@@ -16,7 +16,7 @@ BLOB_SRC = BlobStorage.m
 DB_SRC = PDSDatabase.m Schema.m
 NET_SRC = HttpRequest.m HttpResponse.m HttpServer.m XrpcHandler.m XrpcMethodRegistry.m
 REPO_SRC = CAR.m CBOR.m MST.m MSTPersistence.m RepoCommit.m
-SYNC_SRC = EventFormatter.m Firehose.m RelayClient.m WebSocketConnection.m WebSocketServer.m
+SYNC_SRC = EventFormatter.m Firehose.m WebSocketConnection.m WebSocketServer.m SubscribeReposHandler.m
 
 OBJECTS = $(patsubst %.m,$(BUILD_DIR)/%.o,$(CORE_SRC))
 OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Auth/%.o,$(filter-out secp256k1_wrapper_c.c,$(AUTH_SRC)))
@@ -65,9 +65,9 @@ $(BUILD_DIR)/Repository/%.o: $(SRC_DIR)/Repository/%.m | $(BUILD_DIR)
 $(BUILD_DIR)/Sync/%.o: $(SRC_DIR)/Sync/%.m | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
 
-$(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) $(SRC_DIR)/server_main.m
-	$(CC) $(CFLAGS) $(OBJECTS) -c $(SRC_DIR)/server_main.m -o $(BUILD_DIR)/server_main.o
-	$(CC) $(CFLAGS) $(OBJECTS) $(BUILD_DIR)/server_main.o $(LDFLAGS) -o $@
+$(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) $(SRC_DIR)/streaming_main.m
+	$(CC) $(CFLAGS) $(OBJECTS) -c $(SRC_DIR)/streaming_main.m -o $(BUILD_DIR)/streaming_main.o
+	$(CC) $(CFLAGS) $(OBJECTS) $(BUILD_DIR)/streaming_main.o $(LDFLAGS) -o $@
 
 clean:
 	rm -rf build
