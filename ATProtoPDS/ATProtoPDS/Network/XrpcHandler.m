@@ -130,4 +130,12 @@
     [self registerMethod:@"com.atproto.identity.resolveDid" handler:handler];
 }
 
+- (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.resolveIdentity" handler:handler];
+}
+
+- (void)registerComAtprotoIdentityResolveHandle:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.resolveHandle" handler:handler];
+}
+
 @end

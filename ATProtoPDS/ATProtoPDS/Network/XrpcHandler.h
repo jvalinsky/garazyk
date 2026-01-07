@@ -32,6 +32,8 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 - (void)registerComAtprotoSyncGetBlob:(XrpcMethodHandler)handler;
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
 - (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler;
+- (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler;
+- (void)registerComAtprotoIdentityResolveHandle:(XrpcMethodHandler)handler;
 
 @end
 

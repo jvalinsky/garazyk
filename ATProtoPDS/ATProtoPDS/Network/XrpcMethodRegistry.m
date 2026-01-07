@@ -1,6 +1,7 @@
 #import "XrpcMethodRegistry.h"
 #import "../Blob/BlobStorage.h"
 #import "../DID.h"
+#import "../HandleResolver.h"
 
 @implementation XrpcMethodRegistry
 
@@ -444,6 +445,8 @@
         NSError *error = nil;
         DIDDocument *doc = [resolver resolveDIDSync:did error:&error];
 
+        // TODO: Support forceRefresh query parameter
+
         if (error) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": error.localizedDescription}];
@@ -452,6 +455,106 @@
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:doc.jsonDictionary];
+    }];
+
+    [dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
+        NSString *identifier = [request queryParamForKey:@"identifier"];
+
+        if (!identifier) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing identifier parameter"}];
+            return;
+        }
+
+        DIDResolver *didResolver = [[DIDResolver alloc] init];
+        HandleResolver *handleResolver = [[HandleResolver alloc] init];
+
+        if ([identifier hasPrefix:@"did:"]) {
+            // It's a DID, resolve directly
+            NSError *error = nil;
+            DIDDocument *doc = [didResolver resolveDIDSync:identifier error:&error];
+
+            if (error) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            NSDictionary *result = @{
+                @"did": identifier,
+                @"didDoc": doc.jsonDictionary
+            };
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
+        } else {
+            // It's a handle, resolve to DID then to document
+            // For simplicity, resolve handle to DID, then DID to doc
+            // TODO: Verify handle matches document's alsoKnownAs
+            NSError *handleError = nil;
+            __block NSString *did = nil;
+            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+            [handleResolver resolveHandle:identifier completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable error) {
+                did = resolvedDid;
+                dispatch_semaphore_signal(semaphore);
+            }];
+
+            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+            if (!did) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": @"Handle resolution failed"}];
+                return;
+            }
+
+            NSError *docError = nil;
+            DIDDocument *doc = [didResolver resolveDIDSync:did error:&docError];
+
+            if (docError) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": docError.localizedDescription}];
+                return;
+            }
+
+            NSDictionary *result = @{
+                @"did": did,
+                @"handle": identifier,
+                @"didDoc": doc.jsonDictionary
+            };
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
+        }
+    }];
+
+    [dispatcher registerComAtprotoIdentityResolveHandle:^(HttpRequest *request, HttpResponse *response) {
+        NSString *handle = [request queryParamForKey:@"handle"];
+
+        if (!handle) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle parameter"}];
+            return;
+        }
+
+        HandleResolver *handleResolver = [[HandleResolver alloc] init];
+        NSError *error = nil;
+        __block NSString *did = nil;
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+        [handleResolver resolveHandle:handle completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable resolveError) {
+            did = resolvedDid;
+            dispatch_semaphore_signal(semaphore);
+        }];
+
+        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": @"Handle resolution failed"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"did": did}];
     }];
 }
 @end
