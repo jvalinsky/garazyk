@@ -5,6 +5,7 @@
 @class Session;
 @class BlobStorage;
 @class CID;
+@class FederationClient;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly) PDSDatabase *database;
 @property (nonatomic, readonly) BlobStorage *blobStorage;
+@property (nonatomic, readonly) FederationClient *federationClient;
 
 - (nullable NSDictionary *)createSessionForIdentifier:(NSString *)identifier
                                              password:(NSString *)password
@@ -120,6 +122,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSArray<NSDictionary *> *)queryLabels:(NSDictionary *)query
                                   error:(NSError **)error;
+
+#pragma mark - Federation-Aware Methods
+
+- (nullable NSDictionary *)federatedGetRecordForDid:(NSString *)did
+                                                     collection:(NSString *)collection
+                                                          rkey:(NSString *)rkey
+                                                         error:(NSError **)error;
+
+- (NSArray<NSDictionary *> *)federatedListRecordsForDid:(NSString *)did
+                                              collection:(NSString *)collection
+                                                   limit:(NSInteger)limit
+                                                  cursor:(nullable NSString *)cursor
+                                                   error:(NSError **)error;
+
+- (nullable NSDictionary *)federatedDescribeRepo:(NSString *)did error:(NSError **)error;
+
+- (nullable NSDictionary *)federatedGetRepoDataForDid:(NSString *)did error:(NSError **)error;
+
+- (nullable NSString *)federatedGetRepoHeadForDid:(NSString *)did error:(NSError **)error;
+
+- (nullable NSDictionary *)federatedGetBlobWithCID:(NSString *)cidString
+                                                did:(NSString *)did
+                                              error:(NSError **)error;
+
+- (nullable NSArray<NSDictionary *> *)federatedListBlobsForDID:(NSString *)did
+                                                          limit:(NSInteger)limit
+                                                         cursor:(nullable NSString *)cursor
+                                                          error:(NSError **)error;
 
 @end
 
