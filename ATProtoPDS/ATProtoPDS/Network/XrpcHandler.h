@@ -35,6 +35,11 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 - (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler;
 - (void)registerComAtprotoIdentityResolveHandle:(XrpcMethodHandler)handler;
 
+- (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler;
+- (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler;
+- (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler;
+- (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler;
+
 @end
 
 NS_ASSUME_NONNULL_END
