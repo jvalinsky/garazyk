@@ -101,9 +101,25 @@ NS_ASSUME_NONNULL_BEGIN
                                     error:(NSError **)error;
 
 - (nullable NSArray<NSDictionary *> *)listBlobsForDID:(NSString *)did
-                                                 limit:(NSInteger)limit
-                                                cursor:(nullable NSString *)cursor
-                                                 error:(NSError **)error;
+                                                  limit:(NSInteger)limit
+                                                 cursor:(nullable NSString *)cursor
+                                                  error:(NSError **)error;
+
+- (nullable NSDictionary *)createModerationReport:(NSDictionary *)report
+                                          error:(NSError **)error;
+
+- (nullable NSDictionary *)updateSubjectStatus:(NSDictionary *)subject
+                                       takedown:(nullable NSDictionary *)takedown
+                                     deactivated:(nullable NSDictionary *)deactivated
+                                          error:(NSError **)error;
+
+- (nullable NSDictionary *)getSubjectStatus:(NSString *)did
+                                       uri:(nullable NSString *)uri
+                                      blob:(nullable NSString *)blob
+                                     error:(NSError **)error;
+
+- (NSArray<NSDictionary *> *)queryLabels:(NSDictionary *)query
+                                  error:(NSError **)error;
 
 @end
 

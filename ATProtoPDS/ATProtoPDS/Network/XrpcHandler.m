@@ -138,4 +138,20 @@
     [self registerMethod:@"com.atproto.identity.resolveHandle" handler:handler];
 }
 
+- (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.moderation.createReport" handler:handler];
+}
+
+- (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.updateSubjectStatus" handler:handler];
+}
+
+- (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.getSubjectStatus" handler:handler];
+}
+
+- (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.label.queryLabels" handler:handler];
+}
+
 @end
