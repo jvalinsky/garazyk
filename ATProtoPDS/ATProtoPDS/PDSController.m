@@ -7,6 +7,8 @@
 #import "CID.h"
 #import "TID.h"
 #import "Auth/JWT.h"
+#import "Sync/SubscribeReposHandler.h"
+#import "Repository/RepoCommit.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -18,6 +20,7 @@
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
     dispatch_queue_t _repoQueue;
+    SubscribeReposHandler *_subscribeReposHandler;
 }
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
@@ -34,16 +37,30 @@
 
         _log = os_log_create("com.atproto.pds", "PDSController");
         os_log_info(_log, "PDS Controller initialized with database");
+
+        // Initialize subscribe repos handler
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
     }
     return self;
 }
 
 - (void)startServer {
     os_log_info(_log, "Starting ATProto PDS server...");
+
+    // Start WebSocket streaming server for subscribeRepos
+    NSError *streamingError = nil;
+    if (![_subscribeReposHandler startOnPort:8081 error:&streamingError]) {
+        os_log_error(_log, "Failed to start subscribeRepos WebSocket handler: %@", streamingError);
+    }
 }
 
 - (void)stopServer {
     os_log_info(_log, "Stopping ATProto PDS server...");
+    [_subscribeReposHandler stop];
+}
+
+- (SubscribeReposHandler *)subscribeReposHandler {
+    return _subscribeReposHandler;
 }
 
 #pragma mark - Password Utilities
@@ -315,6 +332,17 @@
         NSLog(@"Failed to save record: %@", saveError);
         if (error) *error = saveError;
         return nil;
+    }
+
+    // Broadcast repository commit event
+    if (_subscribeReposHandler) {
+        // Create a simple commit event for the record creation
+        CID *recordCID = [CID cidFromString:cidString];
+        RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                        data:recordCID
+                                                         rev:[[TID tid] stringValue]
+                                                       prev:nil];
+        [_subscribeReposHandler broadcastRepositoryCommit:commit forRepo:did];
     }
 
     return @{
