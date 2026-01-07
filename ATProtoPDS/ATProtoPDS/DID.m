@@ -61,7 +61,8 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     os_log_t _log;
     NSURLSession *_session;
     NSMutableDictionary<NSString *, NSDictionary *> *_cache;
-    NSTimeInterval _cacheTTL;
+    NSTimeInterval _staleTTL;
+    NSTimeInterval _maxTTL;
 }
 
 - (instancetype)init {
@@ -75,13 +76,15 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         _session = [NSURLSession sessionWithConfiguration:config];
 
         _cache = [[NSMutableDictionary alloc] init];
-        _cacheTTL = 300.0; // 5 minutes
+        _staleTTL = 3600.0; // 1 hour
+        _maxTTL = 86400.0; // 1 day
     }
     return self;
 }
 
 - (void)resolveDID:(NSString *)did
-        completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion {
+     forceRefresh:(BOOL)forceRefresh
+       completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion {
 
     if (!completion) return;
 
@@ -91,12 +94,21 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         return;
     }
 
-    // Check cache first
-    DIDDocument *cached = [self cachedDocumentForDID:did];
-    if (cached) {
-        os_log_info(_log, "Returning cached DID document for %@", did);
-        completion(cached, nil);
-        return;
+    // Check cache first unless force refresh
+    if (!forceRefresh) {
+        DIDCacheStatus status;
+        NSDictionary *entry = [self cachedEntryForDID:did status:&status];
+        if (entry && status == DIDCacheStatusFresh) {
+            os_log_info(_log, "Returning fresh cached DID document for %@", did);
+            completion(entry[@"document"], nil);
+            return;
+        }
+        if (entry && status == DIDCacheStatusStale) {
+            os_log_info(_log, "Returning stale cached DID document for %@ and refreshing", did);
+            completion(entry[@"document"], nil);
+            [self refreshCacheForDID:did];
+            return;
+        }
     }
 
     // Parse DID method
@@ -128,7 +140,7 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     __block DIDDocument *result = nil;
     __block NSError *resultError = nil;
     
-    [self resolveDID:did completion:^(DIDDocument * _Nullable document, NSError * _Nullable resolveError) {
+    [self resolveDID:did forceRefresh:NO completion:^(DIDDocument * _Nullable document, NSError * _Nullable resolveError) {
         result = document;
         resultError = resolveError;
         dispatch_semaphore_signal(semaphore);
@@ -144,18 +156,28 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 
 #pragma mark - Private Methods
 
-- (nullable DIDDocument *)cachedDocumentForDID:(NSString *)did {
+- (nullable NSDictionary *)cachedEntryForDID:(NSString *)did status:(DIDCacheStatus *)outStatus {
     @synchronized(self) {
         NSDictionary *entry = _cache[did];
-        if (!entry) return nil;
-
-        NSDate *timestamp = entry[@"timestamp"];
-        if ([[NSDate date] timeIntervalSinceDate:timestamp] > _cacheTTL) {
-            [_cache removeObjectForKey:did];
+        if (!entry) {
+            *outStatus = DIDCacheStatusExpired;
             return nil;
         }
 
-        return entry[@"document"];
+        NSDate *timestamp = entry[@"timestamp"];
+        NSTimeInterval age = [[NSDate date] timeIntervalSinceDate:timestamp];
+
+        if (age > _maxTTL) {
+            [_cache removeObjectForKey:did];
+            *outStatus = DIDCacheStatusExpired;
+            return nil;
+        } else if (age > _staleTTL) {
+            *outStatus = DIDCacheStatusStale;
+        } else {
+            *outStatus = DIDCacheStatusFresh;
+        }
+
+        return entry;
     }
 }
 
@@ -164,6 +186,48 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         NSDictionary *entry = @{@"document": document, @"timestamp": [NSDate date]};
         _cache[did] = entry;
     }
+}
+
+- (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error {
+    DIDDocument *doc = [self resolveDIDSync:did error:error];
+    if (!doc) return nil;
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"did"] = doc.id;
+
+    // Extract handle from alsoKnownAs (first one, or atproto handle)
+    if (doc.alsoKnownAs.count > 0) {
+        result[@"handle"] = doc.alsoKnownAs[0];
+    }
+
+    // Extract PDS from service
+    if (doc.service) {
+        for (NSDictionary *service in doc.service) {
+            NSString *type = service[@"type"];
+            if ([type isEqualToString:@"AtprotoPersonalDataServer"]) {
+                result[@"pds"] = service[@"serviceEndpoint"];
+                break;
+            }
+        }
+    }
+
+    // Extract signing key (first verification method)
+    NSDictionary *json = doc.jsonDictionary;
+    NSArray *verificationMethods = json[@"verificationMethod"];
+    if (verificationMethods.count > 0) {
+        NSDictionary *method = verificationMethods[0];
+        result[@"signingKey"] = method[@"publicKeyMultibase"];
+    }
+
+    return [result copy];
+}
+
+- (void)refreshCacheForDID:(NSString *)did {
+    [self resolveDID:did forceRefresh:YES completion:^(DIDDocument *document, NSError *error) {
+        if (document) {
+            [self cacheDocument:document forDID:did];
+        }
+    }];
 }
 
 - (NSError *)validateDID:(NSString *)did {
