@@ -275,7 +275,49 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
         return NO;
     }
 
-    // For testing, allow any MIME type
+    // Validate MIME type format (must contain '/')
+    if (!mimeType || [mimeType rangeOfString:@"/"].location == NSNotFound) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorInvalidMIMEType
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid MIME type format"}];
+        }
+        return NO;
+    }
+
+    // Allow common MIME types for ATProto blobs
+    NSSet<NSString *> *allowedTypes = [NSSet setWithArray:@[
+        @"image/jpeg", @"image/png", @"image/gif", @"image/webp",
+        @"video/mp4", @"video/quicktime", @"video/mpeg",
+        @"audio/mpeg", @"audio/mp4", @"audio/wav",
+        @"application/octet-stream", @"text/plain"
+    ]];
+
+    // Check if it's in the allowed set or if it's a valid format (type/subtype)
+    NSArray<NSString *> *components = [mimeType componentsSeparatedByString:@"/"];
+    if (components.count != 2) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorInvalidMIMEType
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid MIME type format"}];
+        }
+        return NO;
+    }
+
+    NSString *type = components[0];
+    NSString *subtype = components[1];
+
+    // Reject obviously invalid types
+    if ([type isEqualToString:@"invalid"] || [subtype isEqualToString:@"type"] ||
+        [type length] == 0 || [subtype length] == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorInvalidMIMEType
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid MIME type"}];
+        }
+        return NO;
+    }
+
     return YES;
 }
 
