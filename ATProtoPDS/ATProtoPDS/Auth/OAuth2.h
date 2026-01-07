@@ -4,6 +4,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const OAuth2ErrorDomain;
 
+// Forward declarations
+@class JWTMinter;
+@class KeyManager;
+@class DIDResolver;
+@class HandleResolver;
+
 typedef NS_ENUM(NSInteger, OAuth2Error) {
     OAuth2ErrorInvalidRequest = 1000,
     OAuth2ErrorUnauthorizedClient,
@@ -45,6 +51,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, copy, nullable) NSString *codeChallengeMethod;
 @property (nonatomic, copy, nullable) NSString *nonce;
 @property (nonatomic, copy, nullable) NSString *dpopJWK;
+@property (nonatomic, copy, nullable) NSString *loginHint; // ATProto: account identifier (handle or DID)
 
 - (NSURL *)authorizationURL;
 - (NSDictionary *)toDictionary;
@@ -113,13 +120,18 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, copy) NSString *tokenEndpoint;
 @property (nonatomic, copy) NSString *jwksURI;
 @property (nonatomic, assign) NSTimeInterval clockSkew;
+@property (nonatomic, strong) NSMutableDictionary *authorizationCodes;
+@property (nonatomic, strong) NSMutableDictionary *activeSessions;
+@property (nonatomic, strong) JWTMinter *jwtMinter;
+@property (nonatomic, strong) KeyManager *keyManager;
+@property (nonatomic, strong) DIDResolver *didResolver; // ATProto: for identity resolution
+@property (nonatomic, strong) HandleResolver *handleResolver; // ATProto: for identity resolution
 
+- (instancetype)init;
 - (void)handleAuthorizationRequest:(OAuth2AuthorizationRequest *)request
                         completion:(OAuth2AuthorizationCompletion)completion;
-
 - (void)handleTokenRequest:(OAuth2TokenRequest *)request
                 completion:(OAuth2TokenCompletion)completion;
-
 - (void)refreshAccessToken:(NSString *)refreshToken
                      scope:(nullable NSString *)scope
                    dpopJWK:(nullable NSDictionary *)dpopJWK

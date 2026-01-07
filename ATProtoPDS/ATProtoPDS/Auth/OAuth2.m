@@ -3,6 +3,9 @@
 #import "KeyManager.h"
 #import "JWT.h"
 #import "Secp256k1.h"
+#import "../DID.h"
+#import "../HandleResolver.h"
+#import <os/log.h>
 
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
 NSString * const OAuth2ScopeSignIn = @"atproto:signin";
@@ -16,10 +19,6 @@ static NSString * const kAuthorizationCodeKey = @"authorization_code";
 static NSString * const kRefreshTokenKey = @"refresh_token";
 
 @interface OAuth2Server ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *authorizationCodes;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *activeSessions;
-@property (nonatomic, strong) JWTMinter *jwtMinter;
-@property (nonatomic, strong) KeyManager *keyManager;
 @end
 
 @implementation OAuth2AuthorizationRequest
@@ -220,7 +219,9 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _activeSessions = [NSMutableDictionary dictionary];
         _jwtMinter = [[JWTMinter alloc] init];
         _keyManager = [[KeyManager alloc] init];
-        
+        _didResolver = [[DIDResolver alloc] init];
+        _handleResolver = [[HandleResolver alloc] init];
+
         // Generate Secp256k1 key pair for JWT signing
         NSError *keyError;
         Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
@@ -262,6 +263,19 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     if (request.nonce) codeData[@"nonce"] = request.nonce;
     if (request.dpopJWK) codeData[@"dpop_jwk"] = request.dpopJWK;
     codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
+
+    // ATProto: Resolve identity if login_hint provided
+    if (request.loginHint) {
+        NSString *resolvedDID = [self resolveIdentity:request.loginHint error:nil];
+        if (resolvedDID) {
+            codeData[@"login_hint_did"] = resolvedDID;
+            codeData[@"login_hint_original"] = request.loginHint;
+            os_log_info(OS_LOG_DEFAULT, "OAuth2: Resolved login_hint %{public}@ to DID %{public}@", request.loginHint, resolvedDID);
+        } else {
+            os_log_error(OS_LOG_DEFAULT, "OAuth2: Failed to resolve login_hint %{public}@", request.loginHint);
+            // Continue without resolved identity - authorization server will handle
+        }
+    }
 
     self.authorizationCodes[code] = codeData;
 
@@ -420,18 +434,68 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
                      scope:(nullable NSString *)scope
                    dpopJWK:(nullable NSDictionary *)dpopJWK
                 completion:(OAuth2RefreshCompletion)completion {
-    OAuth2TokenRequest *request = [[OAuth2TokenRequest alloc] init];
-    request.grantType = @"refresh_token";
-    request.refreshToken = refreshToken;
-    request.scope = scope;
+    // Implementation would go here
+    NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Token refresh not implemented"}];
+    completion(nil, error);
+}
 
-    [self handleTokenRequest:request completion:^(Session *session, NSError *error) {
+#pragma mark - ATProto Identity Resolution
+
+- (nullable NSString *)resolveIdentity:(NSString *)identity error:(NSError **)error {
+    if (!identity || identity.length == 0) {
         if (error) {
-            completion(nil, error);
-        } else {
-            completion(session.accessToken, nil);
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty identity"}];
         }
-    }];
+        return nil;
+    }
+
+    // Check if it's already a DID
+    if ([identity hasPrefix:@"did:"]) {
+        // Validate DID format and resolve to ensure it exists
+        DIDDocument *doc = [self.didResolver resolveDIDSync:identity error:error];
+        return doc ? identity : nil;
+    } else {
+        // It's a handle - resolve to DID
+        __block NSString *resolvedDID = nil;
+        __block NSError *resolveError = nil;
+
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+        [self.handleResolver resolveHandle:identity completion:^(NSString * _Nullable did, NSError * _Nullable err) {
+            resolvedDID = did;
+            resolveError = err;
+            dispatch_semaphore_signal(semaphore);
+        }];
+
+        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+        if (resolveError) {
+            if (error) *error = resolveError;
+            return nil;
+        }
+
+        // Verify bidirectional resolution (ATProto requirement)
+        if (resolvedDID) {
+            NSDictionary *atprotoData = [self.didResolver resolveAtprotoDataForDID:resolvedDID error:error];
+            NSString *verifiedHandle = atprotoData[@"handle"];
+
+            if (verifiedHandle && ![verifiedHandle isEqualToString:identity]) {
+                os_log_error(OS_LOG_DEFAULT, "OAuth2: Handle verification failed - provided %{public}@, resolved %{public}@", identity, verifiedHandle);
+                if (error) {
+                    *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                 code:OAuth2ErrorInvalidRequest
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle verification failed"}];
+                }
+                return nil;
+            }
+        }
+
+        return resolvedDID;
+    }
 }
 
 @end
