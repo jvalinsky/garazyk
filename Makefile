@@ -12,7 +12,7 @@ EXECUTABLE = atprotopds
 CORE_SRC = CID.m DID.m PDSController.m TID.m HandleResolver.m FederationClient.m
 AUTH_SRC = DPoPUtil.m JWT.m KeyManager.m OAuth2.m OAuthServerMetadata.m OAuthSession.m PKCEUtil.m Secp256k1.m Session.m
 AUTH_SRC += secp256k1_wrapper_c.c
-BLOB_SRC = BlobStorage.m
+BLOB_SRC = BlobStorage.m MimeTypeValidator.m
 DB_SRC = PDSDatabase.m Schema.m
 NET_SRC = HttpRequest.m HttpResponse.m HttpServer.m XrpcHandler.m XrpcMethodRegistry.m
 REPO_SRC = CAR.m CBOR.m MST.m MSTPersistence.m RepoCommit.m
@@ -82,7 +82,7 @@ test: $(BUILD_DIR)/$(EXECUTABLE)
 	@timeout 3 ./$(BUILD_DIR)/$(EXECUTABLE) || true
 	@echo "Server test complete"
 
-test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUILD_DIR)/handle_resolver_tests $(BUILD_DIR)/xrpc_integration_tests
+test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUILD_DIR)/handle_resolver_tests $(BUILD_DIR)/xrpc_integration_tests $(BUILD_DIR)/pds_integration_tests
 	@echo "Running blob storage unit tests..."
 	./$(BUILD_DIR)/blob_storage_tests
 	@echo "Running DID resolver unit tests..."
@@ -91,10 +91,16 @@ test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUI
 	./$(BUILD_DIR)/handle_resolver_tests
 	@echo "Running XRPC integration tests..."
 	./$(BUILD_DIR)/xrpc_integration_tests
+	@echo "Running PDS integration tests..."
+	./$(BUILD_DIR)/pds_integration_tests
 
 test-blob: $(BUILD_DIR)/$(EXECUTABLE)
 	@echo "Running blob storage integration tests..."
 	./test_blob_storage.sh
+
+test-comprehensive: test-unit test-blob
+	@echo "Running comprehensive test suite..."
+	./run_tests.sh
 
 $(BUILD_DIR)/blob_storage_tests: $(BUILD_DIR)/blob_storage_tests.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(BUILD_DIR)/blob_storage_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
@@ -117,17 +123,37 @@ $(BUILD_DIR)/xrpc_integration_tests.o: $(SRC_DIR)/xrpc_integration_tests.m | $(B
 $(BUILD_DIR)/xrpc_integration_tests: $(BUILD_DIR)/xrpc_integration_tests.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(BUILD_DIR)/xrpc_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
+$(BUILD_DIR)/pds_integration_tests.o: $(SRC_DIR)/pds_integration_tests.m | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+
+$(BUILD_DIR)/pds_integration_tests: $(BUILD_DIR)/pds_integration_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/pds_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/mime_type_validator_tests.o: $(SRC_DIR)/mime_type_validator_tests.m | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+
+$(BUILD_DIR)/mime_type_validator_tests: $(BUILD_DIR)/mime_type_validator_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/mime_type_validator_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+
 help:
 	@echo "ATProto PDS Build System"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all        - Build the executable (default)"
-	@echo "  build      - Build the executable"
-	@echo "  run        - Build and run the server"
-	@echo "  test       - Build and run a quick connectivity test"
-	@echo "  test-unit  - Build and run blob storage unit tests"
-	@echo "  test-blob  - Build and run blob storage integration tests"
-	@echo "  clean      - Remove build artifacts"
-	@echo "  help       - Show this help message"
+	@echo "  all                 - Build the executable (default)"
+	@echo "  build               - Build the executable"
+	@echo "  run                 - Build and run the server"
+	@echo "  test                - Build and run a quick connectivity test"
+	@echo "  test-unit           - Build and run all unit tests"
+	@echo "  test-blob           - Build and run blob storage integration tests"
+	@echo "  test-comprehensive  - Run the complete test suite with coverage report"
+	@echo "  clean               - Remove build artifacts"
+	@echo "  help                - Show this help message"
+	@echo ""
+	@echo "Test Files:"
+	@echo "  blob_storage_tests      - Blob storage operations"
+	@echo "  did_resolver_tests      - DID resolution and caching"
+	@echo "  handle_resolver_tests   - Handle resolution"
+	@echo "  xrpc_integration_tests  - XRPC endpoint integration"
+	@echo "  pds_integration_tests   - Full PDS workflow integration"
 	@echo ""
 	@echo "Build artifacts are stored in: $(BUILD_DIR)/"

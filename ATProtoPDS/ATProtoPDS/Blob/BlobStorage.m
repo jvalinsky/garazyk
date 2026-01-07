@@ -1,4 +1,5 @@
 #import "BlobStorage.h"
+#import "MimeTypeValidator.h"
 #import "CID.h"
 #import "../Database/PDSDatabase.h"
 #import <CommonCrypto/CommonCrypto.h>
@@ -265,17 +266,59 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
 #pragma mark - Validation
 
 - (BOOL)validateBlob:(NSData *)data mimeType:(NSString *)mimeType error:(NSError **)error {
-    // Check size limit
-    if (data.length > kMaxBlobSize) {
+    MimeTypeValidator *validator = [MimeTypeValidator sharedValidator];
+
+    NSError *mimeError = nil;
+    if (![validator isValidMimeType:mimeType error:&mimeError]) {
         if (error) {
             *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorFileTooLarge
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob exceeds maximum size of 5MB"}];
+                                         code:BlobStorageErrorInvalidMIMEType
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: mimeError.localizedDescription ?: @"Invalid MIME type",
+                NSUnderlyingErrorKey: mimeError ?: [NSNull null]
+            }];
         }
         return NO;
     }
 
-    // For testing, allow any MIME type
+    if (![validator isSupportedMimeType:mimeType error:&mimeError]) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorInvalidMIMEType
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: mimeError.localizedDescription ?: @"Unsupported MIME type",
+                NSUnderlyingErrorKey: mimeError ?: [NSNull null]
+            }];
+        }
+        return NO;
+    }
+
+    if (![validator validateSize:data.length forMimeType:mimeType error:&mimeError]) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorFileTooLarge
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: mimeError.localizedDescription ?: @"File too large",
+                NSUnderlyingErrorKey: mimeError ?: [NSNull null]
+            }];
+        }
+        return NO;
+    }
+
+    if (data.length >= 12) {
+        if (![validator validateMagicNumbers:data forMimeType:mimeType error:&mimeError]) {
+            if (error) {
+                *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                             code:BlobStorageErrorInvalidMIMEType
+                                         userInfo:@{
+                    NSLocalizedDescriptionKey: mimeError.localizedDescription ?: @"Magic number mismatch",
+                    NSUnderlyingErrorKey: mimeError ?: [NSNull null]
+                }];
+            }
+            return NO;
+        }
+    }
+
     return YES;
 }
 
