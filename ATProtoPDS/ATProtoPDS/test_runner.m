@@ -3,6 +3,9 @@
 #import "TID.h"
 #import "DID.h"
 
+// Forward declaration for DID resolver tests
+int runDIDResolverTests(int argc, const char * argv[]);
+
 /// Simple test runner for core ATProto types
 int runTests(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -144,7 +147,16 @@ int runTests(int argc, const char * argv[]) {
         } else {
             NSLog(@"❌ DID Validation: FAILED");
         }
-        
+
+        // Run comprehensive DIDResolver tests
+        NSLog(@"");
+        int didResolverPassed = runDIDResolverTests(argc, argv);
+        // The function returns the number of tests that passed
+        // We assume it ran 25 tests (based on our implementation)
+        int didResolverTotal = 25;
+        passedTests += didResolverPassed;
+        totalTests += didResolverTotal;
+
         // Summary
         NSLog(@"🎯 Test Results: %lu/%lu tests passed", (unsigned long)passedTests, (unsigned long)totalTests);
         

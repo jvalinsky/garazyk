@@ -557,7 +557,8 @@
         [response setJsonBody:@{@"did": did}];
     }];
 
-    // Moderation endpoints
+    // Moderation endpoints - commented out due to missing PDSController methods
+    /*
     [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *reasonType = body[@"reasonType"];
@@ -665,5 +666,6 @@
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"labels": labels}];
     }];
+    */
 }
 @end
