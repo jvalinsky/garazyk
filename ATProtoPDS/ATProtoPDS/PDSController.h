@@ -5,6 +5,7 @@
 @class Session;
 @class BlobStorage;
 @class CID;
+@class SubscribeReposHandler;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly) PDSDatabase *database;
 @property (nonatomic, readonly) BlobStorage *blobStorage;
+@property (nonatomic, readonly, nullable) SubscribeReposHandler *subscribeReposHandler;
 
 - (nullable NSDictionary *)createSessionForIdentifier:(NSString *)identifier
                                              password:(NSString *)password
