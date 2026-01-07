@@ -9,7 +9,7 @@ SRC_DIR = ATProtoPDS/ATProtoPDS
 BUILD_DIR = build
 EXECUTABLE = atprotopds
 
-CORE_SRC = CID.m DID.m PDSController.m TID.m HandleResolver.m
+CORE_SRC = CID.m DID.m PDSController.m TID.m HandleResolver.m FederationClient.m
 AUTH_SRC = DPoPUtil.m JWT.m KeyManager.m OAuth2.m OAuthServerMetadata.m OAuthSession.m PKCEUtil.m Secp256k1.m Session.m
 AUTH_SRC += secp256k1_wrapper_c.c
 BLOB_SRC = BlobStorage.m
