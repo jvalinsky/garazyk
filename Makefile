@@ -82,9 +82,15 @@ test: $(BUILD_DIR)/$(EXECUTABLE)
 	@timeout 3 ./$(BUILD_DIR)/$(EXECUTABLE) || true
 	@echo "Server test complete"
 
-test-unit: $(BUILD_DIR)/blob_storage_tests
+test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUILD_DIR)/handle_resolver_tests $(BUILD_DIR)/xrpc_integration_tests
 	@echo "Running blob storage unit tests..."
 	./$(BUILD_DIR)/blob_storage_tests
+	@echo "Running DID resolver unit tests..."
+	./$(BUILD_DIR)/did_resolver_tests
+	@echo "Running handle resolver unit tests..."
+	./$(BUILD_DIR)/handle_resolver_tests
+	@echo "Running XRPC integration tests..."
+	./$(BUILD_DIR)/xrpc_integration_tests
 
 test-blob: $(BUILD_DIR)/$(EXECUTABLE)
 	@echo "Running blob storage integration tests..."
@@ -92,6 +98,24 @@ test-blob: $(BUILD_DIR)/$(EXECUTABLE)
 
 $(BUILD_DIR)/blob_storage_tests: $(BUILD_DIR)/blob_storage_tests.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(BUILD_DIR)/blob_storage_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/did_resolver_tests.o: $(SRC_DIR)/did_resolver_tests.m | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+
+$(BUILD_DIR)/did_resolver_tests: $(BUILD_DIR)/did_resolver_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/did_resolver_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/handle_resolver_tests.o: $(SRC_DIR)/handle_resolver_tests.m | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+
+$(BUILD_DIR)/handle_resolver_tests: $(BUILD_DIR)/handle_resolver_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/handle_resolver_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/xrpc_integration_tests.o: $(SRC_DIR)/xrpc_integration_tests.m | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+
+$(BUILD_DIR)/xrpc_integration_tests: $(BUILD_DIR)/xrpc_integration_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/xrpc_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
 help:
 	@echo "ATProto PDS Build System"
