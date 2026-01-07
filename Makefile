@@ -1,31 +1,15 @@
-.PHONY: all clean build test run test-blob test-unit
+.PHONY: all clean build test run test-blob test-unit help
 
 CC = clang
 CFLAGS = -framework Foundation -framework Network -framework Security -lsqlite3 -fobjc-arc
 CFLAGS += -I/Users/jack/Software/objpds/secp256k1/include
-CFLAGS += -I/Users/jack/Software/objpds/ATProtoPDS/ATProtoPDS/Auth
+CFLAGS += -IATProtoPDS/Sources
 LDFLAGS = -L/Users/jack/Software/objpds/secp256k1/build/lib -lsecp256k1
-SRC_DIR = ATProtoPDS/ATProtoPDS
 BUILD_DIR = build
 EXECUTABLE = atprotopds
 
-CORE_SRC = CID.m DID.m PDSController.m TID.m HandleResolver.m FederationClient.m
-AUTH_SRC = DPoPUtil.m JWT.m KeyManager.m OAuth2.m OAuthServerMetadata.m OAuthSession.m PKCEUtil.m Secp256k1.m Session.m
-AUTH_SRC += secp256k1_wrapper_c.c
-BLOB_SRC = BlobStorage.m MimeTypeValidator.m
-DB_SRC = PDSDatabase.m Schema.m
-NET_SRC = HttpRequest.m HttpResponse.m HttpServer.m XrpcHandler.m XrpcMethodRegistry.m
-REPO_SRC = CAR.m CBOR.m MST.m MSTPersistence.m RepoCommit.m
-SYNC_SRC = EventFormatter.m Firehose.m WebSocketConnection.m WebSocketServer.m SubscribeReposHandler.m
-
-OBJECTS = $(patsubst %.m,$(BUILD_DIR)/%.o,$(CORE_SRC))
-OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Auth/%.o,$(filter-out secp256k1_wrapper_c.c,$(AUTH_SRC)))
-OBJECTS += $(patsubst secp256k1_wrapper_c.c,$(BUILD_DIR)/Auth/secp256k1_wrapper_c.o,$(filter secp256k1_wrapper_c.c,$(AUTH_SRC)))
-OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Blob/%.o,$(BLOB_SRC))
-OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Database/%.o,$(DB_SRC))
-OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Network/%.o,$(NET_SRC))
-OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Repository/%.o,$(REPO_SRC))
-OBJECTS += $(patsubst %.m,$(BUILD_DIR)/Sync/%.o,$(SYNC_SRC))
+SOURCES = $(wildcard ATProtoPDS/Sources/**/*.m)
+OBJECTS = $(patsubst ATProtoPDS/Sources/%.m,$(BUILD_DIR)/%.o,$(SOURCES))
 
 all: $(BUILD_DIR)/$(EXECUTABLE)
 
@@ -37,37 +21,22 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)/Network
 	mkdir -p $(BUILD_DIR)/Repository
 	mkdir -p $(BUILD_DIR)/Sync
+	mkdir -p $(BUILD_DIR)/AppView
+	mkdir -p $(BUILD_DIR)/Debug
+	mkdir -p $(BUILD_DIR)/Metrics
+	mkdir -p $(BUILD_DIR)/Admin
+	mkdir -p $(BUILD_DIR)/CLI
+	mkdir -p $(BUILD_DIR)/Core
+	mkdir -p $(BUILD_DIR)/App
+	mkdir -p $(BUILD_DIR)/Identity
+	mkdir -p $(BUILD_DIR)/Federation
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+$(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.m | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/blob_storage_tests.o: $(SRC_DIR)/blob_storage_tests.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Auth/%.o: $(SRC_DIR)/Auth/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Auth/secp256k1_wrapper_c.o: $(SRC_DIR)/Auth/secp256k1_wrapper_c.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Blob/%.o: $(SRC_DIR)/Blob/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Database/%.o: $(SRC_DIR)/Database/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Network/%.o: $(SRC_DIR)/Network/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Repository/%.o: $(SRC_DIR)/Repository/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/Sync/%.o: $(SRC_DIR)/Sync/%.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) $(SRC_DIR)/streaming_main.m
-	$(CC) $(CFLAGS) $(OBJECTS) -c $(SRC_DIR)/streaming_main.m -o $(BUILD_DIR)/streaming_main.o
-	$(CC) $(CFLAGS) $(OBJECTS) $(BUILD_DIR)/streaming_main.o $(LDFLAGS) -o $@
+$(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) ATProtoPDS/Sources/App/server_main.m
+	$(CC) $(CFLAGS) $(OBJECTS) -c ATProtoPDS/Sources/App/server_main.m -o $(BUILD_DIR)/server_main.o
+	$(CC) $(CFLAGS) $(OBJECTS) $(BUILD_DIR)/server_main.o $(LDFLAGS) -o $@
 
 clean:
 	rm -rf build
@@ -82,11 +51,13 @@ test: $(BUILD_DIR)/$(EXECUTABLE)
 	@timeout 3 ./$(BUILD_DIR)/$(EXECUTABLE) || true
 	@echo "Server test complete"
 
-test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUILD_DIR)/handle_resolver_tests $(BUILD_DIR)/xrpc_integration_tests $(BUILD_DIR)/pds_integration_tests
+test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUILD_DIR)/did_validation_tests $(BUILD_DIR)/handle_resolver_tests $(BUILD_DIR)/xrpc_integration_tests $(BUILD_DIR)/pds_integration_tests
 	@echo "Running blob storage unit tests..."
 	./$(BUILD_DIR)/blob_storage_tests
 	@echo "Running DID resolver unit tests..."
 	./$(BUILD_DIR)/did_resolver_tests
+	@echo "Running DID validation unit tests..."
+	./$(BUILD_DIR)/did_validation_tests
 	@echo "Running handle resolver unit tests..."
 	./$(BUILD_DIR)/handle_resolver_tests
 	@echo "Running XRPC integration tests..."
@@ -102,38 +73,29 @@ test-comprehensive: test-unit test-blob
 	@echo "Running comprehensive test suite..."
 	./run_tests.sh
 
-$(BUILD_DIR)/blob_storage_tests: $(BUILD_DIR)/blob_storage_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/blob_storage_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+$(BUILD_DIR)/blob_storage_tests: $(BUILD_DIR)/Tests/Blob/blob_storage_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Blob/blob_storage_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/did_resolver_tests.o: $(SRC_DIR)/did_resolver_tests.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+$(BUILD_DIR)/did_resolver_tests: $(BUILD_DIR)/Tests/Identity/did_resolver_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Identity/did_resolver_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/did_resolver_tests: $(BUILD_DIR)/did_resolver_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/did_resolver_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+$(BUILD_DIR)/did_validation_tests: $(BUILD_DIR)/Tests/Core/did_validation_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Core/did_validation_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/handle_resolver_tests.o: $(SRC_DIR)/handle_resolver_tests.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+$(BUILD_DIR)/handle_resolver_tests: $(BUILD_DIR)/Tests/Identity/handle_resolver_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Identity/handle_resolver_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/handle_resolver_tests: $(BUILD_DIR)/handle_resolver_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/handle_resolver_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+$(BUILD_DIR)/xrpc_integration_tests: $(BUILD_DIR)/Tests/Network/xrpc_integration_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Network/xrpc_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/xrpc_integration_tests.o: $(SRC_DIR)/xrpc_integration_tests.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+$(BUILD_DIR)/pds_integration_tests: $(BUILD_DIR)/Tests/Integration/pds_integration_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Integration/pds_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/xrpc_integration_tests: $(BUILD_DIR)/xrpc_integration_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/xrpc_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+$(BUILD_DIR)/mime_type_validator_tests: $(BUILD_DIR)/Tests/Blob/mime_type_validator_tests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Blob/mime_type_validator_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/pds_integration_tests.o: $(SRC_DIR)/pds_integration_tests.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/pds_integration_tests: $(BUILD_DIR)/pds_integration_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/pds_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
-
-$(BUILD_DIR)/mime_type_validator_tests.o: $(SRC_DIR)/mime_type_validator_tests.m | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
-
-$(BUILD_DIR)/mime_type_validator_tests: $(BUILD_DIR)/mime_type_validator_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/mime_type_validator_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+$(BUILD_DIR)/pds-cli: $(wildcard ATProtoPDS/Sources/CLI/*.m) $(wildcard ATProtoPDS/Sources/Debug/*.m) $(wildcard ATProtoPDS/Sources/Admin/*.m) $(wildcard ATProtoPDS/Sources/Metrics/*.m) $(filter-out $(BUILD_DIR)/Repository/%,$(filter $(BUILD_DIR)/Repository/%.o,$(OBJECTS))) $(filter-out $(BUILD_DIR)/Sync/%,$(filter $(BUILD_DIR)/Sync/%.o,$(OBJECTS))) $(filter-out $(BUILD_DIR)/Network/XrpcMethodRegistry.o,$(filter $(BUILD_DIR)/Network/%.o,$(OBJECTS)))
+	$(CC) $(CFLAGS) $(filter $(BUILD_DIR)/CLI/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Debug/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Admin/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Metrics/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Core/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Auth/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Blob/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Database/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Repository/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Sync/%.o,$(OBJECTS)) $(filter $(BUILD_DIR)/Network/XrpcMethodRegistry.o,$(OBJECTS)) $(LDFLAGS) -o $@
 
 help:
 	@echo "ATProto PDS Build System"
