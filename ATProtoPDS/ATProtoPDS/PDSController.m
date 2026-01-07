@@ -7,7 +7,8 @@
 #import "CID.h"
 #import "TID.h"
 #import "Auth/JWT.h"
-#import "FederationClient.h"
+#import "Sync/SubscribeReposHandler.h"
+#import "Repository/RepoCommit.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -16,10 +17,10 @@
     os_log_t _log;
     PDSDatabase *_database;
     BlobStorage *_blobStorage;
-    FederationClient *_federationClient;
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
     dispatch_queue_t _repoQueue;
+    SubscribeReposHandler *_subscribeReposHandler;
 }
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
@@ -30,25 +31,36 @@
         _collections = [NSMutableDictionary dictionary];
         _repoQueue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
 
-        // Initialize federation client
-        _federationClient = [[FederationClient alloc] init];
-
         // Initialize blob storage
         NSURL *blobStorageURL = [[database.databaseURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:@"blobs"];
         _blobStorage = [[BlobStorage alloc] initWithDatabase:database storageDirectory:blobStorageURL];
 
         _log = os_log_create("com.atproto.pds", "PDSController");
         os_log_info(_log, "PDS Controller initialized with database");
+
+        // Initialize subscribe repos handler
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
     }
     return self;
 }
 
 - (void)startServer {
     os_log_info(_log, "Starting ATProto PDS server...");
+
+    // Start WebSocket streaming server for subscribeRepos
+    NSError *streamingError = nil;
+    if (![_subscribeReposHandler startOnPort:8081 error:&streamingError]) {
+        os_log_error(_log, "Failed to start subscribeRepos WebSocket handler: %@", streamingError);
+    }
 }
 
 - (void)stopServer {
     os_log_info(_log, "Stopping ATProto PDS server...");
+    [_subscribeReposHandler stop];
+}
+
+- (SubscribeReposHandler *)subscribeReposHandler {
+    return _subscribeReposHandler;
 }
 
 #pragma mark - Password Utilities
@@ -320,6 +332,17 @@
         NSLog(@"Failed to save record: %@", saveError);
         if (error) *error = saveError;
         return nil;
+    }
+
+    // Broadcast repository commit event
+    if (_subscribeReposHandler) {
+        // Create a simple commit event for the record creation
+        CID *recordCID = [CID cidFromString:cidString];
+        RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                        data:recordCID
+                                                         rev:[[TID tid] stringValue]
+                                                       prev:nil];
+        [_subscribeReposHandler broadcastRepositoryCommit:commit forRepo:did];
     }
 
     return @{
@@ -946,287 +969,6 @@
     NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
     uint32_t random = arc4random_uniform(1000000);
     return [NSString stringWithFormat:@"%.0f-%u", timestamp, random];
-}
-
-#pragma mark - Federation-Aware Methods
-
-- (nullable NSDictionary *)federatedGetRecordForDid:(NSString *)did
-                                          collection:(NSString *)collection
-                                               rkey:(NSString *)rkey
-                                              error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        return [self getRecordForDid:did collection:collection rkey:rkey error:error];
-    }
-
-    // Remote account, forward the request
-    NSDictionary *parameters = @{
-        @"repo": did,
-        @"collection": collection,
-        @"rkey": rkey
-    };
-
-    __block NSDictionary *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcRequest:@"com.atproto.repo.getRecord"
-                               parameters:parameters
-                                      did:did
-                               completion:^(NSDictionary * _Nullable response, NSError * _Nullable fedError) {
-        result = response;
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result;
-}
-
-- (NSArray<NSDictionary *> *)federatedListRecordsForDid:(NSString *)did
-                                              collection:(NSString *)collection
-                                                   limit:(NSInteger)limit
-                                                  cursor:(nullable NSString *)cursor
-                                                   error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        return [self listRecordsForDid:did collection:collection limit:limit cursor:cursor error:error];
-    }
-
-    // Remote account, forward the request
-    NSMutableDictionary *parameters = [@{
-        @"repo": did,
-        @"collection": collection,
-        @"limit": @(limit)
-    } mutableCopy];
-
-    if (cursor) {
-        parameters[@"cursor"] = cursor;
-    }
-
-    __block NSArray *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcRequest:@"com.atproto.repo.listRecords"
-                               parameters:parameters
-                                      did:did
-                               completion:^(NSDictionary * _Nullable response, NSError * _Nullable fedError) {
-        if (response && response[@"records"]) {
-            result = response[@"records"];
-        }
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result ?: @[];
-}
-
-- (nullable NSDictionary *)federatedDescribeRepo:(NSString *)did error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        return [self describeRepo:did error:error];
-    }
-
-    // Remote account, forward the request
-    NSDictionary *parameters = @{@"repo": did};
-
-    __block NSDictionary *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcRequest:@"com.atproto.repo.describeRepo"
-                               parameters:parameters
-                                      did:did
-                               completion:^(NSDictionary * _Nullable response, NSError * _Nullable fedError) {
-        result = response;
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result;
-}
-
-- (nullable NSDictionary *)federatedGetRepoDataForDid:(NSString *)did error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        NSData *repoData = [self getRepoDataForDid:did error:error];
-        return repoData ? @{@"data": repoData} : nil;
-    }
-
-    // Remote account, forward the request
-    NSDictionary *parameters = @{@"did": did};
-
-    __block NSData *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcBinaryRequest:@"com.atproto.sync.getRepo"
-                                     parameters:parameters
-                                            did:did
-                                     completion:^(NSData * _Nullable data, NSError * _Nullable fedError) {
-        result = data;
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result ? @{@"data": result} : nil;
-}
-
-- (nullable NSString *)federatedGetRepoHeadForDid:(NSString *)did error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        return [self getRepoHeadForDid:did error:error];
-    }
-
-    // Remote account, forward the request
-    NSDictionary *parameters = @{@"did": did};
-
-    __block NSString *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcRequest:@"com.atproto.sync.getHead"
-                               parameters:parameters
-                                      did:did
-                               completion:^(NSDictionary * _Nullable response, NSError * _Nullable fedError) {
-        if (response && response[@"root"]) {
-            result = response[@"root"];
-        }
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result;
-}
-
-- (nullable NSDictionary *)federatedGetBlobWithCID:(NSString *)cidString
-                                                did:(NSString *)did
-                                              error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        return [self getBlobWithCID:cidString did:did error:error];
-    }
-
-    // Remote account, forward the request
-    NSDictionary *parameters = @{
-        @"did": did,
-        @"cid": cidString
-    };
-
-    __block NSDictionary *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcRequest:@"com.atproto.sync.getBlob"
-                               parameters:parameters
-                                      did:did
-                               completion:^(NSDictionary * _Nullable response, NSError * _Nullable fedError) {
-        result = response;
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result;
-}
-
-- (nullable NSArray<NSDictionary *> *)federatedListBlobsForDID:(NSString *)did
-                                                          limit:(NSInteger)limit
-                                                         cursor:(nullable NSString *)cursor
-                                                          error:(NSError **)error {
-    // Check if this DID is hosted locally
-    PDSDatabaseAccount *account = [_database getAccountByDid:did error:nil];
-    if (account) {
-        // Local account, use existing method
-        return [self listBlobsForDID:did limit:limit cursor:cursor error:error];
-    }
-
-    // Remote account, forward the request
-    NSMutableDictionary *parameters = [@{
-        @"did": did,
-        @"limit": @(limit)
-    } mutableCopy];
-
-    if (cursor) {
-        parameters[@"cursor"] = cursor;
-    }
-
-    __block NSArray *result = nil;
-    __block NSError *federationError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [_federationClient forwardXrpcRequest:@"com.atproto.sync.listBlobs"
-                               parameters:parameters
-                                      did:did
-                               completion:^(NSDictionary * _Nullable response, NSError * _Nullable fedError) {
-        if (response && response[@"blobs"]) {
-            result = response[@"blobs"];
-        }
-        federationError = fedError;
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (federationError) {
-        if (error) *error = federationError;
-        return nil;
-    }
-
-    return result ?: @[];
 }
 
 @end
