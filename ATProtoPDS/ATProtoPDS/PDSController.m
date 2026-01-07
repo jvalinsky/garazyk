@@ -181,25 +181,62 @@
         uint8_t byte = ((uint8_t *)data.bytes)[i++];
         [result appendFormat:@"%c", alphabet[byte >> 3]];
         uint8_t nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        uint8_t combined = ((byte & 0x07) << 2) | (nextByte >> 6);
-        [result appendFormat:@"%c", alphabet[combined]];
+        [result appendFormat:@"%c", alphabet[((byte & 0x07) << 2) | (nextByte >> 6)]];
         if (i >= length + 1) break;
-        combined = (nextByte >> 1) & 0x1F;
-        [result appendFormat:@"%c", alphabet[combined]];
+        [result appendFormat:@"%c", alphabet[(nextByte >> 1) & 0x1F]];
         if (i >= length) break;
         nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        combined = ((nextByte & 0x0F) << 1) | (nextByte >> 7);
-        [result appendFormat:@"%c", alphabet[combined]];
+        [result appendFormat:@"%c", alphabet[((nextByte & 0x0F) << 1) | (nextByte >> 7)]];
         if (i >= length) break;
-        combined = (nextByte >> 2) & 0x1F;
-        [result appendFormat:@"%c", alphabet[combined]];
+        [result appendFormat:@"%c", alphabet[(nextByte >> 2) & 0x1F]];
         if (i >= length) break;
         nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        combined = nextByte & 0x1F;
-        [result appendFormat:@"%c", alphabet[combined]];
+        [result appendFormat:@"%c", alphabet[nextByte & 0x1F]];
     }
     
     return result;
+}
+
+- (BOOL)validateRecord:(NSDictionary *)record
+          forCollection:(NSString *)collection
+                 error:(NSError **)error {
+    // Basic validation
+    if (![record isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds"
+                                       code:400
+                                   userInfo:@{NSLocalizedDescriptionKey: @"Record must be a dictionary"}];
+        }
+        return NO;
+    }
+    
+    // Check $type field
+    NSString *type = record[@"$type"];
+    if (!type || ![type isKindOfClass:[NSString class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds"
+                                       code:400
+                                   userInfo:@{NSLocalizedDescriptionKey: @"Record must have a valid $type field"}];
+        }
+        return NO;
+    }
+    
+    // Collection-specific validation
+    if ([collection isEqualToString:@"app.bsky.feed.post"]) {
+        // Basic post validation
+        NSString *text = record[@"text"];
+        if (!text || ![text isKindOfClass:[NSString class]] || text.length == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.pds"
+                                           code:400
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Post must have non-empty text field"}];
+            }
+            return NO;
+        }
+    }
+    // Add more collection validations as needed
+    
+    return YES;
 }
 
 - (nullable NSDictionary *)createRecordForDid:(NSString *)did
@@ -240,6 +277,13 @@
     // Generate rkey if not provided
     if (!rkey) {
         rkey = [[TID tid] stringValue];
+    }
+
+    // Validate record
+    NSError *validationError;
+    if (![self validateRecord:record forCollection:collection error:&validationError]) {
+        if (error) *error = validationError;
+        return nil;
     }
 
     // Generate proper CID for the record
