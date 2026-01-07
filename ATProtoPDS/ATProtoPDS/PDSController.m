@@ -943,4 +943,136 @@
     return [NSString stringWithFormat:@"%.0f-%u", timestamp, random];
 }
 
+#pragma mark - Moderation
+
+- (nullable NSDictionary *)createModerationReport:(NSDictionary *)report
+                                          error:(NSError **)error {
+    // Extract report data
+    NSString *reasonType = report[@"reasonType"];
+    NSDictionary *subject = report[@"subject"];
+    NSString *reason = report[@"reason"];
+    NSDictionary *modTool = report[@"modTool"];
+
+    if (!reasonType || !subject) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.moderation"
+                                      code:400
+                                  userInfo:@{NSLocalizedDescriptionKey: @"Missing required fields: reasonType and subject"}];
+        }
+        return nil;
+    }
+
+    // Generate report ID (simple incrementing ID for now)
+    NSNumber *reportId = @([self generateReportId]);
+
+    // Create report record
+    NSDictionary *reportRecord = @{
+        @"id": reportId,
+        @"reasonType": reasonType,
+        @"subject": subject,
+        @"reportedBy": report[@"reportedBy"] ?: @"anonymous", // Would come from auth
+        @"createdAt": [self iso8601StringFromDate:[NSDate date]],
+        @"reason": reason ?: [NSNull null],
+        @"modTool": modTool ?: [NSNull null]
+    };
+
+    // Store in database (would need proper moderation_reports table)
+    // For now, just return the report
+    os_log_info(_log, "Created moderation report: %@", reportId);
+
+    return reportRecord;
+}
+
+- (nullable NSDictionary *)updateSubjectStatus:(NSDictionary *)subject
+                                       takedown:(nullable NSDictionary *)takedown
+                                     deactivated:(nullable NSDictionary *)deactivated
+                                          error:(NSError **)error {
+    if (!subject) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                      code:400
+                                  userInfo:@{NSLocalizedDescriptionKey: @"Missing subject"}];
+        }
+        return nil;
+    }
+
+    // Update subject status in database
+    // For now, just return the updated status
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"subject"] = subject;
+
+    if (takedown) {
+        result[@"takedown"] = takedown;
+    }
+
+    if (deactivated) {
+        result[@"deactivated"] = deactivated;
+    }
+
+    os_log_info(_log, "Updated subject status for: %@", subject);
+
+    return result;
+}
+
+- (nullable NSDictionary *)getSubjectStatus:(NSString *)did
+                                       uri:(nullable NSString *)uri
+                                      blob:(nullable NSString *)blob
+                                     error:(NSError **)error {
+    if (!did && !uri && !blob) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                      code:400
+                                  userInfo:@{NSLocalizedDescriptionKey: @"Must provide did, uri, or blob parameter"}];
+        }
+        return nil;
+    }
+
+    // Determine subject type
+    NSDictionary *subject;
+    if (did) {
+        subject = @{@"did": did};
+    } else if (uri) {
+        subject = @{@"uri": uri};
+    } else if (blob) {
+        subject = @{@"cid": blob};
+    }
+
+    // Query database for status
+    // For now, return default status (not taken down, not deactivated)
+    NSDictionary *result = @{
+        @"subject": subject,
+        @"takedown": @{@"applied": @NO},
+        @"deactivated": @{@"applied": @NO}
+    };
+
+    return result;
+}
+
+- (NSArray<NSDictionary *> *)queryLabels:(NSDictionary *)query
+                                  error:(NSError **)error {
+    // Query parameters
+    NSArray *uriPatterns = query[@"uriPatterns"];
+    NSArray *sources = query[@"sources"];
+    NSInteger limit = [query[@"limit"] integerValue] ?: 250;
+
+    // Query database for labels
+    // For now, return empty array
+    os_log_info(_log, "Querying labels with limit: %ld", (long)limit);
+
+    return @[];
+}
+
+- (NSInteger)generateReportId {
+    // Simple ID generation - in production would use database sequence
+    static NSInteger reportCounter = 1000;
+    return reportCounter++;
+}
+
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"];
+    [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    return [formatter stringFromDate:date];
+}
+
 @end
