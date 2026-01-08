@@ -201,9 +201,10 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (nullable Session *)createSessionForDID:(NSString *)did
-                                   handle:(NSString *)handle
-                                    scope:(NSString *)scope
-                                  dpopJWK:(nullable NSDictionary *)dpopJWK {
+                                    handle:(NSString *)handle
+                                     scope:(NSString *)scope
+                                   dpopJWK:(nullable NSDictionary *)dpopJWK
+                                     error:(NSError **)error {
     Session *session = [[Session alloc] initWithDID:did handle:handle scope:scope];
 
     if (dpopJWK[@"kid"]) {
@@ -222,6 +223,13 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     });
 
     return session;
+}
+
+- (nullable Session *)createSessionForDID:(NSString *)did
+                                    handle:(NSString *)handle
+                                     scope:(NSString *)scope
+                                   dpopJWK:(nullable NSDictionary *)dpopJWK {
+    return [self createSessionForDID:did handle:handle scope:scope dpopJWK:dpopJWK error:nil];
 }
 
 - (nullable Session *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error {

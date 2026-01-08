@@ -6,6 +6,20 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 @implementation DPoPToken
 
++ (nullable instancetype)createWithMethod:(NSString *)htm
+                                      uri:(NSString *)htu
+                                  nonce:(nullable NSString *)nonce
+                                  error:(NSError **)error {
+    DPoPToken *token = [[DPoPToken alloc] init];
+    token.htm = htm;
+    token.htu = htu;
+    token.iat = [NSDate date];
+    token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
+    token.jti = [[NSUUID UUID] UUIDString];
+    token.nonce = nonce;
+    return token;
+}
+
 - (NSDictionary *)header {
     return @{
         @"typ": @"dpop+jwt",
