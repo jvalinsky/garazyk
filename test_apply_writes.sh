@@ -7,6 +7,8 @@ set -e
 
 # Configuration
 SERVER_HOST="http://localhost:2583"
+DB_PATH="/tmp/atproto_pds.db"
+PORT=2583
 
 # Colors
 RED='\033[0;31m'
@@ -15,6 +17,23 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${YELLOW}🧪 Testing applyWrites endpoint${NC}"
+
+# Cleanup function
+cleanup() {
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        kill "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
+    fi
+    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    rm -f "$DB_PATH" 2>/dev/null || true
+}
+
+trap cleanup EXIT
+
+# Kill any existing server and clean up
+pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+sleep 1
+rm -f "$DB_PATH" 2>/dev/null || true
 
 # Start server in background
 echo "Starting server..."
@@ -32,23 +51,16 @@ fi
 
 echo -e "${GREEN}✅ Server started${NC}"
 
-# Cleanup function
-cleanup() {
-    kill $SERVER_PID 2>/dev/null || true
-}
-
-trap cleanup EXIT
-
-# Create test account
+# Create test account with unique handle
+TIMESTAMP=$(date +%s)
 echo "Creating test account..."
 CREATE_RESPONSE=$(curl -s -X POST "$SERVER_HOST/xrpc/com.atproto.server.createAccount" \
     -H "Content-Type: application/json" \
-    -d '{
-        "email": "test@example.com",
-        "handle": "test.example.com",
-        "password": "testpassword123",
-        "did": "did:web:test.example.com"
-    }')
+    -d "{
+        \"email\": \"test$TIMESTAMP@example.com\",
+        \"handle\": \"test$TIMESTAMP.example.com\",
+        \"password\": \"testpassword123\"
+    }")
 
 if echo "$CREATE_RESPONSE" | grep -q "error"; then
     if echo "$CREATE_RESPONSE" | grep -q "AccountCreationFailed"; then
