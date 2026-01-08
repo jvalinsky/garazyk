@@ -85,14 +85,10 @@
     [data appendBytes:&vLen length:2];
     [data appendData:vBytes];
 
+    uint16_t tLen = self.tree ? (uint16_t)[self.tree bytes].length : 0;
+    [data appendBytes:&tLen length:2];
     if (self.tree) {
-        NSData *tBytes = [self.tree bytes];
-        uint16_t tLen = (uint16_t)tBytes.length;
-        [data appendBytes:&tLen length:2];
-        [data appendData:tBytes];
-    } else {
-        uint16_t zero = 0;
-        [data appendBytes:&zero length:2];
+        [data appendData:[self.tree bytes]];
     }
 
     return data;
@@ -134,14 +130,10 @@
 - (NSData *)serialize {
     NSMutableData *data = [NSMutableData data];
 
+    uint16_t leftLen = self.left ? (uint16_t)[self.left bytes].length : 0;
+    [data appendBytes:&leftLen length:2];
     if (self.left) {
-        NSData *leftBytes = [self.left bytes];
-        uint16_t leftLen = (uint16_t)leftBytes.length;
-        [data appendBytes:&leftLen length:2];
-        [data appendData:leftBytes];
-    } else {
-        uint16_t zero = 0;
-        [data appendBytes:&zero length:2];
+        [data appendData:[self.left bytes]];
     }
 
     uint16_t entryCount = (uint16_t)self.entries.count;

@@ -136,12 +136,9 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 }
 
 - (void)broadcastMessage:(NSData *)message toConnectionsMatching:(NSPredicate *)predicate {
-    NSSet<WebSocketConnection *> *targets;
-    if (predicate) {
-        targets = [self.mutableConnections filteredSetUsingPredicate:predicate];
-    } else {
-        targets = [self.mutableConnections copy];
-    }
+    NSSet<WebSocketConnection *> *targets = predicate
+        ? [self.mutableConnections filteredSetUsingPredicate:predicate]
+        : [self.mutableConnections copy];
 
     for (WebSocketConnection *connection in targets) {
         [connection sendMessage:message];
