@@ -326,10 +326,10 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return YES if the session was refreshed, NO otherwise.
  */
 - (BOOL)refreshSession:(NSString *)sessionID
-                 scope:(nullable NSString *)newScope
-               dpopJWK:(nullable NSDictionary *)dpopJWK
-           newSession:(Session **)newSession
-                 error:(NSError **)error;
+                  scope:(nullable NSString *)newScope
+                dpopJWK:(nullable NSDictionary *)dpopJWK
+            newSession:(Session * _Nullable * _Nonnull)newSession
+                  error:(NSError ** _Nullable)error;
 
 /*!
  @method getSessionsForDID:error:
