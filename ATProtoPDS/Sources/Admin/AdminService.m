@@ -4,7 +4,7 @@
 
 NSString * const AdminServiceErrorDomain = @"com.atproto.pds.admin";
 
-static NSDateFormatter * _adminIso8601Formatter(void) {
+static NSDateFormatter * adminIso8601Formatter(void) {
     static NSDateFormatter *formatter = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -47,8 +47,8 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
         result[@"email"] = account.email;
     }
     
-    result[@"createdAt"] = [_adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]];
-    result[@"updatedAt"] = [_adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]];
+    result[@"createdAt"] = [adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]];
+    result[@"updatedAt"] = [adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]];
     
     return result;
 }
@@ -87,7 +87,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     return @{
         @"did": did,
         @"handle": handle,
-        @"updatedAt": [_adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]
+        @"updatedAt": [adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]
     };
 }
 
@@ -112,7 +112,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     return @{
         @"did": did,
         @"email": email,
-        @"updatedAt": [_adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]
+        @"updatedAt": [adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]
     };
 }
 
@@ -140,7 +140,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     
     return @{
         @"did": did,
-        @"updatedAt": [_adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]
+        @"updatedAt": [adminIso8601Formatter() stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]
     };
 }
 
@@ -153,7 +153,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     
     NSError *updateError = nil;
     NSString *sql = [NSString stringWithFormat:@"UPDATE accounts SET invite_enabled = 1, updated_at = '%@' WHERE did = '%@'",
-                     [_adminIso8601Formatter() stringFromDate:[NSDate date]], did];
+                     [adminIso8601Formatter() stringFromDate:[NSDate date]], did];
     
     BOOL success = [self.database executeRawSQL:sql error:&updateError];
     
@@ -167,7 +167,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     return @{
         @"did": did,
         @"invitesEnabled": @YES,
-        @"updatedAt": [_adminIso8601Formatter() stringFromDate:[NSDate date]]
+        @"updatedAt": [adminIso8601Formatter() stringFromDate:[NSDate date]]
     };
 }
 
@@ -180,7 +180,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     
     NSError *updateError = nil;
     NSString *sql = [NSString stringWithFormat:@"UPDATE accounts SET invite_enabled = 0, updated_at = '%@' WHERE did = '%@'",
-                     [_adminIso8601Formatter() stringFromDate:[NSDate date]], did];
+                     [adminIso8601Formatter() stringFromDate:[NSDate date]], did];
     
     BOOL success = [self.database executeRawSQL:sql error:&updateError];
     
@@ -194,7 +194,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
     return @{
         @"did": did,
         @"invitesEnabled": @NO,
-        @"updatedAt": [_adminIso8601Formatter() stringFromDate:[NSDate date]]
+        @"updatedAt": [adminIso8601Formatter() stringFromDate:[NSDate date]]
     };
 }
 
@@ -268,7 +268,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
 
 - (nullable NSDictionary *)updateSubjectStatus:(NSString *)subject takedown:(BOOL)takedown reason:(nullable NSString *)reason error:(NSError **)error {
     NSString *takedownRef = [[NSUUID UUID] UUIDString];
-    NSString *createdAt = [_adminIso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *createdAt = [adminIso8601Formatter() stringFromDate:[NSDate date]];
     
     if (takedown) {
         NSString *sql = [NSString stringWithFormat:
@@ -329,7 +329,7 @@ static NSDateFormatter * _adminIso8601Formatter(void) {
         @"recipientDid": did,
         @"recipientEmail": account.email,
         @"subject": subject,
-        @"sentAt": [_adminIso8601Formatter() stringFromDate:[NSDate date]]
+        @"sentAt": [adminIso8601Formatter() stringFromDate:[NSDate date]]
     };
 }
 

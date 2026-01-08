@@ -3,7 +3,7 @@
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
-static NSDateFormatter * _iso8601Formatter(void) {
+static NSDateFormatter * iso8601Formatter(void) {
     static NSDateFormatter *formatter = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -501,12 +501,12 @@ static NSDateFormatter * _iso8601Formatter(void) {
     
     const char *createdAtText = (const char *)sqlite3_column_text(stmt, 7);
     if (createdAtText) {
-        account.createdAt = [[_iso8601Formatter() dateFromString:@(createdAtText)] timeIntervalSince1970];
+        account.createdAt = [[iso8601Formatter() dateFromString:@(createdAtText)] timeIntervalSince1970];
     }
     
     const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 8);
     if (updatedAtText) {
-        account.updatedAt = [[_iso8601Formatter() dateFromString:@(updatedAtText)] timeIntervalSince1970];
+        account.updatedAt = [[iso8601Formatter() dateFromString:@(updatedAtText)] timeIntervalSince1970];
     }
     
     return account;
@@ -522,7 +522,7 @@ static NSDateFormatter * _iso8601Formatter(void) {
 
     const char *createdAtText = (const char *)sqlite3_column_text(stmt, 5);
     if (createdAtText) {
-        record.createdAt = [_iso8601Formatter() dateFromString:@(createdAtText)];
+        record.createdAt = [iso8601Formatter() dateFromString:@(createdAtText)];
     }
 
     return record;
@@ -1069,11 +1069,11 @@ static NSDateFormatter * _iso8601Formatter(void) {
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
-    return [_iso8601Formatter() stringFromDate:date];
+    return [iso8601Formatter() stringFromDate:date];
 }
 
 - (NSDate *)dateFromISO8601String:(NSString *)string {
-    return [_iso8601Formatter() dateFromString:string];
+    return [iso8601Formatter() dateFromString:string];
 }
 
 @end
