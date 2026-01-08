@@ -70,9 +70,9 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 
 - (nullable PDSActorStore *)storeForDid:(NSString *)did error:(NSError **)error {
     __block PDSActorStore *store = nil;
-    
+    __block NSError *blockError = nil;
+
     dispatch_sync(self.poolQueue, ^{
-        __strong NSError **strongError = error;
         store = self.stores[did];
 
         if (store) {
@@ -85,20 +85,19 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         }
 
         NSString *dbPath = [self dbPathForDid:did];
-        NSError *openError = nil;
-        store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&openError];
+        store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&blockError];
 
         if (store) {
             self.stores[did] = store;
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
-        } else {
-            if (strongError) {
-                *strongError = openError;
-            }
         }
     });
-    
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+
     return store;
 }
 

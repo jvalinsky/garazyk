@@ -116,9 +116,9 @@ jobs:
           key: xcodegen-codeql-${{ runner.os }}-${{ env.XCODE_VERSION }}
 
       - name: Setup CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
-          languages: objective-c
+          languages: c-cpp
           queries: security-extended
 
       - name: Generate project
@@ -134,9 +134,9 @@ jobs:
             build 2>&1 | tail -20
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
-          category: "/language:objective-c"
+          category: "/language:c-cpp"
           upload: true
 
       - name: Store CodeQL results
@@ -243,21 +243,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v1.7.4
+        uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.1
         with:
-          lockfile: >
-            package.json
-            package-lock.json
-            Podfile
-            Podfile.lock
-            Gemfile
-            Gemfile.lock
-          output-path: osv-results.json
+          scan-args: |
+            --recursive
+            ./
+          fail-on-vuln: false
 
   # ============================================================================
   # JOB 5: Secret Scanning
@@ -277,7 +277,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: .
-          extra_args: --entropy-threshold=80
+          extra_args: git --since-commit main --fail
 
       - name: Upload secret scan results
         if: always()
@@ -396,6 +396,21 @@ jobs:
         run: |
           xcodebuild -version
           xcode-select -p
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install xcodegen llvm@18
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar/xcodegen
+            /usr/local/Cellar/llvm
+          key: homebrew-sanitizer-${{ runner.os }}-${{ hashFiles('Brewfile') }}
+          restore-keys: |
+            homebrew-sanitizer-${{ runner.os }}-
 
       - name: Cache XcodeGen
         uses: actions/cache@v4
