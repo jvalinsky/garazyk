@@ -2,13 +2,13 @@
 
 CC = clang
 CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -fobjc-arc
-CFLAGS += -I/Users/jack/Software/objpds/secp256k1/include
+CFLAGS += -Isecp256k1/include
 CFLAGS += -IATProtoPDS/Sources
-LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -L/Users/jack/Software/objpds/secp256k1/build/lib -lsecp256k1
+LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -Lsecp256k1/build/lib -lsecp256k1
 BUILD_DIR = build
 EXECUTABLE = atprotopds
 
-SOURCES = $(wildcard ATProtoPDS/Sources/**/*.m)
+SOURCES = $(shell find ATProtoPDS/Sources -name "*.m")
 TEST_SOURCES = $(wildcard ATProtoPDS/Tests/**/*.m)
 C_SOURCES = ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
 OBJECTS = $(patsubst ATProtoPDS/Sources/%.m,$(BUILD_DIR)/%.o,$(filter-out ATProtoPDS/Sources/App/main.m ATProtoPDS/Sources/App/server_main.m ATProtoPDS/Sources/App/test_runner.m ATProtoPDS/Sources/Network/RateLimiterTests.m ATProtoPDS/Sources/CLI/main.m,$(SOURCES)))
@@ -21,6 +21,10 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)/Auth
 	mkdir -p $(BUILD_DIR)/Blob
 	mkdir -p $(BUILD_DIR)/Database
+	mkdir -p $(BUILD_DIR)/Database/Service
+	mkdir -p $(BUILD_DIR)/Database/Pool
+	mkdir -p $(BUILD_DIR)/Database/Monitoring
+	mkdir -p $(BUILD_DIR)/Database/Migration
 	mkdir -p $(BUILD_DIR)/Network
 	mkdir -p $(BUILD_DIR)/Repository
 	mkdir -p $(BUILD_DIR)/Sync
