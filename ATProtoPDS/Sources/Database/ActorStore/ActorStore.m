@@ -134,6 +134,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         
         "CREATE TABLE IF NOT EXISTS records ("
         "    uri TEXT PRIMARY KEY,"
+        "    did TEXT NOT NULL,"
         "    collection TEXT NOT NULL,"
         "    rkey TEXT NOT NULL,"
         "    cid BLOB NOT NULL,"
@@ -148,10 +149,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         ");"
         
         "CREATE INDEX IF NOT EXISTS idx_records_collection_rkey ON records(collection, rkey);"
+        "CREATE INDEX IF NOT EXISTS idx_records_did ON records(did);"
         "CREATE INDEX IF NOT EXISTS idx_records_uri ON records(uri);"
         "CREATE INDEX IF NOT EXISTS idx_ipld_blocks_cid ON ipld_blocks(cid);"
         
-        "CREATE TABLE IF NOT EXISTS account ("
+        "CREATE TABLE IF NOT EXISTS accounts ("
         "    did TEXT PRIMARY KEY,"
         "    handle TEXT UNIQUE NOT NULL,"
         "    email TEXT,"
@@ -303,11 +305,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 - (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-    
-    NSString *sql = @"SELECT * FROM account WHERE did = ?";
+
+    NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
     sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return nil;
-    
+
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
     
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -363,12 +365,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #pragma mark - Account Operations (Transactor)
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
-    NSString *sql = @"INSERT INTO account (did, handle, email, password_hash, password_salt, "
+    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, "
                      @"access_jwt, refresh_jwt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
+
     sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
-    
+
     sqlite3_bind_text(stmt, 1, account.did.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, account.handle.UTF8String, -1, SQLITE_TRANSIENT);
     
@@ -417,7 +419,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 }
 
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
-    NSString *sql = @"UPDATE account SET handle = ?, email = ?, password_hash = ?, "
+    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, "
                      @"password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ? WHERE did = ?";
     
     sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
@@ -466,7 +468,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 }
 
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"DELETE FROM account WHERE did = ?";
+    NSString *sql = @"DELETE FROM accounts WHERE did = ?";
     sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     

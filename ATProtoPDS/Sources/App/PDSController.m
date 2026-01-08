@@ -15,6 +15,7 @@
 #import "Repository/RepoCommit.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "App/PDSConfiguration.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -152,16 +153,26 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #pragma mark - Account Operations
 
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
-                                         password:(NSString *)password
-                                          handle:(NSString *)handle
-                                              did:(nullable NSString *)did
-                                             error:(NSError **)error {
-    
-    NSString *resolvedDid = did ?: [NSString stringWithFormat:@"did:web:%@", handle];
-    
+                                          password:(NSString *)password
+                                           handle:(NSString *)handle
+                                               did:(nullable NSString *)did
+                                              error:(NSError **)error {
+
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    BOOL debugMode = config.debugSkipPlcOperations;
+
+    NSString *resolvedDid;
+    if (did) {
+        resolvedDid = did;
+    } else if (debugMode) {
+        resolvedDid = [self generatePlcIdentifier];
+    } else {
+        resolvedDid = [NSString stringWithFormat:@"did:web:%@", handle];
+    }
+
     NSError *dbError = nil;
     PDSDatabaseAccount *existingAccount = [_serviceDatabases getAccountByDid:resolvedDid error:&dbError];
-    
+
     if (existingAccount) {
         if (error) {
             *error = [NSError errorWithDomain:PDSControllerErrorDomain
@@ -170,10 +181,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         }
         return nil;
     }
-    
+
     NSData *salt = [self generateSalt];
     NSData *passwordHash = [self hashPassword:password salt:salt];
-    
+
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.email = email;
     account.handle = handle;
@@ -182,45 +193,59 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     account.passwordSalt = salt;
     account.createdAt = [[NSDate date] timeIntervalSince1970];
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    
+
     NSError *createError = nil;
     if (![_serviceDatabases createAccount:account error:&createError]) {
         if (error) *error = createError;
         return nil;
     }
-    
+
     MST *repo = [[MST alloc] init];
     dispatch_sync(_repoQueue, ^{
         self->_repos[resolvedDid] = repo;
     });
-    
+
     CID *root = repo.rootCID;
     NSData *rootData = root ? [root bytes] : [NSData data];
-    
+
     PDSDatabaseRepo *repoInfo = [[PDSDatabaseRepo alloc] init];
     repoInfo.ownerDid = resolvedDid;
     repoInfo.rootCid = rootData;
     repoInfo.createdAt = [NSDate date];
     repoInfo.updatedAt = [NSDate date];
-    
+
     [_userDatabasePool transactWithDid:resolvedDid block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         [store createRepo:repoInfo error:nil];
     } error:nil];
-    
+
     NSString *accessToken = [[NSUUID UUID] UUIDString];
     NSString *refreshToken = [[NSUUID UUID] UUIDString];
-    
+
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_serviceDatabases updateAccount:account error:nil];
-    
+
+    if (debugMode) {
+        os_log_info(_log, "[DEBUG] Created account with mock DID: %{public}@", resolvedDid);
+    }
+
     return @{
         @"did": resolvedDid,
         @"handle": handle,
         @"accessJwt": accessToken,
         @"refreshJwt": refreshToken,
     };
+}
+
+- (NSString *)generatePlcIdentifier {
+    NSString *alphabet = @"abcdefghijklmnopqrstuvwxyz234567";
+    NSMutableString *identifier = [NSMutableString stringWithCapacity:24];
+    for (int i = 0; i < 24; i++) {
+        unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
+        [identifier appendFormat:@"%C", c];
+    }
+    return [NSString stringWithFormat:@"did:plc:%@", identifier];
 }
 
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle

@@ -169,47 +169,66 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-    
-    [self.servicePool readWithDid:@"__service__" block:^id<PDSActorStoreReader> {
-        PDSActorStore *store = (PDSActorStore *)self;
-        NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
-        if (!stmt) return nil;
-        
-        sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            account = [store accountFromStatement:stmt];
+
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
+    if (!store) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
         }
-        
-        [store finalizeStatement:stmt];
-        return store;
-    } error:error];
-    
+        return nil;
+    }
+
+    NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
+    __autoreleasing NSError *stmtError = nil;
+    NSLog(@"[DEBUG] Looking up account by handle: %@", handle);
+    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [store accountFromStatement:stmt];
+    }
+
+    [store finalizeStatement:stmt];
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-    
-    [self.servicePool readWithDid:@"__service__" block:^id<PDSActorStoreReader> {
-        PDSActorStore *store = (PDSActorStore *)self;
-        NSString *sql = @"SELECT a.* FROM accounts a "
-                        @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
-                        @"WHERE rt.token = ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
-        if (!stmt) return nil;
-        
-        sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            account = [store accountFromStatement:stmt];
+
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
+    if (!store) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
         }
-        
-        [store finalizeStatement:stmt];
-        return store;
-    } error:error];
-    
+        return nil;
+    }
+
+    NSString *sql = @"SELECT a.* FROM accounts a "
+                    @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
+                    @"WHERE rt.token = ?";
+    __autoreleasing NSError *stmtError = nil;
+    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [store accountFromStatement:stmt];
+    }
+
+    [store finalizeStatement:stmt];
     return account;
 }
 
@@ -266,23 +285,32 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 
 - (nullable NSString *)getInviteCodeForAccount:(NSString *)accountDid error:(NSError **)error {
     __block NSString *code = nil;
-    
-    [self.servicePool readWithDid:@"__service__" block:^id<PDSActorStoreReader> {
-        PDSActorStore *store = (PDSActorStore *)self;
-        NSString *sql = @"SELECT code FROM invite_codes WHERE account_did = ? AND disabled = 0 LIMIT 1";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
-        if (!stmt) return nil;
-        
-        sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            code = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
+    if (!store) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
         }
-        
-        [store finalizeStatement:stmt];
-        return store;
-    } error:error];
-    
+        return nil;
+    }
+
+    NSString *sql = @"SELECT code FROM invite_codes WHERE account_did = ? AND disabled = 0 LIMIT 1";
+    __autoreleasing NSError *stmtError = nil;
+    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        code = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+    }
+
+    [store finalizeStatement:stmt];
     return code;
 }
 
