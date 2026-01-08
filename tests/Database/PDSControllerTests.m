@@ -42,13 +42,13 @@
 }
 
 - (void)testCreateAccount {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSDictionary *result = [self.controller createAccountForEmail:@"test@example.com"
-                                                         password:@"password123"
-                                                          handle:@"testuser.example.com"
-                                                              did:nil
-                                                             error:&error];
+                                                          password:@"password123"
+                                                           handle:@"testuser.example.com"
+                                                               did:nil
+                                                              error:&error];
     
     XCTAssertNotNil(result, @"Create account should return result: %@", error);
     XCTAssertNotNil(result[@"did"]);
@@ -58,7 +58,7 @@
 }
 
 - (void)testCreateDuplicateAccount {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"dup@example.com" 
                                   password:@"password" 
@@ -66,19 +66,20 @@
                                        did:nil 
                                       error:&error];
     
+    __autoreleasing NSError *dupError = nil;
     NSDictionary *duplicate = [self.controller createAccountForEmail:@"dup@example.com" 
                                                             password:@"password" 
                                                              handle:@"dupuser2.example.com" 
                                                                  did:nil 
-                                                                error:&error];
+                                                                error:&dupError];
     
     XCTAssertNil(duplicate, @"Duplicate account should fail");
-    XCTAssertNotNil(error, @"Should have error for duplicate");
-    XCTAssertEqual(error.code, PDSControllerErrorAccountAlreadyExists);
+    XCTAssertNotNil(dupError, @"Should have error for duplicate");
+    XCTAssertEqual(dupError.code, PDSControllerErrorAccountAlreadyExists);
 }
 
 - (void)testLogin {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"login@example.com" 
                                   password:@"mypassword" 
@@ -86,17 +87,18 @@
                                        did:nil 
                                       error:&error];
     
+    __autoreleasing NSError *loginError = nil;
     NSDictionary *session = [self.controller loginWithHandle:@"loginuser.example.com" 
                                                     password:@"mypassword" 
-                                                       error:&error];
+                                                       error:&loginError];
     
-    XCTAssertNotNil(session, @"Login should succeed: %@", error);
+    XCTAssertNotNil(session, @"Login should succeed: %@", loginError);
     XCTAssertNotNil(session[@"accessJwt"]);
     XCTAssertNotNil(session[@"refreshJwt"]);
 }
 
 - (void)testLoginInvalidPassword {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"loginfail@example.com" 
                                   password:@"correctpassword" 
@@ -104,17 +106,18 @@
                                        did:nil 
                                       error:&error];
     
+    __autoreleasing NSError *loginError = nil;
     NSDictionary *session = [self.controller loginWithHandle:@"loginfail.example.com" 
                                                     password:@"wrongpassword" 
-                                                       error:&error];
+                                                       error:&loginError];
     
     XCTAssertNil(session, @"Login should fail with wrong password");
-    XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, PDSControllerErrorInvalidToken);
+    XCTAssertNotNil(loginError);
+    XCTAssertEqual(loginError.code, PDSControllerErrorInvalidToken);
 }
 
 - (void)testRefreshToken {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSDictionary *create = [self.controller createAccountForEmail:@"refresh@example.com" 
                                                          password:@"password" 
@@ -126,13 +129,14 @@
     NSString *refreshToken = create[@"refreshJwt"];
     XCTAssertNotNil(refreshToken);
     
-    NSDictionary *refresh = [self.controller refreshAccessToken:refreshToken error:&error];
-    XCTAssertNotNil(refresh, @"Refresh should succeed: %@", error);
+    __autoreleasing NSError *refreshError = nil;
+    NSDictionary *refresh = [self.controller refreshAccessToken:refreshToken error:&refreshError];
+    XCTAssertNotNil(refresh, @"Refresh should succeed: %@", refreshError);
     XCTAssertNotNil(refresh[@"accessJwt"]);
 }
 
 - (void)testRefreshInvalidToken {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSDictionary *refresh = [self.controller refreshAccessToken:@"invalid_token" error:&error];
     
@@ -142,7 +146,7 @@
 }
 
 - (void)testDeleteAccount {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"delete@example.com" 
                                   password:@"password" 
@@ -150,15 +154,16 @@
                                        did:nil 
                                       error:&error];
     
+    __autoreleasing NSError *deleteError = nil;
     BOOL success = [self.controller deleteAccount:@"did:web:deleteuser.example.com" 
                                          password:@"password" 
-                                            error:&error];
+                                            error:&deleteError];
     
-    XCTAssertTrue(success, @"Delete should succeed: %@", error);
+    XCTAssertTrue(success, @"Delete should succeed: %@", deleteError);
 }
 
 - (void)testDeleteAccountWrongPassword {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"deletewrong@example.com" 
                                   password:@"correctpassword" 
@@ -166,17 +171,18 @@
                                        did:nil 
                                       error:&error];
     
+    __autoreleasing NSError *deleteError = nil;
     BOOL success = [self.controller deleteAccount:@"did:web:deletewrong.example.com" 
                                          password:@"wrongpassword" 
-                                            error:&error];
+                                            error:&deleteError];
     
     XCTAssertFalse(success, @"Delete should fail with wrong password");
-    XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, PDSControllerErrorUnauthorized);
+    XCTAssertNotNil(deleteError);
+    XCTAssertEqual(deleteError.code, PDSControllerErrorUnauthorized);
 }
 
 - (void)testRecordOperations {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"record@example.com" 
                                   password:@"password" 
@@ -192,25 +198,27 @@
         @"createdAt": @"2026-01-08T00:00:00Z"
     };
     
+    __autoreleasing NSError *putError = nil;
     BOOL putResult = [self.controller putRecord:@"app.bsky.feed.post" 
-                                            rkey:@"test-post-1" 
-                                           value:record 
-                                          forDid:did 
-                                           error:&error];
+                                           rkey:@"test-post-1" 
+                                          value:record 
+                                         forDid:did 
+                                          error:&putError];
     
-    XCTAssertTrue(putResult, @"Put record should succeed: %@", error);
+    XCTAssertTrue(putResult, @"Put record should succeed: %@", putError);
     
+    __autoreleasing NSError *fetchError = nil;
     NSDictionary *fetched = [self.controller getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/test-post-1", did] 
-                                               forDid:did 
-                                                 error:&error];
+                                              forDid:did 
+                                                error:&fetchError];
     
-    XCTAssertNotNil(fetched, @"Get record should succeed: %@", error);
+    XCTAssertNotNil(fetched, @"Get record should succeed: %@", fetchError);
     XCTAssertEqualObjects(fetched[@"collection"], @"app.bsky.feed.post");
     XCTAssertEqualObjects(fetched[@"rkey"], @"test-post-1");
 }
 
 - (void)testDeleteRecord {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"deleterecord@example.com" 
                                   password:@"password" 
@@ -221,14 +229,16 @@
     NSString *did = @"did:web:deleterecord.example.com";
     
     NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": @"Test"};
-    [self.controller putRecord:@"app.bsky.feed.post" rkey:@"delete-me" value:record forDid:did error:&error];
+    __autoreleasing NSError *putError = nil;
+    [self.controller putRecord:@"app.bsky.feed.post" rkey:@"delete-me" value:record forDid:did error:&putError];
     
-    BOOL deleted = [self.controller deleteRecord:@"app.bsky.feed.post" rkey:@"delete-me" forDid:did error:&error];
-    XCTAssertTrue(deleted, @"Delete record should succeed: %@", error);
+    __autoreleasing NSError *deleteError = nil;
+    BOOL deleted = [self.controller deleteRecord:@"app.bsky.feed.post" rkey:@"delete-me" forDid:did error:&deleteError];
+    XCTAssertTrue(deleted, @"Delete record should succeed: %@", deleteError);
 }
 
 - (void)testListRecords {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"list@example.com" 
                                   password:@"password" 
@@ -240,18 +250,20 @@
     
     for (int i = 0; i < 3; i++) {
         NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": [NSString stringWithFormat:@"Post %d", i]};
+        __autoreleasing NSError *putError = nil;
         [self.controller putRecord:@"app.bsky.feed.post" 
                              rkey:[NSString stringWithFormat:@"list-post-%d", i] 
                             value:record 
                            forDid:did 
-                            error:&error];
+                            error:&putError];
     }
     
+    __autoreleasing NSError *listError = nil;
     NSArray *records = [self.controller listRecords:@"app.bsky.feed.post" 
                                              forDid:did 
                                                limit:10 
                                               cursor:nil 
-                                              error:&error];
+                                              error:&listError];
     
     XCTAssertEqual(records.count, 3, @"Should have 3 records");
 }
