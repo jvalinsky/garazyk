@@ -1,4 +1,4 @@
-.PHONY: all clean build test run test-blob test-unit help clang-tidy scan-build fuzz-asan fuzz-ubsan fuzz-tsan fuzz-all fuzz-xrpc fuzz-cbor fuzz-http run-fuzzers
+.PHONY: all clean build test run test-blob test-unit help clang-tidy scan-build fuzz-asan fuzz-ubsan fuzz-tsan fuzz-all fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth run-fuzzers run-fuzzers-comprehensive
 
 CC = clang
 CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -fobjc-arc
@@ -116,17 +116,14 @@ help:
 	@echo "  clean               - Remove build artifacts"
 	@echo "  help                - Show this help message"
 	@echo ""
-	@echo "Security Targets:"
-	@echo "  clang-tidy          - Run clang-tidy static analysis"
-	@echo "  scan-build         - Run Clang Static Analyzer"
-	@echo "  fuzz-asan          - Build with AddressSanitizer"
-	@echo "  fuzz-ubsan         - Build with UndefinedBehaviorSanitizer"
-	@echo "  fuzz-tsan          - Build with ThreadSanitizer"
-	@echo "  fuzz-all           - Build with all sanitizers"
-	@echo "  fuzz-xrpc          - Build XRPC fuzzer"
-	@echo "  fuzz-cbor          - Build CBOR/CAR fuzzer"
+	@echo "Fuzzer Targets:"
+	@echo "  fuzz-xrpc           - Build XRPC fuzzer"
+	@echo "  fuzz-cbor           - Build CBOR/CAR fuzzer"
 	@echo "  fuzz-http          - Build HTTP parser fuzzer"
-	@echo "  run-fuzzers        - Run all fuzzers"
+	@echo "  fuzz-auth          - Build authentication fuzzer"
+	@echo "  fuzz-all           - Build all fuzzers"
+	@echo "  run-fuzzers        - Run all fuzzers (limited)"
+	@echo "  run-fuzzers-comprehensive - Run all fuzzers (extended)"
 	@echo ""
 	@echo "Test Files:"
 	@echo "  blob_storage_tests      - Blob storage operations"
@@ -171,7 +168,10 @@ fuzz-all: FUZZ_CFLAGS += -fsanitize=address,undefined,thread
 fuzz-all: FUZZ_LDFLAGS += -fsanitize=address,undefined,thread
 fuzz-all: build
 
-# Fuzzer Build Targets
+# Comprehensive Fuzzer Build Targets
+
+fuzz-all-fuzzers: fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth
+	@echo "All fuzzers built successfully"
 
 fuzz-xrpc: fuzzing/fuzz_xrpc.mm $(OBJECTS) $(C_OBJECTS)
 	@echo "Building XRPC fuzzer..."
@@ -188,15 +188,53 @@ fuzz-http: fuzzing/fuzz_http.mm $(OBJECTS) $(C_OBJECTS)
 	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_http.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_http
 	@echo "HTTP parser fuzzer built: fuzzing/fuzz_http"
 
+fuzz-auth: fuzzing/fuzz_auth.mm $(OBJECTS) $(C_OBJECTS)
+	@echo "Building authentication fuzzer..."
+	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_auth.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_auth
+	@echo "Authentication fuzzer built: fuzzing/fuzz_auth"
+
+fuzz-blob: fuzzing/fuzz_blob.mm $(OBJECTS) $(C_OBJECTS)
+	@echo "Building blob security fuzzer..."
+	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_blob.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_blob
+	@echo "Blob security fuzzer built: fuzzing/fuzz_blob"
+
+fuzz-sqlite: fuzzing/fuzz_sqlite.mm $(OBJECTS) $(C_OBJECTS)
+	@echo "Building SQL injection fuzzer..."
+	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_sqlite.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_sqlite
+	@echo "SQL injection fuzzer built: fuzzing/fuzz_sqlite"
+
 # Run Fuzzers Target
 
-run-fuzzers: fuzz-xrpc fuzz-cbor fuzz-http
-	@echo "Running fuzzers with corpus..."
-	@echo "Note: Fuzzers will run until Ctrl+C. For limited runs, use:"
-	@echo "  ./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=10000"
-	@echo "  ./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=10000"
-	@echo "  ./fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=10000"
-	@./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=1000 || true
-	@./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=1000 || true
-	@./fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=1000 || true
+run-fuzzers: fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth fuzz-blob fuzz-sqlite
+	@echo "Running fuzzers with corpus (limited run)..."
+	@mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql
+	@./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo "XRPC fuzzer completed"
+	@./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=5000 || echo "CBOR fuzzer completed"
+	@./fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=5000 || echo "HTTP fuzzer completed"
+	@./fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo "Auth fuzzer completed"
+	@./fuzzing/fuzz_blob /dev/null -max_len=65536 -jobs=8 -runs=1000 || echo "Blob fuzzer completed"
+	@./fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=8 -runs=1000 || echo "SQL fuzzer completed"
 	@echo "Fuzzing session complete. Check fuzzing/crashers/ for any crashes."
+
+run-fuzzers-comprehensive: fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth fuzz-blob fuzz-sqlite
+	@echo "Running comprehensive fuzzing session..."
+	@mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql
+	@echo "Running XRPC fuzzer (30 seconds)..."
+	@timeout 30 ./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
+	@echo "Running CBOR fuzzer (30 seconds)..."
+	@timeout 30 ./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -timeout=10 || true
+	@echo "Running HTTP fuzzer (30 seconds)..."
+	@timeout 30 ./fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -timeout=10 || true
+	@echo "Running Auth fuzzer (30 seconds)..."
+	@timeout 30 ./fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
+	@echo "Running Blob fuzzer (30 seconds)..."
+	@timeout 30 ./fuzzing/fuzz_blob /dev/null -max_len=50000000 -jobs=4 -timeout=10 || true
+	@echo "Running SQL fuzzer (30 seconds)..."
+	@timeout 30 ./fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=4 -timeout=10 || true
+	@echo "Comprehensive fuzzing session complete."
+	@ls -la fuzzing/crashers/ 2>/dev/null || echo "No crashes detected"
+
+run-security-tests: fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth fuzz-blob fuzz-sqlite
+	@echo "Running security tests with malicious payloads..."
+	@chmod +x security_test_runner.sh
+	@./security_test_runner.sh

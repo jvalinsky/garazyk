@@ -619,7 +619,7 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         return YES;
     }
 
-    if ([normalizedAccept hasSuffix:@"/*"]) {
+    if ([normalizedAccept hasSuffix:@"/*"] && normalizedAccept.length > 2) {
         NSString *prefix = [normalizedAccept substringToIndex:normalizedAccept.length - 1];
         if ([normalizedMime hasPrefix:prefix]) {
             return YES;
