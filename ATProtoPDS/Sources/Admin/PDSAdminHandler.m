@@ -39,7 +39,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                         body:(nullable NSData *)body {
     PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
 
-    if (![path isEqualToString:@"/admin/login"] && ![auth isAuthenticatedWithRequest:nil]) {
+    if (![path isEqualToString:@"/admin/login"] && ![auth isAuthenticatedWithRequest:headers]) {
         return [self jsonResponseWithStatus:401 body:@{@"error": @"Unauthorized"}];
     }
 
