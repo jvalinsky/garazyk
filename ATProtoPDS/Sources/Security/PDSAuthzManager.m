@@ -42,7 +42,7 @@ static NSSet<NSString *> *kAdminMethods = nil;
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _database = [PDSDatabase databaseAtURL:[NSURL URLWithString:@""]]];
+        _database = nil;
     }
     return self;
 }

@@ -48,6 +48,7 @@ targets:
       - path: tests/Database/ActorStore/ActorStoreTests.m
     dependencies:
       - target: ATProtoPDS
+      - framework: XCTest.framework
     settings:
       base:
         PRODUCT_NAME: ActorStoreTests
@@ -64,10 +65,13 @@ targets:
           - Security
           - "-lsqlite3"
           - "-lsecp256k1"
+          - "-framework"
+          - XCTest
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
+        CODE_SIGN_IDENTITY: "-"
 
   DatabasePoolTests:
     type: tool
@@ -76,6 +80,7 @@ targets:
       - path: tests/Database/Pool/DatabasePoolTests.m
     dependencies:
       - target: ATProtoPDS
+      - framework: XCTest.framework
     settings:
       base:
         PRODUCT_NAME: DatabasePoolTests
@@ -92,10 +97,13 @@ targets:
           - Security
           - "-lsqlite3"
           - "-lsecp256k1"
+          - "-framework"
+          - XCTest
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
+        CODE_SIGN_IDENTITY: "-"
 
   ServiceDatabasesTests:
     type: tool
@@ -104,6 +112,7 @@ targets:
       - path: tests/Database/Service/ServiceDatabasesTests.m
     dependencies:
       - target: ATProtoPDS
+      - framework: XCTest.framework
     settings:
       base:
         PRODUCT_NAME: ServiceDatabasesTests
@@ -120,10 +129,13 @@ targets:
           - Security
           - "-lsqlite3"
           - "-lsecp256k1"
+          - "-framework"
+          - XCTest
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
+        CODE_SIGN_IDENTITY: "-"
 
   PDSControllerTests:
     type: tool
@@ -132,6 +144,7 @@ targets:
       - path: tests/Database/PDSControllerTests.m
     dependencies:
       - target: ATProtoPDS
+      - framework: XCTest.framework
     settings:
       base:
         PRODUCT_NAME: PDSControllerTests
@@ -148,7 +161,10 @@ targets:
           - Security
           - "-lsqlite3"
           - "-lsecp256k1"
+          - "-framework"
+          - XCTest
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
+        CODE_SIGN_IDENTITY: "-"
