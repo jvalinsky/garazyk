@@ -42,8 +42,8 @@
 }
 
 - (void)testStoreRetrieval {
+    __autoreleasing NSError *error = nil;
     NSString *did = @"did:plc:test123";
-    NSError *error = nil;
     
     PDSActorStore *store = [self.pool storeForDid:did error:&error];
     XCTAssertNotNil(store, @"Failed to get store: %@", error);
@@ -53,25 +53,27 @@
 }
 
 - (void)testSameStoreReturned {
+    __autoreleasing NSError *error = nil;
     NSString *did = @"did:plc:test456";
-    NSError *error = nil;
     
     PDSActorStore *store1 = [self.pool storeForDid:did error:&error];
-    PDSActorStore *store2 = [self.pool storeForDid:did error:&error];
+    __autoreleasing NSError *error2 = nil;
+    PDSActorStore *store2 = [self.pool storeForDid:did error:&error2];
     
     XCTAssertEqualObjects(store1, store2, @"Should return same store for same DID");
     XCTAssertEqual(self.pool.currentSize, 1, @"Should only have one store");
 }
 
 - (void)testMultipleStores {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSArray *dids = @[@"did:plc:aaa", @"did:plc:bbb", @"did:plc:ccc"];
     NSMutableArray<PDSActorStore *> *stores = [NSMutableArray array];
     
     for (NSString *did in dids) {
-        PDSActorStore *store = [self.pool storeForDid:did error:&error];
-        XCTAssertNotNil(store, @"Failed for %@: %@", did, error);
+        __autoreleasing NSError *storeError = nil;
+        PDSActorStore *store = [self.pool storeForDid:did error:&storeError];
+        XCTAssertNotNil(store, @"Failed for %@: %@", did, storeError);
         [stores addObject:store];
     }
     
@@ -79,7 +81,8 @@
     XCTAssertEqual(self.pool.openFileHandleCount, 3);
     
     for (NSUInteger i = 0; i < stores.count; i++) {
-        PDSActorStore *store = [self.pool storeForDid:dids[i] error:&error];
+        __autoreleasing NSError *storeError = nil;
+        PDSActorStore *store = [self.pool storeForDid:dids[i] error:&storeError];
         XCTAssertEqualObjects(store, stores[i], @"Store %lu should be same", (unsigned long)i);
     }
 }
@@ -87,9 +90,8 @@
 - (void)testEviction {
     PDSDatabasePool *smallPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:3];
     
-    NSError *error = nil;
-    
     for (int i = 0; i < 5; i++) {
+        __autoreleasing NSError *error = nil;
         NSString *did = [NSString stringWithFormat:@"did:plc:evict%d", i];
         PDSActorStore *store = [smallPool storeForDid:did error:&error];
         XCTAssertNotNil(store);
@@ -103,12 +105,13 @@
 }
 
 - (void)testEvictSpecificStore {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSArray *dids = @[@"did:plc:evict1", @"did:plc:evict2", @"did:plc:evict3"];
     
     for (NSString *did in dids) {
-        PDSActorStore *store = [self.pool storeForDid:did error:&error];
+        __autoreleasing NSError *storeError = nil;
+        PDSActorStore *store = [self.pool storeForDid:did error:&storeError];
         XCTAssertNotNil(store);
     }
     
@@ -118,18 +121,20 @@
     
     XCTAssertEqual(self.pool.currentSize, 2);
     
-    PDSActorStore *evicted = [self.pool storeForDid:dids[1] error:&error];
+    __autoreleasing NSError *evictedError = nil;
+    PDSActorStore *evicted = [self.pool storeForDid:dids[1] error:&evictedError];
     XCTAssertNotNil(evicted, @"Should recreate evicted store");
     XCTAssertEqual(self.pool.currentSize, 2, @"Pool should have 2 stores (evicted was recreated)");
 }
 
 - (void)testCloseAll {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSArray *dids = @[@"did:plc:close1", @"did:plc:close2"];
     
     for (NSString *did in dids) {
-        PDSActorStore *store = [self.pool storeForDid:did error:&error];
+        __autoreleasing NSError *storeError = nil;
+        PDSActorStore *store = [self.pool storeForDid:did error:&storeError];
         XCTAssertNotNil(store);
     }
     
@@ -143,7 +148,7 @@
 }
 
 - (void)testAccountOperations {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     NSString *did = @"did:plc:accounttest";
     
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
@@ -152,17 +157,20 @@
     account.createdAt = [[NSDate date] timeIntervalSince1970];
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     
+    __autoreleasing NSError *txError = nil;
     [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        XCTAssertTrue([transactor createAccount:account error:&error], @"Create failed: %@", error);
-    } error:&error];
+        __autoreleasing NSError *createError = nil;
+        XCTAssertTrue([transactor createAccount:account error:&createError], @"Create failed: %@", createError);
+    } error:&txError];
     
-    PDSDatabaseAccount *fetched = [self.pool getAccount:did error:&error];
-    XCTAssertNotNil(fetched, @"Get account failed: %@", error);
+    __autoreleasing NSError *fetchError = nil;
+    PDSDatabaseAccount *fetched = [self.pool getAccount:did error:&fetchError];
+    XCTAssertNotNil(fetched, @"Get account failed: %@", fetchError);
     XCTAssertEqualObjects(fetched.handle, @"account.test");
 }
 
 - (void)testMetricsCollection {
-    NSError *error = nil;
+    __autoreleasing NSError *error = nil;
     
     NSString *did = @"did:plc:metrics";
     [self.pool storeForDid:did error:&error];
