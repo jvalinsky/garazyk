@@ -289,7 +289,11 @@
 
 #pragma mark - Account Command
 
-@implementation PDSCLIAccountCommand : PDSBaseCommand
+@interface PDSCLIAccountCommand : PDSBaseCommand
+
+@end
+
+@implementation PDSCLIAccountCommand
 
 - (NSString *)name {
     return @"account";
