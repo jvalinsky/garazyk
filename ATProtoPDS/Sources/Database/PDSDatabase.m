@@ -20,6 +20,8 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, readwrite) NSURL *databaseURL;
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
+@property (nonatomic, assign) CFMutableDictionaryRef statementCache;
+@property (nonatomic, strong) dispatch_queue_t cacheQueue;
 
 @end
 
@@ -30,6 +32,8 @@ static NSDateFormatter * iso8601Formatter(void) {
     database.databaseURL = url;
     database.isOpen = NO;
     database.db = NULL;
+    database.statementCache = CFDictionaryCreateMutable(kCFAllocatorDefault, 100, &kCFTypeDictionaryKeyCallBacks, NULL);
+    database.cacheQueue = dispatch_queue_create("com.atproto.pds.database.cache", DISPATCH_QUEUE_SERIAL);
     return database;
 }
 
@@ -48,6 +52,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
+    [self setPerformanceOptimizations:error];
     [self setWalMode:error];
     [self createSchema:error];
 
@@ -57,6 +62,20 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (void)close {
     if (!self.isOpen) return;
+
+    dispatch_sync(self.cacheQueue, ^{
+        CFIndex count = CFDictionaryGetCount(self.statementCache);
+        if (count > 0) {
+            sqlite3_stmt *statements[count];
+            CFDictionaryGetKeysAndValues(self.statementCache, NULL, (const void **)statements);
+            for (CFIndex i = 0; i < count; i++) {
+                sqlite3_finalize(statements[i]);
+            }
+        }
+        CFRelease(self.statementCache);
+        self.statementCache = NULL;
+    });
+
     sqlite3_close(_db);
     _db = NULL;
     self.isOpen = NO;
@@ -64,6 +83,44 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (void)dealloc {
     [self close];
+}
+
+- (nullable sqlite3_stmt *)cachedStatementForKey:(NSString *)key {
+    __block sqlite3_stmt *stmt = NULL;
+    dispatch_sync(self.cacheQueue, ^{
+        stmt = CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
+    });
+    return stmt;
+}
+
+- (void)cacheStatement:(sqlite3_stmt *)stmt forKey:(NSString *)key {
+    dispatch_sync(self.cacheQueue, ^{
+        sqlite3_stmt *existing = CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
+        if (existing) {
+            sqlite3_finalize(existing);
+        }
+        CFIndex count = CFDictionaryGetCount(self.statementCache);
+        if (count >= 100) {
+            const void *keys[1];
+            const void *values[1];
+            CFDictionaryGetKeysAndValues(self.statementCache, keys, values);
+            sqlite3_stmt *oldStmt = (sqlite3_stmt *)values[0];
+            sqlite3_finalize(oldStmt);
+            CFDictionaryRemoveValue(self.statementCache, keys[0]);
+        }
+        CFDictionarySetValue(self.statementCache, (__bridge const void *)(key), stmt);
+    });
+}
+
+- (BOOL)prepareStatement:(sqlite3_stmt **)stmt sql:(NSString *)sql error:(NSError **)error {
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        }
+        return NO;
+    }
+    return YES;
 }
 
 - (BOOL)setWalMode:(NSError **)error {
@@ -77,6 +134,53 @@ static NSDateFormatter * iso8601Formatter(void) {
         if (error) *error = e;
         return NO;
     }
+    return YES;
+}
+
+- (BOOL)setPerformanceOptimizations:(NSError **)error {
+    char *errMsg = NULL;
+    int rc;
+
+    rc = sqlite3_exec(_db, "PRAGMA synchronous=NORMAL", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK && errMsg) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, "PRAGMA cache_size=65536", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK && errMsg) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK && errMsg) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, "PRAGMA mmap_size=268435456", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK && errMsg) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, "PRAGMA page_size=65536", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK && errMsg) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
     return YES;
 }
 
