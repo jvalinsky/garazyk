@@ -1,0 +1,14 @@
+POST /xrpc/com.atproto.repo.createRecord HTTP/1.1
+Host: bsky.social
+Content-Type: application/json
+Authorization: Bearer test_token
+
+{
+  "collection": "app.bsky.feed.post",
+  "repo": "did:plc:test123",
+  "record": {
+    "$type": "app.bsky.feed.post",
+    "text": "Hello world!",
+    "createdAt": "2026-01-08T00:00:00.000Z"
+  }
+}
