@@ -2,3 +2,28 @@
 .deciduous/
 .worktrees
 build/
+
+# Reference repositories (not part of this project)
+atproto/
+pegasus-ocaml/
+cocoon/
+
+# Database files
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# macOS
+.DS_Store
+
+# IDE
+.xcuserdata/
+xcuserdata/
+
+# Objective-C build artifacts
+*.o
+*.a
+*.dylib
+*.framework
+*.h.gch
+*.pch
