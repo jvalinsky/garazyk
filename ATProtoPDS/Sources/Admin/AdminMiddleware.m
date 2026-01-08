@@ -7,7 +7,6 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
 
 @interface AdminMiddleware ()
 
-@property (nonatomic, strong) NSMutableArray<NSString *> *adminDids;
 @property (nonatomic, strong) dispatch_queue_t accessQueue;
 
 @end
@@ -26,17 +25,14 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _adminDids = [NSMutableArray array];
+        _adminDids = @[];
         _accessQueue = dispatch_queue_create("com.atproto.pds.admin.middleware", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
 
 - (void)setAdminDids:(NSArray<NSString *> *)adminDids {
-    dispatch_sync(self.accessQueue, ^{
-        [self.adminDids removeAllObjects];
-        [self.adminDids addObjectsFromArray:adminDids];
-    });
+    _adminDids = [adminDids copy];
 }
 
 - (BOOL)verifyAdminAccessForRequest:(HttpRequest *)request
