@@ -1,0 +1,400 @@
+name: Security Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly security scan on Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      fuzzing_duration:
+        description: 'Fuzzing duration in minutes'
+        required: false
+        default: '30'
+
+env:
+  # Security settings
+  SECURE_LOGGING: 'true'
+  # Fail workflow on critical vulnerabilities
+  FAIL_ON_VULNERABILITIES: 'true'
+
+jobs:
+  # ============================================================================
+  # JOB 1: Static Analysis with Clang-Tidy
+  # ============================================================================
+  static-analysis:
+    name: Static Analysis (clang-tidy)
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Xcode
+        uses: actions/setup-xcode@v5
+        with:
+          xcode-version: '15.4'
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install xcodegen llvm@18
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Run clang-tidy
+        run: |
+          export PATH="/opt/homebrew/opt/llvm@18/bin:$PATH"
+          make clang-tidy 2>&1 | tee static_analysis.log || true
+
+      - name: Upload static analysis results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-results
+          path: static_analysis.log
+          retention-days: 30
+
+      - name: Check for critical warnings
+        run: |
+          if grep -q "error:" static_analysis.log; then
+            echo "::warning::Static analysis found errors - review artifacts"
+          fi
+
+  # ============================================================================
+  # JOB 2: CodeQL Analysis (Native GitHub Security)
+  # ============================================================================
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: objective-c
+          queries: security-extended
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build project
+        run: xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS -configuration Debug build 2>&1 | tail -20
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:objective-c"
+          upload: true
+
+    # Store results for later comparison
+      - name: Store CodeQL results
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-results
+          path: ${{ github.workspace }}/**/codeql/
+          retention-days: 30
+
+  # ============================================================================
+  # JOB 3: Fuzzing with libFuzzer
+  # ============================================================================
+  fuzzing:
+    name: Fuzzing (libFuzzer)
+    runs-on: macos-latest
+    timeout-minutes: ${{ github.event.inputs.fuzzing_duration || 60 }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Xcode
+        uses: actions/setup-xcode@v5
+        with:
+          xcode-version: '15.4'
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build fuzzers with sanitizers
+        run: make fuzz-all 2>&1 | tail -30
+
+      - name: Run fuzzers with corpus
+        run: |
+          echo "Running XRPC fuzzer..."
+          ./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_total_time=${{ github.event.inputs.fuzzing_duration || 600 }} -jobs=4 -timeout=30 2>&1 | tee fuzz_xrpc.log || true
+
+          echo "Running CBOR fuzzer..."
+          ./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_total_time=${{ github.event.inputs.fuzzing_duration || 600 }} -jobs=4 -timeout=30 2>&1 | tee fuzz_cbor.log || true
+
+          echo "Running HTTP fuzzer..."
+          ./fuzzing/fuzz_http fuzzing/corpus_http/ -max_total_time=${{ github.event.inputs.fuzzing_duration || 600 }} -jobs=4 -timeout=30 2>&1 | tee fuzz_http.log || true
+
+      - name: Check for crashes
+        run: |
+          CRASH_COUNT=0
+          for log in fuzz_*.log; do
+            if grep -q "SUMMARY: libFuzzer: crash" "$log" 2>/dev/null; then
+              CRASH_COUNT=$((CRASH_COUNT + 1))
+              echo "::error::Crash detected in $log"
+            fi
+          done
+
+          if [ $CRASH_COUNT -gt 0 ]; then
+            echo "::error::$CRASH_COUNT crash(es) detected during fuzzing"
+            exit 1
+          else
+            echo "No crashes detected during fuzzing"
+          fi
+
+      - name: Upload fuzzing results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzzing-results
+          path: |
+            fuzz_*.log
+            fuzzing/crashers/
+          retention-days: 30
+
+  # ============================================================================
+  # JOB 4: Dependency Security (OSV + npm audit for JS deps)
+  # ============================================================================
+  dependency-check:
+    name: Dependency Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action@v1
+        with:
+          # Scan lockfiles and source
+          lockfile: >
+            package.json
+            package-lock.json
+            Podfile
+            Podfile.lock
+            Gemfile
+            Gemfile.lock
+          # Output results
+          output-path: osv-results.json
+
+      - name: Check for critical vulnerabilities
+        run: |
+          if command -v jq &> /dev/null; then
+            CRITICAL=$(jq '[.results[] | select(.vulnerabilities[] | .severity == "CRITICAL")] | length' osv-results.json 2>/dev/null || echo "0")
+            if [ "$CRITICAL" -gt 0 ]; then
+              echo "::error::Found $CRITICAL critical vulnerabilities in dependencies"
+              cat osv-results.json
+              exit 1
+            fi
+          else
+            echo "jq not available for parsing - manual review required"
+          fi
+
+      - name: Upload dependency scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-results
+          path: osv-results.json
+          retention-days: 7
+
+  # ============================================================================
+  # JOB 5: Container Security (if applicable)
+  # ============================================================================
+  container-security:
+    name: Container Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only run if Dockerfile exists
+    if: file.exists('Dockerfile')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image (for analysis)
+        run: docker build -t atprotopds:test .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'atprotopds:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: '/tool:Trivy'
+
+  # ============================================================================
+  # JOB 6: Secret Scanning
+  # ============================================================================
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog-action@master
+        with:
+          path: .
+          extra_args: --entropy-threshold=80
+
+      - name: Upload secret scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: secret-scan-results
+          path: trufflehog-results.json
+          retention-days: 7
+
+  # ============================================================================
+  # JOB 7: Comprehensive Security Report
+  # ============================================================================
+  security-report:
+    name: Security Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [static-analysis, codeql-analysis, fuzzing, dependency-check, secret-scanning]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: security-results
+
+      - name: Generate security report
+        run: |
+          cat > SECURITY_REPORT.md << 'EOF'
+          # Security Test Report
+
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+
+          ## Summary
+
+          | Check | Status |
+          |-------|--------|
+          | Static Analysis | ${{ needs.static-analysis.result }} |
+          | CodeQL Analysis | ${{ needs.codeql-analysis.result }} |
+          | Fuzzing | ${{ needs.fuzzing.result }} |
+          | Dependencies | ${{ needs.dependency-check.result }} |
+          | Secret Scanning | ${{ needs.secret-scanning.result }} |
+
+          ## Detailed Results
+
+          ### Static Analysis
+          See artifact: static-analysis-results
+
+          ### CodeQL
+          See GitHub Security tab for detailed results
+
+          ### Fuzzing
+          See artifact: fuzzing-results
+
+          ### Dependency Check
+          See artifact: dependency-results
+
+          ### Secret Scanning
+          See artifact: secret-scan-results
+
+          ## Recommendations
+
+          1. Review all findings in GitHub Security tab
+          2. Address any "error" level issues before merging
+          3. Consider addressing "warning" level issues
+          4. Run extended fuzzing session periodically
+          5. Update dependencies regularly
+          EOF
+
+          cat SECURITY_REPORT.md
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: SECURITY_REPORT.md
+          retention-days: 90
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Security Check Complete\n\nAll security tests have completed. Review results in the Security tab and artifacts.'
+            })
+
+  # ============================================================================
+  # JOB 8: Sanitizer Builds (Continuous)
+  # ============================================================================
+  sanitizer-builds:
+    name: Sanitizer Builds
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [asan, ubsan, tsan]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: actions/setup-xcode@v5
+        with:
+          xcode-version: '15.4'
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build with ${{ matrix.sanitizer }}
+        run: make fuzz-${{ matrix.sanitizer }} 2>&1 | tail -20
+
+      - name: Verify build
+        run: |
+          if [ -f "fuzzing/fuzz_xrpc" ]; then
+            echo "${{ matrix.sanitizer }} build: SUCCESS"
+          else
+            echo "::error::${{ matrix.sanitizer }} build failed"
+            exit 1
+          fi
