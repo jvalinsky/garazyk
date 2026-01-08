@@ -20,6 +20,7 @@ typedef BOOL (^AdminAuthCheckBlock)(Session *session);
 @interface AdminMiddleware : NSObject
 
 @property (nonatomic, copy, nullable) AdminAuthCheckBlock customAdminCheck;
+@property (nonatomic, copy) NSArray<NSString *> *adminDids;
 
 + (instancetype)sharedMiddleware;
 
@@ -28,7 +29,7 @@ typedef BOOL (^AdminAuthCheckBlock)(Session *session);
                               error:(NSError **)error;
 
 - (nullable Session *)extractSessionFromRequest:(HttpRequest *)request
-                                        error:(NSError **)error;
+                                         error:(NSError **)error;
 
 - (void)setAdminDids:(NSArray<NSString *> *)adminDids;
 
