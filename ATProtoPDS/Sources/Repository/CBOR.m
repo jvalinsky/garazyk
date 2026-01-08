@@ -183,13 +183,11 @@
         case CBORTypeTag:
             result ^= [self.tag hash];
             break;
-        case CBORTypeSimpleOrFloat:
-            if (self.simpleValue) {
-                result ^= [self.simpleValue hash];
-            } else if (self.floatValue) {
-                result ^= [@(self.floatValue.doubleValue) hash];
-            }
+        case CBORTypeSimpleOrFloat: {
+            id hashable = self.simpleValue ?: @(self.floatValue.doubleValue);
+            result ^= [hashable hash];
             break;
+        }
     }
     return result;
 }
@@ -262,21 +260,22 @@
 }
 
 + (void)encodeCount:(NSUInteger)count withMajorType:(uint8_t)majorType toData:(NSMutableData *)data {
+    uint8_t major = majorType;
     if (count < 24) {
-        uint8_t byte = majorType | (uint8_t)count;
+        uint8_t byte = major | (uint8_t)count;
         [data appendBytes:&byte length:1];
     } else if (count < 256) {
-        uint8_t major = majorType | 24;
+        major |= 24;
         [data appendBytes:&major length:1];
         uint8_t len = (uint8_t)count;
         [data appendBytes:&len length:1];
     } else if (count < 65536) {
-        uint8_t major = majorType | 25;
+        major |= 25;
         [data appendBytes:&major length:1];
         uint16_t be = OSSwapHostToBigInt16((uint16_t)count);
         [data appendBytes:&be length:2];
     } else {
-        uint8_t major = majorType | 26;
+        major |= 26;
         [data appendBytes:&major length:1];
         uint32_t be = OSSwapHostToBigInt32((uint32_t)count);
         [data appendBytes:&be length:4];
@@ -318,19 +317,18 @@
         unsignedValue = (NSUInteger)(-(value + 1));
     }
 
+    uint8_t base = 0x20;
     if (unsignedValue < 24) {
-        uint8_t byte = 0x20 | (uint8_t)unsignedValue;
+        uint8_t byte = base | (uint8_t)unsignedValue;
         [data appendBytes:&byte length:1];
     } else if (unsignedValue < 256) {
-        uint8_t major = 0x38;
-        [data appendBytes:&major length:1];
-        uint8_t byte = (uint8_t)unsignedValue;
-        [data appendBytes:&byte length:1];
+        uint8_t bytes[2] = { base | 24, (uint8_t)unsignedValue };
+        [data appendBytes:bytes length:2];
     } else if (unsignedValue < 65536) {
-        uint8_t major = 0x39;
-        [data appendBytes:&major length:1];
+        uint8_t bytes[3] = { base | 25 };
         uint16_t be = OSSwapHostToBigInt16((uint16_t)unsignedValue);
-        [data appendBytes:&be length:2];
+        memcpy(bytes + 1, &be, 2);
+        [data appendBytes:bytes length:3];
     } else if (unsignedValue < 4294967296ULL) {
         uint8_t major = 0x3A;
         [data appendBytes:&major length:1];
@@ -414,26 +412,19 @@
     uint8_t majorType = (initial & 0xE0) >> 5;
     uint8_t additional = initial & 0x1F;
 
+    CBORValue *result = nil;
     switch (majorType) {
-        case 0:
-            return [self decodeUnsignedInteger:additional data:data offset:offset];
-        case 1:
-            return [self decodeNegativeInteger:additional data:data offset:offset];
-        case 2:
-            return [self decodeByteString:additional data:data offset:offset];
-        case 3:
-            return [self decodeTextString:additional data:data offset:offset];
-        case 4:
-            return [self decodeArray:additional data:data offset:offset];
-        case 5:
-            return [self decodeMap:additional data:data offset:offset];
-        case 6:
-            return [self decodeTag:additional data:data offset:offset];
-        case 7:
-            return [self decodeSimpleOrFloat:additional data:data offset:offset];
-        default:
-            return nil;
+        case 0: result = [self decodeUnsignedInteger:additional data:data offset:offset]; break;
+        case 1: result = [self decodeNegativeInteger:additional data:data offset:offset]; break;
+        case 2: result = [self decodeByteString:additional data:data offset:offset]; break;
+        case 3: result = [self decodeTextString:additional data:data offset:offset]; break;
+        case 4: result = [self decodeArray:additional data:data offset:offset]; break;
+        case 5: result = [self decodeMap:additional data:data offset:offset]; break;
+        case 6: result = [self decodeTag:additional data:data offset:offset]; break;
+        case 7: result = [self decodeSimpleOrFloat:additional data:data offset:offset]; break;
+        default: return nil;
     }
+    return result;
 }
 
 + (CBORValue *)decodeUnsignedInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
@@ -468,36 +459,11 @@
     if (additional < 24) {
         length = additional;
     } else {
-        NSUInteger bytesToRead = 0;
-        switch (additional) {
-            case 24: bytesToRead = 1; break;
-            case 25: bytesToRead = 2; break;
-            case 26: bytesToRead = 4; break;
-            default: return nil;
-        }
-
-        if (*offset + bytesToRead > data.length) {
+        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+        if (bytesToRead == 0 || bytesToRead > 4 || *offset + bytesToRead > data.length) {
             return nil;
         }
-
-        const uint8_t *bytes = data.bytes;
-        switch (bytesToRead) {
-            case 1:
-                length = bytes[*offset];
-                break;
-            case 2: {
-                uint16_t be;
-                memcpy(&be, bytes + *offset, 2);
-                length = OSSwapBigToHostInt16(be);
-                break;
-            }
-            case 4: {
-                uint32_t be;
-                memcpy(&be, bytes + *offset, 4);
-                length = OSSwapBigToHostInt32(be);
-                break;
-            }
-        }
+        length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
 
