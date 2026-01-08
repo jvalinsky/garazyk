@@ -7,7 +7,7 @@
     self = [super init];
     if (self) {
         _dataDir = @"./data";
-        _configPath = @"./config.yaml";
+        _configPath = @"./config.json";
         _verbose = NO;
         _jsonOutput = NO;
     }

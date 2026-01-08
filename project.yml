@@ -20,6 +20,8 @@ targets:
       - path: ATProtoPDS/Sources
         excludes:
           - "**/tests/*"
+          - "**/CLI/main.m"
+          - "**/App/server_main.m"
     settings:
       base:
         PRODUCT_NAME: atprotopds
@@ -40,6 +42,33 @@ targets:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
+
+  ATProtoPDS-CLI:
+    type: tool
+    platform: macOS
+    sources:
+      - path: ATProtoPDS/Sources
+        excludes:
+          - "**/tests/*"
+          - "**/App/main.m"
+          - "**/App/server_main.m"
+    settings:
+      base:
+        PRODUCT_NAME: atprotopds-cli
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        OTHER_LDFLAGS:
+          - "-framework"
+          - Foundation
+          - "-framework"
+          - Network
+          - "-framework"
+          - Security
+          - "-lsqlite3"
+          - "-lsecp256k1"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
+          - "$(PROJECT_DIR)/secp256k1/include"
 
   AllTests:
     type: tool
