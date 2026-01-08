@@ -1,3 +1,4 @@
 # Deciduous database (local)
 .deciduous/
 .worktrees
+build/
