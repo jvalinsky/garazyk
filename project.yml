@@ -9,6 +9,8 @@ settings:
   base:
     CLANG_ENABLE_OBJC_ARC: YES
     SDKROOT: macosx
+    LIBRARY_SEARCH_PATHS:
+      - "$(PROJECT_DIR)/secp256k1/build/lib"
 
 targets:
   ATProtoPDS:

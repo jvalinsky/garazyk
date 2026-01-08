@@ -283,20 +283,20 @@
         }
 
         NSError *error = nil;
-        NSDictionary *result = [controller putRecordForDid:repo
+        BOOL success = [controller putRecordForDid:repo
                                                  collection:collection
                                                       rkey:rkey
                                                      record:record
                                                       error:&error];
 
-        if (error) {
+        if (!success) {
             response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", repo, collection, rkey]}];
     }];
 
     [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
