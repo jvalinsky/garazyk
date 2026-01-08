@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  XCODE_VERSION: '15.4'
-  XCODE_PATH: '/Applications/Xcode_15.4.app'
+  XCODE_VERSION: '16.0'
+  XCODE_PATH: '/Applications/Xcode_16.0.app'
 
 jobs:
   # ============================================================================
@@ -143,17 +143,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/xcodegen
-            /usr/local/Cellar/llvm
-          key: homebrew-fuzz-${{ runner.os }}-${{ hashFiles('Brewfile') }}
-          restore-keys: |
-            homebrew-fuzz-${{ runner.os }}-
+             ~/Library/Caches/Homebrew
+             /usr/local/Cellar/xcodegen
+             /usr/local/Cellar/llvm
+           key: homebrew-fuzz-${{ runner.os }}-${{ hashFiles('Brewfile') }}
+           restore-keys: |
+             homebrew-fuzz-${{ runner.os }}-
 
-      - name: Build Fuzzers
-        run: |
-          xcodegen generate
-          make fuzz-all 2>&1 | tail -15
+       - name: Install Homebrew dependencies
+         run: |
+           brew install xcodegen llvm@18
+
+       - name: Build Fuzzers
+         run: |
+           xcodegen generate
+           make fuzz-all 2>&1 | tail -15
 
       - name: Run Fuzzers
         run: |
