@@ -453,8 +453,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     __block BOOL success = NO;
     [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        __strong NSError **strongError = error;
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store putRecord:record forDid:did error:error];
+        success = [store putRecord:record forDid:did error:strongError];
     } error:error];
     
     return success;
@@ -469,8 +470,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     __block BOOL success = NO;
     [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        __strong NSError **strongError = error;
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteRecord:uri forDid:did error:error];
+        success = [store deleteRecord:uri forDid:did error:strongError];
     } error:error];
     
     return success;
