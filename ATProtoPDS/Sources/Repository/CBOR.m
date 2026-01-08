@@ -523,7 +523,12 @@
         *offset += bytesToRead;
     }
 
-    NSMutableArray<CBORValue *> *array = [NSMutableArray arrayWithCapacity:count];
+    // Prevent excessive memory allocation for malicious CBOR
+    if (count > 100000) {
+        return nil; // Reject arrays with more than 100K elements
+    }
+
+    NSMutableArray<CBORValue *> *array = [NSMutableArray arrayWithCapacity:MIN(count, 1000)]; // Cap capacity
     for (NSUInteger i = 0; i < count; i++) {
         CBORValue *value = [self decode:data offset:offset];
         if (!value) {
@@ -547,6 +552,11 @@
         }
         count = [self readCountFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
+    }
+
+    // Prevent excessive memory allocation for malicious CBOR
+    if (count > 100000) {
+        return nil; // Reject maps with more than 100K entries
     }
 
     NSMutableDictionary<CBORValue *, CBORValue *> *map = [NSMutableDictionary dictionary];
@@ -682,6 +692,14 @@
             uint32_t be;
             memcpy(&be, bytes + *offset, 4);
             return OSSwapBigToHostInt32(be);
+        }
+        case 8: {
+            // For very large arrays/maps, cap at reasonable limit to prevent DoS
+            uint64_t be;
+            memcpy(&be, bytes + *offset, 8);
+            uint64_t hostValue = OSSwapBigToHostInt64(be);
+            // Cap at 1M elements to prevent excessive memory allocation
+            return MIN(hostValue, 1000000);
         }
         default:
             return 0;

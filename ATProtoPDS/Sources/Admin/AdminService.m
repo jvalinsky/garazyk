@@ -152,10 +152,10 @@ static NSDateFormatter * adminIso8601Formatter(void) {
     }
     
     NSError *updateError = nil;
-    NSString *sql = [NSString stringWithFormat:@"UPDATE accounts SET invite_enabled = 1, updated_at = '%@' WHERE did = '%@'",
-                     [adminIso8601Formatter() stringFromDate:[NSDate date]], did];
-    
-    BOOL success = [self.database executeRawSQL:sql error:&updateError];
+    // FIXED: Use parameterized query to prevent SQL injection
+    NSString *sql = @"UPDATE accounts SET invite_enabled = 1, updated_at = ? WHERE did = ?";
+    NSString *updatedAt = [adminIso8601Formatter() stringFromDate:[NSDate date]];
+    BOOL success = [self.database executeParameterizedUpdate:sql params:@[updatedAt, did] error:&updateError];
     
     if (!success) {
         if (error) *error = updateError;
@@ -179,10 +179,10 @@ static NSDateFormatter * adminIso8601Formatter(void) {
     }
     
     NSError *updateError = nil;
-    NSString *sql = [NSString stringWithFormat:@"UPDATE accounts SET invite_enabled = 0, updated_at = '%@' WHERE did = '%@'",
-                     [adminIso8601Formatter() stringFromDate:[NSDate date]], did];
-    
-    BOOL success = [self.database executeRawSQL:sql error:&updateError];
+    // FIXED: Use parameterized query to prevent SQL injection
+    NSString *sql = @"UPDATE accounts SET invite_enabled = 0, updated_at = ? WHERE did = ?";
+    NSString *updatedAt = [adminIso8601Formatter() stringFromDate:[NSDate date]];
+    BOOL success = [self.database executeParameterizedUpdate:sql params:@[updatedAt, did] error:&updateError];
     
     if (!success) {
         if (error) *error = updateError;
@@ -226,9 +226,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
 
 - (nullable NSDictionary *)disableInviteCodesForAccount:(NSString *)did error:(NSError **)error {
     NSError *updateError = nil;
-    NSString *sql = [NSString stringWithFormat:@"UPDATE invite_codes SET disabled = 1 WHERE account_did = '%@'", did];
-    
-    BOOL success = [self.database executeRawSQL:sql error:&updateError];
+    // FIXED: Use parameterized query to prevent SQL injection
+    NSString *sql = @"UPDATE invite_codes SET disabled = 1 WHERE account_did = ?";
+    BOOL success = [self.database executeParameterizedUpdate:sql params:@[did] error:&updateError];
     
     if (!success) {
         if (error) *error = updateError;
@@ -244,9 +244,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
 }
 
 - (nullable NSDictionary *)getSubjectStatus:(NSString *)subject error:(NSError **)error {
-    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM admin_takedowns WHERE subjectId = '%@' AND applied = 1 ORDER BY createdAt DESC LIMIT 1", subject];
-    
-    NSArray *rows = [self.database executeQuery:sql error:error];
+    // FIXED: Use parameterized query to prevent SQL injection
+    NSString *sql = @"SELECT * FROM admin_takedowns WHERE subjectId = ? AND applied = 1 ORDER BY createdAt DESC LIMIT 1";
+    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[subject] error:error];
     
     if (rows.count == 0) {
         return @{
