@@ -2,7 +2,7 @@ name: ATProtoPDS
 options:
   bundleIdPrefix: com.atproto
   deploymentTarget:
-    macOS: "13.0"
+    macOS: "14.0"
   objectVersion: 56
 
 settings:
@@ -24,7 +24,7 @@ targets:
       base:
         PRODUCT_NAME: atprotopds
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
-        MACOSX_DEPLOYMENT_TARGET: 13.0
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
         OTHER_LDFLAGS:
           - "-framework"
           - Foundation
@@ -41,130 +41,38 @@ targets:
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
 
-  ActorStoreTests:
+  AllTests:
     type: tool
     platform: macOS
     sources:
+      - path: ATProtoPDS/Sources
+        excludes:
+          - "**/tests/*"
+          - "**/App/main.m"
       - path: tests/Database/ActorStore/ActorStoreTests.m
-    dependencies:
-      - target: ATProtoPDS
-      - framework: XCTest.framework
-    settings:
-      base:
-        PRODUCT_NAME: ActorStoreTests
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
-        MACOSX_DEPLOYMENT_TARGET: 13.0
-        OTHER_LDFLAGS:
-          - "-framework"
-          - Foundation
-          - "-framework"
-          - AppKit
-          - "-framework"
-          - Network
-          - "-framework"
-          - Security
-          - "-lsqlite3"
-          - "-lsecp256k1"
-          - "-framework"
-          - XCTest
-        HEADER_SEARCH_PATHS:
-          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
-          - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/tests"
-        CODE_SIGN_IDENTITY: "-"
-
-  DatabasePoolTests:
-    type: tool
-    platform: macOS
-    sources:
       - path: tests/Database/Pool/DatabasePoolTests.m
-    dependencies:
-      - target: ATProtoPDS
-      - framework: XCTest.framework
-    settings:
-      base:
-        PRODUCT_NAME: DatabasePoolTests
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
-        MACOSX_DEPLOYMENT_TARGET: 13.0
-        OTHER_LDFLAGS:
-          - "-framework"
-          - Foundation
-          - "-framework"
-          - AppKit
-          - "-framework"
-          - Network
-          - "-framework"
-          - Security
-          - "-lsqlite3"
-          - "-lsecp256k1"
-          - "-framework"
-          - XCTest
-        HEADER_SEARCH_PATHS:
-          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
-          - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/tests"
-        CODE_SIGN_IDENTITY: "-"
-
-  ServiceDatabasesTests:
-    type: tool
-    platform: macOS
-    sources:
-      - path: tests/Database/Service/ServiceDatabasesTests.m
-    dependencies:
-      - target: ATProtoPDS
-      - framework: XCTest.framework
-    settings:
-      base:
-        PRODUCT_NAME: ServiceDatabasesTests
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
-        MACOSX_DEPLOYMENT_TARGET: 13.0
-        OTHER_LDFLAGS:
-          - "-framework"
-          - Foundation
-          - "-framework"
-          - AppKit
-          - "-framework"
-          - Network
-          - "-framework"
-          - Security
-          - "-lsqlite3"
-          - "-lsecp256k1"
-          - "-framework"
-          - XCTest
-        HEADER_SEARCH_PATHS:
-          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
-          - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/tests"
-        CODE_SIGN_IDENTITY: "-"
-
-  PDSControllerTests:
-    type: tool
-    platform: macOS
-    sources:
       - path: tests/Database/PDSControllerTests.m
-    dependencies:
-      - target: ATProtoPDS
-      - framework: XCTest.framework
+      - path: tests/test_main.m
     settings:
       base:
-        PRODUCT_NAME: PDSControllerTests
+        PRODUCT_NAME: AllTests
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
-        MACOSX_DEPLOYMENT_TARGET: 13.0
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_IDENTITY: "-"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+          - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks"
         OTHER_LDFLAGS:
           - "-framework"
+          - XCTest
+          - "-framework"
           - Foundation
-          - "-framework"
-          - AppKit
-          - "-framework"
-          - Network
           - "-framework"
           - Security
           - "-lsqlite3"
           - "-lsecp256k1"
-          - "-framework"
-          - XCTest
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
           - "$(PROJECT_DIR)/tests"
-        CODE_SIGN_IDENTITY: "-"
