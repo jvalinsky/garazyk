@@ -1,0 +1,152 @@
+name: ATProtoPDS
+options:
+  bundleIdPrefix: com.atproto
+  deploymentTarget:
+    macOS: "13.0"
+  objectVersion: 56
+
+settings:
+  base:
+    CLANG_ENABLE_OBJC_ARC: YES
+    SDKROOT: macosx
+
+targets:
+  ATProtoPDS:
+    type: tool
+    platform: macOS
+    sources:
+      - path: ATProtoPDS/Sources
+        excludes:
+          - "**/tests/*"
+    settings:
+      base:
+        PRODUCT_NAME: atprotopds
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: 13.0
+        OTHER_LDFLAGS:
+          - "-framework"
+          - Foundation
+          - "-framework"
+          - AppKit
+          - "-framework"
+          - Network
+          - "-framework"
+          - Security
+          - "-lsqlite3"
+          - "-lsecp256k1"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
+          - "$(PROJECT_DIR)/secp256k1/include"
+          - "$(PROJECT_DIR)/tests"
+
+  ActorStoreTests:
+    type: tool
+    platform: macOS
+    sources:
+      - path: tests/Database/ActorStore/ActorStoreTests.m
+    dependencies:
+      - target: ATProtoPDS
+    settings:
+      base:
+        PRODUCT_NAME: ActorStoreTests
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: 13.0
+        OTHER_LDFLAGS:
+          - "-framework"
+          - Foundation
+          - "-framework"
+          - AppKit
+          - "-framework"
+          - Network
+          - "-framework"
+          - Security
+          - "-lsqlite3"
+          - "-lsecp256k1"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
+          - "$(PROJECT_DIR)/secp256k1/include"
+          - "$(PROJECT_DIR)/tests"
+
+  DatabasePoolTests:
+    type: tool
+    platform: macOS
+    sources:
+      - path: tests/Database/Pool/DatabasePoolTests.m
+    dependencies:
+      - target: ATProtoPDS
+    settings:
+      base:
+        PRODUCT_NAME: DatabasePoolTests
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: 13.0
+        OTHER_LDFLAGS:
+          - "-framework"
+          - Foundation
+          - "-framework"
+          - AppKit
+          - "-framework"
+          - Network
+          - "-framework"
+          - Security
+          - "-lsqlite3"
+          - "-lsecp256k1"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
+          - "$(PROJECT_DIR)/secp256k1/include"
+          - "$(PROJECT_DIR)/tests"
+
+  ServiceDatabasesTests:
+    type: tool
+    platform: macOS
+    sources:
+      - path: tests/Database/Service/ServiceDatabasesTests.m
+    dependencies:
+      - target: ATProtoPDS
+    settings:
+      base:
+        PRODUCT_NAME: ServiceDatabasesTests
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: 13.0
+        OTHER_LDFLAGS:
+          - "-framework"
+          - Foundation
+          - "-framework"
+          - AppKit
+          - "-framework"
+          - Network
+          - "-framework"
+          - Security
+          - "-lsqlite3"
+          - "-lsecp256k1"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
+          - "$(PROJECT_DIR)/secp256k1/include"
+          - "$(PROJECT_DIR)/tests"
+
+  PDSControllerTests:
+    type: tool
+    platform: macOS
+    sources:
+      - path: tests/Database/PDSControllerTests.m
+    dependencies:
+      - target: ATProtoPDS
+    settings:
+      base:
+        PRODUCT_NAME: PDSControllerTests
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: 13.0
+        OTHER_LDFLAGS:
+          - "-framework"
+          - Foundation
+          - "-framework"
+          - AppKit
+          - "-framework"
+          - Network
+          - "-framework"
+          - Security
+          - "-lsqlite3"
+          - "-lsecp256k1"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
+          - "$(PROJECT_DIR)/secp256k1/include"
+          - "$(PROJECT_DIR)/tests"
