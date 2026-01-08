@@ -1,0 +1,5 @@
+GET /xrpc/app.bsky.feed.getTimeline HTTP/1.1
+Host: bsky.social
+Authorization: Bearer test_token
+Accept: application/json
+
