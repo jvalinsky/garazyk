@@ -90,7 +90,7 @@
         unsigned long long freeSpace = [attrs[NSFileSystemFreeSize] unsignedLongLongValue];
         result[@"free_bytes"] = @(freeSpace);
 
-        if (freeSpace < 100 * 1024 * 1024) {
+        if (freeSpace < 100ULL * 1024 * 1024) {
             result[@"status"] = @"warn";
             result[@"message"] = @"Low disk space";
         }
@@ -109,11 +109,11 @@
 
     if (kr == KERN_SUCCESS) {
         unsigned long long usedBytes = vmInfo.phys_footprint;
-        unsigned long long limitBytes = 1024 * 1024 * 1024;
+        unsigned long long limitBytes = 1024ULL * 1024 * 1024;
 
         result[@"used_bytes"] = @(usedBytes);
         result[@"limit_bytes"] = @(limitBytes);
-
+        double usageRatio = (double)usedBytes / (double)limitBytes;
         if (usedBytes > limitBytes * 0.9) {
             result[@"status"] = @"warn";
             result[@"message"] = @"High memory usage";
