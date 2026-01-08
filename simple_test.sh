@@ -53,6 +53,7 @@ test_create_record() {
             \"repo\": \"$DID\",
             \"collection\": \"app.bsky.feed.post\",
             \"record\": {
+                \"\$type\": \"app.bsky.feed.post\",
                 \"text\": \"Hello ATProto!\",
                 \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }
