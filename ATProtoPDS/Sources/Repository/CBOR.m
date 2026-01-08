@@ -261,6 +261,28 @@
     }
 }
 
++ (void)encodeCount:(NSUInteger)count withMajorType:(uint8_t)majorType toData:(NSMutableData *)data {
+    if (count < 24) {
+        uint8_t byte = majorType | (uint8_t)count;
+        [data appendBytes:&byte length:1];
+    } else if (count < 256) {
+        uint8_t major = majorType | 24;
+        [data appendBytes:&major length:1];
+        uint8_t len = (uint8_t)count;
+        [data appendBytes:&len length:1];
+    } else if (count < 65536) {
+        uint8_t major = majorType | 25;
+        [data appendBytes:&major length:1];
+        uint16_t be = OSSwapHostToBigInt16((uint16_t)count);
+        [data appendBytes:&be length:2];
+    } else {
+        uint8_t major = majorType | 26;
+        [data appendBytes:&major length:1];
+        uint32_t be = OSSwapHostToBigInt32((uint32_t)count);
+        [data appendBytes:&be length:4];
+    }
+}
+
 + (void)encodeUnsignedInteger:(NSUInteger)value toData:(NSMutableData *)data {
     if (value < 24) {
         uint8_t byte = (uint8_t)value;
@@ -324,75 +346,20 @@
 
 + (void)encodeByteString:(NSData *)data toData:(NSMutableData *)output {
     NSUInteger length = data.length;
-    if (length < 24) {
-        uint8_t byte = 0x40 | (uint8_t)length;
-        [output appendBytes:&byte length:1];
-    } else if (length < 256) {
-        uint8_t major = 0x58;
-        [output appendBytes:&major length:1];
-        uint8_t len = (uint8_t)length;
-        [output appendBytes:&len length:1];
-    } else if (length < 65536) {
-        uint8_t major = 0x59;
-        [output appendBytes:&major length:1];
-        uint16_t be = OSSwapHostToBigInt16((uint16_t)length);
-        [output appendBytes:&be length:2];
-    } else {
-        uint8_t major = 0x5A;
-        [output appendBytes:&major length:1];
-        uint32_t be = OSSwapHostToBigInt32((uint32_t)length);
-        [output appendBytes:&be length:4];
-    }
+    [self encodeCount:length withMajorType:0x40 toData:output];
     [output appendData:data];
 }
 
 + (void)encodeTextString:(NSString *)string toData:(NSMutableData *)data {
     NSData *utf8 = [string dataUsingEncoding:NSUTF8StringEncoding];
     NSUInteger length = utf8.length;
-
-    if (length < 24) {
-        uint8_t byte = 0x60 | (uint8_t)length;
-        [data appendBytes:&byte length:1];
-    } else if (length < 256) {
-        uint8_t major = 0x78;
-        [data appendBytes:&major length:1];
-        uint8_t len = (uint8_t)length;
-        [data appendBytes:&len length:1];
-    } else if (length < 65536) {
-        uint8_t major = 0x79;
-        [data appendBytes:&major length:1];
-        uint16_t be = OSSwapHostToBigInt16((uint16_t)length);
-        [data appendBytes:&be length:2];
-    } else {
-        uint8_t major = 0x7A;
-        [data appendBytes:&major length:1];
-        uint32_t be = OSSwapHostToBigInt32((uint32_t)length);
-        [data appendBytes:&be length:4];
-    }
+    [self encodeCount:length withMajorType:0x60 toData:data];
     [data appendData:utf8];
 }
 
 + (void)encodeArray:(NSArray<CBORValue *> *)array toData:(NSMutableData *)output {
     NSUInteger count = array.count;
-    if (count < 24) {
-        uint8_t byte = 0x80 | (uint8_t)count;
-        [output appendBytes:&byte length:1];
-    } else if (count < 256) {
-        uint8_t major = 0x98;
-        [output appendBytes:&major length:1];
-        uint8_t len = (uint8_t)count;
-        [output appendBytes:&len length:1];
-    } else if (count < 65536) {
-        uint8_t major = 0x99;
-        [output appendBytes:&major length:1];
-        uint16_t be = OSSwapHostToBigInt16((uint16_t)count);
-        [output appendBytes:&be length:2];
-    } else {
-        uint8_t major = 0x9A;
-        [output appendBytes:&major length:1];
-        uint32_t be = OSSwapHostToBigInt32((uint32_t)count);
-        [output appendBytes:&be length:4];
-    }
+    [self encodeCount:count withMajorType:0x80 toData:output];
     for (CBORValue *value in array) {
         [self encodeValue:value toData:output];
     }
@@ -400,25 +367,7 @@
 
 + (void)encodeMap:(NSDictionary<CBORValue *, CBORValue *> *)map toData:(NSMutableData *)output {
     NSUInteger count = map.count;
-    if (count < 24) {
-        uint8_t byte = 0xA0 | (uint8_t)count;
-        [output appendBytes:&byte length:1];
-    } else if (count < 256) {
-        uint8_t major = 0xB8;
-        [output appendBytes:&major length:1];
-        uint8_t len = (uint8_t)count;
-        [output appendBytes:&len length:1];
-    } else if (count < 65536) {
-        uint8_t major = 0xB9;
-        [output appendBytes:&major length:1];
-        uint16_t be = OSSwapHostToBigInt16((uint16_t)count);
-        [output appendBytes:&be length:2];
-    } else {
-        uint8_t major = 0xBA;
-        [output appendBytes:&major length:1];
-        uint32_t be = OSSwapHostToBigInt32((uint32_t)count);
-        [output appendBytes:&be length:4];
-    }
+    [self encodeCount:count withMajorType:0xA0 toData:output];
     for (CBORValue *key in map) {
         [self encodeValue:key toData:output];
         [self encodeValue:map[key] toData:output];
