@@ -1,0 +1,46 @@
+# Clang-Tidy Configuration for ATProto PDS
+# Run with: clang-tidy ATProtoPDS/Sources/**/*.m -config=.clang-tidy
+
+Checks: >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  objc-*,
+  -bugprone-reserved-identifier,
+  -bugprone-move-forwarding-reference,
+  -bugprone-unchecked-optional-access,
+  -bugprone-optional-value-conversion,
+  -cert-dcl37-c,
+  -cert-dcl50-cpp,
+  -cert-oop58-cpp
+
+HeaderFilterRegex: 'ATProtoPDS/.*'
+
+WarningsAsErrors: >
+  bugprone-undefined-memory-manipulation,
+  bugprone-unsafe-functions,
+  cert-err33-c,
+  bugprone-signed-char-misuse,
+  bugprone-string-constructor,
+  bugprone-misplaced-pointer-arithmetic-in-alloc,
+  bugprone-dangling-handle,
+  objc-avoid-nserror-init,
+  objc-dealloc-in-category
+
+CheckOptions:
+  # Memory safety
+  bugprone-dangling-handle.HandleLifetimeToken: 'return'
+  bugprone-dangling-handle.WarnOnlyIfLastStatement: 'false'
+  bugprone-string-constructor.WarnOnLargeLength: 100
+  
+  # Integer safety  
+  bugprone-integer-division.IgnoreSignedDivision: 'false'
+  bugprone-macro-parentheses.PedanticMode: 'true'
+  
+  # Objective-C
+  objc-forbidden-subclassing.ForbiddenSuperClassName: 'NSObject'
+  
+  # Security
+  cert-err33-c.CheckId: 'true'
+
+FormatStyle: 'file'
