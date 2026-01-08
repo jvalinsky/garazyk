@@ -14,7 +14,6 @@ concurrency:
 
 env:
   XCODE_VERSION: '16.1'
-  XCODE_PATH: '/Applications/Xcode_16.0.app'
 
 jobs:
   # ============================================================================
@@ -62,6 +61,14 @@ jobs:
         with:
           path: /usr/local/bin/xcodegen
           key: xcodegen-${{ runner.os }}-${{ env.XCODE_VERSION }}
+
+      - name: Build secp256k1 library
+        run: |
+          cd secp256k1
+          ./autogen.sh
+          ./configure --enable-module-recovery
+          make -j$(sysctl -n hw.ncpu)
+          cd ..
 
       - name: Generate project
         run: xcodegen generate
