@@ -23,7 +23,7 @@
            @"Options:\n"
            @"  --port <port>         Port to listen on (default: 2583)\n"
            @"  --data-dir <path>     Data directory (default: ./data)\n"
-           @"  --config <path>       Config file path (default: ./config.yaml)\n"
+           @"  --config <path>       Config file path (default: ./config.json)\n"
            @"  --log-level <level>   Log level: debug, info, warn, error (default: info)\n"
            @"  --foreground          Run in foreground (don't daemonize)\n"
            @"  --help                Show this help";

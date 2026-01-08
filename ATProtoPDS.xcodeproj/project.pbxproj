@@ -7,30 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		004CC0CA0884E13B22A40080 /* HttpServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F52AE13C64F11ECDB98EF27 /* HttpServer.m */; };
+		0157C1A9749514C1ABA8F654 /* NotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 6395E8F411526B8CD82E2452 /* NotificationService.m */; };
+		01B40C987B0FDB5F0BF8192E /* PDSDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = ED1DB8932855854D7F050021 /* PDSDatabase.m */; };
+		05DF166AA6CF325A058E6008 /* DID.m in Sources */ = {isa = PBXBuildFile; fileRef = 70793FD32A722F24E9A29397 /* DID.m */; };
+		09743C4CF665185AD3746693 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F6A3A6493D212814D176E01 /* main.m */; };
 		09B98F7ABC432D4E9448CD9A /* DID.m in Sources */ = {isa = PBXBuildFile; fileRef = 70793FD32A722F24E9A29397 /* DID.m */; };
 		0BACAA849D86B1773C74A31E /* HandleResolver.m in Sources */ = {isa = PBXBuildFile; fileRef = CD71AB9F9A4B77FB1A7737E5 /* HandleResolver.m */; };
 		0D651E32C6CA554448718420 /* Secp256k1.m in Sources */ = {isa = PBXBuildFile; fileRef = A1F4C2A2BF464F3B8C6AF205 /* Secp256k1.m */; };
 		0DEEE5210BFBC66595D6440F /* ActorStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 0214FC3DE18321F8D5B7BE0A /* ActorStoreTests.m */; };
+		0E28D9BF9BB046EADCB23932 /* PDSAdminAuth.m in Sources */ = {isa = PBXBuildFile; fileRef = 078169533EB5BB854804930F /* PDSAdminAuth.m */; };
 		0FF62F68A9D783AB4C73C24C /* PDSCLIDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = C7F198C8CD6E00486F2CB332 /* PDSCLIDispatcher.m */; };
 		1069EE35302911EBD0DBD914 /* RelayClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 28B378782EC8375BB300C319 /* RelayClient.m */; };
 		115BBBE84C088FE385F47A05 /* EventFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 72141EF4620C865A5A049254 /* EventFormatter.m */; };
 		1190EFB27E64CA71E6E11C28 /* PDSAuthzManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 19E21EC663E00877FECED32C /* PDSAuthzManager.m */; };
 		13768FF7B8910629CFACE2A7 /* PDSLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = D8F99115895FEB9FB5A13CFB /* PDSLogger.m */; };
+		16B01C7B094A49BFCC2BA3BA /* secp256k1_wrapper_c.c in Sources */ = {isa = PBXBuildFile; fileRef = F1894C052B2C2E47B70D3C08 /* secp256k1_wrapper_c.c */; };
 		177C407401DEED9BAB872760 /* JWT.m in Sources */ = {isa = PBXBuildFile; fileRef = 6C95E779B2C5D8F15D5BCF1E /* JWT.m */; };
 		178D9E49C9E5140944FD2317 /* CID.m in Sources */ = {isa = PBXBuildFile; fileRef = 06AAB57626EFEA167865CFAA /* CID.m */; };
 		17EABD78F24EF905CA8E14D5 /* PDSCLIInviteCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D9D18510D973B64EF02C0C1 /* PDSCLIInviteCommand.m */; };
+		18DDB55DF83953CDFE84339D /* KeyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = AB01192492D762E3EC4F8AA6 /* KeyManager.m */; };
 		1916A52C6232C345295A5A72 /* PDSLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = D8F99115895FEB9FB5A13CFB /* PDSLogger.m */; };
 		1938FE3F38D418984EF39213 /* NotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 6395E8F411526B8CD82E2452 /* NotificationService.m */; };
+		1A11805466462DDC36425268 /* AdminService.m in Sources */ = {isa = PBXBuildFile; fileRef = 65094121F352BA7B94E58718 /* AdminService.m */; };
 		1D970518D3752540EBB3A094 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 49DF1450F13B26A68E3028CD /* README.md */; };
 		1E31A4ABB933990A1D70A060 /* DatabasePoolTests.m in Sources */ = {isa = PBXBuildFile; fileRef = FD60337D1BD931B747E18447 /* DatabasePoolTests.m */; };
 		1EC8F7562E95715DBA35C5AB /* PDSDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = ED1DB8932855854D7F050021 /* PDSDatabase.m */; };
 		1ED9636895C1C9900EE29D88 /* MimeTypeValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 3080CD0A1D2B5AA90C60BFBD /* MimeTypeValidator.m */; };
 		20B9DF742445C357555173BE /* CAR.m in Sources */ = {isa = PBXBuildFile; fileRef = 844A01B4D081E7AC7D68F999 /* CAR.m */; };
 		21B254C4B9F37DF155BE85BA /* TID.m in Sources */ = {isa = PBXBuildFile; fileRef = BB508C7DD5AAB4F09A76F9C1 /* TID.m */; };
+		22A1E5636A4CCE39E0620956 /* PDSLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = D8F99115895FEB9FB5A13CFB /* PDSLogger.m */; };
 		237408A08DDB66581C6184A2 /* AdminMiddleware.m in Sources */ = {isa = PBXBuildFile; fileRef = 62B81FE3136D7AE5420ECA82 /* AdminMiddleware.m */; };
+		251335E6D91D9A55074F4C9E /* RepoCommit.m in Sources */ = {isa = PBXBuildFile; fileRef = 26CD447DBF7F72C5D8C8F9E1 /* RepoCommit.m */; };
+		25E8C10E77CF5C33F5E44A40 /* AdminMiddleware.m in Sources */ = {isa = PBXBuildFile; fileRef = 62B81FE3136D7AE5420ECA82 /* AdminMiddleware.m */; };
+		262781A785C0367729496536 /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
+		2737E9D024370AB60FEFDBFE /* test_runner.m.disabled in Resources */ = {isa = PBXBuildFile; fileRef = 97FED9489AB6CEB9119BFFF3 /* test_runner.m.disabled */; };
 		2B913A049DFF637B8902DA84 /* HttpRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 0D75960A0F029E93BFBF470F /* HttpRequest.m */; };
 		2C393B495F44E87FAFDD412C /* PDSMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 0026557635DCF274E9A6B0E0 /* PDSMetrics.m */; };
+		2C4A8CBC8C139A56401CAD90 /* Schema.m in Sources */ = {isa = PBXBuildFile; fileRef = 789F74E8B0D2264C2362EC66 /* Schema.m */; };
 		2D5EC9AB563ACAAD5F078AFF /* HttpResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 1341CF4A9C802E2BCFB274F9 /* HttpResponse.m */; };
+		2DBAEE36CA2BE3420C8DF3B6 /* DPoPUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 04B4C38E49BBDDC6D76223FA /* DPoPUtil.m */; };
 		2DD566F83AD54EF1E188A2F1 /* PDSInputValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D11C41379F1C6554020EBB8 /* PDSInputValidator.m */; };
 		2F417376D4A3504D95854F10 /* DID.m in Sources */ = {isa = PBXBuildFile; fileRef = 70793FD32A722F24E9A29397 /* DID.m */; };
 		2F901E86C47B6E1423F0D959 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C4E234D2CBED7F06914D6F7 /* main.m */; };
@@ -41,6 +57,7 @@
 		317EC89BC2FF9D32FD735C93 /* PDSConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 410376300C0583C121A36EFC /* PDSConfiguration.m */; };
 		343AD6C5D2496625A3AC5042 /* PDSCLIInviteCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D9D18510D973B64EF02C0C1 /* PDSCLIInviteCommand.m */; };
 		343C1E584C94F67A173BDE35 /* test_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 65C4CDB677A07DB3B3731FF6 /* test_main.m */; };
+		3497A1496695288C8621040D /* PDSCLIAccountCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 66355F5CF17EA4A687EAF0F7 /* PDSCLIAccountCommand.m */; };
 		3621A385C6E1E285F9FDD6B1 /* WebSocketConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = B63B35112A4CBA3512F814E1 /* WebSocketConnection.m */; };
 		36305FB992436F28BA161F3C /* KeyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = AB01192492D762E3EC4F8AA6 /* KeyManager.m */; };
 		363BDECAA3446B95425D4E7D /* WebSocketConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = B63B35112A4CBA3512F814E1 /* WebSocketConnection.m */; };
@@ -50,18 +67,27 @@
 		38FA172FC5AEF36737939C26 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D15D04D006413886EF66C /* AppDelegate.m */; };
 		3BEED6D4A76663A641BC1AE4 /* Schema.m in Sources */ = {isa = PBXBuildFile; fileRef = 789F74E8B0D2264C2362EC66 /* Schema.m */; };
 		3E3C74DD3E3A677E82B48B8F /* RelayClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 28B378782EC8375BB300C319 /* RelayClient.m */; };
+		40E02EA897595FF0B285CD16 /* EventFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 72141EF4620C865A5A049254 /* EventFormatter.m */; };
+		40FE037EC6C3D9674EF49B6F /* PDSAuthzManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 19E21EC663E00877FECED32C /* PDSAuthzManager.m */; };
+		4151FEB37521820C78416E2D /* PDSInputValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D11C41379F1C6554020EBB8 /* PDSInputValidator.m */; };
+		42918AD2BBBF3D0AFFA75032 /* XrpcMethodRegistry.m in Sources */ = {isa = PBXBuildFile; fileRef = 386A82FBAAD1F66F9A039AF9 /* XrpcMethodRegistry.m */; };
+		466BCE77E505C99A75809FE3 /* WebSocketConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = B63B35112A4CBA3512F814E1 /* WebSocketConnection.m */; };
+		4824A197FD87E891A356F012 /* MST.m in Sources */ = {isa = PBXBuildFile; fileRef = 84A333A035BF30955641E999 /* MST.m */; };
 		49BCEDB86D2FD27489A228D2 /* PDSControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1CE4A0C6F2762ED17A928D64 /* PDSControllerTests.m */; };
 		4DAE0D2ECAEEEDBEED504538 /* CID.m in Sources */ = {isa = PBXBuildFile; fileRef = 06AAB57626EFEA167865CFAA /* CID.m */; };
 		51D5174496DBAA6BB011BFBA /* PDSAuthzManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 19E21EC663E00877FECED32C /* PDSAuthzManager.m */; };
 		52F964A5E797C20A4191DC16 /* EventFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 72141EF4620C865A5A049254 /* EventFormatter.m */; };
+		56010148F913CF06656FC740 /* PDSCLIServeCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 90D9EFC3A6F37DA9627455A1 /* PDSCLIServeCommand.m */; };
 		575F468A88930D0A5C56A971 /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
-		59A98E1BF3C50A18B599F427 /* server_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EEF7AED769BAA314541AD31 /* server_main.m */; };
+		5994A9579547581B3F6F4A96 /* RelayClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 28B378782EC8375BB300C319 /* RelayClient.m */; };
 		5BFD3F11787F9884FD188E61 /* XrpcHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C59F464C53BE5282B079E29 /* XrpcHandler.m */; };
 		5FAC6DC0A5B39440615A39FF /* HttpServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F52AE13C64F11ECDB98EF27 /* HttpServer.m */; };
 		627A4F87B22FEE7581C671EE /* PDSConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 410376300C0583C121A36EFC /* PDSConfiguration.m */; };
 		6343ECA8789C476D5C9BDFF3 /* MST.m in Sources */ = {isa = PBXBuildFile; fileRef = 84A333A035BF30955641E999 /* MST.m */; };
 		63FA2A8DA563C1C9294A752C /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
 		64F0A969C2A0F7A7C3CBDF46 /* PDSMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 0026557635DCF274E9A6B0E0 /* PDSMetrics.m */; };
+		662CC79D48E24DFD9BFACED7 /* MimeTypeValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 3080CD0A1D2B5AA90C60BFBD /* MimeTypeValidator.m */; };
+		6696DD500E927CA4F9B77E9E /* CBOR.m in Sources */ = {isa = PBXBuildFile; fileRef = CB5CC8A2FE10F93E8105A409 /* CBOR.m */; };
 		699FE823F23D13877B1F3350 /* PDSAdminAuth.m in Sources */ = {isa = PBXBuildFile; fileRef = 078169533EB5BB854804930F /* PDSAdminAuth.m */; };
 		69C11860C06F4766D8A526FF /* PDSHealthCheck.m in Sources */ = {isa = PBXBuildFile; fileRef = B921F18DE38EAA82F5CB4635 /* PDSHealthCheck.m */; };
 		69E30AE41B439E415C9ACA06 /* Session.m in Sources */ = {isa = PBXBuildFile; fileRef = 7587CBBB99E3730937CB225D /* Session.m */; };
@@ -69,22 +95,28 @@
 		69F073F702DA0905B49D9FE6 /* HttpRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 0D75960A0F029E93BFBF470F /* HttpRequest.m */; };
 		6C1363C9F472E335AFECC90B /* RateLimiter.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F9C290E3512B256148B5BB5 /* RateLimiter.m */; };
 		6E7E6183C484AD2435D1F8B3 /* test_runner.m.disabled in Resources */ = {isa = PBXBuildFile; fileRef = 97FED9489AB6CEB9119BFFF3 /* test_runner.m.disabled */; };
-		6E857545CA38EDCD7CA9C605 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F6A3A6493D212814D176E01 /* main.m */; };
 		6E8E9265F8670906ABB0BF04 /* PDSCLIServeCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 90D9EFC3A6F37DA9627455A1 /* PDSCLIServeCommand.m */; };
 		6EEBAC3A62F0948CF6878445 /* PDSCLIDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = C7F198C8CD6E00486F2CB332 /* PDSCLIDispatcher.m */; };
+		6EFAD55AD71A374D7CEA58B1 /* HttpRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 0D75960A0F029E93BFBF470F /* HttpRequest.m */; };
 		6F75934CD4734D37CDBCDBC4 /* PDSController.m in Sources */ = {isa = PBXBuildFile; fileRef = DC5DE3B23EED06E4B6AF9CFE /* PDSController.m */; };
 		708B1DC740250B509DB47604 /* Secp256k1.m in Sources */ = {isa = PBXBuildFile; fileRef = A1F4C2A2BF464F3B8C6AF205 /* Secp256k1.m */; };
 		70BAC50858354A3229F5819A /* RateLimiter.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F9C290E3512B256148B5BB5 /* RateLimiter.m */; };
+		7455F5CAAA4F59AB9C2DAA13 /* WebSocketServer.m in Sources */ = {isa = PBXBuildFile; fileRef = BA2B29A7692E12F9AD70BFEB /* WebSocketServer.m */; };
+		7737A3F9A23106559282D581 /* PDSMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 0026557635DCF274E9A6B0E0 /* PDSMetrics.m */; };
 		79E2D3A507A4AA045580026A /* PDSCLIHealthCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 35EB11F9969D0368DBB24A7F /* PDSCLIHealthCommand.m */; };
 		7B27D0C64692AA782768F2C9 /* PDSDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = ED1DB8932855854D7F050021 /* PDSDatabase.m */; };
 		7C3ED787530475C04293A26E /* ServiceDatabases.m in Sources */ = {isa = PBXBuildFile; fileRef = 1B2F2A670A833075DCB10EA0 /* ServiceDatabases.m */; };
 		7CE83AEA9F8FC405A1321FBA /* FederationClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5414D6A19DDED887017F5F5D /* FederationClient.m */; };
+		7E41914DF1928A3EB28EDDCF /* FeedService.m in Sources */ = {isa = PBXBuildFile; fileRef = 4C56285390D7C65696D91D60 /* FeedService.m */; };
+		7F181141C9DC38767F88D254 /* HttpResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 1341CF4A9C802E2BCFB274F9 /* HttpResponse.m */; };
+		7FD7777158786D0DC8FBAEFB /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 49DF1450F13B26A68E3028CD /* README.md */; };
 		80C9264F4BF3E27F38EF3D1C /* PDSCLIHealthCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 35EB11F9969D0368DBB24A7F /* PDSCLIHealthCommand.m */; };
 		8132730A30BDA4D8BE8F83C3 /* ActorService.m in Sources */ = {isa = PBXBuildFile; fileRef = F3C6DE8247AB8E5F957DC2CD /* ActorService.m */; };
 		8357828D0D837C687E7CB4B1 /* PDSMigrationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 37D72DFE32BC4A2EB9D2B2F0 /* PDSMigrationManager.m */; };
 		850C1B8365A90762C2A741E7 /* MSTPersistence.m in Sources */ = {isa = PBXBuildFile; fileRef = 995C7AC462E221D595DB9235 /* MSTPersistence.m */; };
 		85E1AB5241DBC0659150CC83 /* Schema.m in Sources */ = {isa = PBXBuildFile; fileRef = 789F74E8B0D2264C2362EC66 /* Schema.m */; };
 		871F0CAE8216754D30BC5427 /* HttpServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F52AE13C64F11ECDB98EF27 /* HttpServer.m */; };
+		8779C4CD8E221C997F5F13AB /* XrpcHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C59F464C53BE5282B079E29 /* XrpcHandler.m */; };
 		897DD6EDF0B7CE95AEB17498 /* PKCEUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C95330301E6079A61DDAA66 /* PKCEUtil.m */; };
 		8B19D1DEAE631E751C005314 /* ServiceDatabases.m in Sources */ = {isa = PBXBuildFile; fileRef = 1B2F2A670A833075DCB10EA0 /* ServiceDatabases.m */; };
 		8BAB78F09FC8E5DB5CC46779 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D15D04D006413886EF66C /* AppDelegate.m */; };
@@ -94,37 +126,66 @@
 		91BE27249EE6D4456651D30A /* SubscribeReposHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FABBB5148AB072C936E088 /* SubscribeReposHandler.m */; };
 		92038A50DF6E6BF832DE5403 /* MSTPersistence.m in Sources */ = {isa = PBXBuildFile; fileRef = 995C7AC462E221D595DB9235 /* MSTPersistence.m */; };
 		925D45692B0FEF08AC1F2061 /* DatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = 00684605A2786187A7F58C95 /* DatabasePool.m */; };
+		943B01023517268D7506D636 /* PDSCLIHealthCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 35EB11F9969D0368DBB24A7F /* PDSCLIHealthCommand.m */; };
+		951139AC98BC2ADF0EF75041 /* PDSMigrationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 37D72DFE32BC4A2EB9D2B2F0 /* PDSMigrationManager.m */; };
 		975FA6C90C8282B1876A8E46 /* PDSMigrationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 37D72DFE32BC4A2EB9D2B2F0 /* PDSMigrationManager.m */; };
+		98048E7C0B46D4129FED8BBF /* JWT.m in Sources */ = {isa = PBXBuildFile; fileRef = 6C95E779B2C5D8F15D5BCF1E /* JWT.m */; };
+		9872EDB7E7EFCC36F46F9342 /* Secp256k1.m in Sources */ = {isa = PBXBuildFile; fileRef = A1F4C2A2BF464F3B8C6AF205 /* Secp256k1.m */; };
+		9BA969FA5D421DB2DF4F968A /* OAuthSession.m in Sources */ = {isa = PBXBuildFile; fileRef = 185CF5645EFEE72786447F6A /* OAuthSession.m */; };
 		9E77BD96CD746C24C6A1463D /* AdminService.m in Sources */ = {isa = PBXBuildFile; fileRef = 65094121F352BA7B94E58718 /* AdminService.m */; };
 		9EAF9B94960C8EAB35C5430D /* XrpcMethodRegistry.m in Sources */ = {isa = PBXBuildFile; fileRef = 386A82FBAAD1F66F9A039AF9 /* XrpcMethodRegistry.m */; };
+		A17D7A34B7DDC24C6C992E65 /* OAuthServerMetadata.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D4371E041AEB023FCBC06 /* OAuthServerMetadata.m */; };
 		A6CAA5A9C51173312F1F130B /* PKCEUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C95330301E6079A61DDAA66 /* PKCEUtil.m */; };
 		A7E932F91DCA587E2B958EDB /* HandleResolver.m in Sources */ = {isa = PBXBuildFile; fileRef = CD71AB9F9A4B77FB1A7737E5 /* HandleResolver.m */; };
 		AA2BBD557A6A5CEB16C6890E /* FeedService.m in Sources */ = {isa = PBXBuildFile; fileRef = 4C56285390D7C65696D91D60 /* FeedService.m */; };
+		ADB8CB275BCF10E2CB9FC15D /* Session.m in Sources */ = {isa = PBXBuildFile; fileRef = 7587CBBB99E3730937CB225D /* Session.m */; };
 		ADEBCD5775C5D24BD4210555 /* OAuth2.m in Sources */ = {isa = PBXBuildFile; fileRef = 0400E530760BADD279F2A8A6 /* OAuth2.m */; };
+		AFB16D8C3EF87604314A1616 /* ActorStore.m in Sources */ = {isa = PBXBuildFile; fileRef = F17DEF2EFD5261D6685C87B4 /* ActorStore.m */; };
 		B0F736348FDE4E85A51528EE /* secp256k1_wrapper_c.c in Sources */ = {isa = PBXBuildFile; fileRef = F1894C052B2C2E47B70D3C08 /* secp256k1_wrapper_c.c */; };
+		B36DEE902278339B3D5FCADA /* PDSConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 410376300C0583C121A36EFC /* PDSConfiguration.m */; };
+		B3877988C21B67CB4F841BB5 /* PDSAdminHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 242218F6DD4C8FA35AC68009 /* PDSAdminHandler.m */; };
 		B3D98327C2EF854685E7E56C /* CBOR.m in Sources */ = {isa = PBXBuildFile; fileRef = CB5CC8A2FE10F93E8105A409 /* CBOR.m */; };
 		B4EF03B7113074B28809A25C /* ActorStore.m in Sources */ = {isa = PBXBuildFile; fileRef = F17DEF2EFD5261D6685C87B4 /* ActorStore.m */; };
+		B515B174A3BFEC5EEAC430A8 /* ActorService.m in Sources */ = {isa = PBXBuildFile; fileRef = F3C6DE8247AB8E5F957DC2CD /* ActorService.m */; };
 		B5DCC01289B2CBF2BFE81144 /* CAR.m in Sources */ = {isa = PBXBuildFile; fileRef = 844A01B4D081E7AC7D68F999 /* CAR.m */; };
+		B6816E0E4353DC4260C86B49 /* PKCEUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C95330301E6079A61DDAA66 /* PKCEUtil.m */; };
 		B6875F005AED6466AFC4B5B6 /* OAuthServerMetadata.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D4371E041AEB023FCBC06 /* OAuthServerMetadata.m */; };
+		B8059EFCC7FA41D6EA18DDE2 /* PDSController.m in Sources */ = {isa = PBXBuildFile; fileRef = DC5DE3B23EED06E4B6AF9CFE /* PDSController.m */; };
 		B88CC361C9F7F945A30FCDE4 /* PDSCLIServeCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 90D9EFC3A6F37DA9627455A1 /* PDSCLIServeCommand.m */; };
 		B95385B0F01F365CE75243A6 /* FederationClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5414D6A19DDED887017F5F5D /* FederationClient.m */; };
+		BA7370A60F5AEAB28CB3E566 /* SubscribeReposHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FABBB5148AB072C936E088 /* SubscribeReposHandler.m */; };
 		BB42733D8C85A5DE37EE3FBB /* PDSAdminHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 242218F6DD4C8FA35AC68009 /* PDSAdminHandler.m */; };
+		C040BEA368A1B24EC7B423DE /* DatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = 00684605A2786187A7F58C95 /* DatabasePool.m */; };
 		C166279CAD6B925600CF769E /* XrpcHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C59F464C53BE5282B079E29 /* XrpcHandler.m */; };
 		C1B28D2D704B353DA3328538 /* CBOR.m in Sources */ = {isa = PBXBuildFile; fileRef = CB5CC8A2FE10F93E8105A409 /* CBOR.m */; };
 		C1F4BC4D98FDCA17975E7810 /* DatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = 00684605A2786187A7F58C95 /* DatabasePool.m */; };
 		C2CFD0265FA64E71AF9864B8 /* DPoPUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 04B4C38E49BBDDC6D76223FA /* DPoPUtil.m */; };
+		C6D395FE5D6180584B39D8FF /* MSTPersistence.m in Sources */ = {isa = PBXBuildFile; fileRef = 995C7AC462E221D595DB9235 /* MSTPersistence.m */; };
 		C6F208682C6AF47CA0D6C45F /* RepoCommit.m in Sources */ = {isa = PBXBuildFile; fileRef = 26CD447DBF7F72C5D8C8F9E1 /* RepoCommit.m */; };
+		C6FA36E76591205C1DD89690 /* CAR.m in Sources */ = {isa = PBXBuildFile; fileRef = 844A01B4D081E7AC7D68F999 /* CAR.m */; };
 		C76F7838E0D26544D40531F0 /* PDSCLIAccountCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 66355F5CF17EA4A687EAF0F7 /* PDSCLIAccountCommand.m */; };
 		C7DC89739D4E4603AA91683B /* AdminService.m in Sources */ = {isa = PBXBuildFile; fileRef = 65094121F352BA7B94E58718 /* AdminService.m */; };
+		C82C2FC2964667709F098F8D /* OAuth2.m in Sources */ = {isa = PBXBuildFile; fileRef = 0400E530760BADD279F2A8A6 /* OAuth2.m */; };
+		C9324B69F34E962B782B8B17 /* HandleResolver.m in Sources */ = {isa = PBXBuildFile; fileRef = CD71AB9F9A4B77FB1A7737E5 /* HandleResolver.m */; };
 		CC27FE7278510F7C4F050FF9 /* secp256k1_wrapper_c.c in Sources */ = {isa = PBXBuildFile; fileRef = F1894C052B2C2E47B70D3C08 /* secp256k1_wrapper_c.c */; };
+		CCA903B1928FB8E20833E45D /* PDSCLIInviteCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D9D18510D973B64EF02C0C1 /* PDSCLIInviteCommand.m */; };
 		CD3681DE06FE0EE7FD4500D1 /* test_runner.m.disabled in Resources */ = {isa = PBXBuildFile; fileRef = 97FED9489AB6CEB9119BFFF3 /* test_runner.m.disabled */; };
+		D0B9049BA1AF7CBEE09FF021 /* PDSCLIDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = C7F198C8CD6E00486F2CB332 /* PDSCLIDispatcher.m */; };
+		D15AE489583D6E19C0DAB074 /* RateLimiter.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F9C290E3512B256148B5BB5 /* RateLimiter.m */; };
+		D219D34AB91CB60F5396AE03 /* PDSHealthCheck.m in Sources */ = {isa = PBXBuildFile; fileRef = B921F18DE38EAA82F5CB4635 /* PDSHealthCheck.m */; };
 		D5DCFCB4E8883E0413CE83AC /* RepoCommit.m in Sources */ = {isa = PBXBuildFile; fileRef = 26CD447DBF7F72C5D8C8F9E1 /* RepoCommit.m */; };
 		DA4AB1E67347690018592480 /* DPoPUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 04B4C38E49BBDDC6D76223FA /* DPoPUtil.m */; };
 		DA88EF57B1ED226C1A5F475C /* SubscribeReposHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FABBB5148AB072C936E088 /* SubscribeReposHandler.m */; };
+		DA997A0BA74034C2E2B11A4C /* FederationClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5414D6A19DDED887017F5F5D /* FederationClient.m */; };
 		DAA158A9212217AE1F7C3CE7 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 49DF1450F13B26A68E3028CD /* README.md */; };
+		DB10BAD18EE9A5BF70652B2D /* TID.m in Sources */ = {isa = PBXBuildFile; fileRef = BB508C7DD5AAB4F09A76F9C1 /* TID.m */; };
 		DD630FE5213CFDA51314763C /* PDSCLIAccountCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 66355F5CF17EA4A687EAF0F7 /* PDSCLIAccountCommand.m */; };
+		DF2ABB911D410ECBA49C4E3A /* CID.m in Sources */ = {isa = PBXBuildFile; fileRef = 06AAB57626EFEA167865CFAA /* CID.m */; };
+		E0147F5B0C84E1BB593E6202 /* ServiceDatabases.m in Sources */ = {isa = PBXBuildFile; fileRef = 1B2F2A670A833075DCB10EA0 /* ServiceDatabases.m */; };
+		E482662FCB57C903E73E9D61 /* ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = 99B8A8E4F83ED406BBA897F6 /* ARCHITECTURE.md */; };
 		E50AF32EDD6784F339F9A188 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F6A3A6493D212814D176E01 /* main.m */; };
 		E6CFCD1D27BC1B69FB6C44A3 /* PDSInputValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D11C41379F1C6554020EBB8 /* PDSInputValidator.m */; };
+		E788FACD4ECDB1E564012A28 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D15D04D006413886EF66C /* AppDelegate.m */; };
 		E7B30A7C50DD9D659F0E8475 /* WebSocketServer.m in Sources */ = {isa = PBXBuildFile; fileRef = BA2B29A7692E12F9AD70BFEB /* WebSocketServer.m */; };
 		E82224A1E25A7933E5740559 /* BlobStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = A30C2620C43499086D04662A /* BlobStorage.m */; };
 		EC82B07D478E6F629F807098 /* MST.m in Sources */ = {isa = PBXBuildFile; fileRef = 84A333A035BF30955641E999 /* MST.m */; };
@@ -133,6 +194,7 @@
 		EF92950B6BC2437E73940BAD /* OAuthServerMetadata.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D4371E041AEB023FCBC06 /* OAuthServerMetadata.m */; };
 		F2423D4CC9BE5BE9856D798F /* ActorService.m in Sources */ = {isa = PBXBuildFile; fileRef = F3C6DE8247AB8E5F957DC2CD /* ActorService.m */; };
 		F27A13CC02518523AA2B99D7 /* AdminMiddleware.m in Sources */ = {isa = PBXBuildFile; fileRef = 62B81FE3136D7AE5420ECA82 /* AdminMiddleware.m */; };
+		F4EB4A9C2F6B9794F91D2FB5 /* BlobStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = A30C2620C43499086D04662A /* BlobStorage.m */; };
 		F519874A7DA9C37EC08E49C1 /* OAuth2.m in Sources */ = {isa = PBXBuildFile; fileRef = 0400E530760BADD279F2A8A6 /* OAuth2.m */; };
 		F5FAF4D77925FF4DB0BC484F /* PDSAdminAuth.m in Sources */ = {isa = PBXBuildFile; fileRef = 078169533EB5BB854804930F /* PDSAdminAuth.m */; };
 		F60748027A5330E88D4E26AF /* XrpcMethodRegistry.m in Sources */ = {isa = PBXBuildFile; fileRef = 386A82FBAAD1F66F9A039AF9 /* XrpcMethodRegistry.m */; };
@@ -210,6 +272,7 @@
 		7EA6EAF561DD00EA8545F69B /* PDSAdminAuth.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PDSAdminAuth.h; sourceTree = "<group>"; };
 		7F198D8CE3517DD86D0F88F7 /* CBOR.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CBOR.h; sourceTree = "<group>"; };
 		82032BB378CA75360057C78C /* Firehose.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Firehose.m; sourceTree = "<group>"; };
+		8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */ = {isa = PBXFileReference; includeInIndex = 0; path = "ATProtoPDS-CLI"; sourceTree = BUILT_PRODUCTS_DIR; };
 		844A01B4D081E7AC7D68F999 /* CAR.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CAR.m; sourceTree = "<group>"; };
 		84A333A035BF30955641E999 /* MST.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MST.m; sourceTree = "<group>"; };
 		86C8ACDA3BE9CCCBB539156E /* FederationClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FederationClient.h; sourceTree = "<group>"; };
@@ -418,6 +481,7 @@
 			children = (
 				9116AA617AA1E2F99D962951 /* AllTests */,
 				DA38879A06FD1977796ED4C8 /* ATProtoPDS */,
+				8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -667,6 +731,24 @@
 			productReference = 9116AA617AA1E2F99D962951 /* AllTests */;
 			productType = "com.apple.product-type.tool";
 		};
+		ADD1CF61F0CF3AC1CD09BC17 /* ATProtoPDS-CLI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C25E707EF530E1E2E449DBE /* Build configuration list for PBXNativeTarget "ATProtoPDS-CLI" */;
+			buildPhases = (
+				CF8709E566C9B7048CA34A37 /* Sources */,
+				55AC10CF20400908C6B556D5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "ATProtoPDS-CLI";
+			packageProductDependencies = (
+			);
+			productName = "ATProtoPDS-CLI";
+			productReference = 8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -691,12 +773,23 @@
 			projectRoot = "";
 			targets = (
 				70F0F1C60CA6F6ED2FD8724E /* ATProtoPDS */,
+				ADD1CF61F0CF3AC1CD09BC17 /* ATProtoPDS-CLI */,
 				9F7F3F370E6ABECF7565CA85 /* AllTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		55AC10CF20400908C6B556D5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E482662FCB57C903E73E9D61 /* ARCHITECTURE.md in Resources */,
+				7FD7777158786D0DC8FBAEFB /* README.md in Resources */,
+				2737E9D024370AB60FEFDBFE /* test_runner.m.disabled in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EDBD44C31FB24BED0A9D65FD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -784,9 +877,7 @@
 				C166279CAD6B925600CF769E /* XrpcHandler.m in Sources */,
 				9EAF9B94960C8EAB35C5430D /* XrpcMethodRegistry.m in Sources */,
 				2F901E86C47B6E1423F0D959 /* main.m in Sources */,
-				6E857545CA38EDCD7CA9C605 /* main.m in Sources */,
 				B0F736348FDE4E85A51528EE /* secp256k1_wrapper_c.c in Sources */,
-				59A98E1BF3C50A18B599F427 /* server_main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -860,6 +951,74 @@
 				CC27FE7278510F7C4F050FF9 /* secp256k1_wrapper_c.c in Sources */,
 				FDB0683B22BF43F7A83CD5BD /* server_main.m in Sources */,
 				343C1E584C94F67A173BDE35 /* test_main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CF8709E566C9B7048CA34A37 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B515B174A3BFEC5EEAC430A8 /* ActorService.m in Sources */,
+				AFB16D8C3EF87604314A1616 /* ActorStore.m in Sources */,
+				25E8C10E77CF5C33F5E44A40 /* AdminMiddleware.m in Sources */,
+				1A11805466462DDC36425268 /* AdminService.m in Sources */,
+				E788FACD4ECDB1E564012A28 /* AppDelegate.m in Sources */,
+				F4EB4A9C2F6B9794F91D2FB5 /* BlobStorage.m in Sources */,
+				C6FA36E76591205C1DD89690 /* CAR.m in Sources */,
+				6696DD500E927CA4F9B77E9E /* CBOR.m in Sources */,
+				DF2ABB911D410ECBA49C4E3A /* CID.m in Sources */,
+				05DF166AA6CF325A058E6008 /* DID.m in Sources */,
+				2DBAEE36CA2BE3420C8DF3B6 /* DPoPUtil.m in Sources */,
+				C040BEA368A1B24EC7B423DE /* DatabasePool.m in Sources */,
+				40E02EA897595FF0B285CD16 /* EventFormatter.m in Sources */,
+				DA997A0BA74034C2E2B11A4C /* FederationClient.m in Sources */,
+				7E41914DF1928A3EB28EDDCF /* FeedService.m in Sources */,
+				262781A785C0367729496536 /* Firehose.m in Sources */,
+				C9324B69F34E962B782B8B17 /* HandleResolver.m in Sources */,
+				6EFAD55AD71A374D7CEA58B1 /* HttpRequest.m in Sources */,
+				7F181141C9DC38767F88D254 /* HttpResponse.m in Sources */,
+				004CC0CA0884E13B22A40080 /* HttpServer.m in Sources */,
+				98048E7C0B46D4129FED8BBF /* JWT.m in Sources */,
+				18DDB55DF83953CDFE84339D /* KeyManager.m in Sources */,
+				4824A197FD87E891A356F012 /* MST.m in Sources */,
+				C6D395FE5D6180584B39D8FF /* MSTPersistence.m in Sources */,
+				662CC79D48E24DFD9BFACED7 /* MimeTypeValidator.m in Sources */,
+				0157C1A9749514C1ABA8F654 /* NotificationService.m in Sources */,
+				C82C2FC2964667709F098F8D /* OAuth2.m in Sources */,
+				A17D7A34B7DDC24C6C992E65 /* OAuthServerMetadata.m in Sources */,
+				9BA969FA5D421DB2DF4F968A /* OAuthSession.m in Sources */,
+				0E28D9BF9BB046EADCB23932 /* PDSAdminAuth.m in Sources */,
+				B3877988C21B67CB4F841BB5 /* PDSAdminHandler.m in Sources */,
+				40FE037EC6C3D9674EF49B6F /* PDSAuthzManager.m in Sources */,
+				3497A1496695288C8621040D /* PDSCLIAccountCommand.m in Sources */,
+				D0B9049BA1AF7CBEE09FF021 /* PDSCLIDispatcher.m in Sources */,
+				943B01023517268D7506D636 /* PDSCLIHealthCommand.m in Sources */,
+				CCA903B1928FB8E20833E45D /* PDSCLIInviteCommand.m in Sources */,
+				56010148F913CF06656FC740 /* PDSCLIServeCommand.m in Sources */,
+				B36DEE902278339B3D5FCADA /* PDSConfiguration.m in Sources */,
+				B8059EFCC7FA41D6EA18DDE2 /* PDSController.m in Sources */,
+				01B40C987B0FDB5F0BF8192E /* PDSDatabase.m in Sources */,
+				D219D34AB91CB60F5396AE03 /* PDSHealthCheck.m in Sources */,
+				4151FEB37521820C78416E2D /* PDSInputValidator.m in Sources */,
+				22A1E5636A4CCE39E0620956 /* PDSLogger.m in Sources */,
+				7737A3F9A23106559282D581 /* PDSMetrics.m in Sources */,
+				951139AC98BC2ADF0EF75041 /* PDSMigrationManager.m in Sources */,
+				B6816E0E4353DC4260C86B49 /* PKCEUtil.m in Sources */,
+				D15AE489583D6E19C0DAB074 /* RateLimiter.m in Sources */,
+				5994A9579547581B3F6F4A96 /* RelayClient.m in Sources */,
+				251335E6D91D9A55074F4C9E /* RepoCommit.m in Sources */,
+				2C4A8CBC8C139A56401CAD90 /* Schema.m in Sources */,
+				9872EDB7E7EFCC36F46F9342 /* Secp256k1.m in Sources */,
+				E0147F5B0C84E1BB593E6202 /* ServiceDatabases.m in Sources */,
+				ADB8CB275BCF10E2CB9FC15D /* Session.m in Sources */,
+				BA7370A60F5AEAB28CB3E566 /* SubscribeReposHandler.m in Sources */,
+				DB10BAD18EE9A5BF70652B2D /* TID.m in Sources */,
+				466BCE77E505C99A75809FE3 /* WebSocketConnection.m in Sources */,
+				7455F5CAAA4F59AB9C2DAA13 /* WebSocketServer.m in Sources */,
+				8779C4CD8E221C997F5F13AB /* XrpcHandler.m in Sources */,
+				42918AD2BBBF3D0AFFA75032 /* XrpcMethodRegistry.m in Sources */,
+				09743C4CF665185AD3746693 /* main.m in Sources */,
+				16B01C7B094A49BFCC2BA3BA /* secp256k1_wrapper_c.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1057,6 +1216,36 @@
 			};
 			name = Debug;
 		};
+		83CC1A7CFFD5B68480315FB5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/ATProtoPDS/Sources",
+					"$(PROJECT_DIR)/secp256k1/include",
+				);
+				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					Foundation,
+					"-framework",
+					Network,
+					"-framework",
+					Security,
+					"-lsqlite3",
+					"-lsecp256k1",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.ATProtoPDS-CLI";
+				PRODUCT_NAME = "atprotopds-cli";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		DB86B10E66C4A8EAC736030B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1089,6 +1278,36 @@
 				SDKROOT = macosx;
 			};
 			name = Release;
+		};
+		DDB8E21E25A2E79E9DF0D1DA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/ATProtoPDS/Sources",
+					"$(PROJECT_DIR)/secp256k1/include",
+				);
+				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					Foundation,
+					"-framework",
+					Network,
+					"-framework",
+					Security,
+					"-lsqlite3",
+					"-lsecp256k1",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.ATProtoPDS-CLI";
+				PRODUCT_NAME = "atprotopds-cli";
+				SDKROOT = macosx;
+			};
+			name = Debug;
 		};
 		EF51F9360DFA353B2EB4E83F /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1149,6 +1368,15 @@
 			buildConfigurations = (
 				343ABBF46A852785676525F6 /* Debug */,
 				EF51F9360DFA353B2EB4E83F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7C25E707EF530E1E2E449DBE /* Build configuration list for PBXNativeTarget "ATProtoPDS-CLI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DDB8E21E25A2E79E9DF0D1DA /* Debug */,
+				83CC1A7CFFD5B68480315FB5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
