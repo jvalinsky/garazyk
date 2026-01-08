@@ -9,6 +9,7 @@ set -e  # Exit on any error
 SERVER_HOST="http://localhost:2583"
 TEST_DB="/tmp/atproto_pds.db"
 PID_FILE="/tmp/pds_test.pid"
+PORT=2583
 
 # Colors for output
 RED='\033[0;31m'
@@ -22,10 +23,12 @@ echo "=================================="
 # Cleanup function
 cleanup() {
     echo -e "${YELLOW}Cleaning up...${NC}"
-    if [ -f "$PID_FILE" ]; then
-        kill "$(cat $PID_FILE)" 2>/dev/null || true
-        rm -f "$PID_FILE"
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        kill "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
     fi
+    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    rm -f "$PID_FILE"
     rm -f "$TEST_DB"
     echo -e "${GREEN}Cleanup complete${NC}"
 }
@@ -55,11 +58,13 @@ if [ ! -f "build/atprotopds" ]; then
     error_exit "Server binary not found. Run 'make build' first."
 fi
 
+# Kill any existing server on our port
+pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+sleep 1
+
 # Clean up any existing test files
 rm -f "$TEST_DB"
-
-# Set environment variables for test database
-export AT_PROTO_DB_PATH="$TEST_DB"
+rm -f "$PID_FILE"
 
 info "Starting PDS server..."
 ./build/atprotopds &
@@ -76,16 +81,16 @@ fi
 
 success "Server started (PID: $SERVER_PID)"
 
-# Test 1: Create test account
+# Test 1: Create test account with unique handle
+TIMESTAMP=$(date +%s)
 info "Creating test account..."
 CREATE_ACCOUNT_RESPONSE=$(curl -s -X POST "$SERVER_HOST/xrpc/com.atproto.server.createAccount" \
     -H "Content-Type: application/json" \
-    -d '{
-        "email": "test@example.com",
-        "handle": "test.example.com",
-        "password": "testpassword123",
-        "did": "did:web:test.example.com"
-    }')
+    -d "{
+        \"email\": \"test$TIMESTAMP@example.com\",
+        \"handle\": \"test$TIMESTAMP.example.com\",
+        \"password\": \"testpassword123\"
+    }")
 
 # Check if account creation failed due to existing account
 if echo "$CREATE_ACCOUNT_RESPONSE" | grep -q '"error":"AccountCreationFailed"'; then

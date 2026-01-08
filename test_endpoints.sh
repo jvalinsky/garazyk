@@ -10,6 +10,7 @@ SERVER="$SCRIPT_DIR/build/atprotopds"
 PORT=2583
 BASE_URL="http://localhost:$PORT"
 SERVER_PID=""
+DB_PATH="/tmp/atproto_pds.db"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -35,7 +36,9 @@ cleanup() {
         kill "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
-    rm -f /tmp/atproto_pds.db 2>/dev/null || true
+    # Also kill any stray servers on our port
+    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    rm -f "$DB_PATH" 2>/dev/null || true
 }
 
 trap cleanup EXIT
@@ -47,7 +50,10 @@ start_server() {
     fi
 
     info "Starting ATProto PDS server..."
-    rm -f /tmp/atproto_pds.db 2>/dev/null || true
+    # Kill any existing server on our port
+    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    sleep 1
+    rm -f "$DB_PATH" 2>/dev/null || true
 
     # Start server and wait for it to be ready
     "$SERVER" &

@@ -6,10 +6,23 @@ SERVER="$SCRIPT_DIR/build/atprotopds"
 PORT=2583
 BASE_URL="http://localhost:$PORT"
 SERVER_PID=""
+DB_PATH="/tmp/atproto_pds.db"
 
 info() {
     echo "[INFO] $1"
 }
+
+cleanup() {
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        info "Stopping server (PID: $SERVER_PID)..."
+        kill "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
+    fi
+    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    rm -f "$DB_PATH" 2>/dev/null || true
+}
+
+trap cleanup EXIT
 
 test_health() {
     info "Testing health endpoint..."
@@ -92,11 +105,9 @@ test_get_record() {
     fi
 
     info "Testing getRecord..."
-    # Use a known rkey from createRecord response, or just test with a dummy one
     local url="$BASE_URL/xrpc/com.atproto.repo.getRecord?repo=$DID&collection=app.bsky.feed.post&rkey=test"
     local response=$(curl -s "$url")
 
-    # getRecord should return either the record or an error
     if echo "$response" | grep -q "uri\|error"; then
         echo "PASS: getRecord responded"
         echo "Response: $response"
@@ -106,6 +117,11 @@ test_get_record() {
 }
 
 # Start server
+info "Starting ATProto PDS server..."
+pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+sleep 1
+rm -f "$DB_PATH" 2>/dev/null || true
+
 "$SERVER" &
 SERVER_PID=$!
 sleep 2
@@ -122,7 +138,3 @@ test_create_account
 test_create_record
 test_get_record
 test_list_records
-
-# Cleanup
-kill "$SERVER_PID" 2>/dev/null || true
-wait "$SERVER_PID" 2>/dev/null || true
