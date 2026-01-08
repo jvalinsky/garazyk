@@ -130,7 +130,7 @@ jobs:
       - name: Setup CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: objective-c
+          languages: objective-c-cpp
           queries: security-extended
 
       - name: Generate project
