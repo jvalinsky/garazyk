@@ -117,15 +117,15 @@ jobs:
             exit 1
           fi
 
-  # ============================================================================
-  # JOB 2: Fuzzing
-  # ============================================================================
-  fuzzing:
-    name: Fuzzing
-    runs-on: macos-14
-    timeout-minutes: 45
+   # ============================================================================
+   # JOB 2: Fuzzing
+   # ============================================================================
+   fuzzing:
+     name: Fuzzing
+     runs-on: macos-14
+     timeout-minutes: 45
 
-    steps:
+     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -139,8 +139,12 @@ jobs:
           xcodebuild -version
           xcode-select -p
 
+      - name: Install Homebrew dependencies
+        run: |
+          brew install xcodegen llvm@18
+
       - name: Cache Homebrew
-        uses: actions/cache@v4
+         uses: actions/cache@v4
          with:
            path: |
              ~/Library/Caches/Homebrew
@@ -149,10 +153,6 @@ jobs:
            key: homebrew-fuzz-${{ runner.os }}-${{ hashFiles('Brewfile') }}
            restore-keys: |
              homebrew-fuzz-${{ runner.os }}-
-
-       - name: Install Homebrew dependencies
-         run: |
-           brew install xcodegen llvm@18
 
        - name: Build Fuzzers
          run: |
