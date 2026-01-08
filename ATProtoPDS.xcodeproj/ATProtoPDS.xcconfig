@@ -10,6 +10,11 @@
 SDKROOT = macosx
 MACOSX_DEPLOYMENT_TARGET = 13.0
 
+// Product
+PRODUCT_NAME = atprotopds
+PRODUCT_BUNDLE_IDENTIFIER = com.atproto.pds
+INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist
+
 // Build Settings
 CLANG_ENABLE_OBJC_ARC = YES
 CLANG_ENABLE_MODULES = YES
@@ -60,10 +65,12 @@ HEADER_SEARCH_PATHS = (
 
 // Compiler Flags
 OTHER_CFLAGS = (
+    $(inherited),
     "-fobjc-arc"
 )
 
 OTHER_LDFLAGS = (
+    $(inherited),
     "-framework",
     Foundation,
     "-framework",

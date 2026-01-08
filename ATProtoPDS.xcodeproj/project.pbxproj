@@ -141,6 +141,8 @@
 // Tests
 		ATPROTO_HTTP_SERVER_TEST = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Tests/Network/http_server_test.m; sourceTree = "<group>"; };
 		ATPROTO_BLOB_STORAGE_TESTS = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Tests/Blob/blob_storage_tests.m; sourceTree = "<group>"; };
+// Configuration
+		ATPROTO_XCCONFIG = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ATProtoPDS.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
