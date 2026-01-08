@@ -3,3 +3,169 @@ Host: localhost
 Content-Type: application/json
 
 {"identifier":"test","password":"test"}
+
+# Empty and minimal
+GET / HTTP/1.1
+
+# Basic HTTP/1.1 requests
+GET / HTTP/1.1
+Host: example.com
+
+POST / HTTP/1.1
+Host: example.com
+Content-Length: 0
+
+PUT /api/data HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Content-Length: 2
+
+DELETE /resource/123 HTTP/1.1
+Host: api.example.com
+
+# XRPC endpoints
+GET /xrpc/com.atproto.server.createAccount HTTP/1.1
+Host: pds.example.com
+
+POST /xrpc/com.atproto.repo.createRecord HTTP/1.1
+Host: pds.example.com
+Content-Type: application/json
+Content-Length: 47
+
+{"repo":"did:plc:test","collection":"app.bsky.feed.post","record":{"$type":"app.bsky.feed.post"}}
+
+# Large path
+GET /very/long/path/that/should/be/handled/correctly/by/the/server/and/should/not/cause/any/overflows/or/issues HTTP/1.1
+Host: example.com
+
+# Query strings
+GET /search?q=test&page=1&limit=10 HTTP/1.1
+Host: example.com
+
+GET /xrpc/com.atproto.repo.listRecords?repo=did:plc:test&collection=app.bsky.feed.post HTTP/1.1
+Host: pds.example.com
+
+# Special characters in path
+GET /api/users/john%40example.com/profile HTTP/1.1
+Host: api.example.com
+
+GET /api/data%20with%20spaces HTTP/1.1
+Host: api.example.com
+
+# Various headers
+GET / HTTP/1.1
+Host: example.com
+User-Agent: ATProtoPDS/1.0
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+Authorization: Bearer token123
+X-Request-ID: 12345
+
+# Malformed but should be handled
+GET
+GET /
+GET / HTTP/1.
+GET / HTTP/
+GET  HTTP/1.1
+Host: example.com
+
+# POST with JSON body
+POST /xrpc/com.atproto.server.createAccount HTTP/1.1
+Host: pds.example.com
+Content-Type: application/json
+Content-Length: 71
+
+{"email":"test@example.com","password":"password123","handle":"testuser"}
+
+# POST with CBOR body
+POST /xrpc/com.atproto.repo.createRecord HTTP/1.1
+Host: pds.example.com
+Content-Type: application/cbor
+Content-Length: 47
+
+a26324 74797065 6b6170 702e62 736b79 2e6665 65642e 706f73 74
+
+# Multipart form data
+POST /upload HTTP/1.1
+Host: api.example.com
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Length: 150
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+Hello World
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+# IPv6 Host header
+GET / HTTP/1.1
+Host: [2001:db8::1]:8080
+
+# Long header values
+GET / HTTP/1.1
+Host: very-long-hostname-that-should-be-handled-correctly.example.com.with-many-subdomains.com
+
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+# Case variations
+get / HTTP/1.1
+Host: example.com
+
+GET / http/1.1
+Host: example.com
+
+# Connection close
+GET / HTTP/1.1
+Host: example.com
+Connection: close
+
+# Chunked encoding (simulated)
+GET / HTTP/1.1
+Host: example.com
+Transfer-Encoding: chunked
+
+5
+hello
+0
+
+# HTTP/0.9 style
+GET /old-resource
+
+# Fragment in URL
+GET /page#section HTTP/1.1
+Host: example.com
+
+# Multiple query parameters with same key
+GET /api/search?tag=a&tag=b&tag=c HTTP/1.1
+Host: api.example.com
+
+# Null bytes in request (should be handled safely)
+GET /\x00/test HTTP/1.1
+Host: example.com
+
+# Very long header name
+GET / HTTP/1.1
+Very-Long-Header-Name-That-Exceeds-Common-Limits: short-value
+Host: example.com
+
+# Duplicate headers
+GET / HTTP/1.1
+Host: first.example.com
+Host: second.example.com
+
+# Atproto specific headers
+GET /xrpc/com.atproto.server.getSession HTTP/1.1
+Host: pds.example.com
+Atproto-Accept-Labelers: did:plc:labeler1,did:plc:labeler2
+
+# Empty headers
+GET / HTTP/1.1
+Host: example.com
+X-Custom-Header:
+
+# Binary data in header (non-ASCII)
+GET / HTTP/1.1
+Host: example.com
+X-Binary: \xff\xfe\xfd

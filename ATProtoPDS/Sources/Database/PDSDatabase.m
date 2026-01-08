@@ -281,6 +281,117 @@ static NSDateFormatter * iso8601Formatter(void) {
                            userInfo:@{NSLocalizedDescriptionKey: msg}];
 }
 
+#pragma mark - Parameterized Queries
+
+- (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
+                                                params:(NSArray *)params
+                                                 error:(NSError **)error {
+    if (!self.isOpen) {
+        if (error) {
+            *error = [self errorWithMessage:"Database is not open" code:PDSDatabaseErrorNotOpen];
+        }
+        return @[];
+    }
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        }
+        return @[];
+    }
+
+    for (NSUInteger i = 0; i < params.count; i++) {
+        id param = params[i];
+        int paramIndex = (int)(i + 1);
+
+        if (param == [NSNull null]) {
+            sqlite3_bind_null(stmt, paramIndex);
+        } else if ([param isKindOfClass:[NSString class]]) {
+            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_STATIC);
+        } else if ([param isKindOfClass:[NSNumber class]]) {
+            const char *objCType = [param objCType];
+            if (strcmp(objCType, @encode(double)) == 0 || 
+                strcmp(objCType, @encode(float)) == 0) {
+                sqlite3_bind_double(stmt, paramIndex, [param doubleValue]);
+            } else {
+                sqlite3_bind_int64(stmt, paramIndex, [param longLongValue]);
+            }
+        } else if ([param isKindOfClass:[NSData class]]) {
+            sqlite3_bind_blob(stmt, paramIndex, [param bytes], (int)[param length], SQLITE_STATIC);
+        }
+    }
+
+    NSMutableArray *results = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        NSMutableDictionary *row = [NSMutableDictionary dictionary];
+        for (int i = 0; i < sqlite3_column_count(stmt); i++) {
+            NSString *columnName = @(sqlite3_column_name(stmt, i));
+            id value = [self valueFromStatement:stmt columnIndex:i];
+            if (value) {
+                row[columnName] = value;
+            }
+        }
+        [results addObject:row];
+    }
+
+    sqlite3_finalize(stmt);
+    return results;
+}
+
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                            params:(NSArray *)params
+                             error:(NSError **)error {
+    if (!self.isOpen) {
+        if (error) {
+            *error = [self errorWithMessage:"Database is not open" code:PDSDatabaseErrorNotOpen];
+        }
+        return NO;
+    }
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        }
+        return NO;
+    }
+
+    for (NSUInteger i = 0; i < params.count; i++) {
+        id param = params[i];
+        int paramIndex = (int)(i + 1);
+
+        if (param == [NSNull null]) {
+            sqlite3_bind_null(stmt, paramIndex);
+        } else if ([param isKindOfClass:[NSString class]]) {
+            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_STATIC);
+        } else if ([param isKindOfClass:[NSNumber class]]) {
+            const char *objCType = [param objCType];
+            if (strcmp(objCType, @encode(double)) == 0 || 
+                strcmp(objCType, @encode(float)) == 0) {
+                sqlite3_bind_double(stmt, paramIndex, [param doubleValue]);
+            } else {
+                sqlite3_bind_int64(stmt, paramIndex, [param longLongValue]);
+            }
+        } else if ([param isKindOfClass:[NSData class]]) {
+            sqlite3_bind_blob(stmt, paramIndex, [param bytes], (int)[param length], SQLITE_STATIC);
+        }
+    }
+
+    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
+    sqlite3_finalize(stmt);
+
+    if (!success && error) {
+        *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+    }
+
+    return success;
+}
+
 #pragma mark - Accounts
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {

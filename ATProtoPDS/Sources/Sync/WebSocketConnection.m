@@ -246,7 +246,12 @@ static const uint8_t WS_MASK = 0x80;
         const unsigned char *payloadBytes = (const unsigned char *)payload.bytes;
         code = (NSInteger)payloadBytes[0] << 8 | (NSInteger)payloadBytes[1];
         if (payload.length > 2) {
-            reason = [[NSString alloc] initWithData:[payload subdataWithRange:NSMakeRange(2, payload.length - 2)] encoding:NSUTF8StringEncoding];
+            NSUInteger reasonLength = payload.length - 2;
+            // Cap reason length to prevent excessive memory allocation
+            if (reasonLength > 1000) {
+                reasonLength = 1000;
+            }
+            reason = [[NSString alloc] initWithData:[payload subdataWithRange:NSMakeRange(2, reasonLength)] encoding:NSUTF8StringEncoding];
         }
     }
 

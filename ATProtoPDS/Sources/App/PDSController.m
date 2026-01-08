@@ -879,8 +879,9 @@ NSString *const kDefaultPlcServerURL = @"http://localhost:2582";
 
     // Get all collections by querying the database for distinct collection names
     // This follows the ATProto reference implementation pattern
-    NSString *query = [NSString stringWithFormat:@"SELECT DISTINCT collection FROM records WHERE did = '%@' ORDER BY collection", account.did];
-    NSArray *rows = [_database executeQuery:query error:nil];
+    // FIXED: Use parameterized query to prevent SQL injection
+    NSString *query = @"SELECT DISTINCT collection FROM records WHERE did = ? ORDER BY collection";
+    NSArray *rows = [_database executeParameterizedQuery:query params:@[account.did] error:nil];
 
     NSMutableArray *collections = [NSMutableArray array];
     for (NSDictionary *row in rows) {

@@ -1,0 +1,106 @@
+# ATProto PDS Fuzzing Dictionary
+# Protocol-specific tokens for better fuzzing coverage
+
+# HTTP Methods
+GET
+POST
+PUT
+DELETE
+PATCH
+OPTIONS
+HEAD
+TRACE
+CONNECT
+
+# HTTP Headers (common case-insensitive)
+Content-Type
+Content-Length
+Authorization
+Accept
+Host
+User-Agent
+Connection
+Transfer-Encoding
+X-Requested-With
+Content-Encoding
+
+# ATProto XRPC prefixes
+/xrpc/
+com.atproto.
+app.bsky.
+
+# CBOR type markers (hex)
+00-1F
+20-3F
+40-5F
+60-7F
+80-9F
+A0-BF
+C0-DF
+E0-FF
+
+# CBOR simple values
+F4
+F5
+F6
+F7
+F8
+F9
+FA
+FB
+FC
+FD
+FE
+FF
+
+# ATProto record types
+$type
+$bytes
+$link
+$value
+
+# DID methods
+did:
+did:web:
+did:plc:
+
+# Lexicon NSIDs
+com.atproto.
+app.bsky.
+
+# HTTP response statuses
+200
+201
+204
+400
+401
+403
+404
+422
+500
+502
+503
+
+# Content types
+application/json
+application/cbor
+text/plain
+text/html
+application/x-www-form-urlencoded
+multipart/form-data
+
+# HTTP/1.1 versions
+HTTP/1.0
+HTTP/1.1
+HTTP/2
+HTTP/3
+
+# Security headers
+WWW-Authenticate
+Authorization
+Proxy-Authenticate
+Proxy-Authorization
+
+# ATProto specific
+Atproto-Accept-Labelers
+Atproto-Content-Labelers

@@ -1,6 +1,14 @@
 //
 //  fuzz_http.mm
-//  Fuzzing harness for HTTP request parsing
+//  Comprehensive HTTP fuzzing harness for ATProto PDS
+//
+//  Tests:
+//  1. HTTP request parsing (various methods, paths, headers)
+//  2. HTTP response serialization
+//  3. Query string parsing
+//  4. JSON body parsing
+//  5. Multipart form data
+//  6. Edge cases and malformed inputs
 //
 
 #import <Foundation/Foundation.h>
@@ -16,54 +24,157 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     @autoreleasepool {
         NSData *inputData = [NSData dataWithBytes:data length:size];
 
+        // Test 1: Basic HTTP request parsing
+        HttpRequest *request = [HttpRequest requestWithData:inputData];
+
+        HttpMethod method = request.method;
+        NSString *methodString = request.methodString;
+        NSString *path = request.path;
+        NSString *queryString = request.queryString;
+        NSString *version = request.version;
+        NSDictionary *headers = request.headers;
+        NSData *body = request.body;
+        NSDictionary *queryParams = request.queryParams;
+        NSDictionary *jsonBody = request.jsonBody;
+
+        (void)method;
+        (void)methodString;
+        (void)queryString;
+        (void)queryParams;
+        (void)jsonBody;
+
+        // Test 2: HTTP response serialization
+        HttpResponse *response = [[HttpResponse alloc] init];
+        response.statusCode = HttpStatusOK;
+        response.statusMessage = @"OK";
+        response.contentType = @"application/json";
+        response.headers = [NSMutableDictionary dictionary];
+        [response.headers setValue:@"application/json" forKey:@"Content-Type"];
+        [response.headers setValue:@"fuzz-test" forKey:@"X-Request-ID"];
+        response.body = body;
+
+        NSData *serialized = [response serialize];
+        (void)serialized;
+
+        // Test 3: Various status codes
+        NSArray *statusCodes = @[
+            @(HttpStatusOK),
+            @(HttpStatusCreated),
+            @(HttpStatusNoContent),
+            @(HttpStatusBadRequest),
+            @(HttpStatusUnauthorized),
+            @(HttpStatusForbidden),
+            @(HttpStatusNotFound),
+            @(HttpStatusInternalServerError),
+            @(HttpStatusServiceUnavailable)
+        ];
+
+        for (NSNumber *statusNum in statusCodes) {
+            HttpResponse *statusResponse = [[HttpResponse alloc] init];
+            statusResponse.statusCode = (HttpStatusCode)[statusNum integerValue];
+            statusResponse.statusMessage = @"Test";
+            statusResponse.contentType = @"text/plain";
+            NSData *statusSerialized = [statusResponse serialize];
+            (void)statusSerialized;
+        }
+
+        // Test 4: Header access methods
+        if (headers.count > 0) {
+            for (NSString *key in headers) {
+                NSString *value = [request headerForKey:key];
+                (void)value;
+            }
+        }
+
+        // Test 5: Query parameter access
+        if (queryParams.count > 0) {
+            for (NSString *key in queryParams) {
+                NSString *value = [request queryParamForKey:key];
+                (void)value;
+            }
+        }
+
+        // Test 6: Partial request parsing
+        if (size > 0) {
+            NSUInteger partialLength = MIN(size, 50);
+            NSData *partialData = [NSData dataWithBytes:data length:partialLength];
+            HttpRequest *partialRequest = [HttpRequest requestWithData:partialData];
+            (void)partialRequest;
+        }
+
+        // Test 7: Different encoding attempts
         NSString *rawRequest = [[NSString alloc] initWithData:inputData
-                                                      encoding:NSUTF8StringEncoding];
+                                                    encoding:NSUTF8StringEncoding];
         if (!rawRequest) {
             rawRequest = [[NSString alloc] initWithData:inputData
                                                encoding:NSISOLatin1StringEncoding];
         }
 
         if (rawRequest) {
-            HttpRequest *request = [HttpRequest requestWithData:inputData];
-
-            HttpMethod method = request.method;
-            NSString *methodString = request.methodString;
-            NSString *path = request.path;
-            NSString *version = request.version;
-            NSDictionary *headers = request.headers;
-            NSData *body = request.body;
-            NSDictionary *queryParams = request.queryParams;
-
-            (void)method;
-            (void)methodString;
-            (void)queryParams;
-
-            if (path) {
-                NSRange queryRange = [path rangeOfString:@"?"];
-                if (queryRange.location != NSNotFound) {
-                    NSString *query = [path substringFromIndex:queryRange.location + 1];
-                    (void)query;
-                }
+            NSData *utf8Data = [rawRequest dataUsingEncoding:NSUTF8StringEncoding];
+            if (utf8Data) {
+                HttpRequest *utf8Request = [HttpRequest requestWithData:utf8Data];
+                (void)utf8Request;
             }
-
-            NSString *contentLength = [headers objectForKey:@"Content-Length"];
-            (void)contentLength;
-
-            HttpResponse *response = [[HttpResponse alloc] init];
-            response.statusCode = HttpStatusOK;
-            response.statusMessage = @"OK";
-            response.contentType = @"application/json";
-            NSData *responseData = [response serialize];
-            (void)responseData;
         }
 
-        NSString *partialRequest = [[NSString alloc] initWithBytes:data
-                                                            length:MIN(size, 50)
-                                                          encoding:NSUTF8StringEncoding];
-        if (partialRequest) {
-            HttpRequest *partial = [HttpRequest requestWithData:[partialRequest dataUsingEncoding:NSUTF8StringEncoding]];
-            (void)partial;
+        // Test 8: Malformed JSON body handling
+        if (body.length > 0) {
+            HttpRequest *jsonRequest = [[HttpRequest alloc] initWithMethod:method
+                                                              methodString:methodString
+                                                                    path:path
+                                                             queryString:queryString
+                                                              queryParams:queryParams
+                                                                  version:version
+                                                                  headers:headers
+                                                                     body:body];
+            (void)jsonRequest;
         }
+
+        // Test 9: Empty and minimal requests
+        NSData *emptyData = [NSData data];
+        HttpRequest *emptyRequest = [HttpRequest requestWithData:emptyData];
+        (void)emptyRequest;
+
+        NSData *minimalData = [@"GET / HTTP/1.1\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
+        HttpRequest *minimalRequest = [HttpRequest requestWithData:minimalData];
+        (void)minimalRequest;
+
+        // Test 10: Large body handling
+        if (size > 1000 && size < 50000) {
+            HttpRequest *largeRequest = [HttpRequest requestWithData:inputData];
+            if (largeRequest.body.length > 0) {
+                NSDictionary *largeJson = largeRequest.jsonBody;
+                (void)largeJson;
+            }
+        }
+
+        // Test 11: Various Content-Types
+        NSArray *contentTypes = @[
+            @"application/json",
+            @"application/cbor",
+            @"text/plain",
+            @"text/html",
+            @"application/x-www-form-urlencoded",
+            @"multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
+        ];
+
+        for (NSString *contentType in contentTypes) {
+            HttpResponse *typeResponse = [[HttpResponse alloc] init];
+            typeResponse.statusCode = HttpStatusOK;
+            typeResponse.contentType = contentType;
+            NSData *typeSerialized = [typeResponse serialize];
+            (void)typeSerialized;
+        }
+
+        // Test 12: Header injection attempts (should be sanitized)
+        NSString *injectionHeader = @"Header-Value\r\nInject: test\r\n";
+        HttpResponse *injectResponse = [[HttpResponse alloc] init];
+        injectResponse.statusCode = HttpStatusOK;
+        injectResponse.headers = [NSMutableDictionary dictionary];
+        [injectResponse.headers setValue:injectionHeader forKey:@"X-Custom"];
+        NSData *injectSerialized = [injectResponse serialize];
+        (void)injectSerialized;
 
         return 0;
     }
@@ -78,7 +189,7 @@ int main(int argc, char **argv) {
 
     FILE *f = fopen(argv[1], "rb");
     if (!f) {
-        fprintf(stderr, "Cannot open file: %s\n", argv[1]);
+        fprintf(stderr, "Cannot open file: %s\n", argv[0]);
         return 1;
     }
 

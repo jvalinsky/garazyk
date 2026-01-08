@@ -119,6 +119,37 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  */
 - (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error;
 
+/*!
+ @method executeParameterizedQuery:params:error:
+ 
+ @abstract Executes a SQL query with parameterized values.
+ 
+ @discussion This is the RECOMMENDED method for executing queries with user-provided
+ values. It uses SQLite parameter binding to prevent SQL injection attacks.
+ 
+ @param sql The SQL query with ? placeholders for parameters.
+ @param params An array of parameter values to bind to the query.
+ @param error On return, contains an error if the query failed.
+ @return An array of dictionaries representing query results, or nil on failure.
+ */
+- (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
+                                                params:(NSArray *)params
+                                                 error:(NSError **)error;
+
+/*!
+ @method executeParameterizedUpdate:params:error:
+ 
+ @abstract Executes a parameterized SQL statement (INSERT, UPDATE, DELETE).
+ 
+ @param sql The SQL statement with ? placeholders for parameters.
+ @param params An array of parameter values to bind to the statement.
+ @param error On return, contains an error if the statement failed.
+ @return YES if the statement executed successfully, NO otherwise.
+ */
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                            params:(NSArray *)params
+                             error:(NSError **)error;
+
 @end
 
 /*!
