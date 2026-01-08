@@ -1,0 +1,58 @@
+# ATProtoPDS Configuration File
+# All settings can be overridden via environment variables with PDS_ prefix
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 8080
+  data_dir: "./data"
+
+# PLC Directory Configuration
+# For local development, set plc_url to a local PLC server or use "mock" for testing
+plc:
+  # URL of the PLC directory server
+  # - Use "https://plc.directory" for production
+  # - Use "http://localhost:5002" for local PLC server
+  # - Use "mock" to skip actual PLC operations (generates stubbed DIDs)
+  url: "mock"
+
+  # Operation retry settings
+  retry_count: 3
+  retry_delay_ms: 1000
+
+# Debug Settings
+debug:
+  # When true, skips all PLC directory operations
+  # Generates did:plc: identifiers locally without registration
+  skip_plc_operations: true
+
+  # When true, logs verbose debug information
+  verbose_logging: true
+
+  # When true, uses in-memory SQLite databases (data not persisted)
+  in_memory_databases: false
+
+  # When true, resets databases on startup (useful for testing)
+  reset_on_startup: false
+
+# Database Settings
+database:
+  # Maximum number of user databases in pool
+  user_pool_max_size: 100
+
+  # Service database pool sizes
+  service_pool_max_size: 10
+  did_cache_pool_max_size: 1000
+  sequencer_pool_max_size: 100
+
+# Session Settings
+session:
+  access_token_ttl_seconds: 3600
+  refresh_token_ttl_seconds: 604800
+  invite_code_required: false
+
+# Rate Limiting
+rate_limit:
+  enabled: true
+  requests_per_minute: 1000
+  burst_size: 100

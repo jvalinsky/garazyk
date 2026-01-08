@@ -60,17 +60,18 @@
 - (void)testCreateDuplicateAccount {
     __autoreleasing NSError *error = nil;
     
-    [self.controller createAccountForEmail:@"dup@example.com" 
-                                  password:@"password" 
-                                   handle:@"dupuser.example.com" 
-                                       did:nil 
-                                      error:&error];
+    NSDictionary *first = [self.controller createAccountForEmail:@"dup@example.com" 
+                                                        password:@"password" 
+                                                         handle:@"dupuser.example.com" 
+                                                             did:@"did:plc:testduplicate123"
+                                                            error:&error];
+    XCTAssertNotNil(first, @"First account should succeed: %@", error);
     
     __autoreleasing NSError *dupError = nil;
     NSDictionary *duplicate = [self.controller createAccountForEmail:@"dup@example.com" 
                                                             password:@"password" 
                                                              handle:@"dupuser2.example.com" 
-                                                                 did:nil 
+                                                                 did:@"did:plc:testduplicate123"
                                                                 error:&dupError];
     
     XCTAssertNil(duplicate, @"Duplicate account should fail");
