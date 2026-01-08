@@ -291,7 +291,7 @@ NSString *const kDefaultPlcServerURL = @"http://localhost:2582";
         dispatch_semaphore_signal(semaphore);
     }];
     [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
 
     if (requestError) {
         if (error) *error = requestError;
