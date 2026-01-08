@@ -172,3 +172,63 @@ Crashes are written to `fuzzing/crashers/`. To triage:
 - `SECURITY_PLAN.md` - Comprehensive security strategy
 - `fuzzing/` - Fuzzing harnesses and corpus
 - `Makefile` - Build targets (search for "Security Targets")
+
+---
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration.
+
+### Workflows
+
+| Workflow | File | Purpose |
+|----------|------|---------|
+| **CI** | `.github/workflows/ci.yml` | Build, test, coverage, lint |
+| **Security** | `.github/workflows/security.yml` | Static analysis, fuzzing, dependency scan |
+| **Deploy Pages** | `.github/workflows/deploy-pages.yml` | Deploy docs to GitHub Pages |
+| **Cleanup** | `.github/workflows/cleanup-decision-graphs.yml` | Clean up PR assets |
+
+### CI Workflow Jobs
+
+| Job | Trigger | Purpose |
+|-----|---------|---------|
+| `build-and-test` | Every PR/push | Build project and run tests |
+| `coverage` | After build | Generate code coverage report |
+| `lint` | Every PR/push | Code formatting and linting |
+| `dependencies` | Every PR/push | Dependency verification |
+| `docs` | After build | Validate documentation builds |
+| `summary` | After all jobs | Create PR comment with results |
+
+### Running CI Locally
+
+```bash
+# Build project
+xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS build
+
+# Run tests
+"/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/AllTests"
+
+# Run static analysis
+make clang-tidy
+
+# Run fuzzers
+./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/
+./fuzzing/fuzz_cbor fuzzing/corpus_cbor/
+./fuzzing/fuzz_http fuzzing/corpus_http/
+```
+
+### CI Status
+
+View CI status at: **Actions** tab on GitHub
+
+- Green checkmark: All checks passed
+- Red X: Some checks failed
+- Yellow dot: Checks in progress
+
+### Quality Gates
+
+Before pushing, ensure:
+1. ✅ All tests pass (`./AllTests`)
+2. ✅ Project builds (`xcodebuild build`)
+3. ✅ No new clang-tidy errors
+4. ✅ Fuzzers still pass
