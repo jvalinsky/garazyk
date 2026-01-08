@@ -452,11 +452,15 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     record.createdAt = [NSDate date];
     
     __block BOOL success = NO;
+    __block NSError *blockError = nil;
     [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        __strong NSError **strongError = error;
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store putRecord:record forDid:did error:strongError];
-    } error:error];
+        success = [store putRecord:record forDid:did error:&blockError];
+    } error:nil];
+
+    if (error && blockError) {
+        *error = blockError;
+    }
     
     return success;
 }
@@ -469,11 +473,15 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     
     __block BOOL success = NO;
+    __block NSError *blockError = nil;
     [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        __strong NSError **strongError = error;
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteRecord:uri forDid:did error:strongError];
-    } error:error];
+        success = [store deleteRecord:uri forDid:did error:&blockError];
+    } error:nil];
+
+    if (error && blockError) {
+        *error = blockError;
+    }
     
     return success;
 }
