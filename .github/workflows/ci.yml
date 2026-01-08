@@ -113,19 +113,19 @@ jobs:
             "$TEST_BUNDLE" 2>&1
           else
             echo "Test bundle not found"
-            find ~/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -5 || true
-            exit 1
-          fi
+             find ~/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -5 || true
+             exit 1
+           fi
 
-   # ============================================================================
-   # JOB 2: Fuzzing
-   # ============================================================================
-   fuzzing:
-     name: Fuzzing
-     runs-on: macos-14
-     timeout-minutes: 45
+  # ============================================================================
+  # JOB 2: Fuzzing
+  # ============================================================================
+  fuzzing:
+    name: Fuzzing
+    runs-on: macos-14
+    timeout-minutes: 45
 
-     steps:
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -144,20 +144,20 @@ jobs:
           brew install xcodegen llvm@18
 
       - name: Cache Homebrew
-         uses: actions/cache@v4
-         with:
-           path: |
-             ~/Library/Caches/Homebrew
-             /usr/local/Cellar/xcodegen
-             /usr/local/Cellar/llvm
-           key: homebrew-fuzz-${{ runner.os }}-${{ hashFiles('Brewfile') }}
-           restore-keys: |
-             homebrew-fuzz-${{ runner.os }}-
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar/xcodegen
+            /usr/local/Cellar/llvm
+          key: homebrew-fuzz-${{ runner.os }}-${{ hashFiles('Brewfile') }}
+          restore-keys: |
+            homebrew-fuzz-${{ runner.os }}-
 
-       - name: Build Fuzzers
-         run: |
-           xcodegen generate
-           make fuzz-all 2>&1 | tail -15
+      - name: Build Fuzzers
+        run: |
+          xcodegen generate
+          make fuzz-all 2>&1 | tail -15
 
       - name: Run Fuzzers
         run: |
@@ -182,30 +182,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-       - name: Setup Xcode
-         uses: maxim-lobanov/setup-xcode@v1
-         with:
-           xcode-version: ${{ env.XCODE_VERSION }}
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
 
-       - name: Verify Xcode
-         run: |
-           xcodebuild -version
-           xcode-select -p
+      - name: Verify Xcode
+        run: |
+          xcodebuild -version
+          xcode-select -p
 
-       - name: Install Homebrew dependencies
-         run: |
-           brew install xcodegen llvm@18
+      - name: Install Homebrew dependencies
+        run: |
+          brew install xcodegen llvm@18
 
-       - name: Cache Homebrew
-         uses: actions/cache@v4
-         with:
-           path: |
-             ~/Library/Caches/Homebrew
-             /usr/local/Cellar/xcodegen
-             /usr/local/Cellar/llvm
-           key: homebrew-sec-${{ runner.os }}-${{ hashFiles('Brewfile') }}
-           restore-keys: |
-             homebrew-sec-${{ runner.os }}-
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar/xcodegen
+            /usr/local/Cellar/llvm
+          key: homebrew-sec-${{ runner.os }}-${{ hashFiles('Brewfile') }}
+          restore-keys: |
+            homebrew-sec-${{ runner.os }}-
 
       - name: Clang-Tidy
         run: |
