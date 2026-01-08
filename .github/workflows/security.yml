@@ -45,27 +45,27 @@ jobs:
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
-      - name: Verify Xcode
-        run: |
-          xcodebuild -version
-          xcode-select -p
+       - name: Verify Xcode
+         run: |
+           xcodebuild -version
+           xcode-select -p
 
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/xcodegen
-            /usr/local/Cellar/llvm
-          key: homebrew-sec-static-${{ runner.os }}-${{ hashFiles('Brewfile') }}
-          restore-keys: |
-            homebrew-sec-static-${{ runner.os }}-
+       - name: Cache Homebrew
+         uses: actions/cache@v4
+         with:
+           path: |
+             ~/Library/Caches/Homebrew
+             /usr/local/Cellar/xcodegen
+             /usr/local/Cellar/llvm
+           key: homebrew-sec-codeql-${{ runner.os }}-${{ hashFiles('Brewfile') }}
+           restore-keys: |
+             homebrew-sec-codeql-${{ runner.os }}-
 
-      - name: Install Homebrew dependencies
-        run: |
-          brew install xcodegen llvm@18
+       - name: Install Homebrew dependencies
+         run: |
+           brew install xcodegen llvm@18
 
-      - name: Cache XcodeGen
+       - name: Cache XcodeGen
         uses: actions/cache@v4
         with:
           path: /usr/local/bin/xcodegen
