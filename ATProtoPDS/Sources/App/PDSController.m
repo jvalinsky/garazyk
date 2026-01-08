@@ -279,9 +279,19 @@ NSString *const kDefaultPlcServerURL = @"http://localhost:2582";
     }
     request.HTTPBody = jsonData;
 
-    NSError *requestError = nil;
-    NSURLResponse *response = nil;
-    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&requestError];
+    __block NSError *requestError = nil;
+    __block NSURLResponse *response = nil;
+    __block NSData *responseData = nil;
+
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *urlResponse, NSError *error) {
+        responseData = data;
+        response = urlResponse;
+        requestError = error;
+        dispatch_semaphore_signal(semaphore);
+    }];
+    [task resume];
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 
     if (requestError) {
         if (error) *error = requestError;
