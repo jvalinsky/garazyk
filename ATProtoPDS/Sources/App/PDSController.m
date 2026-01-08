@@ -35,6 +35,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     BOOL _running;
 }
 
+- (id)database {
+    return nil;
+}
+
 + (instancetype)sharedController {
     static PDSController *shared = nil;
     static dispatch_once_t onceToken;
