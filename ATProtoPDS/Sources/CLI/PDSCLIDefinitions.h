@@ -28,12 +28,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
     PDSCLIExitCodeSuccess = 0,
+    PDSCLIExitCodeDatabaseError = 5,
     PDSCLIExitCodeGeneralError = 1,
     PDSCLIExitCodeInvalidArguments = 2,
+    PDSCLIExitCodeNetworkError = 6,
     PDSCLIExitCodeNotFound = 3,
-    PDSCLIExitCodeUnauthorized = 4,
-    PDSCLIExitCodeDatabaseError = 5,
-    PDSCLIExitCodeNetworkError = 6
+    PDSCLIExitCodeUnauthorized = 4
 };
 
 @class PDSCLICommandContext;
