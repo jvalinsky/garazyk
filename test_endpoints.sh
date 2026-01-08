@@ -161,7 +161,16 @@ test_create_record() {
 
     if echo "$response" | grep -q '"uri":' && echo "$response" | grep -q '"cid":'; then
         RECORD_URI=$(echo "$response" | grep -o '"uri":"[^"]*"' | cut -d'"' -f4)
+        RKEY=$(echo "$RECORD_URI" | sed 's/.*\///')
         pass "createRecord returned URI: $(echo "$RECORD_URI" | head -c 50)..."
+
+        if echo "$RKEY" | grep -qE '^[234567abcdefghijklmnopqrstuvwxyz]{13}$'; then
+            pass "Record key (rkey) format is valid TID: $RKEY"
+        elif echo "$RKEY" | grep -qE '^[a-z0-9]+-[a-z0-9]+$'; then
+            pass "Record key (rkey) format is valid: $RKEY"
+        else
+            fail "Record key (rkey) format is invalid: $RKEY (expected TID or dash-separated format)"
+        fi
     else
         fail "createRecord failed: $response"
     fi

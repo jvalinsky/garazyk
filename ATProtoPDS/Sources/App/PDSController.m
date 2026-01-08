@@ -709,17 +709,20 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                     collection:(NSString *)collection
                                        record:(NSDictionary *)record
                                         error:(NSError **)error {
-    NSString *rkey = [[NSUUID UUID] UUIDString];
+    NSString *rkey = [TID tid].stringValue;
     BOOL success = [self putRecord:collection
                               rkey:rkey
                              value:record
                             forDid:did
                              error:error];
     if (!success) return nil;
+
+    NSData *recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+    CID *cid = [CID sha256:recordData];
     
     return @{
         @"uri": [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey],
-        @"cid": [[NSUUID UUID] UUIDString]
+        @"cid": cid.stringValue ?: @"bafkreiplaceholder"
     };
 }
 
