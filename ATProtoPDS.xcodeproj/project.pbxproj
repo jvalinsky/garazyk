@@ -40,6 +40,7 @@
 		304F7B15C85FC94C5B29823D /* WebSocketServer.m in Sources */ = {isa = PBXBuildFile; fileRef = BA2B29A7692E12F9AD70BFEB /* WebSocketServer.m */; };
 		308620C30481F9FB81563533 /* KeyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = AB01192492D762E3EC4F8AA6 /* KeyManager.m */; };
 		310BA50E07461DA8CEA77A38 /* JWT.m in Sources */ = {isa = PBXBuildFile; fileRef = 6C95E779B2C5D8F15D5BCF1E /* JWT.m */; };
+		317EC89BC2FF9D32FD735C93 /* PDSConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 410376300C0583C121A36EFC /* PDSConfiguration.m */; };
 		343AD6C5D2496625A3AC5042 /* PDSCLIInviteCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D9D18510D973B64EF02C0C1 /* PDSCLIInviteCommand.m */; };
 		343C1E584C94F67A173BDE35 /* test_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 65C4CDB677A07DB3B3731FF6 /* test_main.m */; };
 		3621A385C6E1E285F9FDD6B1 /* WebSocketConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = B63B35112A4CBA3512F814E1 /* WebSocketConnection.m */; };
@@ -58,6 +59,7 @@
 		575F468A88930D0A5C56A971 /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
 		5BFD3F11787F9884FD188E61 /* XrpcHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C59F464C53BE5282B079E29 /* XrpcHandler.m */; };
 		5FAC6DC0A5B39440615A39FF /* HttpServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F52AE13C64F11ECDB98EF27 /* HttpServer.m */; };
+		627A4F87B22FEE7581C671EE /* PDSConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 410376300C0583C121A36EFC /* PDSConfiguration.m */; };
 		6343ECA8789C476D5C9BDFF3 /* MST.m in Sources */ = {isa = PBXBuildFile; fileRef = 84A333A035BF30955641E999 /* MST.m */; };
 		63FA2A8DA563C1C9294A752C /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
 		64F0A969C2A0F7A7C3CBDF46 /* PDSMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 0026557635DCF274E9A6B0E0 /* PDSMetrics.m */; };
@@ -172,8 +174,10 @@
 		3080CD0A1D2B5AA90C60BFBD /* MimeTypeValidator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MimeTypeValidator.m; sourceTree = "<group>"; };
 		35EB11F9969D0368DBB24A7F /* PDSCLIHealthCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSCLIHealthCommand.m; sourceTree = "<group>"; };
 		37D72DFE32BC4A2EB9D2B2F0 /* PDSMigrationManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSMigrationManager.m; sourceTree = "<group>"; };
+		385B42806650B638A805EE97 /* PDSConfiguration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PDSConfiguration.h; sourceTree = "<group>"; };
 		386A82FBAAD1F66F9A039AF9 /* XrpcMethodRegistry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XrpcMethodRegistry.m; sourceTree = "<group>"; };
 		3D879AD92B2BDD0640D9D741 /* Secp256k1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Secp256k1.h; sourceTree = "<group>"; };
+		410376300C0583C121A36EFC /* PDSConfiguration.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSConfiguration.m; sourceTree = "<group>"; };
 		41961595933508C3478CC310 /* secp256k1_wrapper_c.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = secp256k1_wrapper_c.h; sourceTree = "<group>"; };
 		49DF1450F13B26A68E3028CD /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		4A345C40F3ABBC4A7B07D2ED /* RelayClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RelayClient.h; sourceTree = "<group>"; };
@@ -594,6 +598,8 @@
 				124A97755B0DEC18C08F7F34 /* AppDelegate.h */,
 				F14D15D04D006413886EF66C /* AppDelegate.m */,
 				1C4E234D2CBED7F06914D6F7 /* main.m */,
+				385B42806650B638A805EE97 /* PDSConfiguration.h */,
+				410376300C0583C121A36EFC /* PDSConfiguration.m */,
 				F52121A09C764F8922F175BD /* PDSController.h */,
 				DC5DE3B23EED06E4B6AF9CFE /* PDSController.m */,
 				BBBE2D6267CCCCFB752B1F3B /* server_main.m.disabled */,
@@ -759,6 +765,7 @@
 				79E2D3A507A4AA045580026A /* PDSCLIHealthCommand.m in Sources */,
 				17EABD78F24EF905CA8E14D5 /* PDSCLIInviteCommand.m in Sources */,
 				6E8E9265F8670906ABB0BF04 /* PDSCLIServeCommand.m in Sources */,
+				627A4F87B22FEE7581C671EE /* PDSConfiguration.m in Sources */,
 				3643E153FA1193EF31CFE09F /* PDSController.m in Sources */,
 				7B27D0C64692AA782768F2C9 /* PDSDatabase.m in Sources */,
 				69C11860C06F4766D8A526FF /* PDSHealthCheck.m in Sources */,
@@ -828,6 +835,7 @@
 				80C9264F4BF3E27F38EF3D1C /* PDSCLIHealthCommand.m in Sources */,
 				343AD6C5D2496625A3AC5042 /* PDSCLIInviteCommand.m in Sources */,
 				B88CC361C9F7F945A30FCDE4 /* PDSCLIServeCommand.m in Sources */,
+				317EC89BC2FF9D32FD735C93 /* PDSConfiguration.m in Sources */,
 				6F75934CD4734D37CDBCDBC4 /* PDSController.m in Sources */,
 				49BCEDB86D2FD27489A228D2 /* PDSControllerTests.m in Sources */,
 				1EC8F7562E95715DBA35C5AB /* PDSDatabase.m in Sources */,
