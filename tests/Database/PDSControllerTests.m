@@ -149,14 +149,17 @@
 - (void)testDeleteAccount {
     __autoreleasing NSError *error = nil;
     
-    [self.controller createAccountForEmail:@"delete@example.com" 
-                                  password:@"password" 
-                                   handle:@"deleteuser.example.com" 
-                                       did:nil 
-                                      error:&error];
+    NSDictionary *result = [self.controller createAccountForEmail:@"delete@example.com" 
+                                                          password:@"password" 
+                                                           handle:@"deleteuser.example.com" 
+                                                               did:nil 
+                                                              error:&error];
+    XCTAssertNotNil(result, @"Account creation should succeed: %@", error);
+    NSString *actualDid = result[@"did"];
+    XCTAssertNotNil(actualDid, @"Account should have a DID");
     
     __autoreleasing NSError *deleteError = nil;
-    BOOL success = [self.controller deleteAccount:@"did:web:deleteuser.example.com" 
+    BOOL success = [self.controller deleteAccount:actualDid 
                                          password:@"password" 
                                             error:&deleteError];
     
@@ -166,14 +169,17 @@
 - (void)testDeleteAccountWrongPassword {
     __autoreleasing NSError *error = nil;
     
-    [self.controller createAccountForEmail:@"deletewrong@example.com" 
-                                  password:@"correctpassword" 
-                                   handle:@"deletewrong.example.com" 
-                                       did:nil 
-                                      error:&error];
+    NSDictionary *result = [self.controller createAccountForEmail:@"deletewrong@example.com" 
+                                                          password:@"correctpassword" 
+                                                           handle:@"deletewrong.example.com" 
+                                                               did:nil 
+                                                              error:&error];
+    XCTAssertNotNil(result, @"Account creation should succeed: %@", error);
+    NSString *actualDid = result[@"did"];
+    XCTAssertNotNil(actualDid, @"Account should have a DID");
     
     __autoreleasing NSError *deleteError = nil;
-    BOOL success = [self.controller deleteAccount:@"did:web:deletewrong.example.com" 
+    BOOL success = [self.controller deleteAccount:actualDid 
                                          password:@"wrongpassword" 
                                             error:&deleteError];
     

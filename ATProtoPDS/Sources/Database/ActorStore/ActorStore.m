@@ -409,13 +409,30 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
     [self finalizeStatement:stmt];
-    
-    if (!success && error) {
-        *error = [self errorWithSQLiteResult:sqlite3_extended_errcode(self.db) 
-                                     message:@"Failed to insert account"];
+
+    if (!success) {
+        int sqliteCode = sqlite3_extended_errcode(self.db);
+        if (error) {
+            BOOL isConstraintViolation = (sqliteCode == SQLITE_CONSTRAINT_UNIQUE ||
+                                          sqliteCode == SQLITE_CONSTRAINT_PRIMARYKEY ||
+                                          sqliteCode == SQLITE_CONSTRAINT_FOREIGNKEY ||
+                                          sqliteCode == SQLITE_CONSTRAINT_CHECK ||
+                                          sqliteCode == SQLITE_CONSTRAINT_NOTNULL);
+            if (isConstraintViolation) {
+                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                            code:PDSActorStoreErrorAlreadyExists
+                                        userInfo:@{NSLocalizedDescriptionKey: @"Account already exists",
+                                                 @"sqlite_code": @(sqliteCode),
+                                                 @"sqlite_message": [NSString stringWithUTF8String:sqlite3_errmsg(self.db)] ?: @""}];
+            } else {
+                *error = [self errorWithSQLiteResult:sqliteCode
+                                             message:@"Failed to insert account"];
+            }
+        }
+        return NO;
     }
-    
-    return success;
+
+    return YES;
 }
 
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
