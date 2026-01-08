@@ -18,9 +18,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v5
+        uses: maxim-lobanov/setup-xcode@v4
         with:
           xcode-version: '15.4'
+
+      - name: Verify Xcode
+        run: |
+          xcodebuild -version
+          xcode-select -p
 
       - name: Generate project
         run: xcodegen generate
@@ -80,9 +85,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v5
+        uses: maxim-lobanov/setup-xcode@v4
         with:
           xcode-version: '15.4'
+
+      - name: Verify Xcode
+        run: |
+          xcodebuild -version
+          xcode-select -p
 
       - name: Build Fuzzers
         run: |
@@ -110,9 +120,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v5
+        uses: maxim-lobanov/setup-xcode@v4
         with:
           xcode-version: '15.4'
+
+      - name: Verify Xcode
+        run: |
+          xcodebuild -version
+          xcode-select -p
 
       - name: Clang-Tidy
         run: make clang-tidy 2>&1 | tail -20 || true
