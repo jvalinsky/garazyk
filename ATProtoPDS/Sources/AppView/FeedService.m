@@ -1,6 +1,7 @@
 #import "AppView/FeedService.h"
 #import "Database/PDSDatabase.h"
 #import "AppView/ActorService.h"
+#import "Core/TID.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @interface FeedService ()
@@ -488,7 +489,7 @@
         }
         return hashString;
     }
-    return [[NSUUID UUID].UUIDString substringToIndex:16];
+    return [TID tid].stringValue;
 }
 
 @end
