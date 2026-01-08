@@ -7,11 +7,26 @@ build/
 atproto/
 pegasus-ocaml/
 cocoon/
+deciduous/
+indigo/
+
+# Worktrees
+oauth-worktree/
+sqlite-worktree/
+websocket-worktree/
 
 # Database files
 data/*.db
 data/*.db-shm
 data/*.db-wal
+test_streaming.db*
+*.db
+*.db-shm
+*.db-wal
+
+# Log files
+*.log
+server.log
 
 # macOS
 .DS_Store
