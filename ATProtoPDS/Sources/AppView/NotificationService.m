@@ -175,10 +175,16 @@
 
     NSMutableString *query = [NSMutableString stringWithString:@"UPDATE notifications SET is_read = 1 WHERE did = ? AND is_read = 0"];
     if (limit > 0) {
-        [query appendFormat:@" AND id IN (SELECT id FROM notifications WHERE did = '%@' ORDER BY id DESC LIMIT %ld)", actorDID, (long)limit];
+        [query appendString:@" AND id IN (SELECT id FROM notifications WHERE did = ? ORDER BY id DESC LIMIT ?)"];
     }
 
-    BOOL success = [self.database executeRawSQL:query error:error];
+    NSMutableArray *args = [NSMutableArray arrayWithObject:actorDID];
+    if (limit > 0) {
+        [args addObject:actorDID];
+        [args addObject:@(limit)];
+    }
+
+    BOOL success = [self.database executeParameterizedQuery:query params:args error:error];
 
     if (!success && error) {
         *error = [NSError errorWithDomain:@"NotificationService" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Failed to mark notifications as read"}];
