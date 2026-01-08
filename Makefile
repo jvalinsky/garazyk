@@ -1,15 +1,17 @@
 .PHONY: all clean build test run test-blob test-unit help
 
 CC = clang
-CFLAGS = -framework Foundation -framework Network -framework Security -lsqlite3 -fobjc-arc
+CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -fobjc-arc
 CFLAGS += -I/Users/jack/Software/objpds/secp256k1/include
 CFLAGS += -IATProtoPDS/Sources
-LDFLAGS = -L/Users/jack/Software/objpds/secp256k1/build/lib -lsecp256k1
+LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -L/Users/jack/Software/objpds/secp256k1/build/lib -lsecp256k1
 BUILD_DIR = build
 EXECUTABLE = atprotopds
 
 SOURCES = $(wildcard ATProtoPDS/Sources/**/*.m)
-OBJECTS = $(patsubst ATProtoPDS/Sources/%.m,$(BUILD_DIR)/%.o,$(SOURCES))
+C_SOURCES = ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
+OBJECTS = $(patsubst ATProtoPDS/Sources/%.m,$(BUILD_DIR)/%.o,$(filter-out ATProtoPDS/Sources/App/main.m ATProtoPDS/Sources/App/server_main.m ATProtoPDS/Sources/App/test_runner.m ATProtoPDS/Sources/Network/RateLimiterTests.m ATProtoPDS/Sources/CLI/main.m,$(SOURCES)))
+C_OBJECTS = $(patsubst ATProtoPDS/Sources/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
 
 all: $(BUILD_DIR)/$(EXECUTABLE)
 
@@ -34,9 +36,12 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.m | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) ATProtoPDS/Sources/App/server_main.m
-	$(CC) $(CFLAGS) $(OBJECTS) -c ATProtoPDS/Sources/App/server_main.m -o $(BUILD_DIR)/server_main.o
-	$(CC) $(CFLAGS) $(OBJECTS) $(BUILD_DIR)/server_main.o $(LDFLAGS) -o $@
+$(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) $(C_OBJECTS) ATProtoPDS/Sources/App/server_main.m
+	$(CC) $(CFLAGS) $(OBJECTS) $(C_OBJECTS) -c ATProtoPDS/Sources/App/server_main.m -o $(BUILD_DIR)/server_main.o
+	$(CC) $(CFLAGS) $(OBJECTS) $(C_OBJECTS) $(BUILD_DIR)/server_main.o $(LDFLAGS) -o $@
 
 clean:
 	rm -rf build
