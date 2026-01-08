@@ -99,29 +99,46 @@ clang-tidy -p . --config-file=.clang-tidy ATProtoPDS/Sources/Repository/CBOR.m
 
 ### GitHub Actions Security Workflow
 
-Create `.github/workflows/security.yml`:
+A comprehensive security testing workflow runs automatically:
 
 ```yaml
+# .github/workflows/security.yml
 name: Security Testing
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+    inputs:
+      fuzzing_duration:
+        description: 'Fuzzing duration in minutes'
+        default: '30'
 
 jobs:
-  security:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build
-        run: make build
-      - name: Clang-Tidy
-        run: make clang-tidy
-      - name: Fuzzers
-        run: |
-          make fuzz-xrpc
-          make fuzz-cbor
-          make fuzz-http
-      - name: Run Fuzzers
-        run: make run-fuzzers
+  static-analysis:    # Clang-tidy
+  codeql-analysis:    # GitHub CodeQL
+  fuzzing:            # libFuzzer with corpus
+  dependency-check:   # OSV Scanner
+  secret-scanning:    # TruffleHog
+  security-report:    # Combined report
 ```
+
+**Features:**
+- Automatic execution on push/PR/schedule
+- Configurable fuzzing duration
+- CodeQL security analysis
+- Dependency vulnerability scanning
+- Secret detection
+- Sanitizer build verification
+- Comprehensive security report
+
+**View Results:**
+- GitHub Security tab → Vulnerability alerts
+- Artifacts attached to workflow runs
+- SECURITY_REPORT.md in workflow artifacts
 
 ### Adding Fuzzing Corpus
 
