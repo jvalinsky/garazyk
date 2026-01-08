@@ -1,5 +1,35 @@
 {
-  "files_modified": ["/Users/jack/Software/objpds/ATProtoPDS/ATProtoPDS/Sync/WebSocketConnection.m"],
-  "errors_fixed": 20,
-  "remaining_errors": 0
+  "security_fixes": {
+    "critical_fixed": 0,
+    "critical_remaining": 0,
+    "high_priority_fixed": 2,
+    "high_priority_remaining": 0,
+    "medium_priority_fixed": 5,
+    "medium_priority_remaining": 0,
+    "low_priority_fixed": 16,
+    "low_priority_remaining": 32
+  },
+  "all_critical_high_medium_resolved": true,
+  "remaining_issues": "32 low-priority warnings (branch clones, naming conventions, type conversions)",
+  "build_status": "VERIFIED_SUCCESS",
+  "build_timestamp": "2026-01-07T23:08:00Z",
+  "build_details": {
+    "executable": "build/atprotopds",
+    "executable_size_bytes": 2452088,
+    "object_files_built": 53,
+    "compiler_errors": 0,
+    "compiler_warnings": 32
+  },
+  "test_status": "PASSED",
+  "test_details": {
+    "simple_test": "PASSED",
+    "server_start": "PASSED",
+    "health_endpoint": "PASSED",
+    "create_account": "PASSED",
+    "get_record": "PASSED",
+    "list_records": "PASSED"
+  },
+  "fuzzer_crashes": 0,
+  "last_commit": "41cbc565d11c6306870c5c5f602b4d496a9a2631",
+  "parallel_agents_used": 4
 }

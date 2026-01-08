@@ -40,14 +40,15 @@
 
 + (NSString *)encodeTimestamp:(uint64_t)timestamp {
     uint64_t remaining = timestamp;
-    char buffer[13];
-    
+    char buffer[14];
+
     for (int i = 12; i >= 0; i--) {
         uint32_t index = remaining % 32;
         buffer[i] = kTIDBase32Alphabet[index];
         remaining /= 32;
     }
-    
+    buffer[13] = '\0';
+
     return [NSString stringWithUTF8String:buffer];
 }
 
