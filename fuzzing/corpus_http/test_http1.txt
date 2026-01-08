@@ -1,0 +1,5 @@
+POST /xrpc/com.atproto.server.createSession HTTP/1.1
+Host: localhost
+Content-Type: application/json
+
+{"identifier":"test","password":"test"}

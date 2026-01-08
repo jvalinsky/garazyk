@@ -1,4 +1,4 @@
-.PHONY: all clean build test run test-blob test-unit help
+.PHONY: all clean build test run test-blob test-unit help clang-tidy scan-build fuzz-asan fuzz-ubsan fuzz-tsan fuzz-all fuzz-xrpc fuzz-cbor fuzz-http run-fuzzers
 
 CC = clang
 CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -fobjc-arc
@@ -116,6 +116,18 @@ help:
 	@echo "  clean               - Remove build artifacts"
 	@echo "  help                - Show this help message"
 	@echo ""
+	@echo "Security Targets:"
+	@echo "  clang-tidy          - Run clang-tidy static analysis"
+	@echo "  scan-build         - Run Clang Static Analyzer"
+	@echo "  fuzz-asan          - Build with AddressSanitizer"
+	@echo "  fuzz-ubsan         - Build with UndefinedBehaviorSanitizer"
+	@echo "  fuzz-tsan          - Build with ThreadSanitizer"
+	@echo "  fuzz-all           - Build with all sanitizers"
+	@echo "  fuzz-xrpc          - Build XRPC fuzzer"
+	@echo "  fuzz-cbor          - Build CBOR/CAR fuzzer"
+	@echo "  fuzz-http          - Build HTTP parser fuzzer"
+	@echo "  run-fuzzers        - Run all fuzzers"
+	@echo ""
 	@echo "Test Files:"
 	@echo "  blob_storage_tests      - Blob storage operations"
 	@echo "  did_resolver_tests      - DID resolution and caching"
@@ -124,3 +136,67 @@ help:
 	@echo "  pds_integration_tests   - Full PDS workflow integration"
 	@echo ""
 	@echo "Build artifacts are stored in: $(BUILD_DIR)/"
+
+# Security Analysis Targets
+
+clang-tidy: build
+	@echo "Running clang-tidy static analysis..."
+	@find ATProtoPDS/Sources -name "*.m" -o -name "*.c" | head -20 | xargs -I{} clang-tidy -p . --config-file=.clang-tidy {} 2>&1 | grep -E "(warning|error)" | head -50 || true
+	@echo "Clang-tidy analysis complete"
+
+scan-build:
+	@echo "Running Clang Static Analyzer (scan-build)..."
+	@scan-build --use-cc=$(CC) make clean build 2>&1 | tail -50 || true
+	@echo "Static analysis complete"
+
+# Sanitizer Build Targets
+
+FUZZ_CFLAGS = $(CFLAGS) -g -O1 -fno-omit-frame-pointer
+FUZZ_LDFLAGS = $(LDFLAGS)
+FUZZ_CC = clang++
+
+fuzz-asan: FUZZ_CFLAGS += -fsanitize=address
+fuzz-asan: FUZZ_LDFLAGS += -fsanitize=address
+fuzz-asan: build
+
+fuzz-ubsan: FUZZ_CFLAGS += -fsanitize=undefined
+fuzz-ubsan: FUZZ_LDFLAGS += -fsanitize=undefined
+fuzz-ubsan: build
+
+fuzz-tsan: FUZZ_CFLAGS += -fsanitize=thread
+fuzz-tsan: FUZZ_LDFLAGS += -fsanitize=thread
+fuzz-tsan: build
+
+fuzz-all: FUZZ_CFLAGS += -fsanitize=address,undefined,thread
+fuzz-all: FUZZ_LDFLAGS += -fsanitize=address,undefined,thread
+fuzz-all: build
+
+# Fuzzer Build Targets
+
+fuzz-xrpc: fuzzing/fuzz_xrpc.mm $(OBJECTS) $(C_OBJECTS)
+	@echo "Building XRPC fuzzer..."
+	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_xrpc.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_xrpc
+	@echo "XRPC fuzzer built: fuzzing/fuzz_xrpc"
+
+fuzz-cbor: fuzzing/fuzz_cbor.mm $(OBJECTS) $(C_OBJECTS)
+	@echo "Building CBOR/CAR fuzzer..."
+	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_cbor.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_cbor
+	@echo "CBOR/CAR fuzzer built: fuzzing/fuzz_cbor"
+
+fuzz-http: fuzzing/fuzz_http.mm $(OBJECTS) $(C_OBJECTS)
+	@echo "Building HTTP parser fuzzer..."
+	$(FUZZ_CC) $(FUZZ_CFLAGS) fuzzing/fuzz_http.mm $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(C_OBJECTS) $(FUZZ_LDFLAGS) -o fuzzing/fuzz_http
+	@echo "HTTP parser fuzzer built: fuzzing/fuzz_http"
+
+# Run Fuzzers Target
+
+run-fuzzers: fuzz-xrpc fuzz-cbor fuzz-http
+	@echo "Running fuzzers with corpus..."
+	@echo "Note: Fuzzers will run until Ctrl+C. For limited runs, use:"
+	@echo "  ./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=10000"
+	@echo "  ./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=10000"
+	@echo "  ./fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=10000"
+	@./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=1000 || true
+	@./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=1000 || true
+	@./fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=1000 || true
+	@echo "Fuzzing session complete. Check fuzzing/crashers/ for any crashes."
