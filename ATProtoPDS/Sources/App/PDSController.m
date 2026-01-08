@@ -196,8 +196,33 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
     NSError *createError = nil;
     if (![_serviceDatabases createAccount:account error:&createError]) {
-        if (error) *error = createError;
+        if (error) {
+            if ([createError.domain isEqualToString:PDSActorStoreErrorDomain] &&
+                createError.code == PDSActorStoreErrorAlreadyExists) {
+                *error = [NSError errorWithDomain:PDSControllerErrorDomain
+                                             code:PDSControllerErrorAccountAlreadyExists
+                                         userInfo:@{NSLocalizedDescriptionKey: createError.localizedDescription ?: @"Account already exists"}];
+            } else {
+                *error = createError;
+            }
+        }
         return nil;
+    }
+
+    NSString *accessToken = [[NSUUID UUID] UUIDString];
+    NSString *refreshToken = [[NSUUID UUID] UUIDString];
+
+    account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
+    account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
+    [_serviceDatabases updateAccount:account error:nil];
+    [_serviceDatabases storeRefreshToken:refreshToken forAccount:resolvedDid error:nil];
+
+    if (debugMode) {
+        os_log_info(_log, "[DEBUG] Created account with mock DID: %{public}@", resolvedDid);
+    }
+
+    if (debugMode) {
+        os_log_info(_log, "[DEBUG] Created account with mock DID: %{public}@", resolvedDid);
     }
 
     MST *repo = [[MST alloc] init];
@@ -218,17 +243,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         PDSActorStore *store = (PDSActorStore *)transactor;
         [store createRepo:repoInfo error:nil];
     } error:nil];
-
-    NSString *accessToken = [[NSUUID UUID] UUIDString];
-    NSString *refreshToken = [[NSUUID UUID] UUIDString];
-
-    account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
-    account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
-
-    if (debugMode) {
-        os_log_info(_log, "[DEBUG] Created account with mock DID: %{public}@", resolvedDid);
-    }
 
     return @{
         @"did": resolvedDid,
@@ -278,6 +292,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_serviceDatabases updateAccount:account error:nil];
+    [_serviceDatabases storeRefreshToken:refreshToken forAccount:account.did error:nil];
     
     return @{
         @"did": account.did,
@@ -301,11 +316,16 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }
     
     NSString *newAccessToken = [[NSUUID UUID] UUIDString];
+    NSString *newRefreshToken = [[NSUUID UUID] UUIDString];
+    
     account.accessJwt = [newAccessToken dataUsingEncoding:NSUTF8StringEncoding];
+    account.refreshJwt = [newRefreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_serviceDatabases updateAccount:account error:nil];
+    [_serviceDatabases storeRefreshToken:newRefreshToken forAccount:account.did error:nil];
     
     return @{
         @"accessJwt": newAccessToken,
+        @"refreshJwt": newRefreshToken,
     };
 }
 

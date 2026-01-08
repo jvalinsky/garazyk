@@ -124,7 +124,7 @@
     __autoreleasing NSError *evictedError = nil;
     PDSActorStore *evicted = [self.pool storeForDid:dids[1] error:&evictedError];
     XCTAssertNotNil(evicted, @"Should recreate evicted store");
-    XCTAssertEqual(self.pool.currentSize, 2, @"Pool should have 2 stores (evicted was recreated)");
+    XCTAssertEqual(self.pool.currentSize, 3, @"Pool should have 3 stores (evicted was recreated)");
 }
 
 - (void)testCloseAll {

@@ -30,6 +30,9 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
 
+- (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error;
+- (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error;
+
 - (BOOL)createInviteCode:(NSString *)code 
               forAccount:(NSString *)accountDid
               maxUses:(NSInteger)maxUses
