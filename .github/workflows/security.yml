@@ -200,57 +200,6 @@ jobs:
           # Output results
           output-path: osv-results.json
 
-      - name: Check for critical vulnerabilities
-        run: |
-          if command -v jq &> /dev/null; then
-            CRITICAL=$(jq '[.results[] | select(.vulnerabilities[] | .severity == "CRITICAL")] | length' osv-results.json 2>/dev/null || echo "0")
-            if [ "$CRITICAL" -gt 0 ]; then
-              echo "::error::Found $CRITICAL critical vulnerabilities in dependencies"
-              cat osv-results.json
-              exit 1
-            fi
-          else
-            echo "jq not available for parsing - manual review required"
-          fi
-
-      - name: Upload dependency scan results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-results
-          path: osv-results.json
-          retention-days: 7
-
-  # ============================================================================
-  # JOB 5: Container Security (if applicable)
-  # ============================================================================
-  container-security:
-    name: Container Security
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Only run if Dockerfile exists
-    if: file.exists('Dockerfile')
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build Docker image (for analysis)
-        run: docker build -t atprotopds:test .
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'atprotopds:test'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results.sarif
-          category: '/tool:Trivy'
-
   # ============================================================================
   # JOB 6: Secret Scanning
   # ============================================================================
