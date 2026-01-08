@@ -9,6 +9,7 @@ BUILD_DIR = build
 EXECUTABLE = atprotopds
 
 SOURCES = $(wildcard ATProtoPDS/Sources/**/*.m)
+TEST_SOURCES = $(wildcard ATProtoPDS/Tests/**/*.m)
 C_SOURCES = ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
 OBJECTS = $(patsubst ATProtoPDS/Sources/%.m,$(BUILD_DIR)/%.o,$(filter-out ATProtoPDS/Sources/App/main.m ATProtoPDS/Sources/App/server_main.m ATProtoPDS/Sources/App/test_runner.m ATProtoPDS/Sources/Network/RateLimiterTests.m ATProtoPDS/Sources/CLI/main.m,$(SOURCES)))
 C_OBJECTS = $(patsubst ATProtoPDS/Sources/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
@@ -32,11 +33,24 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)/App
 	mkdir -p $(BUILD_DIR)/Identity
 	mkdir -p $(BUILD_DIR)/Federation
+	mkdir -p $(BUILD_DIR)/Tests
+	mkdir -p $(BUILD_DIR)/Tests/Blob
+	mkdir -p $(BUILD_DIR)/Tests/Network
+	mkdir -p $(BUILD_DIR)/Tests/Integration
+	mkdir -p $(BUILD_DIR)/Tests/Identity
+	mkdir -p $(BUILD_DIR)/Tests/Core
 
-$(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.m | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.m
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: ATProtoPDS/Sources/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Rule for building test object files
+$(BUILD_DIR)/Tests/%.o: ATProtoPDS/Tests/%.m
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/$(EXECUTABLE): $(OBJECTS) $(C_OBJECTS) ATProtoPDS/Sources/App/server_main.m

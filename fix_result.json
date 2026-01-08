@@ -12,7 +12,7 @@
   "all_critical_high_medium_resolved": true,
   "remaining_issues": "32 low-priority warnings (branch clones, naming conventions, type conversions)",
   "build_status": "VERIFIED_SUCCESS",
-  "build_timestamp": "2026-01-07T23:08:00Z",
+  "build_timestamp": "2026-01-07T23:13:00Z",
   "build_details": {
     "executable": "build/atprotopds",
     "executable_size_bytes": 2452088,
@@ -20,16 +20,20 @@
     "compiler_errors": 0,
     "compiler_warnings": 32
   },
-  "test_status": "PASSED",
+  "test_status": "ALL_PASSED",
   "test_details": {
-    "simple_test": "PASSED",
     "server_start": "PASSED",
     "health_endpoint": "PASSED",
     "create_account": "PASSED",
+    "create_record": "PASSED",
     "get_record": "PASSED",
     "list_records": "PASSED"
   },
+  "bug_fixes": {
+    "TID_encoding": "Fixed null-terminator in encodeTimestamp for stringWithUTF8String:",
+    "test_record_type": "Added required $type field to test record"
+  },
   "fuzzer_crashes": 0,
-  "last_commit": "41cbc565d11c6306870c5c5f602b4d496a9a2631",
+  "last_commit": "c7cad1ede174338f48ca43d674b306cba3fabc81",
   "parallel_agents_used": 4
 }
