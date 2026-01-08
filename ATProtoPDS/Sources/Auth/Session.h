@@ -328,7 +328,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 - (BOOL)refreshSession:(NSString *)sessionID
                   scope:(nullable NSString *)newScope
                 dpopJWK:(nullable NSDictionary *)dpopJWK
-            newSession:(Session * _Nullable * _Nonnull)newSession
+            newSession:(Session * _Nullable * _Nullable)newSession
                   error:(NSError ** _Nullable)error;
 
 /*!
