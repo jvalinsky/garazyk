@@ -164,7 +164,28 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
-    return [self.servicePool getAccount:did error:error];
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
+    if (!store) {
+        return nil;
+    }
+
+    NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
+    __autoreleasing NSError *stmtError = nil;
+    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+
+    PDSDatabaseAccount *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [store accountFromStatement:stmt];
+    }
+
+    [store finalizeStatement:stmt];
+    return account;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
@@ -182,7 +203,6 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 
     NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
     __autoreleasing NSError *stmtError = nil;
-    NSLog(@"[DEBUG] Looking up account by handle: %@", handle);
     sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
     if (!stmt) {
         if (error) *error = stmtError;
@@ -249,6 +269,60 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         success = [store deleteAccount:did error:error];
+        
+        if (success) {
+            NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
+            __autoreleasing NSError *cleanupError = nil;
+            sqlite3_stmt *stmt = [store prepareStatement:sql error:&cleanupError];
+            if (stmt) {
+                sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+                sqlite3_step(stmt);
+                [store finalizeStatement:stmt];
+            }
+        }
+    } error:error];
+    
+    return success;
+}
+
+#pragma mark - Refresh Token Operations
+
+- (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error {
+    __block BOOL success = NO;
+    
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        
+        NSString *sql = @"INSERT OR REPLACE INTO refresh_tokens (token, account_did, created_at, expires_at) "
+                        @"VALUES (?, ?, ?, ?)";
+        sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
+        if (!stmt) { success = NO; return; }
+        
+        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
+        sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:30 * 24 * 60 * 60] timeIntervalSince1970]);
+        
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        [store finalizeStatement:stmt];
+    } error:error];
+    
+    return success;
+}
+
+- (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error {
+    __block BOOL success = NO;
+    
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        
+        NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
+        sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
+        if (!stmt) { success = NO; return; }
+        
+        sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        [store finalizeStatement:stmt];
     } error:error];
     
     return success;
