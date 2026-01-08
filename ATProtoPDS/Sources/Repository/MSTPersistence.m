@@ -35,9 +35,18 @@
 }
 
 - (BOOL)saveMST:(MST *)mst forDid:(NSString *)did error:(NSError **)error {
-    // In the reference implementation, MST data is saved to blockstore
-    // and only the root CID is stored in the database (handled by controller).
-    // No additional MST metadata needs to be saved here.
+    return YES;
+}
+
+- (BOOL)saveMSTNode:(MSTNode *)node withCID:(CID *)cid forDid:(NSString *)did error:(NSError **)error {
+    return YES;
+}
+
+- (nullable MSTNode *)loadMSTNodeWithCID:(CID *)cid forDid:(NSString *)did error:(NSError **)error {
+    return [[MSTNode alloc] init];
+}
+
+- (BOOL)deleteMSTForDid:(NSString *)did error:(NSError **)error {
     return YES;
 }
 

@@ -1135,6 +1135,41 @@ static NSDateFormatter * _iso8601Formatter(void) {
     return YES;
 }
 
+- (NSArray<PDSDatabaseRecord *> *)getRecordsForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error {
+    NSMutableString *sql = [NSMutableString stringWithString:@"SELECT * FROM records WHERE did = ?"];
+    NSMutableArray *params = [NSMutableArray arrayWithObject:did];
+
+    if (collection.length > 0) {
+        [sql appendString:@" AND collection = ?"];
+        [params addObject:collection];
+    }
+
+    [sql appendString:@" ORDER BY created_at DESC"];
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return @[];
+    }
+
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
+    if (collection.length > 0) {
+        sqlite3_bind_text(stmt, 2, collection.UTF8String, -1, SQLITE_STATIC);
+    }
+
+    NSMutableArray *records = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseRecord *record = [self recordFromStatement:stmt];
+        if (record) {
+            [records addObject:record];
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return records;
+}
+
 @end
 
 #pragma mark - PDSDatabaseAccount
