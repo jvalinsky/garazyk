@@ -606,36 +606,11 @@
     if (additional < 24) {
         count = additional;
     } else {
-        NSUInteger bytesToRead = 0;
-        switch (additional) {
-            case 24: bytesToRead = 1; break;
-            case 25: bytesToRead = 2; break;
-            case 26: bytesToRead = 4; break;
-            default: return nil;
-        }
-
-        if (*offset + bytesToRead > data.length) {
+        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) {
             return nil;
         }
-
-        const uint8_t *bytes = data.bytes;
-        switch (bytesToRead) {
-            case 1:
-                count = bytes[*offset];
-                break;
-            case 2: {
-                uint16_t be;
-                memcpy(&be, bytes + *offset, 2);
-                count = OSSwapBigToHostInt16(be);
-                break;
-            }
-            case 4: {
-                uint32_t be;
-                memcpy(&be, bytes + *offset, 4);
-                count = OSSwapBigToHostInt32(be);
-                break;
-            }
-        }
+        count = [self readCountFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
 
@@ -657,36 +632,11 @@
     if (additional < 24) {
         count = additional;
     } else {
-        NSUInteger bytesToRead = 0;
-        switch (additional) {
-            case 24: bytesToRead = 1; break;
-            case 25: bytesToRead = 2; break;
-            case 26: bytesToRead = 4; break;
-            default: return nil;
-        }
-
-        if (*offset + bytesToRead > data.length) {
+        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) {
             return nil;
         }
-
-        const uint8_t *bytes = data.bytes;
-        switch (bytesToRead) {
-            case 1:
-                count = bytes[*offset];
-                break;
-            case 2: {
-                uint16_t be;
-                memcpy(&be, bytes + *offset, 2);
-                count = OSSwapBigToHostInt16(be);
-                break;
-            }
-            case 4: {
-                uint32_t be;
-                memcpy(&be, bytes + *offset, 4);
-                count = OSSwapBigToHostInt32(be);
-                break;
-            }
-        }
+        count = [self readCountFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
 
@@ -772,6 +722,35 @@
     }
 
     return nil;
+}
+
++ (NSUInteger)bytesToReadForAdditional:(uint8_t)additional {
+    switch (additional) {
+        case 24: return 1;
+        case 25: return 2;
+        case 26: return 4;
+        default: return 0;
+    }
+}
+
++ (NSUInteger)readCountFromData:(NSData *)data offset:(NSUInteger *)offset bytesToRead:(NSUInteger)bytesToRead {
+    const uint8_t *bytes = data.bytes;
+    switch (bytesToRead) {
+        case 1:
+            return bytes[*offset];
+        case 2: {
+            uint16_t be;
+            memcpy(&be, bytes + *offset, 2);
+            return OSSwapBigToHostInt16(be);
+        }
+        case 4: {
+            uint32_t be;
+            memcpy(&be, bytes + *offset, 4);
+            return OSSwapBigToHostInt32(be);
+        }
+        default:
+            return 0;
+    }
 }
 
 @end
