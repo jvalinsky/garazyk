@@ -110,19 +110,19 @@ jobs:
           xcodebuild -version
           xcode-select -p
 
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-codeql-${{ runner.os }}-${{ env.XCODE_VERSION }}
+       - name: Cache XcodeGen
+         uses: actions/cache@v4
+         with:
+           path: /usr/local/bin/xcodegen
+           key: xcodegen-codeql-${{ runner.os }}-${{ env.XCODE_VERSION }}
 
-      - name: Setup CodeQL
-        uses: github/codeql-action/init@v3
+       - name: Setup CodeQL
+         uses: github/codeql-action/init@v3
          with:
            languages: objective-c
            queries: security-extended
 
-      - name: Generate project
+       - name: Generate project
         run: xcodegen generate
 
       - name: Build project
