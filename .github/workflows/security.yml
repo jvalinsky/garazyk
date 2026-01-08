@@ -118,9 +118,9 @@ jobs:
 
       - name: Setup CodeQL
         uses: github/codeql-action/init@v3
-        with:
-          languages: objective-c-cpp
-          queries: security-extended
+         with:
+           languages: objective-c
+           queries: security-extended
 
       - name: Generate project
         run: xcodegen generate
@@ -249,7 +249,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v1
+        uses: google/osv-scanner-action@v1.7.4
         with:
           lockfile: >
             package.json
@@ -275,7 +275,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog-action@master
+        uses: trufflesecurity/trufflehog@main
         with:
           path: .
           extra_args: --entropy-threshold=80
