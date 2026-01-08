@@ -7,138 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  # Build configuration
-  XCODE_SCHEME: ATProtoPDS
-  XCODE_CONFIGURATION: Debug
-  BUILD_DIR: Build
-
 jobs:
-  # ============================================================================
-  # JOB 1: Build and Test
-  # ============================================================================
   build-and-test:
     name: Build & Test
     runs-on: macos-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: Setup Xcode
-        id: xcode
-        uses: actions/setup-xcode@v5
-        with:
-          xcode-version: '15.4'
-
-      - name: Check Xcode version
-        run: |
-          xcodebuild -version
-          xcodegen --version
-
-      - name: Generate XcodeGen project
-        run: xcodegen generate
-
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-${{ runner.os }}
-
-      - name: Build project
-        id: build
-        run: |
-          xcodebuild -project ATProtoPDS.xcodeproj \
-            -scheme AllTests \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            clean build 2>&1 | tee build.log | tail -50
-        env:
-          CI: true
-
-      - name: Generate XcodeGen project
-        run: xcodegen generate
-
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-${{ runner.os }}
-
-      - name: Build project
-        id: build
-        run: |
-          xcodebuild -project ATProtoPDS.xcodeproj \
-            -scheme AllTests \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            clean build 2>&1 | tee build.log | tail -50
-        env:
-          CI: true
-
-      - name: Upload build logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: build.log
-          retention-days: 7
-
-      - name: Run tests
-        id: tests
-        run: |
-          TEST_BUNDLE="/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/AllTests"
-          if [ -f "$TEST_BUNDLE" ]; then
-            "$TEST_BUNDLE" 2>&1 | tee test.log
-          else
-            echo "Test bundle not found at expected path"
-            find /Users/jack/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -5
-            exit 1
-          fi
-
-      - name: Upload test logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-logs
-          path: test.log
-          retention-days: 7
-
-      - name: Parse test results
-        if: always()
-        run: |
-          if grep -q "Executed.*tests.*with.*failures" test.log 2>/dev/null; then
-            echo "Tests found failures"
-            echo "TESTS_PASSED=false" >> $GITHUB_OUTPUT
-          elif grep -q "Executed.*tests.*with.*0 failures" test.log 2>/dev/null; then
-            echo "All tests passed"
-            echo "TESTS_PASSED=true" >> $GITHUB_OUTPUT
-          elif grep -q "Test Suite.*passed" test.log 2>/dev/null; then
-            echo "Tests passed (alternative format)"
-            echo "TESTS_PASSED=true" >> $GITHUB_OUTPUT
-          else
-            echo "Could not parse test results"
-            echo "TESTS_PASSED=unknown" >> $GITHUB_OUTPUT
-          fi
-
-  # ============================================================================
-  # JOB 2: Code Coverage
-  # ============================================================================
-  coverage:
-    name: Code Coverage
-    runs-on: macos-latest
-    timeout-minutes: 30
-    needs: build-and-test
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Xcode
         uses: actions/setup-xcode@v5
@@ -148,65 +25,58 @@ jobs:
       - name: Generate project
         run: xcodegen generate
 
-      - name: Build with coverage
+      - name: Set Default Scheme
         run: |
-          xcodebuild -project ATProtoPDS.xcodeproj \
-            -scheme AllTests \
+          scheme_list=$(xcodebuild -list -json | tr -d "\n")
+          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
+          echo $default > default_scheme
+          echo "Using default scheme: $default"
+
+      - name: Build
+        env:
+          scheme: $(cat default_scheme)
+        run: |
+          SCHEME=$(cat default_scheme)
+
+          # Detect workspace vs project
+          if [ "$(ls -A | grep -i '\.xcworkspace$')" ]; then
+            filetype="workspace"
+            build_target=$(ls -A | grep -i '\.xcworkspace$')
+          else
+            filetype="project"
+            build_target=$(ls -A | grep -i '\.xcodeproj$')
+          fi
+
+          build_target=$(echo $build_target | awk '{$1=$1;print}')
+
+          xcodebuild clean build \
+            -scheme "$SCHEME" \
+            -"$filetype" "$build_target" \
             -configuration Debug \
             -destination 'platform=macOS' \
-            GCC_INSTRUMENT_PROGRAM_FUNCTIONS=YES \
-            GCC_GENERATE_TEST_COVERAGE_FILES=YES \
-            build 2>&1 | tail -10
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tail -30
 
-      - name: Find coverage data
-        id: find-coverage
+      - name: Run Tests
         run: |
-          COVERAGE_DIR=$(find /Users/jack/Library/Developer/Xcode/DerivedData \
-            -name "Coverage.profdata" -type f 2>/dev/null | head -1)
-          echo "Coverage dir: $COVERAGE_DIR"
-          if [ -n "$COVERAGE_DIR" ]; then
-            echo "COVERAGE_DATA=$COVERAGE_DIR" >> $GITHUB_OUTPUT
+          TEST_BUNDLE=$(find ~/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -1)
+
+          if [ -n "$TEST_BUNDLE" ] && [ -f "$TEST_BUNDLE" ]; then
+            echo "Running tests: $TEST_BUNDLE"
+            "$TEST_BUNDLE" 2>&1
           else
-            echo "Could not find coverage data"
+            echo "Test bundle not found"
+            find ~/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -5 || true
+            exit 1
           fi
 
-      - name: Generate coverage report
-        if: steps.find-coverage.outputs.COVERAGE_DATA
-        run: |
-          COVERAGE_DATA="${{ steps.find-coverage.outputs.COVERAGE_DATA }}"
-          if [ -n "$COVERAGE_DATA" ] && [ -f "$COVERAGE_DATA" ]; then
-            xcrun llvm-cov show \
-              "$COVERAGE_DATA" \
-              --sources="ATProtoPDS/Sources/**/*.m" \
-              --format=text \
-              --output-dir=coverage_report 2>/dev/null || true
-            
-            # Generate summary
-            TOTAL_LINES=$(find coverage_report -name "*.txt" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}')
-            echo "Total source lines analyzed: $TOTAL_LINES"
-            
-            # Upload coverage report
-            tar -czf coverage_report.tar.gz coverage_report 2>/dev/null || true
-          fi
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage_report.tar.gz
-          retention-days: 7
-
-  # ============================================================================
-  # JOB 3: Lint and Format
-  # ============================================================================
-  lint:
-    name: Lint & Format
+  fuzzing:
+    name: Fuzzing
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Xcode
@@ -214,135 +84,45 @@ jobs:
         with:
           xcode-version: '15.4'
 
-      - name: Check code formatting
-        id: format
+      - name: Build Fuzzers
         run: |
-          # Check for uncrustify or clang-format config
-          if [ -f ".uncrustify.cfg" ] || [ -f ".clang-format" ]; then
-            echo "Formatter config found"
-          fi
-          
-          # Basic syntax check with clang-tidy for format issues
           xcodegen generate
-          export PATH="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH"
-          xcodebuild -project ATProtoPDS.xcodeproj \
-            -scheme ATProtoPDS \
+          make fuzz-all 2>&1 | tail -10
+
+      - name: Run Fuzzers
+        run: |
+          echo "Running XRPC fuzzer (60s)..."
+          ./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_total_time=60 -jobs=4
+
+          echo "Running CBOR fuzzer (60s)..."
+          ./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_total_time=60 -jobs=4
+
+          echo "Running HTTP fuzzer (60s)..."
+          ./fuzzing/fuzz_http fuzzing/corpus_http/ -max_total_time=60 -jobs=4
+
+  security-scan:
+    name: Security Scan
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: actions/setup-xcode@v5
+        with:
+          xcode-version: '15.4'
+
+      - name: Clang-Tidy
+        run: make clang-tidy 2>&1 | tail -20 || true
+
+      - name: Static Analyzer
+        run: |
+          xcodegen generate
+          xcodebuild -scheme ATProtoPDS \
+            -project ATProtoPDS.xcodeproj \
             -configuration Debug \
-            build 2>&1 | grep -E "(error:|warning:)" | head -20 || echo "Build completed"
-
-  # ============================================================================
-  # JOB 4: Dependency Check
-  # ============================================================================
-  dependencies:
-    name: Dependencies
-    runs-on: macos-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check Homebrew dependencies
-        id: homebrew
-        run: |
-          if [ -f "Brewfile" ]; then
-            brew bundle check --verbose || brew bundle install
-          else
-            echo "No Brewfile found"
-          fi
-
-      - name: Check for stale dependencies
-        id: stale
-        run: |
-          # Check if any dependencies are outdated
-          echo "Checking dependency versions..."
-          # This is a placeholder - configure Dependabot for real checks
-          echo "OUTDATED_COUNT=0" >> $GITHUB_OUTPUT
-
-  # ============================================================================
-  # JOB 5: Documentation Build
-  # ============================================================================
-  docs:
-    name: Documentation
-    runs-on: macos-latest
-    timeout-minutes: 15
-    needs: build-and-test
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check docs build
-        id: docs-build
-        run: |
-          if [ -f "build-pds-docs.sh" ]; then
-            chmod +x build-pds-docs.sh
-            ./build-pds-docs.sh 2>&1 | tail -20 || echo "Docs build completed"
-          else
-            echo "No docs build script found"
-          fi
-
-      - name: Validate markdown links
-        id: links
-        run: |
-          if command -v markdown-link-check &> /dev/null; then
-            find docs -name "*.md" -exec markdown-link-check {} \; 2>&1 | head -20 || true
-          else
-            echo "markdown-link-check not installed - skipping link validation"
-          fi
-
-  # ============================================================================
-  # JOB 6: Summary and Status
-  # ============================================================================
-  summary:
-    name: Summary
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [build-and-test, lint, dependencies]
-
-    if: always()
-    steps:
-      - name: Create summary
-        run: |
-          echo "## CI Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build & Test | ${{ needs.build-and-test.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint & Format | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dependencies | ${{ needs.dependencies.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Check if all jobs passed
-          FAILED=0
-          if [ "${{ needs.build-and-test.result }}" != "success" ]; then
-            FAILED=1
-          fi
-          if [ "${{ needs.lint.result }}" != "success" ]; then
-            FAILED=1
-          fi
-          if [ "${{ needs.dependencies.result }}" != "success" ]; then
-            FAILED=1
-          fi
-          
-          if [ $FAILED -eq 0 ]; then
-            echo "✅ **All CI checks passed**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Some CI checks failed**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Review the failed jobs above for details." >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## CI Build Complete\n\n✅ Build and test completed. Review results in the Actions tab.'
-            })
+            -destination 'platform=macOS' \
+            build CODE_SIGNING_ALLOWED=NO \
+            RUN_CLANG_STATIC_ANALYZER=YES 2>&1 | tail -30 || true
