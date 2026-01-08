@@ -1,5 +1,5 @@
 #include "secp256k1_wrapper_c.h"
-#include "/Users/jack/Software/objpds/secp256k1/include/secp256k1.h"
+#include <secp256k1.h>
 #include <string.h>
 #include <stdlib.h>
 

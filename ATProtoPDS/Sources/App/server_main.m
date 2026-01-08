@@ -10,15 +10,11 @@ int main(int argc, const char * argv[]) {
         NSLog(@"ATProto PDS Starting...");
 
         NSError *error = nil;
-        NSURL *dbURL = [[NSURL fileURLWithPath:@"/tmp/atproto_pds.db"] URLByStandardizingPath];
-        PDSDatabase *database = [PDSDatabase databaseAtURL:dbURL];
+        NSString *dataDirectory = @"/tmp/atproto_pds_data";
 
-        if (![database openWithError:&error]) {
-            NSLog(@"Failed to open database: %@", error);
-            return 1;
-        }
-
-        PDSController *controller = [[PDSController alloc] initWithDatabase:database];
+        PDSController *controller = [[PDSController alloc] initWithDirectory:dataDirectory
+                                                           serviceMaxSize:100
+                                                         userDatabaseSize:30000];
         HttpServer *server = [HttpServer serverWithPort:2583];
         XrpcDispatcher *xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
 
