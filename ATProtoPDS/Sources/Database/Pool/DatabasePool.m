@@ -72,28 +72,29 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
     __block PDSActorStore *store = nil;
     
     dispatch_sync(self.poolQueue, ^{
+        __strong NSError **strongError = error;
         store = self.stores[did];
-        
+
         if (store) {
             self.lastAccessTime[did] = [NSDate date];
             return;
         }
-        
+
         if (self.stores.count >= self.maxSize) {
             [self evictLRUStore];
         }
-        
+
         NSString *dbPath = [self dbPathForDid:did];
         NSError *openError = nil;
         store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&openError];
-        
+
         if (store) {
             self.stores[did] = store;
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
         } else {
-            if (error) {
-                *error = openError;
+            if (strongError) {
+                *strongError = openError;
             }
         }
     });
