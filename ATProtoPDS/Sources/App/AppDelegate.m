@@ -14,7 +14,10 @@
     os_log_info(self.log, "ATProto PDS starting up...");
     
     self.pdsController = [[PDSController alloc] init];
-    [self.pdsController startServer];
+    NSError *error = nil;
+    if (![self.pdsController startServerWithError:&error]) {
+        os_log_error(self.log, "Failed to start server: %@", error);
+    }
     
     [self setupStatusBar];
 }
@@ -39,7 +42,10 @@
 }
 
 - (void)startServer:(id)sender {
-    [self.pdsController startServer];
+    NSError *error = nil;
+    if (![self.pdsController startServerWithError:&error]) {
+        os_log_error(self.log, "Failed to start server: %@", error);
+    }
 }
 
 - (void)stopServer:(id)sender {

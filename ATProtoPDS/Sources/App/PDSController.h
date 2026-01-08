@@ -33,6 +33,11 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
 
+// NOTE: The 'database' property is deprecated in the single-tenant architecture
+// It returns nil to maintain API compatibility with code that expects it
+// Use 'serviceDatabases' and 'userDatabasePool' instead
+@property (nonatomic, strong, readonly, nullable) id database;
+
 + (instancetype)sharedController;
 
 - (instancetype)initWithDirectory:(NSString *)directory 

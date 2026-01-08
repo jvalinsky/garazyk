@@ -189,7 +189,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         }
         sqlite3_finalize(repoStmt);
         
-        NSError *repoError = nil;
+        __block NSError *repoError = nil;
         if (repo) {
             [destinationPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
                 PDSActorStore *store = (PDSActorStore *)transactor;
@@ -212,7 +212,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
             record.cid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(recordStmt, 4)];
             record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(recordStmt, 5)];
             
-            NSError *recordError = nil;
+            __block NSError *recordError = nil;
             [destinationPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
                 PDSActorStore *store = (PDSActorStore *)transactor;
                 [store putRecord:record forDid:did error:&recordError];
@@ -266,7 +266,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         block.size = sqlite3_column_int64(blockStmt, 4);
         block.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(blockStmt, 5)];
         
-        NSError *blockError = nil;
+        __block NSError *blockError = nil;
         [destinationPool transactWithDid:repoDid block:^(id<PDSActorStoreTransactor> transactor) {
             PDSActorStore *store = (PDSActorStore *)transactor;
             [store putBlock:block forDid:repoDid error:&blockError];
