@@ -53,6 +53,10 @@ jobs:
           restore-keys: |
             homebrew-${{ runner.os }}-
 
+      - name: Install Homebrew dependencies
+        run: |
+          brew install xcodegen llvm@18
+
       - name: Cache XcodeGen
         uses: actions/cache@v4
         with:
