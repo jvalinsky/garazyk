@@ -28,6 +28,8 @@ typedef NS_ENUM(NSInteger, PDSValidationError) {
 - (BOOL)isValidDID:(NSString *)did;
 - (BOOL)isValidHandle:(NSString *)handle;
 - (BOOL)isValidRecordKey:(NSString *)rkey;
+- (BOOL)isValidTID:(NSString *)tid;
+- (BOOL)isValidCID:(NSString *)cid;
 - (BOOL)isValidCollectionName:(NSString *)collection;
 - (BOOL)isValidRepoURI:(NSString *)uri;
 - (BOOL)isValidATURI:(NSString *)uri;

@@ -44,6 +44,8 @@ static NSString *const kXSSPatterns[] = {
     NULL
 };
 
+static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
+
 @interface PDSInputValidator ()
 @property (nonatomic, strong) NSRegularExpression *nsidRegex;
 @property (nonatomic, strong) NSRegularExpression *didRegex;
@@ -108,11 +110,52 @@ static NSString *const kXSSPatterns[] = {
     return [self.handleRegex numberOfMatchesInString:handle options:0 range:range] > 0;
 }
 
+- (BOOL)isValidTID:(NSString *)tid {
+    if (!tid || tid.length == 0) return NO;
+    if (tid.length != 13) return NO;
+    if ([self containsNullByte:tid]) return NO;
+
+    for (NSUInteger i = 0; i < tid.length; i++) {
+        char c = [tid characterAtIndex:i];
+        BOOL valid = NO;
+        for (int j = 0; j < 32; j++) {
+            if (c == kTIDBase32Alphabet[j]) {
+                valid = YES;
+                break;
+            }
+        }
+        if (!valid) return NO;
+    }
+
+    return YES;
+}
+
+- (BOOL)isValidCID:(NSString *)cid {
+    if (!cid || cid.length == 0) return NO;
+    if ([self containsNullByte:cid]) return NO;
+
+    if (![cid hasPrefix:@"b"]) return NO;
+
+    NSString *encoded = [cid substringFromIndex:1];
+    if (encoded.length < 10) return NO;
+
+    for (NSUInteger i = 0; i < encoded.length; i++) {
+        char c = [encoded characterAtIndex:i];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '2' && c <= '7'))) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
 - (BOOL)isValidRecordKey:(NSString *)rkey {
     if (!rkey || rkey.length == 0) return NO;
     if (rkey.length > 512) return NO;
     if ([self containsNullByte:rkey]) return NO;
     if ([self containsPathTraversalPattern:rkey]) return NO;
+
+    if ([self isValidTID:rkey]) return YES;
 
     NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./"];
     NSCharacterSet *inputChars = [NSCharacterSet characterSetWithCharactersInString:rkey];
