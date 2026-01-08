@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0BACAA849D86B1773C74A31E /* HandleResolver.m in Sources */ = {isa = PBXBuildFile; fileRef = CD71AB9F9A4B77FB1A7737E5 /* HandleResolver.m */; };
+		0BE92423E7176AD267AE8A4F /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 064D0B84C3A64B4872206B20 /* XCTest.framework */; };
 		0FF62F68A9D783AB4C73C24C /* PDSCLIDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = C7F198C8CD6E00486F2CB332 /* PDSCLIDispatcher.m */; };
 		115BBBE84C088FE385F47A05 /* EventFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 72141EF4620C865A5A049254 /* EventFormatter.m */; };
+		1190EFB27E64CA71E6E11C28 /* PDSAuthzManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 19E21EC663E00877FECED32C /* PDSAuthzManager.m */; };
 		13768FF7B8910629CFACE2A7 /* PDSLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = D8F99115895FEB9FB5A13CFB /* PDSLogger.m */; };
 		14DB22D038450F5C3F38BD35 /* ServiceDatabasesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A459AD3E26FC8030FB0CB737 /* ServiceDatabasesTests.m */; };
 		177C407401DEED9BAB872760 /* JWT.m in Sources */ = {isa = PBXBuildFile; fileRef = 6C95E779B2C5D8F15D5BCF1E /* JWT.m */; };
@@ -17,6 +19,8 @@
 		1D970518D3752540EBB3A094 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 49DF1450F13B26A68E3028CD /* README.md */; };
 		1ED9636895C1C9900EE29D88 /* MimeTypeValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 3080CD0A1D2B5AA90C60BFBD /* MimeTypeValidator.m */; };
 		2C393B495F44E87FAFDD412C /* PDSMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 0026557635DCF274E9A6B0E0 /* PDSMetrics.m */; };
+		2D691CAF4CC57AFFFD0424DE /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 064D0B84C3A64B4872206B20 /* XCTest.framework */; };
+		2DD566F83AD54EF1E188A2F1 /* PDSInputValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D11C41379F1C6554020EBB8 /* PDSInputValidator.m */; };
 		2F417376D4A3504D95854F10 /* DID.m in Sources */ = {isa = PBXBuildFile; fileRef = 70793FD32A722F24E9A29397 /* DID.m */; };
 		2F901E86C47B6E1423F0D959 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C4E234D2CBED7F06914D6F7 /* main.m */; };
 		3621A385C6E1E285F9FDD6B1 /* WebSocketConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = B63B35112A4CBA3512F814E1 /* WebSocketConnection.m */; };
@@ -27,7 +31,9 @@
 		3BEED6D4A76663A641BC1AE4 /* Schema.m in Sources */ = {isa = PBXBuildFile; fileRef = 789F74E8B0D2264C2362EC66 /* Schema.m */; };
 		3E3C74DD3E3A677E82B48B8F /* RelayClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 28B378782EC8375BB300C319 /* RelayClient.m */; };
 		4214569D925A12760E474653 /* PDSControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1CE4A0C6F2762ED17A928D64 /* PDSControllerTests.m */; };
+		4BADBD2023613DD7F8F841C0 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 064D0B84C3A64B4872206B20 /* XCTest.framework */; };
 		4DAE0D2ECAEEEDBEED504538 /* CID.m in Sources */ = {isa = PBXBuildFile; fileRef = 06AAB57626EFEA167865CFAA /* CID.m */; };
+		57706ADD2BCCF3772824B6C1 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 064D0B84C3A64B4872206B20 /* XCTest.framework */; };
 		6343ECA8789C476D5C9BDFF3 /* MST.m in Sources */ = {isa = PBXBuildFile; fileRef = 84A333A035BF30955641E999 /* MST.m */; };
 		63FA2A8DA563C1C9294A752C /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
 		6839A510E28718F24C60490A /* DatabasePoolTests.m in Sources */ = {isa = PBXBuildFile; fileRef = FD60337D1BD931B747E18447 /* DatabasePoolTests.m */; };
@@ -115,6 +121,7 @@
 		0400E530760BADD279F2A8A6 /* OAuth2.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OAuth2.m; sourceTree = "<group>"; };
 		04B4C38E49BBDDC6D76223FA /* DPoPUtil.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DPoPUtil.m; sourceTree = "<group>"; };
 		04C73B06F20A02B38D5D37FA /* WebSocketServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketServer.h; sourceTree = "<group>"; };
+		064D0B84C3A64B4872206B20 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = XCTest.framework; sourceTree = "<group>"; };
 		06AAB57626EFEA167865CFAA /* CID.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CID.m; sourceTree = "<group>"; };
 		078169533EB5BB854804930F /* PDSAdminAuth.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSAdminAuth.m; sourceTree = "<group>"; };
 		0C59F464C53BE5282B079E29 /* XrpcHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XrpcHandler.m; sourceTree = "<group>"; };
@@ -124,6 +131,7 @@
 		1341CF4A9C802E2BCFB274F9 /* HttpResponse.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HttpResponse.m; sourceTree = "<group>"; };
 		14263329AF3A6F4B18CFED7F /* AdminService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AdminService.h; sourceTree = "<group>"; };
 		185CF5645EFEE72786447F6A /* OAuthSession.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OAuthSession.m; sourceTree = "<group>"; };
+		19E21EC663E00877FECED32C /* PDSAuthzManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSAuthzManager.m; sourceTree = "<group>"; };
 		1B2F2A670A833075DCB10EA0 /* ServiceDatabases.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ServiceDatabases.m; sourceTree = "<group>"; };
 		1C4E234D2CBED7F06914D6F7 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1CE4A0C6F2762ED17A928D64 /* PDSControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSControllerTests.m; sourceTree = "<group>"; };
@@ -141,6 +149,7 @@
 		41961595933508C3478CC310 /* secp256k1_wrapper_c.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = secp256k1_wrapper_c.h; sourceTree = "<group>"; };
 		49DF1450F13B26A68E3028CD /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		4A345C40F3ABBC4A7B07D2ED /* RelayClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RelayClient.h; sourceTree = "<group>"; };
+		4B03E707F765986B25E7FF7A /* PDSInputValidator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PDSInputValidator.h; sourceTree = "<group>"; };
 		4C56285390D7C65696D91D60 /* FeedService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FeedService.m; sourceTree = "<group>"; };
 		4D9D18510D973B64EF02C0C1 /* PDSCLIInviteCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSCLIInviteCommand.m; sourceTree = "<group>"; };
 		4F9C290E3512B256148B5BB5 /* RateLimiter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RateLimiter.m; sourceTree = "<group>"; };
@@ -179,10 +188,12 @@
 		995C7AC462E221D595DB9235 /* MSTPersistence.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MSTPersistence.m; sourceTree = "<group>"; };
 		99B8A8E4F83ED406BBA897F6 /* ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ARCHITECTURE.md; sourceTree = "<group>"; };
 		9C4D901667C58AE9982DBFFF /* JWT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = JWT.h; sourceTree = "<group>"; };
+		9D11C41379F1C6554020EBB8 /* PDSInputValidator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSInputValidator.m; sourceTree = "<group>"; };
 		A1F4C2A2BF464F3B8C6AF205 /* Secp256k1.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Secp256k1.m; sourceTree = "<group>"; };
 		A2F6C79FB52B408AF2DDAF23 /* EventFormatter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EventFormatter.h; sourceTree = "<group>"; };
 		A30C2620C43499086D04662A /* BlobStorage.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BlobStorage.m; sourceTree = "<group>"; };
 		A459AD3E26FC8030FB0CB737 /* ServiceDatabasesTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ServiceDatabasesTests.m; sourceTree = "<group>"; };
+		A93613961C38337D5071818D /* PDSAuthzManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PDSAuthzManager.h; sourceTree = "<group>"; };
 		AB01192492D762E3EC4F8AA6 /* KeyManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KeyManager.m; sourceTree = "<group>"; };
 		B10BCB7631C3408CE468C2FF /* PDSHealthCheck.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PDSHealthCheck.h; sourceTree = "<group>"; };
 		B36DF3837569BD1E64B10AD6 /* TID.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TID.h; sourceTree = "<group>"; };
@@ -234,6 +245,41 @@
 		FEE7A6DCC25B2E73D4262FB7 /* DPoPUtil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DPoPUtil.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		8D690AB58BB3D9DFA16247D8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4BADBD2023613DD7F8F841C0 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C241290D3D3A5C51334D8564 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57706ADD2BCCF3772824B6C1 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CDFB74D59E9F2734F4922DDE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0BE92423E7176AD267AE8A4F /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0EEADAF3D9FD0343E917589 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D691CAF4CC57AFFFD0424DE /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
 		1C3788DE84A929B7A6E51C64 /* Admin */ = {
 			isa = PBXGroup;
@@ -247,6 +293,14 @@
 				242218F6DD4C8FA35AC68009 /* PDSAdminHandler.m */,
 			);
 			path = Admin;
+			sourceTree = "<group>";
+		};
+		213035522ADBFA1078711796 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				064D0B84C3A64B4872206B20 /* XCTest.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		2E19A49E15D08010A29919B9 /* ActorStore */ = {
@@ -315,6 +369,7 @@
 				9FBFB4A8942CCBDC4E7CFD51 /* Pool */,
 				5069D80B8275DDE9F05B2126 /* Service */,
 				649B4D35E473C81529C441E5 /* Sources */,
+				213035522ADBFA1078711796 /* Frameworks */,
 				55EF0F65D496D33ACB0EE6E3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -426,6 +481,7 @@
 				7F7B7CD3E3034AC29DF232B7 /* Metrics */,
 				C85D5F2300EA9F9302F7FB28 /* Network */,
 				76A8ECB961AFFD5F3F65AB0B /* Repository */,
+				B101C8F552768BB2CD191FFE /* Security */,
 				4F61B82D67FC130E0E1CD313 /* Sync */,
 			);
 			name = Sources;
@@ -483,6 +539,17 @@
 			);
 			name = ActorStore;
 			path = tests/Database/ActorStore;
+			sourceTree = "<group>";
+		};
+		B101C8F552768BB2CD191FFE /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				A93613961C38337D5071818D /* PDSAuthzManager.h */,
+				19E21EC663E00877FECED32C /* PDSAuthzManager.m */,
+				4B03E707F765986B25E7FF7A /* PDSInputValidator.h */,
+				9D11C41379F1C6554020EBB8 /* PDSInputValidator.m */,
+			);
+			path = Security;
 			sourceTree = "<group>";
 		};
 		C59C78D2578436AD8F64C261 /* Monitoring */ = {
@@ -586,6 +653,7 @@
 			buildConfigurationList = 89AE5B15E50119B0CA084BA7 /* Build configuration list for PBXNativeTarget "PDSControllerTests" */;
 			buildPhases = (
 				C645D7DF19E2F620324A5795 /* Sources */,
+				8D690AB58BB3D9DFA16247D8 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -604,6 +672,7 @@
 			buildConfigurationList = 3EA5291D840EC125E7A79AB4 /* Build configuration list for PBXNativeTarget "ActorStoreTests" */;
 			buildPhases = (
 				77DC08E4BB4D578318C59F55 /* Sources */,
+				CDFB74D59E9F2734F4922DDE /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -640,6 +709,7 @@
 			buildConfigurationList = 7BDB9B10A9F699995D94A51B /* Build configuration list for PBXNativeTarget "ServiceDatabasesTests" */;
 			buildPhases = (
 				48C846F20FBEC7918A61AD79 /* Sources */,
+				C241290D3D3A5C51334D8564 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -658,6 +728,7 @@
 			buildConfigurationList = 4C8E19CCC2DA75590C26C6C9 /* Build configuration list for PBXNativeTarget "DatabasePoolTests" */;
 			buildPhases = (
 				CA04A0C8E053283597ECB226 /* Sources */,
+				E0EEADAF3D9FD0343E917589 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -754,6 +825,7 @@
 				F8E2973CE5F685664655AA57 /* OAuthSession.m in Sources */,
 				699FE823F23D13877B1F3350 /* PDSAdminAuth.m in Sources */,
 				BB42733D8C85A5DE37EE3FBB /* PDSAdminHandler.m in Sources */,
+				1190EFB27E64CA71E6E11C28 /* PDSAuthzManager.m in Sources */,
 				C76F7838E0D26544D40531F0 /* PDSCLIAccountCommand.m in Sources */,
 				0FF62F68A9D783AB4C73C24C /* PDSCLIDispatcher.m in Sources */,
 				79E2D3A507A4AA045580026A /* PDSCLIHealthCommand.m in Sources */,
@@ -762,6 +834,7 @@
 				3643E153FA1193EF31CFE09F /* PDSController.m in Sources */,
 				7B27D0C64692AA782768F2C9 /* PDSDatabase.m in Sources */,
 				69C11860C06F4766D8A526FF /* PDSHealthCheck.m in Sources */,
+				2DD566F83AD54EF1E188A2F1 /* PDSInputValidator.m in Sources */,
 				13768FF7B8910629CFACE2A7 /* PDSLogger.m in Sources */,
 				2C393B495F44E87FAFDD412C /* PDSMetrics.m in Sources */,
 				975FA6C90C8282B1876A8E46 /* PDSMigrationManager.m in Sources */,
@@ -845,7 +918,12 @@
 		102B5C1913C1396DAC50FA3C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -868,6 +946,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.ServiceDatabasesTests;
 				PRODUCT_NAME = ServiceDatabasesTests;
@@ -1036,7 +1116,12 @@
 		6ACD82384B22497D8F79A6FC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1059,6 +1144,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.DatabasePoolTests;
 				PRODUCT_NAME = DatabasePoolTests;
@@ -1069,7 +1156,12 @@
 		757C6B0CCD78A6ADB4839E80 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1092,6 +1184,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.DatabasePoolTests;
 				PRODUCT_NAME = DatabasePoolTests;
@@ -1102,7 +1196,12 @@
 		86E4BA1D4DB9B756AC99831C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1125,6 +1224,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.ActorStoreTests;
 				PRODUCT_NAME = ActorStoreTests;
@@ -1135,7 +1236,12 @@
 		A9CC19E45CE02DC1CD8AE24A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1158,6 +1264,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.ActorStoreTests;
 				PRODUCT_NAME = ActorStoreTests;
@@ -1168,7 +1276,12 @@
 		AC498FF93C9F509704152449 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1191,6 +1304,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.PDSControllerTests;
 				PRODUCT_NAME = PDSControllerTests;
@@ -1201,7 +1316,12 @@
 		E06EFA8E29B67D15F853CF0D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1224,6 +1344,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.PDSControllerTests;
 				PRODUCT_NAME = PDSControllerTests;
@@ -1267,7 +1389,12 @@
 		FF196EF697A733F70F951C3A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/ATProtoPDS/Sources",
 					"$(PROJECT_DIR)/secp256k1/include",
@@ -1290,6 +1417,8 @@
 					Security,
 					"-lsqlite3",
 					"-lsecp256k1",
+					"-framework",
+					XCTest,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.ServiceDatabasesTests;
 				PRODUCT_NAME = ServiceDatabasesTests;
