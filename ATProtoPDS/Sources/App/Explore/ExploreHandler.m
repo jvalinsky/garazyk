@@ -32,7 +32,7 @@
         schema[@"description"] = self.paramDescription;
     }
     dict[@"schema"] = schema;
-    dict[@"required"] = @(self.required);
+    dict[@"required"] = self.required ? @YES : @NO;
     if (self.deprecated) {
         dict[@"deprecated"] = @YES;
     }
@@ -2692,7 +2692,12 @@
                 [yaml appendFormat:@"%@: %@\n", key, strValue];
             }
         } else if ([value isKindOfClass:[NSNumber class]]) {
-            [yaml appendFormat:@"%@: %@\n", key, value];
+            NSNumber *numValue = (NSNumber *)value;
+            if (strcmp(numValue.objCType, @encode(BOOL)) == 0 || numValue == @YES || numValue == @NO) {
+                [yaml appendFormat:@"%@: %@\n", key, numValue.boolValue ? @"true" : @"false"];
+            } else {
+                [yaml appendFormat:@"%@: %@\n", key, numValue];
+            }
         } else if ([value isKindOfClass:[NSNull class]]) {
             [yaml appendFormat:@"%@: null\n", key];
         } else {
