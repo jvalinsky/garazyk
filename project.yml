@@ -55,6 +55,8 @@ targets:
           - "**/tests/*"
           - "**/App/main.m"
           - "**/App/server_main.m"
+    resources:
+      - path: ATProtoPDS/Sources/App/Explore/Assets
     settings:
       base:
         PRODUCT_NAME: atprotopds-cli

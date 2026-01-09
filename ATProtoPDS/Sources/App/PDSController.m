@@ -36,6 +36,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     BOOL _running;
 }
 
+- (NSString *)dataDirectory {
+    return _dataDirectory;
+}
+
 - (id)database {
     return nil;
 }
