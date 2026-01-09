@@ -276,48 +276,28 @@
 #pragma mark - Static Files
 
 - (void)serveIndex:(HttpResponse *)response {
-    NSString *html = @"<!DOCTYPE html>"
-    "<html lang=\"en\">"
-    "<head>"
-    "    <meta charset=\"UTF-8\">"
-    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-    "    <title>ATProto PDS Explorer</title>"
-    "    <link rel=\"stylesheet\" href=\"/explore/css/style.css\">"
-    "</head>"
-    "<body>"
-    "    <nav class=\"sidebar\">"
-    "        <h1>ATProto PDS Explorer</h1>"
-    "        <ul>"
-    "            <li><a href=\"#\" onclick=\"showAccounts()\">Accounts</a></li>"
-    "            <li><a href=\"#\" onclick=\"showRecords()\">Records</a></li>"
-    "            <li><a href=\"#\" onclick=\"showRepos()\">Repositories</a></li>"
-    "            <li><a href=\"#\" onclick=\"showDID()\">DID Resolution</a></li>"
-    "        </ul>"
-    "    </nav>"
-    "    <main class=\"content\">"
-    "        <div id=\"main-content\">"
-    "            <h2>Welcome to ATProto PDS Explorer</h2>"
-    "            <p>Select an option from the sidebar to explore your PDS data.</p>"
-    "        </div>"
-    "        <div class=\"accounts\">"
-    "            <h3>Loading accounts...</h3>"
-    "        </div>"
-    "        <div class=\"records\">"
-    "            <h3>Records</h3>"
-    "            <p>Records functionality coming soon.</p>"
-    "        </div>"
-    "        <div class=\"repos\">"
-    "            <h3>Repositories</h3>"
-    "            <p>Repository functionality coming soon.</p>"
-    "        </div>"
-    "        <div class=\"did\">"
-    "            <h3>DID Resolution</h3>"
-    "            <p>DID resolution functionality coming soon.</p>"
-    "        </div>"
-    "    </main>"
-    "    <script src=\"/explore/js/ui.js\"></script>"
-    "</body>"
-    "</html>";
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *indexPath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/index.html"];
+
+    NSError *error = nil;
+    NSString *html = [NSString stringWithContentsOfFile:indexPath encoding:NSUTF8StringEncoding error:&error];
+
+    if (error || !html) {
+        // Fallback to old HTML if file not found
+        NSString *fallbackHtml = @"<!DOCTYPE html>"
+        "<html lang=\"en\">"
+        "<head>"
+        "    <meta charset=\"UTF-8\">"
+        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+        "    <title>ATProto PDS Explorer</title>"
+        "</head>"
+        "<body>"
+        "    <h1>ATProto PDS Explorer</h1>"
+        "    <p>Error: Could not load index.html</p>"
+        "</body>"
+        "</html>";
+        html = fallbackHtml;
+    }
 
     response.statusCode = 200;
     response.contentType = @"text/html; charset=utf-8";
