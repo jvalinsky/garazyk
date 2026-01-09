@@ -241,8 +241,8 @@ This project uses GitHub Actions for continuous integration.
 ### Running CI Locally
 
 ```bash
-# Build project
-xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS build
+# Build CLI project
+xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS-CLI build
 
 # Run tests
 "/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/AllTests"
@@ -271,3 +271,44 @@ Before pushing, ensure:
 2. ✅ Project builds (`xcodebuild build`)
 3. ✅ No new clang-tidy errors
 4. ✅ Fuzzers still pass
+
+## Xcode Project Management
+
+This project uses **xcodegen** to manage the Xcode project. The project configuration is defined in `project.yml`.
+
+### When to Regenerate the Project
+
+**ALWAYS regenerate the Xcode project after modifying `project.yml`:**
+- Adding/removing targets
+- Changing source file inclusion/exclusion patterns
+- Modifying build settings
+- Updating dependencies
+
+### Regenerate Command
+
+```bash
+# Generate Xcode project from project.yml
+xcodegen generate
+```
+
+### Project Configuration
+
+The `project.yml` file defines:
+- **Targets**: `ATProtoPDS-CLI` (main CLI tool), `AllTests` (unit tests)
+- **Sources**: All source files in `ATProtoPDS/Sources`
+- **Exclusions**: Test files, main entry points for alternate targets
+- **Build settings**: Compiler flags, linker settings, frameworks
+- **Dependencies**: secp256k1, SQLite3, system frameworks
+
+### Adding/Removing Targets
+
+To add a new target:
+1. Add target definition to `project.yml`
+2. Run `xcodegen generate`
+3. Verify build with `xcodebuild -project ATProtoPDS.xcodeproj -scheme <TargetName> build`
+
+To remove a target:
+1. Remove target definition from `project.yml`
+2. Update any dependent targets
+3. Run `xcodegen generate`
+4. Verify build still works

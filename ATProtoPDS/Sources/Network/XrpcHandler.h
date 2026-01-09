@@ -105,6 +105,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.repo.deleteRecord. */
 - (void)registerComAtprotoRepoDeleteRecord:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.repo.deleteBlob. */
+- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.repo.applyWrites. */
 - (void)registerComAtprotoRepoApplyWrites:(XrpcMethodHandler)handler;
 

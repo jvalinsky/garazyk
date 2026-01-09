@@ -16,36 +16,6 @@ settings:
     CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 
 targets:
-  ATProtoPDS:
-    type: tool
-    platform: macOS
-    sources:
-      - path: ATProtoPDS/Sources
-        excludes:
-          - "**/tests/*"
-          - "**/CLI/main.m"
-          - "**/App/main.m"
-    settings:
-      base:
-        PRODUCT_NAME: atprotopds
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
-        MACOSX_DEPLOYMENT_TARGET: "14.0"
-        OTHER_LDFLAGS:
-          - "-framework"
-          - Foundation
-          - "-framework"
-          - AppKit
-          - "-framework"
-          - Network
-          - "-framework"
-          - Security
-          - "-lsqlite3"
-          - "-lsecp256k1"
-        HEADER_SEARCH_PATHS:
-          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
-          - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/ATProtoPDS/Tests"
-
   ATProtoPDS-CLI:
     type: tool
     platform: macOS
@@ -89,7 +59,7 @@ targets:
         excludes:
           - "**/*.md"
     dependencies:
-      - target: ATProtoPDS
+      - target: ATProtoPDS-CLI
     settings:
       base:
         PRODUCT_NAME: AllTests
