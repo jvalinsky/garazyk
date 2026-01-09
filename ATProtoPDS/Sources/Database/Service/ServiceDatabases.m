@@ -96,7 +96,17 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
         
         @"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"
         @"CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code);"
-        @"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);";
+        @"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);"
+
+        @"CREATE TABLE IF NOT EXISTS jwt_signing_keys ("
+        @"    key_id TEXT PRIMARY KEY,"
+        @"    algorithm TEXT NOT NULL,"
+        @"    private_key_data BLOB NOT NULL,"
+        @"    public_key_data BLOB NOT NULL,"
+        @"    is_active INTEGER DEFAULT 1,"
+        @"    created_at TEXT NOT NULL,"
+        @"    last_used_at TEXT"
+        @");";
     
     return [self executeSQL:schemaSQL onPool:self.servicePool error:error];
 }
