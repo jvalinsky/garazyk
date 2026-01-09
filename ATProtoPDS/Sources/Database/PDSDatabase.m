@@ -1397,7 +1397,15 @@ static NSDateFormatter * iso8601Formatter(void) {
         const char *secret = (const char *)sqlite3_column_text(stmt, 1);
         if (secret) dict[@"client_secret"] = @(secret);
 
-        dict[@"redirect_uris"] = @((const char *)sqlite3_column_text(stmt, 2));
+        // Parse redirect_uris as space-separated list
+        const char *redirectUrisStr = (const char *)sqlite3_column_text(stmt, 2);
+        if (redirectUrisStr) {
+            NSString *urisString = @(redirectUrisStr);
+            NSArray *uris = [urisString componentsSeparatedByString:@" "];
+            dict[@"redirect_uris"] = uris;
+        } else {
+            dict[@"redirect_uris"] = @[];
+        }
 
         const char *grants = (const char *)sqlite3_column_text(stmt, 3);
         if (grants) dict[@"grant_types"] = @(grants);
@@ -1428,8 +1436,13 @@ static NSDateFormatter * iso8601Formatter(void) {
     if (secret) sqlite3_bind_text(stmt, 2, secret.UTF8String, -1, SQLITE_STATIC);
     else sqlite3_bind_null(stmt, 2);
 
-    NSString *redirectURIs = client[@"redirect_uris"];
-    sqlite3_bind_text(stmt, 3, redirectURIs.UTF8String, -1, SQLITE_STATIC);
+    // Convert redirect_uris array to space-separated string
+    NSArray *redirectURIs = client[@"redirect_uris"];
+    NSString *redirectURIsString = @"";
+    if ([redirectURIs isKindOfClass:[NSArray class]] && redirectURIs.count > 0) {
+        redirectURIsString = [redirectURIs componentsJoinedByString:@" "];
+    }
+    sqlite3_bind_text(stmt, 3, redirectURIsString.UTF8String, -1, SQLITE_STATIC);
 
     NSString *grants = client[@"grant_types"];
     if (grants) sqlite3_bind_text(stmt, 4, grants.UTF8String, -1, SQLITE_STATIC);
@@ -1455,7 +1468,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
         @"client_secret": @"test-secret",
-        @"redirect_uris": @"http://localhost:3000/callback",
+        @"redirect_uris": @[@"http://localhost:3000/callback", @"http://localhost:8080/callback"],
         @"grant_types": @"authorization_code,refresh_token",
         @"scope": @"atproto"
     };
