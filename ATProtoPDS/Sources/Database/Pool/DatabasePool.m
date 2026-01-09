@@ -250,6 +250,10 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         NSArray<NSString *> *files = [fm contentsOfDirectoryAtPath:fullPath error:nil];
         
         for (NSString *file in files) {
+            // Skip SQLite auxiliary files (-shm, -wal, -journal)
+            if ([file hasSuffix:@"-shm"] || [file hasSuffix:@"-wal"] || [file hasSuffix:@"-journal"]) {
+                continue;
+            }
             if ([file hasPrefix:@"did:"]) {
                 NSString *did = file;
                 PDSDatabaseAccount *account = [self getAccount:did error:nil];
@@ -274,6 +278,10 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         NSArray<NSString *> *files = [fm contentsOfDirectoryAtPath:fullPath error:nil];
         
         for (NSString *file in files) {
+            // Skip SQLite auxiliary files (-shm, -wal, -journal)
+            if ([file hasSuffix:@"-shm"] || [file hasSuffix:@"-wal"] || [file hasSuffix:@"-journal"]) {
+                continue;
+            }
             if ([file hasPrefix:@"did:"]) {
                 NSString *did = file;
                 PDSDatabaseRepo *repo = [self getRepo:did error:nil];

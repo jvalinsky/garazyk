@@ -305,6 +305,16 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #pragma mark - Statement Management
 
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error {
+    // Defensive check: ensure database is open before use
+    if (!self.open || !self.db) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                        code:PDSActorStoreErrorDatabaseClosed
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is not open"}];
+        }
+        return NULL;
+    }
+    
     sqlite3_stmt *stmt = NULL;
     int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
     

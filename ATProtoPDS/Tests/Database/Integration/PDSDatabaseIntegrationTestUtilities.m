@@ -1,6 +1,9 @@
 #import "PDSDatabaseIntegrationTestUtilities.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/Migration/PDSMigrationManager.h"
 #import <sqlite3.h>
 #import <CommonCrypto/CommonCrypto.h>
 

@@ -1,7 +1,5 @@
 #import <XCTest/XCTest.h>
 #import "Auth/JWT.h"
-#import "Auth/JWTMinter.h"
-#import "Auth/JWTVerifier.h"
 
 @interface JWTTests : XCTestCase
 @property (nonatomic, strong) JWTMinter *minter;
@@ -110,7 +108,7 @@
         @"sub": @"test-user",
         @"iss": @"test.issuer",
         @"aud": @"test.audience",
-        @"exp": @([[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
         @"iat": @([[NSDate date] timeIntervalSince1970])
     };
 
@@ -137,7 +135,7 @@
         @"sub": @"test-user",
         @"iss": @"test.issuer",
         @"aud": @"test.audience",
-        @"exp": @([[NSDate date] dateByAddingTimeInterval:-3600] timeIntervalSince1970]), // Expired 1 hour ago
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:-3600] timeIntervalSince1970]), // Expired 1 hour ago
         @"iat": @([[NSDate date] timeIntervalSince1970])
     };
 
@@ -164,7 +162,7 @@
         @"sub": @"test-user",
         @"iss": @"test.issuer", // Wrong issuer
         @"aud": @"test.audience",
-        @"exp": @([[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
         @"iat": @([[NSDate date] timeIntervalSince1970])
     };
 

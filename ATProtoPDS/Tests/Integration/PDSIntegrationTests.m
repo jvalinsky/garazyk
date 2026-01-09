@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "PDSController.h"
+#import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
 
 @interface PDSIntegrationTests : XCTestCase

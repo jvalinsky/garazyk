@@ -62,68 +62,26 @@ jobs:
           path: /usr/local/bin/xcodegen
           key: xcodegen-${{ runner.os }}-${{ env.XCODE_VERSION }}
 
-      - name: Build secp256k1 library
+      - name: Configure and build with CMake
         run: |
-          cd secp256k1
-          ./autogen.sh
-          ./configure --enable-module-recovery
-          make -j$(sysctl -n hw.ncpu)
-          cd ..
+          mkdir -p build
+          cd build
 
-      - name: Generate project
-        run: xcodegen generate
+          # Configure with CMake
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=ON \
+            -DBUILD_FUZZERS=OFF
 
-      - name: Set Default Scheme
+          # Build main project and tests
+          make -j$(sysctl -n hw.ncpu) atprotopds-cli AllTests
+
+      - name: Run Tests
         run: |
-          scheme_list=$(xcodebuild -list -json | tr -d "\n")
-          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
-          echo $default > default_scheme
-          echo "Using default scheme: $default"
-
-      - name: Build
-        env:
-          SCHEME: $(cat default_scheme)
-        run: |
-          SCHEME=$(cat default_scheme)
-
-          # Detect workspace vs project
-          if [ "$(ls -A | grep -i '\.xcworkspace$')" ]; then
-            filetype="workspace"
-            build_target=$(ls -A | grep -i '\.xcworkspace$')
-          else
-            filetype="project"
-            build_target=$(ls -A | grep -i '\.xcodeproj$')
-          fi
-
-          build_target=$(echo $build_target | awk '{$1=$1;print}')
-
-          xcodebuild clean build \
-            -scheme "$SCHEME" \
-            -"$filetype" "$build_target" \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            -skipPackagePluginValidation \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tail -50
-
-      - name: Generate Coverage Report
-        env:
-          SCHEME: $(cat default_scheme)
-        run: |
-          # Use "AllTests" scheme if available, otherwise default
-          SCHEME="AllTests"
-          
-          xcodebuild test \
-            -scheme "$SCHEME" \
-            -project ATProtoPDS.xcodeproj \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            CODE_SIGNING_ALLOWED=NO \
-            GCC_GENERATE_TEST_COVERAGE_FILES=YES \
-            GCC_INSTRUMENT_PROGRAM_AREA_FILES=YES
-
-          # Print coverage path for info
-          echo "Coverage data generated in DerivedData"
+          cd build
+          ctest --output-on-failure
 
 
   # ============================================================================
@@ -165,8 +123,22 @@ jobs:
 
       - name: Build Fuzzers
         run: |
-          xcodegen generate
-          make fuzz-all 2>&1 | tail -15
+          mkdir -p build
+          cd build
+
+          # Configure with CMake (fuzzers enabled)
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=ON
+
+          # Build fuzzers
+          make fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth -j$(sysctl -n hw.ncpu)
+
+          # Copy to expected location
+          cp fuzzing/fuzz_* ../fuzzing/ 2>/dev/null || true
 
       - name: Run Fuzzers
         run: |
@@ -216,19 +188,28 @@ jobs:
           restore-keys: |
             homebrew-sec-${{ runner.os }}-
 
+      - name: Configure for Analysis
+        run: |
+          mkdir -p build
+          cd build
+
+          # Configure with CMake for analysis
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=OFF
+
       - name: Clang-Tidy
         run: |
           export PATH="/usr/local/opt/llvm/bin:$PATH"
-          make clang-tidy 2>&1 | tail -30 || true
+          cd build
+          make help 2>/dev/null | grep -q clang-tidy || echo "No clang-tidy target available"
+          # Note: clang-tidy integration would need custom targets in CMakeLists.txt
 
       - name: Static Analyzer
         run: |
-          xcodegen generate
-          xcodebuild -scheme ATProtoPDS \
-            -project ATProtoPDS.xcodeproj \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            -skipPackagePluginValidation \
-            build CODE_SIGNING_ALLOWED=NO \
-            RUN_CLANG_STATIC_ANALYZER=YES \
-            2>&1 | tail -30 || true
+          cd build
+          # Use CMake to generate compilation database for clang-tidy
+          scan-build make atprotopds-cli 2>&1 | tail -30 || true

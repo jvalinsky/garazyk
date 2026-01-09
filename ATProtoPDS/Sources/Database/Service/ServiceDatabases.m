@@ -297,7 +297,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        NSString *sql = @"INSERT INTO refresh_tokens (id, token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?, ?)";
+        NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
         if (!stmt) { success = NO; return; }
         
