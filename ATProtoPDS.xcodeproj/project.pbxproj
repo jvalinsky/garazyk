@@ -25,6 +25,7 @@
 		115BBBE84C088FE385F47A05 /* EventFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 72141EF4620C865A5A049254 /* EventFormatter.m */; };
 		1190EFB27E64CA71E6E11C28 /* PDSAuthzManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 19E21EC663E00877FECED32C /* PDSAuthzManager.m */; };
 		11A0236FA56CC764D6988249 /* TOTPService.m in Sources */ = {isa = PBXBuildFile; fileRef = 6AF2E813A1CBB687A1FF774A /* TOTPService.m */; };
+		763F5B98B3D4E37A10530169 /* YubiKeyOATH.m in Sources */ = {isa = PBXBuildFile; fileRef = 9EAE6B8CFD9EA4F01BB3167A /* YubiKeyOATH.m */; };
 		13768FF7B8910629CFACE2A7 /* PDSLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = D8F99115895FEB9FB5A13CFB /* PDSLogger.m */; };
 		16B01C7B094A49BFCC2BA3BA /* secp256k1_wrapper_c.c in Sources */ = {isa = PBXBuildFile; fileRef = F1894C052B2C2E47B70D3C08 /* secp256k1_wrapper_c.c */; };
 		177C407401DEED9BAB872760 /* JWT.m in Sources */ = {isa = PBXBuildFile; fileRef = 6C95E779B2C5D8F15D5BCF1E /* JWT.m */; };
@@ -78,6 +79,7 @@
 		38FA172FC5AEF36737939C26 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = F14D15D04D006413886EF66C /* AppDelegate.m */; };
 		3A7798812413C2EFFFBB9787 /* JWTTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4CC25374EAC7E28257123931 /* JWTTests.m */; };
 		3BDA1145F09525E0CE796B53 /* TOTPService.m in Sources */ = {isa = PBXBuildFile; fileRef = 6AF2E813A1CBB687A1FF774A /* TOTPService.m */; };
+		02202C635D4E7E85D47DE612 /* YubiKeyOATH.m in Sources */ = {isa = PBXBuildFile; fileRef = 9EAE6B8CFD9EA4F01BB3167A /* YubiKeyOATH.m */; };
 		3BEED6D4A76663A641BC1AE4 /* Schema.m in Sources */ = {isa = PBXBuildFile; fileRef = 789F74E8B0D2264C2362EC66 /* Schema.m */; };
 		3E3C74DD3E3A677E82B48B8F /* RelayClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 28B378782EC8375BB300C319 /* RelayClient.m */; };
 		3E42DB2DEDBFF28166E59A45 /* comprehensive_tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 31066A3531B3ABC9B498C08F /* comprehensive_tests.m */; };
@@ -105,6 +107,7 @@
 		573AD0C192FA3BC6F0C7601C /* cbor_indefinite_array.bin in Resources */ = {isa = PBXBuildFile; fileRef = 5E819E7C899EAE6EDF84F38D /* cbor_indefinite_array.bin */; };
 		575F468A88930D0A5C56A971 /* Firehose.m in Sources */ = {isa = PBXBuildFile; fileRef = 82032BB378CA75360057C78C /* Firehose.m */; };
 		59498D015463743CEF6CB295 /* TOTPService.m in Sources */ = {isa = PBXBuildFile; fileRef = 6AF2E813A1CBB687A1FF774A /* TOTPService.m */; };
+		D05E94D869B9A6335CA4FE24 /* YubiKeyOATH.m in Sources */ = {isa = PBXBuildFile; fileRef = 9EAE6B8CFD9EA4F01BB3167A /* YubiKeyOATH.m */; };
 		5994A9579547581B3F6F4A96 /* RelayClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 28B378782EC8375BB300C319 /* RelayClient.m */; };
 		59A98E1BF3C50A18B599F427 /* server_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EEF7AED769BAA314541AD31 /* server_main.m */; };
 		5B5C77B340CAD76947D02B83 /* run-integration-tests.sh in Resources */ = {isa = PBXBuildFile; fileRef = 3EB082EC880981C9362F7960 /* run-integration-tests.sh */; };
@@ -386,6 +389,7 @@
 		6810B5BC79A38D944639DEEB /* Firehose.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Firehose.h; sourceTree = "<group>"; };
 		69BC0943EFB95BCAD98625E2 /* cbor_nested_map.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = cbor_nested_map.bin; sourceTree = "<group>"; };
 		6AF2E813A1CBB687A1FF774A /* TOTPService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TOTPService.m; sourceTree = "<group>"; };
+		9EAE6B8CFD9EA4F01BB3167A /* YubiKeyOATH.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = YubiKeyOATH.m; sourceTree = "<group>"; };
 		6BAB8DBFA029F0B3DE8B864A /* cbor_uint8_overflow.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = cbor_uint8_overflow.bin; sourceTree = "<group>"; };
 		6C95E779B2C5D8F15D5BCF1E /* JWT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = JWT.m; sourceTree = "<group>"; };
 		6D54CB6411F297EAE9A42CC1 /* WebAuthnDomain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebAuthnDomain.h; sourceTree = "<group>"; };
@@ -474,6 +478,7 @@
 		DDEB74F75346FF27074A4047 /* ExploreCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ExploreCache.h; sourceTree = "<group>"; };
 		DF38791D380F4B5B383BB7CE /* RepoCommit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RepoCommit.h; sourceTree = "<group>"; };
 		E573AF547E2B92888A1134FE /* TOTPService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TOTPService.h; sourceTree = "<group>"; };
+		B100F2C8FAADCA9CA1804572 /* YubiKeyOATH.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = YubiKeyOATH.h; sourceTree = "<group>"; };
 		ED1DB8932855854D7F050021 /* PDSDatabase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PDSDatabase.m; sourceTree = "<group>"; };
 		F09446B289621BEA0400A5E4 /* HandleResolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HandleResolver.h; sourceTree = "<group>"; };
 		F0BC8FF1803501AE3344BAA0 /* TOTPTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TOTPTests.m; sourceTree = "<group>"; };
@@ -599,6 +604,8 @@
 				98C3303E68D79AC6A3FD1437 /* TOTPGenerator.m */,
 				E573AF547E2B92888A1134FE /* TOTPService.h */,
 				6AF2E813A1CBB687A1FF774A /* TOTPService.m */,
+				B100F2C8FAADCA9CA1804572 /* YubiKeyOATH.h */,
+				9EAE6B8CFD9EA4F01BB3167A /* YubiKeyOATH.m */,
 				6D54CB6411F297EAE9A42CC1 /* WebAuthnDomain.h */,
 				C37691C95C177FDBE4F97149 /* WebAuthnDomain.m */,
 				2D5F5C40A43DC1EDE873E387 /* WebAuthnVerifier.h */,
@@ -1267,6 +1274,7 @@
 				69ECBA11E0D3F767E622E4BC /* TID.m in Sources */,
 				35D1E6308FAFF2B64D56B599 /* TOTPGenerator.m in Sources */,
 				11A0236FA56CC764D6988249 /* TOTPService.m in Sources */,
+				763F5B98B3D4E37A10530169 /* YubiKeyOATH.m in Sources */,
 				B3BDDABB7F86A540747DDBF7 /* WebAuthnDomain.m in Sources */,
 				A2421D84962149D044ED542D /* WebAuthnVerifier.m in Sources */,
 				3621A385C6E1E285F9FDD6B1 /* WebSocketConnection.m in Sources */,
@@ -1362,6 +1370,7 @@
 				21B254C4B9F37DF155BE85BA /* TID.m in Sources */,
 				5CB016FB67619589E807E0EC /* TOTPGenerator.m in Sources */,
 				3BDA1145F09525E0CE796B53 /* TOTPService.m in Sources */,
+				02202C635D4E7E85D47DE612 /* YubiKeyOATH.m in Sources */,
 				2FA5E5461A7C002D8C08464B /* TOTPTests.m in Sources */,
 				A3CBEA7188F076969BCA474D /* WebAuthnDomain.m in Sources */,
 				2FD161190CEA91C6BE373BB1 /* WebAuthnVerifier.m in Sources */,
@@ -1444,6 +1453,7 @@
 				DB10BAD18EE9A5BF70652B2D /* TID.m in Sources */,
 				D4DAD87CD2C15469AE73C742 /* TOTPGenerator.m in Sources */,
 				59498D015463743CEF6CB295 /* TOTPService.m in Sources */,
+				D05E94D869B9A6335CA4FE24 /* YubiKeyOATH.m in Sources */,
 				E31BC9EC91476F7B7ABEC502 /* WebAuthnDomain.m in Sources */,
 				DCBAC963193A2705FF874D50 /* WebAuthnVerifier.m in Sources */,
 				466BCE77E505C99A75809FE3 /* WebSocketConnection.m in Sources */,
