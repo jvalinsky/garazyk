@@ -23,7 +23,7 @@
 
 - (void)tearDown {
     __autoreleasing NSError *error = nil;
-    [self.fixture teardownPoolWithError:&error];
+    XCTAssertTrue([self.fixture teardownPoolWithError:&error], @"Failed to teardown pool: %@", error);
     self.fixture = nil;
     [super tearDown];
 }
@@ -88,8 +88,8 @@
     [bobStore close];
 
     // Remove test database files
-    [[NSFileManager defaultManager] removeItemAtPath:aliceDbPath error:nil];
-    [[NSFileManager defaultManager] removeItemAtPath:bobDbPath error:nil];
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:aliceDbPath error:&error], @"Failed to remove Alice's test database: %@", error);
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:bobDbPath error:&error], @"Failed to remove Bob's test database: %@", error);
 }
 
 - (void)testCrossTenantDataProtection {
@@ -207,8 +207,8 @@
     [bobStore close];
 
     // Remove test database files
-    [[NSFileManager defaultManager] removeItemAtPath:aliceDbPath error:nil];
-    [[NSFileManager defaultManager] removeItemAtPath:bobDbPath error:nil];
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:aliceDbPath error:&error], @"Failed to remove Alice's test database: %@", error);
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:bobDbPath error:&error], @"Failed to remove Bob's test database: %@", error);
 }
 
 - (void)testTenantSpecificMigrations {
@@ -324,9 +324,9 @@
     [charlieStore close];
 
     // Remove test database files
-    [[NSFileManager defaultManager] removeItemAtPath:aliceDbPath error:nil];
-    [[NSFileManager defaultManager] removeItemAtPath:bobDbPath error:nil];
-    [[NSFileManager defaultManager] removeItemAtPath:charlieDbPath error:nil];
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:aliceDbPath error:&error], @"Failed to remove Alice's test database: %@", error);
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:bobDbPath error:&error], @"Failed to remove Bob's test database: %@", error);
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:charlieDbPath error:&error], @"Failed to remove Charlie's test database: %@", error);
 }
 
 @end
