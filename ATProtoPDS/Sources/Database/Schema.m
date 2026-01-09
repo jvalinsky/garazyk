@@ -138,3 +138,14 @@ NSString * const kPDSOAuthClientsTableCreateSQL =
     @"scope TEXT,"
     @"created_at TEXT NOT NULL"
     @")";
+
+NSString * const kPDSJWTSigningKeysTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS jwt_signing_keys ("
+    @"key_id TEXT PRIMARY KEY,"
+    @"algorithm TEXT NOT NULL,"
+    @"private_key_data BLOB NOT NULL,"
+    @"public_key_data BLOB NOT NULL,"
+    @"is_active INTEGER DEFAULT 1,"
+    @"created_at TEXT NOT NULL,"
+    @"last_used_at TEXT"
+    @")";

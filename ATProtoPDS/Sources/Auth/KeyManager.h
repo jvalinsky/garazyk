@@ -3,6 +3,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSDatabase;
+
 extern NSString * const KeyManagerErrorDomain;
 
 typedef NS_ENUM(NSInteger, KeyManagerError) {
@@ -38,8 +40,10 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 @property (nonatomic, copy) NSString *serviceIdentifier;
 @property (nonatomic, assign) SecKeyAlgorithm signingAlgorithm;
 @property (nonatomic, copy, nullable) NSString *currentKeyID;
+@property (nonatomic, strong, nullable) PDSDatabase *database;
 
 - (nullable instancetype)initWithServiceIdentifier:(NSString *)serviceIdentifier;
+- (nullable instancetype)initWithDatabase:(PDSDatabase *)database serviceIdentifier:(NSString *)serviceIdentifier;
 
 - (nullable KeyPair *)generateKeyPairWithAlgorithm:(NSString *)algorithm
                                           keySize:(NSUInteger)keySize
