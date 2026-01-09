@@ -524,6 +524,7 @@ body {
 .icon-list,
 .icon-folder,
 .icon-tag,
+.icon-book,
 .icon-arrow-left {
     display: inline-block;
     width: 16px;
@@ -552,6 +553,10 @@ body {
 
 .icon-tag {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23666'%3E%3Cpath d='M8 1l6 6-7 7h-6l-7-7 7-6z'/%3E%3C/svg%3E");
+}
+
+.icon-book {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23666'%3E%3Cpath d='M2 2h12v12H2V2zm2 2v8h8V4H4z'/%3E%3C/svg%3E");
 }
 
 .icon-arrow-left {
