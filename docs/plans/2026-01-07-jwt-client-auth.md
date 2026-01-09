@@ -149,7 +149,7 @@ Verify proper error responses for various authentication failure cases.
 - Create: `ATProtoPDS/ATProtoPDS/Auth/OAuthJWTClientAuthTests.m`
 - Modify: `docs/README.md`
 
-**Step 1: Create comprehensive test suite**
+**Step 1: Create  test suite**
 
 Add tests for all JWT client authentication scenarios.
 

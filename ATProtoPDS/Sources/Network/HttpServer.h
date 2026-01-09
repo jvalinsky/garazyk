@@ -51,7 +51,7 @@ typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
 @interface HttpServer : NSObject
 
 /*! The port the server is listening on. */
-@property (nonatomic, readonly) uint16_t port;
+@property (nonatomic, readonly) NSUInteger port;
 
 /*! YES if the server is currently running. */
 @property (nonatomic, readonly, getter=isRunning) BOOL running;
@@ -67,7 +67,7 @@ typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
  @param port The port to listen on.
  @return A new HttpServer instance.
  */
-+ (instancetype)serverWithPort:(uint16_t)port;
++ (instancetype)serverWithPort:(NSUInteger)port;
 
 /*!
  @method startWithError:

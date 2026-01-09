@@ -2798,7 +2798,7 @@ class ServerMetrics {
 
 ## Conclusion
 
-This comprehensive guide covers the major APIs and frameworks available for building network server applications on macOS:
+This  guide covers the major APIs and frameworks available for building network server applications on macOS:
 
 ### Recommended Stack for Modern macOS Servers
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A comprehensive debugging session was conducted to fix all failing tests in the ATProtoPDS Objective-C test suite. The session resulted in all 31 tests passing, up from 25/31 (81%) at the start.
+A  debugging session was conducted to fix all failing tests in the ATProtoPDS Objective-C test suite. The session resulted in all 31 tests passing, up from 25/31 (81%) at the start.
 
 ## Initial State
 

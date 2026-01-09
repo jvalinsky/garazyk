@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This plan outlines a comprehensive security validation strategy for the ATProto PDS Objective-C implementation. The approach uses **multiple specialized subagents** for different security domains, ensuring production-ready code with minimal external dependencies (Apple APIs only).
+This plan outlines a  security validation strategy for the ATProto PDS Objective-C implementation. The approach uses **multiple specialized subagents** for different security domains, ensuring production-ready code with minimal external dependencies (Apple APIs only).
 
 ## Subagent Architecture
 

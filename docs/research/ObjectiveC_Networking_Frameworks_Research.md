@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-This comprehensive research document examines the landscape of Objective-C networking and HTTP server frameworks available for macOS development. The Objective-C ecosystem for server-side networking has matured significantly over the years, with several robust frameworks emerging to handle HTTP server implementations, WebSocket connections, async networking patterns, and secure TLS/SSL communications. While many of these projects have been archived or discontinued by their original maintainers, active forks and community-driven alternatives continue to provide reliable solutions for macOS applications requiring embedded HTTP server capabilities.
+This  research document examines the landscape of Objective-C networking and HTTP server frameworks available for macOS development. The Objective-C ecosystem for server-side networking has matured significantly over the years, with several  frameworks emerging to handle HTTP server implementations, WebSocket connections, async networking patterns, and secure TLS/SSL communications. While many of these projects have been archived or discontinued by their original maintainers, active forks and community-driven alternatives continue to provide reliable solutions for macOS applications requiring embedded HTTP server capabilities.
 
-The research reveals that GCDWebServer and CocoaHTTPServer represent the two most influential HTTP server frameworks in the Objective-C ecosystem, with GCDWebServer being particularly notable for its modern GCD-based architecture and comprehensive feature set. For WebSocket support, CocoaAsyncSocket remains the foundational library upon which many solutions are built. The async networking landscape is well-served by both Grand Central Dispatch (GCD) and NSOperationQueue patterns, each offering distinct advantages depending on use case requirements.
+The research reveals that GCDWebServer and CocoaHTTPServer represent the two most influential HTTP server frameworks in the Objective-C ecosystem, with GCDWebServer being particularly notable for its modern GCD-based architecture and  feature set. For WebSocket support, CocoaAsyncSocket remains the foundational library upon which many solutions are built. The async networking landscape is well-served by both Grand Central Dispatch (GCD) and NSOperationQueue patterns, each offering distinct advantages depending on use case requirements.
 
 ---
 
@@ -124,7 +124,7 @@ This framework targets applications requiring higher throughput and more sophist
 
 ### 1.5 IcedHTTP: Lightweight Alternative
 
-IcedHTTP offers a minimal-footprint HTTP server implementation focused on simplicity and ease of integration. This library targets applications that require basic HTTP server functionality without the overhead of more comprehensive frameworks.
+IcedHTTP offers a minimal-footprint HTTP server implementation focused on simplicity and ease of integration. This library targets applications that require basic HTTP server functionality without the overhead of more  frameworks.
 
 The project's lightweight design makes it particularly suitable for resource-constrained environments or applications where minimal dependencies are preferred. IcedHTTP provides fundamental HTTP server capabilities while maintaining a small code footprint.
 
@@ -136,7 +136,7 @@ The project's lightweight design makes it particularly suitable for resource-con
 
 CocoaAsyncSocket, also created by Robbie Hanson, provides the foundational async socket functionality upon which many Objective-C networking solutions are built. The library offers both TCP and UDP socket implementations, with GCDAsyncSocket and GCDAsyncUdpSocket classes providing thread-safe, non-blocking socket operations.
 
-The library has been actively developed for over 16 years with over 12,000 stars on GitHub, demonstrating its stability and widespread adoption. CocoaAsyncSocket supports TLS/SSL encryption through the SecureTransport API and provides comprehensive delegate callbacks for all socket events.
+The library has been actively developed for over 16 years with over 12,000 stars on GitHub, demonstrating its stability and widespread adoption. CocoaAsyncSocket supports TLS/SSL encryption through the SecureTransport API and provides  delegate callbacks for all socket events.
 
 **WebSocket Implementation Pattern**
 
@@ -271,7 +271,7 @@ WebServer *server = [[WebServer alloc] init];
 
 NSJSONSerialization, introduced in iOS 5.0 and Mac OS X 10.7, provides Apple's official JSON serialization capabilities. As a Foundation framework component, it requires no external dependencies and offers guaranteed compatibility with Apple's platforms.
 
-The class supports both JSON parsing (NSJSONReadingOptions) and JSON generation (NSJSONWritingOptions), providing comprehensive JSON handling capabilities. Modern versions support options for allowing fragments (top-level non-dictionary/array values), serializing mutable containers, and pretty printing.
+The class supports both JSON parsing (NSJSONReadingOptions) and JSON generation (NSJSONWritingOptions), providing  JSON handling capabilities. Modern versions support options for allowing fragments (top-level non-dictionary/array values), serializing mutable containers, and pretty printing.
 
 **NSJSONSerialization Performance Characteristics**
 
@@ -342,7 +342,7 @@ For contemporary Objective-C projects, NSJSONSerialization represents the recomm
 
 ### 4.1 Grand Central Dispatch (GCD) Patterns
 
-Grand Central Dispatch provides the fundamental async execution model for macOS and iOS applications. GCD's thread pool architecture efficiently manages system resources while providing simple APIs for submitting work for asynchronous execution.
+Grand Central Dispatch provides the fundamental async execution model for macOS and iOS applications. GCD's thread pool architecture ly manages system resources while providing simple APIs for submitting work for asynchronous execution.
 
 **Dispatch Queues for Network Requests**
 
@@ -1080,11 +1080,11 @@ Middleware patterns in Objective-C HTTP servers typically involve wrapping handl
 
 ## 9. Conclusion and Recommendations
 
-The Objective-C networking ecosystem for macOS provides robust solutions for HTTP server implementation, async networking, and secure communications. While many foundational projects have been archived, their continued influence and active community forks ensure ongoing viability for Objective-C applications requiring server capabilities.
+The Objective-C networking ecosystem for macOS provides  solutions for HTTP server implementation, async networking, and secure communications. While many foundational projects have been archived, their continued influence and active community forks ensure ongoing viability for Objective-C applications requiring server capabilities.
 
 **Primary Recommendations:**
 
-For new projects requiring embedded HTTP servers, **GCDWebServer** (or its active fork **WebServerKit**) remains the recommended choice due to its comprehensive feature set, excellent documentation, and proven reliability. The framework's handler-based architecture provides the flexibility needed for most use cases while maintaining simplicity.
+For new projects requiring embedded HTTP servers, **GCDWebServer** (or its active fork **WebServerKit**) remains the recommended choice due to its  feature set, excellent documentation, and proven reliability. The framework's handler-based architecture provides the flexibility needed for most use cases while maintaining simplicity.
 
 For WebSocket support, combining **CocoaAsyncSocket** for low-level socket operations with custom protocol implementation provides maximum control. Alternatively, **Telegraph** offers integrated HTTP and WebSocket support for applications requiring both protocols.
 
