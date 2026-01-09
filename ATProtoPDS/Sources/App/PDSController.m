@@ -532,6 +532,16 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         success = [store putBlock:block forDid:did error:nil];
+
+        if (success) {
+            PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+            blob.cid = cidData;
+            blob.did = did;
+            blob.mimeType = mimeType;
+            blob.size = blobData.length;
+            blob.createdAt = [NSDate date];
+            success = [store saveBlob:blob error:nil];
+        }
     } error:nil];
     
     if (!success) {
@@ -801,7 +811,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return [self uploadBlob:blobData forDid:did mimeType:mimeType error:error];
 }
 
-- (nullable NSDictionary *)getBlobWithCID:(NSString *)cid 
+- (nullable NSDictionary *)getBlobWithCID:(NSString *)cid
                                       did:(NSString *)did
                                     error:(NSError **)error {
     NSData *cidData = [self cidDataFromString:cid];
@@ -813,14 +823,55 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }
     NSData *blob = [self getBlob:cidData forDid:did error:error];
     if (!blob) return nil;
-    return @{@"blob": @{@"mimeType": @"application/octet-stream", @"size": @(blob.length)}};
+
+    PDSActorStore *store = [_userDatabasePool storeForDid:did error:nil];
+    PDSDatabaseBlob *blobMetadata = [store getBlobForCID:cidData error:nil];
+    NSString *mimeType = blobMetadata.mimeType ?: @"application/octet-stream";
+
+    return @{
+        @"blob": blob,
+        @"mimeType": mimeType,
+        @"size": @(blob.length)
+    };
 }
 
-- (nullable NSArray *)listBlobsForDID:(NSString *)did 
-                                limit:(NSUInteger)limit 
+- (nullable NSArray *)listBlobsForDID:(NSString *)did
+                                limit:(NSUInteger)limit
                                cursor:(nullable NSString *)cursor
                                 error:(NSError **)error {
-    return @[];
+    PDSActorStore *store = [_userDatabasePool storeForDid:did error:error];
+    if (!store) return @[];
+
+    NSArray<PDSDatabaseBlob *> *blobs = [store listBlobsForDid:did limit:limit cursor:cursor error:error];
+
+    NSMutableArray *result = [NSMutableArray array];
+    for (PDSDatabaseBlob *blob in blobs) {
+        NSString *cidString = [[blob.cid base64EncodedStringWithOptions:0] stringByReplacingOccurrencesOfString:@"=" withString:@""];
+        [result addObject:@{
+            @"cid": cidString ?: @"",
+            @"mimeType": blob.mimeType ?: @"application/octet-stream",
+            @"size": @(blob.size)
+        }];
+    }
+    return result;
+}
+
+- (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error {
+    NSData *cidData = [self cidDataFromString:cid];
+    if (!cidData) {
+        if (error) *error = [NSError errorWithDomain:PDSControllerErrorDomain
+                                                code:PDSControllerErrorBlobNotFound
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
+        return NO;
+    }
+
+    __block BOOL success = NO;
+    [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store deleteBlobForCID:cidData forDid:did error:nil];
+    } error:nil];
+
+    return success;
 }
 
 #pragma mark - Write Operations (for backward compatibility)

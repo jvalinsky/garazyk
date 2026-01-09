@@ -110,6 +110,10 @@
     [self registerMethod:@"com.atproto.repo.uploadBlob" handler:handler];
 }
 
+- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.repo.deleteBlob" handler:handler];
+}
+
 - (void)registerComAtprotoSyncGetRepo:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.getRepo" handler:handler];
 }
