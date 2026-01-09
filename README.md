@@ -235,9 +235,14 @@ NSPds/
 │   │   └── Network/               # HTTP server
 │   └── Tests/                     # Unit and integration tests
 ├── docs/                          # Documentation
-│   ├── ARCHITECTURE_DIAGRAMS.md   # System diagrams
-│   ├── SESSION_SUMMARY.md         # Implementation details
-│   └── EXECUTIVE_SUMMARY.md       # High-level overview
+│   ├── guides/                    # Setup, user, and developer guides
+│   ├── architecture/              # System diagrams and data models
+│   ├── security/                  # Security plans, reports, and audits
+│   ├── plans/                     # Historical implementation plans
+│   └── research/                  # Research and reference material
+├── tests/                         # Test suites
+│   └── fixtures/                  # Test data files
+├── fuzzing/                       # Fuzz testing infrastructure
 ├── scripts/                       # Build and utility scripts
 └── README.md                      # This file
 ```
