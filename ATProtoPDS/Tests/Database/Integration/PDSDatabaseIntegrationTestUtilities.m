@@ -369,6 +369,9 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         return NO;
     }
 
+    // Store destination directory for validation
+    self.destinationDirectory = destinationDirectory;
+
     // Create destination directory
     if (![fm createDirectoryAtPath:destinationDirectory withIntermediateDirectories:YES attributes:nil error:error]) {
         return NO;
@@ -415,12 +418,179 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 }
 
 - (BOOL)validateSchemaAfterMigration:(NSError **)error {
-    // This is a placeholder - in a real implementation, this would:
-    // 1. Scan the destination directory for migrated tenant databases
-    // 2. Open each database and validate its schema
-    // 3. Ensure data integrity across all migrated databases
+    NSFileManager *fm = [NSFileManager defaultManager];
 
-    // For now, return YES as this would require more complex setup
+    // Verify destination directory exists
+    if (!self.destinationDirectory || ![fm fileExistsAtPath:self.destinationDirectory]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: @"Destination directory not found for schema validation"}];
+        }
+        return NO;
+    }
+
+    // Get all subdirectories (each represents a tenant)
+    NSArray<NSString *> *tenantDirectories = [fm contentsOfDirectoryAtPath:self.destinationDirectory error:error];
+    if (!tenantDirectories) {
+        return NO;
+    }
+
+    NSMutableArray<NSError *> *validationErrors = [NSMutableArray array];
+
+    // Validate schema for each tenant database
+    for (NSString *tenantDirName in tenantDirectories) {
+        NSString *tenantDirPath = [self.destinationDirectory stringByAppendingPathComponent:tenantDirName];
+
+        // Skip non-directory items
+        NSDictionary *attributes = [fm attributesOfItemAtPath:tenantDirPath error:nil];
+        if (![attributes[NSFileType] isEqualToString:NSFileTypeDirectory]) {
+            continue;
+        }
+
+        // Check for actor store database
+        NSString *actorStorePath = [tenantDirPath stringByAppendingPathComponent:@"actorstore.db"];
+        if ([fm fileExistsAtPath:actorStorePath]) {
+            NSError *actorStoreError = nil;
+            if (![self validateTenantDatabaseSchema:actorStorePath tenantDID:tenantDirName error:&actorStoreError]) {
+                [validationErrors addObject:actorStoreError];
+            }
+        }
+
+        // Check for service databases (accounts.db, repos.db, etc.)
+        NSArray<NSString *> *serviceDbNames = @[@"accounts.db", @"repos.db", @"records.db", @"blocks.db"];
+        for (NSString *serviceDbName in serviceDbNames) {
+            NSString *serviceDbPath = [tenantDirPath stringByAppendingPathComponent:serviceDbName];
+            if ([fm fileExistsAtPath:serviceDbPath]) {
+                NSError *serviceDbError = nil;
+                if (![self validateServiceDatabaseSchema:serviceDbPath databaseName:serviceDbName error:&serviceDbError]) {
+                    [validationErrors addObject:serviceDbError];
+                }
+            }
+        }
+    }
+
+    // If any validation errors occurred, return the first one
+    if (validationErrors.count > 0) {
+        if (error) {
+            *error = validationErrors.firstObject;
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
+- (BOOL)validateTenantDatabaseSchema:(NSString *)databasePath tenantDID:(NSString *)tenantDID error:(NSError **)error {
+    // Open the actor store database
+    sqlite3 *db;
+    int result = sqlite3_open([databasePath UTF8String], &db);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to open tenant database for DID %@: %s", tenantDID, sqlite3_errmsg(db)]}];
+        }
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Check for required actor store tables
+    NSArray<NSString *> *requiredTables = @[@"repo_root", @"records", @"ipld_blocks", @"accounts"];
+    for (NSString *tableName in requiredTables) {
+        NSString *query = @"SELECT name FROM sqlite_master WHERE type='table' AND name=?";
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, [tableName UTF8String], -1, SQLITE_TRANSIENT);
+            int stepResult = sqlite3_step(stmt);
+            if (stepResult != SQLITE_ROW) {
+                if (error) {
+                    *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                              code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Required table '%@' not found in tenant database for DID %@", tableName, tenantDID]}];
+                }
+                sqlite3_finalize(stmt);
+                sqlite3_close(db);
+                return NO;
+            }
+            sqlite3_finalize(stmt);
+        } else {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to query schema for table '%@' in tenant database for DID %@", tableName, tenantDID]}];
+            }
+            sqlite3_close(db);
+            return NO;
+        }
+    }
+
+    sqlite3_close(db);
+    return YES;
+}
+
+- (BOOL)validateServiceDatabaseSchema:(NSString *)databasePath databaseName:(NSString *)databaseName error:(NSError **)error {
+    // Open the service database
+    sqlite3 *db;
+    int result = sqlite3_open([databasePath UTF8String], &db);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to open service database %@: %s", databaseName, sqlite3_errmsg(db)]}];
+        }
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Determine expected table based on database name
+    NSString *expectedTable;
+    if ([databaseName isEqualToString:@"accounts.db"]) {
+        expectedTable = @"accounts";
+    } else if ([databaseName isEqualToString:@"repos.db"]) {
+        expectedTable = @"repos";
+    } else if ([databaseName isEqualToString:@"records.db"]) {
+        expectedTable = @"records";
+    } else if ([databaseName isEqualToString:@"blocks.db"]) {
+        expectedTable = @"blocks";
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unknown service database type: %@", databaseName]}];
+        }
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Check for the expected table
+    NSString *query = @"SELECT name FROM sqlite_master WHERE type='table' AND name=?";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, [expectedTable UTF8String], -1, SQLITE_TRANSIENT);
+        int stepResult = sqlite3_step(stmt);
+        if (stepResult != SQLITE_ROW) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Required table '%@' not found in service database %@", expectedTable, databaseName]}];
+            }
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return NO;
+        }
+        sqlite3_finalize(stmt);
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to query schema for table '%@' in service database %@", expectedTable, databaseName]}];
+        }
+        sqlite3_close(db);
+        return NO;
+    }
+
+    sqlite3_close(db);
     return YES;
 }
 
@@ -539,16 +709,26 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 }
 
 - (BOOL)validateConstraintsWithError:(NSError **)error {
-    // Check foreign key constraints for key tables
-    NSArray<NSString *> *tablesWithForeignKeys = @[
-        kPDSRecordTableName,
-        kPDSBlockTableName,
-        kPDSBlobTableName,
-        kPDSInviteCodeTableName,
-        kPDSPasskeysTableName
-    ];
+    // Define expected foreign key relationships for each table
+    NSDictionary<NSString *, NSArray<NSDictionary *> *> *expectedForeignKeys = @{
+        kPDSRecordTableName: @[
+            @{@"from": @"did", @"table": kPDSAccountTableName, @"to": @"did"}
+        ],
+        kPDSBlockTableName: @[
+            @{@"from": @"repo_did", @"table": kPDSRepoTableName, @"to": @"owner_did"}
+        ],
+        kPDSBlobTableName: @[
+            @{@"from": @"did", @"table": kPDSAccountTableName, @"to": @"did"}
+        ],
+        kPDSInviteCodeTableName: @[
+            // invite_codes table currently has no foreign key constraints defined
+        ],
+        kPDSPasskeysTableName: @[
+            @{@"from": @"account_did", @"table": kPDSAccountTableName, @"to": @"did"}
+        ]
+    };
 
-    for (NSString *tableName in tablesWithForeignKeys) {
+    for (NSString *tableName in expectedForeignKeys) {
         NSString *fkSQL = [NSString stringWithFormat:@"PRAGMA foreign_key_list(%@)", tableName];
         NSArray *fkList = [self.database executeParameterizedQuery:fkSQL params:@[] error:error];
         if (!fkList) {
@@ -560,14 +740,49 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
             return NO;
         }
 
-        // Basic check that tables expected to have foreign keys actually have them
-        if ([tableName isEqualToString:kPDSRecordTableName] && fkList.count == 0) {
+        NSArray<NSDictionary *> *expectedFKs = expectedForeignKeys[tableName];
+
+        // Check that we have the expected number of foreign keys
+        if (fkList.count != expectedFKs.count) {
             if (error) {
                 *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
                                           code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
-                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Table '%@' should have foreign key constraints but has none", tableName]}];
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Table '%@' has %lu foreign keys, expected %lu",
+                                                                             tableName, (unsigned long)fkList.count, (unsigned long)expectedFKs.count]}];
             }
             return NO;
+        }
+
+        // Validate each expected foreign key relationship
+        for (NSDictionary *expectedFK in expectedFKs) {
+            NSString *fromColumn = expectedFK[@"from"];
+            NSString *toTable = expectedFK[@"table"];
+            NSString *toColumn = expectedFK[@"to"];
+
+            // Find the matching foreign key in the actual list
+            BOOL foundMatchingFK = NO;
+            for (NSDictionary *actualFK in fkList) {
+                NSString *actualFrom = actualFK[@"from"];
+                NSString *actualTable = actualFK[@"table"];
+                NSString *actualTo = actualFK[@"to"];
+
+                if ([actualFrom isEqualToString:fromColumn] &&
+                    [actualTable isEqualToString:toTable] &&
+                    [actualTo isEqualToString:toColumn]) {
+                    foundMatchingFK = YES;
+                    break;
+                }
+            }
+
+            if (!foundMatchingFK) {
+                if (error) {
+                    *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                              code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Table '%@' missing expected foreign key: %@ -> %@.%@",
+                                                                                 tableName, fromColumn, toTable, toColumn]}];
+                }
+                return NO;
+            }
         }
     }
 
