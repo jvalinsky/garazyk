@@ -37,6 +37,8 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, strong) NSMutableDictionary *cacheTimestamps; // Exposed for testing
+@property (nonatomic, assign) NSTimeInterval staleTTL; // Exposed for testing
+@property (nonatomic, assign) NSTimeInterval maxTTL; // Exposed for testing
 
 /// Resolve a DID to its document
 /// @param did The DID to resolve

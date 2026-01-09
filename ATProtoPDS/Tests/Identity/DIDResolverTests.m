@@ -72,8 +72,8 @@
 
     // Set a timestamp that's within stale TTL but beyond fresh TTL
     NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
-    NSTimeInterval staleTime = currentTime - (resolver->_staleTTL + 60); // 1 hour + 1 min ago
-    resolver->_cacheTimestamps[@"did:test:123"] = @(staleTime);
+    NSTimeInterval staleTime = currentTime - (resolver.staleTTL + 60); // 1 hour + 1 min ago
+    resolver.cacheTimestamps[@"did:test:123"] = @(staleTime);
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"TTL caching"];
     [resolver resolveDID:@"did:test:123" completion:^(NSDictionary *document, NSError *error) {
@@ -94,8 +94,8 @@
 
     // Set a timestamp that's beyond max TTL
     NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
-    NSTimeInterval expiredTime = currentTime - (resolver->_maxTTL + 60); // 1 day + 1 min ago
-    resolver->_cacheTimestamps[@"did:test:expired"] = @(expiredTime);
+    NSTimeInterval expiredTime = currentTime - (resolver.maxTTL + 60); // 1 day + 1 min ago
+    resolver.cacheTimestamps[@"did:test:expired"] = @(expiredTime);
 
     // This should trigger a fresh resolution since cache is expired
     XCTestExpectation *expectation = [self expectationWithDescription:@"Expired cache"];

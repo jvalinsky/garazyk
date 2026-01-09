@@ -1,10 +1,10 @@
 #import <XCTest/XCTest.h>
 #import <Foundation/Foundation.h>
-#import "PDSController.h"
+#import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
-#import "DIDResolver.h"
+#import "Core/DID.h"
 #import "Identity/HandleResolver.h"
-#import "OAuth2Server.h"
+#import "Auth/OAuth2.h"
 
 // Test utilities and helpers
 @interface ATProtoPDSTests : XCTestCase

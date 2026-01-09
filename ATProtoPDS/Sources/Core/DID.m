@@ -60,13 +60,14 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 @implementation DIDResolver {
     os_log_t _log;
     NSURLSession *_session;
-    NSTimeInterval _staleTTL;
-    NSTimeInterval _maxTTL;
-    NSMutableDictionary *_cacheTimestamps; // Track cache timestamps for TTL
+    // _staleTTL and _maxTTL are synthesized properties
+    // _cacheTimestamps is synthesized property
 }
 
 @synthesize cache = _cache;
 @synthesize cacheTimestamps = _cacheTimestamps;
+@synthesize staleTTL = _staleTTL;
+@synthesize maxTTL = _maxTTL;
 
 - (instancetype)init {
     self = [super init];
