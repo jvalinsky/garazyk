@@ -15,12 +15,12 @@
 ## Foundation Framework Networking Classes
 
 ### Overview
-Apple provides several networking APIs within the Foundation framework, ranging from high-level URL loading systems to lower-level stream-based communications.
+Apple provides multiple networking APIs within the Foundation framework, including high-level URL loading systems and lower-level stream-based communications.
 
 ### NSURLSession
 **Best for:** HTTP/HTTPS clients and servers, REST API communication
 
-NSURLSession is primarily designed for client-side operations but can be adapted for server-like behaviors:
+NSURLSession provides client-side operations with server behavior adaptations:
 
 ```swift
 import Foundation
@@ -44,8 +44,8 @@ class HTTPServerHandler: NSObject, URLSessionDataDelegate {
                                delegate: self, 
                                delegateQueue: nil)
         
-        // Note: NSURLSession doesn't support server sockets directly
-        // For actual server implementation, use Network.framework or SwiftNIO
+        // NSURLSession does not support server sockets directly
+        // Use Network.framework or SwiftNIO for server implementation
     }
     
     func urlSession(_ session: URLSession, 
@@ -152,7 +152,7 @@ extension StreamBasedServer: StreamDelegate {
 ```
 
 ### CFNetwork (C-based API)
-**Best for:** High-performance requirements, integration with C code
+**Best for:** High-performance requirements, C code integration
 
 ```c
 #include <CoreFoundation/CoreFoundation.h>
@@ -186,10 +186,10 @@ void CFNetworkServerExample() {
 ```
 
 ### GCDAsyncSocket Alternatives
-While GCDAsyncSocket (CocoaAsyncSocket) is popular, Apple recommends native frameworks:
+Apple recommends native frameworks over GCDAsyncSocket (CocoaAsyncSocket):
 
 ```swift
-// Modern alternative using DispatchSource
+// DispatchSource implementation
 class GCDBasedServer {
     private var listenHandle: DispatchSourceReadProtocol?
     private let listenQueue = DispatchQueue(label: "com.server.listen", 
@@ -279,7 +279,7 @@ class GCDBasedServer {
 ## Network.framework (Modern Approach)
 
 ### Overview
-Network.framework (introduced in iOS 13/macOS 10.15) provides a modern, Swift-friendly API for network communication based on the IETF Transport Services (TAPS) specification.
+Network.framework (iOS 13/macOS 10.15+) provides a Swift-friendly API for network communication based on the IETF Transport Services (TAPS) specification.
 
 ### NWListener for TCP Servers
 ```swift
@@ -591,7 +591,7 @@ class NetworkMonitor {
 ## Bonjour/mDNS Service Discovery
 
 ### Overview
-Bonjour (Apple's implementation of DNS-SD and mDNS) enables zero-configuration service discovery on local networks.
+Bonjour implements DNS-SD and mDNS for zero-configuration service discovery on local networks.
 
 ### NSNetService (High-level API)
 ```swift
@@ -865,7 +865,7 @@ class NetworkFrameworkDiscovery {
 ## Keychain Services for Secure Credential Storage
 
 ### Overview
-The Keychain Services API provides secure storage for passwords, encryption keys, certificates, and other sensitive data.
+Keychain Services API provides secure storage for passwords, encryption keys, certificates, and sensitive data.
 
 ### Basic Keychain Operations
 ```swift
@@ -1221,7 +1221,7 @@ class QuickKeychain {
 ## Security Framework for Cryptographic Operations
 
 ### Overview
-The Security framework provides cryptographic services including encryption, hashing, digital signatures, and certificate handling.
+Security framework provides cryptographic services including encryption, hashing, digital signatures, and certificate handling.
 
 ### CommonCrypto Integration
 ```swift
@@ -1584,7 +1584,7 @@ struct TLSManager {
 ## System Configuration Framework
 
 ### Overview
-The System Configuration framework provides APIs for network configuration, reachability monitoring, and network state management.
+System Configuration framework provides APIs for network configuration, reachability monitoring, and network state management.
 
 ### Network Reachability
 ```swift
@@ -1864,7 +1864,7 @@ class ProxyConfigurationManager {
 ## LaunchDaemons and Background Execution
 
 ### Overview
-launchd is the init system for macOS, responsible for starting, stopping, and managing background processes and daemons.
+launchd is the macOS init system responsible for starting, stopping, and managing background processes and daemons.
 
 ### LaunchDaemon Configuration
 ```xml

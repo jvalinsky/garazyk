@@ -19,7 +19,7 @@ This guide covers building, installing, and running the ATProto PDS server.
 
 ## Installation Methods
 
-### Method 1: Quick Setup (Recommended)
+### Method 1: Quick Setup
 
 ```bash
 # Clone repository
@@ -31,7 +31,7 @@ make build
 ./scripts/start_server.sh
 ```
 
-Server will be available at `http://localhost:2583`
+Server available at `http://localhost:2583`
 
 ### Method 2: Development Setup
 
@@ -83,7 +83,7 @@ xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS build
 make build-debug
 # Features: Logging, assertions, debug symbols
 # Size: Larger binary
-# Performance: Slower but detailed error info
+# Performance: Slower with detailed error info
 ```
 
 #### Release Build
@@ -107,7 +107,7 @@ The project automatically handles most dependencies:
 
 ### Manual Dependency Installation
 
-If automatic setup fails:
+Manual dependency installation when automatic setup fails:
 
 ```bash
 # Install Homebrew (if not present)
@@ -157,7 +157,7 @@ export AT_PROTO_PORT="2583"
 
 ### Database Configuration
 
-The server automatically creates and migrates the SQLite database. To reset:
+The server automatically creates and migrates the SQLite database. Reset procedure:
 
 ```bash
 # Stop server
@@ -166,7 +166,7 @@ pkill -f "atprotopds"
 # Remove database
 rm -f data/pds.db
 
-# Restart server (will recreate database)
+# Restart server (recreates database)
 ./scripts/start_server.sh
 ```
 
@@ -201,7 +201,7 @@ Options:
 
 ### Systemd Service (Optional)
 
-For production deployment, create a systemd service:
+Create systemd service for production deployment:
 
 ```bash
 # Create service file
@@ -257,9 +257,9 @@ tail -f server.log | grep "handleApi"
 
 ### Browser Testing
 
-1. **Explorer UI**: `http://localhost:2583/explore/`
-2. **API Documentation**: `http://localhost:2583/explore/api/docs`
-3. **OpenAPI Spec**: `http://localhost:2583/explore/api/openapi.yaml`
+1. Explorer UI: `http://localhost:2583/explore/`
+2. API Documentation: `http://localhost:2583/explore/api/docs`
+3. OpenAPI Spec: `http://localhost:2583/explore/api/openapi.yaml`
 
 ## Troubleshooting Installation
 
@@ -307,7 +307,7 @@ lsof -i :2583
 # Kill process
 kill -9 <PID>
 
-# Or use different port
+# Use different port
 ./atprotopds-cli serve --port 2584
 ```
 
@@ -328,7 +328,7 @@ rm -f data/pds.db
 ps aux | grep atprotopds
 
 # Monitor with Activity Monitor
-# Look for memory leaks or excessive usage
+# Check for memory leaks or excessive usage
 ```
 
 ### Network Issues
@@ -434,18 +434,18 @@ ls /cores/
 
 ### Production Deployment
 
-1. **Build release version**
+1. Build release version
    ```bash
    make build-release
    ```
 
-2. **Configure environment**
+2. Configure environment
    ```bash
    export AT_PROTO_PORT=80
    export AT_PROTO_DATA_DIR=/var/lib/atproto
    ```
 
-3. **Set up reverse proxy** (nginx example)
+3. Set up reverse proxy (nginx example)
    ```nginx
    server {
        listen 80;
@@ -459,7 +459,7 @@ ls /cores/
    }
    ```
 
-4. **Enable SSL** with Let's Encrypt
+4. Enable SSL with Let's Encrypt
    ```bash
    certbot --nginx -d your-domain.com
    ```
@@ -478,21 +478,21 @@ CMD ["/app/atprotopds-cli", "serve", "--port", "2583"]
 
 ### Getting Help
 
-1. **Check documentation**: See `docs/` folder
-2. **View logs**: `tail -f server.log`
-3. **Test endpoints**: `./scripts/test_endpoints.sh`
-4. **GitHub Issues**: Report bugs and request features
+1. Check documentation: See `docs/` folder
+2. View logs: `tail -f server.log`
+3. Test endpoints: `./scripts/test_endpoints.sh`
+4. GitHub Issues: Report bugs and request features
 
 ### Common Support Questions
 
-- **"Server won't start"**: Check port availability and logs
-- **"Database errors"**: Reset database or check permissions
-- **"Slow performance"**: Clear cache or check network connectivity
-- **"API errors"**: Verify request format and check server logs
+- Server won't start: Check port availability and logs
+- Database errors: Reset database or check permissions
+- Slow performance: Clear cache or check network connectivity
+- API errors: Verify request format and check server logs
 
 ### Community Resources
 
-- **Documentation**: `docs/` folder in repository
-- **API Reference**: `http://localhost:2583/explore/api/docs`
-- **Architecture**: `docs/ARCHITECTURE_DIAGRAMS.md`
-- **Implementation**: `docs/SESSION_SUMMARY.md`
+- Documentation: `docs/` folder in repository
+- API Reference: `http://localhost:2583/explore/api/docs`
+- Architecture: `docs/ARCHITECTURE_DIAGRAMS.md`
+- Implementation: `docs/SESSION_SUMMARY.md`

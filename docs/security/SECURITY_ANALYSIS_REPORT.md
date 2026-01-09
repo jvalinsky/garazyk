@@ -1,7 +1,7 @@
 # Security Analysis Report - ATProto PDS
 
 **Date:** January 7, 2025
-**Scanner:** clang-tidy + Fuzzers
+**Analysis Tools:** clang-tidy + Fuzzers
 
 ---
 
@@ -20,8 +20,8 @@
 ### 1. Deprecated API Usage (HIGH)
 **File:** `ATProtoPDS/Sources/App/PDSController.m:284`
 **Issue:** Use of deprecated `NSURLConnection sendSynchronousRequest:` (macOS 10.3-10.11)
-**Risk:** API removed in modern macOS, may cause runtime failures
-**Fix:** Replace with `NSURLSession dataTaskWithRequest:completionHandler:`
+**Impact:** API removed in modern macOS, may cause runtime failures
+**Resolution:** Replace with `NSURLSession dataTaskWithRequest:completionHandler:`
 
 ```objc
 // Current (deprecated):
@@ -33,7 +33,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 ### 2. Missing Nullability Annotations (HIGH)
 **File:** `ATProtoPDS/Sources/Auth/Session.h:331`
 **Issue:** Double pointer parameters lack nullability specifiers
-**Risk:** Compiler cannot enforce null checks, potential null pointer dereference
+**Impact:** Compiler cannot enforce null checks, potential null pointer dereference
 
 ```objc
 // Current:
@@ -43,8 +43,8 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
                newSession:(Session **)newSession
                       error:(NSError **)error;
 
-// Fix: Add _Nullable/_Nonnull
-               newSession:(Session * _Nullable * _Nonnull)newSession
+// Resolution: Add _Nullable/_Nonnull
+                newSession:(Session * _Nullable * _Nonnull)newSession
 ```
 
 ---
@@ -55,7 +55,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 **File:** `ATProtoPDS/Sources/Repository/CBOR.m`
 **Lines:** 377, 403, 469, 498, 556, 605, 662, 713
 **Issue:** Multiple `bugprone-branch-clone` warnings - switch statements with identical branches
-**Risk:** Maintenance burden, potential for bugs if branches should differ
+**Impact:** Maintenance burden, potential for bugs if branches should differ
 
 ### 4. Incomplete Method Implementations (MEDIUM)
 **Files:**
@@ -64,7 +64,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 - `ATProtoPDS/Sources/Database/PDSDatabase.m:1083` - `getRecordsForDid:collection:error:` not implemented
 - `ATProtoPDS/Sources/Repository/MSTPersistence.m:7` - Multiple methods not implemented
 
-**Risk:** These methods are declared in headers but may not be called, or are stubs
+**Impact:** These methods are declared in headers but may not be called, or are stubs
 
 ### 5. Type Mismatch in Auth Handler (MEDIUM)
 **File:** `ATProtoPDS/Sources/Admin/PDSAdminHandler.m:42`
@@ -111,7 +111,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 | fuzz_http | 5000 | 0 | ~30s |
 | fuzz_cbor | 5000 | 0 | ~30s |
 
-**Conclusion:** No parsing vulnerabilities found in HTTP, XRPC, or CBOR parsers with current corpus.
+**Results:** No parsing vulnerabilities found in HTTP, XRPC, or CBOR parsers with current corpus.
 
 ---
 

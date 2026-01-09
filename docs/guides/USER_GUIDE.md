@@ -1,10 +1,10 @@
 # ATProto PDS Explorer User Guide
 
-This guide explains how to use the web-based ATProto PDS Explorer to browse and analyze AT Protocol data.
+This guide provides procedures for using the web-based ATProto PDS Explorer to browse and analyze AT Protocol data.
 
 ## Overview
 
-The ATProto PDS Explorer is a web interface for exploring AT Protocol data stored in a Personal Data Server (PDS). It provides an intuitive way to:
+The ATProto PDS Explorer provides a web interface for exploring AT Protocol data stored in a Personal Data Server (PDS). Capabilities include:
 
 - Browse accounts and repositories
 - Examine record collections and individual records
@@ -16,15 +16,15 @@ The ATProto PDS Explorer is a web interface for exploring AT Protocol data store
 
 ### Accessing the Explorer
 
-1. **Start the server**:
+1. Start the server:
    ```bash
    cd NSPds
    ./scripts/start_server.sh
    ```
 
-2. **Open in browser**: Visit `http://localhost:2583/explore/`
+2. Open browser: Visit `http://localhost:2583/explore/`
 
-3. **Verify functionality**: The account list should load automatically
+3. Verify functionality: Account list loads automatically
 
 ## Interface Layout
 
@@ -33,32 +33,32 @@ The ATProto PDS Explorer is a web interface for exploring AT Protocol data store
 The left sidebar contains:
 
 #### 1. DID Lookup Panel
-- **Input field**: Enter DID (e.g., `did:plc:g3x5vnga7kiu3oaookgeozpb`) or handle (e.g., `alice.example.com`)
-- **Search button**: Click or press Enter to resolve
-- **Auto-resolution**: Supports both DID and handle formats
+- Input field: Enter DID (e.g., `did:plc:g3x5vnga7kiu3oaookgeozpb`) or handle (e.g., `alice.example.com`)
+- Search button: Click or press Enter to resolve
+- Auto-resolution: Supports DID and handle formats
 
 #### 2. Account List
-- **Automatic loading**: Shows all accounts in the PDS
-- **Click selection**: Click any account to explore their data
-- **Active indicator**: Blue highlight shows currently selected account
+- Automatic loading: Shows all accounts in the PDS
+- Click selection: Click any account to explore their data
+- Active indicator: Blue highlight shows currently selected account
 
 #### 3. Navigation Menu
-- **DID Document**: View resolved DID information
-- **PLC Operations**: Browse Personal Ledger Computer logs
-- **Collections**: Explore record collections
-- **CID Decoder**: Analyze Content Identifiers
-- **API Docs**: Link to interactive API documentation
+- DID Document: View resolved DID information
+- PLC Operations: Browse Personal Ledger Computer logs
+- Collections: Explore record collections
+- CID Decoder: Analyze Content Identifiers
+- API Docs: Link to interactive API documentation
 
 ### Main Content Area
 
-The right side displays content based on your selection:
+The right side displays content based on selection:
 
-- **Welcome message**: Initial landing page
-- **DID information**: Resolved identity details
-- **PLC operations**: Historical operation log
-- **Collections**: Record collection browser
-- **Records**: Individual record viewer
-- **CID analysis**: Content identifier details
+- Welcome message: Initial landing page
+- DID information: Resolved identity details
+- PLC operations: Historical operation log
+- Collections: Record collection browser
+- Records: Individual record viewer
+- CID analysis: Content identifier details
 
 ## Exploring Data
 
@@ -66,53 +66,53 @@ The right side displays content based on your selection:
 
 #### Selecting an Account
 1. Click any account in the sidebar list
-2. The main area will show:
+2. Main area displays:
    - DID Document (JSON format)
    - PLC Operations log
    - Available collections
 
 #### Account Information
-- **DID**: Decentralized Identifier
-- **Handle**: Human-readable name
-- **Service endpoint**: PDS server URL
-- **Verification methods**: Public keys for signing
+- DID: Decentralized Identifier
+- Handle: Human-readable name
+- Service endpoint: PDS server URL
+- Verification methods: Public keys for signing
 
 ### 2. Collections and Records
 
 #### Browsing Collections
 1. Select an account
 2. Click "Collections" in the navigation
-3. See all record namespaces (e.g., `app.bsky.feed.post`, `app.bsky.feed.like`)
+3. View all record namespaces (e.g., `app.bsky.feed.post`, `app.bsky.feed.like`)
 
 #### Viewing Records
-1. Click on a collection name
-2. Browse the record list with:
-   - **RKey**: Record key (unique within collection)
-   - **CID**: Content identifier (shortened for display)
-   - **Timestamp**: Creation/update time
+1. Click a collection name
+2. Browse record list with:
+   - RKey: Record key (unique within collection)
+   - CID: Content identifier (shortened for display)
+   - Timestamp: Creation/update time
 
 #### Individual Record Details
 1. Click any record in the list
-2. View complete record content including:
-   - **URI**: Full AT Protocol URI
-   - **CID**: Content identifier
-   - **Value**: Complete JSON record data
-   - **Metadata**: Timestamps and collection info
+2. View complete record content:
+   - URI: Full AT Protocol URI
+   - CID: Content identifier
+   - Value: Complete JSON record data
+   - Metadata: Timestamps and collection info
 
 ### 3. Identity Resolution
 
 #### DID Document Lookup
 1. Enter DID or handle in the lookup field
-2. View the resolved DID document
+2. View resolved DID document
 3. See service endpoints and verification methods
 
 #### PLC Operations
 1. Select an account or enter a DID
 2. Click "PLC Operations"
 3. View historical operations:
-   - **Create operations**: Initial DID creation
-   - **Update operations**: Key rotations, service changes
-   - **Operation metadata**: Timestamps, signatures
+   - Create operations: Initial DID creation
+   - Update operations: Key rotations, service changes
+   - Operation metadata: Timestamps, signatures
 
 ### 4. Content Identifier Analysis
 
@@ -120,28 +120,28 @@ The right side displays content based on your selection:
 1. Click "CID Decoder" in navigation
 2. Enter a CID (e.g., `bafyreifac123...`)
 3. View decoded information:
-   - **Multibase prefix**: Encoding format
-   - **Multicodec**: Content type
-   - **Multihash**: Hash algorithm and digest
-   - **Raw bytes**: Hexadecimal representation
+   - Multibase prefix: Encoding format
+   - Multicodec: Content type
+   - Multihash: Hash algorithm and digest
+   - Raw bytes: Hexadecimal representation
 
 #### CID Information
-- **Codec identification**: File type, compression, etc.
-- **Hash verification**: Algorithm used (SHA-256, etc.)
-- **Length information**: Content size hints
+- Codec identification: File type, compression, etc.
+- Hash verification: Algorithm used (SHA-256, etc.)
+- Length information: Content size hints
 
 ## Advanced Features
 
 ### Keyboard Shortcuts
 
-- **Enter** in lookup field: Resolve identity
-- **Enter** in CID field: Decode CID
-- **Tab** navigation: Move between interface elements
+- Enter in lookup field: Resolve identity
+- Enter in CID field: Decode CID
+- Tab navigation: Move between interface elements
 
 ### Data Export
 
 #### API Access
-All data is available via REST API:
+Data available via REST API:
 
 ```bash
 # Get all accounts
@@ -155,45 +155,45 @@ curl "http://localhost:2583/explore/api/account-records?did=did:plc:...&collecti
 ```
 
 #### OpenAPI Specification
-- **Interactive docs**: `http://localhost:2583/explore/api/docs`
-- **YAML download**: `http://localhost:2583/explore/api/openapi.yaml`
-- **JSON format**: `http://localhost:2583/explore/api/openapi.yaml?format=json`
+- Interactive docs: `http://localhost:2583/explore/api/docs`
+- YAML download: `http://localhost:2583/explore/api/openapi.yaml`
+- JSON format: `http://localhost:2583/explore/api/openapi.yaml?format=json`
 
 ### Performance Features
 
 #### Client-Side Caching
-- **Instant reloads**: Repeat views load instantly
-- **Background updates**: Cache refreshes automatically
-- **Offline resilience**: Cached data available when server is busy
+- Instant reloads: Repeat views load instantly
+- Background updates: Cache refreshes automatically
+- Offline resilience: Cached data available when server is busy
 
 #### Parallel Loading
-- **Fast account switching**: Multiple API calls run simultaneously
-- **Reduced wait times**: From 600ms to 250ms load times
-- **Responsive UI**: Loading states prevent confusion
+- Fast account switching: Multiple API calls run simultaneously
+- Reduced wait times: Load times reduced from 600ms to 250ms
+- Responsive UI: Loading states prevent confusion
 
 ## Troubleshooting
 
 ### Common Issues
 
 #### Accounts Not Loading
-- **Check server status**: Verify server is running on port 2583
-- **Database connection**: Ensure `data/pds.db` exists and is readable
-- **Network issues**: Check internet connection for external API calls
+- Check server status: Verify server is running on port 2583
+- Database connection: Ensure `data/pds.db` exists and is readable
+- Network issues: Check internet connection for external API calls
 
 #### DID Resolution Failing
-- **Invalid format**: Ensure DID starts with `did:plc:` or handle has domain
-- **Network timeout**: External PLC directory may be slow
-- **Cache issues**: Try clearing browser cache
+- Invalid format: Ensure DID starts with `did:plc:` or handle has domain
+- Network timeout: External PLC directory may be slow
+- Cache issues: Try clearing browser cache
 
 #### Collections Empty
-- **No records**: Account may not have published content yet
-- **Permission issues**: Some collections may be private
-- **Sync delays**: New records may take time to appear
+- No records: Account may not have published content yet
+- Permission issues: Some collections may be private
+- Sync delays: New records may take time to appear
 
 #### CID Decoding Errors
-- **Invalid CID**: Check format starts with `bafy` or similar
-- **Unsupported codec**: Some CID types may not be fully decoded
-- **Network issues**: External resolution may fail
+- Invalid CID: Check format starts with `bafy` or similar
+- Unsupported codec: Some CID types may not be fully decoded
+- Network issues: External resolution may fail
 
 ### Debug Information
 
@@ -214,10 +214,10 @@ curl http://localhost:2583/explore/api/debug
 
 ### Getting Help
 
-1. **Check server logs** for error messages
-2. **Test API endpoints** individually
-3. **Clear browser cache** and reload
-4. **Restart server** if issues persist
+1. Check server logs for error messages
+2. Test API endpoints individually
+3. Clear browser cache and reload
+4. Restart server if issues persist
 
 ## API Reference
 
@@ -250,7 +250,7 @@ curl http://localhost:2583/explore/api/debug
 
 ### Response Formats
 
-#### Success Responses
+#### Success Response Format
 ```json
 {
   "accounts": [...],
@@ -258,7 +258,7 @@ curl http://localhost:2583/explore/api/debug
 }
 ```
 
-#### Error Responses
+#### Error Response Format
 ```json
 {
   "error": "Description of error",
@@ -266,7 +266,7 @@ curl http://localhost:2583/explore/api/debug
 }
 ```
 
-#### Record Format
+#### Record Structure
 ```json
 {
   "uri": "at://did:plc:.../collection/rkey",
@@ -283,36 +283,36 @@ curl http://localhost:2583/explore/api/debug
 
 ### Efficient Browsing
 
-1. **Start with accounts**: Get overview of available data
-2. **Focus on collections**: Most records are in feed collections
-3. **Use search**: Enter specific DIDs when known
-4. **Check PLC logs**: Understand account history and changes
+1. Start with accounts: Get overview of available data
+2. Focus on collections: Most records are in feed collections
+3. Use search: Enter specific DIDs when known
+4. Check PLC logs: Understand account history and changes
 
 ### Performance Tips
 
-1. **Reuse tabs**: Keep explorer open for multiple sessions
-2. **Batch operations**: Resolve multiple DIDs in sequence
-3. **Cache awareness**: Data stays fresh for 5-10 minutes
-4. **Network monitoring**: Watch for slow external API calls
+1. Reuse tabs: Keep explorer open for multiple sessions
+2. Batch operations: Resolve multiple DIDs in sequence
+3. Cache awareness: Data stays fresh for 5-10 minutes
+4. Network monitoring: Watch for slow external API calls
 
 ### Data Analysis
 
-1. **Collection patterns**: Understand different record types
-2. **CID relationships**: Track content changes over time
-3. **PLC operations**: Monitor account security and updates
-4. **DID resolution**: Verify identity authenticity
+1. Collection patterns: Understand different record types
+2. CID relationships: Track content changes over time
+3. PLC operations: Monitor account security and updates
+4. DID resolution: Verify identity authenticity
 
 ## Security Considerations
 
 ### Data Privacy
-- **Local operation**: All data stays on your server
-- **No external uploads**: Explorer only reads existing data
-- **Cache management**: Sensitive data cached temporarily
+- Local operation: All data stays on your server
+- No external uploads: Explorer only reads existing data
+- Cache management: Sensitive data cached temporarily
 
 ### Network Security
-- **HTTPS ready**: Server supports TLS termination
-- **CORS configuration**: Configurable origin restrictions
-- **Rate limiting**: Built-in protection against abuse
+- HTTPS ready: Server supports TLS termination
+- CORS configuration: Configurable origin restrictions
+- Rate limiting: Built-in protection against abuse
 
 ## Advanced Usage
 
@@ -353,4 +353,4 @@ curl http://localhost:2583/explore/api/debug
 tail -f server.log | grep "handleApi"
 ```
 
-This guide covers the core functionality of the ATProto PDS Explorer. For API development details, see the [API Documentation](http://localhost:2583/explore/api/docs) or [OpenAPI Specification](http://localhost:2583/explore/api/openapi.yaml).
+For API development details, see the [API Documentation](http://localhost:2583/explore/api/docs) or [OpenAPI Specification](http://localhost:2583/explore/api/openapi.yaml).

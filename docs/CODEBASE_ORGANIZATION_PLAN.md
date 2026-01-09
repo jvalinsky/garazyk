@@ -2,13 +2,13 @@
 
 ## Executive Summary
 
-This document outlines a  plan to organize the ATProto PDS codebase following Objective-C/macOS best practices. Based on research from Microsoft's objc-guide, BottleRocket's iOS Project Standards, and established Cocoa patterns, we present a modern, maintainable structure.
+This document outlines a plan to organize the ATProto PDS codebase following Objective-C/macOS best practices. Based on Microsoft's objc-guide, BottleRocket's iOS Project Standards, and Cocoa patterns, this presents a maintainable structure.
 
 ---
 
 ## Current State Analysis
 
-### Existing Structure (Good Points)
+### Existing Structure
 
 ```
 ATProtoPDS/ATProtoPDS/
@@ -31,20 +31,20 @@ ATProtoPDS/ATProtoPDS/
 
 ### Issues Identified
 
-1. **No clear separation of public vs private headers**
-2. **Test files mixed with implementation files**
-3. **No Private/Package/Protected header conventions**
-4. **Flat structure within modules**
-5. **Missing consistent naming conventions**
-6. **Build artifacts in source tree** (build/, *.o files)
-7. **Data files mixed with source** (data/, blobs/)
-8. **No formal module organization**
+1. No clear separation of public vs private headers
+2. Test files mixed with implementation files
+3. No Private/Package/Protected header conventions
+4. Flat structure within modules
+5. Missing consistent naming conventions
+6. Build artifacts in source tree (build/, *.o files)
+7. Data files mixed with source (data/, blobs/)
+8. No formal module organization
 
 ---
 
 ## Best Practices Applied
 
-### 1. Header Factoring (Microsoft objc-guide)
+### 1. Header Factoring
 
 Use category-based header organization:
 
@@ -55,7 +55,7 @@ Class+Protected.h - Subclass API
 Class+Package.h   - Module-internal API
 ```
 
-### 2. Directory Structure (BottleRocket Standards)
+### 2. Directory Structure
 
 ```
 Project/
@@ -76,10 +76,10 @@ Project/
 
 ### 3. File Naming Conventions
 
-- **Public headers:** `ClassName.h`
-- **Private headers:** `ClassName+Private.h`
-- **Test files:** `ClassNameTests.m`
-- **Test headers:** `ClassNameTests.h`
+- Public headers: `ClassName.h`
+- Private headers: `ClassName+Private.h`
+- Test files: `ClassNameTests.m`
+- Test headers: `ClassNameTests.h`
 
 ---
 
@@ -284,7 +284,6 @@ ATProtoPDS/
 
 ### Public Header (Class.h)
 ```objc
-// Class.h
 @interface ClassName : NSObject
 
 @property (nonatomic, copy) NSString *publicProperty;
@@ -295,7 +294,6 @@ ATProtoPDS/
 
 ### Private Header (Class+Private.h)
 ```objc
-// Class+Private.h
 @interface ClassName ()
 
 @property (nonatomic, strong) NSInternalInternal *internalState;
@@ -307,7 +305,6 @@ ATProtoPDS/
 
 ### Protected Header (Class+Protected.h)
 ```objc
-// Class+Protected.h
 @interface ClassName (Protected)
 
 - (void)subclassOnlyMethod;
@@ -318,12 +315,10 @@ ATProtoPDS/
 
 ### Implementation (Class.m)
 ```objc
-// Class.m
 #import "Class.h"
 #import "Class+Private.h"
 
 @implementation Class
-// Implementation
 @end
 ```
 
@@ -344,12 +339,12 @@ ATProtoPDS/
 
 ## Benefits of This Organization
 
-1. **Clear API boundaries** - Public vs private clearly defined
-2. **Better testability** - Private headers accessible to tests
-3. **Improved maintainability** - Files organized by responsibility
-4. **Follows industry standards** - Microsoft, BottleRocket patterns
-5. **Easier onboarding** - New developers understand structure
-6. **Safer refactoring** - Private APIs clearly marked
+1. Clear API boundaries - Public vs private defined
+2. Better testability - Private headers accessible to tests
+3. Improved maintainability - Files organized by responsibility
+4. Industry standards compliance - Microsoft, BottleRocket patterns
+5. Easier onboarding - New developers understand structure
+6. Safer refactoring - Private APIs clearly marked
 
 ---
 
@@ -391,7 +386,7 @@ done
 // Before
 #import "Auth/Session.h"
 
-// After (if using modules)
+// After
 @import ATProtoPDS.Auth;
 // Or
 #import "Sources/Auth/Session.h"
@@ -429,12 +424,12 @@ docs/html/
 
 ## Summary
 
-This reorganization plan follows established Objective-C/macOS best practices:
+This reorganization plan follows Objective-C/macOS best practices:
 
-1. **Separation of concerns** - Clear module boundaries
-2. **Header factoring** - Public/Private/Package/Protected
-3. **Test isolation** - Tests in dedicated directory
-4. **Consistent naming** - Predictable file patterns
-5. **Industry standards** - Microsoft, BottleRocket patterns
+1. Separation of concerns - Clear module boundaries
+2. Header factoring - Public/Private/Package/Protected
+3. Test isolation - Tests in dedicated directory
+4. Consistent naming - Predictable file patterns
+5. Industry standards - Microsoft, BottleRocket patterns
 
-The result will be a maintainable, well-organized codebase that follows professional macOS development practices.
+The result is a maintainable, well-organized codebase following professional macOS development practices.

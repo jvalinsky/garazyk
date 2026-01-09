@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide helps diagnose and resolve common issues with the ATProto PDS server.
+This guide provides procedures for diagnosing and resolving common issues with the ATProto PDS server.
 
 ## Quick Diagnosis
 

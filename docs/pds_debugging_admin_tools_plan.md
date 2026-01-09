@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a  set of debugging and administration tools for the Objective-C PDS implementation. The plan draws inspiration from the Pegasus OCaml PDS implementation while adding tools specific to the Objective-C/macOS ecosystem.
+ This document outlines debugging and administration tools for the Objective-C PDS implementation. The plan draws inspiration from the Pegasus OCaml PDS implementation while adding tools specific to the Objective-C/macOS ecosystem.
 
 ---
 

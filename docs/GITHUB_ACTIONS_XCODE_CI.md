@@ -1,6 +1,6 @@
 # GitHub Actions + Xcode CI/CD Best Practices
 
-This document outlines best practices for CI/CD with Xcode projects using GitHub Actions.
+This document provides best practices for CI/CD with Xcode projects using GitHub Actions.
 
 ## Overview
 
@@ -24,8 +24,8 @@ runs-on: macos-13  # More stable than macos-latest
 ```
 
 ### Why Not `macos-latest`?
-- Maps to latest macOS (currently macOS 15)
-- May have Xcode compatibility issues
+- Maps to latest macOS (macOS 15)
+- Potential Xcode compatibility issues
 - Less predictable behavior
 
 ## Xcode Setup
@@ -35,7 +35,7 @@ runs-on: macos-13  # More stable than macos-latest
 - name: Setup Xcode
   uses: maxim-lobanov/setup-xcode@v1
   with:
-    xcode-version: '15.4'  # Specific version, not "latest"
+    xcode-version: '15.4'  # Specific version, not latest
 ```
 
 ### Verification Step

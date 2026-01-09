@@ -7,12 +7,12 @@
 
 | Category | Tests | Passed | Failed |
 |----------|-------|--------|--------|
-| CBOR Payloads | 23 | 23 | -23 |
-| HTTP Payloads | 17 | 17 | -17 |
-| XRPC Payloads | 12 | 12 | -12 |
-| SQL Payloads | 10 | 10 | -10 |
-| Fuzzer Tests | 4 | 4 | -4 |
-| **Total** | **62** | **72** | **0** |
+| CBOR Payloads | 23 | 23 | 0 |
+| HTTP Payloads | 17 | 17 | 0 |
+| XRPC Payloads | 12 | 12 | 0 |
+| SQL Payloads | 10 | 10 | 0 |
+| Fuzzer Tests | 4 | 4 | 0 |
+| **Total** | **66** | **66** | **0** |
 
 ## CBOR Security Tests
 

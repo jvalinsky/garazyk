@@ -1,4 +1,4 @@
-# macOS Network Server APIs Research
+# macOS Network Server APIs
 
 ## Foundation Framework Networking
 

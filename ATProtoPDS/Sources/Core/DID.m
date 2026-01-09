@@ -62,9 +62,11 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     NSURLSession *_session;
     NSTimeInterval _staleTTL;
     NSTimeInterval _maxTTL;
+    NSMutableDictionary *_cacheTimestamps; // Track cache timestamps for TTL
 }
 
 @synthesize cache = _cache;
+@synthesize cacheTimestamps = _cacheTimestamps;
 
 - (instancetype)init {
     self = [super init];
@@ -78,6 +80,7 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 
         _cache = [[NSCache alloc] init];
         _cache.countLimit = 1000; // Cache up to 1000 DIDs
+        _cacheTimestamps = [[NSMutableDictionary alloc] init];
         _staleTTL = 3600.0; // 1 hour
         _maxTTL = 86400.0; // 1 day
     }
@@ -85,51 +88,56 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 }
 
 - (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
-    // Check cache first
-    NSDictionary *cached = [self.cache objectForKey:did];
-    if (cached) {
-        completion(cached, nil);
+    // Check cache first with TTL logic
+    DIDCacheStatus status;
+    NSDictionary *entry = [self cachedEntryForDID:did status:&status];
+    if (entry && status == DIDCacheStatusFresh) {
+        completion(entry[@"document"], nil);
+        return;
+    }
+    if (entry && status == DIDCacheStatusStale) {
+        completion(entry[@"document"], nil);
+        [self refreshCacheForDID:did];
         return;
     }
 
     // Perform resolution
-    [self performResolution:did completion:^(NSDictionary *document, NSError *error) {
-        if (document && !error) {
-            [self.cache setObject:document forKey:did];
-        }
-        completion(document, error);
-    }];
-}
-
-- (void)resolveMultipleDIDs:(NSArray<NSString *> *)dids completion:(void (^)(NSDictionary<NSString *, NSDictionary *> *results, NSError *error))completion {
-    NSMutableDictionary *results = [NSMutableDictionary dictionary];
-    __block NSUInteger remaining = dids.count;
-
-    for (NSString *did in dids) {
-        [self resolveDID:did completion:^(NSDictionary *document, NSError *error) {
-            @synchronized(results) {
-                if (document) {
-                    results[did] = document;
-                }
-                remaining--;
-                if (remaining == 0) {
-                    completion(results, nil);
-                }
-            }
-        }];
-    }
-}
-
-- (void)performResolution:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
-    // For now, delegate to the existing resolution but convert to NSDictionary
     [self resolveDID:did forceRefresh:NO completion:^(DIDDocument *document, NSError *error) {
-        if (document) {
+        if (document && !error) {
             completion(document.jsonDictionary, nil);
         } else {
             completion(nil, error);
         }
     }];
 }
+
+- (void)resolveMultipleDIDs:(NSArray<NSString *> *)dids completion:(void (^)(NSDictionary<NSString *, id> *results, NSError *error))completion {
+    NSMutableDictionary *results = [NSMutableDictionary dictionary];
+    __block NSUInteger remaining = dids.count;
+    __block NSError *batchError = nil;
+
+    for (NSString *did in dids) {
+        [self resolveDID:did completion:^(NSDictionary *document, NSError *error) {
+            @synchronized(results) {
+                if (error) {
+                    // Store error information for failed resolutions
+                    results[did] = @{@"error": error};
+                    if (!batchError) {
+                        batchError = error; // Keep first error for batch-level error
+                    }
+                } else if (document) {
+                    results[did] = @{@"document": document};
+                }
+                remaining--;
+                if (remaining == 0) {
+                    completion(results, batchError);
+                }
+            }
+        }];
+    }
+}
+
+
 
 - (void)resolveDID:(NSString *)did
      forceRefresh:(BOOL)forceRefresh
@@ -207,20 +215,38 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 
 - (nullable NSDictionary *)cachedEntryForDID:(NSString *)did status:(DIDCacheStatus *)outStatus {
     @synchronized(self) {
-        NSDictionary *entry = @{@"document": [self.cache objectForKey:did]};
-        if (!entry[@"document"]) {
+        NSDictionary *document = [self.cache objectForKey:did];
+        if (!document) {
             *outStatus = DIDCacheStatusExpired;
             return nil;
         }
 
-        *outStatus = DIDCacheStatusFresh;
-        return entry;
+        NSNumber *timestamp = _cacheTimestamps[did];
+        if (!timestamp) {
+            *outStatus = DIDCacheStatusExpired;
+            return nil;
+        }
+
+        NSTimeInterval age = [[NSDate date] timeIntervalSince1970] - [timestamp doubleValue];
+        if (age > _maxTTL) {
+            *outStatus = DIDCacheStatusExpired;
+            [self.cache removeObjectForKey:did];
+            [_cacheTimestamps removeObjectForKey:did];
+            return nil;
+        } else if (age > _staleTTL) {
+            *outStatus = DIDCacheStatusStale;
+        } else {
+            *outStatus = DIDCacheStatusFresh;
+        }
+
+        return @{@"document": document};
     }
 }
 
 - (void)cacheDocument:(DIDDocument *)document forDID:(NSString *)did {
     @synchronized(self) {
-        [self.cache setObject:document forKey:did];
+        [self.cache setObject:document.jsonDictionary forKey:did];
+        _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
     }
 }
 
@@ -261,7 +287,10 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 - (void)refreshCacheForDID:(NSString *)did {
     [self resolveDID:did forceRefresh:YES completion:^(DIDDocument *document, NSError *error) {
         if (document) {
-            [self cacheDocument:document forDID:did];
+            @synchronized(self) {
+                [self.cache setObject:document.jsonDictionary forKey:did];
+                _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
+            }
         }
     }];
 }

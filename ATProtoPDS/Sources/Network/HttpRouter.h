@@ -77,6 +77,27 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
 @property (nonatomic, copy) NSString *baseURL;
 
 /*!
+ @method initWithBaseURL:
+
+ @abstract Initialize router with a base URL.
+
+ @param baseURL The base URL for the router.
+
+ @return An initialized HttpRouter instance.
+ */
+- (instancetype)initWithBaseURL:(NSString *)baseURL;
+
+/*!
+ @method handleRequest:response:
+
+ @abstract Handle an HTTP request and generate a response.
+
+ @param request The HTTP request to handle.
+ @param response The HTTP response to populate.
+ */
+- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+
+/*!
  @method addRoute:pattern:handler:
 
  @abstract Add a route with default priority.

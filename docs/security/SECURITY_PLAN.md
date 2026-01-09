@@ -1,10 +1,10 @@
-# Security Subagent Plan for Objective-C PDS Implementation
+# Security Validation Strategy for Objective-C PDS Implementation
 
 ## Executive Summary
 
-This plan outlines a  security validation strategy for the ATProto PDS Objective-C implementation. The approach uses **multiple specialized subagents** for different security domains, ensuring production-ready code with minimal external dependencies (Apple APIs only).
+This document defines a security validation strategy for the ATProto PDS Objective-C implementation. The approach uses multiple specialized analysis components for different security domains, ensuring production-ready code with minimal external dependencies (Apple APIs only).
 
-## Subagent Architecture
+## Security Analysis Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -22,9 +22,9 @@ This plan outlines a  security validation strategy for the ATProto PDS Objective
 
 ---
 
-## Subagent 1: Static Analysis Agent
+## Static Analysis Component
 
-### Tools (Zero External Dependencies)
+### Tools
 - **Clang Static Analyzer** (`scan-build`) - Built into Xcode/CommandLineTools
 - **clang-tidy** - Part of LLVM toolchain
 - **swiftlint static checks** - Not applicable (pure Obj-C)
@@ -116,9 +116,9 @@ AnalyzeTemporaryDtors: false
 
 ---
 
-## Subagent 2: Fuzzing Agent
+## Fuzzing Component
 
-### Tools (Zero External Dependencies)
+### Tools
 - **libFuzzer** - Built into LLVM/Clang
 - **AddressSanitizer (ASAN)** - Built into Clang
 - **UndefinedBehaviorSanitizer (UBSAN)** - Built into Clang
@@ -214,12 +214,12 @@ fuzzing/
 
 ---
 
-## Subagent 3: Runtime Security Agent
+## Runtime Security Component
 
-### Sanitizers (Zero External Dependencies)
+### Sanitizers
 
 #### 3.1 AddressSanitizer (ASAN)
-Detects memory errors: buffer overflow, use-after-free, double-free.
+Detects memory errors including buffer overflow, use-after-free, and double-free conditions.
 
 ```bash
 # Build with ASAN
@@ -234,7 +234,7 @@ ASAN_OPTIONS=detect_leaks=1:halt_on_error=0 \
 ```
 
 #### 3.2 UndefinedBehaviorSanitizer (UBSAN)
-Detects undefined behavior: integer overflow, null pointer dereference.
+Detects undefined behavior including integer overflow and null pointer dereference.
 
 ```bash
 # Build with UBSAN
@@ -249,7 +249,7 @@ UBSAN_OPTIONS=print_summary=1:halt_on_error=0 \
 ```
 
 #### 3.3 ThreadSanitizer (TSAN)
-Detects data races (critical for concurrent PDS).
+Detects data races in concurrent code paths critical for PDS operations.
 
 ```bash
 # Build with TSAN
@@ -261,7 +261,7 @@ clang -fsanitize=thread -g -O2 \
 
 #### 3.4 Combined Sanitizers
 ```bash
-# Maximum detection
+# Combined sanitizer build for maximum coverage
 clang -fsanitize=address,undefined,thread \
   -fsanitize-recover=address,undefined \
   -g -O1 \
@@ -273,7 +273,7 @@ clang -fsanitize=address,undefined,thread \
 ### Runtime Configuration
 
 ```bash
-# Recommended environment
+# Sanitizer environment configuration
 export ASAN_OPTIONS=\
   detect_leaks=1:\
   detect_stack_use_after_return=1:\
@@ -298,7 +298,7 @@ export TSAN_OPTIONS=\
 
 ---
 
-## Common C/Objective-C Vulnerabilities & Mitigations
+## C/Objective-C Vulnerabilities and Mitigations
 
 ### Memory Safety
 
@@ -340,7 +340,7 @@ export TSAN_OPTIONS=\
 
 ## Automated CI/CD Pipeline
 
-### GitHub Actions Workflow (Minimal Dependencies)
+### GitHub Actions Workflow Configuration
 
 ```yaml
 name: Security Checks
@@ -407,7 +407,7 @@ jobs:
 
 ## Secure Coding Checklist
 
-### Before Code Review
+### Pre-Review Requirements
 - [ ] All `strcpy`/`sprintf` replaced with bounded alternatives
 - [ ] All `malloc`/`free` pairs verified (or use ARC)
 - [ ] Integer overflow checks on arithmetic operations
@@ -436,28 +436,28 @@ jobs:
 
 ---
 
-## Immediate Actions
+## Implementation Timeline
 
-### Week 1: Static Analysis Baseline
+### Phase 1: Static Analysis
 1. Run Clang Static Analyzer on entire codebase
 2. Run clang-tidy with security checks
 3. Fix all CRITICAL and HIGH severity issues
-4. Add `.clang-tidy` config file
+4. Add `.clang-tidy` configuration file
 
-### Week 2: Fuzzing Setup
+### Phase 2: Fuzzing Implementation
 1. Create fuzzing harness for XRPC handler
 2. Create fuzzing harness for CAR/CBOR parsing
 3. Set up corpus with valid inputs
 4. Run 24-hour fuzzing session
 5. Analyze any crashes found
 
-### Week 3: Sanitizer Integration
+### Phase 3: Sanitizer Integration
 1. Build with ASAN and run unit tests
 2. Build with UBSAN and run unit tests
 3. Build with TSAN and verify thread safety
 4. Fix any sanitizer-detected issues
 
-### Week 4: Hardening & CI
+### Phase 4: Integration and Documentation
 1. Add security checks to CI pipeline
 2. Implement runtime exploit mitigations
 3. Document security posture
@@ -465,7 +465,7 @@ jobs:
 
 ---
 
-## Success Metrics
+## Success Criteria
 
 | Metric | Target | Current |
 |--------|--------|---------|
@@ -477,7 +477,7 @@ jobs:
 
 ---
 
-## References
+## References and Resources
 
 - [Clang Static Analyzer](https://clang-analyzer.llvm.org/)
 - [Clang-Tidy Checks](https://clang.llvm.org/extra/clang-tidy/checks/)
