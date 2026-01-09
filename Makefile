@@ -254,5 +254,5 @@ run-fuzzers-comprehensive: fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth fuzz-blob fuz
 
 run-security-tests: fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth fuzz-blob fuzz-sqlite
 	@echo "Running security tests with malicious payloads..."
-	@chmod +x security_test_runner.sh
-	@./security_test_runner.sh
+	@chmod +x scripts/security_test_runner.sh
+	@./scripts/security_test_runner.sh

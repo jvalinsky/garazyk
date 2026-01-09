@@ -14,7 +14,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 # Colors for output
 RED='\033[0;31m'
@@ -240,8 +241,9 @@ echo ""
 
 # Generate summary
 TOTAL_PAYLOADS=$((CBOR_PASSED + HTTP_PASSED + XRPC_PASSED + SQL_PASSED))
+RESULTS_FILE="docs/security/security_test_results.md"
 
-cat > security_test_results.md << EOF
+cat > "$RESULTS_FILE" << EOF
 # Security Test Results
 
 **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -263,92 +265,92 @@ cat > security_test_results.md << EOF
 EOF
 
 # Add CBOR test details
-echo "### CBOR Test Cases" >> security_test_results.md
+echo "### CBOR Test Cases" >> "$RESULTS_FILE"
 for f in fuzzing/corpus_cbor/cbor_*.bin; do
     if [ -f "$f" ]; then
         NAME=$(basename "$f" .bin)
         SIZE=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo "unknown")
-        echo "- **$NAME**: $SIZE bytes" >> security_test_results.md
+        echo "- **$NAME**: $SIZE bytes" >> "$RESULTS_FILE"
     fi
 done
 
-cat >> security_test_results.md << EOF
+cat >> "$RESULTS_FILE" << EOF
 
 ## HTTP Security Tests
 
 EOF
 
 # Add HTTP test details
-echo "### HTTP Test Cases" >> security_test_results.md
+echo "### HTTP Test Cases" >> "$RESULTS_FILE"
 for f in fuzzing/corpus_http/http_*.txt; do
     if [ -f "$f" ]; then
         NAME=$(basename "$f" .txt)
         SIZE=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo "unknown")
-        echo "- **$NAME**: $SIZE bytes" >> security_test_results.md
+        echo "- **$NAME**: $SIZE bytes" >> "$RESULTS_FILE"
     fi
 done
 
-cat >> security_test_results.md << EOF
+cat >> "$RESULTS_FILE" << EOF
 
 ## XRPC Security Tests
 
 EOF
 
 # Add XRPC test details
-echo "### XRPC Test Cases" >> security_test_results.md
+echo "### XRPC Test Cases" >> "$RESULTS_FILE"
 for f in fuzzing/corpus_xrpc/xrpc_*.txt; do
     if [ -f "$f" ]; then
         NAME=$(basename "$f" .txt)
         SIZE=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo "unknown")
-        echo "- **$NAME**: $SIZE bytes" >> security_test_results.md
+        echo "- **$NAME**: $SIZE bytes" >> "$RESULTS_FILE"
     fi
 done
 
-cat >> security_test_results.md << EOF
+cat >> "$RESULTS_FILE" << EOF
 
 ## SQL Injection Tests
 
 EOF
 
 # Add SQL test details
-echo "### SQL Injection Test Cases" >> security_test_results.md
+echo "### SQL Injection Test Cases" >> "$RESULTS_FILE"
 for f in fuzzing/corpus_sql/sql_*.txt; do
     if [ -f "$f" ]; then
         NAME=$(basename "$f" .txt)
         SIZE=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo "unknown")
-        echo "- **$NAME**: $SIZE bytes" >> security_test_results.md
+        echo "- **$NAME**: $SIZE bytes" >> "$RESULTS_FILE"
     fi
 done
 
-cat >> security_test_results.md << EOF
+cat >> "$RESULTS_FILE" << EOF
 
 ## Crashes Detected
 
 EOF
 
 if [ ${#CRASHES[@]} -eq 0 ]; then
-    echo "- No crashes detected" >> security_test_results.md
+    echo "- No crashes detected" >> "$RESULTS_FILE"
 else
     for crash in "${CRASHES[@]}"; do
-        echo "- **$crash**: Crash detected" >> security_test_results.md
+        echo "- **$crash**: Crash detected" >> "$RESULTS_FILE"
     done
 fi
 
-cat >> security_test_results.md << EOF
+cat >> "$RESULTS_FILE" << EOF
 
 ## Recommendations
 
 EOF
 
 if [ $FAILED_TESTS -gt 0 ]; then
-    echo "- Review failed tests for potential security issues" >> security_test_results.md
-    echo "- Add additional test cases for edge cases" >> security_test_results.md
+    echo "- Review failed tests for potential security issues" >> "$RESULTS_FILE"
+    echo "- Add additional test cases for edge cases" >> "$RESULTS_FILE"
 else
-    echo "- All tests passed - code handles malicious payloads correctly" >> security_test_results.md
-    echo "- Continue fuzzing with longer runs for additional coverage" >> security_test_results.md
+    echo "- All tests passed - code handles malicious payloads correctly" >> "$RESULTS_FILE"
+    echo "- Continue fuzzing with longer runs for additional coverage" >> "$RESULTS_FILE"
 fi
 
-echo "Results written to: security_test_results.md"
+echo "Results written to: $RESULTS_FILE"
 echo ""
 
 echo -e "${BLUE}========================================${NC}"
