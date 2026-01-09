@@ -4,34 +4,75 @@
 #import "Auth/Session.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Database/PDSDatabase.h"
 
 @interface OAuth2Handler ()
 @property (nonatomic, strong) OAuth2Server *oauthServer;
+@property (nonatomic, strong) PDSDatabase *database;
 @end
 
 @implementation OAuth2Handler
 
-- (instancetype)init {
+- (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
+        _database = database;
         _oauthServer = [[OAuth2Server alloc] init];
         _oauthServer.issuer = @"https://pds.local:8443";
         _oauthServer.authorizationEndpoint = @"https://pds.local:8443/oauth/authorize";
         _oauthServer.tokenEndpoint = @"https://pds.local:8443/oauth/token";
         _oauthServer.jwksURI = @"https://pds.local:8443/.well-known/jwks.json";
+
+        // Seed test client for development
+        NSError *seedError = nil;
+        if (![_database seedTestClient:&seedError]) {
+            NSLog(@"Warning: Failed to seed test OAuth client: %@", seedError.localizedDescription);
+        }
     }
     return self;
+}
+
+- (instancetype)init {
+    // Legacy init - create temporary database for backward compatibility
+    // In production, use initWithDatabase: instead
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"oauth_temp.db"];
+    PDSDatabase *tempDB = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
+    NSError *error = nil;
+    if (![tempDB openWithError:&error]) {
+        NSLog(@"Failed to create temp database: %@", error);
+        return nil;
+    }
+    return [self initWithDatabase:tempDB];
+}
+
+- (NSDictionary *)validateClient:(NSString *)clientID error:(NSError **)error {
+    if (!clientID) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing client_id"}];
+        }
+        return nil;
+    }
+
+    NSDictionary *client = [self.database getClientWithID:clientID error:error];
+    if (!client) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:401 userInfo:@{NSLocalizedDescriptionKey: @"Invalid client"}];
+        }
+        return nil;
+    }
+
+    return client;
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
     [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleAuthorizeRequest:request response:response];
     }];
-    
+
     [httpServer addRoute:@"POST" path:@"/oauth/token" handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleTokenRequest:request response:response];
     }];
-    
+
     [httpServer addRoute:@"POST" path:@"/oauth/revoke" handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleRevokeRequest:request response:response];
     }];
@@ -40,14 +81,16 @@
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response {
     // Use request.queryParams if available, otherwise parse manually
     NSMutableDictionary *params = [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
-    
-    // Hardcoded client validation for test-client
+
+    // Validate client from database
     NSString *clientID = params[@"client_id"];
-    if (!clientID || ![clientID isEqualToString:@"test-client"]) {
+    NSError *clientError = nil;
+    NSDictionary *client = [self validateClient:clientID error:&clientError];
+    if (!client) {
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"unauthorized_client",
-            @"error_description": @"Only 'test-client' is supported"
+            @"error_description": clientError.localizedDescription ?: @"Invalid client"
         }];
         return;
     }
@@ -116,14 +159,16 @@
             }
         }
     }
-    
-    // Hardcoded client validation
+
+    // Validate client from database
     NSString *clientID = params[@"client_id"];
-    if (!clientID || ![clientID isEqualToString:@"test-client"]) {
+    NSError *clientError = nil;
+    NSDictionary *client = [self validateClient:clientID error:&clientError];
+    if (!client) {
         response.statusCode = 401;
         [response setJsonBody:@{
             @"error": @"invalid_client",
-            @"error_description": @"Only 'test-client' is supported"
+            @"error_description": clientError.localizedDescription ?: @"Invalid client"
         }];
         return;
     }
@@ -200,16 +245,18 @@
             }
         }
     }
-    
-    // Hardcoded client validation
+
+    // Validate client from database
     NSString *clientID = params[@"client_id"];
     NSString *token = params[@"token"];
-    
-    if (!clientID || ![clientID isEqualToString:@"test-client"]) {
+
+    NSError *clientError = nil;
+    NSDictionary *client = [self validateClient:clientID error:&clientError];
+    if (!client) {
         response.statusCode = 401;
         [response setJsonBody:@{
             @"error": @"invalid_client",
-            @"error_description": @"Only 'test-client' is supported"
+            @"error_description": clientError.localizedDescription ?: @"Invalid client"
         }];
         return;
     }

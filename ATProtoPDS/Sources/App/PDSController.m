@@ -636,16 +636,30 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return [[PDSHealthCheck sharedInstance] performHealthCheck];
 }
 
+- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
+    return [_serviceDatabases serviceDatabaseWithError:error];
+}
+
 - (NSDictionary<NSString *, id> *)getMetrics {
-    NSMutableDictionary *metrics = [NSMutableDictionary dictionary];
-    metrics[@"timestamp"] = @([[NSDate date] timeIntervalSince1970]);
-    metrics[@"user_databases"] = [_userDatabasePool collectMetrics];
-    metrics[@"service_databases"] = @{
-        @"service_pool": [[_serviceDatabases servicePool] collectMetrics],
-        @"did_cache_pool": [[_serviceDatabases didCachePool] collectMetrics],
-        @"sequencer_pool": [[_serviceDatabases sequencerPool] collectMetrics]
-    };
-    return metrics;
+    return @{
+        @"user_databases": [_userDatabasePool collectMetrics],
+        @"service_databases": @{
+
+- (NSDictionary<NSString *, id> *)getHealthCheck {
+    NSMutableDictionary *health = [NSMutableDictionary dictionary];
+    health[@"status"] = @"ok";
+    health[@"timestamp"] = @([[NSDate date] timeIntervalSince1970]);
+
+    NSError *error = nil;
+    NSDictionary *serviceHealth = [_serviceDatabases getHealthCheckWithError:&error];
+    if (error) {
+        health[@"status"] = @"degraded";
+        health[@"service_error"] = error.localizedDescription;
+    } else {
+        health[@"service_databases"] = serviceHealth;
+    }
+
+    return health;
 }
 
 #pragma mark - Helpers
