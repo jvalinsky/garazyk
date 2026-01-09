@@ -257,13 +257,13 @@ grep -A 5 -B 5 "#if.*AVAILABLE" /Library/Developer/CommandLineTools/SDKs/MacOSX.
 | Assuming 1:1 mapping | Swift methods often compose multiple ObjC calls | Break down into primitives |
 | Ignoring mutability | Swift value types vs ObjC reference types | Check if method returns new or modifies |
 | Missing error handling | Swift throws vs ObjC NSError** | Add error parameters |
-| Wrong parameter order | Swift flexible ordering vs ObjC fixed | Check method signatures carefully |
+| Wrong parameter order | Swift  ordering vs ObjC fixed | Check method signatures carefully |
 | Overlooking blocks | Swift closures vs ObjC blocks | Convert closure syntax |
 
 ## Red Flags - Not API Discovery
 
-- **"Let me check the docs"** - Use objc-research for documented APIs
-- **"Just use a loop"** - May miss actual API methods
+- **"Check the docs"** - Use objc-research for documented APIs
+- **"Use a loop"** - May miss actual API methods
 - **Single search attempt** - Need systematic pattern matching
 - **No header inspection** - Must verify against actual frameworks
 - **Pure speculation** - Need evidence-based guessing

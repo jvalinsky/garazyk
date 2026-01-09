@@ -24,6 +24,7 @@ targets:
         excludes:
           - "**/tests/*"
           - "**/CLI/main.m"
+          - "**/App/main.m"
     settings:
       base:
         PRODUCT_NAME: atprotopds
@@ -75,25 +76,20 @@ targets:
           - "$(PROJECT_DIR)/secp256k1/include"
 
   AllTests:
-    type: tool
+    type: bundle.unit-test
     platform: macOS
     sources:
       - path: ATProtoPDS/Sources
         excludes:
-          - "**/tests/*"
           - "**/main.m"
           - "**/server_main.m"
-      - path: ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m
-      - path: ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m
-      - path: ATProtoPDS/Tests/Database/PDSControllerTests.m
-      - path: ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m
-      - path: ATProtoPDS/Tests/Network/RateLimiterTests.m
-      - path: ATProtoPDS/Tests/Identity/DIDResolverTests.m
-      - path: ATProtoPDS/Tests/Identity/HandleResolverTests.m
-      - path: ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m
-      - path: ATProtoPDS/Tests/Auth/TOTPTests.m
-      - path: ATProtoPDS/Tests/Auth/CryptoTests.m
-      - path: ATProtoPDS/Tests/test_main.m
+          - "**/CLI/main.m"
+          - "**/*.md"
+      - path: ATProtoPDS/Tests
+        excludes:
+          - "**/*.md"
+    dependencies:
+      - target: ATProtoPDS
     settings:
       base:
         PRODUCT_NAME: AllTests

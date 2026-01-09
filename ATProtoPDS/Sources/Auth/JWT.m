@@ -193,8 +193,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (remainder > 0) {
         [base64 appendString:[@"====" substringToIndex:remainder]];
     }
-    base64 = [base64 stringByReplacingOccurrencesOfString:@"-" withString:@"+"];
-    base64 = [base64 stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+    base64 = [[base64 stringByReplacingOccurrencesOfString:@"-" withString:@"+"] mutableCopy];
+    base64 = [[base64 stringByReplacingOccurrencesOfString:@"_" withString:@"/"] mutableCopy];
     NSData *data = [[NSData alloc] initWithBase64EncodedData:[base64 dataUsingEncoding:NSUTF8StringEncoding] options:0];
     if (!data && error) {
         *error = [NSError errorWithDomain:JWTErrorDomain

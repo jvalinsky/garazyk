@@ -30,7 +30,7 @@
     }
     
     // Label validation regex: ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$
-    // Adjusted to case-insensitive for input, though we normalize before strict usage usually
+    // Case-insensitive pattern allows mixed-case input while preserving validation rules
     NSString *labelPattern = @"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$";
     NSRegularExpression *labelRegex = [NSRegularExpression regularExpressionWithPattern:labelPattern options:0 error:nil];
     
@@ -50,9 +50,9 @@
         }
     }
     
-    // TLD Check: Last segment should be a valid TLD (alphabetic only is a safe-ish bet for ATProto, though ICANN allows numbers now. ATProto usually allows any valid DNS TLD)
-    // Actually, simply ensuring it's not numeric is the key to distinguish from IP. But we already checked IP.
-    // Spec says: "The last segment (TLD) must not be all numeric."
+    // TLD Check: Last segment must be a valid DNS TLD (alphabetic required per ATProto specification)
+    // ICANN allows numeric TLDs, but ATProto specification requires non-numeric TLD to distinguish from IP addresses.
+    // Specification: "The last segment (TLD) must not be all numeric."
     NSString *tld = labels.lastObject;
     NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
     if ([tld rangeOfCharacterFromSet:nonDigits].location == NSNotFound) {

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive plan to organize the ATProto PDS codebase following Objective-C/macOS best practices. Based on research from Microsoft's objc-guide, BottleRocket's iOS Project Standards, and established Cocoa patterns, we present a modern, maintainable structure.
+This document outlines a  plan to organize the ATProto PDS codebase following Objective-C/macOS best practices. Based on research from Microsoft's objc-guide, BottleRocket's iOS Project Standards, and established Cocoa patterns, we present a modern, maintainable structure.
 
 ---
 

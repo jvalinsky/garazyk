@@ -209,17 +209,26 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     self.open = NO;
 }
 
+#pragma mark - Error Handling
+
+- (NSError *)errorWithSQLiteResult:(int)result message:(NSString *)message {
+    return [NSError errorWithDomain:PDSActorStoreErrorDomain
+                              code:result
+                          userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error",
+                                   @"sqlite_code": @(result),
+                                   @"sqlite_message": [NSString stringWithUTF8String:sqlite3_errmsg(self.db)] ?: @""}];
+}
+
 #pragma mark - Transaction Support
 
-- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor))block 
+- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor))block
                     error:(NSError **)error {
+    __block NSError *localError = nil;
     dispatch_sync(self.transactionQueue, ^{
         if (!self.open) {
-            if (error) {
-                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                            code:PDSActorStoreErrorDatabaseClosed
-                                        userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
-            }
+            localError = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                          code:PDSActorStoreErrorDatabaseClosed
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
             return;
         }
         
@@ -259,9 +268,13 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
                 *error = blockError;
             }
         }
-        
+
         [self.stmtCache removeAllObjects];
     });
+
+    if (localError && error) {
+        *error = localError;
+    }
 }
 
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
@@ -935,13 +948,5 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 }
 
 #pragma mark - Error Handling
-
-- (NSError *)errorWithSQLiteResult:(int)result message:(NSString *)message {
-    return [NSError errorWithDomain:PDSActorStoreErrorDomain
-                              code:result
-                          userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error",
-                                   @"sqlite_code": @(result),
-                                   @"sqlite_message": [NSString stringWithUTF8String:sqlite3_errmsg(self.db)] ?: @""}];
-}
 
 @end

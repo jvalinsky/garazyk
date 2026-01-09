@@ -1,7 +1,7 @@
 # Implementation Plan: TOTP & Passkeys (Apple APIs Only)
 
 ## Goal
-Implement robust Two-Factor Authentication (2FA) supporting **TOTP** (Authenticator Apps) and **Passkeys** (WebAuthn) for the ATProtoPDS.
+Implement Two-Factor Authentication (2FA) supporting **TOTP** (Authenticator Apps) and **Passkeys** (WebAuthn) for the ATProtoPDS.
 **Constraint**: Use **100% Objective-C** and **native Apple APIs** (CommonCrypto, Security, CoreImage) with no external dependencies.
 
 ## 1. Database Schema Updates

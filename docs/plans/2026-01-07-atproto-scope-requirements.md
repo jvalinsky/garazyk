@@ -413,7 +413,7 @@ git commit -m "feat: add permission calculation to Session class"
 
 **Step 1: Create OAuth2 scope tests**
 
-Create comprehensive test file for scope validation:
+Create  test file for scope validation:
 
 ```objective-c
 #import <XCTest/XCTest.h>
@@ -502,7 +502,7 @@ Add test file to Makefile compilation.
 
 ```bash
 git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2ScopeTests.m oauth-atproto-scope/Makefile
-git commit -m "feat: add comprehensive tests for ATProto scope validation and mapping"
+git commit -m "feat: add  tests for ATProto scope validation and mapping"
 ```
 
 ---

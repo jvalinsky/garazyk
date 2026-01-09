@@ -53,8 +53,8 @@ static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefg
     if (remainder > 0) {
         [base64 appendString:[@"====" substringToIndex:remainder]];
     }
-    base64 = [base64 stringByReplacingOccurrencesOfString:@"-" withString:@"+"];
-    base64 = [base64 stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+    base64 = [[base64 stringByReplacingOccurrencesOfString:@"-" withString:@"+"] mutableCopy];
+    base64 = [[base64 stringByReplacingOccurrencesOfString:@"_" withString:@"/"] mutableCopy];
     return [[NSData alloc] initWithBase64EncodedData:[base64 dataUsingEncoding:NSUTF8StringEncoding] options:0];
 }
 

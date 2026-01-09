@@ -257,7 +257,7 @@ CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 
 **Files affected:** `docs/README.md`
 
-**Action:** Replace with comprehensive index:
+**Action:** Replace with  index:
 
 ```markdown
 # ATProtoPDS Documentation Index
