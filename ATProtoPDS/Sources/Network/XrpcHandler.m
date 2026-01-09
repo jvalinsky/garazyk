@@ -66,6 +66,10 @@
     handler(request, response);
 }
 
+- (void)registerComAtprotoServerDescribeServer:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.describeServer" handler:handler];
+}
+
 - (void)registerComAtprotoServerCreateSession:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.createSession" handler:handler];
 }

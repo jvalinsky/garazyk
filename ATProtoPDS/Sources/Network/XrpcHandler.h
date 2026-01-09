@@ -82,6 +82,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 // MARK: - Server Methods
 
+/*! Registers handler for com.atproto.server.describeServer. */
+- (void)registerComAtprotoServerDescribeServer:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.createSession. */
 - (void)registerComAtprotoServerCreateSession:(XrpcMethodHandler)handler;
 

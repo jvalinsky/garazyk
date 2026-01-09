@@ -291,6 +291,14 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
+    rc = sqlite3_exec(_db, [kPDSOAuthClientsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
     rc = sqlite3_exec(_db, [kPDSIndexPasskeysAccountDidSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
@@ -1366,6 +1374,92 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (NSDate *)dateFromISO8601String:(NSString *)string {
     return [iso8601Formatter() dateFromString:string];
+}
+
+#pragma mark - OAuth Clients
+
+- (NSDictionary *)getClientWithID:(NSString *)clientID error:(NSError **)error {
+    NSString *sql = @"SELECT * FROM oauth_clients WHERE client_id = ?";
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, clientID.UTF8String, -1, SQLITE_STATIC);
+
+    NSDictionary *client = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+        dict[@"client_id"] = @((const char *)sqlite3_column_text(stmt, 0));
+
+        const char *secret = (const char *)sqlite3_column_text(stmt, 1);
+        if (secret) dict[@"client_secret"] = @(secret);
+
+        dict[@"redirect_uris"] = @((const char *)sqlite3_column_text(stmt, 2));
+
+        const char *grants = (const char *)sqlite3_column_text(stmt, 3);
+        if (grants) dict[@"grant_types"] = @(grants);
+
+        const char *scope = (const char *)sqlite3_column_text(stmt, 4);
+        if (scope) dict[@"scope"] = @(scope);
+
+        client = dict;
+    }
+
+    sqlite3_finalize(stmt);
+    return client;
+}
+
+- (BOOL)createClient:(NSDictionary *)client error:(NSError **)error {
+    NSString *sql = @"INSERT OR REPLACE INTO oauth_clients (client_id, client_secret, redirect_uris, grant_types, scope, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return NO;
+    }
+
+    NSString *clientID = client[@"client_id"];
+    sqlite3_bind_text(stmt, 1, clientID.UTF8String, -1, SQLITE_STATIC);
+
+    NSString *secret = client[@"client_secret"];
+    if (secret) sqlite3_bind_text(stmt, 2, secret.UTF8String, -1, SQLITE_STATIC);
+    else sqlite3_bind_null(stmt, 2);
+
+    NSString *redirectURIs = client[@"redirect_uris"];
+    sqlite3_bind_text(stmt, 3, redirectURIs.UTF8String, -1, SQLITE_STATIC);
+
+    NSString *grants = client[@"grant_types"];
+    if (grants) sqlite3_bind_text(stmt, 4, grants.UTF8String, -1, SQLITE_STATIC);
+    else sqlite3_bind_null(stmt, 4);
+
+    NSString *scope = client[@"scope"];
+    if (scope) sqlite3_bind_text(stmt, 5, scope.UTF8String, -1, SQLITE_STATIC);
+    else sqlite3_bind_null(stmt, 5);
+
+    sqlite3_bind_text(stmt, 6, [self iso8601StringFromDate:[NSDate date]].UTF8String, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)seedTestClient:(NSError **)error {
+    NSDictionary *testClient = @{
+        @"client_id": @"test-client",
+        @"client_secret": @"test-secret",
+        @"redirect_uris": @"http://localhost:3000/callback",
+        @"grant_types": @"authorization_code,refresh_token",
+        @"scope": @"atproto"
+    };
+    return [self createClient:testClient error:error];
 }
 
 @end
