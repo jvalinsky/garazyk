@@ -264,7 +264,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     });
 }
 
-- (BOOL)readWithBlock:(id<PDSActorStoreReader> (^)(void))block 
+- (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
                 error:(NSError **)error {
     if (!self.open) {
         if (error) {
@@ -272,11 +272,10 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
                                         code:PDSActorStoreErrorDatabaseClosed
                                     userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
         }
-        return NO;
+        return;
     }
     
-    id result = block();
-    return result != nil;
+    block(self);
 }
 
 #pragma mark - Statement Management

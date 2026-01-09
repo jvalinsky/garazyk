@@ -159,37 +159,30 @@
     return NO;
 }
 
-- (NSUInteger)hash {
-    NSUInteger result = self.type;
+- (id)underlyingValue {
     switch (self.type) {
         case CBORTypeUnsignedInteger:
-            result ^= [self.unsignedInteger hash];
-            break;
+            return self.unsignedInteger;
         case CBORTypeNegativeInteger:
-            result ^= [self.negativeInteger hash];
-            break;
+            return self.negativeInteger;
         case CBORTypeByteString:
-            result ^= [self.byteString hash];
-            break;
+            return self.byteString;
         case CBORTypeTextString:
-            result ^= [self.textString hash];
-            break;
+            return self.textString;
         case CBORTypeArray:
-            result ^= [self.array hash];
-            break;
+            return self.array;
         case CBORTypeMap:
-            result ^= [self.map hash];
-            break;
+            return self.map;
         case CBORTypeTag:
-            result ^= [self.tag hash];
-            break;
-        case CBORTypeSimpleOrFloat: {
-            id hashable = self.simpleValue ?: @(self.floatValue.doubleValue);
-            result ^= [hashable hash];
-            break;
-        }
+            return self.tag;
+        case CBORTypeSimpleOrFloat:
+            return self.simpleValue ?: @(self.floatValue.doubleValue);
     }
-    return result;
+    return nil;
+}
+
+- (NSUInteger)hash {
+    return self.type ^ [[self underlyingValue] hash];
 }
 
 - (NSData *)encode {
