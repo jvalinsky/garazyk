@@ -1,0 +1,227 @@
+#import "ExploreCache.h"
+
+@interface ExploreCache ()
+@property (nonatomic, strong) NSCache *memoryCache;
+@property (nonatomic, copy) NSString *cacheDirectory;
+@property (nonatomic, copy) NSString *didCacheDir;
+@property (nonatomic, copy) NSString *plcCacheDir;
+@property (nonatomic, copy) NSString *accountCachePath;
+@end
+
+@implementation ExploreCache
+
+static NSTimeInterval const kDidTTL = 3600;
+static NSTimeInterval const kPlcTTL = 86400;
+static NSTimeInterval const kAccountListTTL = 300;
+static NSInteger const kMaxMemoryItems = 200;
+
++ (instancetype)sharedCache {
+    static ExploreCache *instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[ExploreCache alloc] init];
+    });
+    return instance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _memoryCache = [[NSCache alloc] init];
+        _memoryCache.countLimit = kMaxMemoryItems;
+        
+        NSString *baseDir = [self defaultCacheDirectory];
+        _cacheDirectory = baseDir;
+        _didCacheDir = [baseDir stringByAppendingPathComponent:@"did-docs"];
+        _plcCacheDir = [baseDir stringByAppendingPathComponent:@"plc-logs"];
+        _accountCachePath = [baseDir stringByAppendingPathComponent:@"accounts.json"];
+        
+        [self createDirectoryIfNeeded:_didCacheDir];
+        [self createDirectoryIfNeeded:_plcCacheDir];
+    }
+    return self;
+}
+
+- (NSString *)defaultCacheDirectory {
+    NSString *libraryPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *appSupportPath = [libraryPath stringByAppendingPathComponent:@"com.atproto.pds"];
+    return [appSupportPath stringByAppendingPathComponent:@"explore-cache"];
+}
+
+- (void)createDirectoryIfNeeded:(NSString *)path {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm fileExistsAtPath:path]) {
+        NSError *error = nil;
+        [fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error];
+        if (error) {
+            NSLog(@"ExploreCache: Failed to create directory %@: %@", path, error);
+        }
+    }
+}
+
+#pragma mark - DID Document
+
+- (nullable NSString *)getDidDocument:(NSString *)did {
+    if (!did || did.length == 0) return nil;
+    
+    NSString *key = [self cacheKeyForDid:did];
+    NSString *cached = [self.memoryCache objectForKey:key];
+    if (cached) return cached;
+    
+    NSString *path = [self pathForDidDocument:did];
+    NSString *diskCached = [NSString stringWithContentsOfFile:path 
+                                                     encoding:NSUTF8StringEncoding 
+                                                        error:nil];
+    if (diskCached) {
+        NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+        NSDate *modDate = attrs[NSFileModificationDate];
+        if (modDate && [modDate timeIntervalSinceNow] > -kDidTTL) {
+            [self.memoryCache setObject:diskCached forKey:key];
+            return diskCached;
+        }
+    }
+    return nil;
+}
+
+- (void)setDidDocument:(NSString *)did value:(NSString *)document {
+    if (!did || !document) return;
+    
+    NSString *key = [self cacheKeyForDid:did];
+    [self.memoryCache setObject:document forKey:key];
+    
+    NSString *path = [self pathForDidDocument:did];
+    [document writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+}
+
+- (NSString *)pathForDidDocument:(NSString *)did {
+    NSString *sanitized = [self sanitizeFilename:did];
+    return [self.didCacheDir stringByAppendingPathComponent:[sanitized stringByAppendingPathExtension:@"json"]];
+}
+
+#pragma mark - PLC Log
+
+- (nullable NSString *)getPlcLog:(NSString *)did {
+    if (!did || did.length == 0) return nil;
+    
+    NSString *key = [NSString stringWithFormat:@"plc:%@", did];
+    NSString *cached = [self.memoryCache objectForKey:key];
+    if (cached) return cached;
+    
+    NSString *path = [self pathForPlcLog:did];
+    NSString *diskCached = [NSString stringWithContentsOfFile:path 
+                                                     encoding:NSUTF8StringEncoding 
+                                                        error:nil];
+    if (diskCached) {
+        NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+        NSDate *modDate = attrs[NSFileModificationDate];
+        if (modDate && [modDate timeIntervalSinceNow] > -kPlcTTL) {
+            [self.memoryCache setObject:diskCached forKey:key];
+            return diskCached;
+        }
+    }
+    return nil;
+}
+
+- (void)setPlcLog:(NSString *)did value:(NSString *)log {
+    if (!did || !log) return;
+    
+    NSString *key = [NSString stringWithFormat:@"plc:%@", did];
+    [self.memoryCache setObject:log forKey:key];
+    
+    NSString *path = [self pathForPlcLog:did];
+    [log writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+}
+
+- (NSString *)pathForPlcLog:(NSString *)did {
+    NSString *sanitized = [self sanitizeFilename:did];
+    return [self.plcCacheDir stringByAppendingPathComponent:[sanitized stringByAppendingPathExtension:@"json"]];
+}
+
+#pragma mark - Account List
+
+- (nullable NSString *)getAccountList {
+    NSString *cached = [self.memoryCache objectForKey:@"accounts:list"];
+    if (cached) return cached;
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:self.accountCachePath]) {
+        NSString *diskCached = [NSString stringWithContentsOfFile:self.accountCachePath 
+                                                         encoding:NSUTF8StringEncoding 
+                                                            error:nil];
+        if (diskCached) {
+            NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:self.accountCachePath error:nil];
+            NSDate *modDate = attrs[NSFileModificationDate];
+            if (modDate && [modDate timeIntervalSinceNow] > -kAccountListTTL) {
+                [self.memoryCache setObject:diskCached forKey:@"accounts:list"];
+                return diskCached;
+            }
+        }
+    }
+    return nil;
+}
+
+- (void)setAccountList:(NSString *)accountList {
+    if (!accountList) return;
+    
+    [self.memoryCache setObject:accountList forKey:@"accounts:list"];
+    [accountList writeToFile:self.accountCachePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+}
+
+#pragma mark - Cleanup
+
+- (void)clearExpiredEntries {
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    
+    NSArray *dirs = @[self.didCacheDir, self.plcCacheDir];
+    for (NSString *dir in dirs) {
+        NSArray *files = [fm contentsOfDirectoryAtPath:dir error:nil];
+        for (NSString *file in files) {
+            NSString *path = [dir stringByAppendingPathComponent:file];
+            NSDictionary *attrs = [fm attributesOfItemAtPath:path error:nil];
+            NSDate *modDate = attrs[NSFileModificationDate];
+            
+            BOOL expired = NO;
+            if ([dir isEqualToString:self.didCacheDir]) {
+                expired = modDate && [modDate timeIntervalSinceNow] < -kDidTTL;
+            } else if ([dir isEqualToString:self.plcCacheDir]) {
+                expired = modDate && [modDate timeIntervalSinceNow] < -kPlcTTL;
+            }
+            
+            if (expired) {
+                [fm removeItemAtPath:path error:nil];
+            }
+        }
+    }
+    
+    [self.memoryCache removeAllObjects];
+}
+
+- (void)clearAll {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    [fm removeItemAtPath:self.cacheDirectory error:nil];
+    [self createDirectoryIfNeeded:self.didCacheDir];
+    [self createDirectoryIfNeeded:self.plcCacheDir];
+    [self.memoryCache removeAllObjects];
+}
+
+#pragma mark - Helpers
+
+- (NSString *)cacheKeyForDid:(NSString *)did {
+    return [NSString stringWithFormat:@"did:%@", did];
+}
+
+- (NSString *)sanitizeFilename:(NSString *)filename {
+    NSCharacterSet *invalidChars = [NSCharacterSet characterSetWithCharactersInString:@":/\\?%*|\"<>"];
+    NSMutableString *result = [NSMutableString string];
+    for (NSUInteger i = 0; i < filename.length; i++) {
+        unichar c = [filename characterAtIndex:i];
+        if ([invalidChars characterIsMember:c]) {
+            [result appendFormat:@"_%X", (int)c];
+        } else {
+            [result appendFormat:@"%C", c];
+        }
+    }
+    return result;
+}
+
+@end

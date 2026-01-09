@@ -28,6 +28,7 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 
 @interface PDSController : NSObject
 
+@property (nonatomic, copy, readonly) NSString *dataDirectory;
 @property (nonatomic, copy) NSString *plcServerURL;
 @property (nonatomic, assign, readonly, getter=isRunning) BOOL running;
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;

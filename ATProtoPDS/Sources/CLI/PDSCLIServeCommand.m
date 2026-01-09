@@ -1,5 +1,23 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
+#import "Network/HttpServer.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
+#import "App/Explore/ExploreHandler.h"
+#import "App/PDSController.h"
+#import "Database/PDSDatabase.h"
+
+// Forward declaration for PDSAccountManager
+@interface PDSAccountManager : NSObject
++ (NSArray *)listAccountsWithContext:(PDSCLICommandContext *)context
+                             filter:(NSString *)filter
+                              limit:(NSInteger)limit;
+@end
+
+// Category to access HttpServer's private requestHandler property
+@interface HttpServer (Private)
+@property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
+@end
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end
@@ -85,9 +103,136 @@
         printf("Running in background...\n");
     }
 
+    // Initialize and start HTTP server
+    HttpServer *httpServer = [HttpServer serverWithPort:(uint16_t)port];
+    if (!httpServer) {
+        printf("Failed to create HTTP server\n");
+        return;
+    }
+
+    // Initialize PDS controller with specified data directory
+    NSString *dataDir = [[NSURL fileURLWithPath:context.dataDir] path];
+    NSLog(@"Initializing PDS controller with data directory: %@", dataDir);
+    PDSController *controller = [[PDSController alloc] initWithDirectory:dataDir
+                                                         serviceMaxSize:100
+                                                       userDatabaseSize:30000];
+    if (!controller) {
+        printf("Failed to initialize PDS controller\n");
+        return;
+    }
+
+    // Configure Explore handler
+    ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
+    [exploreHandler setController:controller];
+    NSLog(@"PDSCLIServeCommand: Set controller on explore handler: %@", controller);
+
+    // Register route handlers (using old routing system temporarily)
+    [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
+
+    // Add API endpoints
+    [httpServer addHandlerForPath:@"/explore/api/accounts" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![request.methodString isEqualToString:@"GET"]) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setJsonBody:@{@"error": @"Method not allowed"}];
+            return;
+        }
+
+        // Use the same database access as CLI account commands
+        NSError *error = nil;
+        NSArray *accounts = [PDSAccountManager listAccountsWithContext:context
+                                                               filter:nil
+                                                                limit:1000];
+        NSLog(@"PDSCLIServeCommand API: Found %lu accounts", (unsigned long)accounts.count);
+        if (!accounts) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"Failed to load accounts"}];
+            return;
+        }
+
+        // Convert accounts to JSON-friendly format
+        NSMutableArray *accountData = [NSMutableArray array];
+        for (PDSDatabaseAccount *account in accounts) {
+            [accountData addObject:@{
+                @"did": account.did ?: @"",
+                @"handle": account.handle ?: @"",
+                @"createdAt": @(account.createdAt),
+                @"updatedAt": @(account.updatedAt)
+            }];
+        }
+
+        [response setJsonBody:@{
+            @"accounts": accountData,
+            @"count": @(accountData.count)
+        }];
+    }];
+
+    // Start HTTP server
+    NSError *serverError = nil;
+    if (![httpServer startWithError:&serverError]) {
+        printf("Failed to start HTTP server: %s\n", [serverError.localizedDescription UTF8String]);
+        return;
+    }
+
+    printf("HTTP server started successfully on port %ld\n", (long)port);
+    printf("Web interface available at: http://localhost:%ld/explore\n", (long)port);
+
+    if (!foreground) {
+        printf("Running in background...\n");
+    }
+
     if (context.verbose) {
         PDS_LOG_INFO(@"PDS server started successfully");
     }
+
+    // Setup signal handling for graceful shutdown
+    __block volatile sig_atomic_t shouldExit = 0;
+
+    dispatch_source_t intSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGINT, 0, dispatch_get_main_queue());
+    dispatch_source_set_event_handler(intSource, ^{
+        shouldExit = 1;
+        printf("\nShutting down server...\n");
+        [httpServer stop];
+        // Give async operations 2 seconds to complete before forcing exit
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            printf("Forced exit after timeout.\n");
+            exit(0);
+        });
+    });
+    dispatch_resume(intSource);
+
+    dispatch_source_t termSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGTERM, 0, dispatch_get_main_queue());
+    dispatch_source_set_event_handler(termSource, ^{
+        shouldExit = 1;
+        printf("\nShutting down server...\n");
+        [httpServer stop];
+        // Give async operations 2 seconds to complete before forcing exit
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            printf("Forced exit after timeout.\n");
+            exit(0);
+        });
+    });
+    dispatch_resume(termSource);
+
+    // Keep server running
+    if (foreground) {
+        printf("Server running in foreground. Press Ctrl+C to stop.\n");
+    } else {
+        printf("Server started successfully. Running in background mode.\n");
+        printf("Use 'kill %d' or Ctrl+C to stop.\n", getpid());
+    }
+
+    // Run the main run loop to keep the server alive
+    // This properly handles network events
+    while (!shouldExit && httpServer.running) {
+        @autoreleasepool {
+            [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+        }
+    }
+
+    [httpServer stop];
+    printf("Server stopped.\n");
 }
 
 @end

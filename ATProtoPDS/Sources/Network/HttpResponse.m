@@ -87,9 +87,9 @@
     [result appendData:[statusLine dataUsingEncoding:NSUTF8StringEncoding]];
 
     if (self.keepAlive) {
-        [self setHeader:@"Connection: keep-alive" forKey:@"Connection"];
+        [self setHeader:@"keep-alive" forKey:@"Connection"];
     } else {
-        [self setHeader:@"Connection: close" forKey:@"Connection"];
+        [self setHeader:@"close" forKey:@"Connection"];
     }
 
     if (!self.contentType && self.jsonBody) {

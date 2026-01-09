@@ -12,7 +12,8 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
-@property (nonatomic, strong) dispatch_semaphore_t startSemaphore;
+@property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
+@property (nonatomic, assign) BOOL listenerReady;
 
 @end
 
@@ -29,6 +30,8 @@
         _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_SERIAL);
         _routeHandlers = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
+        _readySemaphore = dispatch_semaphore_create(0);
+        _listenerReady = NO;
         _running = NO;
     }
     return self;
@@ -73,28 +76,32 @@
 
     __weak typeof(self) weakSelf = self;
     nw_listener_set_state_changed_handler(self.listener, ^(nw_listener_state_t state, nw_error_t error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            if (!strongSelf) return;
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
 
-            switch (state) {
-                case nw_listener_state_ready:
-                    strongSelf.running = YES;
-                    strongSelf.port = nw_listener_get_port(strongSelf.listener);
-                    NSLog(@"HTTPServer listening on port %d", strongSelf.port);
-                    break;
-                case nw_listener_state_failed:
-                    strongSelf.running = NO;
-                    NSLog(@"HTTPServer failed to start: %@", error);
-                    break;
-                case nw_listener_state_cancelled:
-                    strongSelf.running = NO;
-                    NSLog(@"HTTPServer cancelled");
-                    break;
-                default:
-                    break;
-            }
-        });
+        switch (state) {
+            case nw_listener_state_ready:
+                strongSelf.running = YES;
+                strongSelf.listenerReady = YES;
+                strongSelf.port = nw_listener_get_port(strongSelf.listener);
+                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                NSLog(@"HTTPServer listening on port %d", strongSelf.port);
+                break;
+            case nw_listener_state_failed:
+                strongSelf.running = NO;
+                strongSelf.listenerReady = NO;
+                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                NSLog(@"HTTPServer failed to start: %@", error);
+                break;
+            case nw_listener_state_cancelled:
+                strongSelf.running = NO;
+                strongSelf.listenerReady = NO;
+                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                NSLog(@"HTTPServer cancelled");
+                break;
+            default:
+                break;
+        }
     });
 
     nw_listener_set_new_connection_handler(self.listener, ^(nw_connection_t connection) {
@@ -103,26 +110,32 @@
 
     nw_listener_start(self.listener);
 
-    return YES;
-}
+    // Wait for the listener to become ready or fail
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
+    long result = dispatch_semaphore_wait(self.readySemaphore, timeout);
 
-- (void)handleListenerStateChange:(nw_listener_state_t)state error:(nw_error_t)error {
-    switch (state) {
-        case nw_listener_state_ready:
-            self.running = YES;
-            NSLog(@"HTTPServer listening on port %d", self.port);
-            break;
-        case nw_listener_state_failed:
-            self.running = NO;
-            NSLog(@"HTTPServer failed to start");
-            break;
-        case nw_listener_state_cancelled:
-            self.running = NO;
-            NSLog(@"HTTPServer cancelled");
-            break;
-        default:
-            break;
+    if (result != 0) {
+        // Timeout - listener didn't become ready
+        nw_listener_cancel(self.listener);
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Listener failed to start within timeout"}];
+        }
+        return NO;
     }
+
+    if (!self.listenerReady) {
+        // Listener failed to start
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Listener failed to start"}];
+        }
+        return NO;
+    }
+
+    return YES;
 }
 
 - (void)handleNewConnection:(nw_connection_t)connection {
@@ -215,15 +228,30 @@
     }
 
     HttpRequest *request = [HttpRequest requestWithData:requestData];
+
     if (!request) {
         HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-        [response setBodyString:@"Could not parse request"];
+        [response setBodyString:@"Invalid request"];
         [self sendResponse:response onConnection:connection];
         return;
     }
 
-    HttpResponse *response = [self dispatchRequest:request];
-    [self sendResponse:response onConnection:connection];
+    // Dispatch request processing to background queue to avoid blocking network I/O
+    __weak typeof(self) weakSelf = self;
+    nw_connection_t connectionRef = connection; // Capture connection in block
+    HttpRequest *requestRef = request; // Capture request in block
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+
+        HttpResponse *response = [strongSelf dispatchRequest:requestRef];
+
+        // Send response back on the network queue
+        dispatch_async(strongSelf.serverQueue, ^{
+            [strongSelf sendResponse:response onConnection:connectionRef];
+        });
+    });
 }
 
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {

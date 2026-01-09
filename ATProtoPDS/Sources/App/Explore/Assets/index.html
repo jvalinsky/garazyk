@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATProto PDS Explorer</title>
+    <link rel="stylesheet" href="/explore/css/style.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>ATProto PDS</h1>
+            <p class="subtitle">Explorer</p>
+        </div>
+        
+        <div class="nav-section">
+            <h2>DID Lookup</h2>
+            <form id="lookup-form" class="lookup-form">
+                <input type="text" id="lookup-input" 
+                       placeholder="did:plc:... or handle"
+                       autocomplete="off">
+                <button type="submit" class="btn-primary">
+                    <span class="icon-search"></span>
+                </button>
+            </form>
+        </div>
+        
+        <div class="nav-section">
+            <h2>Accounts</h2>
+            <ul id="account-list" class="account-list">
+                <li class="loading">Loading...</li>
+            </ul>
+        </div>
+        
+        <div class="nav-section">
+            <h2>Navigation</h2>
+            <ul class="nav-list">
+                <li><a href="#did-doc" class="nav-link" data-section="did-doc">
+                    <span class="icon-person"></span>
+                    DID Document</a></li>
+                <li><a href="#plc-ops" class="nav-link" data-section="plc-ops">
+                    <span class="icon-list"></span>
+                    PLC Operations</a></li>
+                <li><a href="#collections" class="nav-link" data-section="collections">
+                    <span class="icon-folder"></span>
+                    Collections</a></li>
+                <li><a href="#cid-decode" class="nav-link" data-section="cid-decode">
+                    <span class="icon-tag"></span>
+                    CID Decoder</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="content">
+        <section id="did-doc" class="section">
+            <h1>DID Document</h1>
+            <div id="did-content" class="content-box">
+                <p class="placeholder">Enter a DID or handle above to view its document</p>
+            </div>
+        </section>
+        
+        <section id="plc-ops" class="section">
+            <h1>PLC Operations</h1>
+            <div id="plc-content" class="content-box">
+                <p class="placeholder">PLC operations will appear here</p>
+            </div>
+        </section>
+        
+        <section id="collections" class="section">
+            <h1>Collections</h1>
+            <div id="collections-content" class="content-box">
+                <p class="placeholder">Select a DID to view its collections</p>
+            </div>
+        </section>
+        
+        <section id="records" class="section hidden">
+            <div class="section-header">
+                <h1 id="records-title">Records</h1>
+                <button id="back-collections" class="btn-secondary">
+                    <span class="icon-arrow-left"></span>
+                    Back to Collections
+                </button>
+            </div>
+            <div id="records-content" class="content-box">
+                <p class="placeholder">Loading records...</p>
+            </div>
+        </section>
+        
+        <section id="record-detail" class="section hidden">
+            <div class="section-header">
+                <h1 id="record-title">Record</h1>
+                <button id="back-records" class="btn-secondary">
+                    <span class="icon-arrow-left"></span>
+                    Back to Records
+                </button>
+            </div>
+            <pre id="record-content" class="code-block"></pre>
+        </section>
+        
+        <section id="cid-decode" class="section">
+            <h1>CID Decoder</h1>
+            <div class="cid-input-group">
+                <input type="text" id="cid-input" 
+                       placeholder="bafybeie..."
+                       autocomplete="off">
+                <button id="cid-decode-btn" class="btn-primary">Decode</button>
+            </div>
+            <div id="cid-result" class="content-box">
+                <p class="placeholder">Enter a CID above to decode it</p>
+            </div>
+        </section>
+    </main>
+    
+    <script src="/explore/js/api.js"></script>
+    <script src="/explore/js/cid.js"></script>
+    <script src="/explore/js/did.js"></script>
+    <script src="/explore/js/plc.js"></script>
+    <script src="/explore/js/ui.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ pegasus-ocaml/
 cocoon/
 deciduous/
 indigo/
+reference/
 
 # Worktrees
 oauth-worktree/
