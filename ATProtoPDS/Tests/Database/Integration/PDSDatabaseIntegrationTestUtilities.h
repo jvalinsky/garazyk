@@ -378,6 +378,8 @@ typedef NS_ENUM(NSInteger, PDSDatabaseIntegrationTestError) {
  */
 @interface PDSSchemaValidationTestFixture : PDSDatabaseTestFixture
 
+@property (nonatomic, readwrite, nullable) PDSDatabase *database;
+
 /**
  @method validateSchemaWithError:
 
