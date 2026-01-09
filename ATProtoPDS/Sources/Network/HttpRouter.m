@@ -207,12 +207,23 @@
 - (void)setupRoutes {
     // ... existing routes ...
 
-    [self addRoute:@"/.well-known/oauth-authorization-server"
-           method:@"GET"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-        OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:self.baseURL];
-        [response setJSONBody:metadata.metadata];
-        response.statusCode = 200;
+    __weak typeof(self) weakSelf = self;
+    [self addRoute:@"GET"
+            pattern:@"/.well-known/oauth-authorization-server"
+            handler:^(HttpRequest *request, HttpResponse *response) {
+        @try {
+            OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:weakSelf.baseURL];
+            if (!metadata) {
+                response.statusCode = 500;
+                [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Failed to generate metadata"}];
+                return;
+            }
+            [response setJsonBody:metadata.metadata];
+            response.statusCode = 200;
+        } @catch (NSException *exception) {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Internal server error"}];
+        }
     }];
 }
 

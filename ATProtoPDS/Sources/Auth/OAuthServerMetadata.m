@@ -3,6 +3,16 @@
 @implementation OAuthServerMetadata
 
 - (instancetype)initWithBaseURL:(NSString *)baseURL {
+    if (!baseURL || ![baseURL hasPrefix:@"https://"]) {
+        return nil;
+    }
+
+    // Validate URL format
+    NSURL *url = [NSURL URLWithString:baseURL];
+    if (!url || !url.scheme || !url.host) {
+        return nil;
+    }
+
     self = [super init];
     if (self) {
         _metadata = @{
