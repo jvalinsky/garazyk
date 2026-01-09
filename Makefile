@@ -1,10 +1,10 @@
 .PHONY: all clean build test run test-blob test-unit help clang-tidy scan-build fuzz-asan fuzz-ubsan fuzz-tsan fuzz-all fuzz-xrpc fuzz-cbor fuzz-http fuzz-auth run-fuzzers run-fuzzers-comprehensive
 
 CC = clang
-CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -fobjc-arc
+CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -framework CoreImage -lsqlite3 -fobjc-arc
 CFLAGS += -Isecp256k1/include
 CFLAGS += -IATProtoPDS/Sources
-LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -lsqlite3 -Lsecp256k1/build/lib -lsecp256k1
+LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -framework CoreImage -lsqlite3 -Lsecp256k1/build/lib -lsecp256k1
 BUILD_DIR = build
 EXECUTABLE = atprotopds
 

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This plan outlines the implementation of a comprehensive test suite for the ATProto PDS Objective-C implementation. The plan prioritizes:
+This plan outlines the implementation of a  test suite for the ATProto PDS Objective-C implementation. The plan prioritizes:
 - **Zero external dependencies** - Use only macOS system frameworks
 - **Native macOS APIs** - XCTest, Foundation, Security, Dispatch
 - **Comprehensive coverage** - Mirror atproto reference implementation patterns

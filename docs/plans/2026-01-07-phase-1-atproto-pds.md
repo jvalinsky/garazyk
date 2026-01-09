@@ -123,7 +123,7 @@ Return current repository head information.
 Support cross-server record fetching.
 
 **Step 3: Implement sync.getBlocks**
-Bulk block retrieval for efficient sync.
+Bulk block retrieval for  sync.
 
 ### Phase 1C: Content Moderation (Weeks 5-6)
 
@@ -219,7 +219,7 @@ Fault injection and recovery testing.
 - CBOR parsing library (if needed)
 
 ### Internal Dependencies
-- Phase 0 completion ✅
+- Phase 0 completion PASS
 - Database schema stability
 - XRPC protocol compliance
 

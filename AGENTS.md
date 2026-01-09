@@ -38,6 +38,26 @@ bd sync               # Sync with git
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+## Important Development Lessons
+
+### Compilation Fixes: Understand Before Changing
+
+**WHEN ENCOUNTERING COMPILATION ERRORS:**
+- **First**: Verify if the code was actually building before your changes
+- **Check**: What types were being used in the original working code
+- **Avoid**: Making assumptions about "correct" types without evidence
+- **Pattern**: If code was building, the original types were likely correct
+
+**Example Issue**: Attempting to fix "uint8_t not found" errors by changing `uint16_t` to `NSUInteger` without verifying the original code actually used `uint16_t`.
+
+**Correct Approach**:
+1. Confirm code was building before changes
+2. Check git history/diffs to see original types
+3. Only change types if there's evidence the original was wrong
+4. Test incrementally after each change
+
+**Prevention**: When fixing compilation issues, ask: "Was this code building before? What changed?"
+
 ## Security Testing
 
 This project includes comprehensive security testing infrastructure.

@@ -29,7 +29,7 @@ The objpds CLI tool has **good to excellent compatibility prospects** with Darli
 
 ## Darling Framework Support - Citations
 
-### ✅ **Fully Supported Frameworks**
+### PASS **Fully Supported Frameworks**
 
 #### Foundation Framework
 - **Repository**: [darlinghq/darling-foundation](https://github.com/darlinghq/darling-foundation)
@@ -58,7 +58,7 @@ The objpds CLI tool has **good to excellent compatibility prospects** with Darli
 - **Repository**: [darlinghq/darling-Libsystem](https://github.com/darlinghq/darling-Libsystem)
 - **Evidence**: Core system libraries (Libsystem-1292.120.1) for threading, logging, I/O
 
-### ❌ **Limited/No Support**
+### FAIL **Limited/No Support**
 
 #### CoreImage Framework
 - **Status**: No dedicated repository found in darlinghq organization

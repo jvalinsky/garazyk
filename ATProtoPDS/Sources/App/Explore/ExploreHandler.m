@@ -1429,8 +1429,8 @@
         return nil;
     }
     
-    // Return the error response from PLC if we couldn't handle it locally
-    // BUT only if it's not a "DID not registered" error, to prevent caching it as a valid doc
+    // Return the error response from PLC if local resolution failed
+    // Exception: "DID not registered" errors to prevent caching as valid document
     if ([result containsString:@"DID not registered"]) {
         return nil;
     }

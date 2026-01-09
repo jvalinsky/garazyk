@@ -89,7 +89,7 @@ This roadmap outlines the remaining features needed to transform the current ATP
 
 ### 1.4 Sync Protocol Improvements
 - **getLatestCommit** (`com.atproto.sync.getLatestCommit`)
-- **getBlocks** for efficient sync
+- **getBlocks** for  sync
 - **Merkle tree** optimizations
 - **Delta synchronization**
 
@@ -147,7 +147,7 @@ This roadmap outlines the remaining features needed to transform the current ATP
 - **Horizontal scaling** capabilities
 
 ### 3.3 Compliance & Audit
-- **Audit logging** comprehensive
+- **Audit logging** 
 - **Data retention** compliance
 - **GDPR compliance** features
 - **Legal hold** capabilities
@@ -177,7 +177,7 @@ This roadmap outlines the remaining features needed to transform the current ATP
 ### Technical Considerations
 - **Backward Compatibility**: Maintain API compatibility
 - **Performance Benchmarks**: Target <100ms for common operations
-- **Testing Coverage**: >90% code coverage, comprehensive integration tests
+- **Testing Coverage**: >90% code coverage,  integration tests
 - **Security Review**: External security audit before production
 
 ### Risk Mitigation
@@ -192,7 +192,7 @@ This roadmap outlines the remaining features needed to transform the current ATP
 
 1. **Immediate Actions** (Week 1):
    - Complete Phase 0.1 repository operations
-   - Implement comprehensive testing framework
+   - Implement  testing framework
    - Set up CI/CD pipeline with automated testing
 
 2. **Short-term Goals** (Weeks 2-4):

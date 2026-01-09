@@ -57,7 +57,7 @@
     if (!cgImage) return nil;
     
     CFMutableDataRef pngData = CFDataCreateMutable(NULL, 0);
-    CGImageDestinationRef destination = CGImageDestinationCreateWithData(pngData, kUTTypePNG, 1, NULL);
+    CGImageDestinationRef destination = CGImageDestinationCreateWithData(pngData, (__bridge CFStringRef)@"public.png", 1, NULL);
     CGImageDestinationAddImage(destination, cgImage, NULL);
     
     BOOL success = CGImageDestinationFinalize(destination);

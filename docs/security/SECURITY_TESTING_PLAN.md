@@ -20,7 +20,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive security testing plan for the Objective-C ATProto PDS implementation. The testing focuses on three critical areas:
+This document provides a  security testing plan for the Objective-C ATProto PDS implementation. The testing focuses on three critical areas:
 
 | Category | Risk Level | Primary Concerns |
 |----------|------------|------------------|

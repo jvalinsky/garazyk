@@ -104,20 +104,20 @@ Our test data has 0x12 followed by 0x20, which means:
 - Length: 32 bytes (0x20)
 - But we only provided 34 total bytes, with hash starting at byte 3
 
-Actually, looking more carefully at the data:
+Detailed analysis of the data sequence:
 ```
 0x01, 0x71, 0x12, 0x20, 0x01, 0x02, 0x03, ...
 ```
 
-This is 7 bytes total. If multihash starts at byte 2 (index 2), we have:
+Total bytes analyzed: 7. If multihash starts at byte 2 (index 2):
 - Version: 0x01 (1 byte)
 - Codec: 0x71 (1 byte)
 - Multihash: 5 bytes starting at index 2
 
-But multihash needs at least 2 bytes for algorithm+length, leaving only 3 bytes for the actual digest. This is a truncated multihash.
+Constraint analysis: multihash requires minimum 2 bytes (algorithm + length), leaving only 3 bytes for digest. This indicates a truncated multihash.
 
-### Hypothesis
-Our CID encoding IS correct for the data we have. The base32 round-trip should work. Let me verify the base32 in isolation.
+### Analysis
+Current CID encoding is correct for available data. The base32 round-trip functionality needs verification through isolated testing.
 
 ### Test Case for Verification
 Test base32 with a simple 2-byte sequence that should have clean round-trip:

@@ -15,7 +15,7 @@ After reviewing the ATProto PDS codebase (23,268 lines of code across 115 source
 ## Current Documentation State
 
 ### Files WITH Documentation (Good Examples)
-1. **CID.h** - Excellent (`///` style comments, comprehensive)
+1. **CID.h** - Excellent (`///` style comments, )
 2. **TID.h** - Good (timestamp ID utilities)
 3. **DID.h** - Good (decentralized identifier support)
 4. **BlobStorage.h** - Good (blob storage interface)

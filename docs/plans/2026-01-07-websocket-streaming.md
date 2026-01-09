@@ -147,7 +147,7 @@ Support cursor-based pagination and backfill limits.
 
 **Step 3: Add event buffering**
 
-Implement buffering for efficient streaming.
+Implement buffering for  streaming.
 
 **Step 4: Handle connection lifecycle**
 

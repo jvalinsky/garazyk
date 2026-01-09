@@ -8,8 +8,8 @@ This document compares the current `ATProtoPDS` (Objective-C) implementation aga
 | :--- | :--- | :--- | :--- | :--- |
 | **OAuth 2.0 Core** | Basic (Code Grant) | Complete (PAR, JAR, Code) | Complete (PAR, Code) | Complete |
 | **DPoP** | Partial (Stubs) | **Strict Enforcement** | Supported | Supported |
-| **2FA / MFA** | ❌ **Missing** | Delegated (via Interaction) | ✅ **Email Codes** | ✅ **TOTP & Passkeys** |
-| **Account Resolution** | ✅ Bidirectional | ✅ Bidirectional | ✅ Bidirectional | ✅ Bidirectional |
+| **2FA / MFA** | FAIL **Missing** | Delegated (via Interaction) | PASS **Email Codes** | PASS **TOTP & Passkeys** |
+| **Account Resolution** | PASS Bidirectional | PASS Bidirectional | PASS Bidirectional | PASS Bidirectional |
 | **Interaction Flow** | Stubs | Logic-driven (Redirects) | HTML Templates | Logic-driven |
 
 ## Detail Analysis

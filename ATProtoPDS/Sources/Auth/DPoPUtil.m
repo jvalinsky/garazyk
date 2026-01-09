@@ -280,7 +280,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     }
     [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
     [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
-    return [[NSData alloc] initWithBase64EncodedData:base64 options:0];
+    return [[NSData alloc] initWithBase64EncodedData:[base64 dataUsingEncoding:NSUTF8StringEncoding] options:0];
 }
 
 @end
