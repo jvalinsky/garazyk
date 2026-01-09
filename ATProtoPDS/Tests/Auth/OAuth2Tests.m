@@ -226,7 +226,42 @@
     XCTAssertEqual(response.statusCode, 200);
     NSDictionary *metadata = response.jsonBody;
     XCTAssertNotNil(metadata[@"issuer"]);
+    XCTAssertEqualObjects(metadata[@"issuer"], @"https://example.com");
     XCTAssertNotNil(metadata[@"authorization_endpoint"]);
+    XCTAssertEqualObjects(metadata[@"authorization_endpoint"], @"https://example.com/oauth/authorize");
+    XCTAssertNotNil(metadata[@"token_endpoint"]);
+    XCTAssertEqualObjects(metadata[@"token_endpoint"], @"https://example.com/oauth/token");
+    XCTAssertNotNil(metadata[@"jwks_uri"]);
+    XCTAssertEqualObjects(metadata[@"jwks_uri"], @"https://example.com/oauth/jwks");
+}
+
+- (void)testMetadataEndpointErrorHandling {
+    HttpRouter *router = [[HttpRouter alloc] init];
+    router.baseURL = @"invalid-url";
+    [router setupRoutes];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                   methodString:@"GET"
+                                                         path:@"/.well-known/oauth-authorization-server"
+                                                  queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:nil];
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    HttpRouteHandler handler = [router handlerForRequest:request];
+    XCTAssertNotNil(handler, @"Handler should be found for metadata endpoint");
+
+    handler(request, response);
+
+    XCTAssertEqual(response.statusCode, 500);
+    NSDictionary *errorResponse = response.jsonBody;
+    XCTAssertNotNil(errorResponse[@"error"]);
+    XCTAssertEqualObjects(errorResponse[@"error"], @"server_error");
+    XCTAssertNotNil(errorResponse[@"error_description"]);
+    XCTAssertEqualObjects(errorResponse[@"error_description"], @"Failed to generate metadata");
 }
 
 #pragma mark - Helper Methods
