@@ -216,6 +216,8 @@
     }
 
     // Validate client secret
+    // Note: In a production environment, this should use a constant-time comparison
+    // to prevent timing attacks (e.g., CRYPTO_memcmp or similar).
     NSString *clientSecret = params[@"client_secret"];
     if (!clientSecret || ![clientSecret isEqualToString:client[@"client_secret"]]) {
         response.statusCode = 401;
