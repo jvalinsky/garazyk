@@ -150,8 +150,24 @@
     [self registerMethod:@"com.atproto.admin.getSubjectStatus" handler:handler];
 }
 
+- (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.moderateAccount" handler:handler];
+}
+
+- (void)registerComAtprotoAdminModerateRecord:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.moderateRecord" handler:handler];
+}
+
 - (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.label.queryLabels" handler:handler];
+}
+
+- (void)registerComAtprotoLabelCreateLabel:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.label.createLabel" handler:handler];
+}
+
+- (void)registerComAtprotoLabelGetLabels:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.label.getLabels" handler:handler];
 }
 
 - (void)registerAppBskyActorGetProfile:(XrpcMethodHandler)handler {
