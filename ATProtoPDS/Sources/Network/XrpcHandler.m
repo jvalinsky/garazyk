@@ -210,4 +210,8 @@
     [self registerMethod:@"app.bsky.notification.registerPush" handler:handler];
 }
 
+- (void)registerAppBskyUserGetUserStats:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.user.getUserStats" handler:handler];
+}
+
 @end
