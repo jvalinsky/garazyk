@@ -2,6 +2,9 @@
 
 @class OAuth2Server;
 @class HttpServer;
+@class PDSDatabase;
+@class HttpRequest;
+@class HttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -20,6 +23,16 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) OAuth2Server *server;
 
 /*!
+ @method initWithDatabase:
+ 
+ @abstract Initializes a new OAuth2 handler with a database.
+ 
+ @param database The database to use for client storage.
+ @return An initialized OAuth2Handler instance.
+ */
+- (instancetype)initWithDatabase:(PDSDatabase *)database;
+
+/*!
  @method init
  
  @abstract Initializes a new OAuth2 handler.
@@ -36,6 +49,8 @@ NS_ASSUME_NONNULL_BEGIN
  @param httpServer The HTTP server to register routes with.
  */
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
+
+- (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
 
