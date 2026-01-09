@@ -11,6 +11,7 @@ extern NSString * const kPDSBlockTableName;
 extern NSString * const kPDSBlobTableName;
 extern NSString * const kPDSInviteCodeTableName;
 extern NSString * const kPDSPasskeysTableName;
+extern NSString * const kPDSOAuthClientsTableName;
 
 extern NSString * const kPDSAccountTableCreateSQL;
 extern NSString * const kPDSRepoTableCreateSQL;
@@ -20,6 +21,7 @@ extern NSString * const kPDSBlobTableCreateSQL;
 extern NSString * const kPDSInviteCodeTableCreateSQL;
 extern NSString * const kPDSAdminTakedownTableCreateSQL;
 extern NSString * const kPDSPasskeysTableCreateSQL;
+extern NSString * const kPDSOAuthClientsTableCreateSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;

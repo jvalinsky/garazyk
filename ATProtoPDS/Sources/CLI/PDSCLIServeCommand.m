@@ -3,6 +3,8 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/XrpcHandler.h"
+#import "Network/XrpcMethodRegistry.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
@@ -128,9 +130,28 @@
     NSLog(@"PDSCLIServeCommand: Set controller on explore handler: %@", controller);
 
     // Configure OAuth2 handler
-    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] init];
+    NSError *dbError = nil;
+    PDSDatabase *serviceDB = [controller serviceDatabaseWithError:&dbError];
+    if (!serviceDB) {
+        printf("Failed to initialize service database: %s\n", dbError.localizedDescription.UTF8String);
+        return;
+    }
+    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:serviceDB];
     [oauthHandler registerRoutesWithServer:httpServer];
     NSLog(@"PDSCLIServeCommand: Registered OAuth2 routes");
+
+    // Configure XRPC dispatcher
+    XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
+    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
+    
+    [httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        [dispatcher handleRequest:request response:response];
+    }];
+    
+    [httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [dispatcher handleRequest:request response:response];
+    }];
+    NSLog(@"PDSCLIServeCommand: Registered XRPC routes");
 
     // Register route handlers (using old routing system temporarily)
     [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {

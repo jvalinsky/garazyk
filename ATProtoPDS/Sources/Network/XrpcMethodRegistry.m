@@ -10,6 +10,27 @@
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller {
+    [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
+        // Return server capabilities and available DIDs
+        NSArray *dids = [controller.database getAllAccountsWithError:nil];
+        NSMutableArray *availableUserDomains = [NSMutableArray array];
+        
+        // This is a simplified implementation - normally we'd return more server metadata
+        NSDictionary *result = @{
+            @"inviteCodeRequired": @NO,
+            @"phoneVerificationRequired": @NO,
+            @"availableUserDomains": @[@"test.pds"],
+            @"links": @{
+                @"privacyPolicy": @"https://bsky.social/about/blog/privacy-policy",
+                @"termsOfService": @"https://bsky.social/about/blog/terms-of-service"
+            },
+            @"did": @"did:web:test.pds" // Server DID
+        };
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *email = body[@"email"];

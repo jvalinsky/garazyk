@@ -161,6 +161,26 @@
     nw_connection_start(connection);
 }
 
+- (void)readMoreDataInto:(NSMutableData *)requestData connection:(nw_connection_t)connection {
+    nw_connection_receive(connection, 1, UINT32_MAX, ^(dispatch_data_t newContent, nw_content_context_t context, bool isComplete, nw_error_t receiveError) {
+        if (newContent && dispatch_data_get_size(newContent) > 0) {
+            NSData *newData = [self dataFromDispatchData:newContent];
+            [requestData appendData:newData];
+            [self parseRequest:requestData fromConnection:connection];
+        } else if (isComplete) {
+            // Connection closed by peer
+            nw_connection_cancel(connection);
+        } else if (receiveError) {
+            nw_connection_cancel(connection);
+        } else {
+            // No data read, try again? Or maybe this means we should wait.
+            // nw_connection_receive should call back when there IS data or error.
+            // But if min=1, it should wait.
+            [self readMoreDataInto:requestData connection:connection];
+        }
+    });
+}
+
 - (void)readRequestFromConnection:(nw_connection_t)connection {
     __weak typeof(self) weakSelf = self;
 
@@ -214,16 +234,44 @@
     }
 
     NSRange headerEndRange = [requestString rangeOfString:@"\r\n\r\n"];
-    if (headerEndRange.location == NSNotFound && data.length < 16384) {
-        nw_connection_receive(connection, 1, UINT32_MAX, ^(dispatch_data_t newContent, nw_content_context_t context, bool isComplete, nw_error_t receiveError) {
-            if (newContent && dispatch_data_get_size(newContent) > 0) {
-                NSData *newData = [self dataFromDispatchData:newContent];
-                [requestData appendData:newData];
-                [self parseRequest:requestData fromConnection:connection];
-            } else {
-                [self readRequestFromConnection:connection];
-            }
-        });
+    if (headerEndRange.location == NSNotFound) {
+        if (data.length < 16384) {
+            // Headers not fully received yet
+            [self readMoreDataInto:requestData connection:connection];
+            return;
+        } else {
+            // Request too large or malformed
+            HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
+            [response setBodyString:@"Request too large"];
+            [self sendResponse:response onConnection:connection];
+            return;
+        }
+    }
+
+    // Check for Content-Length
+    NSString *headersPart = [requestString substringToIndex:headerEndRange.location];
+    NSUInteger contentLength = 0;
+    
+    // Simple case-insensitive search for Content-Length
+    NSRange clRange = [headersPart rangeOfString:@"Content-Length:" options:NSCaseInsensitiveSearch];
+    if (clRange.location != NSNotFound) {
+        NSUInteger valueStart = clRange.location + clRange.length;
+        NSRange lineEnd = [headersPart rangeOfString:@"\r\n" options:0 range:NSMakeRange(valueStart, headersPart.length - valueStart)];
+        if (lineEnd.location != NSNotFound) {
+            NSString *valueString = [headersPart substringWithRange:NSMakeRange(valueStart, lineEnd.location - valueStart)];
+            contentLength = (NSUInteger)[valueString longLongValue];
+        } else {
+            // End of headers string
+            NSString *valueString = [headersPart substringFromIndex:valueStart];
+            contentLength = (NSUInteger)[valueString longLongValue];
+        }
+    }
+    
+    NSUInteger expectedLength = headerEndRange.location + 4 + contentLength;
+    
+    if (data.length < expectedLength) {
+        // Need more body data
+        [self readMoreDataInto:requestData connection:connection];
         return;
     }
 

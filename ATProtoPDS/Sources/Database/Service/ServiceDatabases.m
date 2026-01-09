@@ -491,6 +491,14 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 
 #pragma mark - Cleanup
 
+- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:self.serviceDbPath]];
+    if (![db openWithError:error]) {
+        return nil;
+    }
+    return db;
+}
+
 - (void)closeAll {
     [self.servicePool closeAll];
     [self.didCachePool closeAll];

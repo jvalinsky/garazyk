@@ -18,6 +18,8 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
 + (instancetype)sharedInstance;
 
+- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
+
 - (instancetype)initWithDirectory:(NSString *)directory 
                      serviceMaxSize:(NSUInteger)serviceMaxSize
                    didCacheMaxSize:(NSUInteger)didCacheMaxSize
