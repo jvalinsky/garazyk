@@ -88,13 +88,12 @@
 }
 
 - (nullable NSString *)generateTOTPToken:(NSError **)error {
-    // Try hardware token first, fall back to software
-    if ([self.yubiKeyManager generateTOTPForSecret:self.secret counter:self.counter error:error]) {
-        // For now, hardware generation returns success but we fall back to software
-        // In real implementation, this would return the actual hardware token
-        return [self generateSoftwareToken];
+    // Try hardware token first (currently software-only), fall back to software
+    NSString *token = [self.yubiKeyManager generateTOTPForSecret:self.secret counter:self.counter error:error];
+    if (token) {
+        return token;
     } else {
-        // Fallback to software generation
+        // Fallback to direct software generation if hardware manager fails
         return [self generateSoftwareToken];
     }
 }
