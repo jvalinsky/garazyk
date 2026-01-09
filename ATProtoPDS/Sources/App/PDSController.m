@@ -16,6 +16,9 @@
 #import "Repository/RepoCommit.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/HttpServer.h"
+#import "Network/XrpcHandler.h"
+#import "Network/XrpcMethodRegistry.h"
 #import "App/PDSConfiguration.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -33,6 +36,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     dispatch_queue_t _repoQueue;
     dispatch_queue_t _controllerQueue;
     SubscribeReposHandler *_subscribeReposHandler;
+    HttpServer *_httpServer;
+    XrpcDispatcher *_xrpcDispatcher;
     NSString *_dataDirectory;
     BOOL _running;
 }
@@ -97,6 +102,29 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 - (BOOL)startServerWithError:(NSError **)error {
     os_log_info(_log, "Starting ATProto PDS server with single-tenant architecture...");
     
+    // Start HTTP server with XRPC handlers
+    _httpServer = [HttpServer serverWithPort:2583];
+    _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+    
+    [XrpcMethodRegistry registerMethodsWithDispatcher:_xrpcDispatcher controller:self];
+    
+    [_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self->_xrpcDispatcher handleRequest:request response:response];
+    }];
+    
+    [_httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self->_xrpcDispatcher handleRequest:request response:response];
+    }];
+    
+    NSError *httpError = nil;
+    if (![_httpServer startWithError:&httpError]) {
+        os_log_error(_log, "Failed to start HTTP server: %@", httpError);
+        if (error) *error = httpError;
+        return NO;
+    }
+    os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpServer.port);
+    
+    // Start WebSocket handler for subscribeRepos
     NSError *streamingError = nil;
     _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
     
@@ -107,12 +135,13 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }
     
     _running = YES;
-    os_log_info(_log, "PDS server started successfully");
+    os_log_info(_log, "PDS server started successfully - XRPC at port 2583, WebSocket at port 8081");
     return YES;
 }
 
 - (void)stopServer {
     os_log_info(_log, "Stopping ATProto PDS server...");
+    [_httpServer stop];
     [_subscribeReposHandler stop];
     [_userDatabasePool closeAll];
     [_serviceDatabases closeAll];

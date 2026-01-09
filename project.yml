@@ -9,78 +9,85 @@ settings:
   base:
     CLANG_ENABLE_OBJC_ARC: YES
     SDKROOT: macosx
-    LIBRARY_SEARCH_PATHS:
-      - "$(PROJECT_DIR)/secp256k1/build/lib"
     CLANG_C_LANGUAGE_STANDARD: c11
     CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING: YES
     CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 
 targets:
+  # Main CLI Tool - wrapper around CMake build
   ATProtoPDS-CLI:
     type: tool
     platform: macOS
-    sources:
-      - path: ATProtoPDS/Sources
-        excludes:
-          - "**/tests/*"
-          - "**/App/main.m"
-          - "**/App/server_main.m"
-    resources:
-      - path: ATProtoPDS/Sources/App/Explore/Assets
+    sources: [] 
     settings:
       base:
         PRODUCT_NAME: atprotopds-cli
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        OTHER_LDFLAGS:
-          - "-framework"
-          - Foundation
-          - "-framework"
-          - Network
-          - "-framework"
-          - Security
-          - "-lsqlite3"
-          - "-lsecp256k1"
-        HEADER_SEARCH_PATHS:
-          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
-          - "$(PROJECT_DIR)/secp256k1/include"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/atprotopds-cli"
+    prebuildScripts:
+      - name: "Build with CMake"
+        script: |
+          #!/bin/bash
+          set -e
+          mkdir -p "${PROJECT_DIR}/build"
+          cd "${PROJECT_DIR}/build"
+          # Configure and build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=OFF
+          make -j$(sysctl -n hw.ncpu) atprotopds-cli
 
+  # Test Runner - wrapper around CMake build
   AllTests:
-    type: bundle.unit-test
+    type: tool
     platform: macOS
-    sources:
-      - path: ATProtoPDS/Sources
-        excludes:
-          - "**/main.m"
-          - "**/server_main.m"
-          - "**/CLI/main.m"
-          - "**/*.md"
-      - path: ATProtoPDS/Tests
-        excludes:
-          - "**/*.md"
-    dependencies:
-      - target: ATProtoPDS-CLI
+    sources: []
     settings:
       base:
         PRODUCT_NAME: AllTests
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        CODE_SIGN_IDENTITY: "-"
-        LD_RUNPATH_SEARCH_PATHS:
-          - "$(inherited)"
-          - "@executable_path/../Frameworks"
-          - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks"
-        OTHER_LDFLAGS:
-          - "-all_load"
-          - "-framework"
-          - XCTest
-          - "-framework"
-          - Foundation
-          - "-framework"
-          - Security
-          - "-lsqlite3"
-          - "-lsecp256k1"
-        HEADER_SEARCH_PATHS:
-          - "$(PROJECT_DIR)/ATProtoPDS/Sources"
-          - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/ATProtoPDS/Tests"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/tests/AllTests"
+    prebuildScripts:
+      - name: "Build Tests with CMake"
+        script: |
+          #!/bin/bash
+          set -e
+          mkdir -p "${PROJECT_DIR}/build"
+          cd "${PROJECT_DIR}/build"
+          # Configure and build tests
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=ON \
+            -DBUILD_FUZZERS=OFF
+          make -j$(sysctl -n hw.ncpu) AllTests
+
+  # Fuzzers - aggregate target to build all fuzzers
+  Fuzzers:
+    type: tool
+    platform: macOS
+    sources: []
+    settings:
+      base:
+        PRODUCT_NAME: Fuzzers
+    prebuildScripts:
+      - name: "Build Fuzzers with CMake"
+        script: |
+          #!/bin/bash
+          set -e
+          mkdir -p "${PROJECT_DIR}/build"
+          cd "${PROJECT_DIR}/build"
+          # Configure and build fuzzers
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=ON
+          make -j$(sysctl -n hw.ncpu) fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth

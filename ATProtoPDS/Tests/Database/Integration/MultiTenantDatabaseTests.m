@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Database/Integration/PDSDatabaseIntegrationTestUtilities.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/PDSDatabase.h"
 
 @interface MultiTenantDatabaseTests : XCTestCase
 
@@ -17,12 +18,12 @@
                                                               maxPoolSize:5
                                                                 testDIDs:@[@"did:plc:alice", @"did:plc:bob", @"did:plc:charlie"]];
 
-    __autoreleasing NSError *error = nil;
+    __block NSError *error = nil;
     XCTAssertTrue([self.fixture setupTenantsWithError:&error], @"Failed to setup tenants: %@", error);
 }
 
 - (void)tearDown {
-    __autoreleasing NSError *error = nil;
+    __block NSError *error = nil;
     XCTAssertTrue([self.fixture teardownPoolWithError:&error], @"Failed to teardown pool: %@", error);
     self.fixture = nil;
     [super tearDown];
@@ -33,7 +34,7 @@
     NSString *aliceDID = @"did:plc:alice";
     NSString *bobDID = @"did:plc:bob";
 
-    __autoreleasing NSError *error = nil;
+    __block NSError *error = nil;
 
     // Create test data for Alice
     PDSDatabaseRecord *aliceRecord = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:aliceDID
@@ -97,7 +98,7 @@
     NSString *aliceDID = @"did:plc:alice";
     NSString *bobDID = @"did:plc:bob";
 
-    __autoreleasing NSError *error = nil;
+    __block NSError *error = nil;
 
     // Create test data for both tenants
     PDSDatabaseRecord *aliceRecord = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:aliceDID
@@ -217,7 +218,7 @@
     NSString *bobDID = @"did:plc:bob";
     NSString *charlieDID = @"did:plc:charlie";
 
-    __autoreleasing NSError *error = nil;
+    __block NSError *error = nil;
 
     // Create actor stores for multiple tenants - this should apply schema migrations
     NSString *aliceDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"actorstore_%@.db", aliceDID]];
