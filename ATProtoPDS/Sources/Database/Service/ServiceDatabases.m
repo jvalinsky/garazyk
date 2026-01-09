@@ -420,7 +420,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 - (void)cacheDID:(NSString *)did 
         document:(NSDictionary *)document 
       expiresAt:(NSDate *)expiresAt {
-    [self.didCachePool transactWithDid:@"__did_cache__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.didCachePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         
         NSString *sql = @"INSERT OR REPLACE INTO did_cache (did, document, expires_at) VALUES (?, ?, ?)";
@@ -444,12 +444,12 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 - (nullable NSDictionary *)resolveDID:(NSString *)did {
     __block NSDictionary *document = nil;
     
-    [self.didCachePool readWithDid:@"__did_cache__" block:^id<PDSActorStoreReader> {
-        PDSActorStore *store = (PDSActorStore *)self;
+    [self.didCachePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+        PDSActorStore *store = (PDSActorStore *)reader;
         
         NSString *sql = @"SELECT document FROM did_cache WHERE did = ? AND expires_at > ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:nil];
-        if (!stmt) return nil;
+        if (!stmt) return;
         
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
@@ -462,7 +462,6 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
         }
         
         [store finalizeStatement:stmt];
-        return store;
     } error:nil];
     
     return document;

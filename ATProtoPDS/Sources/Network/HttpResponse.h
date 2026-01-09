@@ -29,6 +29,12 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 @property (nonatomic, copy) NSMutableDictionary<NSString *, NSString *> *headers;
 @property (nonatomic, assign) BOOL keepAlive;
 
++ (void)applySecurityHeaders:(NSMutableDictionary *)headers;
+
+@property (class, nonatomic, copy, readonly) NSString *xContentTypeOptions;
+@property (class, nonatomic, copy, readonly) NSString *xFrameOptions;
+@property (class, nonatomic, copy, readonly) NSString *contentSecurityPolicy;
+
 + (instancetype)response;
 + (instancetype)responseWithStatusCode:(HttpStatusCode)statusCode;
 + (instancetype)jsonResponse:(NSDictionary *)json statusCode:(HttpStatusCode)statusCode;

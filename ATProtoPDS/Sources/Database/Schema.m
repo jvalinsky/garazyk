@@ -8,7 +8,9 @@ NSString * const kPDSRecordTableName = @"records";
 NSString * const kPDSBlockTableName = @"blocks";
 NSString * const kPDSBlobTableName = @"blobs";
 NSString * const kPDSInviteCodeTableName = @"invite_codes";
+
 NSString * const kPDSAdminTakedownTableName = @"admin_takedowns";
+NSString * const kPDSPasskeysTableName = @"passkeys";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -20,7 +22,10 @@ NSString * const kPDSAccountTableCreateSQL =
     @"access_jwt BLOB,"
     @"refresh_jwt BLOB,"
     @"created_at TEXT NOT NULL,"
-    @"updated_at TEXT NOT NULL"
+    @"updated_at TEXT NOT NULL,"
+    @"tfa_enabled INTEGER DEFAULT 0,"
+    @"tfa_secret BLOB,"
+    @"recovery_codes BLOB"
     @")";
 
 NSString * const kPDSRepoTableCreateSQL =
@@ -103,3 +108,22 @@ NSString * const kPDSIndexInviteCodesAccountDidSQL =
 
 NSString * const kPDSIndexTakedownsSubjectIdSQL =
     @"CREATE INDEX IF NOT EXISTS idx_admin_takedowns_subject_id ON admin_takedowns(subjectId)";
+
+NSString * const kPDSPasskeysTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS passkeys ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"account_did TEXT NOT NULL,"
+    @"credential_id TEXT NOT NULL,"
+    @"public_key BLOB NOT NULL,"
+    @"counter INTEGER DEFAULT 0,"
+    @"aaguid TEXT,"
+    @"created_at TEXT NOT NULL,"
+    @"last_used_at TEXT,"
+    @"FOREIGN KEY (account_did) REFERENCES accounts(did)"
+    @")";
+
+NSString * const kPDSIndexPasskeysAccountDidSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_passkeys_account_did ON passkeys(account_did)";
+
+NSString * const kPDSIndexPasskeysCredentialIdSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_passkeys_credential_id ON passkeys(credential_id)";

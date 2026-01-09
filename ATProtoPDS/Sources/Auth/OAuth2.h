@@ -22,7 +22,9 @@ extern NSString * const OAuth2ErrorDomain;
 @class KeyManager;
 @class DIDResolver;
 @class HandleResolver;
+@class HandleResolver;
 @class Session;
+@class PDSDatabase;
 
 /*!
  @enum OAuth2Error
@@ -265,6 +267,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! The requested scope for the new token. */
 @property (nonatomic, copy, nullable) NSString *scope;
 
+/*! The 2FA code (TOTP or backup code) if required. */
+@property (nonatomic, copy, nullable) NSString *tfaCode;
+
 /*!
  @method toFormData
  
@@ -411,6 +416,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 
 /*! Handle resolution service. */
 @property (nonatomic, strong) HandleResolver *handleResolver;
+
+/*! Database accessor for account verification. */
+@property (nonatomic, strong) PDSDatabase *database;
 
 /*!
  @method init

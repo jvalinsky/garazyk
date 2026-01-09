@@ -1,5 +1,6 @@
 #import "PDSController.h"
 #import "Database/PDSDatabase.h"
+#import "Identity/ATProtoHandleValidator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -164,6 +165,12 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     BOOL debugMode = config.debugSkipPlcOperations;
+
+    // Validate Handle
+    if (![ATProtoHandleValidator validateHandle:handle error:error]) {
+        return nil;
+    }
+    handle = [ATProtoHandleValidator normalizeHandle:handle];
 
     NSString *resolvedDid;
     if (did) {

@@ -78,7 +78,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor))block 
                     error:(NSError **)error;
 
-- (BOOL)readWithBlock:(id<PDSActorStoreReader> (^)(void))block 
+- (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
                 error:(NSError **)error;
 
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error;

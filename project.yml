@@ -13,7 +13,7 @@ settings:
       - "$(PROJECT_DIR)/secp256k1/build/lib"
     CLANG_C_LANGUAGE_STANDARD: c11
     CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING: YES
-    CLANG_WARN_DOCUMENTATION_COMMENTS: NO
+    CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 
 targets:
   ATProtoPDS:
@@ -24,7 +24,6 @@ targets:
         excludes:
           - "**/tests/*"
           - "**/CLI/main.m"
-          - "**/App/server_main.m"
     settings:
       base:
         PRODUCT_NAME: atprotopds
@@ -44,7 +43,7 @@ targets:
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/tests"
+          - "$(PROJECT_DIR)/ATProtoPDS/Tests"
 
   ATProtoPDS-CLI:
     type: tool
@@ -82,11 +81,19 @@ targets:
       - path: ATProtoPDS/Sources
         excludes:
           - "**/tests/*"
-          - "**/App/main.m"
-      - path: tests/Database/ActorStore/ActorStoreTests.m
-      - path: tests/Database/Pool/DatabasePoolTests.m
-      - path: tests/Database/PDSControllerTests.m
-      - path: tests/test_main.m
+          - "**/main.m"
+          - "**/server_main.m"
+      - path: ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m
+      - path: ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m
+      - path: ATProtoPDS/Tests/Database/PDSControllerTests.m
+      - path: ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m
+      - path: ATProtoPDS/Tests/Network/RateLimiterTests.m
+      - path: ATProtoPDS/Tests/Identity/DIDResolverTests.m
+      - path: ATProtoPDS/Tests/Identity/HandleResolverTests.m
+      - path: ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m
+      - path: ATProtoPDS/Tests/Auth/TOTPTests.m
+      - path: ATProtoPDS/Tests/Auth/CryptoTests.m
+      - path: ATProtoPDS/Tests/test_main.m
     settings:
       base:
         PRODUCT_NAME: AllTests
@@ -98,6 +105,7 @@ targets:
           - "@executable_path/../Frameworks"
           - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks"
         OTHER_LDFLAGS:
+          - "-all_load"
           - "-framework"
           - XCTest
           - "-framework"
@@ -109,4 +117,4 @@ targets:
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/ATProtoPDS/Sources"
           - "$(PROJECT_DIR)/secp256k1/include"
-          - "$(PROJECT_DIR)/tests"
+          - "$(PROJECT_DIR)/ATProtoPDS/Tests"

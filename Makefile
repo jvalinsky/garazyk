@@ -164,6 +164,10 @@ scan-build:
 	@scan-build --use-cc=$(CC) make clean build 2>&1 | tail -50 || true
 	@echo "Static analysis complete"
 
+# Formatting
+format:
+	clang-format -i -style=file ATProtoPDS/Sources/**/*.m
+
 # Sanitizer Build Targets
 
 FUZZ_CFLAGS = $(CFLAGS) -g -O1 -fno-omit-frame-pointer
