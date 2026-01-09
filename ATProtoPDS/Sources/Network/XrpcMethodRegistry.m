@@ -561,27 +561,15 @@
     }];
 
     // Moderation endpoints
-    [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
-        NSString *reasonType = body[@"reasonType"];
-        NSDictionary *subject = body[@"subject"];
-
-        if (!reasonType || !subject) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing reasonType or subject"}];
-            return;
-        }
-
-        // Add reportedBy from auth (placeholder for now)
-        NSMutableDictionary *reportData = [body mutableCopy];
-        reportData[@"reportedBy"] = @"did:example:user"; // Would come from auth
 
         NSError *error = nil;
-        NSDictionary *result = [controller createModerationReport:reportData error:&error];
+        NSDictionary *result = [controller moderateAccount:body error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ReportCreationFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription}];
             return;
         }
 
@@ -589,27 +577,15 @@
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
-        NSDictionary *subject = body[@"subject"];
-        NSDictionary *takedown = body[@"takedown"];
-        NSDictionary *deactivated = body[@"deactivated"];
-
-        if (!subject) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing subject"}];
-            return;
-        }
 
         NSError *error = nil;
-        NSDictionary *result = [controller updateSubjectStatus:subject
-                                                        takedown:takedown
-                                                      deactivated:deactivated
-                                                           error:&error];
+        NSDictionary *result = [controller moderateRecord:body error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"StatusUpdateFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription}];
             return;
         }
 
@@ -617,23 +593,16 @@
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoAdminGetSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *uri = [request queryParamForKey:@"uri"];
-        NSString *blob = [request queryParamForKey:@"blob"];
-
-        if (!did && !uri && !blob) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Must provide did, uri, or blob parameter"}];
-            return;
-        }
+    // Labeling endpoints
+    [dispatcher registerComAtprotoLabelCreateLabel:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody;
 
         NSError *error = nil;
-        NSDictionary *result = [controller getSubjectStatus:did uri:uri blob:blob error:&error];
+        NSDictionary *result = [controller createLabel:body error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"StatusQueryFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"LabelCreationFailed", @"message": error.localizedDescription}];
             return;
         }
 
@@ -641,32 +610,20 @@
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoLabelQueryLabels:^(HttpRequest *request, HttpResponse *response) {
-        // Parse query parameters
-        NSArray *uriPatterns = [request queryParamForKey:@"uriPatterns"] ?
-            [[request queryParamForKey:@"uriPatterns"] componentsSeparatedByString:@","] : nil;
-        NSArray *sources = [request queryParamForKey:@"sources"] ?
-            [[request queryParamForKey:@"sources"] componentsSeparatedByString:@","] : nil;
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 50;
-        limit = MIN(limit, 250); // Cap at 250
-
-        NSDictionary *query = @{
-            @"uriPatterns": uriPatterns ?: @[],
-            @"sources": sources ?: @[],
-            @"limit": @(limit)
-        };
+    [dispatcher registerComAtprotoLabelGetLabels:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody;
 
         NSError *error = nil;
-        NSArray *labels = [controller queryLabels:query error:&error];
+        NSDictionary *result = [controller getLabels:body error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"LabelQueryFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"LabelRetrievalFailed", @"message": error.localizedDescription}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"labels": labels}];
+        [response setJsonBody:result];
     }];
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:controller.database];

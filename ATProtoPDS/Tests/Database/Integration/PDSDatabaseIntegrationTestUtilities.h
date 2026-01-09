@@ -326,6 +326,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseIntegrationTestError) {
 @interface PDSMigrationTestFixture : PDSDatabaseTestFixture
 
 @property (nonatomic, readonly, nullable) PDSMigrationManager *migrationManager;
+@property (nonatomic, strong, nullable) NSString *destinationDirectory;
 
 /**
  @method testMigrationWithSourcePath:destinationDirectory:error:

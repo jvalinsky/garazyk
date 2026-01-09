@@ -74,19 +74,9 @@ test: $(BUILD_DIR)/$(EXECUTABLE)
 	@timeout 3 ./$(BUILD_DIR)/$(EXECUTABLE) || true
 	@echo "Server test complete"
 
-test-unit: $(BUILD_DIR)/blob_storage_tests $(BUILD_DIR)/did_resolver_tests $(BUILD_DIR)/did_validation_tests $(BUILD_DIR)/handle_resolver_tests $(BUILD_DIR)/xrpc_integration_tests $(BUILD_DIR)/pds_integration_tests
-	@echo "Running blob storage unit tests..."
-	./$(BUILD_DIR)/blob_storage_tests
-	@echo "Running DID resolver unit tests..."
-	./$(BUILD_DIR)/did_resolver_tests
-	@echo "Running DID validation unit tests..."
-	./$(BUILD_DIR)/did_validation_tests
-	@echo "Running handle resolver unit tests..."
-	./$(BUILD_DIR)/handle_resolver_tests
-	@echo "Running XRPC integration tests..."
-	./$(BUILD_DIR)/xrpc_integration_tests
-	@echo "Running PDS integration tests..."
-	./$(BUILD_DIR)/pds_integration_tests
+test-unit:
+	@echo "Running unit tests via Xcode..."
+	xcodebuild test -project ATProtoPDS.xcodeproj -scheme ATProtoPDS -destination 'platform=macOS' -quiet
 
 test-blob: $(BUILD_DIR)/$(EXECUTABLE)
 	@echo "Running blob storage integration tests..."
@@ -111,8 +101,10 @@ $(BUILD_DIR)/handle_resolver_tests: $(BUILD_DIR)/Tests/Identity/handle_resolver_
 $(BUILD_DIR)/xrpc_integration_tests: $(BUILD_DIR)/Tests/Network/xrpc_integration_tests.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Network/xrpc_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
 
-$(BUILD_DIR)/pds_integration_tests: $(BUILD_DIR)/Tests/Integration/pds_integration_tests.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Integration/pds_integration_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+$(BUILD_DIR)/pds_integration_tests: $(BUILD_DIR)/Tests/Integration/PDSIntegrationTests.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Integration/PDSIntegrationTests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@
+
+
 
 $(BUILD_DIR)/mime_type_validator_tests: $(BUILD_DIR)/Tests/Blob/mime_type_validator_tests.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(BUILD_DIR)/Tests/Blob/mime_type_validator_tests.o $(filter-out $(BUILD_DIR)/server_main.o, $(OBJECTS)) $(LDFLAGS) -o $@

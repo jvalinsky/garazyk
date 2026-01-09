@@ -175,16 +175,13 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 
 #pragma mark - Moderation Operations
 
-- (NSDictionary *)createModerationReport:(NSDictionary *)params error:(NSError **)error;
-- (NSDictionary *)updateSubjectStatus:(NSDictionary *)subject
-                              takedown:(NSDictionary *)takedown
-                           deactivated:(NSDictionary *)deactivated
-                                error:(NSError **)error;
-- (NSDictionary *)getSubjectStatus:(NSString *)did uri:(NSString *)uri blob:(NSString *)blob error:(NSError **)error;
+- (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error;
+- (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error;
 
 #pragma mark - Labeling Operations
 
-- (NSArray *)queryLabels:(NSDictionary *)params error:(NSError **)error;
+- (NSDictionary *)createLabel:(NSDictionary *)params error:(NSError **)error;
+- (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error;
 
 #pragma mark - Health & Metrics
 
