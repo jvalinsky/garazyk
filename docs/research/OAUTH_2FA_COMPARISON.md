@@ -7,8 +7,8 @@ This document compares the current `ATProtoPDS` (Objective-C) implementation aga
 | Feature | ATProtoPDS (Local) | atproto (JS/TS) | cocoon (Go) | pegasus (OCaml) |
 | :--- | :--- | :--- | :--- | :--- |
 | **OAuth 2.0 Core** | Basic (Code Grant) | Complete (PAR, JAR, Code) | Complete (PAR, Code) | Complete |
-| **DPoP** | Partial (Stubs) | **Strict Enforcement** | Supported | Supported |
-| **2FA / MFA** | FAIL **Missing** | Delegated (via Interaction) | PASS **Email Codes** | PASS **TOTP & Passkeys** |
+| **DPoP** | Partial (Stubs) | Strict Enforcement | Supported | Supported |
+| **2FA / MFA** | FAIL Missing | Delegated (via Interaction) | PASS Email Codes | PASS TOTP & Passkeys |
 | **Account Resolution** | PASS Bidirectional | PASS Bidirectional | PASS Bidirectional | PASS Bidirectional |
 | **Interaction Flow** | Stubs | Logic-driven (Redirects) | HTML Templates | Logic-driven |
 
@@ -18,7 +18,7 @@ This document compares the current `ATProtoPDS` (Objective-C) implementation aga
 
 *   **ATProtoPDS (Local)**:
     *   **Current State**: No implementation found. `OAuth2.m` and `Session.m` do not handle MFA tokens or challenges.
-    *   **Gap**: Critical security gap for production use.
+    *   **Gap**: Critical security gap for production deployment.
 *   **Cocoon (Go)**:
     *   **Implementation**: `handle_server_create_session.go` explicitly checks `repo.TwoFactorType`.
     *   **Mechanism**: Generates 5-character alphanumeric codes sent via email (`sendTwoFactorCode`).
@@ -40,18 +40,18 @@ This document compares the current `ATProtoPDS` (Objective-C) implementation aga
 ### 3. Interaction & Login Flow
 
 *   **ATProtoPDS (Local)**:
-    *   **Current State**: The `authorize` endpoint (`handleAuthorizationRequest`) seems to rely on an external or simple direct resolution without a "Login Screen" loop.
+    *   **Current State**: The `authorize` endpoint (`handleAuthorizationRequest`) relies on external or simple direct resolution without a "Login Screen" loop.
 *   **atproto (JS)**:
-    *   **Implementation**: Uses `AccountSelectionRequiredError` and `LoginRequiredError` to signal the router to redirect the user to a login UI, passing state back and forth.
+     *   **Implementation**: Uses `AccountSelectionRequiredError` and `LoginRequiredError` to signal router to redirect user to login UI, passing state back and forth.
 *   **Cocoon (Go)**:
     *   **Implementation**: Renders server-side HTML templates (`authorize.html`) for the consent screen.
 
 ## Recommendations
 
 1.  **Implement Email 2FA (P0)**:
-    *   Adopt the **Cocoon** pattern: Add `two_factor_code` and `expiry` to the Account/Repo table.
-    *   Update `Session` creation to check this flag and return a `AuthFactorTokenRequired` error.
+    *   Adopt **Cocoon** pattern: Add `two_factor_code` and `expiry` to Account/Repo table.
+    *   Update `Session` creation to check this flag and return `AuthFactorTokenRequired` error.
 2.  **Strict DPoP Enforcement (P1)**:
-    *   Adopt the **JS** pattern: Ensure every protected resource access verifies the DPoP proof against the access token's bound key.
+    *   Adopt the **JS** pattern: Ensure protected resource access verifies DPoP proof against access token's bound key.
 3.  **Upgrade 2FA (P2)**:
-    *   Look to **Pegasus** for TOTP/Passkey implementation architecture.
+    *   Reference **Pegasus** for TOTP/Passkey implementation architecture.

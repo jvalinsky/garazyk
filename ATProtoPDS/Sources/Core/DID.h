@@ -36,6 +36,7 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 @interface DIDResolver : NSObject
 
 @property (nonatomic, strong) NSCache *cache;
+@property (nonatomic, strong) NSMutableDictionary *cacheTimestamps; // Exposed for testing
 
 /// Resolve a DID to its document
 /// @param did The DID to resolve
@@ -43,7 +44,9 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 - (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion;
 
 /// Batch resolution for multiple DIDs
-- (void)resolveMultipleDIDs:(NSArray<NSString *> *)dids completion:(void (^)(NSDictionary<NSString *, NSDictionary *> *results, NSError *error))completion;
+/// @param dids Array of DIDs to resolve
+/// @param completion Completion block with results dictionary containing both successful resolutions and errors
+- (void)resolveMultipleDIDs:(NSArray<NSString *> *)dids completion:(void (^)(NSDictionary<NSString *, id> *results, NSError *error))completion;
 
 /// Synchronous resolution (for testing)
 - (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error;
