@@ -485,11 +485,6 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
     return YES;
 }
-            return NO;
-        }
-    }
-    return YES;
-}
 
 - (BOOL)validateTable:(NSString *)tableName
       expectedColumns:(NSDictionary<NSString *, NSString *> *)expectedColumns
