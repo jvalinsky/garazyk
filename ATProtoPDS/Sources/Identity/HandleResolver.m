@@ -17,14 +17,23 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 }
 
 - (void)resolveHandle:(NSString *)handle
-           completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
-    
-    if (!completion) return;
-    
-    // Validate handle
-    NSError *validationError = nil;
-    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
-        completion(nil, validationError);
+                    completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+
+    // SSRF Protection: Check if handle resolves to private/internal IPs
+    NSError *ssrfError = nil;
+    if (![self validateHandleResolvesToPublicIP:handle error:&ssrfError]) {
+        completion(nil, ssrfError);
+        return;
+    }
+
+    NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
+    NSURL *url = [NSURL URLWithString:urlString];
+
+    if (!url) {
+        NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                          code:HandleErrorInvalidFormat
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid URL constructed from handle"}];
+        completion(nil, error);
         return;
     }
     
@@ -104,8 +113,113 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         
         completion(did, nil);
     }];
-    
-    [task resume];
+}
+
+#pragma mark - SSRF Protection
+
+- (BOOL)validateHandleResolvesToPublicIP:(NSString *)handle error:(NSError **)error {
+    // Resolve the handle to IP addresses to prevent DNS rebinding attacks
+    CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)handle);
+    if (!hostRef) {
+        if (error) {
+            *error = [NSError errorWithDomain:HandleErrorDomain
+                                         code:HandleErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create host resolver"}];
+        }
+        return NO;
+    }
+
+    CFStreamError streamError;
+    Boolean success = CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError);
+
+    if (!success) {
+        CFRelease(hostRef);
+        if (error) {
+            *error = [NSError errorWithDomain:HandleErrorDomain
+                                         code:HandleErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to resolve hostname"}];
+        }
+        return NO;
+    }
+
+    CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
+    if (!addresses || CFArrayGetCount(addresses) == 0) {
+        CFRelease(hostRef);
+        if (error) {
+            *error = [NSError errorWithDomain:HandleErrorDomain
+                                         code:HandleErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No IP addresses found for hostname"}];
+        }
+        return NO;
+    }
+
+    // Check each resolved IP address
+    for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
+        struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
+
+        if (addr->sa_family == AF_INET) {
+            // IPv4
+            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+            uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
+
+            if ([self isPrivateIPv4Address:ip]) {
+                CFRelease(hostRef);
+                if (error) {
+                    *error = [NSError errorWithDomain:HandleErrorDomain
+                                                 code:HandleErrorSSRFAttempt
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IP address (SSRF protection)"}];
+                }
+                return NO;
+            }
+        } else if (addr->sa_family == AF_INET6) {
+            // IPv6
+            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+            struct in6_addr ip6 = addr_in6->sin6_addr;
+
+            if ([self isPrivateIPv6Address:ip6]) {
+                CFRelease(hostRef);
+                if (error) {
+                    *error = [NSError errorWithDomain:HandleErrorDomain
+                                                 code:HandleErrorSSRFAttempt
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IPv6 address (SSRF protection)"}];
+                }
+                return NO;
+            }
+        }
+    }
+
+    CFRelease(hostRef);
+    return YES;
+}
+
+- (BOOL)isPrivateIPv4Address:(uint32_t)ip {
+    // RFC 1918 private ranges
+    // 10.0.0.0/8
+    if ((ip & 0xFF000000) == 0x0A000000) return YES;
+    // 172.16.0.0/12
+    if ((ip & 0xFFF00000) == 0xAC100000) return YES;
+    // 192.168.0.0/16
+    if ((ip & 0xFFFF0000) == 0xC0A80000) return YES;
+    // 127.0.0.0/8 (loopback)
+    if ((ip & 0xFF000000) == 0x7F000000) return YES;
+    // 169.254.0.0/16 (link-local)
+    if ((ip & 0xFFFF0000) == 0xA9FE0000) return YES;
+
+    return NO;
+}
+
+- (BOOL)isPrivateIPv6Address:(struct in6_addr)ip6 {
+    // IPv6 private ranges
+    // ::1/128 (loopback)
+    if (memcmp(&ip6, &in6addr_loopback, sizeof(struct in6_addr)) == 0) return YES;
+
+    // fc00::/7 (unique local addresses)
+    if ((ip6.s6_addr[0] & 0xFE) == 0xFC) return YES;
+
+    // fe80::/10 (link-local)
+    if ((ip6.s6_addr[0] == 0xFE) && ((ip6.s6_addr[1] & 0xC0) == 0x80)) return YES;
+
+    return NO;
 }
 
 @end
