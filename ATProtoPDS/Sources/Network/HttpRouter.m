@@ -48,6 +48,24 @@
     return self;
 }
 
+- (instancetype)initWithBaseURL:(NSString *)baseURL {
+    self = [self init];
+    if (self) {
+        _baseURL = [baseURL copy];
+    }
+    return self;
+}
+
+- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    [self setupRoutes];
+    HttpRouteHandler handler = [self handlerForRequest:request];
+    if (handler) {
+        handler(request, response);
+    } else {
+        response.statusCode = 404;
+    }
+}
+
 - (void)addRoute:(NSString *)method
          pattern:(NSString *)pattern
          handler:(HttpRouteHandler)handler {
@@ -207,23 +225,12 @@
 - (void)setupRoutes {
     // ... existing routes ...
 
-    __weak typeof(self) weakSelf = self;
     [self addRoute:@"GET"
-            pattern:@"/.well-known/oauth-authorization-server"
-            handler:^(HttpRequest *request, HttpResponse *response) {
-        @try {
-            OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:weakSelf.baseURL];
-            if (!metadata) {
-                response.statusCode = 500;
-                [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Failed to generate metadata"}];
-                return;
-            }
-            [response setJsonBody:metadata.metadata];
-            response.statusCode = 200;
-        } @catch (NSException *exception) {
-            response.statusCode = 500;
-            [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Internal server error"}];
-        }
+             pattern:@"/.well-known/oauth-authorization-server"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+        OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:self.baseURL];
+        [response setJsonBody:metadata.metadata];
+        response.statusCode = 200;
     }];
 }
 

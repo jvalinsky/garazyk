@@ -1,7 +1,8 @@
 # Phase 0 Implementation Plan: Core Repository Features
 
 ## Overview
-Phase 0 focuses on completing the core repository functionality that's essential for basic PDS operations. This includes advanced CRUD operations, bulk processing, and performance improvements.
+
+Phase 0 implements core repository functionality required for basic PDS operations. This phase covers advanced CRUD operations, bulk processing, and performance optimization.
 
 ## 0.1 Advanced Repository Operations
 
@@ -9,13 +10,13 @@ Phase 0 focuses on completing the core repository functionality that's essential
 **Endpoint**: `com.atproto.repo.applyWrites`
 **Priority**: P0 | **Complexity**: High | **Risk**: Medium
 
-#### Requirements:
+#### Requirements
 - Accept array of write operations (create, update, delete)
 - Atomic transaction processing
 - Proper error handling and rollback
 - Optimistic concurrency control with sequence numbers
 
-#### Implementation Steps:
+#### Implementation Steps
 1. **API Handler** (`XrpcMethodRegistry.m`):
    ```objc
    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
@@ -40,7 +41,7 @@ Phase 0 focuses on completing the core repository functionality that's essential
    - Permission checks per operation
    - Reference integrity
 
-#### Testing:
+#### Testing
 - Unit tests for transaction safety
 - Integration tests for batch operations
 - Error handling edge cases
@@ -49,12 +50,12 @@ Phase 0 focuses on completing the core repository functionality that's essential
 **Endpoint**: `com.atproto.repo.putRecord`
 **Priority**: P0 | **Complexity**: Medium | **Risk**: Low
 
-#### Requirements:
+#### Requirements
 - Update existing records by URI
 - Handle record versioning
 - Validate record structure
 
-#### Implementation:
+#### Implementation
 1. Parse record URI to extract collection/rkey
 2. Load existing record for comparison
 3. Update record with new data
@@ -63,7 +64,7 @@ Phase 0 focuses on completing the core repository functionality that's essential
 ### 0.1.3 Bulk Operations Support
 **Priority**: P1 | **Complexity**: Medium | **Risk**: Medium
 
-#### Features:
+#### Features
 - Multiple record operations in single request
 - Efficient batch processing
 - Progress reporting for large operations
@@ -74,7 +75,7 @@ Phase 0 focuses on completing the core repository functionality that's essential
 **Endpoint**: `com.atproto.repo.describeRepo`
 **Priority**: P0 | **Complexity**: Low | **Risk**: Low
 
-#### Response Format:
+#### Response Format
 ```json
 {
   "did": "did:web:user.example.com",
@@ -91,7 +92,7 @@ Phase 0 focuses on completing the core repository functionality that's essential
 }
 ```
 
-#### Implementation:
+#### Implementation
 1. Query database for collection counts
 2. Fetch current DID document
 3. Aggregate repository statistics
@@ -99,12 +100,12 @@ Phase 0 focuses on completing the core repository functionality that's essential
 ### 0.2.2 listRecords Pagination
 **Priority**: P0 | **Complexity**: Medium | **Risk**: Low
 
-#### Improvements:
+#### Improvements
 - Efficient cursor-based pagination
 - Reverse chronological ordering
 - Proper limit enforcement (max 100)
 
-#### Database Optimization:
+#### Database Optimization
 ```sql
 CREATE INDEX idx_records_collection_created ON records(collection, created_at DESC);
 ```
@@ -112,7 +113,7 @@ CREATE INDEX idx_records_collection_created ON records(collection, created_at DE
 ### 0.2.3 Record Validation
 **Priority**: P0 | **Complexity**: Medium | **Risk**: Medium
 
-#### Features:
+#### Features
 - Lexicon schema validation
 - Record size limits
 - Content type verification
@@ -123,13 +124,13 @@ CREATE INDEX idx_records_collection_created ON records(collection, created_at DE
 **Endpoint**: `com.atproto.sync.importRepo`
 **Priority**: P1 | **Complexity**: High | **Risk**: High
 
-#### Requirements:
+#### Requirements
 - Parse CAR file format
 - Validate repository structure
 - Merge with existing repository
 - Conflict resolution
 
-#### Implementation:
+#### Implementation
 1. **CAR Parser**: Extend existing CAR.m with import functionality
 2. **Repository Merger**: Handle MST merging and conflict resolution
 3. **Validation**: Verify all blocks and references
@@ -137,7 +138,7 @@ CREATE INDEX idx_records_collection_created ON records(collection, created_at DE
 ### 0.3.2 CAR Export Improvements
 **Priority**: P1 | **Complexity**: Medium | **Risk**: Low
 
-#### Features:
+#### Features
 - Incremental exports (since specific commit)
 - Compression options
 - Streaming for large repositories
@@ -147,7 +148,7 @@ CREATE INDEX idx_records_collection_created ON records(collection, created_at DE
 ### 0.4.1 Database Indexing
 **Priority**: P0 | **Complexity**: Low | **Risk**: Low
 
-#### Required Indexes:
+#### Required Indexes
 ```sql
 -- Records table
 CREATE INDEX idx_records_repo_collection_rkey ON records(repo_did, collection, rkey);
@@ -164,16 +165,16 @@ CREATE INDEX idx_accounts_created ON accounts(created_at);
 ### 0.4.2 Query Optimization
 **Priority**: P0 | **Complexity**: Medium | **Risk**: Low
 
-#### Improvements:
+#### Improvements
 - Prepared statements caching
 - Connection pooling
 - Query result pagination
-- Memory- result processing
+- Memory-efficient result processing
 
 ### 0.4.3 Caching Layer
 **Priority**: P1 | **Complexity**: Medium | **Risk**: Medium
 
-#### Features:
+#### Features
 - DID document caching
 - Record metadata caching
 - Repository statistics caching
@@ -184,7 +185,7 @@ CREATE INDEX idx_accounts_created ON accounts(created_at);
 ### 0.5.1 Standardized Error Responses
 **Priority**: P0 | **Complexity**: Low | **Risk**: Low
 
-#### Error Format:
+#### Error Format
 ```json
 {
   "error": "InvalidRequest",
@@ -199,7 +200,7 @@ CREATE INDEX idx_accounts_created ON accounts(created_at);
 ### 0.5.2 Input Validation
 **Priority**: P0 | **Complexity**: Medium | **Risk**: Low
 
-#### Validation Rules:
+#### Validation Rules
 - DID format validation
 - Record size limits (100KB)
 - Collection name restrictions
@@ -208,7 +209,7 @@ CREATE INDEX idx_accounts_created ON accounts(created_at);
 ### 0.5.3 Rate Limiting
 **Priority**: P1 | **Complexity**: Medium | **Risk**: Medium
 
-#### Implementation:
+#### Implementation
 - Token bucket algorithm
 - Per-user limits
 - Configurable thresholds
@@ -247,28 +248,28 @@ CREATE INDEX idx_records_updated ON records(repo_did, updated_at DESC);
 
 ## Success Criteria
 
-### Functional Requirements:
-- PASS All basic repository operations working
-- PASS Proper error handling and validation
-- PASS Efficient pagination and querying
-- PASS CAR import/export functionality
+### Functional Requirements
+- All basic repository operations working
+- Proper error handling and validation
+- Efficient pagination and querying
+- CAR import/export functionality
 
-### Performance Requirements:
-- PASS <100ms average response time
-- PASS <10MB memory usage for typical operations
-- PASS Proper database connection pooling
-- PASS Efficient query execution plans
+### Performance Requirements
+- <100ms average response time
+- <10MB memory usage for typical operations
+- Proper database connection pooling
+- Efficient query execution plans
 
-### Quality Requirements:
-- PASS >90% test coverage
-- PASS Comprehensive error handling
-- PASS Proper logging and monitoring
-- PASS Backward API compatibility
+### Quality Requirements
+- >90% test coverage
+- Comprehensive error handling
+- Proper logging and monitoring
+- Backward API compatibility
 
 ## Dependencies
-- Current blob storage implementation (PASS Complete)
-- Basic authentication system (PASS Complete)
-- Core repository operations (PASS Complete)
+- Current blob storage implementation (Complete)
+- Basic authentication system (Complete)
+- Core repository operations (Complete)
 - Database schema stability
 
 ## Risk Assessment
@@ -282,4 +283,4 @@ CREATE INDEX idx_records_updated ON records(repo_did, updated_at DESC);
 - **Week 4**: Performance optimization and testing
 - **Week 5-6**: CAR import/export and advanced features
 
-This Phase 0 plan provides a solid foundation for a production-ready PDS core functionality.
+This Phase 0 plan provides foundation for production-ready PDS core functionality.

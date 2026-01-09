@@ -1,24 +1,28 @@
 # ATProto Scope Requirement Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+## Objective
 
-**Goal:** Implement ATProto scope requirement and handling in OAuth2 server, including validation, transitional scopes, permission mapping, and error handling.
+Implement ATProto scope requirement and handling in OAuth2 server, including validation, transitional scopes, permission mapping, and error handling.
 
-**Architecture:** Extend the existing OAuth2 implementation to validate that all scopes include 'atproto' prefix, implement transitional scope mapping for backwards compatibility, add scope permission validation, and enhance error handling for scope-related issues.
+## Architecture
 
-**Tech Stack:** Objective-C, OAuth2 protocol, ATProto specifications
+Extend the existing OAuth2 implementation to validate that all scopes include 'atproto' prefix, implement transitional scope mapping for backwards compatibility, add scope permission validation, and enhance error handling for scope-related issues.
+
+## Technology Stack
+
+Objective-C, OAuth2 protocol, ATProto specifications
 
 ---
 
 ## Prerequisites
 
-**Current State Analysis:**
+### Current State Analysis
 - OAuth2 server accepts any scope string
 - Scopes are stored in Session and returned in token responses  
 - No validation for 'atproto' prefix requirement
 - No scope permission mapping or transitional support
 
-**ATProto Scope Requirements:**
+### ATProto Scope Requirements
 - All scopes must include 'atproto' prefix
 - Support transitional scopes for backwards compatibility
 - Implement scope permission validation
@@ -28,21 +32,86 @@
 
 ### Task 1: Define ATProto Scope Constants and Validation
 
-**Files:**
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m`
+**Files:** Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`, Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m`
 
-**Step 1: Add transitional scope constants**
-
+#### Step 1: Add Transitional Scope Constants
 In OAuth2.h, add constants for transitional scopes:
 
-```objective-c
+```objc
 // Add after existing scope constants
 extern NSString * const OAuth2ScopeTransitionIdentify;
 extern NSString * const OAuth2ScopeTransitionSignIn;
 extern NSString * const OAuth2ScopeTransitionRepoWrite;
 extern NSString * const OAuth2ScopeTransitionRepoRead;
 extern NSString * const OAuth2ScopeTransitionProfile;
+```
+
+#### Step 2: Implement Scope Validation Function
+In OAuth2.m, add scope validation method:
+
+```objc
+- (BOOL)validateScopes:(NSString *)scopeString error:(NSError **)error {
+    if (!scopeString || [scopeString length] == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidScope
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Scope parameter is required"}];
+        }
+        return NO;
+    }
+    
+    NSArray<NSString *> *scopes = [scopeString componentsSeparatedByString:@" "];
+    for (NSString *scope in scopes) {
+        if (![scope hasPrefix:@"atproto:"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidScope
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid scope '%@': all scopes must have 'atproto:' prefix", scope]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+```
+
+#### Step 3: Implement Transitional Scope Mapping
+Add transitional scope mapping method:
+
+```objc
+- (NSString *)mapTransitionalScopes:(NSString *)scopeString {
+    if (!scopeString) return OAuth2ScopeIdentify;
+    
+    NSArray<NSString *> *scopes = [scopeString componentsSeparatedByString:@" "];
+    NSMutableArray<NSString *> *mappedScopes = [NSMutableArray array];
+    
+    for (NSString *scope in scopes) {
+        NSString *mappedScope = scope;
+        
+        // Map transitional scopes to canonical atproto scopes
+        if ([scope isEqualToString:OAuth2ScopeTransitionIdentify]) {
+            mappedScope = OAuth2ScopeIdentify;
+        } else if ([scope isEqualToString:OAuth2ScopeTransitionSignIn]) {
+            mappedScope = OAuth2ScopeSignIn;
+        } else if ([scope isEqualToString:OAuth2ScopeTransitionRepoWrite]) {
+            mappedScope = OAuth2ScopeRepoWrite;
+        } else if ([scope isEqualToString:OAuth2ScopeTransitionRepoRead]) {
+            mappedScope = OAuth2ScopeRepoRead;
+        } else if ([scope isEqualToString:OAuth2ScopeTransitionProfile]) {
+            mappedScope = OAuth2ScopeAtprotoProfile;
+        }
+        
+        [mappedScopes addObject:mappedScope];
+    }
+    
+    return [mappedScopes componentsJoinedByString:@" "];
+}
+```
+
+#### Step 4: Commit Changes
+```bash
+git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git commit -m "feat: add ATProto scope constants and validation methods"
 ```
 
 **Step 2: Implement scope validation function**
@@ -120,14 +189,12 @@ git commit -m "feat: add ATProto scope constants and validation methods"
 
 ### Task 2: Integrate Scope Validation in Authorization Request
 
-**Files:**
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m:236-273`
+**Files:** Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m:236-273`
 
-**Step 1: Add scope validation to authorization request handler**
-
+#### Step 1: Add Scope Validation to Authorization Request Handler
 In `handleAuthorizationRequest:completion:`, add scope validation after basic parameter validation:
 
-```objective-c
+```objc
 - (void)handleAuthorizationRequest:(OAuth2AuthorizationRequest *)request
                          completion:(OAuth2AuthorizationCompletion)completion {
     // ... existing validation code ...
@@ -152,6 +219,12 @@ In `handleAuthorizationRequest:completion:`, add scope validation after basic pa
 }
 ```
 
+#### Step 2: Commit Changes
+```bash
+git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git commit -m "feat: integrate scope validation in authorization request handler"
+```
+
 **Step 2: Commit changes**
 
 ```bash
@@ -163,14 +236,12 @@ git commit -m "feat: integrate scope validation in authorization request handler
 
 ### Task 3: Integrate Scope Validation in Token Request
 
-**Files:**
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m:291-342`
+**Files:** Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m:291-342`
 
-**Step 1: Add scope validation to authorization code grant**
-
+#### Step 1: Add Scope Validation to Authorization Code Grant
 In `processAuthorizationCodeGrant:completion:`, add scope validation:
 
-```objective-c
+```objc
 - (void)processAuthorizationCodeGrant:(OAuth2TokenRequest *)request
                            completion:(OAuth2TokenCompletion)completion {
     // ... existing code validation ...
@@ -198,6 +269,55 @@ In `processAuthorizationCodeGrant:completion:`, add scope validation:
     
     // ... rest of existing method, use finalScope instead of scope ...
 }
+```
+
+#### Step 2: Implement Scope Subset Validation Helper
+Add scope subset validation method:
+
+```objc
+- (BOOL)isScopeSubset:(NSString *)requestedScope ofScope:(NSString *)authorizedScope {
+    NSSet<NSString *> *requested = [NSSet setWithArray:[requestedScope componentsSeparatedByString:@" "]];
+    NSSet<NSString *> *authorized = [NSSet setWithArray:[authorizedScope componentsSeparatedByString:@" "]];
+    return [requested isSubsetOfSet:authorized];
+}
+```
+
+#### Step 3: Update Refresh Token Grant to Handle Scopes
+In `processRefreshTokenGrant:completion:`, update scope handling:
+
+```objc
+- (void)processRefreshTokenGrant:(OAuth2TokenRequest *)request
+                       completion:(OAuth2TokenCompletion)completion {
+    // ... existing validation ...
+    
+    NSString *newScope = request.scope ?: existingSession.scope;
+    if (request.scope) {
+        NSError *scopeError = nil;
+        if (![self validateScopes:request.scope error:&scopeError]) {
+            completion(nil, scopeError);
+            return;
+        }
+        
+        // Check if requested scope is subset of original authorized scope
+        if (![self isScopeSubset:request.scope ofScope:existingSession.scope]) {
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                 code:OAuth2ErrorInvalidScope
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Requested scope exceeds originally authorized scope"}];
+            completion(nil, error);
+            return;
+        }
+        
+        newScope = [self mapTransitionalScopes:request.scope];
+    }
+    
+    // ... rest of existing method, use newScope ...
+}
+```
+
+#### Step 4: Commit Changes
+```bash
+git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git commit -m "feat: integrate scope validation and mapping in token request handlers"
 ```
 
 **Step 2: Implement scope subset validation helper**

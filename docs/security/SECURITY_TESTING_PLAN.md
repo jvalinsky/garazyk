@@ -1,7 +1,7 @@
 # ATProto PDS Security Testing Plan
 
 **Generated:** 2026-01-07
-**Purpose:** Comprehensive security testing for parsing exploits, SQL injection, and blob upload vulnerabilities
+**Scope:** Comprehensive security testing for parsing exploits, SQL injection, and blob upload vulnerabilities
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Executive Summary
 
-This document provides a  security testing plan for the Objective-C ATProto PDS implementation. The testing focuses on three critical areas:
+This document defines a security testing plan for the Objective-C ATProto PDS implementation. The testing focuses on three critical areas:
 
 | Category | Risk Level | Primary Concerns |
 |----------|------------|------------------|
@@ -749,7 +749,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 ### 1. Input Validation
 
 ```objective-c
-// Sanitize all user input
+// Input sanitization for SQL parameters
 - (NSString *)sanitizeSQLInput:(NSString *)input {
     NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:
                                @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-"];
@@ -768,13 +768,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 ### 2. Parameterized Queries
 
 ```objective-c
-// WRONG - vulnerable
+// VULNERABLE - string interpolation
 - (NSArray *)queryRecords:(NSString *)collection {
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM records WHERE collection='%@'", collection];
     return [self executeSQL:sql];
 }
 
-// CORRECT - parameterized
+// SECURE - parameterized
 - (NSArray *)queryRecords:(NSString *)collection {
     NSString *sql = @"SELECT * FROM records WHERE collection=?";
     return [self executeSQL:sql parameters:@[collection]];
@@ -837,4 +837,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
 ---
 
-*This document should be updated as new vulnerabilities are discovered and as the codebase evolves.*
+## Document Maintenance
+
+This document requires updates when new vulnerabilities are discovered or the codebase evolves.

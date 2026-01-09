@@ -2,15 +2,15 @@
 
 ## Executive Summary
 
-This research examines the landscape of Objective-C networking and HTTP server frameworks for macOS development. GCDWebServer and CocoaHTTPServer represent the two most influential HTTP server frameworks, with GCDWebServer being particularly notable for its modern GCD-based architecture. For WebSocket support, CocoaAsyncSocket remains the foundational library.
+This research examines Objective-C networking and HTTP server frameworks for macOS development. GCDWebServer and CocoaHTTPServer represent influential HTTP server frameworks, with GCDWebServer notable for modern GCD-based architecture. CocoaAsyncSocket remains foundational for WebSocket support.
 
 ---
 
 ## 1. HTTP Server Implementations in Objective-C
 
-### 1.1 GCDWebServer: The Premier Choice
+### 1.1 GCDWebServer: Premier Framework
 
-GCDWebServer, developed by Pierre-Olivier Latour, is the most popular HTTP server framework for iOS and macOS. Archived as of January 2023 but actively forked by the community. With over 6,600 stars on GitHub.
+GCDWebServer, developed by Pierre-Olivier Latour, is the most popular HTTP server framework for iOS and macOS. Archived in January 2023 but actively forked by the community. Over 6,600 stars on GitHub.
 
 **Installation and Basic Setup:**
 

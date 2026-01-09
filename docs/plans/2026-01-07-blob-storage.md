@@ -1,19 +1,20 @@
 # Blob Storage System Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+## Goal
+Implement a complete blob storage system for ATProto PDS with filesystem backend, CID computation, and XRPC endpoints for media content handling.
 
-**Goal:** Implement a complete blob storage system for ATProto PDS with filesystem backend, CID computation, and XRPC endpoints for media content handling.
+## Architecture
+Create a BlobStorage class managing filesystem operations with CID-based naming, integrate with PDSController for XRPC dispatch, implement uploadBlob, getBlob, and listBlobs endpoints with proper validation and error handling.
 
-**Architecture:** Create a BlobStorage class managing filesystem operations with CID-based naming, integrate with PDSController for XRPC dispatch, implement uploadBlob, getBlob, and listBlobs endpoints with proper validation and error handling.
-
-**Tech Stack:** Objective-C, Foundation framework, NSFileManager for filesystem operations, custom CID computation, multipart/form-data handling.
+## Tech Stack
+Objective-C, Foundation framework, NSFileManager for filesystem operations, custom CID computation, multipart/form-data handling.
 
 ## Task 1: Create BlobStorage Header File
 
 **Files:**
 - Create: `ATProtoPDS/ATProtoPDS/Blob/BlobStorage.h`
 
-**Step 1: Write the interface definition**
+### Step 1: Write the interface definition
 
 ```objc
 #import <Foundation/Foundation.h>
@@ -44,7 +45,7 @@ NS_ASSUME_NONNULL_BEGIN
 NS_ASSUME_NONNULL_END
 ```
 
-**Step 2: Commit**
+### Step 2: Commit
 
 ```bash
 git add ATProtoPDS/ATProtoPDS/Blob/BlobStorage.h
@@ -56,7 +57,7 @@ git commit -m "feat: add BlobStorage header with interface definitions"
 **Files:**
 - Modify: `ATProtoPDS/ATProtoPDS/Blob/BlobStorage.m`
 
-**Step 1: Write CID computation implementation**
+### Step 1: Write CID computation implementation
 
 ```objc
 #import "BlobStorage.h"
@@ -135,7 +136,7 @@ git commit -m "feat: add BlobStorage header with interface definitions"
 }
 ```
 
-**Step 2: Write store and retrieve methods**
+### Step 2: Write store and retrieve methods
 
 ```objc
 - (BOOL)storeBlob:(NSData *)data mimeType:(NSString *)mimeType cid:(NSString **)outCID error:(NSError **)error {
@@ -213,7 +214,7 @@ git commit -m "feat: add BlobStorage header with interface definitions"
 }
 ```
 
-**Step 3: Write list and delete methods**
+### Step 3: Write list and delete methods
 
 ```objc
 - (NSArray<BlobMetadata *> *)listBlobsForAccount:(NSString *)accountDID error:(NSError **)error {
@@ -267,7 +268,7 @@ git commit -m "feat: add BlobStorage header with interface definitions"
 @end
 ```
 
-**Step 4: Commit**
+### Step 4: Commit
 
 ```bash
 git add ATProtoPDS/ATProtoPDS/Blob/BlobStorage.m
@@ -279,7 +280,7 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 **Files:**
 - Modify: `ATProtoPDS/ATProtoPDS/PDSController.m`
 
-**Step 1: Add blob storage property and initialization**
+### Step 1: Add blob storage property and initialization
 
 ```objc
 #import "PDSController.h"
@@ -302,7 +303,7 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 }
 ```
 
-**Step 2: Implement uploadBlob endpoint**
+### Step 2: Implement uploadBlob endpoint
 
 ```objc
 - (void)handleUploadBlob:(NSDictionary *)params request:(HTTPRequest *)request response:(HTTPResponse *)response {
@@ -354,7 +355,7 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 }
 ```
 
-**Step 3: Implement getBlob endpoint**
+### Step 3: Implement getBlob endpoint
 
 ```objc
 - (void)handleGetBlob:(NSDictionary *)params request:(HTTPRequest *)request response:(HTTPResponse *)response {
@@ -382,7 +383,7 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 }
 ```
 
-**Step 4: Implement listBlobs endpoint**
+### Step 4: Implement listBlobs endpoint
 
 ```objc
 - (void)handleListBlobs:(NSDictionary *)params request:(HTTPRequest *)request response:(HTTPResponse *)response {
@@ -410,7 +411,7 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 }
 ```
 
-**Step 5: Update XRPC method dispatch**
+### Step 5: Update XRPC method dispatch
 
 ```objc
 - (void)dispatchXRPCMethod:(NSString *)method params:(NSDictionary *)params request:(HTTPRequest *)request response:(HTTPResponse *)response {
@@ -428,7 +429,7 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 }
 ```
 
-**Step 6: Commit**
+### Step 6: Commit
 
 ```bash
 git add ATProtoPDS/ATProtoPDS/PDSController.m
@@ -440,7 +441,7 @@ git commit -m "feat: add blob storage endpoints to PDSController"
 **Files:**
 - Create: `ATProtoPDS/ATProtoPDS/Blob/BlobStorageTests.m`
 
-**Step 1: Write basic unit tests**
+### Step 1: Write basic unit tests
 
 ```objc
 #import <XCTest/XCTest.h>
@@ -505,7 +506,7 @@ git commit -m "feat: add blob storage endpoints to PDSController"
 @end
 ```
 
-**Step 2: Commit**
+### Step 2: Commit
 
 ```bash
 git add ATProtoPDS/ATProtoPDS/Blob/BlobStorageTests.m
@@ -517,11 +518,11 @@ git commit -m "feat: add basic unit tests for BlobStorage"
 **Files:**
 - Modify: `ATProtoPDS/ATProtoPDS.xcodeproj/project.pbxproj`
 
-**Step 1: Add BlobStorage files to Xcode project**
+### Step 1: Add BlobStorage files to Xcode project
 
 Add the new BlobStorage.h, BlobStorage.m, and BlobStorageTests.m files to the appropriate target groups in the Xcode project file.
 
-**Step 2: Commit**
+### Step 2: Commit
 
 ```bash
 git add ATProtoPDS/ATProtoPDS.xcodeproj/project.pbxproj
@@ -533,7 +534,7 @@ git commit -m "feat: update Xcode project to include BlobStorage files"
 **Files:**
 - Create: `test_blob_endpoints.sh`
 
-**Step 1: Write integration test script**
+### Step 1: Write integration test script
 
 ```bash
 #!/bin/bash
@@ -563,7 +564,7 @@ curl "http://localhost:8080/xrpc/com.atproto.sync.getBlob?cid=bafkreiexamplecid"
 kill $SERVER_PID
 ```
 
-**Step 2: Make script executable and commit**
+### Step 2: Make script executable and commit
 
 ```bash
 chmod +x test_blob_endpoints.sh
@@ -576,7 +577,7 @@ git commit -m "feat: add integration test script for blob endpoints"
 **Files:**
 - Create: `docs/blob_storage_api.md`
 
-**Step 1: Write API documentation**
+### Step 1: Write API documentation
 
 ```markdown
 # Blob Storage API
@@ -638,7 +639,7 @@ List blobs for an account.
 - Supported MIME types: images, videos, audio, and octet-stream
 ```
 
-**Step 2: Commit**
+### Step 2: Commit
 
 ```bash
 git add docs/blob_storage_api.md
