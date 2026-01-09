@@ -8,6 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRepo;
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlock;
+@class PDSDatabaseBlob;
 
 extern NSString * const PDSActorStoreErrorDomain;
 
@@ -38,6 +39,16 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                             error:(NSError **)error;
 - (NSInteger)getRecordCountForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error;
 - (NSInteger)getBlockCountForDid:(NSString *)did error:(NSError **)error;
+
+#pragma mark - Blob Operations
+
+- (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error;
+- (nullable PDSDatabaseBlob *)getBlobForCID:(NSData *)cid error:(NSError **)error;
+- (NSArray<PDSDatabaseBlob *> *)listBlobsForDid:(NSString *)did
+                                          limit:(NSUInteger)limit
+                                         cursor:(nullable NSString *)cursor
+                                          error:(NSError **)error;
+- (BOOL)deleteBlobForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 
 @end
 

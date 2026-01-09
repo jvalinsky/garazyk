@@ -345,13 +345,13 @@
     }];
 
     [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
-        // Extract DID from Authorization header (this would need proper auth implementation)
-        // For now, we'll use a query parameter for testing
-        NSString *did = [request queryParamForKey:@"did"];
+        // Extract DID from Authorization header
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller];
 
         if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
@@ -381,6 +381,36 @@
         [response setJsonBody:result];
     }];
 
+    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller];
+
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSString *cid = [request queryParamForKey:@"cid"];
+        if (!cid) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [controller deleteBlobWithCID:cid did:did error:&error];
+
+        if (!success) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"DeleteFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
     [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         NSString *cid = [request queryParamForKey:@"cid"];
@@ -401,8 +431,8 @@
         }
 
         response.statusCode = HttpStatusOK;
-        response.contentType = @"application/octet-stream"; // Should be the actual MIME type
-        response.body = result[@"blob"];
+        response.contentType = result[@"mimeType"] ?: @"application/octet-stream";
+        [response setBodyData:result[@"blob"]];
     }];
 
     [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
@@ -903,4 +933,12 @@
         [response setJsonBody:stats];
     }];
 }
+
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller {
+    if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) return nil;
+    NSString *token = [authHeader substringFromIndex:7];
+    // For now, return a test DID - proper auth implementation needed
+    return @"did:plc:test123456789";
+}
+
 @end

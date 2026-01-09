@@ -1,0 +1,34 @@
+name: atproto-compliance-review
+description: |
+  Comprehensive compliance review of ATProto PDS implementations against official specifications.
+  Checks API endpoints, data models, authentication flows, and protocol adherence.
+  Provides structured reports with gap analysis and remediation recommendations.
+
+  Supports both server-side PDS compliance and client-side ATProto integration verification.
+  Covers all major ATProto specifications: ATP, XRPC, OAuth, Repository, DID, Handle, Lexicon, etc.
+
+parameters:
+  - name: codebase_path
+    type: string
+    description: Path to the codebase root directory
+    required: true
+
+  - name: focus_areas
+    type: array
+    description: Specific ATProto areas to focus on (xrpc, oauth, repository, did, lexicon, etc.)
+    required: false
+    default: ["all"]
+
+  - name: compliance_level
+    type: string
+    description: Compliance strictness level
+    enum: ["basic", "standard", "comprehensive"]
+    required: false
+    default: "standard"
+
+  - name: output_format
+    type: string
+    description: Report output format
+    enum: ["structured_checklist", "executive_summary", "detailed_gap_analysis", "all"]
+    required: false
+    default: "all"

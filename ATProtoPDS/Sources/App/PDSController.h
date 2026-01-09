@@ -154,10 +154,12 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
                                       did:(NSString *)did
                                     error:(NSError **)error;
 
-- (nullable NSArray *)listBlobsForDID:(NSString *)did 
-                                limit:(NSUInteger)limit 
+- (nullable NSArray *)listBlobsForDID:(NSString *)did
+                                limit:(NSUInteger)limit
                                cursor:(nullable NSString *)cursor
                                 error:(NSError **)error;
+
+- (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error;
 
 #pragma mark - Write Operations (for backward compatibility)
 
