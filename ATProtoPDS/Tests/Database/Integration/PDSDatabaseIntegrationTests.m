@@ -69,16 +69,48 @@
     XCTAssertEqualObjects(record.did, @"did:plc:test123");
     XCTAssertEqualObjects(record.collection, @"app.bsky.feed.post");
     XCTAssertEqualObjects(record.rkey, @"test123");
-    
+
     __autoreleasing NSError *error = nil;
     BOOL success = [self.database saveRecord:record error:&error];
     XCTAssertTrue(success, @"Failed to save record: %@", error);
-    
+
     __autoreleasing NSError *fetchError = nil;
     PDSDatabaseRecord *fetched = [self.database getRecord:record.uri error:&fetchError];
     XCTAssertNotNil(fetched, @"Failed to fetch record: %@", fetchError);
     XCTAssertEqualObjects(fetched.uri, record.uri);
     XCTAssertEqualObjects(fetched.collection, record.collection);
+}
+
+- (void)testBlobFactoryAndOperations {
+    PDSDatabaseBlob *blob = [PDSDatabaseIntegrationTestUtilities createTestBlobWithDID:@"did:plc:test123"];
+    XCTAssertNotNil(blob);
+    XCTAssertEqualObjects(blob.did, @"did:plc:test123");
+    XCTAssertTrue(blob.size > 0);
+
+    __autoreleasing NSError *error = nil;
+    BOOL success = [self.database saveBlob:blob error:&error];
+    XCTAssertTrue(success, @"Failed to save blob: %@", error);
+
+    __autoreleasing NSError *fetchError = nil;
+    PDSDatabaseBlob *fetched = [self.database getBlob:blob.cid error:&fetchError];
+    XCTAssertNotNil(fetched, @"Failed to fetch blob: %@", fetchError);
+    XCTAssertEqualObjects(fetched.did, blob.did);
+}
+
+- (void)testBlockFactoryAndOperations {
+    PDSDatabaseBlock *block = [PDSDatabaseIntegrationTestUtilities createTestBlockWithRepoDID:@"did:plc:test123"];
+    XCTAssertNotNil(block);
+    XCTAssertEqualObjects(block.repoDid, @"did:plc:test123");
+    XCTAssertNotNil(block.blockData);
+
+    __autoreleasing NSError *error = nil;
+    BOOL success = [self.database saveBlock:block error:&error];
+    XCTAssertTrue(success, @"Failed to save block: %@", error);
+
+    __autoreleasing NSError *fetchError = nil;
+    PDSDatabaseBlock *fetched = [self.database getBlock:block.cid error:&fetchError];
+    XCTAssertNotNil(fetched, @"Failed to fetch block: %@", fetchError);
+    XCTAssertEqualObjects(fetched.repoDid, block.repoDid);
 }
 
 @end
