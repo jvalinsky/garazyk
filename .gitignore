@@ -29,6 +29,16 @@ test_streaming.db*
 *.log
 server.log
 
+# Runtime/generated files
+server.pid
+spam_accounts.txt
+fix_result.json
+
+# Generated documentation
+docs/html/
+docs/index.html
+docs/graph-data.json
+
 # macOS
 .DS_Store
 
