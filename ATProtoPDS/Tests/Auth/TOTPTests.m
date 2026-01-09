@@ -2,6 +2,7 @@
 #import "Auth/Base32Utils.h"
 #import "Auth/TOTPGenerator.h"
 #import "Auth/TOTPService.h"
+#import "Auth/YubiKeyOATH.h"
 
 @interface TOTPTests : XCTestCase
 @end
@@ -70,6 +71,17 @@
     
     // Test invalid
     XCTAssertFalse([TOTPService verifyCode:@"000000" secret:base32Secret], @"Random code should be invalid");
+}
+
+- (void)testYubiKeyOATHFallback {
+    NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
+    TOTPService *service = [[TOTPService alloc] initWithSecret:secretData];
+    NSError *error = nil;
+
+    NSString *token = [service generateTOTPToken:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+    XCTAssertEqual(token.length, 6, @"TOTP token should be 6 digits");
 }
 
 @end
