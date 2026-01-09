@@ -56,3 +56,12 @@ rate_limit:
   enabled: true
   requests_per_minute: 1000
   burst_size: 100
+
+# Explorer UI Settings
+explore:
+  enabled: true
+  plc_server: "https://plc.directory"
+  cache_directory: "~/Library/Caches/com.atproto.pds/explore-cache"
+  did_ttl_seconds: 3600
+  plc_log_ttl_seconds: 86400
+  account_list_ttl_seconds: 300
