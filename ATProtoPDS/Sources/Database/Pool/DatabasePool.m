@@ -188,15 +188,15 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
     [store transactWithBlock:block error:error];
 }
 
-- (BOOL)readWithDid:(NSString *)did 
-              block:(id<PDSActorStoreReader> (^)(void))block 
+- (void)readWithDid:(NSString *)did 
+              block:(void (^)(id<PDSActorStoreReader> reader))block 
               error:(NSError **)error {
     PDSActorStore *store = [self storeForDid:did error:error];
     if (!store) {
-        return NO;
+        return;
     }
     
-    return [store readWithBlock:block error:error];
+    [store readWithBlock:block error:error];
 }
 
 #pragma mark - Convenience Methods

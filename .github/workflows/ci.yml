@@ -106,23 +106,25 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tail -50
 
-      - name: Run Tests
+      - name: Generate Coverage Report
         env:
           SCHEME: $(cat default_scheme)
         run: |
-          SCHEME=$(cat default_scheme)
+          # Use "AllTests" scheme if available, otherwise default
+          SCHEME="AllTests"
+          
+          xcodebuild test \
+            -scheme "$SCHEME" \
+            -project ATProtoPDS.xcodeproj \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            GCC_GENERATE_TEST_COVERAGE_FILES=YES \
+            GCC_INSTRUMENT_PROGRAM_AREA_FILES=YES
 
-          # Find and run the test bundle
-          TEST_BUNDLE=$(find ~/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -1)
+          # Print coverage path for info
+          echo "Coverage data generated in DerivedData"
 
-          if [ -n "$TEST_BUNDLE" ] && [ -f "$TEST_BUNDLE" ]; then
-            echo "Running tests: $TEST_BUNDLE"
-            "$TEST_BUNDLE" 2>&1
-          else
-            echo "Test bundle not found"
-             find ~/Library/Developer/Xcode/DerivedData -name "AllTests" -type f 2>/dev/null | head -5 || true
-             exit 1
-           fi
 
   # ============================================================================
   # JOB 2: Fuzzing

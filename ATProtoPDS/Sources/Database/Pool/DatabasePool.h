@@ -33,9 +33,9 @@ typedef NS_ENUM(NSInteger, PDSDatabasePoolError) {
                   block:(void (^)(id<PDSActorStoreTransactor> transactor))block 
                   error:(NSError **)error;
 
-- (BOOL)readWithDid:(NSString *)did 
-              block:(id<PDSActorStoreReader> (^)(void))block 
-              error:(NSError **)error;
+- (void)readWithDid:(NSString *)did 
+               block:(void (^)(id<PDSActorStoreReader> reader))block 
+               error:(NSError **)error;
 
 - (nullable PDSDatabaseAccount *)getAccount:(NSString *)did error:(NSError **)error;
 - (nullable PDSDatabaseRepo *)getRepo:(NSString *)did error:(NSError **)error;

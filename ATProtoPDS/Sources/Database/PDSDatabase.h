@@ -195,6 +195,15 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! Whether invite codes are enabled for this account. */
 @property (nonatomic, assign) BOOL inviteEnabled;
 
+/*! Whether 2FA (TOTP/Passkey) is enabled. */
+@property (nonatomic, assign) BOOL tfaEnabled;
+
+/*! Encrypted TOTP secret or other 2FA secret data. */
+@property (nonatomic, copy, nullable) NSData *tfaSecret;
+
+/*! JSON array of hashed recovery codes. */
+@property (nonatomic, copy, nullable) NSData *recoveryCodes;
+
 @end
 
 /*!

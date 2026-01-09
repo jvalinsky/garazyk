@@ -34,6 +34,7 @@
         _headers = [NSMutableDictionary dictionary];
         _keepAlive = YES;
         _contentType = @"application/json; charset=utf-8";
+        [[self class] applySecurityHeaders:_headers];
     }
     return self;
 }
@@ -130,6 +131,16 @@
     }
 
     return [result copy];
+}
+
++ (NSString *)xContentTypeOptions { return @"nosniff"; }
++ (NSString *)xFrameOptions { return @"DENY"; }
++ (NSString *)contentSecurityPolicy { return @"default-src 'self';"; }
+
++ (void)applySecurityHeaders:(NSMutableDictionary *)headers {
+    headers[@"X-Content-Type-Options"] = self.xContentTypeOptions;
+    headers[@"X-Frame-Options"] = self.xFrameOptions;
+    headers[@"Content-Security-Policy"] = self.contentSecurityPolicy;
 }
 
 @end
