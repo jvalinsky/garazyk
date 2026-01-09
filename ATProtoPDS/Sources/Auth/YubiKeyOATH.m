@@ -3,10 +3,11 @@
 
 @implementation YubiKeyOATHManager
 
-- (BOOL)generateTOTPForSecret:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
-    // TODO: Implement actual YubiKey communication
-    // For now, fall back to software TOTP
-    return [self fallbackTOTPGeneration:secret counter:counter error:error];
+- (nullable NSString *)generateTOTPForSecret:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
+    // TODO: Implement actual YubiKey hardware communication
+    // For now, fall back to software TOTP generation
+    // This is clearly marked as software-only to avoid confusion
+    return [self generateSoftwareTOTPToken:secret counter:counter error:error];
 }
 
 - (BOOL)setOATHSecret:(NSData *)secret name:(NSString *)name error:(NSError **)error {
@@ -19,20 +20,20 @@
     return NO;
 }
 
-- (BOOL)fallbackTOTPGeneration:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
-    // Use existing software TOTP generation as fallback
+- (nullable NSString *)generateSoftwareTOTPToken:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
+    // Software-only TOTP generation for current implementation
     // Note: counter is ignored for time-based TOTP, but kept for future HOTP support
     TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:secret];
     NSString *token = [generator generateOTP];
     if (token) {
-        return YES;
+        return token;
     } else {
         if (error) {
             *error = [NSError errorWithDomain:@"YubiKeyOATHErrorDomain"
-                                      code:1001
-                                  userInfo:@{NSLocalizedDescriptionKey: @"Software TOTP generation failed"}];
+                                       code:1001
+                                   userInfo:@{NSLocalizedDescriptionKey: @"Software TOTP generation failed"}];
         }
-        return NO;
+        return nil;
     }
 }
 
