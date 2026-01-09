@@ -31,7 +31,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     if (_publicKey) CFRelease(_publicKey);
 }
 
-- (nullable NSDictionary *)publicKeyJwk {
+- (nullable NSDictionary *)publicKeyJWK {
     NSData *publicKeyData = [self exportPublicKeyData:self.publicKey];
     if (!publicKeyData) return nil;
 
@@ -49,7 +49,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 }
 
 - (nullable NSString *)publicKeyThumbprint {
-    NSDictionary *jwk = [self publicKeyJwk];
+    NSDictionary *jwk = [self publicKeyJWK];
     if (!jwk) return nil;
 
     NSData *thumbprintData = [NSJSONSerialization dataWithJSONObject:jwk options:0 error:nil];
@@ -390,7 +390,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 - (NSDictionary *)toJWKS {
     KeyPair *activeKey = [self getActiveKeyPair:nil];
     if (activeKey) {
-        return [activeKey publicKeyJwk] ?: @{};
+        return [activeKey publicKeyJWK] ?: @{};
     }
     return @{};
 }
@@ -400,7 +400,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     NSArray *keyPairs = [self allKeyPairs:nil];
 
     for (KeyPair *keyPair in keyPairs) {
-        NSDictionary *jwk = [keyPair publicKeyJwk];
+        NSDictionary *jwk = [keyPair publicKeyJWK];
         if (jwk) {
             [jwks addObject:jwk];
         }

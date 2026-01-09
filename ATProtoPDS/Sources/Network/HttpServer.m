@@ -5,7 +5,7 @@
 
 @interface HttpServer ()
 
-@property (nonatomic, readwrite) uint16_t port;
+@property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, assign) nw_listener_t listener;
 @property (nonatomic, strong) dispatch_queue_t serverQueue;
@@ -19,11 +19,11 @@
 
 @implementation HttpServer
 
-+ (instancetype)serverWithPort:(uint16_t)port {
++ (instancetype)serverWithPort:(NSUInteger)port {
     return [[self alloc] initWithPort:port];
 }
 
-- (instancetype)initWithPort:(uint16_t)port {
+- (instancetype)initWithPort:(NSUInteger)port {
     self = [super init];
     if (self) {
         _port = port;
@@ -57,7 +57,7 @@
     }
 
     char portStr[16];
-    snprintf(portStr, sizeof(portStr), "%d", self.port);
+    snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)self.port);
 
     nw_listener_t listener = nw_listener_create_with_port(portStr, parameters);
 
@@ -85,7 +85,7 @@
                 strongSelf.listenerReady = YES;
                 strongSelf.port = nw_listener_get_port(strongSelf.listener);
                 dispatch_semaphore_signal(strongSelf.readySemaphore);
-                NSLog(@"HTTPServer listening on port %d", strongSelf.port);
+                NSLog(@"HTTPServer listening on port %lu", (unsigned long)strongSelf.port);
                 break;
             case nw_listener_state_failed:
                 strongSelf.running = NO;

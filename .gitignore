@@ -15,6 +15,10 @@ data/
 # Worktrees
 .worktrees/
 
+# Additional git directories to exclude
+.worktree/
+reference/
+
 # Database files
 data/*.db
 data/*.db-shm

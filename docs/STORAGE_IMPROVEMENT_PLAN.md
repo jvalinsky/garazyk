@@ -73,7 +73,7 @@ Add indexes on:
 ```
 
 #### 2.2 CAR File Import/Export
-Implement efficient CAR file serialization for repo migration and sync.
+Implement  CAR file serialization for repo migration and sync.
 
 #### 2.3 Blob Storage Improvements
 - Add blob deduplication using CID hashes

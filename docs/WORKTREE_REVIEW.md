@@ -21,7 +21,7 @@ Main branch (614b9bd):
 ├── b33b2e7 - Ignore .worktrees directory
 ├── ad4b0e9 - HeaderDoc comments (14 files)
 ├── 5d08861 - DID validation tests fixed (42/42 passing)
-├── 645c53f - MIME type validation (comprehensive)
+├── 645c53f - MIME type validation ()
 ├── a885db8 - Complete ATProto PDS API (38+ endpoints)
 └── ee0c8f7 - Identity resolution (OAuth)
 
@@ -77,13 +77,13 @@ All worktrees end at: ee0c8f7 (same as above)
 
 ## What This Means
 
-### ❌ DON'T Merge Worktrees to Main
+### FAIL DON'T Merge Worktrees to Main
 Main already has everything the worktrees have. Merging would:
 - Create confusion
 - Potentially overwrite newer code
 - Waste time
 
-### ✅ DO Update Worktrees from Main
+### PASS DO Update Worktrees from Main
 The worktrees need to be fast-forwarded to main:
 ```bash
 # For each worktree:
