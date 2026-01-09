@@ -215,6 +215,17 @@
         return;
     }
 
+    // Validate client secret
+    NSString *clientSecret = params[@"client_secret"];
+    if (!clientSecret || ![clientSecret isEqualToString:client[@"client_secret"]]) {
+        response.statusCode = 401;
+        [response setJsonBody:@{
+            @"error": @"invalid_client",
+            @"error_description": @"Invalid client credentials"
+        }];
+        return;
+    }
+
     // Validate redirect URI for authorization_code grant type
     NSString *grantType = params[@"grant_type"];
     if ([grantType isEqualToString:@"authorization_code"]) {
