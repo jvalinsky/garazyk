@@ -2,7 +2,7 @@
 
 ## Overview
 
-A  debugging session was conducted to fix all failing tests in the ATProtoPDS Objective-C test suite. The session resulted in all 31 tests passing, up from 25/31 (81%) at the start.
+A debugging session was conducted to resolve failing tests in the ATProtoPDS Objective-C test suite. Results: all 31 tests passing, increased from 25/31 (81%) at session start.
 
 ## Initial State
 
@@ -19,9 +19,9 @@ A  debugging session was conducted to fix all failing tests in the ATProtoPDS Ob
 
 **File:** `tests/Database/Pool/DatabasePoolTests.m:127`
 
-**Symptom:** Test expected `currentSize == 2` after evicting and recreating a store.
+**Symptom:** Test expected `currentSize == 2` after evicting and recreating store.
 
-**Root Cause:** The test logic was incorrect. After creating 3 stores (A, B, C), evicting B (count: 2), and recreating B, the pool correctly has 3 stores. The test assertion `XCTAssertEqual(self.pool.currentSize, 2)` was wrong.
+**Root Cause:** Test logic was incorrect. After creating 3 stores (A, B, C), evicting B (count: 2), and recreating B, pool correctly has 3 stores. Test assertion `XCTAssertEqual(self.pool.currentSize, 2)` was incorrect.
 
 **Fix:** Changed assertion to expect 3 stores:
 ```objc

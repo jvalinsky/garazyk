@@ -1,16 +1,16 @@
 # ATProto PDS Implementation Roadmap
 
-## Executive Summary
+## Overview
 
-This roadmap outlines the remaining features needed to transform the current ATProto PDS implementation into a production-ready, feature-complete Personal Data Server. The plan is structured in 4 phases with clear priorities, dependencies, and success criteria.
+This roadmap defines the remaining features required to transform the current ATProto PDS implementation into a production-ready Personal Data Server. The implementation is structured in 4 phases with defined priorities, dependencies, and success criteria.
 
 **Current Status**: Basic PDS with authentication, repository operations, and blob storage
 **Target**: Production-grade PDS with federation, moderation, and enterprise features
 
 ---
 
-## Phase 0: Core Repository & Performance (Priority: HIGH)
-**Timeline**: 4-6 weeks | **Risk**: Medium | **Dependencies**: Current blob storage
+## Phase 0: Core Repository & Performance
+**Priority**: HIGH | **Timeline**: 4-6 weeks | **Risk**: Medium | **Dependencies**: Current blob storage
 
 ### 0.1 Advanced Repository Operations
 - **applyWrites** (`com.atproto.repo.applyWrites`)
@@ -55,8 +55,8 @@ This roadmap outlines the remaining features needed to transform the current ATP
 
 ---
 
-## Phase 1: Advanced Sync & Federation (Priority: HIGH)
-**Timeline**: 6-8 weeks | **Risk**: High | **Dependencies**: Phase 0
+## Phase 1: Advanced Sync & Federation
+**Priority**: HIGH | **Timeline**: 6-8 weeks | **Risk**: High | **Dependencies**: Phase 0
 
 ### 1.1 Firehose & Event Streaming
 - **subscribeRepos** (`com.atproto.sync.subscribeRepos`)
@@ -95,8 +95,8 @@ This roadmap outlines the remaining features needed to transform the current ATP
 
 ---
 
-## Phase 2: Moderation & Safety (Priority: MEDIUM)
-**Timeline**: 8-12 weeks | **Risk**: Medium | **Dependencies**: Phase 1
+## Phase 2: Moderation & Safety
+**Priority**: MEDIUM | **Timeline**: 8-12 weeks | **Risk**: Medium | **Dependencies**: Phase 1
 
 ### 2.1 Content Moderation
 - **Moderation reporting** (`com.atproto.moderation.*`)
@@ -127,8 +127,8 @@ This roadmap outlines the remaining features needed to transform the current ATP
 
 ---
 
-## Phase 3: Enterprise & Admin Features (Priority: LOW)
-**Timeline**: 12-16 weeks | **Risk**: Medium | **Dependencies**: Phase 2
+## Phase 3: Enterprise & Admin Features
+**Priority**: LOW | **Timeline**: 12-16 weeks | **Risk**: Medium | **Dependencies**: Phase 2
 
 ### 3.1 Administration Tools
 - **Admin API** (`com.atproto.admin.*`)
@@ -188,26 +188,26 @@ This roadmap outlines the remaining features needed to transform the current ATP
 
 ---
 
-## Next Steps
+## Implementation Schedule
 
-1. **Immediate Actions** (Week 1):
-   - Complete Phase 0.1 repository operations
-   - Implement  testing framework
-   - Set up CI/CD pipeline with automated testing
+### Week 1: Immediate Actions
+- Complete Phase 0.1 repository operations
+- Implement testing framework
+- Set up CI/CD pipeline with automated testing
 
-2. **Short-term Goals** (Weeks 2-4):
-   - Complete Phase 0 features
-   - Begin Phase 1 sync protocol implementation
-   - Performance optimization and benchmarking
+### Weeks 2-4: Short-term Goals
+- Complete Phase 0 features
+- Begin Phase 1 sync protocol implementation
+- Performance optimization and benchmarking
 
-3. **Medium-term Goals** (Weeks 5-12):
-   - Complete Phases 1 & 2
-   - Security hardening and compliance
-   - Production deployment preparation
+### Weeks 5-12: Medium-term Goals
+- Complete Phases 1 & 2
+- Security hardening and compliance
+- Production deployment preparation
 
-4. **Long-term Vision** (Weeks 13+):
-   - Enterprise features and scaling
-   - Advanced moderation and safety
-   - Ecosystem integration and partnerships
+### Weeks 13+: Long-term Objectives
+- Enterprise features and scaling
+- Advanced moderation and safety
+- Ecosystem integration and partnerships
 
-This roadmap provides a clear path to a production-ready ATProto PDS while maintaining realistic timelines and manageable risk.
+This roadmap provides a structured path to production-ready ATProto PDS implementation with realistic timelines and controlled risk exposure.

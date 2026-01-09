@@ -2,23 +2,23 @@
 
 ## Executive Summary
 
-This  research document examines the landscape of Objective-C networking and HTTP server frameworks available for macOS development. The Objective-C ecosystem for server-side networking has matured significantly over the years, with several  frameworks emerging to handle HTTP server implementations, WebSocket connections, async networking patterns, and secure TLS/SSL communications. While many of these projects have been archived or discontinued by their original maintainers, active forks and community-driven alternatives continue to provide reliable solutions for macOS applications requiring embedded HTTP server capabilities.
+This research document examines Objective-C networking and HTTP server frameworks for macOS development. The Objective-C ecosystem for server-side networking has matured significantly, with frameworks handling HTTP server implementations, WebSocket connections, async networking patterns, and TLS/SSL communications. Many projects have been archived or discontinued, but active forks and community-driven alternatives provide reliable solutions for macOS applications requiring embedded HTTP server capabilities.
 
-The research reveals that GCDWebServer and CocoaHTTPServer represent the two most influential HTTP server frameworks in the Objective-C ecosystem, with GCDWebServer being particularly notable for its modern GCD-based architecture and  feature set. For WebSocket support, CocoaAsyncSocket remains the foundational library upon which many solutions are built. The async networking landscape is well-served by both Grand Central Dispatch (GCD) and NSOperationQueue patterns, each offering distinct advantages depending on use case requirements.
+ Research reveals GCDWebServer and CocoaHTTPServer as the most influential HTTP server frameworks in the Objective-C ecosystem, with GCDWebServer notable for its modern GCD-based architecture and comprehensive feature set. CocoaAsyncSocket remains foundational for WebSocket support. The async networking landscape is served by Grand Central Dispatch (GCD) and NSOperationQueue patterns, each offering distinct advantages for specific use cases.
 
 ---
 
 ## 1. Modern HTTP Server Implementations in Objective-C
 
-### 1.1 GCDWebServer: The Premier Choice
+### 1.1 GCDWebServer: Premier Framework
 
-GCDWebServer, developed by Pierre-Olivier Latour, stands as the most popular and feature-complete HTTP server framework for iOS, macOS, and tvOS applications. The project has been archived as of January 2023 but remains widely used and actively forked by the community. With over 6,600 stars on GitHub and 1,300 forks, it represents the de facto standard for embedded HTTP servers in Objective-C applications.
+GCDWebServer, developed by Pierre-Olivier Latour, is the most popular and feature-complete HTTP server framework for iOS, macOS, and tvOS applications. The project was archived in January 2023 but remains widely used with active community forks. With over 6,600 stars and 1,300 forks on GitHub, it represents the de facto standard for embedded HTTP servers in Objective-C applications.
 
-The framework's architecture leverages Grand Central Dispatch for all I/O operations, providing excellent performance characteristics and natural integration with the Apple's concurrency frameworks. GCDWebServer implements a complete HTTP 1.1 server with support for persistent connections, chunked transfer encoding, and range requests for partial content retrieval.
+The framework's architecture leverages Grand Central Dispatch for all I/O operations, providing excellent performance and integration with Apple's concurrency frameworks. GCDWebServer implements a complete HTTP 1.1 server with support for persistent connections, chunked transfer encoding, and range requests for partial content retrieval.
 
 **Core Architecture and Design Philosophy**
 
-GCDWebServer follows a handler-based architecture where developers register blocks or classes to handle specific URL patterns and HTTP methods. This design provides maximum flexibility while maintaining a clean, predictable API. The framework automatically handles common HTTP functionalities such as MIME type detection,ETag generation, and Last-Modified headers, allowing developers to focus on application-specific logic.
+GCDWebServer uses handler-based architecture where developers register blocks or classes to handle specific URL patterns and HTTP methods. This design provides flexibility while maintaining clean API. The framework handles common HTTP functionalities including MIME type detection, ETag generation, and Last-Modified headers, allowing developers to focus on application logic.
 
 The server supports multiple request classes to handle different content types including URL-encoded forms, multipart forms with file uploads, and JSON bodies. Response types are equally diverse, encompassing simple text responses, HTML content, JSON data, and streaming responses for large file transfers.
 

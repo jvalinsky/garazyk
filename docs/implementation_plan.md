@@ -26,11 +26,11 @@
 
 ### Recommended Library: bitcoin-core/secp256k1
 
-**Why:**
-1. Most audited and battle-tested secp256k1 implementation
-2. Used by Bitcoin Core, highest security standards
-3. Supports ECDSA and recovery mode (needed for commit signing)
-4. Can be compiled as static library for macOS/iOS
+**Rationale:**
+1. Most audited secp256k1 implementation
+2. Used by Bitcoin Core with high security standards
+3. Supports ECDSA and recovery mode for commit signing
+4. Compilable as static library for macOS/iOS
 
 ### Implementation Steps
 

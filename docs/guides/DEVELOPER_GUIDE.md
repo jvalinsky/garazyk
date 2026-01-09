@@ -1,6 +1,6 @@
-# Developer Guide: Extending the ATProto PDS API
+# Developer Guide: ATProto PDS API Extension
 
-This guide explains how to add new endpoints, modify existing functionality, and contribute to the ATProto PDS server.
+This guide provides procedures for adding new endpoints, modifying existing functionality, and contributing to the ATProto PDS server codebase.
 
 ## Project Structure
 
@@ -27,7 +27,7 @@ ATProtoPDS/
 
 ### Step 1: Define the Endpoint Specification
 
-Before coding, document the new endpoint:
+Document the endpoint specification before implementation:
 
 ```markdown
 # New Endpoint: /explore/api/search-records
@@ -74,7 +74,7 @@ Add the handler method to `ExploreHandler.m`:
 
 ### Step 3: Add the Route
 
-Update the routing logic in `handleApiRequest:`:
+Update routing logic in `handleApiRequest:`:
 
 ```objc
 else if ([endpoint isEqualToString:@"search-records"]) {
@@ -84,7 +84,7 @@ else if ([endpoint isEqualToString:@"search-records"]) {
 
 ### Step 4: Implement the Backend Logic
 
-Add the search implementation:
+Implement search functionality:
 
 ```objc
 - (NSArray *)searchRecordsWithQuery:(NSString *)query
@@ -108,7 +108,7 @@ Add the search implementation:
 
 ### Step 5: Add OpenAPI Documentation
 
-Update `allEndpointDescriptors` to include the new endpoint:
+Update `allEndpointDescriptors` to include new endpoint:
 
 ```objc
 APIParameterDescriptor *queryParam = [[APIParameterDescriptor alloc] init];
@@ -149,7 +149,7 @@ searchResponse.arrayItemRef = @"#/components/schemas/Record";
 
 ### Step 6: Update Frontend (Optional)
 
-If the endpoint should be accessible from the web UI, update the JavaScript:
+Update JavaScript for web UI accessibility:
 
 ```javascript
 // Add to api.js
@@ -177,30 +177,30 @@ async function handleSearch() {
 
 ### Changing Response Format
 
-1. **Update handler method** to return new format
-2. **Update OpenAPI schema** to reflect changes
-3. **Update frontend code** to handle new format
-4. **Add migration logic** if breaking changes
+1. Update handler method to return new format
+2. Update OpenAPI schema to reflect changes
+3. Update frontend code to handle new format
+4. Add migration logic for breaking changes
 
 ### Adding Parameters
 
-1. **Add parameter validation** in handler
-2. **Update OpenAPI descriptor** with new parameter
-3. **Update frontend** to pass new parameter
-4. **Add default values** for backward compatibility
+1. Add parameter validation in handler
+2. Update OpenAPI descriptor with new parameter
+3. Update frontend to pass new parameter
+4. Add default values for backward compatibility
 
 ### Performance Optimization
 
-1. **Add caching** in `getCachedOrFetch` wrapper
-2. **Implement pagination** for large result sets
-3. **Add database indexes** for frequently queried fields
-4. **Use prepared statements** for repeated queries
+1. Add caching in `getCachedOrFetch` wrapper
+2. Implement pagination for large result sets
+3. Add database indexes for frequently queried fields
+4. Use prepared statements for repeated queries
 
 ## Database Schema Changes
 
 ### Adding New Tables
 
-1. **Create migration SQL**:
+1. Create migration SQL:
 ```sql
 CREATE TABLE new_table (
     id INTEGER PRIMARY KEY,
@@ -209,7 +209,7 @@ CREATE TABLE new_table (
 );
 ```
 
-2. **Add migration logic** in handler initialization:
+2. Add migration logic in handler initialization:
 ```objc
 - (void)runMigrations {
     char *errMsg = NULL;
@@ -221,7 +221,7 @@ CREATE TABLE new_table (
 }
 ```
 
-3. **Update PDSDatabase class** with new methods:
+3. Update PDSDatabase class with new methods:
 ```objc
 - (BOOL)insertIntoNewTable:(NSDictionary *)data error:(NSError **)error;
 - (NSArray *)queryNewTableWithLimit:(NSInteger)limit error:(NSError **)error;
@@ -229,7 +229,7 @@ CREATE TABLE new_table (
 
 ### Schema Migrations
 
-For production systems, implement proper migration tracking:
+Implement migration tracking for production systems:
 
 ```objc
 - (void)applyMigrations {
@@ -302,13 +302,13 @@ instruments -t "Allocations" -D trace.trace ./atprotopds-cli serve --port 2583
 
 ### Adding New UI Components
 
-1. **Create HTML structure** in appropriate section
-2. **Add CSS styling** in `style.css`
-3. **Implement JavaScript logic** in `ui.js`
-4. **Add API calls** in `api.js`
-5. **Update navigation** if needed
+1. Create HTML structure in appropriate section
+2. Add CSS styling in `style.css`
+3. Implement JavaScript logic in `ui.js`
+4. Add API calls in `api.js`
+5. Update navigation if needed
 
-### Example: Search Interface
+### Search Interface Implementation
 
 ```html
 <section id="search" class="section">
@@ -346,12 +346,12 @@ document.getElementById('search-btn').addEventListener('click', async () => {
 
 ### Input Validation
 
-Always validate inputs:
+Validate all inputs:
 
 ```objc
 - (BOOL)validateSearchQuery:(NSString *)query {
     if (!query || query.length == 0) return NO;
-    if (query.length > 1000) return NO; // Prevent DoS
+    if (query.length > 1000) return NO; // DoS prevention
     // Check for SQL injection attempts
     if ([query containsString:@"'"] || [query containsString:@";"]) return NO;
     return YES;
@@ -360,19 +360,19 @@ Always validate inputs:
 
 ### Rate Limiting
 
-Implement rate limiting for expensive operations:
+Implement rate limiting for resource-intensive operations:
 
 ```objc
 - (BOOL)shouldRateLimitRequest:(NSString *)clientIP endpoint:(NSString *)endpoint {
-    // Implement rate limiting logic
+    // Rate limiting implementation
     // Return YES to block request
     return NO;
 }
 ```
 
-### Authentication (Future)
+### Authentication Implementation
 
-When adding authentication:
+When implementing authentication:
 
 ```objc
 - (BOOL)authenticateRequest:(HttpRequest *)request {
@@ -390,7 +390,7 @@ Update `Makefile` for new dependencies:
 
 ```makefile
 deps: libsecp256k1
-    # Add new dependency installation
+    # New dependency installation
 
 libsecp256k1:
     cd secp256k1 && ./autogen.sh && ./configure && make
@@ -407,7 +407,7 @@ Add tests to GitHub Actions:
     curl -f "http://localhost:2583/explore/api/search-records?query=test"
 ```
 
-### Docker Support (Future)
+### Docker Support
 
 ```dockerfile
 FROM macos:latest
@@ -424,7 +424,7 @@ CMD ["/app/atprotopds-cli", "serve", "--port", "2583"]
 
 ### Logging
 
-Add structured logging:
+Implement structured logging:
 
 ```objc
 NSLog(@"[Search] Query: %@, Collection: %@, Results: %ld",
@@ -437,24 +437,24 @@ Add performance metrics:
 
 ```objc
 NSTimeInterval start = [NSDate timeIntervalSinceReferenceDate];
-// ... operation ...
+// Operation execution
 NSTimeInterval duration = [NSDate timeIntervalSinceReferenceDate] - start;
 [self recordMetric:@"search.duration" value:duration];
 ```
 
 ### Error Handling
 
-Comprehensive error handling:
+Implement comprehensive error handling:
 
 ```objc
 @try {
-    // Operation that might fail
+    // Operation execution
 } @catch (NSException *e) {
     NSLog(@"Error in search operation: %@", e);
     [response setJsonBody:@{@"error": @"Internal server error"}];
     response.statusCode = 500;
 } @finally {
-    // Cleanup
+    // Cleanup procedures
 }
 ```
 
@@ -462,7 +462,7 @@ Comprehensive error handling:
 
 ### API Documentation
 
-Update OpenAPI spec automatically (it regenerates), but document breaking changes:
+OpenAPI specification regenerates automatically. Document breaking changes:
 
 ```markdown
 ## v2.0.0 (Breaking Changes)
@@ -477,7 +477,7 @@ Update user guide for new features:
 
 ```markdown
 ### Advanced Search
-Use the new search endpoint to find records across all collections:
+Use search endpoint to find records across collections:
 
 ```bash
 curl "http://localhost:2583/explore/api/search-records?query=hello&limit=10"
@@ -500,7 +500,7 @@ Add inline documentation:
 - (NSArray *)searchRecordsWithQuery:(NSString *)query
                          collection:(NSString *)collection
                               limit:(NSInteger)limit {
-    // Implementation...
+    // Search implementation
 }
 ```
 
@@ -508,54 +508,54 @@ Add inline documentation:
 
 ### Code Quality
 
-1. **Consistent naming**: Use clear, descriptive names
-2. **Error handling**: Always handle errors gracefully
-3. **Input validation**: Validate all inputs
-4. **Documentation**: Document complex logic
-5. **Testing**: Write tests for new functionality
+1. Use clear, descriptive naming conventions
+2. Handle errors gracefully
+3. Validate all inputs
+4. Document complex logic
+5. Write tests for new functionality
 
 ### Performance
 
-1. **Caching**: Use appropriate TTL values
-2. **Pagination**: Limit result sets
-3. **Indexes**: Add database indexes for queries
-4. **Async operations**: Don't block on I/O
+1. Use appropriate TTL values for caching
+2. Limit result sets with pagination
+3. Add database indexes for queries
+4. Use non-blocking I/O operations
 
 ### Security
 
-1. **Input sanitization**: Clean all user inputs
-2. **Rate limiting**: Prevent abuse
-3. **Authentication**: Require auth for sensitive operations
-4. **Logging**: Log security events
+1. Sanitize all user inputs
+2. Implement rate limiting to prevent abuse
+3. Require authentication for sensitive operations
+4. Log security events
 
 ### Maintainability
 
-1. **Modular code**: Keep functions focused
-2. **Configuration**: Externalize magic numbers
-3. **Documentation**: Keep docs in sync with code
-4. **Versioning**: Plan for API versioning
+1. Maintain modular, focused functions
+2. Externalize configuration values
+3. Keep documentation synchronized with code
+4. Plan for API versioning
 
 ## Getting Help
 
 ### Resources
 
-- **API Documentation**: `http://localhost:2583/explore/api/docs`
-- **OpenAPI Spec**: `http://localhost:2583/explore/api/openapi.yaml`
-- **Architecture Docs**: `docs/ARCHITECTURE_DIAGRAMS.md`
-- **Session Summary**: `docs/SESSION_SUMMARY.md`
+- API Documentation: `http://localhost:2583/explore/api/docs`
+- OpenAPI Specification: `http://localhost:2583/explore/api/openapi.yaml`
+- Architecture Documentation: `docs/ARCHITECTURE_DIAGRAMS.md`
+- Session Summary: `docs/SESSION_SUMMARY.md`
 
 ### Common Issues
 
-1. **Build fails**: Check dependencies and Xcode version
-2. **Tests fail**: Ensure test data is properly set up
-3. **API errors**: Check request format and server logs
-4. **Performance issues**: Profile with Instruments
+1. Build failures: Check dependencies and Xcode version
+2. Test failures: Ensure test data is properly configured
+3. API errors: Check request format and server logs
+4. Performance issues: Profile with Instruments
 
 ### Contributing
 
-1. Follow the development workflow
+1. Follow development workflow
 2. Write tests for new features
 3. Update documentation
 4. Submit pull requests with clear descriptions
 
-This guide provides the foundation for extending the ATProto PDS API. Always consider backward compatibility, performance, and security when making changes.
+Consider backward compatibility, performance, and security when implementing changes.

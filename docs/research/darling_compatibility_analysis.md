@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-The objpds CLI tool has **good to excellent compatibility prospects** with Darling for Linux deployment. All critical Apple frameworks used by objpds are actively maintained in the Darling ecosystem, with the only significant gap being CoreImage support.
+ The objpds CLI tool has good to excellent compatibility prospects with Darling for Linux deployment. All critical Apple frameworks used by objpds are actively maintained in Darling ecosystem, with CoreImage support as the only significant gap.
 
 ## Apple Frameworks Used in objpds
 
@@ -65,7 +65,7 @@ The objpds CLI tool has **good to excellent compatibility prospects** with Darli
 - **Evidence**: CoreImage is not explicitly implemented
 - **Impact**: QR code generation for TOTP will need alternative implementation
 
-### 🔄 **Partial Support**
+### **Partial Support**
 
 #### Cocoa Framework
 - **Repository**: [darlinghq/darling-cocotron](https://github.com/darlinghq/darling-cocotron)
@@ -87,7 +87,7 @@ The objpds CLI tool has **good to excellent compatibility prospects** with Darli
 3. **Missing Framework Symbols** - Some edge cases may hit unimplemented APIs
 
 ### **Known Darling Limitations**
-- Most GUI applications don't run perfectly
+- Most GUI applications do not run perfectly
 - Framework bundle paths may differ from macOS
 - Some Apple-specific APIs may have incomplete implementations
 
@@ -161,7 +161,7 @@ if ([NSBundle bundleForClass:[NSString class]]) {
 
 ## Conclusion
 
-Your objpds CLI tool is **well-positioned to run on Darling** with minimal modifications. The critical server functionality (cryptography, networking, data handling) has solid support. Only the TOTP QR generation and GUI components would require fallback implementations.
+The objpds CLI tool is well-positioned to run on Darling with minimal modifications. Critical server functionality (cryptography, networking, data handling) has solid support. TOTP QR generation and GUI components require fallback implementations.
 
 **Recommended next steps**:
 1. Set up Darling development environment
@@ -169,4 +169,4 @@ Your objpds CLI tool is **well-positioned to run on Darling** with minimal modif
 3. Implement CoreImage fallback for QR codes
 4. Consider conditional compilation for GUI components
 
-The research indicates this is a viable path for Linux deployment, though careful testing of each component will be essential.
+Research indicates a viable path for Linux deployment, requiring careful component testing.

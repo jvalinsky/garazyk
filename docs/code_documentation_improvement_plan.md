@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-After reviewing the ATProto PDS codebase (23,268 lines of code across 115 source files), we found a critical documentation gap:
+After reviewing the ATProto PDS codebase (23,268 lines across 115 source files), a critical documentation gap was identified:
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
@@ -10,12 +10,12 @@ After reviewing the ATProto PDS codebase (23,268 lines of code across 115 source
 | Files with ANY documentation | 5 | 10.6% |
 | Files WITHOUT documentation | 42 | 89.4% |
 
-**The vast majority (89%) of header files lack documentation.**
+**The majority (89%) of header files lack documentation.**
 
 ## Current Documentation State
 
 ### Files WITH Documentation (Good Examples)
-1. **CID.h** - Excellent (`///` style comments, )
+1. **CID.h** - Excellent (`///` style comments)
 2. **TID.h** - Good (timestamp ID utilities)
 3. **DID.h** - Good (decentralized identifier support)
 4. **BlobStorage.h** - Good (blob storage interface)
