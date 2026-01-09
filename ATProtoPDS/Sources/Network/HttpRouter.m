@@ -1,6 +1,7 @@
 #import "HttpRouter.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"
+#import "Auth/OAuthServerMetadata.h"
 
 @interface HttpRoute ()
 
@@ -201,6 +202,18 @@
     }
 
     return path;
+}
+
+- (void)setupRoutes {
+    // ... existing routes ...
+
+    [self addRoute:@"/.well-known/oauth-authorization-server"
+           method:@"GET"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+        OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:self.baseURL];
+        [response setJSONBody:metadata.metadata];
+        response.statusCode = 200;
+    }];
 }
 
 @end
