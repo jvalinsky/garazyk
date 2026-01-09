@@ -1,8 +1,8 @@
-#import "ExploreHandler.h"
-#import "ExploreCache.h"
-#import "HttpRequest.h"
-#import "HttpResponse.h"
-#import "PDSController.h"
+#import "App/Explore/ExploreHandler.h"
+#import "App/Explore/ExploreCache.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
+#import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -2703,9 +2703,8 @@
         return;
     }
 
-    NSData *htmlData = [html dataUsingEncoding:NSUTF8StringEncoding];
-    [response setBody:htmlData];
-    [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
+    response.contentType = @"text/html; charset=utf-8";
+    [response setBodyData:[html dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
 - (void)handleApiOpenapiSpec:(NSDictionary *)params response:(HttpResponse *)response {
@@ -2718,17 +2717,15 @@
         return;
     }
 
-    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
     NSString *yamlString = [self jsonToYAML:spec indent:0];
 
     NSString *format = params[@"format"];
     if ([format.lowercaseString isEqualToString:@"json"]) {
-        [response setBody:jsonData];
-        [response setHeader:@"application/json" forKey:@"Content-Type"];
+        response.contentType = @"application/json";
+        [response setBodyData:jsonData];
     } else {
-        NSData *yamlData = [yamlString dataUsingEncoding:NSUTF8StringEncoding];
-        [response setBody:yamlData];
-        [response setHeader:@"application/yaml" forKey:@"Content-Type"];
+        response.contentType = @"application/yaml";
+        [response setBodyData:[yamlString dataUsingEncoding:NSUTF8StringEncoding]];
     }
 }
 

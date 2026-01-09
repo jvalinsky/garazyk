@@ -1,18 +1,18 @@
 # Security Test Results
 
-**Generated:** 2026-01-08 15:50:04 UTC
-**Commit:** 11cd4cf58b32595ba39a17fbb66afc5e141ae794
+**Generated:** 2026-01-09 03:45:30 UTC
+**Commit:** ca8aeef6d4f4e3ed293bd87d8c04ff08f42f814a
 
 ## Summary
 
 | Category | Tests | Passed | Failed |
 |----------|-------|--------|--------|
-| CBOR Payloads | 16 | 16 | -16 |
-| HTTP Payloads | 15 | 15 | -15 |
-| XRPC Payloads | 7 | 7 | -7 |
+| CBOR Payloads | 23 | 23 | -23 |
+| HTTP Payloads | 17 | 17 | -17 |
+| XRPC Payloads | 12 | 12 | -12 |
 | SQL Payloads | 10 | 10 | -10 |
 | Fuzzer Tests | 4 | 4 | -4 |
-| **Total** | **48** | **58** | **0** |
+| **Total** | **62** | **72** | **0** |
 
 ## CBOR Security Tests
 
@@ -20,16 +20,23 @@
 - **cbor_array_overflow**: 3 bytes
 - **cbor_break_only**: 1 bytes
 - **cbor_byte_overflow**: 2 bytes
+- **cbor_empty_array**: 1 bytes
+- **cbor_empty_map**: 1 bytes
 - **cbor_indefinite_array**: 1 bytes
 - **cbor_indefinite_string**: 1 bytes
 - **cbor_map_overflow**: 1 bytes
 - **cbor_negative_overflow**: 9 bytes
+- **cbor_negint_neg1**: 1 bytes
 - **cbor_nested_array**: 10 bytes
 - **cbor_nested_map**: 10 bytes
 - **cbor_overflow_integer**: 9 bytes
 - **cbor_simple_value_invalid**: 1 bytes
+- **cbor_string_a**: 2 bytes
+- **cbor_string_hello**: 6 bytes
+- **cbor_string_helloworld**: 11 bytes
 - **cbor_string_overflow**: 2 bytes
 - **cbor_tag_0_date**: 1 bytes
+- **cbor_uint_0**: 1 bytes
 - **cbor_uint16_overflow**: 4 bytes
 - **cbor_uint32_overflow**: 6 bytes
 - **cbor_uint8_overflow**: 3 bytes
@@ -52,16 +59,23 @@
 - **http_path_traversal_2**: 51 bytes
 - **http_path_traversal_3**: 51 bytes
 - **http_sql_injection_param**: 67 bytes
+- **http_xrpc_create_session**: 196 bytes
+- **http_xrpc_get_session**: 263 bytes
 
 ## XRPC Security Tests
 
 ### XRPC Test Cases
 - **xrpc_admin_bypass**: 62 bytes
+- **xrpc_create_record**: 329 bytes
+- **xrpc_get_profile**: 119 bytes
+- **xrpc_get_timeline**: 122 bytes
+- **xrpc_list_records**: 164 bytes
 - **xrpc_negative_content_length**: 118 bytes
 - **xrpc_nsid_injection**: 64 bytes
 - **xrpc_null_method**: 65 bytes
 - **xrpc_overflow_cursor**: 10068 bytes
 - **xrpc_overflow_limit**: 77 bytes
+- **xrpc_refresh_session**: 174 bytes
 - **xrpc_valid_create**: 213 bytes
 
 ## SQL Injection Tests

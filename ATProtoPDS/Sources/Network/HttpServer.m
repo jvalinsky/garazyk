@@ -348,12 +348,24 @@
 
     dispatch_data_t dispatchData = dispatch_data_create(responseData.bytes, responseData.length, self.serverQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 
+    __weak typeof(self) weakSelf = self;
+    BOOL shouldKeepAlive = response.keepAlive;
+    
     nw_connection_send(connection, dispatchData, _nw_content_context_default_message, true, ^(nw_error_t error) {
         if (error) {
             NSLog(@"Failed to send response");
+            nw_connection_cancel(connection);
+            return;
         }
 
-        if (!response.keepAlive) {
+        if (shouldKeepAlive) {
+            // HTTP/1.1 keep-alive: read the next request on this connection
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf readRequestFromConnection:connection];
+            }
+        } else {
+            // Close connection after response
             nw_connection_cancel(connection);
         }
     });
