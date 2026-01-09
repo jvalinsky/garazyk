@@ -22,6 +22,7 @@ extern NSString * const kPDSInviteCodeTableCreateSQL;
 extern NSString * const kPDSAdminTakedownTableCreateSQL;
 extern NSString * const kPDSPasskeysTableCreateSQL;
 extern NSString * const kPDSOAuthClientsTableCreateSQL;
+extern NSString * const kPDSJWTSigningKeysTableCreateSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;

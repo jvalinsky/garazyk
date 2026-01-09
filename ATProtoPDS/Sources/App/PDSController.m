@@ -156,13 +156,15 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     size_t passwordLength = strlen(passwordBytes);
     NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
     
+    // OWASP recommends at least 600,000 iterations for PBKDF2-HMAC-SHA256
+    // This provides adequate resistance against GPU-based cracking attacks
     CCKeyDerivationPBKDF(kCCPBKDF2,
                          passwordBytes,
                          passwordLength,
                          salt.bytes,
                          salt.length,
                          kCCPRFHmacAlgSHA256,
-                         10000,
+                         600000,
                          derivedKey.mutableBytes,
                          derivedKey.length);
     
