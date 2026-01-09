@@ -93,15 +93,35 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
+        [self loadKeysFromDatabase];
     }
     return self;
 }
 
 - (instancetype)initWithServiceIdentifier:(NSString *)serviceIdentifier {
-    self = [self init];
+    self = [super init];
     if (self) {
-        _serviceIdentifier = serviceIdentifier;
+        _serviceIdentifier = [serviceIdentifier copy];
+        _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+        _keyPairs = [NSMutableDictionary dictionary];
+        _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
+        [self loadKeysFromDatabase];
     }
+    return self;
+}
+
+- (instancetype)initWithDatabase:(PDSDatabase *)database serviceIdentifier:(NSString *)serviceIdentifier {
+    self = [super init];
+    if (self) {
+        _database = database;
+        _serviceIdentifier = [serviceIdentifier copy];
+        _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+        _keyPairs = [NSMutableDictionary dictionary];
+        _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
+        [self loadKeysFromDatabase];
+    }
+    return self;
+}
     return self;
 }
 
@@ -159,14 +179,20 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     KeyPair *keyPair = [KeyPair keyPairFromPrivateKey:privateKey
                                              publicKey:publicKey
-                                                keyID:keyID
-                                             algorithm:algorithm];
+                                                 keyID:keyID
+                                              algorithm:algorithm];
 
     dispatch_sync(self.accessQueue, ^{
         self.keyPairs[keyID] = keyPair;
     });
 
     self.currentKeyID = keyID;
+
+    // Save to database for persistence
+    NSError *saveError = nil;
+    if (![self saveKeyPairToDatabase:keyPair error:&saveError]) {
+        NSLog(@"Warning: Failed to save JWT signing key to database: %@", saveError);
+    }
 
     return keyPair;
 }
@@ -407,6 +433,123 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     }
 
     return jwks;
+}
+
+#pragma mark - Database Persistence
+
+- (void)loadKeysFromDatabase {
+    if (!self.database) return;
+
+    NSError *error = nil;
+    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
+
+    if (error) {
+        NSLog(@"Failed to load JWT signing keys from database: %@", error);
+        return;
+    }
+
+    dispatch_sync(self.accessQueue, ^{
+        for (NSDictionary *row in results) {
+            NSString *keyID = row[@"key_id"];
+            NSString *algorithm = row[@"algorithm"];
+            NSData *privateKeyData = row[@"private_key_data"];
+            NSData *publicKeyData = row[@"public_key_data"];
+            NSNumber *isActive = row[@"is_active"];
+
+            // Import keys from data
+            NSDictionary *privateKeyAttrs = @{
+                (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+                (__bridge id)kSecAttrKeySizeInBits: @2048
+            };
+
+            NSDictionary *publicKeyAttrs = @{
+                (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic,
+                (__bridge id)kSecAttrKeySizeInBits: @2048
+            };
+
+            CFErrorRef importError = NULL;
+            SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+                                                       (__bridge CFDictionaryRef)privateKeyAttrs,
+                                                       &importError);
+            SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+                                                      (__bridge CFDictionaryRef)publicKeyAttrs,
+                                                      &importError);
+
+            if (privateKey && publicKey) {
+                KeyPair *keyPair = [KeyPair keyPairFromPrivateKey:privateKey
+                                                         publicKey:publicKey
+                                                           keyID:keyID
+                                                        algorithm:algorithm];
+                if (keyPair) {
+                    keyPair.isActive = [isActive boolValue];
+                    self.keyPairs[keyID] = keyPair;
+
+                    // Set current key ID if this is active
+                    if (keyPair.isActive && !self.currentKeyID) {
+                        self.currentKeyID = keyID;
+                    }
+                }
+            }
+
+            if (privateKey) CFRelease(privateKey);
+            if (publicKey) CFRelease(publicKey);
+        }
+    });
+}
+
+- (BOOL)saveKeyPairToDatabase:(KeyPair *)keyPair error:(NSError **)error {
+    if (!self.database) return YES; // Not an error if no database
+
+    // Export key data
+    NSDictionary *privateKeyAttrs = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate
+    };
+
+    NSDictionary *publicKeyAttrs = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic
+    };
+
+    CFErrorRef exportError = NULL;
+    NSData *privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+    NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
+
+    if (!privateKeyData || !publicKeyData) {
+        if (error) {
+            *error = [NSError errorWithDomain:KeyManagerErrorDomain
+                                         code:KeyManagerErrorExportFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export key data"}];
+        }
+        return NO;
+    }
+
+    // Insert into database
+    NSString *sql = @"INSERT OR REPLACE INTO jwt_signing_keys (key_id, algorithm, private_key_data, public_key_data, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSArray *params = @[
+        keyPair.keyID,
+        keyPair.algorithm,
+        privateKeyData,
+        publicKeyData,
+        @(keyPair.isActive),
+        [self iso8601StringFromDate:keyPair.createdAt]
+    ];
+
+    return [self.database executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
+        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
+        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    });
+    return [formatter stringFromDate:date];
 }
 
 @end
