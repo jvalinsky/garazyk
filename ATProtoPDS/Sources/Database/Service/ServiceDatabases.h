@@ -3,6 +3,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
+@class PDSDatabase;
 @class PDSDatabaseAccount;
 @class PDSDatabaseRepo;
 @class PDSDatabaseBlob;

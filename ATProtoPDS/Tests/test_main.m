@@ -61,7 +61,8 @@ int main(int argc, char * argv[]) {
             @"HandleResolverTests",
             @"ATProtoHandleValidatorTests",
             @"TOTPTests",
-            @"CryptoTests"
+            @"CryptoTests",
+            @"OAuth2HandlerTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

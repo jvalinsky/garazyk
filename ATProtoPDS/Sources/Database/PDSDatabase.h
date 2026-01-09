@@ -150,6 +150,38 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                             params:(NSArray *)params
                              error:(NSError **)error;
 
+/*!
+ @method getClientWithID:error:
+ 
+ @abstract Retrieves an OAuth client by ID.
+ 
+ @param clientID The client ID to search for.
+ @param error On return, contains an error if the operation failed.
+ @return The client dictionary, or nil if not found.
+ */
+- (NSDictionary *)getClientWithID:(NSString *)clientID error:(NSError **)error;
+
+/*!
+ @method createClient:error:
+ 
+ @abstract Creates or updates an OAuth client.
+ 
+ @param client The client details dictionary.
+ @param error On return, contains an error if the operation failed.
+ @return YES if the client was created successfully, NO otherwise.
+ */
+- (BOOL)createClient:(NSDictionary *)client error:(NSError **)error;
+
+/*!
+ @method seedTestClient:
+ 
+ @abstract Creates a test client for development/testing.
+ 
+ @param error On return, contains an error if the operation failed.
+ @return YES if the test client was created successfully, NO otherwise.
+ */
+- (BOOL)seedTestClient:(NSError **)error;
+
 @end
 
 /*!

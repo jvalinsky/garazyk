@@ -1,5 +1,6 @@
 #import "Auth/KeyManager.h"
 #import "Auth/JWT.h"
+#import "Database/PDSDatabase.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
@@ -120,8 +121,6 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
         [self loadKeysFromDatabase];
     }
-    return self;
-}
     return self;
 }
 

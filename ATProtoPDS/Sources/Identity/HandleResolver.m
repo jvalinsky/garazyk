@@ -1,5 +1,8 @@
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import <netinet/in.h>
+#import <sys/socket.h>
+#import <arpa/inet.h>
 
 NSString * const HandleErrorDomain = @"com.atproto.handle";
 
