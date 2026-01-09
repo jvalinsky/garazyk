@@ -66,6 +66,12 @@ async function selectAccount(account) {
     });
     
     currentDid = account.did;
+    
+    // Clear sections to show loading state
+    document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
+    document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
+    document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
+    
     await showDidDocument(account.did);
 }
 
@@ -74,7 +80,15 @@ async function handleLookup(e) {
     const input = document.getElementById('lookup-input').value.trim();
     if (!input) return;
     
+    // Show loading state
+    document.getElementById('lookup-input').disabled = true;
+    document.getElementById('did-content').innerHTML = '<p class="loading">Looking up DID/handle...</p>';
+    document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
+    document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
+    
     const result = await API.lookup(input);
+    
+    document.getElementById('lookup-input').disabled = false;
     
     if (result.error) {
         alert('DID/handle not found: ' + result.error);
@@ -103,17 +117,21 @@ async function showDidDocument(did) {
     plcContent.innerHTML = '<p class="loading">Loading PLC operations...</p>';
     collectionsContent.innerHTML = '<p class="loading">Loading collections...</p>';
     
-    const doc = await API.getDidDocument(did);
+    // Parallel API calls - all run simultaneously
+    const [doc, ops, describe] = await Promise.all([
+        API.getDidDocument(did),
+        API.getPlcLog(did),
+        API.getRepoDescribe(did)
+    ]);
+    
     if (doc.error) {
         didContent.innerHTML = `<p class="error">${escapeHtml(doc.error)}</p>`;
     } else {
         didContent.innerHTML = renderDidSummary(doc);
     }
     
-    const ops = await API.fetchPlcLog(did);
     plcContent.innerHTML = renderPlcOperations(ops);
     
-    const describe = await API.getRepoDescribe(did);
     renderCollections(describe);
 }
 
