@@ -1,6 +1,9 @@
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2.h"
 #import "Auth/OAuthSession.h"
+#import "Network/HttpRouter.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 
 @interface OAuth2Tests : XCTestCase
 @property (nonatomic, strong) OAuth2 *oauth2;
@@ -196,6 +199,34 @@
     session.expiresAt = [[NSDate date] dateByAddingTimeInterval:-60]; // Expired 1 minute ago
 
     XCTAssertTrue(session.isExpired, @"Expired session should be detected as expired");
+}
+
+- (void)testOAuthServerMetadataEndpoint {
+    // Test that /.well-known/oauth-authorization-server returns correct metadata
+    HttpRouter *router = [[HttpRouter alloc] init];
+    router.baseURL = @"https://example.com";
+    [router setupRoutes];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                   methodString:@"GET"
+                                                         path:@"/.well-known/oauth-authorization-server"
+                                                  queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:nil];
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    HttpRouteHandler handler = [router handlerForRequest:request];
+    XCTAssertNotNil(handler, @"Handler should be found for metadata endpoint");
+
+    handler(request, response);
+
+    XCTAssertEqual(response.statusCode, 200);
+    NSDictionary *metadata = response.jsonBody;
+    XCTAssertNotNil(metadata[@"issuer"]);
+    XCTAssertNotNil(metadata[@"authorization_endpoint"]);
 }
 
 #pragma mark - Helper Methods

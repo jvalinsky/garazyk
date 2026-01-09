@@ -74,6 +74,8 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
  */
 @interface HttpRouter : NSObject
 
+@property (nonatomic, copy) NSString *baseURL;
+
 /*!
  @method addRoute:pattern:handler:
 
@@ -125,6 +127,13 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
  */
 - (nullable NSDictionary<NSString *, NSString *> *)extractParametersFromPath:(NSString *)path
                                                                      pattern:(NSString *)pattern;
+
+/*!
+ @method setupRoutes
+
+ @abstract Set up the default routes for the server.
+ */
+- (void)setupRoutes;
 
 @end
 
