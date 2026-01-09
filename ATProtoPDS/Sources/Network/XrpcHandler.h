@@ -153,10 +153,22 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.admin.getSubjectStatus. */
 - (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.admin.moderateAccount. */
+- (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.moderateRecord. */
+- (void)registerComAtprotoAdminModerateRecord:(XrpcMethodHandler)handler;
+
 // MARK: - Label Methods
 
 /*! Registers handler for com.atproto.label.queryLabels. */
 - (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.label.createLabel. */
+- (void)registerComAtprotoLabelCreateLabel:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.label.getLabels. */
+- (void)registerComAtprotoLabelGetLabels:(XrpcMethodHandler)handler;
 
 // MARK: - App Bsky Actor Methods
 
