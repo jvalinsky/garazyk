@@ -173,6 +173,19 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error;
 
+#pragma mark - Moderation Operations
+
+- (NSDictionary *)createModerationReport:(NSDictionary *)params error:(NSError **)error;
+- (NSDictionary *)updateSubjectStatus:(NSDictionary *)subject
+                              takedown:(NSDictionary *)takedown
+                           deactivated:(NSDictionary *)deactivated
+                                error:(NSError **)error;
+- (NSDictionary *)getSubjectStatus:(NSString *)did uri:(NSString *)uri blob:(NSString *)blob error:(NSError **)error;
+
+#pragma mark - Labeling Operations
+
+- (NSArray *)queryLabels:(NSDictionary *)params error:(NSError **)error;
+
 #pragma mark - Health & Metrics
 
 - (NSDictionary<NSString *, id> *)getHealthCheck;

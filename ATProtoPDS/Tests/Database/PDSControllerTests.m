@@ -284,11 +284,63 @@
 
 - (void)testMetrics {
     NSDictionary *metrics = [self.controller getMetrics];
-    
+
     XCTAssertNotNil(metrics);
     XCTAssertNotNil(metrics[@"timestamp"]);
     XCTAssertNotNil(metrics[@"user_databases"]);
     XCTAssertNotNil(metrics[@"service_databases"]);
+}
+
+- (void)testCreateModerationReport {
+    NSDictionary *reportData = @{
+        @"reasonType": @"spam",
+        @"subject": @{@"$type": @"com.atproto.admin.defs#repoRef", @"did": @"did:plc:test"},
+        @"reportedBy": @"did:example:user"
+    };
+
+    NSError *error = nil;
+    NSDictionary *result = [self.controller createModerationReport:reportData error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+}
+
+- (void)testUpdateSubjectStatus {
+    NSDictionary *subject = @{@"$type": @"com.atproto.admin.defs#repoRef", @"did": @"did:plc:test"};
+    NSDictionary *takedown = @{@"applied": @YES};
+    NSDictionary *deactivated = @{@"applied": @NO};
+
+    NSError *error = nil;
+    NSDictionary *result = [self.controller updateSubjectStatus:subject
+                                                        takedown:takedown
+                                                      deactivated:deactivated
+                                                           error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+}
+
+- (void)testGetSubjectStatus {
+    NSError *error = nil;
+    NSDictionary *result = [self.controller getSubjectStatus:@"did:plc:test" uri:nil blob:nil error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+}
+
+- (void)testQueryLabels {
+    NSDictionary *query = @{
+        @"uriPatterns": @[],
+        @"sources": @[],
+        @"limit": @50
+    };
+
+    NSError *error = nil;
+    NSArray *result = [self.controller queryLabels:query error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertEqual(result.count, 1);
+    XCTAssertEqualObjects(result[0][@"status"], @"not_implemented");
 }
 
 @end

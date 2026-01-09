@@ -560,8 +560,7 @@
         [response setJsonBody:@{@"did": did}];
     }];
 
-    // Moderation endpoints - commented out due to missing PDSController methods
-    /*
+    // Moderation endpoints
     [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *reasonType = body[@"reasonType"];
@@ -604,9 +603,9 @@
 
         NSError *error = nil;
         NSDictionary *result = [controller updateSubjectStatus:subject
-                                                       takedown:takedown
-                                                     deactivated:deactivated
-                                                          error:&error];
+                                                        takedown:takedown
+                                                      deactivated:deactivated
+                                                           error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
@@ -669,7 +668,6 @@
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"labels": labels}];
     }];
-    */
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:controller.database];
     FeedService *feedService = [[FeedService alloc] initWithDatabase:controller.database];

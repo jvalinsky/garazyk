@@ -567,6 +567,33 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return NO;
 }
 
+#pragma mark - Moderation Operations
+
+- (NSDictionary *)createModerationReport:(NSDictionary *)params error:(NSError **)error {
+    // TODO: Implement moderation report creation
+    return @{@"status": @"not_implemented"};
+}
+
+- (NSDictionary *)updateSubjectStatus:(NSDictionary *)subject
+                              takedown:(NSDictionary *)takedown
+                           deactivated:(NSDictionary *)deactivated
+                                error:(NSError **)error {
+    // TODO: Implement subject status updates
+    return @{@"status": @"not_implemented"};
+}
+
+- (NSDictionary *)getSubjectStatus:(NSString *)did uri:(NSString *)uri blob:(NSString *)blob error:(NSError **)error {
+    // TODO: Implement subject status retrieval
+    return @{@"status": @"not_implemented"};
+}
+
+#pragma mark - Labeling Operations
+
+- (NSArray *)queryLabels:(NSDictionary *)params error:(NSError **)error {
+    // TODO: Implement label querying
+    return @[@{@"status": @"not_implemented"}];
+}
+
 #pragma mark - Health & Metrics
 
 - (NSDictionary<NSString *, id> *)getHealthCheck {
