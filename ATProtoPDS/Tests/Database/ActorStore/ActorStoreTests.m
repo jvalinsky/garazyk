@@ -231,4 +231,92 @@
     XCTAssertEqual(collectionCount, 5, @"Should have 5 records in collection");
 }
 
+- (void)testSaveBlobAndListBlobsForDid {
+    __autoreleasing NSError *error = nil;
+
+    PDSDatabaseBlob *blob1 = [[PDSDatabaseBlob alloc] init];
+    blob1.cid = [@"blobcid1" dataUsingEncoding:NSUTF8StringEncoding];
+    blob1.did = self.testDID;
+    blob1.mimeType = @"text/plain";
+    blob1.size = 100;
+    blob1.createdAt = [NSDate date];
+
+    PDSDatabaseBlob *blob2 = [[PDSDatabaseBlob alloc] init];
+    blob2.cid = [@"blobcid2" dataUsingEncoding:NSUTF8StringEncoding];
+    blob2.did = self.testDID;
+    blob2.mimeType = @"image/jpeg";
+    blob2.size = 500;
+    blob2.createdAt = [NSDate date];
+
+    BOOL success1 = [self.store saveBlob:blob1 error:&error];
+    XCTAssertTrue(success1, @"Failed to save blob1: %@", error);
+
+    BOOL success2 = [self.store saveBlob:blob2 error:&error];
+    XCTAssertTrue(success2, @"Failed to save blob2: %@", error);
+
+    NSArray<PDSDatabaseBlob *> *blobs = [self.store listBlobsForDid:self.testDID limit:10 cursor:nil error:&error];
+    XCTAssertNotNil(blobs, @"Blobs should not be nil");
+    XCTAssertEqual(blobs.count, 2, @"Should have 2 blobs");
+
+    PDSDatabaseBlob *retrievedBlob = [self.store getBlobForCID:blob1.cid error:&error];
+    XCTAssertNotNil(retrievedBlob, @"Should retrieve blob1");
+    XCTAssertEqualObjects(retrievedBlob.mimeType, @"text/plain", @"MIME type should match");
+    XCTAssertEqual(retrievedBlob.size, 100, @"Size should match");
+}
+
+- (void)testListBlobsExcludesOtherDids {
+    __autoreleasing NSError *error = nil;
+
+    PDSDatabaseBlob *blob1 = [[PDSDatabaseBlob alloc] init];
+    blob1.cid = [@"blobcid1" dataUsingEncoding:NSUTF8StringEncoding];
+    blob1.did = self.testDID;
+    blob1.mimeType = @"text/plain";
+    blob1.size = 100;
+    blob1.createdAt = [NSDate date];
+
+    PDSDatabaseBlob *blob2 = [[PDSDatabaseBlob alloc] init];
+    blob2.cid = [@"blobcid2" dataUsingEncoding:NSUTF8StringEncoding];
+    blob2.did = @"did:plc:other123456789";
+    blob2.mimeType = @"image/jpeg";
+    blob2.size = 500;
+    blob2.createdAt = [NSDate date];
+
+    BOOL success1 = [self.store saveBlob:blob1 error:&error];
+    XCTAssertTrue(success1, @"Failed to save blob1: %@", error);
+
+    BOOL success2 = [self.store saveBlob:blob2 error:&error];
+    XCTAssertTrue(success2, @"Failed to save blob2: %@", error);
+
+    NSArray<PDSDatabaseBlob *> *blobs = [self.store listBlobsForDid:self.testDID limit:10 cursor:nil error:&error];
+    XCTAssertNotNil(blobs, @"Blobs should not be nil");
+    XCTAssertEqual(blobs.count, 1, @"Should have only 1 blob for this DID");
+    XCTAssertEqualObjects(blobs[0].did, self.testDID, @"Blob should belong to this DID");
+}
+
+- (void)testDeleteBlobForCID {
+    __autoreleasing NSError *error = nil;
+
+    PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+    blob.cid = [@"blobcid1" dataUsingEncoding:NSUTF8StringEncoding];
+    blob.did = self.testDID;
+    blob.mimeType = @"text/plain";
+    blob.size = 100;
+    blob.createdAt = [NSDate date];
+
+    BOOL success = [self.store saveBlob:blob error:&error];
+    XCTAssertTrue(success, @"Failed to save blob: %@", error);
+
+    // Verify blob exists
+    PDSDatabaseBlob *retrieved = [self.store getBlobForCID:blob.cid error:&error];
+    XCTAssertNotNil(retrieved, @"Blob should exist before deletion");
+
+    // Delete blob
+    BOOL deleteSuccess = [self.store deleteBlobForCID:blob.cid forDid:self.testDID error:&error];
+    XCTAssertTrue(deleteSuccess, @"Failed to delete blob: %@", error);
+
+    // Verify blob is gone
+    PDSDatabaseBlob *afterDelete = [self.store getBlobForCID:blob.cid error:&error];
+    XCTAssertNil(afterDelete, @"Blob should not exist after deletion");
+}
+
 @end
