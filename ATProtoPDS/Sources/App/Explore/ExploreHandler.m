@@ -688,6 +688,9 @@
             @"dbExists": @(dbExists)
         }];
     }
+    else if ([endpoint isEqualToString:@"docs"]) {
+        [self handleApiDocs:params response:response];
+    }
     else if ([endpoint isEqualToString:@"openapi.yaml"] || [endpoint isEqualToString:@"openapi.json"]) {
         NSLog(@"[ExploreHandler] OpenAPI spec request received");
         [self handleApiOpenapiSpec:params response:response];
@@ -2706,6 +2709,23 @@
     }
 
     return [yaml copy];
+}
+
+- (void)handleApiDocs:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *docsPath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/docs.html"];
+
+    NSError *error = nil;
+    NSString *html = [NSString stringWithContentsOfFile:docsPath encoding:NSUTF8StringEncoding error:&error];
+
+    if (error || !html) {
+        [response setJsonBody:@{@"error": @"Failed to load docs", @"details": error.localizedDescription ?: @"Unknown error"}];
+        return;
+    }
+
+    NSData *htmlData = [html dataUsingEncoding:NSUTF8StringEncoding];
+    [response setBody:htmlData];
+    [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
 }
 
 - (void)handleApiOpenapiSpec:(NSDictionary *)params response:(HttpResponse *)response {
