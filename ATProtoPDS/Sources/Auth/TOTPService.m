@@ -2,9 +2,24 @@
 #import "Auth/TOTPGenerator.h"
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/YubiKeyOATH.h"
 #import <CoreImage/CoreImage.h>
 
 @implementation TOTPService
+
+@synthesize yubiKeyManager = _yubiKeyManager;
+@synthesize secret = _secret;
+@synthesize counter = _counter;
+
+- (instancetype)initWithSecret:(NSData *)secret {
+    self = [super init];
+    if (self) {
+        _secret = [secret copy];
+        _counter = 0; // For future HOTP support
+        _yubiKeyManager = [[YubiKeyOATHManager alloc] init];
+    }
+    return self;
+}
 
 + (NSString *)generateSecret {
     NSData *randomBytes = [CryptoUtils randomBytes:20]; // 160 bits (recommended min)
@@ -70,6 +85,23 @@
         CFRelease(pngData);
         return nil;
     }
+}
+
+- (nullable NSString *)generateTOTPToken:(NSError **)error {
+    // Try hardware token first, fall back to software
+    if ([self.yubiKeyManager generateTOTPForSecret:self.secret counter:self.counter error:error]) {
+        // For now, hardware generation returns success but we fall back to software
+        // In real implementation, this would return the actual hardware token
+        return [self generateSoftwareToken];
+    } else {
+        // Fallback to software generation
+        return [self generateSoftwareToken];
+    }
+}
+
+- (nullable NSString *)generateSoftwareToken {
+    TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:self.secret];
+    return [generator generateOTP];
 }
 
 @end
