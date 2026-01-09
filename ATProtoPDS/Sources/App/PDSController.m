@@ -644,24 +644,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 - (NSDictionary<NSString *, id> *)getMetrics {
     return @{
-        @"user_databases": [_userDatabasePool collectMetrics],
-        @"service_databases": @{
-
-- (NSDictionary<NSString *, id> *)getHealthCheck {
-    NSMutableDictionary *health = [NSMutableDictionary dictionary];
-    health[@"status"] = @"ok";
-    health[@"timestamp"] = @([[NSDate date] timeIntervalSince1970]);
-
-    NSError *error = nil;
-    NSDictionary *serviceHealth = [_serviceDatabases getHealthCheckWithError:&error];
-    if (error) {
-        health[@"status"] = @"degraded";
-        health[@"service_error"] = error.localizedDescription;
-    } else {
-        health[@"service_databases"] = serviceHealth;
-    }
-
-    return health;
+        @"user_databases": [_userDatabasePool collectMetrics] ?: @{},
+        @"service_databases": @{}
+    };
 }
 
 #pragma mark - Helpers
