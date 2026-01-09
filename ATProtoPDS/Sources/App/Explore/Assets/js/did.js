@@ -2,7 +2,7 @@ export function renderDidDocument(doc) {
     if (!doc) {
         return '<p class="error">DID document not found</p>';
     }
-    
+
     return `<pre class="code-block">${escapeHtml(JSON.stringify(doc, null, 2))}</pre>`;
 }
 
@@ -10,7 +10,7 @@ export function extractKeyInfo(doc) {
     if (!doc || !doc.verificationMethod) {
         return [];
     }
-    
+
     return doc.verificationMethod.map(vm => ({
         id: vm.id,
         type: vm.type,
@@ -23,12 +23,12 @@ export function extractServices(doc) {
     if (!doc || !doc.service) {
         return [];
     }
-    
+
     return doc.service.map(s => ({
         id: s.id,
         type: s.type,
-        endpoint: typeof s.serviceEndpoint === 'string' 
-            ? s.serviceEndpoint 
+        endpoint: typeof s.serviceEndpoint === 'string'
+            ? s.serviceEndpoint
             : JSON.stringify(s.serviceEndpoint)
     }));
 }
@@ -37,67 +37,100 @@ export function renderDidSummary(doc) {
     if (!doc) {
         return '<p class="error">DID document not found</p>';
     }
-    
+
     const keys = extractKeyInfo(doc);
     const services = extractServices(doc);
-    
+
     let html = `
-        <div class="did-summary">
-            <div class="did-header">
-                <span class="did-label">DID</span>
-                <code class="did-value">${escapeHtml(doc.id)}</code>
-            </div>
+        <p class="description">
+            The DID Document is a JSON-LD object that serves as the root of the identity. 
+            It contains the public keys for verification and the service endpoints for interacting with the identity.
+        </p>
+
+        <div class="summary-table">
+            <h3>Identity Properties</h3>
+            <table>
+                <tr>
+                    <th style="width: 150px">Property</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td><strong>id</strong></td>
+                    <td><code>${escapeHtml(doc.id)}</code></td>
+                </tr>
     `;
-    
+
     if (doc.alsoKnownAs && doc.alsoKnownAs.length > 0) {
         html += `
-            <div class="did-also-known-as">
-                <span class="did-label">Also Known As</span>
-                <code class="did-value">${escapeHtml(doc.alsoKnownAs[0])}</code>
-            </div>
+            <tr>
+                <td><strong>alsoKnownAs</strong></td>
+                <td><a href="#">${escapeHtml(doc.alsoKnownAs[0])}</a></td>
+            </tr>
         `;
     }
-    
+    html += '</table></div>';
+
     if (keys.length > 0) {
         html += `
-            <div class="did-section">
-                <h3>Verification Methods (${keys.length})</h3>
-                <ul class="key-list">
+            <h3>Verification Methods</h3>
+            <p class="description">Cryptographic keys used to verify signatures and authenticate updates.</p>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Public Key</th>
+                </tr>
         `;
-        for (const key of keys.slice(0, 5)) {
+        for (const key of keys) {
+            const shortKey = key.key ? key.key.slice(0, 16) + '...' : 'N/A';
+            const shortId = key.id.startsWith(doc.id) ? key.id.slice(doc.id.length) : key.id;
             html += `
-                <li class="key-item">
-                    <span class="key-id">${escapeHtml(key.id)}</span>
-                    <span class="key-type">${escapeHtml(key.type)}</span>
-                    <code class="key-fingerprint">${escapeHtml(key.key ? key.key.slice(0, 12) + '...' : 'N/A')}</code>
-                </li>
+                <tr>
+                    <td><code>${escapeHtml(shortId)}</code></td>
+                    <td>${escapeHtml(key.type)}</td>
+                    <td><code style="font-size:11px">${escapeHtml(shortKey)}</code></td>
+                </tr>
             `;
         }
-        if (keys.length > 5) {
-            html += `<li class="key-item more">+${keys.length - 5} more...</li>`;
-        }
-        html += '</ul></div>';
+        html += '</table>';
     }
-    
+
     if (services.length > 0) {
         html += `
-            <div class="did-section">
-                <h3>Services (${services.length})</h3>
-                <ul class="service-list">
+            <h3>Services</h3>
+            <p class="description">Endpoint identifiers for interacting with the identity agent.</p>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Endpoint</th>
+                </tr>
         `;
         for (const svc of services) {
+            const shortId = svc.id.startsWith(doc.id) ? svc.id.slice(doc.id.length) : svc.id;
             html += `
-                <li class="service-item">
-                    <span class="service-id">${escapeHtml(svc.id)}</span>
-                    <span class="service-type">${escapeHtml(svc.type)}</span>
-                    <span class="service-endpoint">${escapeHtml(svc.endpoint)}</span>
-                </li>
+                <tr>
+                    <td><code>${escapeHtml(shortId)}</code></td>
+                    <td>${escapeHtml(svc.type)}</td>
+                    <td><a href="${escapeHtml(svc.endpoint)}" target="_blank">${escapeHtml(svc.endpoint)}</a></td>
+                </tr>
             `;
         }
-        html += '</ul></div>';
+        html += '</table>';
     }
-    
-    html += '</div>';
+
+    html += `
+        <h3>Full DID Document</h3>
+        <pre class="code-block">${escapeHtml(JSON.stringify(doc, null, 2))}</pre>
+        
+        <h3 class="see-also">See Also</h3>
+        <ul class="see-also-links">
+            <li><a href="#" onclick="document.getElementById('nav-plc-ops').click(); return false;">PLC Operations</a></li>
+            <li><a href="#" onclick="document.getElementById('nav-collections').click(); return false;">Collections</a></li>
+            <li><a href="https://atproto.com/specs/did" target="_blank">ATProto DID Specification</a></li>
+        </ul>
+    `;
+
     return html;
 }
 

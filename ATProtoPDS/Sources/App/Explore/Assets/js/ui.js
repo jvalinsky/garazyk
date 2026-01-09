@@ -5,10 +5,13 @@ import { renderPlcOperations } from './plc.js';
 
 let currentDid = null;
 let currentCollection = null;
-let currentRecordsCursor = null;
 
 export function init() {
-    document.getElementById('lookup-form').addEventListener('submit', handleLookup);
+    // Search Enter key
+    document.getElementById('lookup-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLookup();
+    });
+    
     document.getElementById('cid-decode-btn').addEventListener('click', handleCidDecode);
     document.getElementById('cid-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleCidDecode();
@@ -16,20 +19,34 @@ export function init() {
     
     document.getElementById('back-collections').addEventListener('click', showCollectionsSection);
     document.getElementById('back-records').addEventListener('click', () => {
-        document.getElementById('record-detail').classList.add('hidden');
-        document.getElementById('records').classList.remove('hidden');
+        showSection('records', `Records: ${currentCollection || ''}`);
     });
     
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const section = link.dataset.section;
-            if (section) {
-                showSection(section);
+    // Navigation handling
+    document.querySelectorAll('.nav-row[data-section]').forEach(row => {
+        row.addEventListener('click', (e) => {
+            const section = row.dataset.section;
+            const label = row.querySelector('.nav-label').textContent;
+            
+            // Only switch if it's a static section or we have data
+            if (section === 'cid-decode') {
+                showSection(section, label);
+            } else if (currentDid) {
+                showSection(section, label);
+            } else {
+                // If clicking nav items without a DID selected, try to select first account
+                const firstAccount = document.querySelector('.account-item');
+                if (firstAccount) {
+                    firstAccount.click();
+                } else {
+                    alert('Please search for a DID or select an account first.');
+                }
             }
         });
     });
     
+    // Initial state
+    showSection('did-doc', 'DID Document');
     loadAccounts();
 }
 
@@ -43,22 +60,24 @@ async function loadAccounts() {
         list.innerHTML = '';
         for (const account of result.accounts) {
             const li = document.createElement('li');
+            li.className = 'account-item';
             li.dataset.did = account.did;
             li.dataset.handle = account.handle || '';
             li.innerHTML = `
-                <span class="icon-person"></span>
+                <span style="font-size:14px">👤</span>
                 <span class="account-handle">${escapeHtml(account.handle || account.did)}</span>
             `;
             li.addEventListener('click', () => selectAccount(account));
             list.appendChild(li);
         }
     } else {
-        list.innerHTML = '<li class="empty">No accounts found</li>';
+        list.innerHTML = '<li class="empty" style="padding:5px; border:none; background:none;">No accounts found</li>';
     }
 }
 
 async function selectAccount(account) {
-    document.querySelectorAll('.account-list li').forEach(li => {
+    // Highlight account
+    document.querySelectorAll('.account-item').forEach(li => {
         li.classList.remove('active');
         if (li.dataset.did === account.did) {
             li.classList.add('active');
@@ -67,27 +86,26 @@ async function selectAccount(account) {
     
     currentDid = account.did;
     
-    // Clear sections to show loading state
+    // Update loading states
     document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
     document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
     document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
     
+    showSection('did-doc', 'DID Document');
     await showDidDocument(account.did);
 }
 
-async function handleLookup(e) {
-    e.preventDefault();
+async function handleLookup() {
     const input = document.getElementById('lookup-input').value.trim();
     if (!input) return;
     
-    // Show loading state
     document.getElementById('lookup-input').disabled = true;
+    
+    // Reset view
+    document.querySelectorAll('.account-item').forEach(li => li.classList.remove('active'));
     document.getElementById('did-content').innerHTML = '<p class="loading">Looking up DID/handle...</p>';
-    document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
-    document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
     
     const result = await API.lookup(input);
-    
     document.getElementById('lookup-input').disabled = false;
     
     if (result.error) {
@@ -97,15 +115,15 @@ async function handleLookup(e) {
     
     currentDid = result.did;
     
-    document.querySelectorAll('.account-list li').forEach(li => {
-        li.classList.remove('active');
+    // Highlight if it's in our list
+    document.querySelectorAll('.account-item').forEach(li => {
         if (li.dataset.did === result.did) {
             li.classList.add('active');
         }
     });
     
+    showSection('did-doc', 'DID Document');
     await showDidDocument(result.did);
-    showSection('did-doc');
 }
 
 async function showDidDocument(did) {
@@ -113,11 +131,7 @@ async function showDidDocument(did) {
     const plcContent = document.getElementById('plc-content');
     const collectionsContent = document.getElementById('collections-content');
     
-    didContent.innerHTML = '<p class="loading">Loading DID document...</p>';
-    plcContent.innerHTML = '<p class="loading">Loading PLC operations...</p>';
-    collectionsContent.innerHTML = '<p class="loading">Loading collections...</p>';
-    
-    // Parallel API calls - all run simultaneously
+    // Parallel API calls
     const [doc, ops, describe] = await Promise.all([
         API.getDidDocument(did),
         API.getPlcLog(did),
@@ -131,7 +145,6 @@ async function showDidDocument(did) {
     }
     
     plcContent.innerHTML = renderPlcOperations(ops);
-    
     renderCollections(describe);
 }
 
@@ -148,32 +161,41 @@ function renderCollections(describe) {
         return;
     }
     
-    let html = '<ul class="collection-list">';
+    let html = `
+        <p class="description">
+            This repository contains <strong>${describe.collections.length}</strong> collections. 
+            Select a collection below to browse its records.
+        </p>
+        <table class="param-table">
+            <tr><th>Collection NSID</th><th>Action</th></tr>
+    `;
     
     for (const collection of describe.collections) {
         html += `
-            <li class="collection-item" data-collection="${escapeHtml(collection)}">
-                <span class="icon-folder"></span>
-                <span class="collection-name">${escapeHtml(collection)}</span>
-            </li>
+            <tr>
+                <td><code>${escapeHtml(collection)}</code></td>
+                <td><button class="btn-secondary" onclick="window.viewCollection('${escapeHtml(collection)}')">View Records</button></td>
+            </tr>
         `;
     }
     
-    html += '</ul>';
+    html += '</table>';
     content.innerHTML = html;
-    
-    document.querySelectorAll('.collection-item').forEach(item => {
-        item.addEventListener('click', () => {
-            currentCollection = item.dataset.collection;
-            showRecords(currentCollection);
-        });
-    });
 }
 
+// Global helper for the button onclick
+window.viewCollection = (collection) => {
+    currentCollection = collection;
+    showRecords(collection);
+};
+
 async function showRecords(collection) {
-    document.getElementById('records').classList.remove('hidden');
-    document.getElementById('record-detail').classList.add('hidden');
-    document.getElementById('collections').classList.add('hidden');
+    showSection('records', `Records: ${collection}`);
+    
+    // Update nav visibility
+    const recordsNav = document.getElementById('nav-records');
+    recordsNav.style.display = 'flex';
+    recordsNav.click(); // Select it
     
     document.getElementById('records-title').textContent = collection;
     
@@ -192,31 +214,38 @@ function renderRecordsList(records, collection) {
         return;
     }
     
-    let html = '<ul class="record-list">';
+    let html = `
+        <p class="description">Found <strong>${records.length}</strong> records in ${collection}.</p>
+        <table>
+            <tr><th>RKey</th><th>CID</th><th>Action</th></tr>
+    `;
     
     for (const record of records) {
+        const displayCid = record.cid ? record.cid.slice(0, 12) + '...' : 'N/A';
         html += `
-            <li class="record-item" data-uri="${escapeHtml(record.uri)}">
-                <span class="icon-doc"></span>
-                <span class="record-rkey">${escapeHtml(record.rkey)}</span>
-                <span class="record-cid">${record.cid ? escapeHtml(record.cid.slice(0, 8)) + '...' : 'N/A'}</span>
-            </li>
+            <tr>
+                <td><code>${escapeHtml(record.rkey)}</code></td>
+                <td><code>${escapeHtml(displayCid)}</code></td>
+                <td><button class="btn-secondary" onclick="window.viewRecordDetail('${escapeHtml(record.uri)}')">View Detail</button></td>
+            </tr>
         `;
     }
     
-    html += '</ul>';
+    html += '</table>';
     content.innerHTML = html;
-    
-    document.querySelectorAll('.record-item').forEach(item => {
-        item.addEventListener('click', () => {
-            showRecordDetail(item.dataset.uri);
-        });
-    });
 }
 
+window.viewRecordDetail = (uri) => {
+    showRecordDetail(uri);
+};
+
 async function showRecordDetail(uri) {
-    document.getElementById('records').classList.add('hidden');
-    document.getElementById('record-detail').classList.remove('hidden');
+    showSection('record-detail', 'Record Detail');
+    
+    // Update nav
+    const detailNav = document.getElementById('nav-record-detail');
+    detailNav.style.display = 'flex';
+    detailNav.click();
     
     document.getElementById('record-title').textContent = uri;
     document.getElementById('record-content').textContent = 'Loading...';
@@ -238,32 +267,52 @@ async function handleCidDecode() {
     
     try {
         const decoded = CIDDecoder.decode(cid);
-        resultEl.innerHTML = CIDDecoder.render(decoded);
+        // Custom render for the new style
+        let html = '<div style="margin-top:20px">';
+        html += `<h3>CID Version ${decoded.version}</h3>`;
+        html += '<table><tr><th>Property</th><th>Value</th></tr>';
+        html += `<tr><td>Codec</td><td>${decoded.codec} (0x${decoded.code.toString(16)})</td></tr>`;
+        html += `<tr><td>Multihash</td><td>${decoded.multihashName} (0x${decoded.multihashCode.toString(16)})</td></tr>`;
+        html += `<tr><td>Digest Size</td><td>${decoded.size} bytes</td></tr>`;
+        html += '</table>';
+        html += '</div>';
+        
+        resultEl.innerHTML = html;
     } catch (e) {
         resultEl.innerHTML = `<p class="error">${escapeHtml(e.message)}</p>`;
     }
 }
 
-function showSection(sectionId) {
-    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+function showSection(sectionId, breadcrumbLabel) {
+    // Hide all sections
+    document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+    
+    // Show target section
     const section = document.getElementById(sectionId);
     if (section) {
-        section.classList.remove('hidden');
+        section.classList.add('active');
     }
     
-    document.querySelectorAll('.nav-link').forEach(l => {
-        l.classList.remove('active');
-        if (l.dataset.section === sectionId) {
-            l.classList.add('active');
-        }
-    });
+    // Update nav selection
+    document.querySelectorAll('.nav-row').forEach(row => row.classList.remove('active'));
+    const activeNav = document.querySelector(`.nav-row[data-section="${sectionId}"]`);
+    if (activeNav) {
+        activeNav.classList.add('active');
+        // Ensure parent tree is expanded
+        activeNav.closest('.nav-item').classList.add('expanded');
+    }
+    
+    // Update breadcrumb
+    if (breadcrumbLabel) {
+        document.getElementById('breadcrumb-current').textContent = breadcrumbLabel;
+    }
 }
 
 function showCollectionsSection() {
-    document.getElementById('records').classList.add('hidden');
-    document.getElementById('record-detail').classList.add('hidden');
-    document.getElementById('collections').classList.remove('hidden');
-    showSection('collections');
+    showSection('collections', 'Collections');
+    // Hide temporary nav items
+    document.getElementById('nav-records').style.display = 'none';
+    document.getElementById('nav-record-detail').style.display = 'none';
 }
 
 function escapeHtml(str) {
