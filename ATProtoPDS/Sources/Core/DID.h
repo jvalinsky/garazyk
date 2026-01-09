@@ -35,13 +35,15 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 /// DID resolver for different DID methods
 @interface DIDResolver : NSObject
 
+@property (nonatomic, strong) NSCache *cache;
+
 /// Resolve a DID to its document
 /// @param did The DID to resolve
-/// @param forceRefresh If YES, bypass cache and force network resolution
 /// @param completion Completion block with document or error
-- (void)resolveDID:(NSString *)did
-     forceRefresh:(BOOL)forceRefresh
-       completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion;
+- (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion;
+
+/// Batch resolution for multiple DIDs
+- (void)resolveMultipleDIDs:(NSArray<NSString *> *)dids completion:(void (^)(NSDictionary<NSString *, NSDictionary *> *results, NSError *error))completion;
 
 /// Synchronous resolution (for testing)
 - (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error;

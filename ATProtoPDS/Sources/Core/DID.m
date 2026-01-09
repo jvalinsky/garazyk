@@ -60,10 +60,11 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 @implementation DIDResolver {
     os_log_t _log;
     NSURLSession *_session;
-    NSMutableDictionary<NSString *, NSDictionary *> *_cache;
     NSTimeInterval _staleTTL;
     NSTimeInterval _maxTTL;
 }
+
+@synthesize cache = _cache;
 
 - (instancetype)init {
     self = [super init];
@@ -75,11 +76,59 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         config.timeoutIntervalForResource = 60.0;
         _session = [NSURLSession sessionWithConfiguration:config];
 
-        _cache = [[NSMutableDictionary alloc] init];
+        _cache = [[NSCache alloc] init];
+        _cache.countLimit = 1000; // Cache up to 1000 DIDs
         _staleTTL = 3600.0; // 1 hour
         _maxTTL = 86400.0; // 1 day
     }
     return self;
+}
+
+- (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
+    // Check cache first
+    NSDictionary *cached = [self.cache objectForKey:did];
+    if (cached) {
+        completion(cached, nil);
+        return;
+    }
+
+    // Perform resolution
+    [self performResolution:did completion:^(NSDictionary *document, NSError *error) {
+        if (document && !error) {
+            [self.cache setObject:document forKey:did];
+        }
+        completion(document, error);
+    }];
+}
+
+- (void)resolveMultipleDIDs:(NSArray<NSString *> *)dids completion:(void (^)(NSDictionary<NSString *, NSDictionary *> *results, NSError *error))completion {
+    NSMutableDictionary *results = [NSMutableDictionary dictionary];
+    __block NSUInteger remaining = dids.count;
+
+    for (NSString *did in dids) {
+        [self resolveDID:did completion:^(NSDictionary *document, NSError *error) {
+            @synchronized(results) {
+                if (document) {
+                    results[did] = document;
+                }
+                remaining--;
+                if (remaining == 0) {
+                    completion(results, nil);
+                }
+            }
+        }];
+    }
+}
+
+- (void)performResolution:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
+    // For now, delegate to the existing resolution but convert to NSDictionary
+    [self resolveDID:did forceRefresh:NO completion:^(DIDDocument *document, NSError *error) {
+        if (document) {
+            completion(document.jsonDictionary, nil);
+        } else {
+            completion(nil, error);
+        }
+    }];
 }
 
 - (void)resolveDID:(NSString *)did
@@ -158,33 +207,20 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 
 - (nullable NSDictionary *)cachedEntryForDID:(NSString *)did status:(DIDCacheStatus *)outStatus {
     @synchronized(self) {
-        NSDictionary *entry = _cache[did];
-        if (!entry) {
+        NSDictionary *entry = @{@"document": [self.cache objectForKey:did]};
+        if (!entry[@"document"]) {
             *outStatus = DIDCacheStatusExpired;
             return nil;
         }
 
-        NSDate *timestamp = entry[@"timestamp"];
-        NSTimeInterval age = [[NSDate date] timeIntervalSinceDate:timestamp];
-
-        if (age > _maxTTL) {
-            [_cache removeObjectForKey:did];
-            *outStatus = DIDCacheStatusExpired;
-            return nil;
-        } else if (age > _staleTTL) {
-            *outStatus = DIDCacheStatusStale;
-        } else {
-            *outStatus = DIDCacheStatusFresh;
-        }
-
+        *outStatus = DIDCacheStatusFresh;
         return entry;
     }
 }
 
 - (void)cacheDocument:(DIDDocument *)document forDID:(NSString *)did {
     @synchronized(self) {
-        NSDictionary *entry = @{@"document": document, @"timestamp": [NSDate date]};
-        _cache[did] = entry;
+        [self.cache setObject:document forKey:did];
     }
 }
 
