@@ -182,4 +182,149 @@
     XCTAssertNotNil(metrics[@"stores"]);
 }
 
+- (void)testAcquireReleaseDetailed {
+    __autoreleasing NSError *error = nil;
+    NSString *did = @"did:plc:acquiretest";
+
+    // Acquire store
+    PDSActorStore *store1 = [self.pool storeForDid:did error:&error];
+    XCTAssertNotNil(store1);
+    XCTAssertEqual(self.pool.currentSize, 1);
+
+    // Acquire same store again - should return same instance
+    PDSActorStore *store2 = [self.pool storeForDid:did error:&error];
+    XCTAssertEqualObjects(store1, store2);
+    XCTAssertEqual(self.pool.currentSize, 1);
+
+    // Evict to simulate release
+    [self.pool evictStoreForDid:did];
+    XCTAssertEqual(self.pool.currentSize, 0);
+
+    // Acquire again after eviction
+    PDSActorStore *store3 = [self.pool storeForDid:did error:&error];
+    XCTAssertNotNil(store3);
+    XCTAssertNotEqualObjects(store1, store3); // New instance after eviction
+    XCTAssertEqual(self.pool.currentSize, 1);
+}
+
+- (void)testAcquireTimeoutSimulation {
+    // Simulate timeout by filling pool and checking behavior
+    PDSDatabasePool *smallPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:2];
+
+    for (int i = 0; i < 2; i++) {
+        NSString *did = [NSString stringWithFormat:@"did:plc:timeout%d", i];
+        PDSActorStore *store = [smallPool storeForDid:did error:nil];
+        XCTAssertNotNil(store);
+    }
+    XCTAssertEqual(smallPool.currentSize, 2);
+
+    // Attempt to acquire more - should handle gracefully (pool doesn't block, just evicts)
+    NSString *did3 = @"did:plc:timeout2";
+    PDSActorStore *store3 = [smallPool storeForDid:did3 error:nil];
+    XCTAssertNotNil(store3);
+    XCTAssertEqual(smallPool.currentSize, 2); // Still at max, evicted one
+
+    [smallPool closeAll];
+}
+
+- (void)testAcquireErrorConditions {
+    // Test with nil DID
+    __autoreleasing NSError *error = nil;
+    PDSActorStore *store = [self.pool storeForDid:nil error:&error];
+    XCTAssertNil(store);
+    XCTAssertNotNil(error);
+
+    // Test with invalid DID format (though pool may not validate)
+    // Assuming pool accepts any string, but database operations may fail
+    NSString *invalidDid = @"invalid-did";
+    store = [self.pool storeForDid:invalidDid error:&error];
+    XCTAssertNotNil(store); // Pool creates store, errors happen later
+    XCTAssertEqual(self.pool.currentSize, 1);
+}
+
+- (void)testConcurrentAccessPatterns {
+    XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Concurrent access"];
+
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_group_t group = dispatch_group_create();
+
+    NSMutableArray *stores = [NSMutableArray array];
+    for (int i = 0; i < 5; i++) {
+        dispatch_group_enter(group);
+        dispatch_async(queue, ^{
+            NSString *did = [NSString stringWithFormat:@"did:plc:concurrent%d", i];
+            __autoreleasing NSError *error = nil;
+            PDSActorStore *store = [self.pool storeForDid:did error:&error];
+            @synchronized(stores) {
+                [stores addObject:store];
+            }
+            dispatch_group_leave(group);
+        });
+    }
+
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        XCTAssertEqual(stores.count, 5);
+        XCTAssertEqual(self.pool.currentSize, 5);
+        [expectation fulfill];
+    });
+
+    [self waitForExpectations:@[expectation] timeout:5.0];
+}
+
+- (void)testPoolExhaustionHandling {
+    PDSDatabasePool *tinyPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:3];
+
+    // Fill pool
+    for (int i = 0; i < 3; i++) {
+        NSString *did = [NSString stringWithFormat:@"did:plc:exhaust%d", i];
+        PDSActorStore *store = [tinyPool storeForDid:did error:nil];
+        XCTAssertNotNil(store);
+    }
+    XCTAssertEqual(tinyPool.currentSize, 3);
+
+    // Try to acquire more - should evict oldest
+    NSString *did4 = @"did:plc:exhaust3";
+    PDSActorStore *store4 = [tinyPool storeForDid:did4 error:nil];
+    XCTAssertNotNil(store4);
+    XCTAssertEqual(tinyPool.currentSize, 3); // Still 3, evicted one
+
+    // Access one to mark as used, evict unused
+    NSString *didUsed = @"did:plc:exhaust2";
+    PDSActorStore *usedStore = [tinyPool storeForDid:didUsed error:nil];
+    [tinyPool evictUnusedStores];
+    // Should evict unused ones, keep used
+    XCTAssertGreaterThanOrEqual(tinyPool.currentSize, 1);
+    XCTAssertLessThanOrEqual(tinyPool.currentSize, 3);
+
+    [tinyPool closeAll];
+}
+
+- (void)testEvictionUnderLoad {
+    XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Eviction under load"];
+
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+
+    // Fill pool
+    for (int i = 0; i < self.pool.maxSize; i++) {
+        NSString *did = [NSString stringWithFormat:@"did:plc:load%d", i];
+        [self.pool storeForDid:did error:nil];
+    }
+    XCTAssertEqual(self.pool.currentSize, self.pool.maxSize);
+
+    // Concurrent access and eviction
+    dispatch_async(queue, ^{
+        // Simulate load by accessing stores
+        for (int i = 0; i < 10; i++) {
+            NSString *did = [NSString stringWithFormat:@"did:plc:load%d", i % self.pool.maxSize];
+            [self.pool storeForDid:did error:nil];
+        }
+        [self.pool evictUnusedStores];
+        [expectation fulfill];
+    });
+
+    [self waitForExpectations:@[expectation] timeout:5.0];
+    // Verify pool is still functional
+    XCTAssertLessThanOrEqual(self.pool.currentSize, self.pool.maxSize);
+}
+
 @end
