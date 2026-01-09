@@ -8,7 +8,8 @@ typedef NS_ENUM(NSInteger, HandleError) {
     HandleErrorInvalidFormat = 1000,
     HandleErrorResolutionFailed,
     HandleErrorNetworkError,
-    HandleErrorNotFound
+    HandleErrorNotFound,
+    HandleErrorSSRFAttempt
 };
 
 @interface HandleResolver : NSObject
