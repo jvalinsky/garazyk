@@ -1,119 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATProto PDS Explorer</title>
+    <title>ATProto PDS Documentation</title>
     <link rel="stylesheet" href="/explore/css/style.css">
 </head>
+
 <body>
-    <nav class="sidebar">
-        <div class="sidebar-header">
-            <h1>ATProto PDS</h1>
-            <p class="subtitle">Explorer</p>
-        </div>
-        
-        <div class="nav-section">
-            <h2>DID Lookup</h2>
-            <form id="lookup-form" class="lookup-form">
-                <input type="text" id="lookup-input" 
-                       placeholder="did:plc:... or handle"
-                       autocomplete="off">
-                <button type="submit" class="btn-primary">
-                    <span class="icon-search"></span>
-                </button>
-            </form>
-        </div>
-        
-        <div class="nav-section">
-            <h2>Accounts</h2>
-            <ul id="account-list" class="account-list">
-                <li class="loading">Loading...</li>
+    <header class="apple-header">
+        <div class="apple-logo"></div>
+        <h1>Developer Documentation</h1>
+    </header>
+
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="lookup-input" placeholder="Search DID or handle..." autocomplete="off">
+            </div>
+
+            <ul class="nav-tree">
+                <li class="nav-item expanded">
+                    <div class="nav-row" onclick="toggleNav(this)">
+                        <span class="disclosure">▶</span>
+                        <span class="nav-label">ATProto PDS</span>
+                    </div>
+                    <ul class="nav-children">
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-did-doc" data-section="did-doc">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">DID Document</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-plc-ops" data-section="plc-ops">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">PLC Operations</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-collections" data-section="collections">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Collections</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-records" data-section="records" style="display:none">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Records</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-record-detail" data-section="record-detail"
+                                style="display:none">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Record Detail</span>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item expanded">
+                    <div class="nav-row" onclick="toggleNav(this)">
+                        <span class="disclosure">▶</span>
+                        <span class="nav-label">Utilities</span>
+                    </div>
+                    <ul class="nav-children">
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-cid-decode" data-section="cid-decode">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">CID Decoder</span>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item expanded">
+                    <div class="nav-row" onclick="toggleNav(this)">
+                        <span class="disclosure">▶</span>
+                        <span class="nav-label">Reference</span>
+                    </div>
+                    <ul class="nav-children">
+                        <li class="nav-item">
+                            <div class="nav-row" onclick="window.location.href='/explore/api/docs'">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">API Reference</span>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
             </ul>
-        </div>
-        
-        <div class="nav-section">
-            <h2>Navigation</h2>
-            <ul class="nav-list">
-                <li><a href="#did-doc" class="nav-link" data-section="did-doc">
-                    <span class="icon-person"></span>
-                    DID Document</a></li>
-                <li><a href="#plc-ops" class="nav-link" data-section="plc-ops">
-                    <span class="icon-list"></span>
-                    PLC Operations</a></li>
-                <li><a href="#collections" class="nav-link" data-section="collections">
-                    <span class="icon-folder"></span>
-                    Collections</a></li>
-                <li><a href="#cid-decode" class="nav-link" data-section="cid-decode">
-                    <span class="icon-tag"></span>
-                    CID Decoder</a></li>
-                <li><a href="/explore/api/docs" class="nav-link">
-                    <span class="icon-book"></span>
-                    API Docs</a></li>
-            </ul>
-        </div>
-    </nav>
-    
-    <main class="content">
-        <section id="did-doc" class="section">
-            <h1>DID Document</h1>
-            <div id="did-content" class="content-box">
-                <p class="placeholder">Enter a DID or handle above to view its document</p>
+
+            <div class="account-section">
+                <h3>Accounts</h3>
+                <ul id="account-list">
+                    <li class="loading">Loading...</li>
+                </ul>
             </div>
-        </section>
-        
-        <section id="plc-ops" class="section">
-            <h1>PLC Operations</h1>
-            <div id="plc-content" class="content-box">
-                <p class="placeholder">PLC operations will appear here</p>
-            </div>
-        </section>
-        
-        <section id="collections" class="section">
-            <h1>Collections</h1>
-            <div id="collections-content" class="content-box">
-                <p class="placeholder">Select a DID to view its collections</p>
-            </div>
-        </section>
-        
-        <section id="records" class="section hidden">
-            <div class="section-header">
-                <h1 id="records-title">Records</h1>
-                <button id="back-collections" class="btn-secondary">
-                    <span class="icon-arrow-left"></span>
-                    Back to Collections
-                </button>
-            </div>
-            <div id="records-content" class="content-box">
-                <p class="placeholder">Loading records...</p>
-            </div>
-        </section>
-        
-        <section id="record-detail" class="section hidden">
-            <div class="section-header">
-                <h1 id="record-title">Record</h1>
-                <button id="back-records" class="btn-secondary">
-                    <span class="icon-arrow-left"></span>
-                    Back to Records
-                </button>
-            </div>
-            <pre id="record-content" class="code-block"></pre>
-        </section>
-        
-        <section id="cid-decode" class="section">
-            <h1>CID Decoder</h1>
-            <div class="cid-input-group">
-                <input type="text" id="cid-input" 
-                       placeholder="bafybeie..."
-                       autocomplete="off">
-                <button id="cid-decode-btn" class="btn-primary">Decode</button>
-            </div>
-            <div id="cid-result" class="content-box">
-                <p class="placeholder">Enter a CID above to decode it</p>
-            </div>
-        </section>
-    </main>
-    
+        </nav>
+
+        <main class="content">
+            <nav class="breadcrumb">
+                <a href="#">Home</a> &gt;
+                <a href="#">ATProto</a> &gt;
+                <span id="breadcrumb-current">DID Document</span>
+            </nav>
+
+            <!-- DID Document Section -->
+            <section id="did-doc" class="doc-section active">
+                <div class="section-header">
+                    <h1>DID Document</h1>
+                </div>
+                <div id="did-content">
+                    <p class="placeholder">Select an account or search for a DID to view its document.</p>
+                </div>
+            </section>
+
+            <!-- PLC Operations Section -->
+            <section id="plc-ops" class="doc-section">
+                <div class="section-header">
+                    <h1>PLC Operations</h1>
+                </div>
+                <div id="plc-content">
+                    <p class="placeholder">PLC operations log will appear here.</p>
+                </div>
+            </section>
+
+            <!-- Collections Section -->
+            <section id="collections" class="doc-section">
+                <div class="section-header">
+                    <h1>Collections</h1>
+                </div>
+                <div id="collections-content">
+                    <p class="placeholder">Select a DID to view its collections.</p>
+                </div>
+            </section>
+
+            <!-- Records Section -->
+            <section id="records" class="doc-section">
+                <div class="section-header">
+                    <h1>Records</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-collections" class="btn-secondary">Back to Collections</button>
+                    <span id="records-title" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <div id="records-content">
+                    <p class="placeholder">Loading records...</p>
+                </div>
+            </section>
+
+            <!-- Record Detail Section -->
+            <section id="record-detail" class="doc-section">
+                <div class="section-header">
+                    <h1>Record Detail</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-records" class="btn-secondary">Back to Records</button>
+                    <span id="record-title" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <pre id="record-content" class="code-block"></pre>
+            </section>
+
+            <!-- CID Decoder Section -->
+            <section id="cid-decode" class="doc-section">
+                <div class="section-header">
+                    <h1>CID Decoder</h1>
+                </div>
+                <div class="cid-input-group">
+                    <input type="text" id="cid-input" placeholder="bafybeie..." autocomplete="off">
+                    <button id="cid-decode-btn" class="btn-primary">Decode</button>
+                </div>
+                <div id="cid-result">
+                    <p class="placeholder">Enter a CID above to decode it.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function toggleNav(el) {
+            el.parentElement.classList.toggle('expanded');
+        }
+    </script>
     <script type="module" src="/explore/js/ui.js"></script>
 </body>
+
 </html>

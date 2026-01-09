@@ -168,7 +168,7 @@
         _cache = [ExploreCache sharedCache];
         _enabled = YES;
         _cacheDirectory = @"/tmp/pds-explore-cache";
-        _plcServerURL = @"https://plc.directory";
+        _plcServerURL = @"http://localhost:2582"; // Local PLC
         _didTTL = 3600;
         _plcTTL = 86400;
         _accountTTL = 300;
@@ -305,26 +305,21 @@
 }
 
 - (void)serveCss:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *css = @"body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; }"
-    ".sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: #f8f9fa; border-right: 1px solid #dee2e6; padding: 20px; }"
-    ".sidebar h1 { margin-bottom: 20px; font-size: 18px; }"
-    ".sidebar ul { list-style: none; padding: 0; }"
-    ".sidebar li { margin-bottom: 10px; }"
-    ".sidebar a { text-decoration: none; color: #007bff; display: block; padding: 8px; border-radius: 4px; }"
-    ".sidebar a:hover { background: #e9ecef; }"
-    ".content { margin-left: 250px; padding: 20px; }"
-    "h2 { color: #333; margin-bottom: 20px; }"
-    "p { color: #666; }"
-    ".accounts, .records, .repos, .did { display: none; }"
-    ".accounts.show, .records.show, .repos.show, .did.show { display: block; }"
-    "table { width: 100%; border-collapse: collapse; margin-top: 20px; }"
-    "th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }"
-    "th { background-color: #f8f9fa; font-weight: bold; }"
-    ".json { font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap; }";
-
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *cssPath = [[cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/css"] stringByAppendingPathComponent:@"style.css"];
+    
+    NSError *error = nil;
+    NSString *css = [NSString stringWithContentsOfFile:cssPath encoding:NSUTF8StringEncoding error:&error];
+    
+    if (error || !css) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"CSS file not found"}];
+        return;
+    }
+    
     response.statusCode = 200;
     response.contentType = @"text/css; charset=utf-8";
-    [response setBody:[css dataUsingEncoding:NSUTF8StringEncoding]];
+    [response setBodyData:[css dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
 - (void)serveJs:(HttpRequest *)request response:(HttpResponse *)response {
@@ -443,7 +438,27 @@
 
 - (sqlite3 *)openDatabaseWithError:(NSString **)errorMessage {
     NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *dbPath = [cwd stringByAppendingPathComponent:@"data/pds.db"];
+    NSArray *possiblePaths = @[
+        [cwd stringByAppendingPathComponent:@"data/pds.db"],
+        [cwd stringByAppendingPathComponent:@"pds.db"],
+        [cwd stringByAppendingPathComponent:@"data/service.sqlite"],
+        [cwd stringByAppendingPathComponent:@"service.sqlite"]
+    ];
+    
+    NSString *dbPath = nil;
+    for (NSString *path in possiblePaths) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            dbPath = path;
+            NSLog(@"openDatabaseWithError: Found database at %@", path);
+            break;
+        }
+    }
+    
+    if (!dbPath) {
+        // Default to data/pds.db if nothing found
+        dbPath = [cwd stringByAppendingPathComponent:@"data/pds.db"];
+        NSLog(@"openDatabaseWithError: No database found, defaulting to %@", dbPath);
+    }
 
     sqlite3 *db = NULL;
     int rc = sqlite3_open(dbPath.fileSystemRepresentation, &db);
@@ -454,7 +469,7 @@
 
     // Add value column if it doesn't exist (migration)
     char *errMsg = NULL;
-    int migrationRc = sqlite3_exec(db, "ALTER TABLE records ADD COLUMN value TEXT", NULL, NULL, &errMsg);
+    (void)sqlite3_exec(db, "ALTER TABLE records ADD COLUMN value TEXT", NULL, NULL, &errMsg);
     if (errMsg) {
         sqlite3_free(errMsg);
         errMsg = NULL;
@@ -873,6 +888,7 @@
         const char *col = (const char *)sqlite3_column_text(stmt, 2);
         const char *rkey = (const char *)sqlite3_column_text(stmt, 3);
         const char *cid = (const char *)sqlite3_column_text(stmt, 4);
+        const char *createdAt = (const char *)sqlite3_column_text(stmt, 5);
         const char *valueStr = (const char *)sqlite3_column_text(stmt, 6);
 
         NSMutableDictionary *record = [NSMutableDictionary dictionary];
@@ -881,6 +897,7 @@
         record[@"collection"] = col ? @(col) : @"";
         record[@"rkey"] = rkey ? @(rkey) : @"";
         record[@"cid"] = cid ? @(cid) : @"";
+        record[@"createdAt"] = createdAt ? @(createdAt) : @"";
 
         // Parse value JSON
         if (valueStr) {
@@ -1299,43 +1316,243 @@
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", self.plcServerURL, did]];
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
     req.HTTPMethod = @"GET";
-    
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] 
-        dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
-        if (data) {
-            NSString *result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (result) {
-                    [self.cache setDidDocument:did value:result];
-                }
-            });
-        }
-    }];
-    [task resume];
-    
-    NSString *cached = [self.cache getDidDocument:did];
-    return cached;
-}
-
-- (NSString *)fetchPlcLog:(NSString *)did {
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/log/%@", self.plcServerURL, did]];
-    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
-    req.HTTPMethod = @"GET";
+    req.timeoutInterval = 10.0; // 10 second timeout
     
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
     __block NSString *result = nil;
+    __block NSError *networkError = nil;
+    __block NSInteger statusCode = 0;
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] 
         dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
-        if (data) {
+        if (res) {
+            statusCode = ((NSHTTPURLResponse *)res).statusCode;
+        }
+        if (err) {
+            networkError = err;
+        } else if (data) {
             result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         }
         dispatch_semaphore_signal(sem);
     }];
     [task resume];
-    dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+    
+    // Wait with timeout to prevent hanging
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.0 * NSEC_PER_SEC));
+    long waitResult = dispatch_semaphore_wait(sem, timeout);
+    
+    BOOL isValidResponse = (waitResult == 0) && !networkError && (statusCode == 200) && result && [result hasPrefix:@"{"] && [result hasSuffix:@"}"] && ![result containsString:@"DID not registered"];
+    
+    if (isValidResponse) {
+        [self.cache setDidDocument:did value:result];
+        return result;
+    }
+    
+    // Fallback: Check if this is a local account
+    NSError *error = nil;
+    NSArray *accounts = nil;
+    
+    // Try via controller first
+    if (self.controller) {
+        accounts = [self.controller getAllAccountsWithError:&error];
+    }
+    
+    // Fallback to manual DB if controller failed or returned no accounts (and we suspect they exist)
+    if (!accounts || error || accounts.count == 0) {
+        // Try multiple possible database locations (copied from fetchAccountList)
+        NSString *dataDir = self.controller.dataDirectory;
+        if (!dataDir) dataDir = @"."; // Prevent crash if dataDir is nil
+        
+        NSArray *possiblePaths = @[
+            [dataDir stringByAppendingPathComponent:@"pds.db"],
+            [dataDir stringByAppendingPathComponent:@"service.sqlite"],
+            [@"./data/pds.db" stringByExpandingTildeInPath],
+            [@"./data/service.sqlite" stringByExpandingTildeInPath],
+            [dataDir stringByAppendingPathComponent:@"data/pds.db"],
+            [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+        ];
+        
+        NSString *dbPath = nil;
+        for (NSString *path in possiblePaths) {
+            if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+                dbPath = path;
+                break;
+            }
+        }
+        
+        if (dbPath) {
+            PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+            if ([db openWithError:&error]) {
+                accounts = [db getAllAccountsWithError:&error];
+                [db close];
+            }
+        }
+    }
+    
+    if (accounts) {
+        for (PDSDatabaseAccount *account in accounts) {
+            if ([account.did isEqualToString:did]) {
+                // Determine service endpoint
+                NSString *serviceEndpoint = @"http://localhost:2583";
+                
+                NSDictionary *doc = @{
+                    @"@context": @[@"https://www.w3.org/ns/did/v1", @"https://w3id.org/security/multikey/v1"],
+                    @"id": did,
+                    @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", account.handle]],
+                    @"service": @[@{
+                        @"id": @"#atproto_pds",
+                        @"type": @"AtprotoPersonalDataServer",
+                        @"serviceEndpoint": serviceEndpoint
+                    }],
+                    @"verificationMethod": @[]
+                };
+                
+                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:doc options:NSJSONWritingPrettyPrinted error:nil];
+                if (jsonData) {
+                    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                    // Cache the generated local DID doc
+                    [self.cache setDidDocument:did value:jsonString];
+                    return jsonString;
+                }
+            }
+        }
+    }
+
+    if (waitResult != 0) {
+        NSLog(@"fetchDidDocument timeout for %@", did);
+        [task cancel];
+        return nil;
+    }
+    
+    if (networkError) {
+        NSLog(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
+        return nil;
+    }
+    
+    // Return the error response from PLC if we couldn't handle it locally
+    // BUT only if it's not a "DID not registered" error, to prevent caching it as a valid doc
+    if ([result containsString:@"DID not registered"]) {
+        return nil;
+    }
     
     return result;
+}
+
+- (NSString *)fetchPlcLog:(NSString *)did {
+    // Correct URL format: <server>/<did>/log
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@/log", self.plcServerURL, did]];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"GET";
+    req.timeoutInterval = 10.0; // 10 second timeout
+    
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    __block NSString *result = nil;
+    __block NSError *networkError = nil;
+    __block NSInteger statusCode = 0;
+    
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] 
+        dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
+        if (res) {
+            statusCode = ((NSHTTPURLResponse *)res).statusCode;
+        }
+        if (err) {
+            networkError = err;
+        } else if (data) {
+            result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        }
+        dispatch_semaphore_signal(sem);
+    }];
+    [task resume];
+    
+    // Wait with timeout to prevent hanging
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.0 * NSEC_PER_SEC));
+    long waitResult = dispatch_semaphore_wait(sem, timeout);
+    
+    BOOL isValidResponse = (waitResult == 0) && !networkError && (statusCode == 200) && result && [result hasPrefix:@"["] && [result hasSuffix:@"]"];
+    
+    if (isValidResponse) {
+        [self.cache setPlcLog:did value:result];
+        return result;
+    }
+    
+    // Fallback: Check if this is a local account and generate a simulated log
+    NSError *error = nil;
+    NSArray *accounts = nil;
+    
+    if (self.controller) {
+        accounts = [self.controller getAllAccountsWithError:&error];
+    }
+    
+    // Fallback to manual DB if controller failed or returned no accounts
+    if (!accounts || error || accounts.count == 0) {
+        NSString *dataDir = self.controller.dataDirectory;
+        if (!dataDir) dataDir = @".";
+        
+        NSArray *possiblePaths = @[
+            [dataDir stringByAppendingPathComponent:@"pds.db"],
+            [dataDir stringByAppendingPathComponent:@"service.sqlite"],
+            [@"./data/pds.db" stringByExpandingTildeInPath],
+            [@"./data/service.sqlite" stringByExpandingTildeInPath],
+            [dataDir stringByAppendingPathComponent:@"data/pds.db"],
+            [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+        ];
+        
+        NSString *dbPath = nil;
+        for (NSString *path in possiblePaths) {
+            if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+                dbPath = path;
+                break;
+            }
+        }
+        
+        if (dbPath) {
+            PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+            if ([db openWithError:&error]) {
+                accounts = [db getAllAccountsWithError:&error];
+                [db close];
+            }
+        }
+    }
+    
+    if (accounts) {
+        for (PDSDatabaseAccount *account in accounts) {
+            if ([account.did isEqualToString:did]) {
+                // Generate a simulated PLC log for this local account
+                // A minimal 'create' operation
+                NSDictionary *op = @{
+                    @"sig": @"<simulated_signature>",
+                    @"prev": [NSNull null],
+                    @"type": @"create",
+                    @"handle": account.handle ?: @"unknown",
+                    @"service": @"http://localhost:2583",
+                    @"signingKey": @"<simulated_key>",
+                    @"recoveryKey": @"<simulated_key>"
+                };
+                
+                NSArray *log = @[op];
+                
+                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:log options:NSJSONWritingPrettyPrinted error:nil];
+                if (jsonData) {
+                    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                    [self.cache setPlcLog:did value:jsonString];
+                    return jsonString;
+                }
+            }
+        }
+    }
+    
+    if (waitResult != 0) {
+        NSLog(@"fetchPlcLog timeout for %@", did);
+        [task cancel];
+        return nil;
+    }
+    
+    if (networkError) {
+        NSLog(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
+        return nil;
+    }
+    
+    return nil; // Return nil on failure to allow 404/error handling downstream
 }
 
 - (NSString *)fetchAccountList {
@@ -1343,22 +1560,59 @@
         return @"{\"accounts\":[],\"error\":\"PDS controller not configured\"}";
     }
 
-    // Use direct database access like CLI commands do
-    // This ensures compatibility with the account creation commands
-    NSString *dbPath = [self.controller.dataDirectory stringByAppendingPathComponent:@"pds.db"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+    // Try multiple possible database locations
+    NSString *dataDir = self.controller.dataDirectory;
+    NSArray *possiblePaths = @[
+        [dataDir stringByAppendingPathComponent:@"pds.db"],
+        [dataDir stringByAppendingPathComponent:@"service.sqlite"],
+        [@"./data/pds.db" stringByExpandingTildeInPath],
+        [@"./data/service.sqlite" stringByExpandingTildeInPath],
+        [dataDir stringByAppendingPathComponent:@"data/pds.db"],
+        [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+    ];
+    
+    NSString *dbPath = nil;
+    for (NSString *path in possiblePaths) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            dbPath = path;
+            NSLog(@"Found database at: %@", path);
+            break;
+        }
+    }
+    
+    if (!dbPath) {
+        NSLog(@"fetchAccountList: No database found in any of the expected locations");
         return @"{\"accounts\":[],\"error\":\"Database not found\"}";
     }
 
+    // Try to get accounts using PDSController first (preferred method)
     NSError *error = nil;
-    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
-    if (![db openWithError:&error]) {
-        return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"Failed to open database: %@\"}", error.localizedDescription];
+    NSArray<PDSDatabaseAccount *> *accounts = nil;
+    
+    @try {
+        accounts = [self.controller getAllAccountsWithError:&error];
+    } @catch (NSException *exception) {
+        NSLog(@"Exception getting accounts from controller: %@", exception);
+        error = [NSError errorWithDomain:@"ExploreHandler" 
+                                   code:500 
+                               userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
     }
-
-    NSArray<PDSDatabaseAccount *> *accounts = [db getAllAccountsWithError:&error];
-    if (error) {
-        return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"%@\"}", error.localizedDescription];
+    
+    // Fallback to direct database access if controller method fails
+    if (!accounts || error) {
+        NSLog(@"Controller method failed, falling back to direct database access: %@", error.localizedDescription);
+        
+        PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+        if (![db openWithError:&error]) {
+            return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"Failed to open database: %@\"}", error.localizedDescription];
+        }
+        
+        accounts = [db getAllAccountsWithError:&error];
+        [db close];
+        
+        if (error) {
+            return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"%@\"}", error.localizedDescription];
+        }
     }
 
     // Debug: log the number of accounts found
@@ -1386,18 +1640,73 @@
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
 
+- (PDSDatabase *)openLocalDatabaseWithError:(NSError **)error {
+    NSString *dataDir = nil;
+    if (self.controller) {
+        dataDir = self.controller.dataDirectory;
+    }
+    if (!dataDir) dataDir = @".";
+    
+    NSArray *possiblePaths = @[
+        [dataDir stringByAppendingPathComponent:@"pds.db"],
+        [dataDir stringByAppendingPathComponent:@"service.sqlite"],
+        [@"./data/pds.db" stringByExpandingTildeInPath],
+        [@"./data/service.sqlite" stringByExpandingTildeInPath],
+        [dataDir stringByAppendingPathComponent:@"data/pds.db"],
+        [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+    ];
+    
+    NSString *dbPath = nil;
+    for (NSString *path in possiblePaths) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            dbPath = path;
+            break;
+        }
+    }
+    
+    if (dbPath) {
+        PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+        if ([db openWithError:error]) {
+            return db;
+        }
+    }
+    
+    if (error && *error == nil) {
+        *error = [NSError errorWithDomain:@"ExploreHandler" code:404 userInfo:@{NSLocalizedDescriptionKey: @"Database not found"}];
+    }
+    return nil;
+}
+
 - (NSString *)fetchCollectionsForDid:(NSString *)did {
-    if (!self.controller || !did) {
-        return @"{\"collections\":[],\"error\":\"Controller not configured or DID missing\"}";
-    }
-    
     NSError *error = nil;
-    NSDictionary *repoDesc = [self.controller describeRepo:did error:&error];
+    NSString *rootCid = nil;
+    NSString *repoDid = did;
     
-    if (error || !repoDesc) {
-        return [NSString stringWithFormat:@"{\"collections\":[],\"error\":\"%@\"}", 
-                error.localizedDescription ?: @"Failed to fetch repo description"];
+    // Try controller first
+    if (self.controller) {
+        NSDictionary *repoDesc = [self.controller describeRepo:did error:&error];
+        if (repoDesc) {
+            rootCid = repoDesc[@"root"];
+            repoDid = repoDesc[@"did"];
+        }
     }
+    
+    // Fallback to local DB if controller failed
+    if (!rootCid) {
+        PDSDatabase *db = [self openLocalDatabaseWithError:&error];
+        if (db) {
+            PDSDatabaseRepo *repo = [db getRepoForDid:did error:&error];
+            if (repo) {
+                // Use a placeholder for root CID since we can't easily convert NSData to string here without helpers
+                rootCid = @"HEAD"; 
+                repoDid = repo.ownerDid;
+            }
+            [db close];
+        }
+    }
+    
+    // Ignore errors if we still want to show the list of collections
+    // The previous implementation returned early on error, causing "No collections found"
     
     NSMutableArray *collections = [NSMutableArray array];
     NSArray *knownCollections = @[
@@ -1416,9 +1725,6 @@
         @"app.bsky.labeler.subscribed"
     ];
     
-    NSString *rootCid = repoDesc[@"root"];
-    NSString *repoDid = repoDesc[@"did"];
-    
     for (NSString *collection in knownCollections) {
         [collections addObject:collection];
     }
@@ -1427,7 +1733,7 @@
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@{
         @"collections": collections,
         @"root": rootCid ?: @"",
-        @"did": repoDid ?: did
+        @"did": repoDid ?: did ?: @""
     } options:0 error:&jsonError];
     
     if (jsonError) {
@@ -1438,47 +1744,87 @@
 }
 
 - (NSString *)fetchRecordsForCollection:(NSString *)collection did:(NSString *)did limit:(NSString *)limitStr cursor:(NSString *)cursor {
-    if (!self.controller || !did || !collection) {
-        return @"{\"records\":[],\"error\":\"Controller not configured or parameters missing\"}";
-    }
-    
     NSUInteger limit = limitStr ? [limitStr integerValue] : 20;
     if (limit > 100) limit = 100;
     
-    NSError *error = nil;
-    NSArray *records = [self.controller listRecords:collection 
-                                            forDid:did 
+    // Try controller first (optional, but good for consistency if controller is active)
+    if (self.controller) {
+        NSError *error = nil;
+        NSArray *records = [self.controller listRecords:collection 
+                                             forDid:did 
                                               limit:limit 
                                              cursor:cursor 
                                               error:&error];
-    
-    if (error) {
-        return [NSString stringWithFormat:@"{\"records\":[],\"error\":\"%@\"}", error.localizedDescription];
+        if (records) {
+            NSMutableArray *recordArray = [NSMutableArray array];
+            for (NSDictionary *record in records) {
+                [recordArray addObject:@{
+                    @"uri": record[@"uri"] ?: @"",
+                    @"cid": record[@"cid"] ?: @"",
+                    @"value": record[@"value"] ?: @{}
+                }];
+            }
+            
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@{
+                @"records": recordArray,
+                @"cursor": records.lastObject[@"uri"] ?: @""
+            } options:0 error:nil];
+            return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        }
     }
     
-    NSMutableArray *recordArray = [NSMutableArray array];
-    for (NSDictionary *record in records) {
-        NSString *uri = record[@"uri"];
-        NSString *cid = record[@"cid"];
-        NSDictionary *value = record[@"value"];
+    // Fallback: Direct SQLite Access
+    NSString *errorMessage = nil;
+    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
+    
+    if (!db) {
+        return [NSString stringWithFormat:@"{\"records\":[],\"error\":\"%@\"}", errorMessage ?: @"Failed to open database"];
+    }
+    
+    sqlite3_stmt *stmt = NULL;
+    NSString *sql = @"SELECT uri, did, collection, rkey, cid, value FROM records WHERE did = ? AND collection = ? LIMIT ?";
+    
+    // Handle cursor? For simplicity, we ignore it in fallback or implementing offset requires more SQL.
+    // Given this is a local dev fallback, ignore cursor is acceptable, implies page 1.
+    
+    int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        NSString *err = [NSString stringWithUTF8String:sqlite3_errmsg(db)];
+        sqlite3_close(db);
+        return [NSString stringWithFormat:@"{\"records\":[],\"error\":\"Failed to prepare query: %@\"}", err];
+    }
+    
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, collection.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 3, limit);
+    
+    NSMutableArray *records = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *uri = (const char *)sqlite3_column_text(stmt, 0);
+        const char *cid = (const char *)sqlite3_column_text(stmt, 4);
+        const char *valueStr = (const char *)sqlite3_column_text(stmt, 5);
         
-        [recordArray addObject:@{
-            @"uri": uri ?: @"",
-            @"cid": cid ?: @"",
-            @"value": value ?: @{}
+        NSDictionary *value = @{};
+        if (valueStr) {
+            NSData *data = [NSData dataWithBytes:valueStr length:strlen(valueStr)];
+            value = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if (!value) value = @{@"raw": [NSString stringWithUTF8String:valueStr]};
+        }
+        
+        [records addObject:@{
+            @"uri": uri ? [NSString stringWithUTF8String:uri] : @"",
+            @"cid": cid ? [NSString stringWithUTF8String:cid] : @"",
+            @"value": value
         }];
     }
     
-    NSError *jsonError = nil;
-    NSDictionary *result = @{
-        @"records": recordArray,
-        @"cursor": cursor ?: [NSNull null]
-    };
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result options:0 error:&jsonError];
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
     
-    if (jsonError) {
-        return @"{\"records\":[],\"error\":\"JSON serialization failed\"}";
-    }
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@{
+        @"records": records,
+        @"cursor": @"" // Cursor support omitted in fallback
+    } options:0 error:nil];
     
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
@@ -2431,7 +2777,7 @@
             }
         } else if ([value isKindOfClass:[NSNumber class]]) {
             NSNumber *numValue = (NSNumber *)value;
-            if (strcmp(numValue.objCType, @encode(BOOL)) == 0 || numValue == @YES || numValue == @NO) {
+            if (strcmp(numValue.objCType, @encode(BOOL)) == 0 || [numValue isEqual:@YES] || [numValue isEqual:@NO]) {
                 [yaml appendFormat:@"%@: %@\n", key, numValue.boolValue ? @"true" : @"false"];
             } else {
                 [yaml appendFormat:@"%@: %@\n", key, numValue];
