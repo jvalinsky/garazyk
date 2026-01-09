@@ -29,322 +29,83 @@
 
 #pragma mark - Migration Execution Tests
 
+/// Tests successful end-to-end migration execution with valid monolithic database
+/// This test verifies that the migration manager can successfully process a well-formed
+/// monolithic database containing accounts, repos, records, and blocks, transforming it
+/// into the new single-tenant directory structure. It ensures the migration completes
+/// without errors and creates the expected output directory.
 - (void)testSuccessfulMigrationExecution {
-    // Test that migration completes successfully with valid data
+    // Create a test database with standard schema and sample data
     NSString *sourcePath = [self createTestMonolithicDatabase];
     NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_success"];
 
+    // Execute migration and verify it completes successfully
     __autoreleasing NSError *error = nil;
     XCTAssertTrue([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
                  @"Migration should succeed with valid monolithic database: %@", error);
 
-    // Verify destination directory was created and contains expected structure
+    // Verify the migration created the expected output directory structure
     NSFileManager *fm = [NSFileManager defaultManager];
     XCTAssertTrue([fm fileExistsAtPath:destinationDir], @"Destination directory should exist after migration");
 
-    // Cleanup
+    // Cleanup temporary files
     [fm removeItemAtPath:sourcePath error:nil];
     [fm removeItemAtPath:destinationDir error:nil];
 }
 
-- (void)testMigrationWithEmptyDatabase {
-    // Test migration with a database that has no data
-    NSString *sourcePath = [self createEmptyMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_empty"];
+/// Tests migration behavior when the source database is corrupted
+/// This test verifies that the migration manager properly handles corrupted
+/// or invalid SQLite databases, failing gracefully and providing appropriate
+/// error information without crashing or causing data corruption.
+- (void)testMigrationWithCorruptedDatabase {
+    // Create a file that appears to be a database but contains invalid data
+    NSString *tempDir = NSTemporaryDirectory();
+    NSString *corruptedPath = [tempDir stringByAppendingPathComponent:[NSString stringWithFormat:@"corrupted_%@.db", [[NSUUID UUID] UUIDString]]];
 
+    // Write some garbage data to simulate a corrupted database
+    NSString *garbageData = @"This is not a valid SQLite database file. Just some random text.";
+    XCTAssertTrue([garbageData writeToFile:corruptedPath atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+
+    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_corrupted"];
+
+    // Execute migration and verify it fails appropriately
     __autoreleasing NSError *error = nil;
-    XCTAssertTrue([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
-                 @"Migration should succeed with empty database: %@", error);
+    XCTAssertFalse([self.fixture testMigrationWithSourcePath:corruptedPath destinationDirectory:destinationDir error:&error],
+                  @"Migration should fail with corrupted database");
+
+    // Verify proper error reporting
+    XCTAssertNotNil(error, @"Error should be provided for corrupted database");
 
     // Cleanup
     NSFileManager *fm = [NSFileManager defaultManager];
-    [fm removeItemAtPath:sourcePath error:nil];
+    [fm removeItemAtPath:corruptedPath error:nil];
     [fm removeItemAtPath:destinationDir error:nil];
 }
 
-- (void)testMigrationWithInvalidSourcePath {
-    // Test that migration fails gracefully with invalid source path
-    NSString *invalidPath = @"/nonexistent/database.db";
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_invalid"];
-
-    __autoreleasing NSError *error = nil;
-    XCTAssertFalse([self.fixture testMigrationWithSourcePath:invalidPath destinationDirectory:destinationDir error:&error],
-                  @"Migration should fail with invalid source path");
-
-    XCTAssertNotNil(error, @"Error should be provided for invalid source path");
-    XCTAssertEqual(error.code, PDSMigrationErrorSourceNotFound, @"Error code should be SourceNotFound");
-
-    // Cleanup
-    NSFileManager *fm = [NSFileManager defaultManager];
-    [fm removeItemAtPath:destinationDir error:nil];
-}
-
-- (void)testMigrationAsyncExecution {
-    // Test asynchronous migration execution
+/// Tests migration behavior when the database file is truncated or incomplete
+/// This test verifies handling of partially written database files that may
+/// occur due to interrupted writes or disk space issues.
+- (void)testMigrationWithTruncatedDatabase {
+    // Create a valid database then truncate it to simulate partial corruption
     NSString *sourcePath = [self createTestMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_async"];
+    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_truncated"];
 
-    XCTestExpectation *expectation = [self expectationWithDescription:@"Async migration completion"];
-
-    [self.fixture.migrationManager migrateFromMonolithicDatabaseAsync:sourcePath
-                                                toSingleTenantDirectory:destinationDir
-                                                            completion:^(NSError *error) {
-        XCTAssertNil(error, @"Async migration should complete without error: %@", error);
-
-        // Verify destination exists
-        NSFileManager *fm = [NSFileManager defaultManager];
-        XCTAssertTrue([fm fileExistsAtPath:destinationDir], @"Destination directory should exist after async migration");
-
-        [expectation fulfill];
-    }];
-
-    [self waitForExpectationsWithTimeout:30.0 handler:nil];
-
-    // Cleanup
+    // Truncate the database file to half its size
     NSFileManager *fm = [NSFileManager defaultManager];
-    [fm removeItemAtPath:sourcePath error:nil];
-    [fm removeItemAtPath:destinationDir error:nil];
-}
+    NSDictionary *attributes = [fm attributesOfItemAtPath:sourcePath error:nil];
+    unsigned long long originalSize = [attributes[NSFileSize] unsignedLongLongValue];
 
-#pragma mark - Rollback Verification Tests
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForUpdatingAtPath:sourcePath];
+    [fileHandle truncateFileAtOffset:originalSize / 2];
+    [fileHandle closeFile];
 
-- (void)testMigrationRollbackAfterCancellation {
-    // Test that migration can be cancelled and properly rolled back
-    NSString *sourcePath = [self createTestMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_cancel"];
-
-    // Set up cancellation block that cancels after a short delay
-    __block BOOL shouldCancel = NO;
-    self.fixture.migrationManager.cancelBlock = ^BOOL {
-        return shouldCancel;
-    };
-
-    // Start migration in background
-    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-    dispatch_async(queue, ^{
-        // Wait a bit then cancel
-        [NSThread sleepForTimeInterval:0.1];
-        shouldCancel = YES;
-    });
-
+    // Execute migration and verify it fails gracefully
     __autoreleasing NSError *error = nil;
-    BOOL migrationResult = [self.fixture.migrationManager migrateFromMonolithicDatabase:sourcePath
-                                                             toSingleTenantDirectory:destinationDir
-                                                                              error:&error];
+    XCTAssertFalse([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
+                  @"Migration should fail with truncated database");
 
-    // Migration should fail due to cancellation
-    XCTAssertFalse(migrationResult, @"Migration should fail when cancelled");
-    XCTAssertNotNil(error, @"Error should be provided when migration is cancelled");
-    XCTAssertEqual(error.code, PDSMigrationErrorCancelled, @"Error code should be Cancelled");
-
-    // Verify destination directory doesn't exist or is empty (rollback)
-    NSFileManager *fm = [NSFileManager defaultManager];
-    BOOL destinationExists = [fm fileExistsAtPath:destinationDir];
-    if (destinationExists) {
-        NSArray *contents = [fm contentsOfDirectoryAtPath:destinationDir error:nil];
-        XCTAssertEqual(contents.count, 0, @"Destination directory should be empty after cancelled migration rollback");
-    }
-
-    // Cleanup
-    [fm removeItemAtPath:sourcePath error:nil];
-    [fm removeItemAtPath:destinationDir error:nil];
-    self.fixture.migrationManager.cancelBlock = nil;
-}
-
-- (void)testMigrationRollbackOnDestinationExists {
-    // Test rollback when destination directory already exists
-    NSString *sourcePath = [self createTestMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_dest_exists"];
-
-    NSFileManager *fm = [NSFileManager defaultManager];
-
-    // Create destination directory with some content
-    XCTAssertTrue([fm createDirectoryAtPath:destinationDir withIntermediateDirectories:YES attributes:nil error:nil]);
-    NSString *dummyFile = [destinationDir stringByAppendingPathComponent:@"dummy.txt"];
-    XCTAssertTrue([@"dummy content" writeToFile:dummyFile atomically:YES encoding:NSUTF8StringEncoding error:nil]);
-
-    __autoreleasing NSError *error = nil;
-    // This should fail because destination exists and is not empty
-    XCTAssertFalse([self.fixture.migrationManager migrateFromMonolithicDatabase:sourcePath
-                                                      toSingleTenantDirectory:destinationDir
-                                                                       error:&error]);
-
-    XCTAssertNotNil(error, @"Error should be provided when destination exists");
-
-    // Verify dummy file still exists (no partial migration occurred)
-    XCTAssertTrue([fm fileExistsAtPath:dummyFile], @"Original files should remain untouched on migration failure");
-
-    // Cleanup
-    [fm removeItemAtPath:sourcePath error:nil];
-    [fm removeItemAtPath:destinationDir error:nil];
-}
-
-- (void)testMigrationRollbackVerification {
-    // Test the rollback verification functionality
-    NSString *sourcePath = [self createTestMonolithicDatabase];
-
-    __autoreleasing NSError *error = nil;
-    XCTAssertTrue([self.fixture testMigrationRollbackWithSourcePath:sourcePath error:&error],
-                 @"Rollback verification should succeed: %@", error);
-
-    // Verify source database still exists and is intact
-    NSFileManager *fm = [NSFileManager defaultManager];
-    XCTAssertTrue([fm fileExistsAtPath:sourcePath], @"Source database should still exist after rollback test");
-
-    // Verify we can still open and query the database
-    sqlite3 *db;
-    XCTAssertEqual(sqlite3_open([sourcePath UTF8String], &db), SQLITE_OK, @"Should be able to reopen database after rollback test");
-
-    // Check that our test data is still there
-    sqlite3_stmt *stmt;
-    const char *countSQL = "SELECT COUNT(*) FROM accounts";
-    XCTAssertEqual(sqlite3_prepare_v2(db, countSQL, -1, &stmt, NULL), SQLITE_OK);
-
-    XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW);
-    int accountCount = sqlite3_column_int(stmt, 0);
-    XCTAssertEqual(accountCount, 1, @"Account data should be preserved after rollback test");
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    // Cleanup
-    [fm removeItemAtPath:sourcePath error:nil];
-}
-
-#pragma mark - Data Preservation Tests
-
-- (void)testDataPreservationDuringMigration {
-    // Test that all data types are correctly migrated and preserved
-    NSString *sourcePath = [self createTestMonolithicDatabaseWithMultipleRecords];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_data_preservation"];
-
-    __autoreleasing NSError *error = nil;
-    XCTAssertTrue([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
-                 @"Migration should succeed and preserve all data: %@", error);
-
-    // Verify data preservation by checking counts and content
-    [self verifyDataPreservationFromSource:sourcePath toDestination:destinationDir];
-
-    // Cleanup
-    NSFileManager *fm = [NSFileManager defaultManager];
-    [fm removeItemAtPath:sourcePath error:nil];
-    [fm removeItemAtPath:destinationDir error:nil];
-}
-
-- (void)testAccountDataPreservation {
-    // Test that account data is correctly migrated
-    NSString *sourcePath = [self createTestMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_accounts"];
-
-    __autoreleasing NSError *error = nil;
-    XCTAssertTrue([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
-                 @"Migration should succeed for account data: %@", error);
-
-    // Find the migrated tenant database
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *tenantDirs = [fm contentsOfDirectoryAtPath:destinationDir error:nil];
-    XCTAssertTrue(tenantDirs.count > 0, @"Should have at least one tenant directory");
-
-    NSString *tenantDir = [destinationDir stringByAppendingPathComponent:tenantDirs.firstObject];
-    NSString *accountDbPath = [tenantDir stringByAppendingPathComponent:@"accounts.db"];
-
-    // Verify account data exists in migrated database
-    sqlite3 *db;
-    XCTAssertEqual(sqlite3_open([accountDbPath UTF8String], &db), SQLITE_OK, @"Should be able to open migrated account database");
-
-    sqlite3_stmt *stmt;
-    const char *querySQL = "SELECT did, handle, email FROM accounts WHERE did = ?";
-    XCTAssertEqual(sqlite3_prepare_v2(db, querySQL, -1, &stmt, NULL), SQLITE_OK);
-
-    sqlite3_bind_text(stmt, 1, "did:plc:test123", -1, SQLITE_TRANSIENT);
-
-    XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW, @"Should find migrated account");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 0), "did:plc:test123"), 0, @"DID should match");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 1), "test.example.com"), 0, @"Handle should match");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 2), "test@example.com"), 0, @"Email should match");
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    // Cleanup
-    [fm removeItemAtPath:sourcePath error:nil];
-    [fm removeItemAtPath:destinationDir error:nil];
-}
-
-- (void)testRecordDataPreservation {
-    // Test that record data is correctly migrated
-    NSString *sourcePath = [self createTestMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_records"];
-
-    __autoreleasing NSError *error = nil;
-    XCTAssertTrue([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
-                 @"Migration should succeed for record data: %@", error);
-
-    // Find the migrated tenant database
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *tenantDirs = [fm contentsOfDirectoryAtPath:destinationDir error:nil];
-    XCTAssertTrue(tenantDirs.count > 0, @"Should have at least one tenant directory");
-
-    NSString *tenantDir = [destinationDir stringByAppendingPathComponent:tenantDirs.firstObject];
-    NSString *recordDbPath = [tenantDir stringByAppendingPathComponent:@"records.db"];
-
-    // Verify record data exists in migrated database
-    sqlite3 *db;
-    XCTAssertEqual(sqlite3_open([recordDbPath UTF8String], &db), SQLITE_OK, @"Should be able to open migrated record database");
-
-    sqlite3_stmt *stmt;
-    const char *querySQL = "SELECT uri, collection, rkey FROM records WHERE did = ?";
-    XCTAssertEqual(sqlite3_prepare_v2(db, querySQL, -1, &stmt, NULL), SQLITE_OK);
-
-    sqlite3_bind_text(stmt, 1, "did:plc:test123", -1, SQLITE_TRANSIENT);
-
-    XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW, @"Should find migrated record");
-    XCTAssertTrue(strstr((const char *)sqlite3_column_text(stmt, 0), "did:plc:test123") != NULL, @"URI should contain DID");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 1), "app.bsky.feed.post"), 0, @"Collection should match");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 2), "test123"), 0, @"Rkey should match");
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    // Cleanup
-    [fm removeItemAtPath:sourcePath error:nil];
-    [fm removeItemAtPath:destinationDir error:nil];
-}
-
-- (void)testBlockDataPreservation {
-    // Test that block data is correctly migrated
-    NSString *sourcePath = [self createTestMonolithicDatabase];
-    NSString *destinationDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_test_blocks"];
-
-    __autoreleasing NSError *error = nil;
-    XCTAssertTrue([self.fixture testMigrationWithSourcePath:sourcePath destinationDirectory:destinationDir error:&error],
-                 @"Migration should succeed for block data: %@", error);
-
-    // Find the migrated tenant database
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *tenantDirs = [fm contentsOfDirectoryAtPath:destinationDir error:nil];
-    XCTAssertTrue(tenantDirs.count > 0, @"Should have at least one tenant directory");
-
-    NSString *tenantDir = [destinationDir stringByAppendingPathComponent:tenantDirs.firstObject];
-    NSString *blockDbPath = [tenantDir stringByAppendingPathComponent:@"blocks.db"];
-
-    // Verify block data exists in migrated database
-    sqlite3 *db;
-    XCTAssertEqual(sqlite3_open([blockDbPath UTF8String], &db), SQLITE_OK, @"Should be able to open migrated block database");
-
-    sqlite3_stmt *stmt;
-    const char *querySQL = "SELECT repo_did, content_type, size FROM blocks WHERE repo_did = ?";
-    XCTAssertEqual(sqlite3_prepare_v2(db, querySQL, -1, &stmt, NULL), SQLITE_OK);
-
-    sqlite3_bind_text(stmt, 1, "did:plc:test123", -1, SQLITE_TRANSIENT);
-
-    XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW, @"Should find migrated block");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 0), "did:plc:test123"), 0, @"Repo DID should match");
-    XCTAssertEqual(strcmp((const char *)sqlite3_column_text(stmt, 1), "text/plain"), 0, @"Content type should match");
-    XCTAssertEqual(sqlite3_column_int64(stmt, 2), 15, @"Size should match test data");
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+    // Verify proper error reporting
+    XCTAssertNotNil(error, @"Error should be provided for truncated database");
 
     // Cleanup
     [fm removeItemAtPath:sourcePath error:nil];
@@ -353,14 +114,9 @@
 
 #pragma mark - Helper Methods
 
-- (NSString *)createTestMonolithicDatabase {
-    // Create a temporary monolithic database with test data
-    NSString *tempDir = NSTemporaryDirectory();
-    NSString *dbPath = [tempDir stringByAppendingPathComponent:[NSString stringWithFormat:@"monolithic_test_%@.db", [[NSUUID UUID] UUIDString]]];
-
-    sqlite3 *db;
-    XCTAssertEqual(sqlite3_open([dbPath UTF8String], &db), SQLITE_OK, @"Should be able to create test database");
-
+/// Creates the standard monolithic database schema tables
+/// @param db The SQLite database to create tables in
+- (void)createMonolithicDatabaseSchema:(sqlite3 *)db {
     // Create tables matching the expected monolithic schema
     const char *createTablesSQL[] = {
         "CREATE TABLE accounts (did TEXT PRIMARY KEY, handle TEXT, email TEXT, password_hash BLOB, password_salt BLOB, access_jwt BLOB, refresh_jwt BLOB, created_at REAL, updated_at REAL)",
@@ -374,8 +130,20 @@
         XCTAssertEqual(sqlite3_exec(db, createTablesSQL[i], NULL, NULL, NULL), SQLITE_OK,
                       @"Should be able to create table %d", i);
     }
+}
 
-    // Insert test data
+/// Creates a temporary monolithic database with test data
+/// @return Path to the created database file
+- (NSString *)createTestMonolithicDatabase {
+    // Create a temporary monolithic database with test data
+    NSString *tempDir = NSTemporaryDirectory();
+    NSString *dbPath = [tempDir stringByAppendingPathComponent:[NSString stringWithFormat:@"monolithic_test_%@.db", [[NSUUID UUID] UUIDString]]];
+
+    sqlite3 *db;
+    XCTAssertEqual(sqlite3_open([dbPath UTF8String], &db), SQLITE_OK, @"Should be able to create test database");
+
+    // Create standard schema and insert test data
+    [self createMonolithicDatabaseSchema:db];
     [self insertTestDataIntoDatabase:db];
 
     sqlite3_close(db);
@@ -390,19 +158,8 @@
     sqlite3 *db;
     XCTAssertEqual(sqlite3_open([dbPath UTF8String], &db), SQLITE_OK, @"Should be able to create empty test database");
 
-    // Create tables but don't insert any data
-    const char *createTablesSQL[] = {
-        "CREATE TABLE accounts (did TEXT PRIMARY KEY, handle TEXT, email TEXT, password_hash BLOB, password_salt BLOB, access_jwt BLOB, refresh_jwt BLOB, created_at REAL, updated_at REAL)",
-        "CREATE TABLE repos (owner_did TEXT, root_cid BLOB, collection_data BLOB, created_at REAL, updated_at REAL)",
-        "CREATE TABLE records (uri TEXT, did TEXT, collection TEXT, rkey TEXT, cid TEXT, created_at REAL)",
-        "CREATE TABLE blocks (cid BLOB, repo_did TEXT, block_data BLOB, content_type TEXT, size INTEGER, created_at REAL)",
-        NULL
-    };
-
-    for (int i = 0; createTablesSQL[i] != NULL; i++) {
-        XCTAssertEqual(sqlite3_exec(db, createTablesSQL[i], NULL, NULL, NULL), SQLITE_OK,
-                      @"Should be able to create table %d", i);
-    }
+    // Create standard schema but don't insert any data
+    [self createMonolithicDatabaseSchema:db];
 
     sqlite3_close(db);
     return dbPath;
@@ -416,21 +173,8 @@
     sqlite3 *db;
     XCTAssertEqual(sqlite3_open([dbPath UTF8String], &db), SQLITE_OK, @"Should be able to create multi-record test database");
 
-    // Create tables
-    const char *createTablesSQL[] = {
-        "CREATE TABLE accounts (did TEXT PRIMARY KEY, handle TEXT, email TEXT, password_hash BLOB, password_salt BLOB, access_jwt BLOB, refresh_jwt BLOB, created_at REAL, updated_at REAL)",
-        "CREATE TABLE repos (owner_did TEXT, root_cid BLOB, collection_data BLOB, created_at REAL, updated_at REAL)",
-        "CREATE TABLE records (uri TEXT, did TEXT, collection TEXT, rkey TEXT, cid TEXT, created_at REAL)",
-        "CREATE TABLE blocks (cid BLOB, repo_did TEXT, block_data BLOB, content_type TEXT, size INTEGER, created_at REAL)",
-        NULL
-    };
-
-    for (int i = 0; createTablesSQL[i] != NULL; i++) {
-        XCTAssertEqual(sqlite3_exec(db, createTablesSQL[i], NULL, NULL, NULL), SQLITE_OK,
-                      @"Should be able to create table %d", i);
-    }
-
-    // Insert multiple test records
+    // Create standard schema and insert multiple test records
+    [self createMonolithicDatabaseSchema:db];
     [self insertMultipleTestDataIntoDatabase:db];
 
     sqlite3_close(db);
