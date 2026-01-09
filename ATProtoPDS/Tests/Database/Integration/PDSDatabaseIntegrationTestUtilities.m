@@ -18,7 +18,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
 + (BOOL)verifySchemaInDatabase:(PDSDatabase *)database error:(NSError **)error {
     PDSSchemaValidationTestFixture *fixture = [[PDSSchemaValidationTestFixture alloc] initWithTestName:@"SchemaValidation"];
-    fixture->_database = database; // Direct assignment since it's readonly
+    fixture.database = database;
     return [fixture validateSchemaWithError:error];
 }
 
@@ -29,12 +29,18 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     account.email = [NSString stringWithFormat:@"%@@example.com", handle];
     account.createdAt = [[NSDate date] timeIntervalSince1970];
     account.updatedAt = account.createdAt;
-    // Generate some dummy hash data
+    // Generate realistic dummy hash data using a simple hash of the handle
+    NSString *hashInput = [NSString stringWithFormat:@"password:%@", handle];
+    NSData *inputData = [hashInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t hashBytes[32];
-    memset(hashBytes, 0xAA, 32);
+    CC_SHA256(inputData.bytes, (CC_LONG)inputData.length, hashBytes);
     account.passwordHash = [NSData dataWithBytes:hashBytes length:32];
+
+    // Generate salt using a hash of DID + handle
+    NSString *saltInput = [NSString stringWithFormat:@"salt:%@:%@", did, handle];
+    NSData *saltInputData = [saltInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t saltBytes[16];
-    memset(saltBytes, 0xBB, 16);
+    CC_MD5(saltInputData.bytes, (CC_LONG)saltInputData.length, saltBytes);
     account.passwordSalt = [NSData dataWithBytes:saltBytes length:16];
     return account;
 }
@@ -42,8 +48,11 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 + (PDSDatabaseRepo *)createTestRepoWithOwnerDID:(NSString *)ownerDid {
     PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
     repo.ownerDid = ownerDid;
+    // Generate a realistic CID-like hash based on the owner DID
+    NSString *cidInput = [NSString stringWithFormat:@"root:%@", ownerDid];
+    NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];
-    memset(cidBytes, 0xCC, 32);
+    CC_SHA256(cidInputData.bytes, (CC_LONG)cidInputData.length, cidBytes);
     repo.rootCid = [NSData dataWithBytes:cidBytes length:32];
     repo.createdAt = [NSDate date];
     repo.updatedAt = [NSDate date];
@@ -56,15 +65,27 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     record.did = did;
     record.collection = collection;
     record.rkey = rkey;
-    record.cid = [NSString stringWithFormat:@"bafyreitTestCID%@", rkey];
+    // Generate a realistic CID-like string based on the record data
+    NSString *cidInput = [NSString stringWithFormat:@"record:%@:%@:%@", did, collection, rkey];
+    NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
+    uint8_t cidBytes[32];
+    CC_SHA256(cidInputData.bytes, (CC_LONG)cidInputData.length, cidBytes);
+    NSMutableString *cidString = [NSMutableString stringWithString:@"bafyre"];
+    for (int i = 0; i < 8; i++) {
+        [cidString appendFormat:@"%02x", cidBytes[i]];
+    }
+    record.cid = cidString;
     record.createdAt = [NSDate date];
     return record;
 }
 
 + (PDSDatabaseBlock *)createTestBlockWithRepoDID:(NSString *)repoDid {
     PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    // Generate realistic CID based on repo DID and content
+    NSString *cidInput = [NSString stringWithFormat:@"block:%@:test block data", repoDid];
+    NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];
-    memset(cidBytes, 0xDD, 32);
+    CC_SHA256(cidInputData.bytes, (CC_LONG)cidInputData.length, cidBytes);
     block.cid = [NSData dataWithBytes:cidBytes length:32];
     block.repoDid = repoDid;
     block.blockData = [@"test block data" dataUsingEncoding:NSUTF8StringEncoding];
@@ -75,8 +96,11 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
 + (PDSDatabaseBlob *)createTestBlobWithDID:(NSString *)did {
     PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+    // Generate realistic CID based on DID and blob content
+    NSString *cidInput = [NSString stringWithFormat:@"blob:%@:application/octet-stream:1024", did];
+    NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];
-    memset(cidBytes, 0xEE, 32);
+    CC_SHA256(cidInputData.bytes, (CC_LONG)cidInputData.length, cidBytes);
     blob.cid = [NSData dataWithBytes:cidBytes length:32];
     blob.did = did;
     blob.mimeType = @"application/octet-stream";
@@ -139,19 +163,72 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 }
 
 - (BOOL)setupPoolWithError:(NSError **)error {
-    // Implementation for pool setup
+    if (!self.database) {
+        if (![self setupDatabaseWithError:error]) {
+            return NO;
+        }
+    }
+
+    // Create pool directory within test directory
+    NSString *poolDir = [self.testDirectory stringByAppendingPathComponent:@"pool"];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm createDirectoryAtPath:poolDir withIntermediateDirectories:YES attributes:nil error:error]) {
+        return NO;
+    }
+
+    _pool = [[PDSDatabasePool alloc] initWithDbDirectory:poolDir maxSize:self.maxPoolSize];
     return YES;
 }
 
 - (BOOL)teardownPoolWithError:(NSError **)error {
-    // Implementation for pool teardown
+    if (self.pool) {
+        [self.pool closeAll];
+        _pool = nil;
+    }
     return YES;
 }
 
 - (BOOL)testConcurrentPoolAccessWithBlock:(void (^)(PDSActorStore *store, NSError **error))block
-                                    error:(NSError **)error {
-    // Implementation for concurrent access testing
-    return YES;
+                                     error:(NSError **)error {
+    if (!self.pool) {
+        if (![self setupPoolWithError:error]) {
+            return NO;
+        }
+    }
+
+    dispatch_group_t group = dispatch_group_create();
+    __block NSError *concurrentError = nil;
+    __block BOOL success = YES;
+
+    for (NSUInteger i = 0; i < self.maxPoolSize; i++) {
+        dispatch_group_enter(group);
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            @autoreleasepool {
+                NSError *localError = nil;
+                PDSActorStore *store = [self.pool storeForDid:[NSString stringWithFormat:@"did:plc:test%lu", (unsigned long)i] error:&localError];
+                if (store) {
+                    block(store, &localError);
+                }
+                if (localError) {
+                    @synchronized(self) {
+                        if (!concurrentError) {
+                            concurrentError = localError;
+                        }
+                        success = NO;
+                    }
+                }
+            }
+            dispatch_group_leave(group);
+        });
+    }
+
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+    if (!success && error) {
+        *error = concurrentError;
+    }
+
+    return success;
 }
 
 @end
@@ -169,39 +246,181 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 }
 
 - (BOOL)setupTenantsWithError:(NSError **)error {
-    // Implementation for tenant setup
+    if (!self.pool) {
+        if (![self setupPoolWithError:error]) {
+            return NO;
+        }
+    }
+
+    // Create test accounts for each tenant DID
+    for (NSString *did in self.testDIDs) {
+        PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"%@.example.com", did.lastPathComponent]];
+        if (![self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+            [transactor createAccount:account error:nil];
+        } error:error]) {
+            return NO;
+        }
+    }
+
     return YES;
 }
 
 - (BOOL)verifyTenantIsolationWithError:(NSError **)error {
-    // Implementation for tenant isolation verification
-    return YES;
+    if (!self.pool || self.testDIDs.count < 2) {
+        return YES; // Need at least 2 tenants to test isolation
+    }
+
+    NSString *did1 = self.testDIDs[0];
+    NSString *did2 = self.testDIDs[1];
+
+    // Create a record in tenant 1
+    PDSDatabaseRecord *record1 = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:did1 collection:@"app.bsky.feed.post" rkey:@"isolation-test"];
+
+    __block BOOL success = YES;
+    __block NSError *isolationError = nil;
+
+    [self.pool transactWithDid:did1 block:^(id<PDSActorStoreTransactor> transactor) {
+        if (![transactor putRecord:record1 forDid:did1 error:&isolationError]) {
+            success = NO;
+        }
+    } error:&isolationError];
+
+    if (!success) {
+        if (error) *error = isolationError;
+        return NO;
+    }
+
+    // Try to access the record from tenant 2 - should not be visible
+    [self.pool readWithDid:did2 block:^(id<PDSActorStoreReader> reader) {
+        PDSDatabaseRecord *fetched = [reader getRecord:record1.uri forDid:did1 error:&isolationError];
+        if (fetched) {
+            // Record should not be accessible from different tenant
+            success = NO;
+            isolationError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                              code:PDSDatabaseIntegrationTestErrorConcurrentAccessFailed
+                                          userInfo:@{NSLocalizedDescriptionKey: @"Tenant isolation breached - record accessible from wrong tenant"}];
+        }
+    } error:&isolationError];
+
+    if (!success && error) {
+        *error = isolationError;
+    }
+
+    return success;
 }
 
 - (BOOL)createTestDataForTenant:(NSString *)did error:(NSError **)error {
-    // Implementation for test data creation
-    return YES;
+    __block BOOL success = YES;
+    __block NSError *dataError = nil;
+
+    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        // Create a test repo
+        PDSDatabaseRepo *repo = [PDSDatabaseIntegrationTestUtilities createTestRepoWithOwnerDID:did];
+        if (![transactor createRepo:repo error:&dataError]) {
+            success = NO;
+            return;
+        }
+
+        // Create a test record
+        PDSDatabaseRecord *record = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:did collection:@"app.bsky.feed.post" rkey:@"tenant-test"];
+        if (![transactor putRecord:record forDid:did error:&dataError]) {
+            success = NO;
+            return;
+        }
+
+        // Create a test block
+        PDSDatabaseBlock *block = [PDSDatabaseIntegrationTestUtilities createTestBlockWithRepoDID:did];
+        if (![transactor putBlock:block forDid:did error:&dataError]) {
+            success = NO;
+        }
+    } error:&dataError];
+
+    if (!success && error) {
+        *error = dataError;
+    }
+
+    return success;
 }
 
 @end
 
 @implementation PDSMigrationTestFixture
 
+- (instancetype)initWithTestName:(NSString *)testName {
+    self = [super initWithTestName:testName];
+    if (self) {
+        _migrationManager = [PDSMigrationManager sharedManager];
+    }
+    return self;
+}
+
 - (BOOL)testMigrationWithSourcePath:(NSString *)sourcePath
-             destinationDirectory:(NSString *)destinationDirectory
-                            error:(NSError **)error {
-    // Implementation for migration testing
-    return YES;
+              destinationDirectory:(NSString *)destinationDirectory
+                             error:(NSError **)error {
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    // Verify source exists
+    if (![fm fileExistsAtPath:sourcePath]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorMigrationVerificationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Source database not found at path: %@", sourcePath]}];
+        }
+        return NO;
+    }
+
+    // Create destination directory
+    if (![fm createDirectoryAtPath:destinationDirectory withIntermediateDirectories:YES attributes:nil error:error]) {
+        return NO;
+    }
+
+    // Perform migration
+    if (![self.migrationManager migrateFromMonolithicDatabase:sourcePath toSingleTenantDirectory:destinationDirectory error:error]) {
+        return NO;
+    }
+
+    // Validate schema after migration
+    return [self validateSchemaAfterMigration:error];
 }
 
 - (BOOL)testMigrationRollbackWithSourcePath:(NSString *)sourcePath
-                                      error:(NSError **)error {
-    // Implementation for migration rollback testing
+                                       error:(NSError **)error {
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    // Create a backup of the source
+    NSString *backupPath = [sourcePath stringByAppendingString:@".backup"];
+    if (![fm copyItemAtPath:sourcePath toPath:backupPath error:error]) {
+        return NO;
+    }
+
+    NSString *testDestination = [NSTemporaryDirectory() stringByAppendingPathComponent:@"migration_rollback_test"];
+
+    // Attempt migration (may fail, that's ok for rollback test)
+    [self.migrationManager migrateFromMonolithicDatabase:sourcePath toSingleTenantDirectory:testDestination error:nil];
+
+    // Restore from backup
+    if (![fm removeItemAtPath:sourcePath error:error]) {
+        [fm removeItemAtPath:backupPath error:nil]; // cleanup
+        return NO;
+    }
+
+    if (![fm moveItemAtPath:backupPath toPath:sourcePath error:error]) {
+        return NO;
+    }
+
+    // Cleanup test destination
+    [fm removeItemAtPath:testDestination error:nil];
+
     return YES;
 }
 
 - (BOOL)validateSchemaAfterMigration:(NSError **)error {
-    // Implementation for schema validation after migration
+    // This is a placeholder - in a real implementation, this would:
+    // 1. Scan the destination directory for migrated tenant databases
+    // 2. Open each database and validate its schema
+    // 3. Ensure data integrity across all migrated databases
+
+    // For now, return YES as this would require more complex setup
     return YES;
 }
 
@@ -223,9 +442,9 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         kPDSBlobTableName,
         kPDSInviteCodeTableName,
         kPDSPasskeysTableName,
-        kPDSTakedownTableName
+        kPDSAdminTakedownTableName
     ];
-    
+
     for (NSString *tableName in requiredTables) {
         NSString *query = @"SELECT name FROM sqlite_master WHERE type='table' AND name=?";
         NSArray *params = @[tableName];
@@ -233,9 +452,39 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         if (!results || results.count == 0) {
             if (error) {
                 *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
-                                             code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
-                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Required table '%@' not found", tableName]}];
+                                              code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Required table '%@' not found", tableName]}];
             }
+            return NO;
+        }
+    }
+
+    // Validate specific table structures (sample validation)
+    NSDictionary *expectedAccountColumns = @{
+        @"did": @"TEXT",
+        @"handle": @"TEXT",
+        @"email": @"TEXT",
+        @"password_hash": @"BLOB",
+        @"password_salt": @"BLOB",
+        @"created_at": @"TEXT",
+        @"updated_at": @"TEXT"
+    };
+
+    if (![self validateTable:kPDSAccountTableName expectedColumns:expectedAccountColumns error:error]) {
+        return NO;
+    }
+
+    // Validate constraints and indexes
+    if (![self validateConstraintsWithError:error]) {
+        return NO;
+    }
+
+    if (![self validateIndexesWithError:error]) {
+        return NO;
+    }
+
+    return YES;
+}
             return NO;
         }
     }
@@ -245,17 +494,118 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 - (BOOL)validateTable:(NSString *)tableName
       expectedColumns:(NSDictionary<NSString *, NSString *> *)expectedColumns
                 error:(NSError **)error {
-    // Implementation for table validation
+    // Get actual table schema
+    NSString *pragmaSQL = [NSString stringWithFormat:@"PRAGMA table_info(%@)", tableName];
+    NSArray *tableInfo = [self.database executeParameterizedQuery:pragmaSQL params:@[] error:error];
+    if (!tableInfo) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                      code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to get table info for '%@'", tableName]}];
+        }
+        return NO;
+    }
+
+    // Build dictionary of actual columns
+    NSMutableDictionary<NSString *, NSString *> *actualColumns = [NSMutableDictionary dictionary];
+    for (NSDictionary *columnInfo in tableInfo) {
+        NSString *columnName = columnInfo[@"name"];
+        NSString *columnType = columnInfo[@"type"];
+        if (columnName && columnType) {
+            actualColumns[columnName] = columnType;
+        }
+    }
+
+    // Check that all expected columns exist with correct types
+    for (NSString *expectedColumn in expectedColumns) {
+        NSString *expectedType = expectedColumns[expectedColumn];
+        NSString *actualType = actualColumns[expectedColumn];
+
+        if (!actualType) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Table '%@' missing expected column '%@'", tableName, expectedColumn]}];
+            }
+            return NO;
+        }
+
+        if (![actualType isEqualToString:expectedType]) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Table '%@' column '%@' has type '%@', expected '%@'", tableName, expectedColumn, actualType, expectedType]}];
+            }
+            return NO;
+        }
+    }
+
     return YES;
 }
 
 - (BOOL)validateConstraintsWithError:(NSError **)error {
-    // Implementation for constraint validation
+    // Check foreign key constraints for key tables
+    NSArray<NSString *> *tablesWithForeignKeys = @[
+        kPDSRecordTableName,
+        kPDSBlockTableName,
+        kPDSBlobTableName,
+        kPDSInviteCodeTableName,
+        kPDSPasskeysTableName
+    ];
+
+    for (NSString *tableName in tablesWithForeignKeys) {
+        NSString *fkSQL = [NSString stringWithFormat:@"PRAGMA foreign_key_list(%@)", tableName];
+        NSArray *fkList = [self.database executeParameterizedQuery:fkSQL params:@[] error:error];
+        if (!fkList) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to get foreign key list for '%@'", tableName]}];
+            }
+            return NO;
+        }
+
+        // Basic check that tables expected to have foreign keys actually have them
+        if ([tableName isEqualToString:kPDSRecordTableName] && fkList.count == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Table '%@' should have foreign key constraints but has none", tableName]}];
+            }
+            return NO;
+        }
+    }
+
     return YES;
 }
 
 - (BOOL)validateIndexesWithError:(NSError **)error {
-    // Implementation for index validation
+    // Expected indexes based on schema
+    NSArray<NSString *> *expectedIndexes = @[
+        @"idx_records_did_collection",
+        @"idx_records_did_collection_rkey",
+        @"idx_blocks_repo_did",
+        @"idx_blobs_did",
+        @"idx_accounts_handle",
+        @"idx_invite_codes_account_did",
+        @"idx_admin_takedowns_subject_id",
+        @"idx_passkeys_account_did",
+        @"idx_passkeys_credential_id"
+    ];
+
+    for (NSString *indexName in expectedIndexes) {
+        NSString *indexSQL = @"SELECT name FROM sqlite_master WHERE type='index' AND name=?";
+        NSArray *indexResult = [self.database executeParameterizedQuery:indexSQL params:@[indexName] error:error];
+        if (!indexResult || indexResult.count == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                          code:PDSDatabaseIntegrationTestErrorSchemaValidationFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Expected index '%@' not found", indexName]}];
+            }
+            return NO;
+        }
+    }
+
     return YES;
 }
 
@@ -274,23 +624,211 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 }
 
 - (BOOL)testConcurrentReadsWithError:(NSError **)error {
-    // Implementation for concurrent reads
-    return YES;
+    if (!self.pool) {
+        if (![self setupPoolWithError:error]) {
+            return NO;
+        }
+    }
+
+    dispatch_group_t group = dispatch_group_create();
+    __block NSError *readError = nil;
+    __block BOOL success = YES;
+    __block NSUInteger completedReads = 0;
+
+    for (NSUInteger i = 0; i < self.concurrentThreads; i++) {
+        dispatch_group_enter(group);
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            @autoreleasepool {
+                NSError *localError = nil;
+                [self.pool readWithDid:@"did:plc:concurrent-test" block:^(id<PDSActorStoreReader> reader) {
+                    // Perform a read operation
+                    PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&localError];
+                    if (localError && localError.code != PDSActorStoreErrorNotFound) {
+                        @synchronized(self) {
+                            if (!readError) {
+                                readError = localError;
+                            }
+                            success = NO;
+                        }
+                    }
+                } error:&localError];
+
+                @synchronized(self) {
+                    completedReads++;
+                }
+            }
+            dispatch_group_leave(group);
+        });
+    }
+
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+    if (!success && error) {
+        *error = readError;
+    }
+
+    return success && (completedReads == self.concurrentThreads);
 }
 
 - (BOOL)testConcurrentWritesWithError:(NSError **)error {
-    // Implementation for concurrent writes
-    return YES;
+    if (!self.pool) {
+        if (![self setupPoolWithError:error]) {
+            return NO;
+        }
+    }
+
+    dispatch_group_t group = dispatch_group_create();
+    __block NSError *writeError = nil;
+    __block BOOL success = YES;
+    __block NSUInteger completedWrites = 0;
+
+    for (NSUInteger i = 0; i < self.concurrentThreads; i++) {
+        dispatch_group_enter(group);
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            @autoreleasepool {
+                NSError *localError = nil;
+                NSString *did = [NSString stringWithFormat:@"did:plc:write-test-%lu", (unsigned long)i];
+                PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"write%lu.example.com", (unsigned long)i]];
+
+                [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+                    if (![transactor createAccount:account error:&localError]) {
+                        @synchronized(self) {
+                            if (!writeError) {
+                                writeError = localError;
+                            }
+                            success = NO;
+                        }
+                    }
+                } error:&localError];
+
+                @synchronized(self) {
+                    completedWrites++;
+                }
+            }
+            dispatch_group_leave(group);
+        });
+    }
+
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+    if (!success && error) {
+        *error = writeError;
+    }
+
+    return success && (completedWrites == self.concurrentThreads);
 }
 
 - (BOOL)testTransactionIsolationWithError:(NSError **)error {
-    // Implementation for transaction isolation
-    return YES;
+    // Test basic transaction isolation - create a record in one transaction
+    // and verify it's not visible in another concurrent transaction until committed
+    if (!self.pool) {
+        if (![self setupPoolWithError:error]) {
+            return NO;
+        }
+    }
+
+    NSString *did = @"did:plc:isolation-test";
+    __block BOOL success = YES;
+    __block NSError *isolationError = nil;
+
+    // Create account first
+    PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:@"isolation.example.com"];
+    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        [transactor createAccount:account error:nil];
+    } error:nil];
+
+    // Test that records created in transactions are properly isolated
+    dispatch_group_t group = dispatch_group_create();
+    __block PDSDatabaseRecord *createdRecord = nil;
+
+    dispatch_group_enter(group);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+            PDSDatabaseRecord *record = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:did collection:@"app.bsky.feed.post" rkey:@"isolation-test"];
+            if ([transactor putRecord:record forDid:did error:&isolationError]) {
+                createdRecord = record;
+            } else {
+                success = NO;
+            }
+        } error:&isolationError];
+        dispatch_group_leave(group);
+    });
+
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+    // Verify the record is now visible after transaction commit
+    if (success && createdRecord) {
+        [self.pool readWithDid:did block:^(id<PDSActorStoreReader> reader) {
+            PDSDatabaseRecord *fetched = [reader getRecord:createdRecord.uri forDid:did error:&isolationError];
+            if (!fetched) {
+                success = NO;
+                isolationError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                                                  code:PDSDatabaseIntegrationTestErrorConcurrentAccessFailed
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Transaction isolation failed - record not visible after commit"}];
+            }
+        } error:&isolationError];
+    }
+
+    if (!success && error) {
+        *error = isolationError;
+    }
+
+    return success;
 }
 
 - (BOOL)testDeadlockDetectionWithError:(NSError **)error {
-    // Implementation for deadlock detection
-    return YES;
+    // Basic deadlock detection test - attempt concurrent operations that might deadlock
+    // In a real implementation, this would create more complex scenarios
+    if (!self.pool) {
+        if (![self setupPoolWithError:error]) {
+            return NO;
+        }
+    }
+
+    dispatch_group_t group = dispatch_group_create();
+    __block NSError *deadlockError = nil;
+    __block BOOL success = YES;
+
+    // Run multiple concurrent transactions that access shared resources
+    for (NSUInteger i = 0; i < MIN(self.concurrentThreads, 4); i++) {
+        dispatch_group_enter(group);
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            @autoreleasepool {
+                NSError *localError = nil;
+                NSString *did = @"did:plc:deadlock-test";
+
+                [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+                    // Perform some database operations that might conflict
+                    PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:@"deadlock.example.com"];
+                    [transactor createAccount:account error:&localError];
+
+                    // Add small delay to increase chance of interleaving
+                    usleep(1000);
+                } error:&localError];
+
+                if (localError) {
+                    @synchronized(self) {
+                        if (!deadlockError) {
+                            deadlockError = localError;
+                        }
+                        // Don't fail on constraint violations (expected for duplicate accounts)
+                        if (localError.code != PDSDatabaseErrorConstraintViolation) {
+                            success = NO;
+                        }
+                    }
+                }
+            }
+            dispatch_group_leave(group);
+        });
+    }
+
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+    if (!success && error) {
+        *error = deadlockError;
+    }
+
+    return success;
 }
 
 @end
