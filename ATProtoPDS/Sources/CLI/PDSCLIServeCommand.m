@@ -6,7 +6,7 @@
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
-// #import "Auth/OAuth2Handler.h"  // Temporarily commented for quick test
+#import "Auth/OAuth2Handler.h"
 
 // Forward declaration for PDSAccountManager
 @interface PDSAccountManager : NSObject
@@ -128,37 +128,13 @@
     NSLog(@"PDSCLIServeCommand: Set controller on explore handler: %@", controller);
 
     // Configure OAuth2 handler
-    // OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] init];
-    // [oauthHandler registerRoutesWithServer:httpServer];
-    // NSLog(@"PDSCLIServeCommand: Registered OAuth2 routes");
+    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] init];
+    [oauthHandler registerRoutesWithServer:httpServer];
+    NSLog(@"PDSCLIServeCommand: Registered OAuth2 routes");
 
     // Register route handlers (using old routing system temporarily)
     [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
-    }];
-
-    // Add simple OAuth2 test endpoints
-    [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
-        [response setJsonBody:@{
-            @"message": @"OAuth2 authorize endpoint - placeholder",
-            @"client_id": request.queryParams[@"client_id"] ?: @"none",
-            @"redirect_uri": request.queryParams[@"redirect_uri"] ?: @"none",
-            @"response_type": request.queryParams[@"response_type"] ?: @"none",
-            @"scope": request.queryParams[@"scope"] ?: @"none"
-        }];
-    }];
-
-    [httpServer addRoute:@"POST" path:@"/oauth/token" handler:^(HttpRequest *request, HttpResponse *response) {
-        [response setJsonBody:@{
-            @"access_token": @"test-access-token-placeholder",
-            @"token_type": @"DPoP",
-            @"expires_in": @3600,
-            @"refresh_token": @"test-refresh-token-placeholder"
-        }];
-    }];
-
-    [httpServer addRoute:@"POST" path:@"/oauth/revoke" handler:^(HttpRequest *request, HttpResponse *response) {
-        [response setJsonBody:@{}];
     }];
 
     // Add API endpoints

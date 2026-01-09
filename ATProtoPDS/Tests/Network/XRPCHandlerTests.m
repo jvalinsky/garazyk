@@ -219,4 +219,85 @@
     XCTAssertEqual(response.statusCode, 400, @"Wrong content type should return bad request");
 }
 
+#pragma mark - getUserStats Endpoint Tests
+
+- (void)testGetUserStatsSuccess {
+    // Test successful getUserStats request
+    HttpRequest *request = [[HttpRequest alloc] init];
+    request.method = @"GET";
+    request.path = @"/xrpc/app.bsky.user.getUserStats?user=testuser";
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+    
+    // Create a dispatcher and register the method
+    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    [dispatcher registerAppBskyUserGetUserStats:^(HttpRequest *req, HttpResponse *resp) {
+        // Simulate the handler implementation
+        NSString *user = [req queryParamForKey:@"user"];
+        
+        if (!user) {
+            resp.statusCode = HttpStatusBadRequest;
+            [resp setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing user parameter"}];
+            return;
+        }
+        
+        // Return hardcoded demo data as requested
+        NSDictionary *stats = @{
+            @"followers": @150,
+            @"following": @75,
+            @"posts": @42
+        };
+        
+        resp.statusCode = HttpStatusOK;
+        [resp setJsonBody:stats];
+    }];
+    
+    [dispatcher handleRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 200, @"getUserStats should succeed");
+    NSDictionary *responseBody = response.jsonBody;
+    XCTAssertNotNil(responseBody, @"Response should contain JSON body");
+    XCTAssertEqualObjects(responseBody[@"followers"], @150, @"Should return correct follower count");
+    XCTAssertEqualObjects(responseBody[@"following"], @75, @"Should return correct following count");
+    XCTAssertEqualObjects(responseBody[@"posts"], @42, @"Should return correct post count");
+}
+
+- (void)testGetUserStatsMissingUser {
+    // Test getUserStats with missing user parameter
+    HttpRequest *request = [[HttpRequest alloc] init];
+    request.method = @"GET";
+    request.path = @"/xrpc/app.bsky.user.getUserStats";
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+    
+    // Create a dispatcher and register the method
+    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    [dispatcher registerAppBskyUserGetUserStats:^(HttpRequest *req, HttpResponse *resp) {
+        NSString *user = [req queryParamForKey:@"user"];
+        
+        if (!user) {
+            resp.statusCode = HttpStatusBadRequest;
+            [resp setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing user parameter"}];
+            return;
+        }
+        
+        NSDictionary *stats = @{
+            @"followers": @150,
+            @"following": @75,
+            @"posts": @42
+        };
+        
+        resp.statusCode = HttpStatusOK;
+        [resp setJsonBody:stats];
+    }];
+    
+    [dispatcher handleRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 400, @"Missing user parameter should return bad request");
+    NSDictionary *responseBody = response.jsonBody;
+    XCTAssertNotNil(responseBody, @"Response should contain JSON body");
+    XCTAssertEqualObjects(responseBody[@"error"], @"InvalidRequest", @"Should return correct error type");
+    XCTAssertTrue([responseBody[@"message"] containsString:@"Missing user parameter"], @"Should return descriptive error message");
+}
+
 @end

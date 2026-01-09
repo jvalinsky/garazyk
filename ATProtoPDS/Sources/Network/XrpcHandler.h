@@ -184,6 +184,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for app.bsky.actor.putPreferences. */
 - (void)registerAppBskyActorPutPreferences:(XrpcMethodHandler)handler;
 
+/*! Registers handler for app.bsky.user.getUserStats. */
+- (void)registerAppBskyUserGetUserStats:(XrpcMethodHandler)handler;
+
 // MARK: - App Bsky Feed Methods
 
 /*! Registers handler for app.bsky.feed.getTimeline. */

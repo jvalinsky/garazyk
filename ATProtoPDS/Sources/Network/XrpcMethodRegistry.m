@@ -882,5 +882,25 @@
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
+    
+    [dispatcher registerAppBskyUserGetUserStats:^(HttpRequest *request, HttpResponse *response) {
+        NSString *user = [request queryParamForKey:@"user"];
+        
+        if (!user) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing user parameter"}];
+            return;
+        }
+        
+        // Return hardcoded demo data as requested
+        NSDictionary *stats = @{
+            @"followers": @150,
+            @"following": @75,
+            @"posts": @42
+        };
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:stats];
+    }];
 }
 @end
