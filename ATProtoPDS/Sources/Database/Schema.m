@@ -11,6 +11,7 @@ NSString * const kPDSInviteCodeTableName = @"invite_codes";
 
 NSString * const kPDSAdminTakedownTableName = @"admin_takedowns";
 NSString * const kPDSPasskeysTableName = @"passkeys";
+NSString * const kPDSOAuthClientsTableName = @"oauth_clients";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -127,3 +128,13 @@ NSString * const kPDSIndexPasskeysAccountDidSQL =
 
 NSString * const kPDSIndexPasskeysCredentialIdSQL =
     @"CREATE INDEX IF NOT EXISTS idx_passkeys_credential_id ON passkeys(credential_id)";
+
+NSString * const kPDSOAuthClientsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS oauth_clients ("
+    @"client_id TEXT PRIMARY KEY,"
+    @"client_secret TEXT,"
+    @"redirect_uris TEXT NOT NULL,"
+    @"grant_types TEXT,"
+    @"scope TEXT,"
+    @"created_at TEXT NOT NULL"
+    @")";
