@@ -19,19 +19,12 @@
     return self;
 }
 
-- (void)testSuite:(XCTestSuite *)suite didStartTestCaseAtIndex:(NSUInteger)index forTestWithClassName:(NSString *)className methodName:(NSString *)methodName {
+- (void)testCaseWillStart:(XCTestCase *)testCase {
     self.testCount++;
 }
 
-- (void)testSuite:(XCTestSuite *)suite didFailWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber {
+- (void)testCase:(XCTestCase *)testCase didFailWithDescription:(NSString *)description inFile:(nullable NSString *)filePath atLine:(NSUInteger)lineNumber {
     self.failureCount++;
-}
-
-- (void)testCase:(XCTestCase *)testCase didFailWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber {
-    self.failureCount++;
-}
-
-- (void)testSuiteDidFinish:(XCTestSuite *)suite {
 }
 @end
 
@@ -61,7 +54,14 @@ int main(int argc, char * argv[]) {
         NSArray *testClasses = @[
             @"ActorStoreTests",
             @"DatabasePoolTests",
-            @"PDSControllerTests"
+            @"PDSControllerTests",
+            @"ServiceDatabasesTests",
+            @"RateLimiterTests",
+            @"DIDResolverTests",
+            @"HandleResolverTests",
+            @"ATProtoHandleValidatorTests",
+            @"TOTPTests",
+            @"CryptoTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
@@ -84,11 +84,13 @@ int main(int argc, char * argv[]) {
                     }
                     [mainSuite addTest:classSuite];
                 }
+            } else {
+                NSLog(@"Warning: Test class %@ not found", className);
             }
         }
 
         NSLog(@"\n=== Starting Test Suite: %@ ===", mainSuite.name);
-        NSLog(@"Test classes: %lu", (unsigned long)mainSuite.tests.count);
+        NSLog(@"Test suites: %lu", (unsigned long)mainSuite.tests.count);
 
         [mainSuite performTest:nil];
 

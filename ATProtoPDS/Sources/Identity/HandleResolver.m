@@ -1,4 +1,5 @@
 #import "Identity/HandleResolver.h"
+#import "Identity/ATProtoHandleValidator.h"
 
 NSString * const HandleErrorDomain = @"com.atproto.handle";
 
@@ -20,14 +21,15 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     
     if (!completion) return;
     
-    // Validate handle format (basic)
-    if (!handle || handle.length == 0 || [handle containsString:@"."] == NO) {
-        NSError *error = [NSError errorWithDomain:HandleErrorDomain
-                                          code:HandleErrorInvalidFormat
-                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid handle format"}];
-        completion(nil, error);
+    // Validate handle
+    NSError *validationError = nil;
+    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
+        completion(nil, validationError);
         return;
     }
+    
+    // Normalize handle
+    handle = [ATProtoHandleValidator normalizeHandle:handle];
     
     // Try HTTPS resolution first
     [self resolveHandleViaHTTPS:handle completion:completion];

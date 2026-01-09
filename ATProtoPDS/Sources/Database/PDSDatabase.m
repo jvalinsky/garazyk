@@ -1,5 +1,6 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
+#import "Identity/ATProtoHandleValidator.h"
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
@@ -282,13 +283,52 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
-    rc = sqlite3_exec(_db, "ALTER TABLE accounts ADD COLUMN password_salt BLOB", NULL, NULL, &errMsg);
-    if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL) {
+    rc = sqlite3_exec(_db, [kPDSPasskeysTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
         return NO;
     }
+
+    rc = sqlite3_exec(_db, [kPDSIndexPasskeysAccountDidSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexPasskeysCredentialIdSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    // Migrations for accounts table
+    const char *migrations[] = {
+        "ALTER TABLE accounts ADD COLUMN password_salt BLOB",
+        "ALTER TABLE accounts ADD COLUMN tfa_enabled INTEGER DEFAULT 0",
+        "ALTER TABLE accounts ADD COLUMN tfa_secret BLOB",
+        "ALTER TABLE accounts ADD COLUMN recovery_codes BLOB"
+    };
+
+    for (int i = 0; i < 4; i++) {
+        rc = sqlite3_exec(_db, migrations[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL) {
+            NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+            sqlite3_free(errMsg);
+            if (error) *error = e;
+            return NO;
+        }
+        if (errMsg) {
+            sqlite3_free(errMsg);
+            errMsg = NULL;
+        }
+    }
+    
     if (errMsg) sqlite3_free(errMsg);
 
     return YES;
@@ -499,7 +539,13 @@ static NSDateFormatter * iso8601Formatter(void) {
 #pragma mark - Accounts
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
-    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // Validate handle
+    if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
+        return NO;
+    }
+    account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
+
+    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at, tfa_enabled, tfa_secret, recovery_codes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -521,6 +567,10 @@ static NSDateFormatter * iso8601Formatter(void) {
     [self bindData:account.refreshJwt toStatement:stmt index:7];
     sqlite3_bind_text(stmt, 8, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]].UTF8String, -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 9, [self iso8601StringFromDate:[NSDate date]].UTF8String, -1, SQLITE_STATIC);
+    // 2FA columns (defaults)
+    sqlite3_bind_int(stmt, 10, account.tfaEnabled ? 1 : 0);
+    [self bindData:account.tfaSecret toStatement:stmt index:11];
+    [self bindData:account.recoveryCodes toStatement:stmt index:12];
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -537,7 +587,13 @@ static NSDateFormatter * iso8601Formatter(void) {
 }
 
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
-    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ? WHERE did = ?";
+    // Validate handle
+    if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
+        return NO;
+    }
+    account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
+
+    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ?, tfa_enabled = ?, tfa_secret = ?, recovery_codes = ? WHERE did = ?";
 
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -556,7 +612,14 @@ static NSDateFormatter * iso8601Formatter(void) {
     [self bindData:account.accessJwt toStatement:stmt index:4];
     [self bindData:account.refreshJwt toStatement:stmt index:5];
     sqlite3_bind_text(stmt, 6, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]].UTF8String, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 7, account.did.UTF8String, -1, SQLITE_STATIC);
+    
+    // 2FA
+    sqlite3_bind_int(stmt, 7, account.tfaEnabled ? 1 : 0);
+    [self bindData:account.tfaSecret toStatement:stmt index:8];
+    [self bindData:account.recoveryCodes toStatement:stmt index:9];
+
+    // WHERE did = ?
+    sqlite3_bind_text(stmt, 10, account.did.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -603,6 +666,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         return nil;
     }
 
+    handle = [ATProtoHandleValidator normalizeHandle:handle];
     sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_STATIC);
 
     PDSDatabaseAccount *account = nil;
@@ -722,6 +786,19 @@ static NSDateFormatter * iso8601Formatter(void) {
     const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 8);
     if (updatedAtText) {
         account.updatedAt = [[iso8601Formatter() dateFromString:@(updatedAtText)] timeIntervalSince1970];
+    }
+    
+    // 2FA
+    account.tfaEnabled = (sqlite3_column_int(stmt, 9) != 0);
+    
+    blobBytes = sqlite3_column_bytes(stmt, 10);
+    if (blobBytes > 0) {
+        account.tfaSecret = [NSData dataWithBytes:sqlite3_column_blob(stmt, 10) length:blobBytes];
+    }
+    
+    blobBytes = sqlite3_column_bytes(stmt, 11);
+    if (blobBytes > 0) {
+        account.recoveryCodes = [NSData dataWithBytes:sqlite3_column_blob(stmt, 11) length:blobBytes];
     }
     
     return account;

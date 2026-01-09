@@ -5,6 +5,9 @@
 #import "Auth/Secp256k1.h"
 #import "Core/DID.h"
 #import "Identity/HandleResolver.h"
+#import "Database/PDSDatabase.h"
+#import "Auth/TOTPService.h"
+#import "Auth/Base32Utils.h"
 #import <os/log.h>
 
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
@@ -129,6 +132,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     if (self.accessToken) dict[@"access_token"] = self.accessToken;
     if (self.dpopProof) dict[@"dpop"] = self.dpopProof;
     if (self.scope) dict[@"scope"] = self.scope;
+    if (self.tfaCode) dict[@"tfa_code"] = self.tfaCode;
     return dict;
 }
 
@@ -221,6 +225,10 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _keyManager = [[KeyManager alloc] init];
         _didResolver = [[DIDResolver alloc] init];
         _handleResolver = [[HandleResolver alloc] init];
+        // Initialize with default database location for now (should be injected preferably)
+        NSURL *dbURL = [[NSURL fileURLWithPath:NSHomeDirectory()] URLByAppendingPathComponent:@".gemini/pds.db"];
+        _database = [PDSDatabase databaseAtURL:dbURL];
+        [_database openWithError:nil];
 
         // Generate Secp256k1 key pair for JWT signing
         NSError *keyError;
@@ -262,6 +270,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     if (request.codeChallengeMethod) codeData[@"code_challenge_method"] = request.codeChallengeMethod;
     if (request.nonce) codeData[@"nonce"] = request.nonce;
     if (request.dpopJWK) codeData[@"dpop_jwk"] = request.dpopJWK;
+    if (request.loginHint) codeData[@"login_hint"] = request.loginHint; // Ensure we store this
     codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
 
     // ATProto: Resolve identity if login_hint provided
@@ -346,8 +355,37 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 
     [self.authorizationCodes removeObjectForKey:request.code];
 
-    NSString *did = @"did:plc:stub-user-placeholder";
-    NSString *handle = @"handle.placeholder";
+    NSString *did = @"did:plc:stub-user-placeholder"; // In real usage, this comes from the codeData or is resolved
+    if (codeData[@"login_hint_did"]) {
+        did = codeData[@"login_hint_did"];
+    }
+    
+    // Check 2FA Status
+    NSError *dbError = nil;
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+    
+    if (account && account.tfaEnabled) {
+        if (!request.tfaCode) {
+             NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                  code:OAuth2ErrorInteractionRequired
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Two-factor authentication code required", @"error": @"mfa_required"}];
+             completion(nil, error);
+             return;
+        }
+        
+        // Verify Code
+        NSString *secret = [Base32Utils base32StringFromData:account.tfaSecret];
+        BOOL valid = [TOTPService verifyCode:request.tfaCode secret:secret];
+        if (!valid) {
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                  code:OAuth2ErrorInvalidGrant
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Invalid 2FA code"}];
+            completion(nil, error);
+            return;
+        }
+    }
+
+    NSString *handle = account.handle ?: @"handle.placeholder";
     NSString *scope = codeData[@"scope"] ?: OAuth2ScopeIdentify;
 
     Session *session = [self createSessionForDID:did handle:handle scope:scope dpopJWK:codeData[@"dpop_jwk"]];

@@ -4,17 +4,16 @@
 build/
 
 # Reference repositories (not part of this project)
-atproto/
-pegasus-ocaml/
-cocoon/
-deciduous/
-indigo/
+# atproto/
+# pegasus-ocaml/
+# cocoon/
+# deciduous/
+# indigo/
 reference/
+data/
 
 # Worktrees
-oauth-worktree/
-sqlite-worktree/
-websocket-worktree/
+.worktrees/
 
 # Database files
 data/*.db

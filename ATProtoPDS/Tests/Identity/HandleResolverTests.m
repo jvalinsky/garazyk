@@ -115,7 +115,7 @@
     [self.resolver resolveHandle:@"" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         XCTAssertNil(did, @"Empty handle should return nil DID");
         XCTAssertNotNil(error, @"Error should be set");
-        XCTAssertEqual(error.code, HandleErrorInvalidFormat, @"Error code should be HandleErrorInvalidFormat");
+        XCTAssertEqual(error.code, 1001, @"Error code should be 1001 (Empty)");
         [expectation fulfill];
     }];
 
@@ -128,7 +128,7 @@
     [self.resolver resolveHandle:nil completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         XCTAssertNil(did, @"Null handle should return nil DID");
         XCTAssertNotNil(error, @"Error should be set");
-        XCTAssertEqual(error.code, HandleErrorInvalidFormat, @"Error code should be HandleErrorInvalidFormat");
+        XCTAssertEqual(error.code, 1001, @"Error code should be 1001 (Empty)");
         [expectation fulfill];
     }];
 
@@ -141,7 +141,7 @@
     [self.resolver resolveHandle:@"invalidhandle" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         XCTAssertNil(did, @"Handle without dot should return nil DID");
         XCTAssertNotNil(error, @"Error should be set");
-        XCTAssertEqual(error.code, HandleErrorInvalidFormat, @"Error code should be HandleErrorInvalidFormat");
+        XCTAssertEqual(error.code, 1004, @"Error code should be 1004 (Segment count)");
         [expectation fulfill];
     }];
 
@@ -310,7 +310,7 @@
     [urlTestResolver resolveHandle:@"invalid url.example.com" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         XCTAssertNil(did, @"Invalid URL chars should return nil DID");
         XCTAssertNotNil(error, @"Error should be set");
-        XCTAssertEqual(error.code, HandleErrorInvalidFormat, @"Error code should be HandleErrorInvalidFormat");
+        XCTAssertEqual(error.code, 1007, @"Error code should be 1007 (Invalid characters)");
         [expectation fulfill];
     }];
 
@@ -369,18 +369,12 @@
     NSString *largeHandle = [@"" stringByPaddingToLength:1000 withString:@"a" startingAtIndex:0];
     largeHandle = [largeHandle stringByAppendingString:@".example.com"];
 
-    MockURLSession *largeHandleSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:large"}
-                                                                           error:nil
-                                                                           delay:0.1];
-    HandleResolver *largeHandleResolver = [[HandleResolver alloc] init];
-    [largeHandleResolver setValue:largeHandleSession forKey:@"session"];
-
     XCTestExpectation *expectation = [self expectationWithDescription:@"Large handle test"];
 
-    [largeHandleResolver resolveHandle:largeHandle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
-        XCTAssertNotNil(did, @"Large handle should return DID");
-        XCTAssertEqualObjects(did, @"did:plc:large", @"DID should match");
-        XCTAssertNil(error, @"No error should occur");
+    [self.resolver resolveHandle:largeHandle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+        XCTAssertNil(did, @"Large handle should return nil DID");
+        XCTAssertNotNil(error, @"Error should be set");
+        XCTAssertEqual(error.code, 1002, @"Error code should be 1002 (Handle too long)");
         [expectation fulfill];
     }];
 
