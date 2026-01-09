@@ -5,6 +5,7 @@
 #import "AppView/ActorService.h"
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
+#import "Auth/JWT.h"
 
 @implementation XrpcMethodRegistry
 
@@ -958,8 +959,35 @@
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller {
     if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) return nil;
     NSString *token = [authHeader substringFromIndex:7];
-    // For now, return a test DID - proper auth implementation needed
-    return @"did:plc:test123456789";
+
+    // Parse the JWT token
+    NSError *parseError = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&parseError];
+    if (!jwt || parseError) {
+        NSLog(@"Failed to parse JWT token: %@", parseError.localizedDescription);
+        return nil;
+    }
+
+    // Create verifier and set expected issuer
+    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    verifier.expectedIssuer = @"https://pds.local:8443"; // Match OAuth2Handler issuer
+
+    // Verify the JWT
+    NSError *verifyError = nil;
+    BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
+    if (!isValid || verifyError) {
+        NSLog(@"JWT verification failed: %@", verifyError.localizedDescription);
+        return nil;
+    }
+
+    // Extract DID from subject claim
+    NSString *did = jwt.payload.sub;
+    if (!did || ![did hasPrefix:@"did:"]) {
+        NSLog(@"Invalid DID in JWT subject claim: %@", did);
+        return nil;
+    }
+
+    return did;
 }
 
 @end
