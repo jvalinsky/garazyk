@@ -64,6 +64,36 @@
     return client;
 }
 
+- (BOOL)validateRedirectURI:(NSString *)redirectURI forClient:(NSDictionary *)client error:(NSError **)error {
+    if (!redirectURI) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing redirect_uri"}];
+        }
+        return NO;
+    }
+
+    // Check if the redirect URI is in the client's registered URIs
+    NSArray *allowedURIs = client[@"redirect_uris"];
+    if (!allowedURIs || ![allowedURIs isKindOfClass:[NSArray class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Client has no registered redirect URIs"}];
+        }
+        return NO;
+    }
+
+    // Exact match required (OAuth 2.0 security best practice)
+    for (NSString *allowedURI in allowedURIs) {
+        if ([redirectURI isEqualToString:allowedURI]) {
+            return YES;
+        }
+    }
+
+    if (error) {
+        *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid redirect_uri"}];
+    }
+    return NO;
+}
+
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
     [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleAuthorizeRequest:request response:response];
@@ -91,6 +121,18 @@
         [response setJsonBody:@{
             @"error": @"unauthorized_client",
             @"error_description": clientError.localizedDescription ?: @"Invalid client"
+        }];
+        return;
+    }
+
+    // Validate redirect URI against client's registered URIs
+    NSString *redirectURI = params[@"redirect_uri"];
+    NSError *redirectError = nil;
+    if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": redirectError.localizedDescription ?: @"Invalid redirect_uri"
         }];
         return;
     }
@@ -171,6 +213,21 @@
             @"error_description": clientError.localizedDescription ?: @"Invalid client"
         }];
         return;
+    }
+
+    // Validate redirect URI for authorization_code grant type
+    NSString *grantType = params[@"grant_type"];
+    if ([grantType isEqualToString:@"authorization_code"]) {
+        NSString *redirectURI = params[@"redirect_uri"];
+        NSError *redirectError = nil;
+        if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+            response.statusCode = 400;
+            [response setJsonBody:@{
+                @"error": @"invalid_request",
+                @"error_description": redirectError.localizedDescription ?: @"Invalid redirect_uri"
+            }];
+            return;
+        }
     }
     
     OAuth2TokenRequest *tokenRequest = [[OAuth2TokenRequest alloc] init];
