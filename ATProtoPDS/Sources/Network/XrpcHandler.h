@@ -137,6 +137,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.sync.listBlobs. */
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.repo.deleteBlob. */
+- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
+
 // MARK: - Identity Methods
 
 /*! Registers handler for com.atproto.identity.resolveDid. */

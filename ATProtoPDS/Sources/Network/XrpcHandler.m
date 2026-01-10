@@ -134,6 +134,10 @@
     [self registerMethod:@"com.atproto.sync.listBlobs" handler:handler];
 }
 
+- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.repo.deleteBlob" handler:handler];
+}
+
 - (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.identity.resolveDid" handler:handler];
 }
