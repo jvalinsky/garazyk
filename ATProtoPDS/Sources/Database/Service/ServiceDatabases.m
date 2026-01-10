@@ -47,9 +47,9 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
             [fm createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
         }
         
-        _serviceDbPath = [directory stringByAppendingPathComponent:@"service.sqlite"];
-        _didCacheDbPath = [directory stringByAppendingPathComponent:@"did_cache.sqlite"];
-        _sequencerDbPath = [directory stringByAppendingPathComponent:@"sequencer.sqlite"];
+        _serviceDbPath = [directory stringByAppendingPathComponent:@"service"];
+        _didCacheDbPath = [directory stringByAppendingPathComponent:@"did_cache"];
+        _sequencerDbPath = [directory stringByAppendingPathComponent:@"sequencer"];
         
         _servicePool = [[PDSDatabasePool alloc] initWithDbDirectory:_serviceDbPath maxSize:serviceMaxSize];
         _didCachePool = [[PDSDatabasePool alloc] initWithDbDirectory:_didCacheDbPath maxSize:didCacheMaxSize];
@@ -468,7 +468,8 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 #pragma mark - Cleanup
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
-    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:self.serviceDbPath]];
+    NSString *dbFilePath = [self.serviceDbPath stringByAppendingPathComponent:@"service.db"];
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbFilePath]];
     if (![db openWithError:error]) {
         return nil;
     }
