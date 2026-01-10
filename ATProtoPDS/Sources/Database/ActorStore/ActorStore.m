@@ -2,6 +2,7 @@
 #import <sqlite3.h>
 #import <Security/Security.h>
 #import "Database/PDSDatabase.h"
+#import "Database/Schema/PDSSchemaManager.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
@@ -126,69 +127,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 }
 
 - (BOOL)createSchema:(NSError **)error {
-    const char *schemaSQL = 
-        "CREATE TABLE IF NOT EXISTS repo_root ("
-        "    cid BLOB PRIMARY KEY,"
-        "    updated_at DATETIME NOT NULL"
-        ");"
-        
-        "CREATE TABLE IF NOT EXISTS records ("
-        "    uri TEXT PRIMARY KEY,"
-        "    did TEXT NOT NULL,"
-        "    collection TEXT NOT NULL,"
-        "    rkey TEXT NOT NULL,"
-        "    cid BLOB NOT NULL,"
-        "    value BLOB,"
-        "    indexed_at DATETIME NOT NULL"
-        ");"
-        
-        "CREATE TABLE IF NOT EXISTS ipld_blocks ("
-        "    cid BLOB PRIMARY KEY,"
-        "    block BLOB NOT NULL,"
-        "    size INTEGER NOT NULL"
-        ");"
-        
-        "CREATE INDEX IF NOT EXISTS idx_records_collection_rkey ON records(collection, rkey);"
-        "CREATE INDEX IF NOT EXISTS idx_records_did ON records(did);"
-        "CREATE INDEX IF NOT EXISTS idx_records_uri ON records(uri);"
-        "CREATE INDEX IF NOT EXISTS idx_ipld_blocks_cid ON ipld_blocks(cid);"
-        
-        "CREATE TABLE IF NOT EXISTS accounts ("
-        "    did TEXT PRIMARY KEY,"
-        "    handle TEXT UNIQUE NOT NULL,"
-        "    email TEXT,"
-        "    password_hash BLOB,"
-        "    password_salt BLOB,"
-        "    access_jwt BLOB,"
-        "    refresh_jwt BLOB,"
-        "    created_at DATETIME NOT NULL,"
-        "    updated_at DATETIME NOT NULL"
-        ");"
-        
-        "CREATE TABLE IF NOT EXISTS invite_codes ("
-        "    id TEXT PRIMARY KEY,"
-        "    code TEXT NOT NULL UNIQUE,"
-        "    account_did TEXT NOT NULL,"
-        "    created_at DATETIME NOT NULL,"
-        "    uses INTEGER DEFAULT 0,"
-        "    max_uses INTEGER DEFAULT 1,"
-        "    disabled INTEGER DEFAULT 0"
-        ");"
+    NSString *schemaSQL = [[PDSSchemaManager sharedManager] actorStoreSchemaSQL];
 
-        "CREATE TABLE IF NOT EXISTS blobs ("
-        "    cid BLOB PRIMARY KEY,"
-        "    did TEXT NOT NULL,"
-        "    mimeType TEXT,"
-        "    size INTEGER NOT NULL,"
-        "    created_at DATETIME NOT NULL"
-        ");"
-
-        "CREATE INDEX IF NOT EXISTS idx_blobs_did ON blobs(did);"
-        "CREATE INDEX IF NOT EXISTS idx_blobs_cid ON blobs(cid);";
-    
     char *errMsg = NULL;
-    int result = sqlite3_exec(self.db, schemaSQL, NULL, NULL, &errMsg);
-    
+    int result = sqlite3_exec(self.db, [schemaSQL UTF8String], NULL, NULL, &errMsg);
+
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
@@ -198,7 +141,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         sqlite3_free(errMsg);
         return NO;
     }
-    
+
     return YES;
 }
 

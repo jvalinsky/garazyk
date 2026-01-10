@@ -2,6 +2,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/Schema/PDSSchemaManager.h"
 #import <sqlite3.h>
 
 NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.databases";
@@ -64,79 +65,21 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 #pragma mark - Schema Initialization
 
 - (BOOL)initializeServiceSchema:(NSError **)error {
-    NSString *schemaSQL = 
-        @"CREATE TABLE IF NOT EXISTS accounts ("
-        @"    did TEXT PRIMARY KEY,"
-        @"    handle TEXT UNIQUE NOT NULL,"
-        @"    email TEXT,"
-        @"    password_hash BLOB,"
-        @"    password_salt BLOB,"
-        @"    access_jwt BLOB,"
-        @"    refresh_jwt BLOB,"
-        @"    created_at REAL NOT NULL,"
-        @"    updated_at REAL NOT NULL"
-        @");"
-        
-        @"CREATE TABLE IF NOT EXISTS invite_codes ("
-        @"    id TEXT PRIMARY KEY,"
-        @"    code TEXT NOT NULL UNIQUE,"
-        @"    account_did TEXT NOT NULL,"
-        @"    created_at REAL NOT NULL,"
-        @"    uses INTEGER DEFAULT 0,"
-        @"    max_uses INTEGER DEFAULT 1,"
-        @"    disabled INTEGER DEFAULT 0"
-        @");"
-        
-        @"CREATE TABLE IF NOT EXISTS refresh_tokens ("
-        @"    token TEXT PRIMARY KEY,"
-        @"    account_did TEXT NOT NULL,"
-        @"    created_at REAL NOT NULL,"
-        @"    expires_at REAL NOT NULL"
-        @");"
-        
-        @"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"
-        @"CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code);"
-        @"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);"
-
-        @"CREATE TABLE IF NOT EXISTS jwt_signing_keys ("
-        @"    key_id TEXT PRIMARY KEY,"
-        @"    algorithm TEXT NOT NULL,"
-        @"    private_key_data BLOB NOT NULL,"
-        @"    public_key_data BLOB NOT NULL,"
-        @"    is_active INTEGER DEFAULT 1,"
-        @"    created_at TEXT NOT NULL,"
-        @"    last_used_at TEXT"
-        @");";
-    
+    NSString *schemaSQL = [[PDSSchemaManager sharedManager] serviceSchemaSQL];
     return [self executeSQL:schemaSQL onPool:self.servicePool error:error];
 }
 
 - (BOOL)initializeDidCacheSchema:(NSError **)error {
-    NSString *schemaSQL = 
-        @"CREATE TABLE IF NOT EXISTS did_cache ("
-        @"    did TEXT PRIMARY KEY,"
-        @"    document BLOB NOT NULL,"
-        @"    expires_at REAL NOT NULL"
-        @");"
-        
-        @"CREATE INDEX IF NOT EXISTS idx_did_cache_expires ON did_cache(expires_at);";
-    
+    NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@",
+                           [[PDSSchemaManager sharedManager] serviceDIDCacheTableSchema],
+                           @"CREATE INDEX IF NOT EXISTS idx_did_cache_expires ON did_cache(expires_at);"];
     return [self executeSQL:schemaSQL onPool:self.didCachePool error:error];
 }
 
 - (BOOL)initializeSequencerSchema:(NSError **)error {
-    NSString *schemaSQL = 
-        @"CREATE TABLE IF NOT EXISTS repo_sequence ("
-        @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        @"    did TEXT NOT NULL,"
-        @"    root_cid BLOB NOT NULL,"
-        @"    sequence_num INTEGER NOT NULL,"
-        @"    created_at REAL NOT NULL"
-        @");"
-        
-        @"CREATE INDEX IF NOT EXISTS idx_repo_sequence_did ON repo_sequence(did);"
-        @"CREATE INDEX IF NOT EXISTS idx_repo_sequence_num ON repo_sequence(sequence_num);";
-    
+    NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@",
+                           [[PDSSchemaManager sharedManager] serviceRepoSequenceTableSchema],
+                           @"CREATE INDEX IF NOT EXISTS idx_repo_sequence_did ON repo_sequence(did);"];
     return [self executeSQL:schemaSQL onPool:self.sequencerPool error:error];
 }
 
