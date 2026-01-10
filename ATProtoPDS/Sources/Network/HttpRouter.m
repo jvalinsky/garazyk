@@ -248,7 +248,81 @@
             return;
         }
 
+        // Add CORS headers for OAuth metadata
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+
         [response setJsonBody:metadata.metadata];
+        response.statusCode = HttpStatusOK;
+    }];
+
+    // CORS preflight for authorization server metadata
+    [self addRoute:@"OPTIONS"
+             pattern:@"/.well-known/oauth-authorization-server"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        response.statusCode = HttpStatusOK;
+    }];
+
+    [self addRoute:@"GET"
+             pattern:@"/.well-known/oauth-protected-resource"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+        // Validate base URL configuration
+        if (!self.baseURL || [self.baseURL length] == 0) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{
+                @"error": @"server_error",
+                @"error_description": @"Server configuration error: base URL not configured"
+            }];
+            return;
+        }
+
+        // OAuth 2.0 Protected Resource Metadata
+        NSDictionary *resourceMetadata = @{
+            @"resource": self.baseURL,
+            @"authorization_servers": @[
+                @{
+                    @"authorization_server": self.baseURL,
+                    @"resource_servers": @[self.baseURL]
+                }
+            ],
+            @"protected_resources": @[
+                @{
+                    @"resource": self.baseURL,
+                    @"resource_scopes": @[@"atproto"],
+                    @"bearer_methods_supported": @[@"header"],
+                    @"access_token_types_supported": @[@"Bearer"]
+                }
+            ],
+            @"mtls_endpoint_aliases": @{
+                @"token_endpoint": [self.baseURL stringByAppendingPathComponent:@"/oauth/token"],
+                @"resource": self.baseURL
+            }
+        };
+
+        // Add CORS headers for OAuth metadata
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+
+        [response setJsonBody:resourceMetadata];
+        response.statusCode = HttpStatusOK;
+    }];
+
+    // CORS preflight for protected resource metadata
+    [self addRoute:@"OPTIONS"
+             pattern:@"/.well-known/oauth-protected-resource"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
         response.statusCode = HttpStatusOK;
     }];
 }
