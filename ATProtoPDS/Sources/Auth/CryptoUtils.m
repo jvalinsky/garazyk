@@ -7,11 +7,17 @@
 
 + (nullable NSData *)hmacSHA1WithKey:(NSData *)key data:(NSData *)data {
     if (!key || !data) return nil;
-    
+
     unsigned char cHMAC[CC_SHA1_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA1, key.bytes, key.length, data.bytes, data.length, cHMAC);
-    
+
     return [NSData dataWithBytes:cHMAC length:CC_SHA1_DIGEST_LENGTH];
+}
+
++ (NSData *)HMACSHA256:(NSData *)data key:(NSData *)key {
+    unsigned char hmac[CC_SHA256_DIGEST_LENGTH];
+    CCHmac(kCCHmacAlgSHA256, key.bytes, key.length, data.bytes, data.length, hmac);
+    return [NSData dataWithBytes:hmac length:CC_SHA256_DIGEST_LENGTH];
 }
 
 + (nullable NSData *)sha256:(NSData *)data {
