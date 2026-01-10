@@ -43,8 +43,8 @@
     counter = CFSwapInt64HostToBig(counter);
     NSData *counterData = [NSData dataWithBytes:&counter length:sizeof(counter)];
     
-    // 3. HMAC-SHA1
-    NSData *hash = [CryptoUtils hmacSHA1WithKey:_secret data:counterData];
+    // 3. HMAC-SHA256
+    NSData *hash = [CryptoUtils HMACSHA256:counterData key:_secret];
     if (!hash) return nil;
     
     const uint8_t *hashBytes = hash.bytes;
