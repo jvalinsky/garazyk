@@ -339,4 +339,64 @@
     XCTAssertEqualObjects(result[@"status"], @"not_implemented");
 }
 
+- (void)testPasswordHashingMethods {
+    NSString *password = @"testpassword";
+    NSData *salt = [self.controller generateSalt];
+
+    // Test Argon2-compatible method
+    NSData *hash1 = [self.controller hashPasswordArgon2:password salt:salt];
+    NSData *hash2 = [self.controller hashPasswordArgon2:password salt:salt];
+    XCTAssertEqualObjects(hash1, hash2, @"Same password and salt should produce same hash");
+
+    // Test legacy SHA-256 method
+    NSData *legacyHash = [self.controller hashPasswordSHA256:password salt:salt];
+    XCTAssertNotEqualObjects(hash1, legacyHash, @"New and legacy hashes should be different");
+
+    // Test verification with new method
+    BOOL verified = [self.controller verifyPassword:password hash:hash1 salt:salt];
+    XCTAssertTrue(verified, @"Password should verify with correct hash");
+
+    // Test verification with legacy method
+    BOOL migrated = NO;
+    verified = [self.controller verifyPassword:password hash:legacyHash salt:salt migrated:&migrated];
+    XCTAssertTrue(verified, @"Password should verify with legacy hash");
+    XCTAssertTrue(migrated, @"Should indicate migration needed");
+}
+
+- (void)testPasswordMigration {
+    __autoreleasing NSError *error = nil;
+
+    // Create account (will use new hashing)
+    NSDictionary *result = [self.controller createAccountForEmail:@"migrate@example.com"
+                                                         password:@"migratepass"
+                                                          handle:@"migrateuser.example.com"
+                                                              did:nil
+                                                           error:&error];
+    XCTAssertNotNil(result);
+
+    NSString *did = result[@"did"];
+
+    // Simulate old SHA-256 hash in database (manually modify for test)
+    PDSDatabaseAccount *account = [_serviceDatabases getAccountByDid:did error:&error];
+    XCTAssertNotNil(account);
+
+    // Replace with SHA-256 hash
+    NSData *legacyHash = [self.controller hashPasswordSHA256:@"migratepass" salt:account.passwordSalt];
+    account.passwordHash = legacyHash;
+    [_serviceDatabases updateAccount:account error:nil];
+
+    // Login should succeed and migrate
+    NSDictionary *session = [self.controller loginWithHandle:@"migrateuser.example.com"
+                                                    password:@"migratepass"
+                                                      error:&error];
+    XCTAssertNotNil(session, @"Login should succeed after migration");
+
+    // Verify hash was updated
+    PDSDatabaseAccount *updatedAccount = [_serviceDatabases getAccountByDid:did error:&error];
+    XCTAssertNotNil(updatedAccount);
+
+    NSData *expectedNewHash = [self.controller hashPasswordArgon2:@"migratepass" salt:updatedAccount.passwordSalt];
+    XCTAssertEqualObjects(updatedAccount.passwordHash, expectedNewHash, @"Password hash should be migrated to new method");
+}
+
 @end
