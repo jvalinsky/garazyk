@@ -276,7 +276,19 @@
         return;
     }
 
-    HttpRequest *request = [HttpRequest requestWithData:requestData];
+    // Get remote address from connection
+    nw_endpoint_t endpoint = nw_connection_copy_endpoint(connection);
+    NSString *remoteAddress = nil;
+    if (endpoint) {
+        const char *addressStr = nw_endpoint_copy_address_string(endpoint);
+        if (addressStr) {
+            remoteAddress = [NSString stringWithUTF8String:addressStr];
+            free((void *)addressStr);
+        }
+        CFRelease((__bridge CFTypeRef)endpoint);
+    }
+
+    HttpRequest *request = [HttpRequest requestWithData:requestData remoteAddress:remoteAddress];
 
     if (!request) {
         HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
