@@ -174,6 +174,57 @@
     XCTAssertNotNil(error, @"Error should be returned for wrong issuer");
 }
 
+- (void)testJWTVerificationRejectsNoneAlgorithm {
+    // Test JWT with "none" algorithm is rejected
+    NSError *error = nil;
+
+    // Create a JWT with "none" algorithm (unsigned)
+    JWTHeader *header = [[JWTHeader alloc] init];
+    header.alg = @"none";
+    header.typ = @"JWT";
+
+    JWTPayload *payload = [[JWTPayload alloc] init];
+    payload.sub = @"test-user";
+    payload.iss = @"test.issuer";
+    payload.aud = @"test.audience";
+    payload.exp = [[NSDate date] dateByAddingTimeInterval:3600];
+
+    // Create JWT with empty signature (none algorithm)
+    JWT *jwt = [JWT jwtWithHeader:header payload:payload signature:@"" error:&error];
+    XCTAssertNotNil(jwt, @"JWT should be created");
+
+    // Set allowed algorithms (excluding none)
+    self.verifier.allowedAlgorithms = @[@"RS256", @"ES256"];
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"JWT with 'none' algorithm should not verify when algorithm restriction is set");
+
+    // Assert error is returned
+    XCTAssertNotNil(error, @"Error should be returned for disallowed algorithm");
+}
+
+- (void)testJWTVerificationWithWrongAudience {
+    // Test JWT with wrong audience
+    self.verifier.expectedAudience = @"wrong.audience";
+
+    NSError *error = nil;
+
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience", // Wrong audience
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+
+    NSString *token = [self.minter signPayload:payload error:&error];
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"JWT with wrong audience should not verify");
+    XCTAssertNotNil(error, @"Error should be returned for wrong audience");
+}
+
 #pragma mark - JWTMinter Tests
 
 - (void)testAccessTokenMinting {
