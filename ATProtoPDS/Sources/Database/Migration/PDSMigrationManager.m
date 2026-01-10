@@ -89,14 +89,61 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     
     [self updateProgress:0.1 status:@"Migrating accounts"];
     
+    // Collect all accounts for batch processing
+    NSMutableArray<PDSDatabaseAccount *> *allAccounts = [NSMutableArray array];
     sqlite3_stmt *accountStmt;
-    sqlite3_prepare_v2(sourceDb, 
+    sqlite3_prepare_v2(sourceDb,
         "SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at "
         "FROM accounts", -1, &accountStmt, NULL);
-    
+
     while (sqlite3_step(accountStmt) == SQLITE_ROW) {
+        PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+        account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 0)];
+        account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 1)];
+
+        int col = 2;
+        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+            account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, col)];
+        }
+        col++;
+
+        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+            account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                                  length:sqlite3_column_bytes(accountStmt, col)];
+        }
+        col++;
+
+        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+            account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                                  length:sqlite3_column_bytes(accountStmt, col)];
+        }
+        col++;
+
+        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+            account.accessJwt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                               length:sqlite3_column_bytes(accountStmt, col)];
+        }
+        col++;
+
+        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+            account.refreshJwt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                                length:sqlite3_column_bytes(accountStmt, col)];
+        }
+        col++;
+
+        account.createdAt = sqlite3_column_double(accountStmt, col);
+        col++;
+        account.updatedAt = sqlite3_column_double(accountStmt, col);
+
+        [allAccounts addObject:account];
+        [accountDids addObject:account.did];
+    }
+    sqlite3_finalize(accountStmt);
+
+    // Create accounts in batches for better performance
+    const NSUInteger batchSize = 100;
+    for (NSUInteger i = 0; i < allAccounts.count; i += batchSize) {
         if (self.cancelBlock && self.cancelBlock()) {
-            sqlite3_finalize(accountStmt);
             sqlite3_close(sourceDb);
             if (error) {
                 *error = [NSError errorWithDomain:PDSMigrationErrorDomain
@@ -105,58 +152,20 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
             }
             return NO;
         }
-        
-        PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-        account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 0)];
-        account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 1)];
-        
-        int col = 2;
-        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
-            account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, col)];
-        }
-        col++;
-        
-        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
-            account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col) 
-                                                  length:sqlite3_column_bytes(accountStmt, col)];
-        }
-        col++;
-        
-        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
-            account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col) 
-                                                  length:sqlite3_column_bytes(accountStmt, col)];
-        }
-        col++;
-        
-        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
-            account.accessJwt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col) 
-                                               length:sqlite3_column_bytes(accountStmt, col)];
-        }
-        col++;
-        
-        if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
-            account.refreshJwt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col) 
-                                                length:sqlite3_column_bytes(accountStmt, col)];
-        }
-        col++;
-        
-        account.createdAt = sqlite3_column_double(accountStmt, col);
-        col++;
-        account.updatedAt = sqlite3_column_double(accountStmt, col);
-        
+
+        NSUInteger endIndex = MIN(i + batchSize, allAccounts.count);
+        NSArray<PDSDatabaseAccount *> *batch = [allAccounts subarrayWithRange:NSMakeRange(i, endIndex - i)];
+
         NSError *createError = nil;
-        [serviceDb createAccount:account error:&createError];
-        if (createError) {
-            NSLog(@"[Migration] Failed to create account %@: %@", account.did, createError);
-        } else {
-            [accountDids addObject:account.did];
+        BOOL batchSuccess = [serviceDb createAccounts:batch error:&createError];
+        if (!batchSuccess) {
+            NSLog(@"[Migration] Failed to create account batch starting at %@: %@", @(i), createError);
         }
-        
-        migratedItems++;
-        [self updateProgress:(0.1 + 0.3 * ((double)migratedItems / totalItems)) 
+
+        migratedItems += batch.count;
+        [self updateProgress:(0.1 + 0.3 * ((double)migratedItems / totalItems))
                       status:[NSString stringWithFormat:@"Migrating accounts (%ld/%ld)", (long)migratedItems, (long)totalAccounts]];
     }
-    sqlite3_finalize(accountStmt);
     
     [self updateProgress:0.4 status:@"Migrating repos and records"];
     

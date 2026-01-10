@@ -27,6 +27,8 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
                  sequencerMaxSize:(NSUInteger)sequencerMaxSize;
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
+- (BOOL)createAccounts:(NSArray<PDSDatabaseAccount *> *)accounts error:(NSError **)error;
+- (BOOL)createAccounts:(NSArray<PDSDatabaseAccount *> *)accounts error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
