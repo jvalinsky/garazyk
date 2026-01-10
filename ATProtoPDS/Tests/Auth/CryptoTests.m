@@ -21,6 +21,14 @@
     XCTAssertEqualObjects(hex, @"104152c5bfdca07bc633eebd46199f0255c9f49d");
 }
 
+- (void)testHMACSHA256 {
+    NSData *key = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *data = [@"message" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *hmac = [CryptoUtils HMACSHA256:data key:key];
+    XCTAssertNotNil(hmac);
+    XCTAssertEqual(hmac.length, CC_SHA256_DIGEST_LENGTH);
+}
+
 - (void)testRandomBytes {
     NSData *r1 = [CryptoUtils randomBytes:16];
     NSData *r2 = [CryptoUtils randomBytes:16];
