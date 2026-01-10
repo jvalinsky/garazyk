@@ -15,20 +15,33 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         config.timeoutIntervalForRequest = 10.0;
         config.timeoutIntervalForResource = 30.0;
         _session = [NSURLSession sessionWithConfiguration:config];
+        _resolutionCache = [[NSCache alloc] init];
+        _cacheExpirationInterval = 300.0; // 5 minutes
+        _rateLimitPerMinute = 100; // Allow 100 resolutions per minute
+        _requestTimestamps = [NSMutableArray array];
     }
     return self;
 }
 
 - (void)resolveHandle:(NSString *)handle
-                    completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
-    
+                     completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+
+    // Rate limiting check
+    if (![self checkRateLimit]) {
+        NSError *rateLimitError = [NSError errorWithDomain:HandleErrorDomain
+                                                   code:HandleErrorNetworkError
+                                               userInfo:@{NSLocalizedDescriptionKey: @"Rate limit exceeded"}];
+        completion(nil, rateLimitError);
+        return;
+    }
+
     // Validate handle format first
     NSError *validationError = nil;
     if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
         completion(nil, validationError);
         return;
     }
-    
+
     // Normalize handle
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
@@ -52,10 +65,35 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         return;
     }
     
-    // Try HTTPS resolution first
-    [self resolveHandleViaHTTPS:handle completion:completion];
-    
-    // TODO: Add DNS TXT fallback if HTTPS fails
+    // Check cache first
+    NSString *cachedDID = [self.resolutionCache objectForKey:handle];
+    if (cachedDID) {
+        completion(cachedDID, nil);
+        return;
+    }
+
+    // Try HTTPS resolution first, then DNS TXT fallback for specific errors
+    [self resolveHandleViaHTTPS:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+        if (did) {
+            // Cache successful resolution
+            [self.resolutionCache setObject:did forKey:handle];
+            completion(did, nil);
+        } else if (error && [error.domain isEqualToString:HandleErrorDomain] &&
+                   error.code == HandleErrorNotFound) {
+            // Try DNS TXT fallback only for 404 Not Found errors
+            [self resolveHandleViaDNS:handle completion:completion];
+        } else {
+            // Ensure network errors are properly wrapped
+            NSError *finalError = error;
+            if (error && [error.domain isEqualToString:NSURLErrorDomain]) {
+                finalError = [NSError errorWithDomain:HandleErrorDomain
+                                               code:HandleErrorNetworkError
+                                           userInfo:@{NSLocalizedDescriptionKey: @"Network error during handle resolution",
+                                                     NSUnderlyingErrorKey: error}];
+            }
+            completion(nil, finalError);
+        }
+    }];
 }
 
 - (void)resolveHandleViaHTTPS:(NSString *)handle
@@ -76,18 +114,14 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
                                               completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
-            // TODO: Try DNS TXT as fallback
-            NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                      code:HandleErrorNetworkError
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Network error during handle resolution",
-                                                            NSUnderlyingErrorKey: error}];
-            completion(nil, resolveError);
+            // Pass error up to main method for DNS fallback
+            completion(nil, error);
             return;
         }
-        
+
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (httpResponse.statusCode != 200) {
-            // TODO: Try DNS TXT as fallback
+            // Pass error up to main method for DNS fallback
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
                                                       code:HandleErrorNotFound
                                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving handle", (long)httpResponse.statusCode]}];
@@ -126,6 +160,77 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         completion(did, nil);
     }];
     [task resume];
+}
+
+- (void)resolveHandles:(NSArray<NSString *> *)handles
+             completion:(void (^)(NSDictionary<NSString *, NSString *> * _Nullable results, NSError * _Nullable error))completion {
+
+    NSMutableDictionary<NSString *, NSString *> *results = [NSMutableDictionary dictionary];
+    __block NSUInteger remaining = handles.count;
+    __block NSError *firstError = nil;
+
+    if (remaining == 0) {
+        completion(@{}, nil);
+        return;
+    }
+
+    for (NSString *handle in handles) {
+        [self resolveHandle:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+            @synchronized(results) {
+                if (did) {
+                    results[handle] = did;
+                } else if (!firstError) {
+                    firstError = error;
+                }
+            }
+
+            remaining--;
+            if (remaining == 0) {
+                completion(results.count > 0 ? results : nil, firstError);
+            }
+        }];
+    }
+}
+
+- (void)resolveHandleViaDNS:(NSString *)handle
+                  completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+
+    // DNS TXT resolution: look for _atproto.{handle} TXT record
+    // Note: This is a placeholder implementation. Full DNS TXT support would require
+    // a dedicated DNS library or raw DNS query implementation.
+
+    NSString *dnsName = [NSString stringWithFormat:@"_atproto.%@", handle];
+
+    // For now, we simulate DNS resolution failure since we don't have TXT record support
+    // In a full implementation, this would query DNS TXT records and parse the DID
+
+    NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                      code:HandleErrorNotFound
+                                  userInfo:@{NSLocalizedDescriptionKey: @"DNS TXT record resolution not implemented",
+                                            @"dns_name": dnsName,
+                                            @"note": @"DNS TXT fallback requires additional DNS library implementation"}];
+    completion(nil, error);
+}
+
+- (BOOL)checkRateLimit {
+    @synchronized(self.requestTimestamps) {
+        NSDate *now = [NSDate date];
+        NSTimeInterval oneMinuteAgo = [now timeIntervalSince1970] - 60.0;
+
+        // Remove timestamps older than 1 minute
+        [self.requestTimestamps filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDate *timestamp, NSDictionary *bindings) {
+            return [timestamp timeIntervalSince1970] > oneMinuteAgo;
+        }]];
+
+        // Check if we're under the limit
+        if (self.requestTimestamps.count >= self.rateLimitPerMinute) {
+            return NO;
+        }
+
+        // Add current timestamp
+        [self.requestTimestamps addObject:now];
+        return YES;
+    }
 }
 
 #pragma mark - SSRF Protection
