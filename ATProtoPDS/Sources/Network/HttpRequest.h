@@ -25,8 +25,10 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 @property (nonatomic, readonly, nullable, copy) NSData *body;
 @property (nonatomic, readonly, nullable, copy) NSDictionary *jsonBody;
 @property (nonatomic, readonly, nullable, copy) NSDictionary *multipartFormData;
+@property (nonatomic, readonly, nullable, copy) NSString *remoteAddress;
 
 + (instancetype)requestWithData:(NSData *)data;
++ (instancetype)requestWithData:(NSData *)data remoteAddress:(NSString *)remoteAddress;
 
 - (instancetype)initWithMethod:(HttpMethod)method
                      methodString:(NSString *)methodString
@@ -35,7 +37,8 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
                      queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                          version:(NSString *)version
                          headers:(NSDictionary<NSString *, NSString *> *)headers
-                            body:(NSData *)body;
+                            body:(NSData *)body
+                    remoteAddress:(NSString *)remoteAddress;
 
 - (NSString *)headerForKey:(NSString *)key;
 - (NSString *)queryParamForKey:(NSString *)key;
