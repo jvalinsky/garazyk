@@ -25,7 +25,7 @@
 }
 
 - (instancetype)initWithSecret:(NSData *)secret {
-    return [self initWithSecret:secret digits:6 period:30.0 algorithm:@"SHA1"];
+    return [self initWithSecret:secret digits:6 period:30.0 algorithm:@"SHA256"];
 }
 
 - (nullable NSString *)generateOTP {
@@ -43,8 +43,15 @@
     counter = CFSwapInt64HostToBig(counter);
     NSData *counterData = [NSData dataWithBytes:&counter length:sizeof(counter)];
     
-    // 3. HMAC-SHA256
-    NSData *hash = [CryptoUtils HMACSHA256:counterData key:_secret];
+    // 3. HMAC computation based on algorithm
+    NSData *hash;
+    if ([_algorithm isEqualToString:@"SHA256"]) {
+        hash = [CryptoUtils hmacSHA256WithKey:_secret data:counterData];
+    } else if ([_algorithm isEqualToString:@"SHA1"]) {
+        hash = [CryptoUtils hmacSHA1WithKey:_secret data:counterData];
+    } else {
+        return nil; // Unsupported algorithm
+    }
     if (!hash) return nil;
     
     const uint8_t *hashBytes = hash.bytes;
