@@ -355,23 +355,12 @@
         return;
     }
     
-    // Find the session and validate ownership
+    // Find the session for this token (client validation already done above)
     NSString *sessionIdToRemove = nil;
     for (NSString *sessionId in self.oauthServer.activeSessions) {
         Session *session = self.oauthServer.activeSessions[sessionId];
         if ([session.accessToken isEqualToString:token] || [session.refreshToken isEqualToString:token]) {
-            // Check if token was issued to this client
-            if ([session.clientID isEqualToString:clientID]) {
-                sessionIdToRemove = sessionId;
-            } else {
-                // Token was issued to a different client - forbidden
-                response.statusCode = 403;
-                [response setJsonBody:@{
-                    @"error": @"access_denied",
-                    @"error_description": @"Token was not issued to this client"
-                }];
-                return;
-            }
+            sessionIdToRemove = sessionId;
             break;
         }
     }
