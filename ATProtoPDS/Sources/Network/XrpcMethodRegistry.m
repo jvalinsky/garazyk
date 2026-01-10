@@ -369,7 +369,7 @@
     [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
         // Extract DID from Authorization header
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -405,7 +405,7 @@
 
     [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -489,7 +489,7 @@
 
     [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -986,7 +986,7 @@
     }];
 }
 
-+ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller {
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request {
     if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) return nil;
     NSString *token = [authHeader substringFromIndex:7];
 

@@ -78,15 +78,4 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 
 @end
 
-@interface KeyRotationManager : NSObject
-
-@property (nonatomic, assign) NSTimeInterval keyLifetime;
-@property (nonatomic, assign) NSTimeInterval rotationGracePeriod;
-@property (nonatomic, assign) NSUInteger maxActiveKeys;
-
-- (void)performScheduledRotation:(void (^)(NSString * _Nullable newKeyID, NSError * _Nullable error))completion;
-- (BOOL)shouldRotateKeyWithID:(NSString *)keyID createdAt:(NSDate *)createdAt;
-
-@end
-
 NS_ASSUME_NONNULL_END

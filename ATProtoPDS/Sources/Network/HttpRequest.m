@@ -4,23 +4,29 @@
 
 @property (nonatomic, readwrite, copy) NSDictionary *jsonBody;
 @property (nonatomic, readwrite, copy) NSDictionary *multipartFormData;
+@property (nonatomic, readwrite, copy) NSString *remoteAddress;
 
 @end
 
 @implementation HttpRequest
 
 + (instancetype)requestWithData:(NSData *)data {
-    return [[self alloc] parseFromData:data];
+    return [[self alloc] parseFromData:data remoteAddress:nil];
+}
+
++ (instancetype)requestWithData:(NSData *)data remoteAddress:(NSString *)remoteAddress {
+    return [[self alloc] parseFromData:data remoteAddress:remoteAddress];
 }
 
 - (instancetype)initWithMethod:(HttpMethod)method
-                    methodString:(NSString *)methodString
-                          path:(NSString *)path
-                   queryString:(NSString *)queryString
-                    queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
-                        version:(NSString *)version
-                        headers:(NSDictionary<NSString *, NSString *> *)headers
-                           body:(NSData *)body {
+                     methodString:(NSString *)methodString
+                           path:(NSString *)path
+                    queryString:(NSString *)queryString
+                     queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
+                         version:(NSString *)version
+                         headers:(NSDictionary<NSString *, NSString *> *)headers
+                            body:(NSData *)body
+                    remoteAddress:(NSString *)remoteAddress {
     self = [super init];
     if (self) {
         _method = method;
@@ -31,6 +37,7 @@
         _version = [version copy];
         _headers = [headers copy];
         _body = [body copy];
+        _remoteAddress = [remoteAddress copy];
         _jsonBody = [self parseJsonBody:body];
         _multipartFormData = [self parseMultipartFormData:body headers:headers];
     }
@@ -189,7 +196,7 @@
     return formData.count > 0 ? [formData copy] : nil;
 }
 
-- (instancetype)parseFromData:(NSData *)data {
+- (instancetype)parseFromData:(NSData *)data remoteAddress:(NSString *)remoteAddress {
     if (!data || data.length == 0) {
         return nil;
     }
@@ -242,7 +249,8 @@
                      queryParams:queryParams
                          version:version
                          headers:headers
-                            body:body];
+                            body:body
+                    remoteAddress:remoteAddress];
 }
 
 - (HttpMethod)methodFromString:(NSString *)methodString {

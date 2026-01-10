@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Auth/CryptoUtils.h"
+#import <CommonCrypto/CommonCrypto.h>
 
 @interface CryptoTests : XCTestCase
 @end
