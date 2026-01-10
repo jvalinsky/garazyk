@@ -30,7 +30,8 @@
                                                    queryParams:@{}
                                                        version:@"1.1"
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
-                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]];
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
     HttpResponse *response = [[HttpResponse alloc] init];
 
     // Execute handler
@@ -54,7 +55,8 @@
                                                    }
                                                        version:@"1.1"
                                                        headers:@{}
-                                                          body:nil];
+                                                          body:nil
+                                                    remoteAddress:@"127.0.0.1"];
     HttpResponse *response = [[HttpResponse alloc] init];
 
     // Execute handler

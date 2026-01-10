@@ -552,25 +552,3 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 }
 
 @end
-
-@implementation KeyRotationManager
-
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        _keyLifetime = 86400 * 30;
-        _rotationGracePeriod = 86400 * 7;
-        _maxActiveKeys = 2;
-    }
-    return self;
-}
-
-- (void)performScheduledRotation:(void (^)(NSString * _Nullable, NSError * _Nullable))completion {
-}
-
-- (BOOL)shouldRotateKeyWithID:(NSString *)keyID createdAt:(NSDate *)createdAt {
-    NSTimeInterval age = [[NSDate date] timeIntervalSinceDate:createdAt];
-    return age >= (self.keyLifetime - self.rotationGracePeriod);
-}
-
-@end

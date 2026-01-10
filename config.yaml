@@ -57,6 +57,10 @@ rate_limit:
   requests_per_minute: 1000
   burst_size: 100
 
+# SSL Pinning
+ssl_pinning:
+  enabled: true
+
 # Explorer UI Settings
 explore:
   enabled: true

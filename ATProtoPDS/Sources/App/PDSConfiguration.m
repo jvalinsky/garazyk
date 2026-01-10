@@ -53,6 +53,8 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _rateLimitEnabled = YES;
         _rateLimitRequestsPerMinute = 1000;
         _rateLimitBurstSize = 100;
+
+        _sslPinningEnabled = YES;
     }
     return self;
 }
@@ -138,6 +140,11 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (rateLimit[@"enabled"]) _rateLimitEnabled = [rateLimit[@"enabled"] boolValue];
         if (rateLimit[@"requests_per_minute"]) _rateLimitRequestsPerMinute = [rateLimit[@"requests_per_minute"] unsignedIntegerValue];
         if (rateLimit[@"burst_size"]) _rateLimitBurstSize = [rateLimit[@"burst_size"] unsignedIntegerValue];
+    }
+
+    NSDictionary *sslPinning = config[@"ssl_pinning"];
+    if (sslPinning) {
+        if (sslPinning[@"enabled"]) _sslPinningEnabled = [sslPinning[@"enabled"] boolValue];
     }
 }
 

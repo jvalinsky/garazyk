@@ -38,6 +38,8 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @property (nonatomic, readonly) NSUInteger rateLimitRequestsPerMinute;
 @property (nonatomic, readonly) NSUInteger rateLimitBurstSize;
 
+@property (nonatomic, readonly) BOOL sslPinningEnabled;
+
 + (nullable instancetype)sharedConfiguration;
 + (nullable instancetype)configurationWithPath:(NSString *)path error:(NSError **)error;
 
