@@ -994,19 +994,24 @@
     NSError *parseError = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
-        NSLog(@"Failed to parse JWT token: %@", parseError.localizedDescription);
+        NSLog(@"Failed to parse JWT token from authorization header");
         return nil;
     }
 
     // Create verifier and set expected issuer
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
-    verifier.expectedIssuer = @"https://pds.local:8443"; // Match OAuth2Handler issuer
+
+    // Use configurable issuer from environment, default to localhost
+    NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+    verifier.expectedIssuer = expectedIssuer;
+    verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
+    verifier.allowedAlgorithms = @[@"RS256", @"ES256"]; // Restrict to secure algorithms
 
     // Verify the JWT
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
-        NSLog(@"JWT verification failed: %@", verifyError.localizedDescription);
+        NSLog(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
         return nil;
     }
 

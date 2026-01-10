@@ -16,12 +16,16 @@
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
-        _database = database;
         _oauthServer = [[OAuth2Server alloc] init];
-        _oauthServer.issuer = @"https://pds.local:8443";
-        _oauthServer.authorizationEndpoint = @"https://pds.local:8443/oauth/authorize";
-        _oauthServer.tokenEndpoint = @"https://pds.local:8443/oauth/token";
-        _oauthServer.jwksURI = @"https://pds.local:8443/.well-known/jwks.json";
+
+        // Use configurable issuer from environment, default to localhost
+        NSString *issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+        _oauthServer.issuer = issuer;
+
+        // Build other endpoints relative to issuer
+        _oauthServer.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
+        _oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
+        _oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
 
         // Seed test client for development
         NSError *seedError = nil;
@@ -133,6 +137,17 @@
         [response setJsonBody:@{
             @"error": @"invalid_request",
             @"error_description": redirectError.localizedDescription ?: @"Invalid redirect_uri"
+        }];
+        return;
+    }
+
+    // Validate state parameter (CSRF protection)
+    NSString *state = params[@"state"];
+    if (!state || [state stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]].length == 0) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"state parameter required for CSRF protection"
         }];
         return;
     }
@@ -340,18 +355,31 @@
         return;
     }
     
-    // For now, just remove from active sessions
+    // Find the session and validate ownership
     NSString *sessionIdToRemove = nil;
     for (NSString *sessionId in self.oauthServer.activeSessions) {
         Session *session = self.oauthServer.activeSessions[sessionId];
         if ([session.accessToken isEqualToString:token] || [session.refreshToken isEqualToString:token]) {
-            sessionIdToRemove = sessionId;
+            // Check if token was issued to this client
+            if ([session.clientID isEqualToString:clientID]) {
+                sessionIdToRemove = sessionId;
+            } else {
+                // Token was issued to a different client - forbidden
+                response.statusCode = 403;
+                [response setJsonBody:@{
+                    @"error": @"access_denied",
+                    @"error_description": @"Token was not issued to this client"
+                }];
+                return;
+            }
             break;
         }
     }
-    
+
     if (sessionIdToRemove) {
         [self.oauthServer.activeSessions removeObjectForKey:sessionIdToRemove];
+    } else {
+        // Token not found - still return success for security (don't reveal if token exists)
     }
     
     response.statusCode = 200;

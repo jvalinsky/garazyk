@@ -1,6 +1,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/RateLimiter.h"
 #import <Network/Network.h>
 
 @interface HttpServer ()
@@ -304,6 +305,16 @@
 
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
     HttpResponse *response = [HttpResponse response];
+
+    // Apply rate limiting for OAuth endpoints
+    if ([request.path hasPrefix:@"/oauth/"]) {
+        RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+        if (!result.allowed) {
+            response.statusCode = 429;
+            [response setJsonBody:@{@"error": @"too_many_requests", @"message": @"Rate limit exceeded"}];
+            return response;
+        }
+    }
 
     if (self.requestHandler) {
         self.requestHandler(request, response);
