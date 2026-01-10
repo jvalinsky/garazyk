@@ -644,6 +644,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 - (NSDictionary<NSString *, id> *)getMetrics {
     return @{
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
         @"user_databases": [_userDatabasePool collectMetrics] ?: @{},
         @"service_databases": @{}
     };
