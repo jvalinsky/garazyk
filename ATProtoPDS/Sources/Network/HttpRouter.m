@@ -228,9 +228,28 @@
     [self addRoute:@"GET"
              pattern:@"/.well-known/oauth-authorization-server"
              handler:^(HttpRequest *request, HttpResponse *response) {
+        // Validate base URL configuration
+        if (!self.baseURL || [self.baseURL length] == 0) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{
+                @"error": @"server_error",
+                @"error_description": @"Server configuration error: base URL not configured"
+            }];
+            return;
+        }
+
         OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:self.baseURL];
+        if (!metadata) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{
+                @"error": @"server_error",
+                @"error_description": @"Server configuration error: invalid base URL format"
+            }];
+            return;
+        }
+
         [response setJsonBody:metadata.metadata];
-        response.statusCode = 200;
+        response.statusCode = HttpStatusOK;
     }];
 }
 

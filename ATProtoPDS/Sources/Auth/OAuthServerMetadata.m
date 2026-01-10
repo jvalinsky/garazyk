@@ -3,7 +3,19 @@
 @implementation OAuthServerMetadata
 
 - (instancetype)initWithBaseURL:(NSString *)baseURL {
-    if (!baseURL || ![baseURL hasPrefix:@"https://"]) {
+    // Validate base URL
+    if (!baseURL || [baseURL length] == 0) {
+        return nil;
+    }
+
+    // Ensure base URL uses HTTPS
+    if (![baseURL hasPrefix:@"https://"]) {
+        return nil;
+    }
+
+    // Basic URL validation
+    NSURL *url = [NSURL URLWithString:baseURL];
+    if (!url || !url.host || [url.host length] == 0) {
         return nil;
     }
 
