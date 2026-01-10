@@ -856,8 +856,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     if (!blob) return nil;
 
     PDSActorStore *store = [_userDatabasePool storeForDid:did error:nil];
-    PDSDatabaseBlob *blobMetadata = [store getBlobForCID:cidData error:nil];
-    NSString *mimeType = blobMetadata.mimeType ?: @"application/octet-stream";
+    PDSDatabaseBlob *metadata = [store getBlobForCID:cidData error:nil];
+    NSString *mimeType = metadata.mimeType ?: @"application/octet-stream";
 
     return @{
         @"blob": blob,
@@ -877,9 +877,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
     NSMutableArray *result = [NSMutableArray array];
     for (PDSDatabaseBlob *blob in blobs) {
-        NSString *cidString = [[blob.cid base64EncodedStringWithOptions:0] stringByReplacingOccurrencesOfString:@"=" withString:@""];
         [result addObject:@{
-            @"cid": cidString ?: @"",
+            @"cid": [self base32Encode:blob.cid] ?: @"",
             @"mimeType": blob.mimeType ?: @"application/octet-stream",
             @"size": @(blob.size)
         }];

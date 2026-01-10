@@ -487,6 +487,36 @@
         [response setJsonBody:result];
     }];
 
+    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller];
+
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSString *cid = [request queryParamForKey:@"cid"];
+        if (!cid) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [controller deleteBlobWithCID:cid did:did error:&error];
+
+        if (!success) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"DeleteFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
     [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
 
