@@ -21,12 +21,24 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 
 - (void)resolveHandle:(NSString *)handle
                     completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+    
+    // Validate handle format first
+    NSError *validationError = nil;
+    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
+        completion(nil, validationError);
+        return;
+    }
+    
+    // Normalize handle
+    handle = [ATProtoHandleValidator normalizeHandle:handle];
 
     // SSRF Protection: Check if handle resolves to private/internal IPs
-    NSError *ssrfError = nil;
-    if (![self validateHandleResolvesToPublicIP:handle error:&ssrfError]) {
-        completion(nil, ssrfError);
-        return;
+    if (!self.skipSSRFCheck) {
+        NSError *ssrfError = nil;
+        if (![self validateHandleResolvesToPublicIP:handle error:&ssrfError]) {
+            completion(nil, ssrfError);
+            return;
+        }
     }
 
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
@@ -39,9 +51,6 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         completion(nil, error);
         return;
     }
-    
-    // Normalize handle
-    handle = [ATProtoHandleValidator normalizeHandle:handle];
     
     // Try HTTPS resolution first
     [self resolveHandleViaHTTPS:handle completion:completion];
@@ -116,6 +125,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         
         completion(did, nil);
     }];
+    [task resume];
 }
 
 #pragma mark - SSRF Protection

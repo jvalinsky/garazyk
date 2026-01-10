@@ -15,6 +15,7 @@ typedef NS_ENUM(NSInteger, HandleError) {
 @interface HandleResolver : NSObject
 
 @property (nonatomic, strong) NSURLSession *session;
+@property (nonatomic, assign) BOOL skipSSRFCheck;
 
 - (instancetype)init;
 
