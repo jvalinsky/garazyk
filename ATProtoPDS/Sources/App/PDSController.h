@@ -13,6 +13,10 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRepo;
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlob;
+@class PDSAccountService;
+@class PDSRecordService;
+@class PDSBlobService;
+@class PDSRepositoryService;
 
 extern NSString * const PDSControllerErrorDomain;
 
@@ -34,6 +38,10 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 @property (nonatomic, assign, readonly, getter=isRunning) BOOL running;
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
+@property (nonatomic, strong, readonly) PDSAccountService *accountService;
+@property (nonatomic, strong, readonly) PDSRecordService *recordService;
+@property (nonatomic, strong, readonly) PDSBlobService *blobService;
+@property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
 
