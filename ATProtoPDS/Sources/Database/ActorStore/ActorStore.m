@@ -11,7 +11,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 @property (nonatomic, copy, readwrite) NSString *dbPath;
 @property (nonatomic, assign, readwrite) sqlite3 *db;
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, id> *stmtCache;
+@property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
 @property (nonatomic, strong) dispatch_queue_t transactionQueue;
 @property (nonatomic, assign) SecKeyRef signingKey;
@@ -37,7 +37,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         _dbPath = [dbPath copy];
         _db = NULL;
         _open = NO;
-        _stmtCache = [NSMutableDictionary dictionary];
+        _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
         _blobCache = [NSMutableDictionary dictionary];
         _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
         _signingKey = NULL;
@@ -207,6 +207,16 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         return;
     }
     
+    // Finalize all cached statements to prevent memory leaks
+    NSMapTable *cache = self.stmtCache;
+    for (NSString *sql in cache) {
+        NSValue *stmtValue = [cache objectForKey:sql];
+        sqlite3_stmt *stmt = NULL;
+        [stmtValue getValue:&stmt];
+        if (stmt) {
+            sqlite3_finalize(stmt);
+        }
+    }
     [self.stmtCache removeAllObjects];
     [self.blobCache removeAllObjects];
     
@@ -314,23 +324,42 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
         return NULL;
     }
-    
+
+    // Check cache first
+    NSValue *stmtValue = [self.stmtCache objectForKey:sql];
     sqlite3_stmt *stmt = NULL;
+    if (stmtValue) {
+        [stmtValue getValue:&stmt];
+        if (stmt) {
+            // Reset the cached statement for reuse
+            sqlite3_reset(stmt);
+            sqlite3_clear_bindings(stmt);
+            return stmt;
+        }
+    }
+
+    // Prepare new statement
     int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
-    
+
     if (result != SQLITE_OK) {
         if (error) {
             *error = [self errorWithSQLiteResult:result message:@"Failed to prepare statement"];
         }
         return NULL;
     }
-    
+
+    // Cache the prepared statement
+    [self.stmtCache setObject:[NSValue valueWithPointer:stmt] forKey:sql];
+
     return stmt;
 }
 
 - (void)finalizeStatement:(sqlite3_stmt *)stmt {
     if (stmt) {
-        sqlite3_finalize(stmt);
+        // Reset the statement but keep it in cache for reuse
+        sqlite3_reset(stmt);
+        sqlite3_clear_bindings(stmt);
+        // Statement remains in cache for future reuse
     }
 }
 
