@@ -217,6 +217,16 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error {
+    // Check algorithm restriction
+    if (self.allowedAlgorithms && ![self.allowedAlgorithms containsObject:jwt.header.alg ?: @""]) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidAlgorithm
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Algorithm not allowed"}];
+        }
+        return NO;
+    }
+
     if (![self validateClaims:jwt.payload ofJWT:jwt error:error]) {
         return NO;
     }
