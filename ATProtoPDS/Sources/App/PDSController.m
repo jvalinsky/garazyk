@@ -20,6 +20,10 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "App/PDSConfiguration.h"
+#import "Services/PDSAccountService.h"
+#import "Services/PDSRecordService.h"
+#import "Services/PDSBlobService.h"
+#import "Services/PDSRepositoryService.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -31,6 +35,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     os_log_t _log;
     PDSServiceDatabases *_serviceDatabases;
     PDSDatabasePool *_userDatabasePool;
+    PDSAccountService *_accountService;
+    PDSRecordService *_recordService;
+    PDSBlobService *_blobService;
+    PDSRepositoryService *_repositoryService;
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
     dispatch_queue_t _repoQueue;
@@ -67,30 +75,35 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return [[appSupport URLByAppendingPathComponent:@"ATProtoPDS"] path];
 }
 
-- (instancetype)initWithDirectory:(NSString *)directory 
-                   serviceMaxSize:(NSUInteger)serviceMaxSize 
-                 userDatabaseSize:(NSUInteger)userDatabaseSize {
+- (instancetype)initWithDirectory:(NSString *)directory
+                    serviceMaxSize:(NSUInteger)serviceMaxSize
+                  userDatabaseSize:(NSUInteger)userDatabaseSize {
     self = [super init];
     if (self) {
         _dataDirectory = [directory copy];
-        _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:directory 
-                                                            serviceMaxSize:serviceMaxSize 
-                                                          didCacheMaxSize:1000 
-                                                        sequencerMaxSize:100];
+        _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:directory
+                                                             serviceMaxSize:serviceMaxSize
+                                                           didCacheMaxSize:1000
+                                                         sequencerMaxSize:100];
         _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:directory maxSize:userDatabaseSize];
+        _accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
+        _accountService.serviceDatabases = _serviceDatabases;
+        _recordService = [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
+        _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool];
+        _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
         _repos = [NSMutableDictionary dictionary];
         _collections = [NSMutableDictionary dictionary];
         _repoQueue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
         _controllerQueue = dispatch_queue_create("com.atproto.pds.controller", DISPATCH_QUEUE_SERIAL);
         _plcServerURL = kDefaultPlcServerURL;
         _running = NO;
-        
+
         NSFileManager *fm = [NSFileManager defaultManager];
         NSString *blobDir = [_dataDirectory stringByAppendingPathComponent:@"blobs"];
         if (![fm fileExistsAtPath:blobDir]) {
             [fm createDirectoryAtPath:blobDir withIntermediateDirectories:YES attributes:nil error:nil];
         }
-        
+
         _log = os_log_create("com.atproto.pds", "PDSController");
         os_log_info(_log, "PDS Controller initialized with single-tenant architecture");
     }
@@ -149,639 +162,34 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     os_log_info(_log, "PDS server stopped");
 }
 
-#pragma mark - Password Utilities
-
-- (NSData *)hashPasswordSHA256:(NSString *)password salt:(NSData *)salt {
-    // Legacy SHA-256 hashing for migration purposes
-    const char *passwordBytes = [password UTF8String];
-    size_t passwordLength = strlen(passwordBytes);
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-
-    // Simple SHA-256 with salt prepended
-    NSMutableData *saltedPassword = [NSMutableData dataWithData:salt];
-    [saltedPassword appendBytes:passwordBytes length:passwordLength];
-    CC_SHA256(saltedPassword.bytes, (CC_LONG)saltedPassword.length, hash);
-
-    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-}
-
-- (NSData *)hashPasswordArgon2:(NSString *)password salt:(NSData *)salt {
-    // Use CommonCrypto PBKDF2 as Argon2 substitute until proper library available
-    // Parameters: 10000 iterations, 256-bit output
-    const char *passwordBytes = [password UTF8String];
-    size_t passwordLength = strlen(passwordBytes);
-    NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
-    CCKeyDerivationPBKDF(kCCPBKDF2, passwordBytes, passwordLength,
-                        salt.bytes, salt.length, kCCPRFHmacAlgSHA256,
-                        10000, derivedKey.mutableBytes, derivedKey.length);
-    return derivedKey;
-}
-
-- (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
-    // Legacy method - redirects to Argon2-compatible implementation
-    return [self hashPasswordArgon2:password salt:salt];
-}
-
-- (BOOL)verifyPassword:(NSString *)password hash:(NSData *)hash salt:(NSData *)salt migrated:(BOOL *)migrated {
-    // First try new Argon2-compatible method
-    NSData *computedHash = [self hashPasswordArgon2:password salt:salt];
-    if ([computedHash isEqualToData:hash]) {
-        if (migrated) *migrated = NO;
-        return YES;
-    }
-
-    // Try legacy SHA-256 method for migration
-    computedHash = [self hashPasswordSHA256:password salt:salt];
-    if ([computedHash isEqualToData:hash]) {
-        if (migrated) *migrated = YES;
-        return YES;
-    }
-
-    return NO;
-}
-
-- (BOOL)verifyPassword:(NSString *)password hash:(NSData *)hash salt:(NSData *)salt {
-    return [self verifyPassword:password hash:hash salt:salt migrated:NULL];
-}
-
-- (NSData *)generateSalt {
-    NSMutableData *salt = [NSMutableData dataWithLength:16];
-    if (SecRandomCopyBytes(kSecRandomDefault, 16, salt.mutableBytes) != errSecSuccess) {
-        for (NSUInteger i = 0; i < 16; i++) {
-            ((uint8_t *)salt.mutableBytes)[i] = arc4random_uniform(256);
-        }
-    }
-    return salt;
-}
-
 #pragma mark - Account Operations
 
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
-                                          password:(NSString *)password
-                                           handle:(NSString *)handle
-                                               did:(nullable NSString *)did
-                                              error:(NSError **)error {
-
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    BOOL debugMode = config.debugSkipPlcOperations;
-
-    // Validate Handle
-    if (![ATProtoHandleValidator validateHandle:handle error:error]) {
-        return nil;
-    }
-    handle = [ATProtoHandleValidator normalizeHandle:handle];
-
-    NSString *resolvedDid;
-    if (did) {
-        resolvedDid = did;
-    } else if (debugMode) {
-        resolvedDid = [self generatePlcIdentifier];
-    } else {
-        resolvedDid = [NSString stringWithFormat:@"did:web:%@", handle];
-    }
-
-    NSError *dbError = nil;
-    PDSDatabaseAccount *existingAccount = [_serviceDatabases getAccountByDid:resolvedDid error:&dbError];
-
-    if (existingAccount) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                         code:PDSControllerErrorAccountAlreadyExists
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account already exists"}];
-        }
-        return nil;
-    }
-
-    NSData *salt = [self generateSalt];
-    NSData *passwordHash = [self hashPasswordArgon2:password salt:salt];
-
-    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-    account.email = email;
-    account.handle = handle;
-    account.did = resolvedDid;
-    account.passwordHash = passwordHash;
-    account.passwordSalt = salt;
-    account.createdAt = [[NSDate date] timeIntervalSince1970];
-    account.updatedAt = [[NSDate date] timeIntervalSince1970];
-
-    NSError *createError = nil;
-    if (![_serviceDatabases createAccount:account error:&createError]) {
-        if (error) {
-            if ([createError.domain isEqualToString:PDSActorStoreErrorDomain] &&
-                createError.code == PDSActorStoreErrorAlreadyExists) {
-                *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                             code:PDSControllerErrorAccountAlreadyExists
-                                         userInfo:@{NSLocalizedDescriptionKey: createError.localizedDescription ?: @"Account already exists"}];
-            } else {
-                *error = createError;
-            }
-        }
-        return nil;
-    }
-
-    NSString *accessToken = [[NSUUID UUID] UUIDString];
-    NSString *refreshToken = [[NSUUID UUID] UUIDString];
-
-    account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
-    account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
-    [_serviceDatabases storeRefreshToken:refreshToken forAccount:resolvedDid error:nil];
-
-    if (debugMode) {
-        os_log_info(_log, "[DEBUG] Created account with mock DID: %{public}@", resolvedDid);
-    }
-
-    if (debugMode) {
-        os_log_info(_log, "[DEBUG] Created account with mock DID: %{public}@", resolvedDid);
-    }
-
-    MST *repo = [[MST alloc] init];
-    dispatch_sync(_repoQueue, ^{
-        self->_repos[resolvedDid] = repo;
-    });
-
-    CID *root = repo.rootCID;
-    NSData *rootData = root ? [root bytes] : [NSData data];
-
-    PDSDatabaseRepo *repoInfo = [[PDSDatabaseRepo alloc] init];
-    repoInfo.ownerDid = resolvedDid;
-    repoInfo.rootCid = rootData;
-    repoInfo.createdAt = [NSDate date];
-    repoInfo.updatedAt = [NSDate date];
-
-    [_userDatabasePool transactWithDid:resolvedDid block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        [store createRepo:repoInfo error:nil];
-    } error:nil];
-
-    return @{
-        @"did": resolvedDid,
-        @"handle": handle,
-        @"accessJwt": accessToken,
-        @"refreshJwt": refreshToken,
-    };
-}
-
-- (NSString *)generatePlcIdentifier {
-    NSString *alphabet = @"abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableString *identifier = [NSMutableString stringWithCapacity:24];
-    for (int i = 0; i < 24; i++) {
-        unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
-        [identifier appendFormat:@"%C", c];
-    }
-    return [NSString stringWithFormat:@"did:plc:%@", identifier];
+                                           password:(NSString *)password
+                                            handle:(NSString *)handle
+                                                did:(nullable NSString *)did
+                                               error:(NSError **)error {
+    return [_accountService createAccountForEmail:email
+                                         password:password
+                                          handle:handle
+                                              did:did
+                                             error:error];
 }
 
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
-                                  password:(NSString *)password
-                                     error:(NSError **)error {
-    NSError *dbError = nil;
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByHandle:handle error:&dbError];
-    
-    if (!account) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                         code:PDSControllerErrorAccountNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
-        }
-        return nil;
-    }
-    
-    BOOL migrated = NO;
-    if (![self verifyPassword:password hash:account.passwordHash salt:account.passwordSalt migrated:&migrated]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                          code:PDSControllerErrorInvalidToken
-                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid password"}];
-        }
-        return nil;
-    }
-
-    // Migrate password hash if using old method
-    if (migrated) {
-        os_log_info(_log, "Migrating password hash to Argon2-compatible method for account: %@", account.did);
-        NSData *newHash = [self hashPasswordArgon2:password salt:account.passwordSalt];
-        account.passwordHash = newHash;
-        [_serviceDatabases updateAccount:account error:nil];
-    }
-    
-    NSString *accessToken = [[NSUUID UUID] UUIDString];
-    NSString *refreshToken = [[NSUUID UUID] UUIDString];
-    
-    account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
-    account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
-    [_serviceDatabases storeRefreshToken:refreshToken forAccount:account.did error:nil];
-    
-    return @{
-        @"did": account.did,
-        @"handle": account.handle,
-        @"accessJwt": accessToken,
-        @"refreshJwt": refreshToken,
-    };
+                                   password:(NSString *)password
+                                      error:(NSError **)error {
+    return [_accountService loginWithHandle:handle
+                                  password:password
+                                     error:error];
 }
 
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken error:(NSError **)error {
-    NSError *dbError = nil;
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByRefreshToken:refreshToken error:&dbError];
-    
-    if (!account) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                         code:PDSControllerErrorInvalidToken
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];
-        }
-        return nil;
-    }
-    
-    NSString *newAccessToken = [[NSUUID UUID] UUIDString];
-    NSString *newRefreshToken = [[NSUUID UUID] UUIDString];
-    
-    account.accessJwt = [newAccessToken dataUsingEncoding:NSUTF8StringEncoding];
-    account.refreshJwt = [newRefreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
-    [_serviceDatabases storeRefreshToken:newRefreshToken forAccount:account.did error:nil];
-    
-    return @{
-        @"accessJwt": newAccessToken,
-        @"refreshJwt": newRefreshToken,
-    };
+    return [_accountService refreshAccessToken:refreshToken error:error];
 }
 
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error {
-    NSError *dbError = nil;
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByDid:did error:&dbError];
-    
-    if (!account) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                         code:PDSControllerErrorAccountNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
-        }
-        return NO;
-    }
-    
-    BOOL migrated = NO;
-    if (![self verifyPassword:password hash:account.passwordHash salt:account.passwordSalt migrated:&migrated]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                          code:PDSControllerErrorUnauthorized
-                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid password"}];
-        }
-        return NO;
-    }
-
-    // Migrate password hash if using old method
-    if (migrated) {
-        os_log_info(_log, "Migrating password hash to Argon2-compatible method for account: %@", account.did);
-        NSData *newHash = [self hashPasswordArgon2:password salt:account.passwordSalt];
-        account.passwordHash = newHash;
-        [_serviceDatabases updateAccount:account error:nil];
-    }
-    
-    [_serviceDatabases deleteAccount:did error:nil];
-    [_userDatabasePool evictStoreForDid:did];
-    
-    dispatch_sync(_repoQueue, ^{
-        [self->_repos removeObjectForKey:did];
-    });
-    
-    return YES;
-}
-
-#pragma mark - Repo Operations
-
-- (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
-    return [_userDatabasePool getRepoRoot:did error:error];
-}
-
-- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSData *)sinceCid error:(NSError **)error {
-    PDSActorStore *store = [_userDatabasePool storeForDid:did error:error];
-    if (!store) return nil;
-    return [store getRepoRootForDid:did error:error];
-}
-
-- (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
-    return NO;
-}
-
-#pragma mark - Record Operations
-
-- (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
-    PDSDatabaseRecord *record = [_userDatabasePool getRecord:uri forDid:did error:error];
-    
-    if (!record) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                         code:PDSControllerErrorRecordNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Record not found"}];
-        }
-        return nil;
-    }
-    
-    return @{
-        @"uri": record.uri,
-        @"cid": record.cid,
-        @"collection": record.collection,
-        @"rkey": record.rkey
-    };
-}
-
-- (nullable NSArray *)listRecords:(NSString *)collection 
-                           forDid:(NSString *)did
-                             limit:(NSUInteger)limit
-                            cursor:(nullable NSString *)cursor
-                            error:(NSError **)error {
-    
-    PDSActorStore *store = [_userDatabasePool storeForDid:did error:error];
-    if (!store) return nil;
-    
-    NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:did 
-                                                          collection:collection
-                                                                limit:limit
-                                                               offset:0
-                                                                error:error];
-    
-    NSMutableArray *result = [NSMutableArray array];
-    for (PDSDatabaseRecord *record in records) {
-        [result addObject:@{
-            @"uri": record.uri,
-            @"cid": record.cid,
-            @"collection": record.collection,
-            @"rkey": record.rkey
-        }];
-    }
-    
-    return result;
-}
-
-- (BOOL)putRecord:(NSString *)collection 
-              rkey:(NSString *)rkey 
-             value:(NSDictionary *)value 
-            forDid:(NSString *)did
-             error:(NSError **)error {
-    
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    
-    NSError *cidError;
-    NSString *cidString = [self generateCIDForData:[NSJSONSerialization dataWithJSONObject:value options:0 error:nil] 
-                                             error:&cidError];
-    if (!cidString) {
-        if (error) *error = cidError;
-        return NO;
-    }
-    
-    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
-    record.uri = uri;
-    record.did = did;
-    record.collection = collection;
-    record.rkey = rkey;
-    record.cid = cidString;
-    record.createdAt = [NSDate date];
-    
-    __block BOOL success = NO;
-    __block NSError *blockError = nil;
-    [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store putRecord:record forDid:did error:&blockError];
-    } error:nil];
-
-    if (error && blockError) {
-        *error = blockError;
-    }
-    
-    return success;
-}
-
-- (BOOL)deleteRecord:(NSString *)collection 
-                 rkey:(NSString *)rkey 
-               forDid:(NSString *)did
-                error:(NSError **)error {
-    
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    
-    __block BOOL success = NO;
-    __block NSError *blockError = nil;
-    [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteRecord:uri forDid:did error:&blockError];
-    } error:nil];
-
-    if (error && blockError) {
-        *error = blockError;
-    }
-    
-    return success;
-}
-
-#pragma mark - Blob Operations
-
-- (nullable NSData *)getBlob:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [_userDatabasePool storeForDid:did error:error];
-    if (!store) return nil;
-    
-    return [store getBlockForCID:cid forDid:did error:error];
-}
-
-- (nullable NSDictionary *)uploadBlob:(NSData *)blobData 
-                              forDid:(NSString *)did 
-                              mimeType:(NSString *)mimeType
-                                 error:(NSError **)error {
-    
-    NSError *cidError;
-    NSString *cidString = [self generateCIDForData:blobData error:&cidError];
-    if (!cidString) {
-        if (error) *error = cidError;
-        return nil;
-    }
-    
-    NSData *cidData = [self cidDataFromString:cidString];
-    
-    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
-    block.cid = cidData;
-    block.repoDid = did;
-    block.blockData = blobData;
-    block.contentType = mimeType;
-    block.size = blobData.length;
-    block.createdAt = [NSDate date];
-    
-    __block BOOL success = NO;
-    [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store putBlock:block forDid:did error:nil];
-
-        if (success) {
-            PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
-            blob.cid = cidData;
-            blob.did = did;
-            blob.mimeType = mimeType;
-            blob.size = blobData.length;
-            blob.createdAt = [NSDate date];
-            success = [store saveBlob:blob error:nil];
-        }
-    } error:nil];
-    
-    if (!success) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store blob"}];
-        }
-        return nil;
-    }
-    
-    return @{
-        @"blob": @{
-            @"$type": @"blob",
-            @"ref": @{@"$link": cidString},
-            @"mimeType": mimeType,
-            @"size": @(blobData.length)
-        }
-    };
-}
-
-#pragma mark - Admin Operations
-
-- (nullable NSArray *)getAllAccountsWithError:(NSError **)error {
-    return [_userDatabasePool getAllAccountsWithError:error];
-}
-
-- (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
-    return NO;
-}
-
-- (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
-    return NO;
-}
-
-#pragma mark - Moderation Operations
-
-- (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error {
-    // TODO: Implement moderation logic
-    return @{@"status": @"not_implemented"};
-}
-
-- (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error {
-    // TODO: Implement record moderation logic
-    return @{@"status": @"not_implemented"};
-}
-
-#pragma mark - Labeling Operations
-
-- (NSDictionary *)createLabel:(NSDictionary *)params error:(NSError **)error {
-    // TODO: Implement label creation
-    return @{@"status": @"not_implemented"};
-}
-
-- (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error {
-    // TODO: Implement label retrieval
-    return @{@"status": @"not_implemented"};
-}
-
-#pragma mark - Health & Metrics
-
-- (NSDictionary<NSString *, id> *)getHealthCheck {
-    return [[PDSHealthCheck sharedInstance] performHealthCheck];
-}
-
-- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
-    return [_serviceDatabases serviceDatabaseWithError:error];
-}
-
-- (NSDictionary<NSString *, id> *)getMetrics {
-    return @{
-        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
-        @"user_databases": [_userDatabasePool collectMetrics] ?: @{},
-        @"service_databases": @{}
-    };
-}
-
-#pragma mark - Helpers
-
-- (nullable NSString *)generateCIDForData:(NSData *)data error:(NSError **)error {
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
-    
-    NSMutableData *multihash = [NSMutableData data];
-    [multihash appendBytes:(uint8_t[]){0x12, 0x20} length:2];
-    [multihash appendBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-    
-    NSMutableData *cidData = [NSMutableData data];
-    [cidData appendBytes:(uint8_t[]){0x01, 0x71} length:2];
-    [cidData appendData:multihash];
-    
-    NSString *base32 = [self base32Encode:cidData];
-    return [NSString stringWithFormat:@"b%@", [base32 lowercaseString]];
-}
-
-- (NSData *)cidDataFromString:(NSString *)cidString {
-    if (![cidString hasPrefix:@"b"]) {
-        return nil;
-    }
-    NSString *base32 = [cidString substringFromIndex:1];
-    return [self base32Decode:base32];
-}
-
-- (NSString *)base32Encode:(NSData *)data {
-    static const char *alphabet = "abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableString *result = [NSMutableString string];
-    NSUInteger length = data.length;
-    NSUInteger i = 0;
-    
-    while (i < length) {
-        uint8_t byte = ((uint8_t *)data.bytes)[i++];
-        [result appendFormat:@"%c", alphabet[byte >> 3]];
-        uint8_t nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        [result appendFormat:@"%c", alphabet[((byte & 0x07) << 2) | (nextByte >> 6)]];
-        if (i >= length + 1) break;
-        [result appendFormat:@"%c", alphabet[(nextByte >> 1) & 0x1F]];
-        if (i >= length) break;
-        nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        [result appendFormat:@"%c", alphabet[((nextByte & 0x0F) << 1) | (nextByte >> 7)]];
-        if (i >= length) break;
-        [result appendFormat:@"%c", alphabet[(nextByte >> 2) & 0x1F]];
-        if (i >= length) break;
-        nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        [result appendFormat:@"%c", alphabet[nextByte & 0x1F]];
-    }
-    
-    return result;
-}
-
-- (NSData *)base32Decode:(NSString *)base32 {
-    static const char *alphabet = "abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableData *result = [NSMutableData data];
-    NSUInteger length = base32.length;
-    
-    NSMutableData *buffer = [NSMutableData dataWithLength:8];
-    int bufferBits = 0;
-    int bufferValue = 0;
-    
-    for (NSUInteger i = 0; i < length; i++) {
-        unichar c = [base32 characterAtIndex:i];
-        if (c == ' ' || c == '\n' || c == '\r' || c == '\t') continue;
-        
-        int val = -1;
-        for (int j = 0; j < 32; j++) {
-            if (alphabet[j] == c) {
-                val = j;
-                break;
-            }
-        }
-        
-        if (val < 0) continue;
-        
-        bufferValue = (bufferValue << 5) | val;
-        bufferBits += 5;
-        
-        while (bufferBits >= 8) {
-            bufferBits -= 8;
-            uint8_t byte = (bufferValue >> bufferBits) & 0xFF;
-            [result appendBytes:&byte length:1];
-        }
-    }
-    
-    return result;
+    return [_accountService deleteAccount:did password:password error:error];
 }
 
 #pragma mark - Legacy Account Operations (for backward compatibility)
@@ -799,8 +207,22 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 }
 
 - (nullable NSDictionary *)refreshSessionWithRefreshToken:(NSString *)refreshToken
-                                                    error:(NSError **)error {
+                                                     error:(NSError **)error {
     return [self refreshAccessToken:refreshToken error:error];
+}
+
+#pragma mark - Repo Operations
+
+- (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
+    return [_repositoryService getRepoRoot:did error:error];
+}
+
+- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSData *)sinceCid error:(NSError **)error {
+    return [_repositoryService getRepoContents:did since:sinceCid error:error];
+}
+
+- (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
+    return [_repositoryService updateRepo:did commit:commitData error:error];
 }
 
 #pragma mark - Legacy Repo Operations (for backward compatibility)
@@ -823,6 +245,61 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     NSData *root = [self getRepoRoot:did error:error];
     if (!root) return nil;
     return [self base32Encode:root];
+}
+
+- (NSString *)base32Encode:(NSData *)data {
+    static const char *alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+    NSMutableString *result = [NSMutableString string];
+    NSUInteger length = data.length;
+    NSUInteger i = 0;
+
+    while (i < length) {
+        uint8_t byte = ((uint8_t *)data.bytes)[i++];
+        [result appendFormat:@"%c", alphabet[byte >> 3]];
+        uint8_t nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
+        [result appendFormat:@"%c", alphabet[((byte & 0x07) << 2) | (nextByte >> 6)]];
+        if (i >= length + 1) break;
+        [result appendFormat:@"%c", alphabet[(nextByte >> 1) & 0x1F]];
+        if (i >= length) break;
+        nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
+        [result appendFormat:@"%c", alphabet[((nextByte & 0x0F) << 1) | (nextByte >> 7)]];
+        if (i >= length) break;
+        [result appendFormat:@"%c", alphabet[(nextByte >> 2) & 0x1F]];
+        if (i >= length) break;
+        nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
+        [result appendFormat:@"%c", alphabet[nextByte & 0x1F]];
+    }
+
+    return result;
+}
+
+#pragma mark - Record Operations
+
+- (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
+    return [_recordService getRecord:uri forDid:did error:error];
+}
+
+- (nullable NSArray *)listRecords:(NSString *)collection
+                           forDid:(NSString *)did
+                             limit:(NSUInteger)limit
+                            cursor:(nullable NSString *)cursor
+                            error:(NSError **)error {
+    return [_recordService listRecords:collection forDid:did limit:limit cursor:cursor error:error];
+}
+
+- (BOOL)putRecord:(NSString *)collection
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+             error:(NSError **)error {
+    return [_recordService putRecord:collection rkey:rkey value:value forDid:did error:error];
+}
+
+- (BOOL)deleteRecord:(NSString *)collection
+                  rkey:(NSString *)rkey
+                forDid:(NSString *)did
+                 error:(NSError **)error {
+    return [_recordService deleteRecord:collection rkey:rkey forDid:did error:error];
 }
 
 #pragma mark - Legacy Record Operations (for backward compatibility)
@@ -879,75 +356,43 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return [self putRecord:collection rkey:rkey value:record forDid:did error:error];
 }
 
+#pragma mark - Blob Operations
+
+- (nullable NSData *)getBlob:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
+    return [_blobService getBlob:cid forDid:did error:error];
+}
+
+- (nullable NSDictionary *)uploadBlob:(NSData *)blobData
+                               forDid:(NSString *)did
+                              mimeType:(NSString *)mimeType
+                                 error:(NSError **)error {
+    return [_blobService uploadBlob:blobData forDid:did mimeType:mimeType error:error];
+}
+
 #pragma mark - Legacy Blob Operations (for backward compatibility)
 
-- (nullable NSDictionary *)uploadBlob:(NSData *)blobData 
-                             mimeType:(NSString *)mimeType 
-                                  did:(NSString *)did
-                                error:(NSError **)error {
+- (nullable NSDictionary *)uploadBlob:(NSData *)blobData
+                              mimeType:(NSString *)mimeType
+                                   did:(NSString *)did
+                                 error:(NSError **)error {
     return [self uploadBlob:blobData forDid:did mimeType:mimeType error:error];
 }
 
 - (nullable NSDictionary *)getBlobWithCID:(NSString *)cid
-                                      did:(NSString *)did
-                                    error:(NSError **)error {
-    NSData *cidData = [self cidDataFromString:cid];
-    if (!cidData) {
-        if (error) *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                                code:PDSControllerErrorBlobNotFound
-                                            userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
-        return nil;
-    }
-    NSData *blob = [self getBlob:cidData forDid:did error:error];
-    if (!blob) return nil;
-
-    PDSActorStore *store = [_userDatabasePool storeForDid:did error:nil];
-    PDSDatabaseBlob *metadata = [store getBlobForCID:cidData error:nil];
-    NSString *mimeType = metadata.mimeType ?: @"application/octet-stream";
-
-    return @{
-        @"blob": blob,
-        @"mimeType": mimeType,
-        @"size": @(blob.length)
-    };
+                                     did:(NSString *)did
+                                   error:(NSError **)error {
+    return [_blobService getBlobWithCID:cid did:did error:error];
 }
 
 - (nullable NSArray *)listBlobsForDID:(NSString *)did
-                                limit:(NSUInteger)limit
-                               cursor:(nullable NSString *)cursor
-                                error:(NSError **)error {
-    PDSActorStore *store = [_userDatabasePool storeForDid:did error:error];
-    if (!store) return @[];
-
-    NSArray<PDSDatabaseBlob *> *blobs = [store listBlobsForDid:did limit:limit cursor:cursor error:error];
-
-    NSMutableArray *result = [NSMutableArray array];
-    for (PDSDatabaseBlob *blob in blobs) {
-        [result addObject:@{
-            @"cid": [self base32Encode:blob.cid] ?: @"",
-            @"mimeType": blob.mimeType ?: @"application/octet-stream",
-            @"size": @(blob.size)
-        }];
-    }
-    return result;
+                               limit:(NSUInteger)limit
+                              cursor:(nullable NSString *)cursor
+                               error:(NSError **)error {
+    return [_blobService listBlobsForDID:did limit:limit cursor:cursor error:error];
 }
 
 - (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error {
-    NSData *cidData = [self cidDataFromString:cid];
-    if (!cidData) {
-        if (error) *error = [NSError errorWithDomain:PDSControllerErrorDomain
-                                                code:PDSControllerErrorBlobNotFound
-                                            userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
-        return NO;
-    }
-
-    __block BOOL success = NO;
-    [_userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteBlobForCID:cidData forDid:did error:nil];
-    } error:nil];
-
-    return success;
+    return [_blobService deleteBlobWithCID:cid did:did error:error];
 }
 
 #pragma mark - Write Operations (for backward compatibility)
@@ -974,6 +419,58 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         }
     }
     return @{@"commit": @{@"root": @"newroot"}};
+}
+
+#pragma mark - Health & Metrics
+
+- (NSDictionary<NSString *, id> *)getHealthCheck {
+    return [[PDSHealthCheck sharedInstance] performHealthCheck];
+}
+
+- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
+    return [_serviceDatabases serviceDatabaseWithError:error];
+}
+
+- (NSDictionary<NSString *, id> *)getMetrics {
+    return @{
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+        @"user_databases": [_userDatabasePool collectMetrics] ?: @{},
+        @"service_databases": @{}
+    };
+}
+
+#pragma mark - Admin Operations
+
+- (nullable NSArray *)getAllAccountsWithError:(NSError **)error {
+    return [_userDatabasePool getAllAccountsWithError:error];
+}
+
+- (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
+    return NO;
+}
+
+- (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
+    return NO;
+}
+
+#pragma mark - Moderation Operations
+
+- (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error {
+    return @{@"status": @"not_implemented"};
+}
+
+- (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error {
+    return @{@"status": @"not_implemented"};
+}
+
+#pragma mark - Labeling Operations
+
+- (NSDictionary *)createLabel:(NSDictionary *)params error:(NSError **)error {
+    return @{@"status": @"not_implemented"};
+}
+
+- (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error {
+    return @{@"status": @"not_implemented"};
 }
 
 @end

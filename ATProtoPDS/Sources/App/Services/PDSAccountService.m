@@ -9,7 +9,6 @@
 
 @interface PDSAccountService ()
 
-@property (nonatomic, weak) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) os_log_t log;
 
 @end
@@ -187,7 +186,7 @@
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
     if (![passwordHash isEqualToData:account.passwordHash]) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1002
+            *error = [NSError errorWithDomain:@"PDSController" code:1007
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid password"}];
         }
         return NO;
