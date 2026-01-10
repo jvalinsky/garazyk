@@ -21,10 +21,7 @@
 
 - (void)testTokenRequestRejectsInvalidClientSecret {
     // Setup request with valid client_id but wrong client_secret
-    NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://pds.local/oauth/token"]];
-    urlRequest.HTTPMethod = @"POST";
     NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client&client_secret=wrong";
-    urlRequest.HTTPBody = [body dataUsingEncoding:NSUTF8StringEncoding];
     
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
