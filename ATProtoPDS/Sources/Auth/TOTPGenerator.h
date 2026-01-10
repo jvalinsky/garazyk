@@ -9,7 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
                         period:(NSTimeInterval)period
                      algorithm:(NSString *)algorithm;
 
-- (instancetype)initWithSecret:(NSData *)secret; // Defaults: 6 digits, 30s, SHA1
+- (instancetype)initWithSecret:(NSData *)secret; // Defaults: 6 digits, 30s, SHA256
 
 - (nullable NSString *)generateOTPForDate:(NSDate *)date;
 - (nullable NSString *)generateOTP; // Uses [NSDate date]

@@ -5,7 +5,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CryptoUtils : NSObject
 
 + (nullable NSData *)hmacSHA1WithKey:(NSData *)key data:(NSData *)data;
-+ (NSData *)HMACSHA256:(NSData *)data key:(NSData *)key;
++ (nullable NSData *)hmacSHA256WithKey:(NSData *)key data:(NSData *)data;
 + (nullable NSData *)sha256:(NSData *)data;
 + (nullable NSData *)randomBytes:(NSUInteger)length;
 + (NSString *)hexStringFromData:(NSData *)data;

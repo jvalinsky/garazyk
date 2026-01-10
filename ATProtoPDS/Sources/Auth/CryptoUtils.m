@@ -14,7 +14,20 @@
     return [NSData dataWithBytes:cHMAC length:CC_SHA1_DIGEST_LENGTH];
 }
 
-+ (NSData *)HMACSHA256:(NSData *)data key:(NSData *)key {
+/**
+ * Computes HMAC-SHA256 for the given data using the specified key.
+ *
+ * This method provides enhanced security compared to HMAC-SHA1 by using SHA-256,
+ * which offers better resistance against collision attacks and is recommended
+ * for cryptographic operations requiring strong integrity guarantees.
+ *
+ * @param key The secret key for HMAC computation. Must not be nil.
+ * @param data The data to authenticate. Must not be nil.
+ * @return The HMAC-SHA256 digest as NSData, or nil if key or data is nil.
+ */
++ (nullable NSData *)hmacSHA256WithKey:(NSData *)key data:(NSData *)data {
+    if (!key || !data) return nil;
+
     unsigned char hmac[CC_SHA256_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA256, key.bytes, key.length, data.bytes, data.length, hmac);
     return [NSData dataWithBytes:hmac length:CC_SHA256_DIGEST_LENGTH];
