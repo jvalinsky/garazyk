@@ -46,6 +46,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
     JWTErrorInvalidIssuer,
     JWTErrorInvalidSubject,
     JWTErrorInvalidAudience,
+    JWTErrorInvalidAlgorithm,
     JWTErrorMissingRequiredClaim,
     JWTErrorEncodingFailed,
     JWTErrorDecodingFailed,
@@ -273,6 +274,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 
 /*! The expected audience claim value. */
 @property (nonatomic, copy) NSString *expectedAudience;
+
+/*! The allowed signing algorithms. */
+@property (nonatomic, copy) NSArray<NSString *> *allowedAlgorithms;
 
 /*! Clock offset for time-based validation. */
 @property (nonatomic, strong) NSDate *clockOffset;
