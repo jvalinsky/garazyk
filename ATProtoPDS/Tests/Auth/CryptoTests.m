@@ -22,11 +22,18 @@
 }
 
 - (void)testHMACSHA256 {
-    NSData *key = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *data = [@"message" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *hmac = [CryptoUtils HMACSHA256:data key:key];
+    // RFC 4231 Test Case 1: HMAC-SHA256
+    // Key: 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b (20 bytes)
+    // Data: "Hi There"
+    // Expected: b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7
+    const unsigned char keyBytes[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
+    NSData *key = [NSData dataWithBytes:keyBytes length:sizeof(keyBytes)];
+    NSData *data = [@"Hi There" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *hmac = [CryptoUtils hmacSHA256WithKey:key data:data];
     XCTAssertNotNil(hmac);
     XCTAssertEqual(hmac.length, CC_SHA256_DIGEST_LENGTH);
+    NSString *hex = [CryptoUtils hexStringFromData:hmac];
+    XCTAssertEqualObjects(hex, @"b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7");
 }
 
 - (void)testRandomBytes {
