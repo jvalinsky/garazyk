@@ -3,6 +3,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "Debug/PDSLogger.h"
 
 @interface PDSCLIRepoCommand : PDSBaseCommand
@@ -86,8 +87,21 @@
     record.value = jsonValue;
     record.createdAt = [NSDate date];
     
-    // Generate a dummy CID for now (proper CID generation requires CBOR encoding)
-    record.cid = [NSString stringWithFormat:@"bafy%@", [[NSUUID UUID] UUIDString].lowercaseString];
+    // Proper CID generation using DAG-CBOR
+    NSError *cborError = nil;
+    NSDictionary *jsonObject = [NSJSONSerialization JSONObjectWithData:[jsonValue dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    if (jsonObject) {
+        NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObject error:&cborError];
+        if (cborData) {
+            NSData *digest = [CID sha256Digest:cborData];
+            CID *cid = [CID cidWithMultihash:digest codec:0x71]; // dag-cbor
+            record.cid = [cid stringValue];
+        } else {
+            record.cid = [NSString stringWithFormat:@"bafkrei%@", [[NSUUID UUID] UUIDString].lowercaseString];
+        }
+    } else {
+        record.cid = [NSString stringWithFormat:@"bafkrei%@", [[NSUUID UUID] UUIDString].lowercaseString];
+    }
 
     BOOL success = [store putRecord:record forDid:did error:&error];
     if (success) {

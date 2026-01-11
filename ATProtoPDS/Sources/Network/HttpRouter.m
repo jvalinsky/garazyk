@@ -225,11 +225,15 @@
 - (void)setupRoutes {
     // ... existing routes ...
 
+    __weak typeof(self) weakSelf = self;
     [self addRoute:@"GET"
              pattern:@"/.well-known/oauth-authorization-server"
              handler:^(HttpRequest *request, HttpResponse *response) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+
         // Validate base URL configuration
-        if (!self.baseURL || [self.baseURL length] == 0) {
+        if (!strongSelf.baseURL || [strongSelf.baseURL length] == 0) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{
                 @"error": @"server_error",
@@ -238,7 +242,7 @@
             return;
         }
 
-        OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:self.baseURL];
+        OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:strongSelf.baseURL];
         if (!metadata) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{
@@ -272,8 +276,11 @@
     [self addRoute:@"GET"
              pattern:@"/.well-known/oauth-protected-resource"
              handler:^(HttpRequest *request, HttpResponse *response) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+
         // Validate base URL configuration
-        if (!self.baseURL || [self.baseURL length] == 0) {
+        if (!strongSelf.baseURL || [strongSelf.baseURL length] == 0) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{
                 @"error": @"server_error",
@@ -284,24 +291,24 @@
 
         // OAuth 2.0 Protected Resource Metadata
         NSDictionary *resourceMetadata = @{
-            @"resource": self.baseURL,
+            @"resource": strongSelf.baseURL,
             @"authorization_servers": @[
                 @{
-                    @"authorization_server": self.baseURL,
-                    @"resource_servers": @[self.baseURL]
+                    @"authorization_server": strongSelf.baseURL,
+                    @"resource_servers": @[strongSelf.baseURL]
                 }
             ],
             @"protected_resources": @[
                 @{
-                    @"resource": self.baseURL,
+                    @"resource": strongSelf.baseURL,
                     @"resource_scopes": @[@"atproto"],
                     @"bearer_methods_supported": @[@"header"],
                     @"access_token_types_supported": @[@"Bearer"]
                 }
             ],
             @"mtls_endpoint_aliases": @{
-                @"token_endpoint": [self.baseURL stringByAppendingPathComponent:@"/oauth/token"],
-                @"resource": self.baseURL
+                @"token_endpoint": [strongSelf.baseURL stringByAppendingPathComponent:@"/oauth/token"],
+                @"resource": strongSelf.baseURL
             }
         };
 
