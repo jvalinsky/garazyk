@@ -219,7 +219,6 @@
 - (void)registerDefaultCommands {
     [self addCommand:[PDSCLIHelpCommand command]];
     [self addCommand:[PDSCLIVersionCommand command]];
-    [self addCommand:[PDSCLIRepoCommand command]];
 }
 
 - (void)addCommand:(id<PDSCLICommand>)command {
