@@ -47,7 +47,7 @@
         NSDictionary *obj = @{@"error": error};
         NSData *data = [NSJSONSerialization dataWithJSONObject:obj options:0 error:&jsonError];
         if (data) {
-            printf("%s\n", data.bytes);
+            printf("%s\n", (const char *)data.bytes);
         }
     } else {
         fprintf(stderr, "Error: %s\n", [error UTF8String]);
@@ -58,7 +58,7 @@
     if (self.jsonOutput) {
         NSData *data = [NSJSONSerialization dataWithJSONObject:@{@"info": info} options:0 error:nil];
         if (data) {
-            printf("%s\n", data.bytes);
+            printf("%s\n", (const char *)data.bytes);
         }
     } else {
         printf("%s\n", [info UTF8String]);

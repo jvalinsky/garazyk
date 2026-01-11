@@ -93,11 +93,13 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     DIDCacheStatus status;
     NSDictionary *entry = [self cachedEntryForDID:did status:&status];
     if (entry && status == DIDCacheStatusFresh) {
-        completion(entry[@"document"], nil);
+        DIDDocument *doc = entry[@"document"];
+        completion(doc.jsonDictionary, nil);
         return;
     }
     if (entry && status == DIDCacheStatusStale) {
-        completion(entry[@"document"], nil);
+        DIDDocument *doc = entry[@"document"];
+        completion(doc.jsonDictionary, nil);
         [self refreshCacheForDID:did];
         return;
     }
@@ -246,7 +248,7 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 
 - (void)cacheDocument:(DIDDocument *)document forDID:(NSString *)did {
     @synchronized(self) {
-        [self.cache setObject:document.jsonDictionary forKey:did];
+        [self.cache setObject:document forKey:did];
         _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
     }
 }
@@ -289,7 +291,7 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     [self resolveDID:did forceRefresh:YES completion:^(DIDDocument *document, NSError *error) {
         if (document) {
             @synchronized(self) {
-                [self.cache setObject:document.jsonDictionary forKey:did];
+                [self.cache setObject:document forKey:did];
                 _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
             }
         }

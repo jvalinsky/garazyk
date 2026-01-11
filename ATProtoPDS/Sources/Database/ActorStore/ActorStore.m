@@ -206,22 +206,24 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             return;
         }
         
-        BOOL success = YES;
-        NSError *blockError = nil;
+        __block BOOL success = YES;
+        __block NSError *blockError = nil;
         
         @try {
             block(self);
         } @catch (NSException *exception) {
             success = NO;
             blockError = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                            code:-1
-                                        userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
+                                             code:-1
+                                         userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
         }
         
         if (success && !blockError) {
             result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
-            if (result != SQLITE_OK && error) {
-                *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+            if (result != SQLITE_OK) {
+                if (error) {
+                    *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+                }
                 sqlite3_free(errMsg);
                 
                 sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
