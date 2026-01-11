@@ -313,12 +313,15 @@
            @"Subcommands:\n"
            @"  list                   List all accounts\n"
            @"  info <did|handle>      Show account details\n"
-           @"  create                 Create a new account\n"
+           @"  create --email <email> --handle <handle> [--password <pw>]  Create a new account\n"
            @"  deactivate <did>       Deactivate an account\n"
            @"  reactivate <did>       Reactivate a deactivated account\n"
            @"  delete <did>           Permanently delete an account\n"
            @"  update-email <did> <email>  Update account email\n"
-           @"  update-handle <did> <handle>  Update account handle";
+           @"  update-handle <did> <handle>  Update account handle\n\n"
+           @"Options for 'list':\n"
+           @"  --limit, -l <n>        Limit results (default: 100)\n"
+           @"  --filter, -f <text>    Filter by handle, email, or DID";
 }
 
 - (NSArray<NSString *> *)aliases {
@@ -419,6 +422,7 @@
 - (void)executeInfoWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printError:@"Missing account identifier"];
+        printf("Usage: pds account info <did|handle>\n");
         return;
     }
 
@@ -471,13 +475,20 @@
 
     if (email.length == 0 || handle.length == 0) {
         [context printError:@"Missing required arguments: --email and --handle"];
+        printf("Usage: pds account create --email <email> --handle <handle> [--password <pw>]\n");
+        return;
+    }
+
+    if ([handle rangeOfString:@"."].location == NSNotFound) {
+        [context printError:@"Invalid handle: Handle must be a domain (e.g., alice.test)"];
         return;
     }
 
     BOOL success = [PDSAccountManager createAccountWithContext:context
-                                                        email:email
-                                                      handle:handle
-                                                    password:password];
+                                                         email:email
+                                                       handle:handle
+                                                     password:password];
+
 
     if (success) {
         [context printInfo:@"Account created successfully"];
