@@ -2,19 +2,6 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
 
-void print_usage(void) {
-    printf("Usage: pds <command> [options]\n\n");
-    printf("A command-line interface for managing the ATProto PDS.\n\n");
-    printf("Commands:\n");
-    printf("  serve       Start the PDS server\n");
-    printf("  health      Check PDS health status\n");
-    printf("  account     Manage PDS accounts\n");
-    printf("  invite      Manage invite codes\n");
-    printf("  help        Show help information\n");
-    printf("  version     Show version information\n\n");
-    printf("Use 'pds help <command>' for more information about a command.\n");
-}
-
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         NSMutableArray *args = [NSMutableArray array];
@@ -24,17 +11,23 @@ int main(int argc, const char * argv[]) {
 
         PDSCLICommandContext *context = [[PDSCLICommandContext alloc] init];
 
-        NSUInteger firstCommandArg = 0;
+        NSUInteger firstCommandArg = args.count;
         for (NSUInteger i = 0; i < args.count; i++) {
             NSString *arg = args[i];
             if ([arg hasPrefix:@"-"]) {
                 if ([arg isEqualToString:@"--data-dir"] || [arg isEqualToString:@"-d"]) {
                     if (i + 1 < args.count) {
                         context.dataDir = args[++i];
+                    } else {
+                        fprintf(stderr, "Error: --data-dir requires a path\n");
+                        return PDSCLIExitCodeInvalidArguments;
                     }
                 } else if ([arg isEqualToString:@"--config"] || [arg isEqualToString:@"-c"]) {
                     if (i + 1 < args.count) {
                         context.configPath = args[++i];
+                    } else {
+                        fprintf(stderr, "Error: --config requires a path\n");
+                        return PDSCLIExitCodeInvalidArguments;
                     }
                 } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
                     context.verbose = YES;
@@ -42,18 +35,22 @@ int main(int argc, const char * argv[]) {
                 } else if ([arg isEqualToString:@"--json"] || [arg isEqualToString:@"-j"]) {
                     context.jsonOutput = YES;
                 } else if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
-                    print_usage();
-                    return 0;
+                    [[PDSCLIDispatcher sharedDispatcher] printUsage];
+                    return PDSCLIExitCodeSuccess;
+                } else {
+                    fprintf(stderr, "Error: Unknown option %s\n", [arg UTF8String]);
+                    [[PDSCLIDispatcher sharedDispatcher] printUsage];
+                    return PDSCLIExitCodeInvalidArguments;
                 }
-                firstCommandArg = i + 1;
             } else {
+                firstCommandArg = i;
                 break;
             }
         }
 
         if (firstCommandArg >= args.count) {
-            print_usage();
-            return 0;
+            [[PDSCLIDispatcher sharedDispatcher] printUsage];
+            return PDSCLIExitCodeSuccess;
         }
 
         NSString *commandName = args[firstCommandArg];
@@ -64,7 +61,8 @@ int main(int argc, const char * argv[]) {
 
         [[PDSCLIDispatcher sharedDispatcher] dispatchWithCommandName:commandName
                                                             arguments:commandArgs
-                                                             context:context];
+                                                              context:context];
     }
-    return 0;
+    return PDSCLIExitCodeSuccess;
 }
+
