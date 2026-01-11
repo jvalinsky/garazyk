@@ -122,12 +122,19 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     [XrpcMethodRegistry registerMethodsWithDispatcher:_xrpcDispatcher controller:self];
     
+    __weak typeof(self) weakSelf = self;
     [_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self->_xrpcDispatcher handleRequest:request response:response];
+        PDSController *strongSelf = weakSelf;
+        if (strongSelf) {
+            [strongSelf->_xrpcDispatcher handleRequest:request response:response];
+        }
     }];
     
     [_httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self->_xrpcDispatcher handleRequest:request response:response];
+        PDSController *strongSelf = weakSelf;
+        if (strongSelf) {
+            [strongSelf->_xrpcDispatcher handleRequest:request response:response];
+        }
     }];
     
     NSError *httpError = nil;
