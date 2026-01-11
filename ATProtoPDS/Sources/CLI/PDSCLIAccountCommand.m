@@ -43,8 +43,6 @@
 + (NSArray<PDSDatabaseAccount *> *)listAccountsWithContext:(PDSCLICommandContext *)context
                                                    filter:(NSString *)filter
                                                    limit:(NSInteger)limit {
-    NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
-
     NSString *dbPath = [self databasePathForContext:context];
     if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
         if (context.verbose) {
@@ -62,43 +60,36 @@
         return @[];
     }
 
-    NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
-    if (limit > 0) {
-        sql = [NSString stringWithFormat:@"%@ LIMIT %ld", sql, (long)limit];
-    }
+    NSArray<PDSDatabaseAccount *> *allAccounts = [db getAllAccountsWithError:&error];
+    [db close];
 
-    NSArray *rows = [db executeQuery:sql error:&error];
     if (error) {
         if (context.verbose) {
             PDS_LOG_ERROR(@"Failed to query accounts: %@", error.localizedDescription);
         }
-        [db close];
         return @[];
     }
 
-    for (NSDictionary *row in rows) {
-        PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-        account.did = row[@"did"];
-        account.handle = row[@"handle"];
-        account.email = row[@"email"];
-        account.createdAt = [row[@"created_at"] doubleValue];
-        account.updatedAt = [row[@"updated_at"] doubleValue];
-
-        if (filter.length > 0) {
-            BOOL matches = NO;
-            if ([account.handle containsString:filter] ||
-                [account.email containsString:filter] ||
-                [account.did containsString:filter]) {
-                matches = YES;
-            }
-            if (!matches) continue;
-        }
-
-        [accounts addObject:account];
+    if (filter.length == 0 && limit <= 0) {
+        return allAccounts;
     }
 
-    [db close];
-    return accounts;
+    NSMutableArray<PDSDatabaseAccount *> *filtered = [NSMutableArray array];
+    for (PDSDatabaseAccount *account in allAccounts) {
+        if (filter.length > 0) {
+            if (![account.handle containsString:filter] &&
+                ![account.email containsString:filter] &&
+                ![account.did containsString:filter]) {
+                continue;
+            }
+        }
+        [filtered addObject:account];
+        if (limit > 0 && filtered.count >= limit) {
+            break;
+        }
+    }
+
+    return filtered;
 }
 
 + (nullable PDSDatabaseAccount *)getAccountWithContext:(PDSCLICommandContext *)context

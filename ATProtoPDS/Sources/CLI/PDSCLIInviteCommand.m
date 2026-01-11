@@ -247,7 +247,7 @@
         printf("Invite code created:\n");
         printf("  Code:     %s\n", [code UTF8String]);
         printf("  Uses:     %ld / %ld\n", (long)uses, (long)uses);
-        printf("  Status:   %s\n", disabled ? @"disabled" : @"active");
+        printf("  Status:   %s\n", disabled ? "disabled" : "active");
     }
 }
 
