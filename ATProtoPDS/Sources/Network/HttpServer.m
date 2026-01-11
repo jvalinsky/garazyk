@@ -15,6 +15,7 @@
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
 @property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
 @property (nonatomic, assign) BOOL listenerReady;
+@property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 
 @end
 
@@ -31,6 +32,7 @@
         _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_SERIAL);
         _routeHandlers = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
+        _activeConnections = [NSMutableSet set];
         _readySemaphore = dispatch_semaphore_create(0);
         _listenerReady = NO;
         _running = NO;
@@ -119,21 +121,28 @@
 }
 
 - (void)handleNewConnection:(id<PDSNetworkConnection>)connection {
+    @synchronized (self.activeConnections) {
+        [self.activeConnections addObject:connection];
+    }
+
     __weak typeof(self) weakSelf = self;
     __weak id<PDSNetworkConnection> weakConnection = connection;
 
     connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
-        if (!strongConnection) return;
+        if (!strongSelf || !strongConnection) return;
 
         switch (state) {
             case PDSNetworkConnectionStateReady:
-                [weakSelf readRequestFromConnection:strongConnection];
+                [strongSelf readRequestFromConnection:strongConnection];
                 break;
             case PDSNetworkConnectionStateFailed:
-                [strongConnection cancel];
-                break;
             case PDSNetworkConnectionStateCancelled:
+                @synchronized (strongSelf.activeConnections) {
+                    [strongSelf.activeConnections removeObject:strongConnection];
+                }
+                [strongConnection cancel];
                 break;
             default:
                 break;
