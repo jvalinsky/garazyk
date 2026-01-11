@@ -1,5 +1,5 @@
 #import "Sync/WebSocketConnection.h"
-#import <Network/Network.h>
+#import "Network/PDSNetworkTransport.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const WebSocketConnectionErrorDomain = @"com.atproto.pds.websocket.connection";
@@ -20,7 +20,7 @@ static const uint8_t WS_MASK = 0x80;
 
 @property (nonatomic, assign, readwrite) WebSocketConnectionState state;
 
-@property (nonatomic, strong) nw_connection_t connection;
+@property (nonatomic, strong) id<PDSNetworkConnection> connection;
 @property (nonatomic, strong) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMutableData *readBuffer;
 @property (nonatomic, strong) NSMutableData *writeBuffer;
@@ -56,7 +56,7 @@ static const uint8_t WS_MASK = 0x80;
 - (void)dealloc {
     [self stopHeartbeat];
     if (_connection) {
-        nw_connection_cancel(_connection);
+        [_connection cancel];
     }
 }
 
@@ -72,20 +72,16 @@ static const uint8_t WS_MASK = 0x80;
 
     self.connectionQueue = dispatch_queue_create("com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
 
-    nw_endpoint_t endpoint = nw_endpoint_create_host(self.host.UTF8String, [NSString stringWithFormat:@"%d", self.port].UTF8String);
-    nw_parameters_t parameters = nw_parameters_create_secure_tcp(NULL, NULL);
-
-    self.connection = nw_connection_create(endpoint, parameters);
-
-    nw_connection_set_queue(self.connection, self.connectionQueue);
+    self.connection = [PDSNetworkTransportFactory createConnectionWithHost:self.host port:self.port];
 
     [self setupInitialState];
 
-    nw_connection_set_state_changed_handler(self.connection, ^(nw_connection_state_t state, nw_error_t error) {
-        [self handleStateChange:state error:error];
-    });
+    __weak typeof(self) weakSelf = self;
+    self.connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        [weakSelf handlePDSStateChange:state error:error];
+    };
 
-    nw_connection_start(self.connection);
+    [self.connection startWithQueue:self.connectionQueue];
 
     return YES;
 }
@@ -93,31 +89,30 @@ static const uint8_t WS_MASK = 0x80;
 - (void)setupInitialState {
 }
 
-- (void)handleStateChange:(nw_connection_state_t)state error:(nw_error_t)error {
+- (void)handlePDSStateChange:(PDSNetworkConnectionState)state error:(NSError * _Nullable)error {
     dispatch_async(dispatch_get_main_queue(), ^{
         switch (state) {
-            case nw_connection_state_ready:
+            case PDSNetworkConnectionStateReady:
                 self.state = WebSocketConnectionStateConnected;
                 [self startReading];
                 [self startHeartbeat];
                 break;
 
-            case nw_connection_state_cancelled:
+            case PDSNetworkConnectionStateCancelled:
                 self.state = WebSocketConnectionStateClosed;
                 [self stopHeartbeat];
                 [self notifyCloseWithCode:0 reason:@"Connection cancelled"];
                 break;
 
-            case nw_connection_state_failed:
+            case PDSNetworkConnectionStateFailed:
                 self.state = WebSocketConnectionStateClosed;
                 [self stopHeartbeat];
                 if (error) {
-                    NSError *nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
-                    [self notifyError:nsError];
+                    [self notifyError:error];
                 } else {
                     [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain
-                                                          code:WebSocketConnectionErrorCodeConnectionClosed
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"Connection failed"}]];
+                                                           code:WebSocketConnectionErrorCodeConnectionClosed
+                                                       userInfo:@{NSLocalizedDescriptionKey: @"Connection failed"}]];
                 }
                 break;
 
@@ -129,27 +124,20 @@ static const uint8_t WS_MASK = 0x80;
 
 - (void)startReading {
     __weak typeof(self) weakSelf = self;
-    nw_connection_receive_completion_t completion = ^(dispatch_data_t data, nw_content_context_t context, bool isComplete, nw_error_t error) {
+    [self.connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
 
         if (data) {
-            NSMutableData *receivedData = [NSMutableData dataWithCapacity:dispatch_data_get_size(data)];
-            dispatch_data_apply(data, ^bool(dispatch_data_t region, size_t offset, const void *buffer, size_t size) {
-                [receivedData appendBytes:buffer length:size];
-                return true;
-            });
             dispatch_async(dispatch_get_main_queue(), ^{
-                [strongSelf handleReceivedData:receivedData];
+                [strongSelf handleReceivedData:data];
             });
         }
 
         if (!error) {
             [strongSelf startReading];
         }
-    };
-
-    nw_connection_receive(self.connection, 1, UINT32_MAX, completion);
+    }];
 }
 
 - (void)handleReceivedData:(NSData *)data {
@@ -247,7 +235,6 @@ static const uint8_t WS_MASK = 0x80;
         code = (NSInteger)payloadBytes[0] << 8 | (NSInteger)payloadBytes[1];
         if (payload.length > 2) {
             NSUInteger reasonLength = payload.length - 2;
-            // Cap reason length to prevent excessive memory allocation
             if (reasonLength > 1000) {
                 reasonLength = 1000;
             }
@@ -281,7 +268,7 @@ static const uint8_t WS_MASK = 0x80;
     self.closeReason = reason;
 
     NSMutableData *closeData = [NSMutableData dataWithCapacity:2 + reason.length];
-    uint8_t codeBytes[2] = { (code >> 8) & 0xFF, code & 0xFF };
+    uint8_t codeBytes[2] = { (uint8_t)((code >> 8) & 0xFF), (uint8_t)(code & 0xFF) };
     [closeData appendBytes:codeBytes length:2];
     if (reason.length > 0) {
         [closeData appendData:[reason dataUsingEncoding:NSUTF8StringEncoding]];
@@ -333,7 +320,7 @@ static const uint8_t WS_MASK = 0x80;
 
 - (void)writeData:(NSData *)data {
     __weak typeof(self) weakSelf = self;
-    nw_connection_send(self.connection, dispatch_data_create(data.bytes, data.length, self.writeQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT), _nw_content_context_final_send, true, ^(nw_error_t error) {
+    [self.connection sendData:data completion:^(NSError * _Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
 
@@ -346,11 +333,10 @@ static const uint8_t WS_MASK = 0x80;
 
         if (error) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                NSError *nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
-                [strongSelf notifyError:nsError];
+                [strongSelf notifyError:error];
             });
         }
-    });
+    }];
 }
 
 - (NSData *)createFrameWithOpcode:(uint8_t)opcode payload:(NSData *)payload {
@@ -365,14 +351,14 @@ static const uint8_t WS_MASK = 0x80;
         [frame appendBytes:&secondByte length:1];
     } else if (length < 65536) {
         uint8_t secondByte = 126;
-        uint8_t lengthBytes[2] = { (length >> 8) & 0xFF, length & 0xFF };
+        uint8_t lengthBytes[2] = { (uint8_t)((length >> 8) & 0xFF), (uint8_t)(length & 0xFF) };
         [frame appendBytes:&secondByte length:1];
         [frame appendBytes:lengthBytes length:2];
     } else {
         uint8_t secondByte = 127;
         uint8_t lengthBytes[8];
         for (int i = 7; i >= 0; i--) {
-            lengthBytes[i] = length & 0xFF;
+            lengthBytes[i] = (uint8_t)(length & 0xFF);
             length >>= 8;
         }
         [frame appendBytes:&secondByte length:1];
@@ -387,10 +373,10 @@ static const uint8_t WS_MASK = 0x80;
 - (void)startHeartbeat {
     [self stopHeartbeat];
     self.heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:self.heartbeatInterval
-                                                           target:self
-                                                         selector:@selector(sendHeartbeat)
-                                                         userInfo:nil
-                                                          repeats:YES];
+                                                            target:self
+                                                          selector:@selector(sendHeartbeat)
+                                                          userInfo:nil
+                                                           repeats:YES];
 }
 
 - (void)stopHeartbeat {

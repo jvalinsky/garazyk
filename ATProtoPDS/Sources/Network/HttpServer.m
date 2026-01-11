@@ -2,13 +2,13 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
-#import <Network/Network.h>
+#import "Network/PDSNetworkTransport.h"
 
 @interface HttpServer ()
 
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
-@property (nonatomic, assign) nw_listener_t listener;
+@property (nonatomic, strong) id<PDSNetworkListener> listener;
 @property (nonatomic, strong) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
@@ -43,26 +43,9 @@
         return YES;
     }
 
-    nw_parameters_t parameters = nw_parameters_create_secure_tcp(
-        NW_PARAMETERS_DISABLE_PROTOCOL,
-        NW_PARAMETERS_DEFAULT_CONFIGURATION
-    );
+    self.listener = [PDSNetworkTransportFactory createListenerWithPort:self.port];
 
-    if (!parameters) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create parameters"}];
-        }
-        return NO;
-    }
-
-    char portStr[16];
-    snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)self.port);
-
-    nw_listener_t listener = nw_listener_create_with_port(portStr, parameters);
-
-    if (!listener) {
+    if (!self.listener) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
                                          code:-1
@@ -71,30 +54,26 @@
         return NO;
     }
 
-    self.listener = listener;
-
-    nw_listener_set_queue(self.listener, self.serverQueue);
-
     __weak typeof(self) weakSelf = self;
-    nw_listener_set_state_changed_handler(self.listener, ^(nw_listener_state_t state, nw_error_t error) {
+    self.listener.stateChangedHandler = ^(PDSNetworkListenerState state, NSError * _Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
 
         switch (state) {
-            case nw_listener_state_ready:
+            case PDSNetworkListenerStateReady:
                 strongSelf.running = YES;
                 strongSelf.listenerReady = YES;
-                strongSelf.port = nw_listener_get_port(strongSelf.listener);
+                strongSelf.port = strongSelf.listener.port;
                 dispatch_semaphore_signal(strongSelf.readySemaphore);
                 NSLog(@"HTTPServer listening on port %lu", (unsigned long)strongSelf.port);
                 break;
-            case nw_listener_state_failed:
+            case PDSNetworkListenerStateFailed:
                 strongSelf.running = NO;
                 strongSelf.listenerReady = NO;
                 dispatch_semaphore_signal(strongSelf.readySemaphore);
                 NSLog(@"HTTPServer failed to start: %@", error);
                 break;
-            case nw_listener_state_cancelled:
+            case PDSNetworkListenerStateCancelled:
                 strongSelf.running = NO;
                 strongSelf.listenerReady = NO;
                 dispatch_semaphore_signal(strongSelf.readySemaphore);
@@ -103,13 +82,13 @@
             default:
                 break;
         }
-    });
+    };
 
-    nw_listener_set_new_connection_handler(self.listener, ^(nw_connection_t connection) {
+    self.listener.newConnectionHandler = ^(id<PDSNetworkConnection> connection) {
         [weakSelf handleNewConnection:connection];
-    });
+    };
 
-    nw_listener_start(self.listener);
+    [self.listener startWithQueue:self.serverQueue];
 
     // Wait for the listener to become ready or fail
     dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
@@ -117,7 +96,7 @@
 
     if (result != 0) {
         // Timeout - listener didn't become ready
-        nw_listener_cancel(self.listener);
+        [self.listener cancel];
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
                                          code:-1
@@ -139,87 +118,64 @@
     return YES;
 }
 
-- (void)handleNewConnection:(nw_connection_t)connection {
+- (void)handleNewConnection:(id<PDSNetworkConnection>)connection {
     __weak typeof(self) weakSelf = self;
 
-    nw_connection_set_queue(connection, self.serverQueue);
-
-    nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t state, nw_error_t error) {
+    connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
         switch (state) {
-            case nw_connection_state_ready:
+            case PDSNetworkConnectionStateReady:
                 [weakSelf readRequestFromConnection:connection];
                 break;
-            case nw_connection_state_failed:
-                nw_connection_cancel(connection);
+            case PDSNetworkConnectionStateFailed:
+                [connection cancel];
                 break;
-            case nw_connection_state_cancelled:
+            case PDSNetworkConnectionStateCancelled:
                 break;
             default:
                 break;
         }
-    });
+    };
 
-    nw_connection_start(connection);
+    [connection startWithQueue:self.serverQueue];
 }
 
-- (void)readMoreDataInto:(NSMutableData *)requestData connection:(nw_connection_t)connection {
-    nw_connection_receive(connection, 1, UINT32_MAX, ^(dispatch_data_t newContent, nw_content_context_t context, bool isComplete, nw_error_t receiveError) {
-        if (newContent && dispatch_data_get_size(newContent) > 0) {
-            NSData *newData = [self dataFromDispatchData:newContent];
-            [requestData appendData:newData];
+- (void)readMoreDataInto:(NSMutableData *)requestData connection:(id<PDSNetworkConnection>)connection {
+    [connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(NSData * _Nullable newContent, BOOL isComplete, NSError * _Nullable receiveError) {
+        if (newContent && newContent.length > 0) {
+            [requestData appendData:newContent];
             [self parseRequest:requestData fromConnection:connection];
         } else if (isComplete) {
             // Connection closed by peer
-            nw_connection_cancel(connection);
+            [connection cancel];
         } else if (receiveError) {
-            nw_connection_cancel(connection);
+            [connection cancel];
         } else {
-            // No data read, try again? Or maybe this means we should wait.
-            // nw_connection_receive should call back when there IS data or error.
-            // But if min=1, it should wait.
             [self readMoreDataInto:requestData connection:connection];
         }
-    });
+    }];
 }
 
-- (void)readRequestFromConnection:(nw_connection_t)connection {
+- (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
     __weak typeof(self) weakSelf = self;
 
-    nw_connection_receive(connection, 1, UINT32_MAX, ^(dispatch_data_t content, nw_content_context_t context, bool isComplete, nw_error_t error) {
+    [connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(NSData * _Nullable content, BOOL isComplete, NSError * _Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf || error) {
-            nw_connection_cancel(connection);
+            [connection cancel];
             return;
         }
 
-        if (content && dispatch_data_get_size(content) > 0) {
-            NSData *data = [strongSelf dataFromDispatchData:content];
-            [strongSelf parseRequest:data fromConnection:connection];
+        if (content && content.length > 0) {
+            [strongSelf parseRequest:content fromConnection:connection];
         } else if (isComplete) {
-            nw_connection_cancel(connection);
+            [connection cancel];
         } else {
             [strongSelf readRequestFromConnection:connection];
         }
-    });
+    }];
 }
 
-- (NSData *)dataFromDispatchData:(dispatch_data_t)data {
-    __block const void *buffer = NULL;
-    __block size_t size = 0;
-
-    dispatch_data_apply(data, ^bool(dispatch_data_t region, size_t offset, const void *buf, size_t len) {
-        buffer = buf;
-        size = len;
-        return false;
-    });
-
-    if (buffer && size > 0) {
-        return [NSData dataWithBytes:buffer length:size];
-    }
-    return [NSData data];
-}
-
-- (void)parseRequest:(NSData *)data fromConnection:(nw_connection_t)connection {
+- (void)parseRequest:(NSData *)data fromConnection:(id<PDSNetworkConnection>)connection {
     NSMutableData *requestData = [NSMutableData dataWithData:data];
 
     NSString *requestString = [[NSString alloc] initWithData:requestData encoding:NSUTF8StringEncoding];
@@ -277,16 +233,7 @@
     }
 
     // Get remote address from connection
-    nw_endpoint_t endpoint = nw_connection_copy_endpoint(connection);
-    NSString *remoteAddress = nil;
-    if (endpoint) {
-        const char *addressStr = nw_endpoint_copy_address_string(endpoint);
-        if (addressStr) {
-            remoteAddress = [NSString stringWithUTF8String:addressStr];
-            free((void *)addressStr);
-        }
-        CFRelease((__bridge CFTypeRef)endpoint);
-    }
+    NSString *remoteAddress = connection.remoteAddress;
 
     HttpRequest *request = [HttpRequest requestWithData:requestData remoteAddress:remoteAddress];
 
@@ -299,7 +246,7 @@
 
     // Dispatch request processing to background queue to avoid blocking network I/O
     __weak typeof(self) weakSelf = self;
-    nw_connection_t connectionRef = connection; // Capture connection in block
+    id<PDSNetworkConnection> connectionRef = connection; // Capture connection in block
     HttpRequest *requestRef = request; // Capture request in block
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -414,18 +361,16 @@
     return YES;
 }
 
-- (void)sendResponse:(HttpResponse *)response onConnection:(nw_connection_t)connection {
+- (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection {
     NSData *responseData = [response serialize];
-
-    dispatch_data_t dispatchData = dispatch_data_create(responseData.bytes, responseData.length, self.serverQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 
     __weak typeof(self) weakSelf = self;
     BOOL shouldKeepAlive = response.keepAlive;
     
-    nw_connection_send(connection, dispatchData, _nw_content_context_default_message, true, ^(nw_error_t error) {
+    [connection sendData:responseData completion:^(NSError * _Nullable error) {
         if (error) {
             NSLog(@"Failed to send response");
-            nw_connection_cancel(connection);
+            [connection cancel];
             return;
         }
 
@@ -437,15 +382,15 @@
             }
         } else {
             // Close connection after response
-            nw_connection_cancel(connection);
+            [connection cancel];
         }
-    });
+    }];
 }
 
 - (void)stop {
     if (self.listener) {
-        nw_listener_cancel(self.listener);
-        self.listener = NULL;
+        [self.listener cancel];
+        self.listener = nil;
     }
     self.running = NO;
 }
