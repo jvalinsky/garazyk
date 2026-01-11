@@ -19,12 +19,7 @@ jobs:
         ./scripts/setup_linux.sh
 
     - name: Configure CMake
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Debug
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_OBJC_COMPILER=clang -DBUILD_TESTS=OFF
 
     - name: Build
-      run: |
-        cd build
-        make -j$(nproc)
+      run: cmake --build build --parallel $(nproc)

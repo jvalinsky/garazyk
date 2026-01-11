@@ -20,14 +20,6 @@ if(NOT APPLE)
     set(CMAKE_OBJC_STANDARD 20)
     add_compile_definitions(GNUSTEP LINUX)
     
-    # Use clang if not set
-    if(NOT CMAKE_C_COMPILER)
-        set(CMAKE_C_COMPILER clang)
-    endif()
-    if(NOT CMAKE_OBJC_COMPILER)
-        set(CMAKE_OBJC_COMPILER clang)
-    endif()
-    
     # GNUstep Configuration
     find_program(GNUSTEP_CONFIG gnustep-config REQUIRED)
     if(GNUSTEP_CONFIG)
