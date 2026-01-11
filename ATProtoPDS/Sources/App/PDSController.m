@@ -317,7 +317,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     if (!success) return nil;
 
     NSData *recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
-    CID *cid = [CID sha256:recordData];
+    NSData *digest = [CID sha256Digest:recordData];
+    CID *cid = [CID cidWithMultihash:digest codec:0x71]; // Use dag-cbor codec
     
     return @{
         @"uri": [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey],
