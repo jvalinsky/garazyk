@@ -359,7 +359,28 @@
 + (void)encodeMap:(NSDictionary<CBORValue *, CBORValue *> *)map toData:(NSMutableData *)output {
     NSUInteger count = map.count;
     [self encodeCount:count withMajorType:0xA0 toData:output];
-    for (CBORValue *key in map) {
+    
+    // Sort keys for deterministic encoding (DAG-CBOR requirement)
+    NSArray *keys = [map allKeys];
+    NSArray *sortedKeys = [keys sortedArrayUsingComparator:^NSComparisonResult(CBORValue *key1, CBORValue *key2) {
+        NSData *d1 = [CBOREncoder encode:key1];
+        NSData *d2 = [CBOREncoder encode:key2];
+        
+        // Bytewise comparison
+        NSUInteger len1 = d1.length;
+        NSUInteger len2 = d2.length;
+        NSUInteger len = MIN(len1, len2);
+        int cmp = memcmp(d1.bytes, d2.bytes, len);
+        
+        if (cmp != 0) {
+            return cmp < 0 ? NSOrderedAscending : NSOrderedDescending;
+        }
+        if (len1 < len2) return NSOrderedAscending;
+        if (len1 > len2) return NSOrderedDescending;
+        return NSOrderedSame;
+    }];
+    
+    for (CBORValue *key in sortedKeys) {
         [self encodeValue:key toData:output];
         [self encodeValue:map[key] toData:output];
     }
