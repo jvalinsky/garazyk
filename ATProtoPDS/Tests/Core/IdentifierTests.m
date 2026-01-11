@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Core/ATProtoValidator.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "App/Services/PDSAccountService.h"
 #import "App/Services/PDSRecordService.h"
 #import "App/Services/PDSBlobService.h"
@@ -8,6 +9,30 @@
 @end
 
 @implementation IdentifierTests
+
+- (void)testCBORMapSorting {
+    // { "b": 2, "a": 1 } should encode same as { "a": 1, "b": 2 }
+    // DAG-CBOR requires bytewise sorting of keys
+    NSDictionary *dict1 = @{@"b": @2, @"a": @1};
+    NSDictionary *dict2 = @{@"a": @1, @"b": @2};
+    
+    NSError *error = nil;
+    NSData *data1 = [ATProtoCBORSerialization encodeDataWithJSONObject:dict1 error:&error];
+    XCTAssertNil(error);
+    NSData *data2 = [ATProtoCBORSerialization encodeDataWithJSONObject:dict2 error:&error];
+    XCTAssertNil(error);
+    
+    XCTAssertEqualObjects(data1, data2);
+    
+    // Ensure "a" comes before "b" in encoding
+    // Map header 0xA2 (map(2))
+    // Key "a" (0x61 'a') -> value 1 (0x01)
+    // Key "b" (0x61 'b') -> value 2 (0x02)
+    // Expected: A2 61 61 01 61 62 02
+    const uint8_t expected[] = {0xA2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02};
+    NSData *expectedData = [NSData dataWithBytes:expected length:sizeof(expected)];
+    XCTAssertEqualObjects(data1, expectedData);
+}
 
 - (void)testDIDValidation {
     // Valid cases
