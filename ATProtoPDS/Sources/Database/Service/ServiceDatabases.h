@@ -34,6 +34,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
+- (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
 
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error;
 - (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error;
