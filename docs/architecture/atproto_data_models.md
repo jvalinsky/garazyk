@@ -4,6 +4,72 @@
 
 AT Protocol (atproto) is a collection of protocol components that provide a generic framework for interoperable social web applications, using global aggregations of interlinked, self-certifying data records.
 
+## Data Model Overview
+
+```mermaid
+classDiagram
+    class DIDDocument {
+        +String id
+        +String[] alsoKnownAs
+        +VerificationMethod[] verificationMethods
+        +Service[] services
+        +resolvePublicKey(keyId)
+    }
+    
+    class VerificationMethod {
+        +String id
+        +String type
+        +String controller
+        +String publicKeyMultibase
+    }
+    
+    class Repository {
+        +String did
+        +Commit root
+        +Record[] records
+        +getRecord(collection, rkey)
+        +putRecord(collection, rkey, value)
+        +deleteRecord(collection, rkey)
+    }
+    
+    class Commit {
+        +String did
+        +Integer version
+        +CID prev
+        +CID data
+        +Byte[] signature
+        +String rev
+    }
+    
+    class Record {
+        +String uri
+        +String cid
+        +String collection
+        +String rkey
+        +Object value
+        +Date createdAt
+    }
+    
+    class Collection {
+        +String name
+        +Record[] records
+    }
+    
+    class Blob {
+        +String cid
+        +String mimeType
+        +Integer size
+        +String storagePath
+    }
+    
+    DIDDocument "1" --> "*" VerificationMethod : contains
+    Repository "1" --> "1" DIDDocument : identified by
+    Repository "1" --> "*" Collection : organizes
+    Collection "1" --> "*" Record : holds
+    Repository "1" --> "*" Blob : references
+    Record --> Blob : may reference
+```
+
 ---
 
 ## 1. DID (Decentralized Identifier) Implementation and Resolution
@@ -37,6 +103,26 @@ AT Protocol supports two primary DID methods:
 }
 ```
 
+### DID Resolution Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant PLC as PLC Directory
+    participant DNS as DNS Server
+    
+    C->>PLC: GET /did/{did}
+    Note over PLC: Parse DID method
+    PLC->>PLC: Lookup in operation log
+    PLC-->>C: {didDocument: {...}}
+    
+    C->>DNS: Query TXT _atproto.{handle}
+    DNS-->>C: did=did:plc:...
+    C->>C: Validate DID matches
+    
+    Note over C: Bidirectional verification complete
+```
+
 ### 1.3 Handle Resolution
 
 Handles are DNS hostnames that must be bidirectionally validated:
@@ -55,6 +141,26 @@ The repository data structure is a key/value content-addressed Merkle Search Tre
 - Verifiable diff operations
 - Cryptographic authentication
 - Efficient synchronization
+
+### MST Operations
+
+```mermaid
+flowchart TD
+    A[MST Operation] --> B{Type?}
+    B -->|Get| C[Hash key → Find leaf]
+    B -->|Put| D[CBOR encode value]
+    D --> E[Create content block]
+    E --> F[Generate CID]
+    F --> G[Update tree nodes]
+    G --> H[Recalculate hashes]
+    H --> I[New root CID]
+    B -->|Delete| J[Remove leaf]
+    J --> G
+    
+    style A fill:#c8e6c9
+    style C fill:#bbdefb
+    style I fill:#c8e6c9
+```
 
 Reference implementations:
 - **TypeScript**: `packages/repo` in main Bluesky repository
