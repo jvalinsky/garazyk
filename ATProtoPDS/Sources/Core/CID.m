@@ -1,8 +1,8 @@
 #import "Core/CID.h"
 #import <CommonCrypto/CommonCrypto.h>
 
-/// Base32 alphabet (RFC 4648)
-static const char kBase32Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+/// Base32 alphabet (RFC 4648) - Lowercase for Multibase 'b'
+static const char kBase32Alphabet[] = "abcdefghijklmnopqrstuvwxyz234567";
 
 /// CIDv1 multicodec code (0x01)
 static const uint64_t kCIDv1Multicodec = 0x01;
@@ -280,7 +280,7 @@ static const NSUInteger kMaxVarintSize = 9;
 
     for (NSUInteger i = 0; i < length; i++) {
         unichar c = [cleanString characterAtIndex:i];
-        if (c >= 'a' && c <= 'z') c = c - 'a' + 'A'; // Convert to uppercase
+        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a'; // Convert to lowercase
 
         const char *ptr = strchr(kBase32Alphabet, (char)c);
         if (!ptr) {

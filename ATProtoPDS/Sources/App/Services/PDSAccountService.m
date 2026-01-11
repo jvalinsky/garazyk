@@ -198,7 +198,13 @@
 #pragma mark - Private Helpers
 
 - (NSString *)generatePlcIdentifier {
-    return [NSString stringWithFormat:@"did:plc:%@", [[NSUUID UUID] UUIDString]];
+    static NSString *const kBase32Chars = @"abcdefghijklmnopqrstuvwxyz234567";
+    NSMutableString *str = [NSMutableString stringWithCapacity:24];
+    for (int i = 0; i < 24; i++) {
+        uint32_t idx = arc4random_uniform((uint32_t)kBase32Chars.length);
+        [str appendFormat:@"%C", [kBase32Chars characterAtIndex:idx]];
+    }
+    return [NSString stringWithFormat:@"did:plc:%@", str];
 }
 
 - (NSData *)generateSalt {

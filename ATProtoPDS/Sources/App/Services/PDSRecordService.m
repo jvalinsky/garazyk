@@ -2,6 +2,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Core/ATProtoBase32.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @interface PDSRecordService ()
@@ -128,16 +129,20 @@
 #pragma mark - Private Helpers
 
 - (NSString *)generateCIDForData:(NSData *)data error:(NSError **)error {
-    // Simple CID generation - in production use proper IPLD library
+    // CIDv1 = version(0x01) + codec(0x71 dag-cbor) + hash_alg(0x12 sha2-256) + hash_len(0x20) + hash
+    // Prefix bytes: 0x01 0x71 0x12 0x20
+    
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
 
-    NSMutableString *hashString = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
-        [hashString appendFormat:@"%02x", (unsigned int)hash[i]];
-    }
+    NSMutableData *cidData = [NSMutableData dataWithCapacity:4 + CC_SHA256_DIGEST_LENGTH];
+    const unsigned char prefix[] = {0x01, 0x71, 0x12, 0x20};
+    [cidData appendBytes:prefix length:4];
+    [cidData appendBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 
-    return [NSString stringWithFormat:@"bafyrei%@", hashString];
+    // Multibase 'b' prefix + base32 encoded data
+    NSString *base32 = [ATProtoBase32 encodeData:cidData];
+    return [NSString stringWithFormat:@"b%@", base32];
 }
 
 @end

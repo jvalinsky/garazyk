@@ -2,6 +2,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Core/ATProtoBase32.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @interface PDSBlobService ()
@@ -119,8 +120,9 @@
 
     NSMutableArray *result = [NSMutableArray array];
     for (PDSDatabaseBlob *blob in blobs) {
+        NSString *cidStr = [NSString stringWithFormat:@"b%@", [ATProtoBase32 encodeData:blob.cid]];
         [result addObject:@{
-            @"cid": [self base32Encode:blob.cid] ?: @"",
+            @"cid": cidStr ?: @"",
             @"mimeType": blob.mimeType ?: @"application/octet-stream",
             @"size": @(blob.size)
         }];
@@ -148,49 +150,49 @@
 #pragma mark - Private Helpers
 
 - (NSString *)generateCIDForData:(NSData *)data error:(NSError **)error {
-    // Simple CID generation - in production use proper IPLD library
+    // CIDv1 = version(0x01) + codec(0x71 dag-cbor) + hash_alg(0x12 sha2-256) + hash_len(0x20) + hash
+    // Prefix bytes: 0x01 0x71 0x12 0x20 (for blobs we should use 0x55 raw? No, spec says sha-256)
+    // Actually blobs are raw binary usually?
+    // If it's a "blob" object in repo, it's a reference.
+    // The blob ITSELF is stored.
+    // AtProto blobs are raw data. CID is typically raw (0x55) or just sha256?
+    // Spec says: "Blobs... are referenced by hash (CID)..."
+    // "Blessed CID formats... for records... is CIDv1... dag-cbor"
+    // But for BLOBS?
+    // Usually blobs are `bafkrei...` (CIDv1, raw (0x55), sha2-256)
+    // `raw` = 0x55. `dag-cbor` = 0x71.
+    // If I use 0x71 for blobs, it means the blob content is DAG-CBOR? No.
+    // If blob is image, it is RAW.
+    // So I should use 0x55 (raw) codec for blobs?
+    // Let's assume standard behavior: `raw` codec for blobs.
+    // 0x55 = 85.
+    
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
 
-    NSMutableString *hashString = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
-        [hashString appendFormat:@"%02x", (unsigned int)hash[i]];
-    }
+    NSMutableData *cidData = [NSMutableData dataWithCapacity:4 + CC_SHA256_DIGEST_LENGTH];
+    // Use raw codec (0x55) for blobs? Or just generic?
+    // Let's stick to what was there implicitly or check spec?
+    // Spec says "Large binary blobs... are not stored directly in repositories... referenced by hash".
+    // If I upload an image, it is raw bytes.
+    // The CID should reflect that. `bafkrei...` is typical. `k` = `0x55` (raw) in base32? No.
+    // `raw` codec is 0x55.
+    // `0x01` `0x55` `0x12` `0x20` ...
+    // Let's use 0x55 for blobs.
+    
+    const unsigned char prefix[] = {0x01, 0x55, 0x12, 0x20};
+    [cidData appendBytes:prefix length:4];
+    [cidData appendBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 
-    return [NSString stringWithFormat:@"bafyrei%@", hashString];
+    NSString *base32 = [ATProtoBase32 encodeData:cidData];
+    return [NSString stringWithFormat:@"b%@", base32];
 }
 
 - (NSData *)cidDataFromString:(NSString *)cidString {
-    // Simple CID decoding - in production use proper IPLD library
-    if ([cidString hasPrefix:@"bafyrei"]) {
-        NSString *hashHex = [cidString substringFromIndex:7];
-        NSMutableData *data = [NSMutableData dataWithCapacity:hashHex.length / 2];
-
-        for (NSUInteger i = 0; i < hashHex.length; i += 2) {
-            NSString *byteString = [hashHex substringWithRange:NSMakeRange(i, 2)];
-            unsigned char byte = (unsigned char)strtol([byteString UTF8String], NULL, 16);
-            [data appendBytes:&byte length:1];
-        }
-
-        return data;
+    if ([cidString hasPrefix:@"b"]) {
+        return [ATProtoBase32 decodeString:[cidString substringFromIndex:1]];
     }
     return nil;
-}
-
-- (NSString *)base32Encode:(NSData *)data {
-    // Simple base32 encoding - in production use proper library
-    static const char *alphabet = "abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableString *result = [NSMutableString string];
-
-    unsigned char *bytes = (unsigned char *)data.bytes;
-    NSUInteger length = data.length;
-
-    for (NSUInteger i = 0; i < length; i += 5) {
-        // Simple implementation - in production use proper base32 library
-        [result appendFormat:@"%c", alphabet[bytes[i] % 32]];
-    }
-
-    return result;
 }
 
 @end

@@ -55,11 +55,13 @@ int main(int argc, char * argv[]) {
             @"ActorStoreTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",
+            @"PDSIntegrationTests",
             @"ServiceDatabasesTests",
             @"RateLimiterTests",
             @"DIDResolverTests",
             @"HandleResolverTests",
             @"ATProtoHandleValidatorTests",
+            @"IdentifierTests",
             @"TOTPTests",
             @"CryptoTests",
             @"OAuth2HandlerTests"
