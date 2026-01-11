@@ -57,11 +57,20 @@
 
     NSMutableArray *result = [NSMutableArray array];
     for (PDSDatabaseRecord *record in records) {
+        NSDictionary *parsedValue = @{};
+        if (record.value) {
+            NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+            if (data) {
+                parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+            }
+        }
+        
         [result addObject:@{
             @"uri": record.uri,
             @"cid": record.cid,
             @"collection": record.collection,
-            @"rkey": record.rkey
+            @"rkey": record.rkey,
+            @"value": parsedValue
         }];
     }
 
@@ -131,6 +140,53 @@
     }
 
     return success;
+}
+
+- (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+    
+    __block NSArray *collections = nil;
+    __block NSInteger totalCount = 0;
+    __block NSError *blockError = nil;
+    
+    [store readWithBlock:^(id<PDSActorStoreReader> reader) {
+        PDSActorStore *actorStore = (PDSActorStore *)reader;
+        sqlite3 *db = actorStore.db;
+        sqlite3_stmt *stmt;
+        const char *sql = "SELECT collection, COUNT(*) as count FROM records GROUP BY collection ORDER BY collection";
+        
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            NSMutableArray *results = [NSMutableArray array];
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char *colName = (const char *)sqlite3_column_text(stmt, 0);
+                int count = sqlite3_column_int(stmt, 1);
+                
+                [results addObject:@{
+                    @"collection": colName ? [NSString stringWithUTF8String:colName] : @"",
+                    @"count": @(count)
+                }];
+                totalCount += count;
+            }
+            sqlite3_finalize(stmt);
+            collections = results;
+        } else {
+            blockError = [NSError errorWithDomain:@"PDSRecordService"
+                                             code:sqlite3_errcode(db)
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
+        }
+    } error:&blockError];
+    
+    if (blockError) {
+        if (error) *error = blockError;
+        return nil;
+    }
+    
+    return @{
+        @"did": did,
+        @"collections": collections ?: @[],
+        @"recordCount": @(totalCount)
+    };
 }
 
 #pragma mark - Private Helpers
