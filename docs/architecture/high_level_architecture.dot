@@ -1,0 +1,134 @@
+strict digraph G {
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Helvetica"];
+    edge [fontname="Helvetica"];
+
+    // Main clusters
+    subgraph cluster_client {
+        label="Client Applications";
+        style=dashed;
+        color=gray;
+        BSKY "Bluesky App";
+        OTHER "Other ATProto Apps";
+    }
+
+    subgraph cluster_pds {
+        label="ATProto PDS Server";
+        style=solid;
+        color=black;
+        
+        subgraph cluster_network {
+            label="Network Layer";
+            style=dotted;
+            color=gray;
+            HttpServer [label="HttpServer\n(Port 2583)"];
+            XrpcHandler [label="XrpcHandler\n(XRPC Dispatcher)"];
+            WebSocket [label="WebSocket\n(Port 8081)"];
+            SubscribeHandler [label="SubscribeReposHandler"];
+        }
+        
+        subgraph cluster_app {
+            label="Application Layer";
+            style=dotted;
+            color=gray;
+            PDSController [label="PDSController\n(Coordinator)", shape=ellipse];
+            AccountService [label="AccountService"];
+            RecordService [label="RecordService"];
+            BlobService [label="BlobService"];
+            RepositoryService [label="RepositoryService"];
+        }
+        
+        subgraph cluster_auth {
+            label="Authentication Layer";
+            style=dotted;
+            color=gray;
+            AuthController [label="AuthController"];
+            JWT [label="JWT (RS256/ES256)"];
+            OAuth2 [label="OAuth2 Provider"];
+            KeyManager [label="KeyManager"];
+            TOTP [label="TOTP (2FA)"];
+            WebAuthn [label="WebAuthn"];
+        }
+        
+        subgraph cluster_repo {
+            label="Repository Layer";
+            style=dotted;
+            color=gray;
+            MST [label="MST\n(Merkle Search Tree)"];
+            CAR [label="CAR Archive"];
+            CBOR [label="CBOR Encoding"];
+            Repository [label="Repository"];
+        }
+        
+        subgraph cluster_data {
+            label="Data Layer";
+            style=dotted;
+            color=gray;
+            PDSDatabase [label="PDSDatabase\n(SQLite)"];
+            ActorStore [label="ActorStore\n(Per-user)"];
+            DatabasePool [label="Connection Pool"];
+        }
+        
+        subgraph cluster_identity {
+            label="Identity Layer";
+            style=dotted;
+            color=gray;
+            DIDResolver [label="DID Resolver"];
+            HandleResolver [label="Handle Resolver"];
+            PLC [label="PLC Directory"];
+        }
+        
+        subgraph cluster_sync {
+            label="Sync Layer";
+            style=dotted;
+            color=gray;
+            Firehose [label="Firehose\n(WebSocket Stream)"];
+            RepoSubs [label="Repo Subscriptions"];
+            Relay [label="Federation Relay"];
+        }
+    }
+    
+    subgraph cluster_plc {
+        label="PLC Directory";
+        style=dashed;
+        color=gray;
+        PLCServer [label="PLC Server"];
+    }
+    
+    // External services
+    PDSController -> AuthController;
+    PDSController -> AccountService;
+    PDSController -> RecordService;
+    PDSController -> BlobService;
+    PDSController -> RepositoryService;
+    PDSController -> DIDResolver;
+    PDSController -> PDSDatabase;
+    
+    AuthController -> JWT;
+    AuthController -> OAuth2;
+    AuthController -> KeyManager;
+    AuthController -> TOTP;
+    AuthController -> WebAuthn;
+    
+    RepositoryService -> MST;
+    RepositoryService -> CAR;
+    RepositoryService -> CBOR;
+    
+    RecordService -> Repository;
+    BlobService -> Repository;
+    
+    PDSDatabase -> ActorStore;
+    PDSDatabase -> DatabasePool;
+    
+    DIDResolver -> PLC [style=dashed];
+    
+    HttpServer -> XrpcHandler;
+    WebSocket -> SubscribeHandler;
+    SubscribeHandler -> Firehose;
+    SubscribeHandler -> RepoSubs;
+    
+    // Client interactions
+    BSKY -> HttpServer [label="HTTPS/XRPC"];
+    OTHER -> HttpServer [label="HTTPS/XRPC"];
+    BSKY -> WebSocket [label="WebSocket"];
+}
