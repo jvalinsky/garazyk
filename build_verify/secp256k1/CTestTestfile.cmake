@@ -1,0 +1,7 @@
+# CMake generated Testfile for 
+# Source directory: /Users/jack/Software/objpds/secp256k1
+# Build directory: /Users/jack/Software/objpds/build_verify/secp256k1
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+subdirs("src")

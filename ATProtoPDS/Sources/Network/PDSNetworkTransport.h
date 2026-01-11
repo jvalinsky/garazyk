@@ -1,4 +1,8 @@
+#import <stdint.h>
+#import <stdint.h>
 #import <Foundation/Foundation.h>
+#include <stdint.h>
+#import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
