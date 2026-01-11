@@ -1,0 +1,110 @@
+strict digraph Dependencies {
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Helvetica"];
+    edge [fontname="Helvetica", dir=both, arrowtail=dot];
+
+    // Foundation layer
+    subgraph cluster_foundation {
+        label="Foundation Layer";
+        color=lightgray;
+        Foundation [label="Foundation.framework"];
+        Security [label="Security.framework"];
+        Network [label="Network.framework"];
+    }
+    
+    // External dependencies
+    SQLite [label="SQLite3", color=lightyellow];
+    Secp256k1 [label="secp256k1", color=lightyellow];
+    
+    // Identity layer
+    Identity [label="Identity/\n(DID, Handle)", color=lightblue];
+    
+    // Core layer
+    Core [label="Core/\n(CID, DID, TID)", color=lightblue];
+    
+    // Auth layer
+    Auth [label="Auth/\n(JWT, OAuth2)", color=lightblue];
+    SecurityMod [label="Security/\n(Authz, SQLi)", color=lightblue];
+    
+    // Network layer
+    NetworkMod [label="Network/\n(Http, XRPC)", color=lightblue];
+    
+    // Repository layer
+    Repository [label="Repository/\n(MST, CAR)", color=lightblue];
+    
+    // Blob layer
+    Blob [label="Blob/", color=lightblue];
+    
+    // Database layer
+    Database [label="Database/", color=lightblue];
+    
+    // App layer
+    App [label="App/", color=lightcoral];
+    AppView [label="AppView/", color=lightcoral];
+    Admin [label="Admin/", color=lightcoral];
+    Sync [label="Sync/", color=lightcoral];
+    Federation [label="Federation/", color=lightcoral];
+    CLI [label="CLI/", color=lightcoral];
+    
+    // Dependencies
+    App -> Identity;
+    App -> Core;
+    App -> Auth;
+    App -> SecurityMod;
+    App -> NetworkMod;
+    App -> Repository;
+    App -> Blob;
+    App -> Database;
+    App -> AppView;
+    App -> Admin;
+    App -> Sync;
+    App -> Federation;
+    
+    AppView -> Auth;
+    AppView -> Database;
+    AppView -> Repository;
+    
+    Admin -> Auth;
+    Admin -> Database;
+    Admin -> Repository;
+    
+    Sync -> Auth;
+    Sync -> Database;
+    Sync -> Repository;
+    Sync -> NetworkMod;
+    
+    Federation -> Auth;
+    Federation -> Database;
+    Federation -> Repository;
+    Federation -> NetworkMod;
+    
+    CLI -> App;
+    CLI -> NetworkMod;
+    CLI -> Auth;
+    CLI -> Database;
+    
+    Repository -> Core;
+    Repository -> Blob;
+    Repository -> Auth;
+    
+    Blob -> Core;
+    Blob -> Database;
+    
+    Database -> SQLite;
+    
+    Auth -> SecurityMod;
+    Auth -> Core;
+    Auth -> Secp256k1;
+    
+    NetworkMod -> SecurityMod;
+    NetworkMod -> Auth;
+    
+    Identity -> Core;
+    Identity -> NetworkMod;
+    
+    SecurityMod -> Auth;
+    
+    Secp256k1 -> Security;
+    
+    Foundation -> Security;
+}
