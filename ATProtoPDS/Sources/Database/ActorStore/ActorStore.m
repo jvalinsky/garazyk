@@ -602,10 +602,22 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 - (PDSDatabaseRecord *)recordFromStatement:(sqlite3_stmt *)stmt {
     PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
     record.uri = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+    record.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
     record.collection = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
     record.rkey = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 3)];
-    record.cid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 4)];
-    record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 5)];
+    
+    const char *cidText = (const char *)sqlite3_column_text(stmt, 4);
+    if (cidText) {
+        record.cid = [NSString stringWithUTF8String:cidText];
+    }
+    
+    const void *valueBlob = sqlite3_column_blob(stmt, 5);
+    int valueBytes = sqlite3_column_bytes(stmt, 5);
+    if (valueBlob && valueBytes > 0) {
+        record.value = [[NSString alloc] initWithBytes:valueBlob length:valueBytes encoding:NSUTF8StringEncoding];
+    }
+    
+    record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 6)];
     return record;
 }
 
@@ -642,8 +654,8 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 }
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, indexed_at) "
-                     @"VALUES (?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at) "
+                     @"VALUES (?, ?, ?, ?, ?, ?, ?)";
     sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
@@ -652,7 +664,14 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_text(stmt, 3, record.collection.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 4, record.rkey.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 5, record.cid.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 6, record.createdAt.timeIntervalSince1970);
+    
+    if (record.value) {
+        sqlite3_bind_text(stmt, 6, record.value.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 6);
+    }
+    
+    sqlite3_bind_double(stmt, 7, record.createdAt.timeIntervalSince1970);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
     [self finalizeStatement:stmt];

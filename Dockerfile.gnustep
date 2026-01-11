@@ -1,0 +1,36 @@
+# Dockerfile for GNUstep Build Verification
+FROM ubuntu:22.04
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies matching scripts/setup_linux.sh
+RUN apt-get update && apt-get install -y \
+    clang \
+    cmake \
+    gnustep \
+    gnustep-devel \
+    libgnustep-base-dev \
+    libdispatch-dev \
+    libssl-dev \
+    libqrencode-dev \
+    git \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up environment variables for GNUstep
+ENV GNUSTEP_MAKEFILES=/usr/share/GNUstep/Makefiles
+ENV GS_MAKE=gnustep-make
+
+# Set work directory
+WORKDIR /src
+
+# Copy the project
+COPY . .
+
+# Create build directory
+RUN mkdir build
+
+# Run CMake and Build
+# Using the same flags as the CI workflow
+CMD ["sh", "-c", "cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_OBJC_COMPILER=clang -DBUILD_TESTS=OFF && cmake --build build --parallel $(nproc)"]

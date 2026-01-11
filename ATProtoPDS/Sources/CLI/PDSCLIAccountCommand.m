@@ -36,7 +36,8 @@
     if (config[@"pds"][@"data_dir"]) {
         dataDir = config[@"pds"][@"data_dir"];
     }
-    return [dataDir stringByAppendingPathComponent:@"pds.db"];
+    // New path: data/service/service.db
+    return [[dataDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
 }
 
 + (NSArray<PDSDatabaseAccount *> *)listAccountsWithContext:(PDSCLICommandContext *)context

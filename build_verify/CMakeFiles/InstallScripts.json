@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/jack/Software/objpds/build_verify/cmake_install.cmake",
+		"/Users/jack/Software/objpds/build_verify/secp256k1/cmake_install.cmake",
+		"/Users/jack/Software/objpds/build_verify/secp256k1/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
