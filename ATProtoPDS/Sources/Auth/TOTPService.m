@@ -3,7 +3,14 @@
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/YubiKeyOATH.h"
+
+#if defined(GNUSTEP)
+#import <qrencode.h>
+#else
 #import <CoreImage/CoreImage.h>
+#import <CoreGraphics/CoreGraphics.h>
+#import <ImageIO/ImageIO.h>
+#endif
 
 @implementation TOTPService
 
@@ -52,6 +59,36 @@
                            secret,
                            [issuer stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
     
+#if defined(GNUSTEP)
+    QRcode *qrcode = QRcode_encodeString([urlString UTF8String], 0, QR_ECLEVEL_M, QR_MODE_8, 1);
+    if (!qrcode) return nil;
+    
+    // Generate a simple PBM (Portable BitMap) P4 format
+    int width = qrcode->width;
+    int rowBytes = (width + 7) / 8;
+    NSMutableData *pbmData = [NSMutableData data];
+    NSString *header = [NSString stringWithFormat:@"P4\n%d %d\n", width, width];
+    [pbmData appendData:[header dataUsingEncoding:NSASCIIStringEncoding]];
+    
+    unsigned char *p = qrcode->data;
+    for (int y = 0; y < width; y++) {
+        for (int x = 0; x < rowBytes; x++) {
+            unsigned char byte = 0;
+            for (int bit = 0; bit < 8; bit++) {
+                int xx = x * 8 + bit;
+                if (xx < width) {
+                    if (p[y * width + xx] & 1) {
+                        byte |= (1 << (7 - bit));
+                    }
+                }
+            }
+            [pbmData appendBytes:&byte length:1];
+        }
+    }
+    
+    QRcode_free(qrcode);
+    return pbmData;
+#else
     NSData *stringData = [urlString dataUsingEncoding:NSISOLatin1StringEncoding];
     
     CIFilter *qrFilter = [CIFilter filterWithName:@"CIQRCodeGenerator"];
@@ -85,6 +122,7 @@
         CFRelease(pngData);
         return nil;
     }
+#endif
 }
 
 - (nullable NSString *)generateTOTPToken:(NSError **)error {
