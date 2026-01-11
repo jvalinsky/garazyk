@@ -67,6 +67,16 @@ echo "Creating follows..."
 create_record "$ALICE_DID" "app.bsky.graph.follow" "{\"subject\": \"$BOB_DID\", \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 create_record "$BOB_DID" "app.bsky.graph.follow" "{\"subject\": \"$ALICE_DID\", \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 
+# Test Explore API
+echo "Testing Explore API..."
+curl -s "http://localhost:2583/explore/api/describe?did=$ALICE_DID" > explore.json
+if grep -q "\"handle\":\"alice.test\"" explore.json; then
+    echo "Explore API OK"
+else
+    echo "Explore API FAILED"
+    cat explore.json
+fi
+
 echo "Data regeneration complete."
 echo "Server is running at PID $SERVER_PID"
 echo "Press Ctrl+C to stop."
