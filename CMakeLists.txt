@@ -38,6 +38,7 @@ if(NOT APPLE)
     endif()
     
     include_directories(/usr/include/GNUstep)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
 endif()
 
 #=============================
