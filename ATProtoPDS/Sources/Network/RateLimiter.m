@@ -45,7 +45,7 @@ NS_ASSUME_NONNULL_BEGIN
     return [self initWithDatabasePath:nil];
 }
 
-- (instancetype)initWithDatabasePath:(NSString *)path {
+- (instancetype)initWithDatabasePath:(nullable NSString *)path {
     self = [super init];
     if (self) {
         _didLimit = 5000;

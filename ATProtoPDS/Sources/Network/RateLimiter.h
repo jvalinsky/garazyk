@@ -38,7 +38,7 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 
 + (instancetype)sharedLimiter;
 
-- (instancetype)initWithDatabasePath:(NSString *)path;
+- (instancetype)initWithDatabasePath:(nullable NSString *)path;
 
 - (RateLimitResult *)checkRateLimitForDid:(NSString *)did;
 - (RateLimitResult *)checkRateLimitForIP:(NSString *)ip;
