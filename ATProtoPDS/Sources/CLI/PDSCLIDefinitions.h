@@ -238,6 +238,16 @@ typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
 - (void)addCommand:(id<PDSCLICommand>)command;
 
 /*!
+ @method commandForName:
+ 
+ @abstract Returns a registered command by name.
+ 
+ @param name The name of the command to find.
+ @return The command, or nil if not found.
+ */
+- (nullable id<PDSCLICommand>)commandForName:(NSString *)name;
+
+/*!
  @method removeCommandWithName:
  
  @abstract Removes a registered command.
