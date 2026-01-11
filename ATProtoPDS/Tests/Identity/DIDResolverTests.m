@@ -21,23 +21,24 @@
 - (void)testDIDResolutionCaching {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
-    // First resolution should cache
-    XCTestExpectation *expectation = [self expectationWithDescription:@"First resolution"];
+    // Mock a document in cache to avoid network calls
+    NSDictionary *mockDocJSON = @{@"id": @"did:plc:test", @"verificationMethod": @[]};
+    DIDDocument *mockDoc = [DIDDocument documentWithJSON:mockDocJSON error:nil];
+    [resolver.cache setObject:mockDoc forKey:@"did:plc:test"];
+    resolver.cacheTimestamps[@"did:plc:test"] = @([[NSDate date] timeIntervalSince1970]);
+
+    // Resolution should use cache
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Cached resolution"];
     [resolver resolveDID:@"did:plc:test" completion:^(NSDictionary *document, NSError *error) {
+        if (!document) {
+            printf("DEBUG: Error resolving DID: %s\n", [[error description] UTF8String]);
+        }
         XCTAssertNotNil(document);
+        XCTAssertEqualObjects(document[@"id"], @"did:plc:test");
         [expectation fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
-
-    // Second resolution should use cache
-    expectation = [self expectationWithDescription:@"Cached resolution"];
-    [resolver resolveDID:@"did:plc:test" completion:^(NSDictionary *document, NSError *error) {
-        XCTAssertNotNil(document);
-        [expectation fulfill];
-    }];
-
-    [self waitForExpectationsWithTimeout:1.0 handler:nil]; // Should be fast
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
 - (void)testBatchResolution {
@@ -67,7 +68,8 @@
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
     // Mock a cached document
-    NSDictionary *mockDocument = @{@"id": @"did:test:123", @"test": @"data"};
+    NSDictionary *mockDocJSON = @{@"id": @"did:test:123", @"test": @"data"};
+    DIDDocument *mockDocument = [DIDDocument documentWithJSON:mockDocJSON error:nil];
     [resolver.cache setObject:mockDocument forKey:@"did:test:123"];
 
     // Set a timestamp that's within stale TTL but beyond fresh TTL
@@ -89,7 +91,8 @@
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
     // Mock a cached document
-    NSDictionary *mockDocument = @{@"id": @"did:test:expired", @"test": @"data"};
+    NSDictionary *mockDocJSON = @{@"id": @"did:test:expired", @"test": @"data"};
+    DIDDocument *mockDocument = [DIDDocument documentWithJSON:mockDocJSON error:nil];
     [resolver.cache setObject:mockDocument forKey:@"did:test:expired"];
 
     // Set a timestamp that's beyond max TTL

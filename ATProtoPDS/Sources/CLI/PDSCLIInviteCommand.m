@@ -199,7 +199,7 @@
             } else if (invite.uses >= invite.maxUses) {
                 status = @"used";
             } else if (invite.expiresAt) {
-                status = [NSString stringWithFormat:@"valid*", invite.expiresAt];
+                status = @"valid*";
             } else {
                 status = @"valid";
             }

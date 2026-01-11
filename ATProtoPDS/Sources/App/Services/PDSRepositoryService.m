@@ -38,7 +38,7 @@
     return mst;
 }
 
-- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(CID *)cid error:(NSError **)error {
+- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error {
     MST *mst = [self loadMSTForDid:did error:error];
     if (!mst) return NO;
     
@@ -56,10 +56,12 @@
     if (!store) return NO;
     
     __block BOOL success = NO;
+    __block NSError *innerError = nil;
     [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor) {
-        success = [transactor updateRepoRoot:did rootCid:[repoRoot bytes] error:error];
+        success = [transactor updateRepoRoot:did rootCid:[repoRoot bytes] error:&innerError];
     } error:error];
     
+    if (innerError && error) *error = innerError;
     return success;
 }
 

@@ -162,10 +162,10 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 
 - (nullable NSString *)stringForKey:(NSString *)key {
     NSArray *components = [key componentsSeparatedByString:@"."];
-    NSDictionary *current = _config;
+    id current = _config;
     for (NSString *component in components) {
         if (![current isKindOfClass:[NSDictionary class]]) return nil;
-        current = current[component];
+        current = ((NSDictionary *)current)[component];
         if (!current) return nil;
     }
     return [current isKindOfClass:[NSString class]] ? current : nil;

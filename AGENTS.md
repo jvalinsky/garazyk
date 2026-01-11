@@ -10,6 +10,12 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 - **Test Suite Repair**: Fixed critical failures in `PDSControllerTests` (refresh token logic), `DIDResolverTests`, and `ATProtoCoreTests`.
 - **Test Consolidation**: 107 unit tests are now passing. Broken or obsolete tests (`OAuth2Tests`, `XRPCHandlerTests`) were removed or excluded.
 - **Dependency Management**: `secp256k1` is built as a CMake subproject, and `XCTest` linking is properly configured.
+- **Code Quality**: Resolved several compiler warnings related to retain cycles, format strings, and nullability.
+
+### 🏗️ Phase 4: Linux Support & Robustness - IN PROGRESS
+- **Linux Porting**: Implementing `PDSNetworkTransport` for Linux using GNUstep and libdispatch.
+- **CLI Enhancements**: Added `repo create-record` command for manual data manipulation.
+- **Account Management**: Implemented `getAllAccounts` for administrative tasks.
 
 ## Quick Reference
 

@@ -89,14 +89,14 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (nullable sqlite3_stmt *)cachedStatementForKey:(NSString *)key {
     __block sqlite3_stmt *stmt = NULL;
     dispatch_sync(self.cacheQueue, ^{
-        stmt = CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
+        stmt = (sqlite3_stmt *)CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
     });
     return stmt;
 }
 
 - (void)cacheStatement:(sqlite3_stmt *)stmt forKey:(NSString *)key {
     dispatch_sync(self.cacheQueue, ^{
-        sqlite3_stmt *existing = CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
+        sqlite3_stmt *existing = (sqlite3_stmt *)CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
         if (existing) {
             sqlite3_finalize(existing);
         }

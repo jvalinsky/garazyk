@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
 
-- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(CID *)cid error:(NSError **)error;
+- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error;
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
 

@@ -54,7 +54,8 @@ The server will start on `http://localhost:2583` by default.
 1. **Show Help**: `./build/bin/atprotopds-cli help`
 2. **Check Health**: `./build/bin/atprotopds-cli health --verbose`
 3. **List Accounts**: `./build/bin/atprotopds-cli account list`
-4. **Open the Explorer**: Visit `http://localhost:2583/explore/`
+4. **Create Record**: `./build/bin/atprotopds-cli repo create-record <did> <col> <rkey> <json>`
+5. **Open the Explorer**: Visit `http://localhost:2583/explore/`
 
 ## Building from Source
 
