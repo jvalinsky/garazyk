@@ -197,38 +197,27 @@ searchResponse.arrayItemRef = @"#/components/schemas/Record";
 
 ### Unit Tests
 
-Add tests in `Tests/` directory. Ensure your new test file is included in `CMakeLists.txt` (globally picked up by `ATProtoPDS/Tests/**/*.m`).
+Add tests in `ATProtoPDS/Tests/` directory. All files matching `ATProtoPDS/Tests/**/*.m` are automatically included in the `AllTests` target.
 
-```objc
-- (void)testSearchRecords {
-    // Setup test data
-    NSDictionary *testRecord = @{
-        @"uri": @"at://did:plc:test/app.test.record/test",
-        @"value": @{@"text": @"test search content"}
-    };
-
-    // Insert test data
-    [self insertTestRecord:testRecord];
-
-    // Test search functionality
-    NSArray *results = [handler searchRecordsWithQuery:@"search"
-                                             collection:nil
-                                                  limit:10];
-
-    XCTAssertEqual(results.count, 1);
-    XCTAssertEqualObjects(results[0][@"uri"], testRecord[@"uri"]);
-}
+```bash
+# Build and run unit tests
+xcodebuild -scheme AllTests build
+./build/tests/AllTests
 ```
 
 ### Integration Tests
 
-Add API endpoint tests:
+Test the PDS server using the CLI and curl:
 
 ```bash
-# Test new endpoint
-curl -X GET "http://localhost:2583/explore/api/search-records?query=test" \
-     -H "Content-Type: application/json" \
-     -w "\nStatus: %{http_code}\n"
+# Start server
+./build/bin/atprotopds-cli serve --verbose
+
+# Create test account
+./build/bin/atprotopds-cli account create --email test@example.com --handle test.test
+
+# Test API endpoint
+curl -s http://localhost:2583/explore/api/accounts
 ```
 
 ## Troubleshooting Build Issues

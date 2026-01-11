@@ -25,9 +25,10 @@ A high-performance, standards-compliant AT Protocol Personal Data Server (PDS) i
 
 ### Prerequisites
 
-- macOS 12.0 or later
+- macOS 14.0 or later
 - Xcode 15.0 or later
-- Command Line Tools for Xcode
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- CMake 3.21 or later (`brew install cmake`)
 
 ### Installation
 
@@ -36,49 +37,55 @@ A high-performance, standards-compliant AT Protocol Personal Data Server (PDS) i
 git clone https://github.com/jvalinsky/NSPds.git
 cd NSPds
 
-# Build the project
-make build
+# Generate the project
+xcodegen generate
+
+# Build the CLI tool
+xcodebuild -scheme ATProtoPDS-CLI build
 
 # Start the server
-./scripts/start_server.sh
+./build/bin/atprotopds-cli serve
 ```
 
-The server will start on `http://localhost:2583`
+The server will start on `http://localhost:2583` by default.
 
 ### First Steps
 
-1. **Open the Explorer**: Visit `http://localhost:2583/explore/`
-2. **View API Documentation**: Visit `http://localhost:2583/explore/api/docs`
-3. **Download OpenAPI Spec**: Visit `http://localhost:2583/explore/api/openapi.yaml`
+1. **Show Help**: `./build/bin/atprotopds-cli help`
+2. **Check Health**: `./build/bin/atprotopds-cli health --verbose`
+3. **List Accounts**: `./build/bin/atprotopds-cli account list`
+4. **Open the Explorer**: Visit `http://localhost:2583/explore/`
 
 ## Building from Source
 
-### Using Make
+### Using XcodeGen & CMake (Recommended)
+
+The project uses a unified CMake build system wrapped by XcodeGen.
+
+```bash
+# Regenerate project if project.yml or CMakeLists.txt changes
+xcodegen generate
+
+# Build CLI Tool
+xcodebuild -scheme ATProtoPDS-CLI build
+# Binary at: ./build/bin/atprotopds-cli
+
+# Build & Run Unit Tests
+xcodebuild -scheme AllTests build
+./build/tests/AllTests
+
+# Build Fuzzers
+xcodebuild -scheme Fuzzers build
+```
+
+### Using Make (Legacy Support)
 
 ```bash
 # Build all targets
 make build
 
-# Build specific target
-make build-cli    # Command-line interface
-make build-gui    # macOS GUI application
-
 # Run tests
 make test
-
-# Clean build artifacts
-make clean
-```
-
-### Using Xcode
-
-```bash
-# Open in Xcode
-open ATProtoPDS.xcodeproj
-
-# Select target and build
-# - ATProtoPDS-CLI: Command-line server
-# - ATProtoPDS: macOS GUI application
 ```
 
 ### Dependencies
