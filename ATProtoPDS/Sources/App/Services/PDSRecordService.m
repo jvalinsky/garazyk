@@ -3,6 +3,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Core/ATProtoBase32.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @interface PDSRecordService ()
@@ -76,8 +77,14 @@
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
 
     NSError *cidError;
-    NSString *cidString = [self generateCIDForData:[NSJSONSerialization dataWithJSONObject:value options:0 error:nil]
-                                             error:&cidError];
+    // Use DAG-CBOR encoding for CID calculation to match spec
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:&cidError];
+    if (!cborData) {
+        if (error) *error = cidError;
+        return NO;
+    }
+    
+    NSString *cidString = [self generateCIDForData:cborData error:&cidError];
     if (!cidString) {
         if (error) *error = cidError;
         return NO;
