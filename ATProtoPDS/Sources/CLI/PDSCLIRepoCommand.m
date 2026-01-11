@@ -28,11 +28,12 @@
            @"Subcommands:\n"
            @"  list <did>             List all records in the user's repository\n"
            @"  get <did> <uri>        Fetch a specific record\n"
-           @"  root <did>             Return the current root CID of the repository";
+           @"  root <did>             Return the current root CID of the repository\n"
+           @"  create-record <did> <col> <rkey> <json>  Create a new record";
 }
 
 - (NSArray<NSString *> *)subcommands {
-    return @[@"list", @"get", @"root"];
+    return @[@"list", @"get", @"root", @"create-record"];
 }
 
 - (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -50,8 +51,52 @@
         [self executeGetWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"root"]) {
         [self executeRootWithArgs:subArgs context:context];
+    } else if ([subcommand isEqualToString:@"create-record"]) {
+        [self executeCreateRecordWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
+    }
+}
+
+- (void)executeCreateRecordWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+    if (args.count < 4) {
+        [context printError:@"Usage: pds repo create-record <did> <collection> <rkey> <json_value>"];
+        return;
+    }
+
+    NSString *did = args[0];
+    NSString *collection = args[1];
+    NSString *rkey = args[2];
+    NSString *jsonValue = args[3];
+
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+    NSError *error = nil;
+
+    PDSActorStore *store = [pool storeForDid:did error:&error];
+    if (!store) {
+        [context printError:[NSString stringWithFormat:@"Failed to open store for %@: %@", did, error.localizedDescription]];
+        return;
+    }
+
+    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+    record.did = did;
+    record.collection = collection;
+    record.rkey = rkey;
+    record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    record.value = jsonValue;
+    record.createdAt = [NSDate date];
+    
+    // Generate a dummy CID for now (proper CID generation requires CBOR encoding)
+    record.cid = [NSString stringWithFormat:@"bafy%@", [[NSUUID UUID] UUIDString].lowercaseString];
+
+    BOOL success = [store putRecord:record forDid:did error:&error];
+    if (success) {
+        [context printInfo:[NSString stringWithFormat:@"Record created: %@", record.uri]];
+        if (!context.jsonOutput) {
+            printf("CID: %s\n", [record.cid UTF8String]);
+        }
+    } else {
+        [context printError:[NSString stringWithFormat:@"Failed to create record: %@", error.localizedDescription]];
     }
 }
 
