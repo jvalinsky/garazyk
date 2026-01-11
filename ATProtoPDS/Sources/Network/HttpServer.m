@@ -120,14 +120,18 @@
 
 - (void)handleNewConnection:(id<PDSNetworkConnection>)connection {
     __weak typeof(self) weakSelf = self;
+    __weak id<PDSNetworkConnection> weakConnection = connection;
 
     connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        __strong typeof(weakConnection) strongConnection = weakConnection;
+        if (!strongConnection) return;
+
         switch (state) {
             case PDSNetworkConnectionStateReady:
-                [weakSelf readRequestFromConnection:connection];
+                [weakSelf readRequestFromConnection:strongConnection];
                 break;
             case PDSNetworkConnectionStateFailed:
-                [connection cancel];
+                [strongConnection cancel];
                 break;
             case PDSNetworkConnectionStateCancelled:
                 break;
@@ -246,18 +250,19 @@
 
     // Dispatch request processing to background queue to avoid blocking network I/O
     __weak typeof(self) weakSelf = self;
-    id<PDSNetworkConnection> connectionRef = connection; // Capture connection in block
+    __weak id<PDSNetworkConnection> weakConnection = connection;
     HttpRequest *requestRef = request; // Capture request in block
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
+        __strong typeof(weakConnection) strongConnection = weakConnection;
+        if (!strongSelf || !strongConnection) return;
 
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
 
         // Send response back on the network queue
         dispatch_async(strongSelf.serverQueue, ^{
-            [strongSelf sendResponse:response onConnection:connectionRef];
+            [strongSelf sendResponse:response onConnection:strongConnection];
         });
     });
 }

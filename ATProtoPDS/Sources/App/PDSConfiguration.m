@@ -168,7 +168,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         current = ((NSDictionary *)current)[component];
         if (!current) return nil;
     }
-    return [current isKindOfClass:[NSString class]] ? current : nil;
+    return [current isKindOfClass:[NSString class]] ? (NSString *)current : nil;
 }
 
 - (NSInteger)integerForKey:(NSString *)key {
