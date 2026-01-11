@@ -8,15 +8,14 @@ git clone https://github.com/jvalinsky/NSPds.git
 cd NSPds
 
 # Setup dependencies
-brew install xcodegen llvm@18
-cd secp256k1 && ./autogen.sh && ./configure && make && cd ..
+brew install xcodegen cmake
 
 # Generate project and build
 xcodegen generate
-make build
+xcodebuild -scheme ATProtoPDS-CLI build
 
 # Run tests
-make test-unit
+./build/tests/AllTests
 ```
 
 ## Development Workflow
@@ -51,19 +50,17 @@ refactor: simplify blob storage initialization
 
 ```bash
 # Run all unit tests
-make test-unit
+xcodebuild -scheme AllTests build
+./build/tests/AllTests
 
 # Run specific test
-./build/did_resolver_tests
-
-# Run with coverage
-xcodebuild test -scheme AllTests -configuration Debug GCC_GENERATE_TEST_COVERAGE_FILES=YES
+./build/tests/AllTests --test-class MyTests
 ```
 
 ## Submitting Changes
 
-1. Ensure all tests pass
-2. Run static analysis: `make clang-tidy`
+1. Ensure all tests pass: `./build/tests/AllTests`
+2. Run static analysis (if applicable)
 3. Update documentation as needed
 4. Create a descriptive PR description
 
