@@ -137,7 +137,7 @@
 - (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count > 0) {
         NSString *commandName = args[0];
-        id<PDSCLICommand> command = [[PDSCLIDispatcher sharedDispatcher] valueForKey:commandName];
+        id<PDSCLICommand> command = [[PDSCLIDispatcher sharedDispatcher] commandForName:commandName];
         if (command) {
             [[PDSCLIDispatcher sharedDispatcher] printUsageForCommand:command];
         } else {
@@ -193,6 +193,9 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, id<PDSCLICommand>> *commands;
 @end
 
+@interface PDSCLIRepoCommand : PDSBaseCommand
+@end
+
 @implementation PDSCLIDispatcher
 
 + (instancetype)sharedDispatcher {
@@ -216,6 +219,7 @@
 - (void)registerDefaultCommands {
     [self addCommand:[PDSCLIHelpCommand command]];
     [self addCommand:[PDSCLIVersionCommand command]];
+    [self addCommand:[PDSCLIRepoCommand command]];
 }
 
 - (void)addCommand:(id<PDSCLICommand>)command {
@@ -223,6 +227,10 @@
     for (NSString *alias in [command aliases]) {
         self.commands[alias] = command;
     }
+}
+
+- (id<PDSCLICommand>)commandForName:(NSString *)name {
+    return self.commands[name];
 }
 
 - (void)removeCommandWithName:(NSString *)name {

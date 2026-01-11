@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <stdint.h>
 
 @class WebSocketConnection;
 
