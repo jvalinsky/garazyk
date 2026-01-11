@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Core/ATProtoValidator.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "App/Services/PDSAccountService.h"
 #import "App/Services/PDSRecordService.h"
 #import "App/Services/PDSBlobService.h"
