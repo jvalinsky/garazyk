@@ -65,6 +65,8 @@ if(APPLE)
     find_library(SECURITY Security REQUIRED)
     find_library(COREIMAGE CoreImage REQUIRED)
     find_library(APPKIT AppKit REQUIRED)
+    find_library(IMAGEIO ImageIO REQUIRED)
+    find_library(COREGRAPHICS CoreGraphics REQUIRED)
     
     # Find SQLite3
     find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
@@ -75,6 +77,8 @@ if(APPLE)
         ${SECURITY} 
         ${COREIMAGE} 
         ${APPKIT} 
+        ${IMAGEIO}
+        ${COREGRAPHICS}
         ${SQLite3_LIBRARY}
     )
 else()
@@ -84,8 +88,8 @@ else()
     
     find_library(DISPATCH_LIB dispatch)
     find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
-    find_library(QRENCODE_LIB qrencode)
-    find_path(QRENCODE_INCLUDE_DIR qrencode.h)
+    find_library(QRENCODE_LIB qrencode REQUIRED)
+    find_path(QRENCODE_INCLUDE_DIR qrencode.h REQUIRED)
     
     if(NOT DISPATCH_LIB)
         message(WARNING "libdispatch not found")
