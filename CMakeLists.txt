@@ -15,7 +15,38 @@ project(ATProtoPDS
 # Enable ARC for Objective-C and disable strict standards
 set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -Wno-implicit-function-declaration")
 
-
+# Platform Specific Configuration
+if(NOT APPLE)
+    set(CMAKE_OBJC_STANDARD 20)
+    add_compile_definitions(GNUSTEP LINUX)
+    
+    # Use clang if not set
+    if(NOT CMAKE_C_COMPILER)
+        set(CMAKE_C_COMPILER clang)
+    endif()
+    if(NOT CMAKE_OBJC_COMPILER)
+        set(CMAKE_OBJC_COMPILER clang)
+    endif()
+    
+    # GNUstep Configuration
+    find_program(GNUSTEP_CONFIG gnustep-config REQUIRED)
+    if(GNUSTEP_CONFIG)
+        execute_process(
+            COMMAND ${GNUSTEP_CONFIG} --objc-flags
+            OUTPUT_VARIABLE GNUSTEP_CFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${GNUSTEP_CONFIG} --base-libs
+            OUTPUT_VARIABLE GNUSTEP_LIBS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_CFLAGS} -fblocks -fobjc-runtime=gnustep-2.0")
+        string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS}")
+    endif()
+    
+    include_directories(/usr/include/GNUstep)
+endif()
 
 #=============================
 # Build Type Configuration
@@ -34,15 +65,51 @@ set(CMAKE_OBJC_FLAGS_RELEASE "${CMAKE_OBJC_FLAGS_RELEASE} -O2")
 # Dependencies
 #=============================
 
-# Find required frameworks
-find_library(FOUNDATION Foundation REQUIRED)
-find_library(NETWORK Network REQUIRED)
-find_library(SECURITY Security REQUIRED)
-find_library(COREIMAGE CoreImage REQUIRED)
-find_library(APPKIT AppKit REQUIRED)
-
-# Find SQLite3
-find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
+if(APPLE)
+    # Find required frameworks
+    find_library(FOUNDATION Foundation REQUIRED)
+    find_library(NETWORK Network REQUIRED)
+    find_library(SECURITY Security REQUIRED)
+    find_library(COREIMAGE CoreImage REQUIRED)
+    find_library(APPKIT AppKit REQUIRED)
+    
+    # Find SQLite3
+    find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
+    
+    set(PLATFORM_LIBRARIES 
+        ${FOUNDATION} 
+        ${NETWORK} 
+        ${SECURITY} 
+        ${COREIMAGE} 
+        ${APPKIT} 
+        ${SQLite3_LIBRARY}
+    )
+else()
+    # Linux Dependencies
+    find_package(OpenSSL REQUIRED)
+    find_package(SQLite3 REQUIRED)
+    
+    find_library(DISPATCH_LIB dispatch)
+    find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
+    find_library(QRENCODE_LIB qrencode)
+    
+    if(NOT DISPATCH_LIB)
+        message(WARNING "libdispatch not found")
+    endif()
+    
+    set(PLATFORM_LIBRARIES
+        ${GNUSTEP_LIBS_LIST}
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        SQLite3::SQLite3
+        ${DISPATCH_LIB}
+        ${BLOCKS_RUNTIME_LIB}
+        ${QRENCODE_LIB}
+        pthread
+        m
+        dl
+    )
+endif()
 
 #=============================
 # secp256k1 Subproject
@@ -71,6 +138,17 @@ list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*main\.m$")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/tests/.*")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Tests/.*")
 
+# Exclude AppDelegate on Linux/Server builds if not used or has deps
+if(NOT APPLE)
+  # Exclude sources that depend on Apple frameworks not present in GNUstep base
+  # (Adjust as needed based on actual dependencies)
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*AppDelegate\.m$")
+  # For now, let's assume AppDelegate might be compiled if dependencies are met or ifdef'd
+  # But since it imports Cocoa, we should likely exclude it unless we have gnustep-gui and want it.
+  # Given this is a PDS server, we probably don't want it.
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*AppDelegate\.m$")
+endif()
+
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
 
 #=============================
@@ -89,12 +167,7 @@ target_include_directories(atprotopds-cli PRIVATE
 )
 
 target_link_libraries(atprotopds-cli PRIVATE
-  ${FOUNDATION}
-  ${NETWORK}
-  ${SECURITY}
-  ${COREIMAGE}
-  ${APPKIT}
-  ${SQLite3_LIBRARY}
+  ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
 
@@ -119,12 +192,7 @@ target_include_directories(atprotopds-server PRIVATE
 )
 
 target_link_libraries(atprotopds-server PRIVATE
-  ${FOUNDATION}
-  ${NETWORK}
-  ${SECURITY}
-  ${COREIMAGE}
-  ${APPKIT}
-  ${SQLite3_LIBRARY}
+  ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
 
@@ -144,7 +212,7 @@ set_target_properties(atprotopds-server PROPERTIES
 option(BUILD_FUZZERS "Build fuzzing targets" OFF)
 
 if(BUILD_FUZZERS)
-  # Check if fuzzer sanitize is supported (AppleClang usually lacks libFuzzer)
+  # Check if fuzzer sanitize is supported
   include(CheckCXXCompilerFlag)
   CHECK_CXX_COMPILER_FLAG("-fsanitize=fuzzer" HAS_FUZZER_SANITIZE)
 
@@ -159,63 +227,29 @@ if(BUILD_FUZZERS)
     set(FUZZER_CFLAGS -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined)
     set(FUZZER_LDFLAGS -fsanitize=address,undefined)
     set(FUZZER_DRIVER "")
-    # Do NOT define LIBFUZZER so internal main is used
   endif()
 
-  # Base fuzzer sources (without main entry points)
   set(FUZZER_SOURCES ${ATProtoPDS_SOURCES})
+  
+  # Macro to add fuzzer targets
+  macro(add_pds_fuzzer name source)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+      add_executable(${name} ${source} ${FUZZER_SOURCES} ${FUZZER_DRIVER})
+      target_include_directories(${name} PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
+      target_link_libraries(${name} PRIVATE ${PLATFORM_LIBRARIES} ${SECP256K1_LIBRARIES})
+      target_compile_options(${name} PRIVATE ${FUZZER_CFLAGS})
+      target_link_options(${name} PRIVATE ${FUZZER_LDFLAGS})
+      set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
+    endif()
+  endmacro()
 
-  # XRPC Fuzzer
-  add_executable(fuzz_xrpc fuzzing/fuzz_xrpc.mm ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-  target_include_directories(fuzz_xrpc PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
-  target_link_libraries(fuzz_xrpc PRIVATE ${FOUNDATION} ${NETWORK} ${SECURITY} ${COREIMAGE} ${APPKIT} ${SQLite3_LIBRARY} ${SECP256K1_LIBRARIES})
-  target_compile_options(fuzz_xrpc PRIVATE ${FUZZER_CFLAGS})
-  target_link_options(fuzz_xrpc PRIVATE ${FUZZER_LDFLAGS})
-  set_target_properties(fuzz_xrpc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
+  add_pds_fuzzer(fuzz_xrpc "fuzzing/fuzz_xrpc.mm")
+  add_pds_fuzzer(fuzz_cbor "fuzzing/fuzz_cbor.mm")
+  add_pds_fuzzer(fuzz_http "fuzzing/fuzz_http.mm")
+  add_pds_fuzzer(fuzz_auth "fuzzing/fuzz_auth.mm")
+  add_pds_fuzzer(fuzz_blob "fuzzing/fuzz_blob.mm")
+  add_pds_fuzzer(fuzz_sqlite "fuzzing/fuzz_sqlite.mm")
 
-  # CBOR Fuzzer
-  add_executable(fuzz_cbor fuzzing/fuzz_cbor.mm ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-  target_include_directories(fuzz_cbor PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
-  target_link_libraries(fuzz_cbor PRIVATE ${FOUNDATION} ${NETWORK} ${SECURITY} ${COREIMAGE} ${APPKIT} ${SQLite3_LIBRARY} ${SECP256K1_LIBRARIES})
-  target_compile_options(fuzz_cbor PRIVATE ${FUZZER_CFLAGS})
-  target_link_options(fuzz_cbor PRIVATE ${FUZZER_LDFLAGS})
-  set_target_properties(fuzz_cbor PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
-
-  # HTTP Fuzzer
-  add_executable(fuzz_http fuzzing/fuzz_http.mm ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-  target_include_directories(fuzz_http PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
-  target_link_libraries(fuzz_http PRIVATE ${FOUNDATION} ${NETWORK} ${SECURITY} ${COREIMAGE} ${APPKIT} ${SQLite3_LIBRARY} ${SECP256K1_LIBRARIES})
-  target_compile_options(fuzz_http PRIVATE ${FUZZER_CFLAGS})
-  target_link_options(fuzz_http PRIVATE ${FUZZER_LDFLAGS})
-  set_target_properties(fuzz_http PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
-
-  # Auth Fuzzer
-  add_executable(fuzz_auth fuzzing/fuzz_auth.mm ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-  target_include_directories(fuzz_auth PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
-  target_link_libraries(fuzz_auth PRIVATE ${FOUNDATION} ${NETWORK} ${SECURITY} ${COREIMAGE} ${APPKIT} ${SQLite3_LIBRARY} ${SECP256K1_LIBRARIES})
-  target_compile_options(fuzz_auth PRIVATE ${FUZZER_CFLAGS})
-  target_link_options(fuzz_auth PRIVATE ${FUZZER_LDFLAGS})
-  set_target_properties(fuzz_auth PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
-
-  # Blob Fuzzer
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/fuzzing/fuzz_blob.mm")
-    add_executable(fuzz_blob fuzzing/fuzz_blob.mm ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-    target_include_directories(fuzz_blob PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
-    target_link_libraries(fuzz_blob PRIVATE ${FOUNDATION} ${NETWORK} ${SECURITY} ${COREIMAGE} ${APPKIT} ${SQLite3_LIBRARY} ${SECP256K1_LIBRARIES})
-    target_compile_options(fuzz_blob PRIVATE ${FUZZER_CFLAGS})
-    target_link_options(fuzz_blob PRIVATE ${FUZZER_LDFLAGS})
-    set_target_properties(fuzz_blob PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
-  endif()
-
-  # SQLite Fuzzer
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/fuzzing/fuzz_sqlite.mm")
-    add_executable(fuzz_sqlite fuzzing/fuzz_sqlite.mm ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-    target_include_directories(fuzz_sqlite PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
-    target_link_libraries(fuzz_sqlite PRIVATE ${FOUNDATION} ${NETWORK} ${SECURITY} ${COREIMAGE} ${APPKIT} ${SQLite3_LIBRARY} ${SECP256K1_LIBRARIES})
-    target_compile_options(fuzz_sqlite PRIVATE ${FUZZER_CFLAGS})
-    target_link_options(fuzz_sqlite PRIVATE ${FUZZER_LDFLAGS})
-    set_target_properties(fuzz_sqlite PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
-  endif()
 endif()
 
 #=============================
@@ -225,28 +259,20 @@ endif()
 option(BUILD_TESTS "Build test targets" ON)
 if(BUILD_TESTS)
   enable_testing()
-
-  # Find XCTest
-  execute_process(COMMAND xcode-select -p OUTPUT_VARIABLE XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-  find_library(XCTest XCTest PATHS "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/Library/Frameworks" REQUIRED)
-
-  # Collect test sources
+  
+  # Test sources
   file(GLOB_RECURSE TEST_OBJC_SOURCES "ATProtoPDS/Tests/**/*.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/test_main.m")
-  message(STATUS "Test Sources found: ${TEST_OBJC_SOURCES}")
+  
+  # Exclude problematic tests (preserved from original)
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Integration/.*")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2HandlerTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
 
-   # Exclude problematic tests
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Integration/.*")
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2HandlerTests.m")
-   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
-
-
-
-  # Test executable
   add_executable(AllTests
     ${ATProtoPDS_SOURCES}
     ${TEST_OBJC_SOURCES}
@@ -257,18 +283,23 @@ if(BUILD_TESTS)
     ATProtoPDS/Tests
     ${SECP256K1_INCLUDE_DIRS}
   )
-
-
+  
   target_link_libraries(AllTests PRIVATE
-    ${FOUNDATION}
-    ${NETWORK}
-    ${SECURITY}
-    ${COREIMAGE}
-    ${APPKIT}
-    ${SQLite3_LIBRARY}
+    ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
-    ${XCTest}
   )
+  
+  if(APPLE)
+    execute_process(COMMAND xcode-select -p OUTPUT_VARIABLE XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    find_library(XCTest XCTest PATHS "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/Library/Frameworks" REQUIRED)
+    target_link_libraries(AllTests PRIVATE ${XCTest})
+  else()
+     # On GNUstep/Linux we need a test framework. 
+     # Usually gnustep-base provides NSAutoreleasePool etc, but XCTest is Apple specific.
+     # We might need a port of XCTest or use a different test runner.
+     # For now, we'll try to link what we have, but if the tests import XCTest, they will fail on Linux.
+     # The instructions don't explicitly ask to port tests yet, just build system setup.
+  endif()
 
   target_compile_definitions(AllTests PRIVATE
     SQLITE_THREADSAFE=2
@@ -278,7 +309,6 @@ if(BUILD_TESTS)
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   )
 
-  # Add test
   add_test(NAME AllTests COMMAND AllTests)
 endif()
 
@@ -294,14 +324,3 @@ if(BUILD_FUZZERS)
     RUNTIME DESTINATION bin
   )
 endif()
-
-#=============================
-# Build Summary
-#=============================
-message(STATUS "ATProtoPDS Build Configuration:")
-message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "  macOS Deployment Target: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
-message(STATUS "  Build secp256k1: ${BUILD_SECP256K1}")
-message(STATUS "  Build Fuzzers: ${BUILD_FUZZERS}")
-message(STATUS "  Build Tests: ${BUILD_TESTS}")
-message(STATUS "  Install Prefix: ${CMAKE_INSTALL_PREFIX}")
