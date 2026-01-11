@@ -85,9 +85,14 @@ else()
     find_library(DISPATCH_LIB dispatch)
     find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
     find_library(QRENCODE_LIB qrencode)
+    find_path(QRENCODE_INCLUDE_DIR qrencode.h)
     
     if(NOT DISPATCH_LIB)
         message(WARNING "libdispatch not found")
+    endif()
+
+    if(QRENCODE_INCLUDE_DIR)
+        include_directories(${QRENCODE_INCLUDE_DIR})
     endif()
     
     set(PLATFORM_LIBRARIES
@@ -141,13 +146,8 @@ endif()
 
 # Exclude AppDelegate on Linux/Server builds if not used or has deps
 if(NOT APPLE)
-  # Exclude sources that depend on Apple frameworks not present in GNUstep base
-  # (Adjust as needed based on actual dependencies)
+  # AppDelegate is now guarded with ifdefs and can be compiled on Linux
   # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*AppDelegate\.m$")
-  # For now, let's assume AppDelegate might be compiled if dependencies are met or ifdef'd
-  # But since it imports Cocoa, we should likely exclude it unless we have gnustep-gui and want it.
-  # Given this is a PDS server, we probably don't want it.
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*AppDelegate\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
