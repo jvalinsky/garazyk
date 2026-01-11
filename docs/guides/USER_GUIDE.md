@@ -14,68 +14,79 @@ The ATProto PDS Explorer provides a web interface for exploring AT Protocol data
 
 ## Getting Started
 
-### Accessing the Explorer
+### Accessing the PDS
 
 1. Start the server:
    ```bash
-   cd NSPds
-   ./scripts/start_server.sh
+   ./build/bin/atprotopds-cli serve
    ```
 
 2. Open browser: Visit `http://localhost:2583/explore/`
 
 3. Verify functionality: Account list loads automatically
 
-## Interface Layout
+## Interface Options
 
-### Sidebar Navigation
+### 1. Command-Line Interface (CLI)
 
-The left sidebar contains:
+The `atprotopds-cli` tool is the primary way to manage your PDS server, accounts, and invite codes.
 
-#### 1. DID Lookup Panel
-- Input field: Enter DID (e.g., `did:plc:g3x5vnga7kiu3oaookgeozpb`) or handle (e.g., `alice.example.com`)
-- Search button: Click or press Enter to resolve
-- Auto-resolution: Supports DID and handle formats
+### Server Management
 
-#### 2. Account List
-- Automatic loading: Shows all accounts in the PDS
-- Click selection: Click any account to explore their data
-- Active indicator: Blue highlight shows currently selected account
+Start the PDS server:
+```bash
+./build/bin/atprotopds-cli serve
+```
 
-#### 3. Navigation Menu
-- DID Document: View resolved DID information
-- PLC Operations: Browse Personal Ledger Computer logs
-- Collections: Explore record collections
-- CID Decoder: Analyze Content Identifiers
-- API Docs: Link to interactive API documentation
+Common options:
+- `--port <port>`: Change the listen port (default: 2583)
+- `--data-dir <path>`: Specify data directory
+- `--verbose`: Enable detailed logging
 
-### Main Content Area
+### Account Management
 
-The right side displays content based on selection:
+List all registered accounts:
+```bash
+./build/bin/atprotopds-cli account list
+```
 
-- Welcome message: Initial landing page
-- DID information: Resolved identity details
-- PLC operations: Historical operation log
-- Collections: Record collection browser
-- Records: Individual record viewer
-- CID analysis: Content identifier details
+Create a new account:
+```bash
+./build/bin/atprotopds-cli account create --email alice@example.com --handle alice.test
+```
 
-## Exploring Data
+Show account details:
+```bash
+./build/bin/atprotopds-cli account info alice.test
+```
 
-### 1. Account Exploration
+### Invite Codes
 
-#### Selecting an Account
-1. Click any account in the sidebar list
-2. Main area displays:
-   - DID Document (JSON format)
-   - PLC Operations log
-   - Available collections
+List all invite codes:
+```bash
+./build/bin/atprotopds-cli invite list --used
+```
 
-#### Account Information
-- DID: Decentralized Identifier
-- Handle: Human-readable name
-- Service endpoint: PDS server URL
-- Verification methods: Public keys for signing
+Create a new invite code:
+```bash
+./build/bin/atprotopds-cli invite create --uses 5
+```
+
+### Repository Inspection
+
+View repository records for a DID:
+```bash
+./build/bin/atprotopds-cli repo list did:plc:abc...
+```
+
+Get the root CID of a repository:
+```bash
+./build/bin/atprotopds-cli repo root did:plc:abc...
+```
+
+## 2. Web Explorer
+
+The ATProto PDS Explorer provides a web interface for exploring data visually.
 
 ### 2. Collections and Records
 
