@@ -2,6 +2,79 @@
 
 This guide provides procedures for diagnosing and resolving common issues with the ATProto PDS server.
 
+## Troubleshooting Decision Tree
+
+```mermaid
+flowchart TD
+    A([Issue Encountered]) --> B[Identify symptom type]
+    
+    B --> C[Server won't start]
+    B --> D[Web UI not loading]
+    B --> E[API errors]
+    B --> F[Slow performance]
+    B --> G[Build fails]
+    B --> H[Tests fail]
+    
+    C --> C1[Check port availability]
+    C --> C2[Check dependencies]
+    C --> C3[Check file permissions]
+    C --> C4[Run with verbose output]
+    
+    D --> D1[Check asset files exist]
+    D --> D2[Clear browser cache]
+    D --> D3[Verify static file serving]
+    
+    E --> E1[Check database connection]
+    E --> E2[Check external APIs]
+    E --> E3[Review server logs]
+    
+    F --> F1[Clear caches]
+    F --> F2[Check database indexes]
+    F --> F3[Monitor memory usage]
+    
+    G --> G1[Clean build]
+    G --> G2[Reinstall dependencies]
+    G --> G3[Check Xcode version]
+    
+    H --> H1[Reset test database]
+    H --> H2[Run tests individually]
+    H --> H3[Check CI logs]
+    
+    C1 --> K[Resolved?]
+    C2 --> K
+    C3 --> K
+    C4 --> K
+    
+    D1 --> K
+    D2 --> K
+    D3 --> K
+    
+    E1 --> K
+    E2 --> K
+    E3 --> K
+    
+    F1 --> K
+    F2 --> K
+    F3 --> K
+    
+    G1 --> K
+    G2 --> K
+    G3 --> K
+    
+    H1 --> K
+    H2 --> K
+    H3 --> K
+    
+    K -->|No| L[Check advanced diagnostics]
+    L --> M([Escalate to support])
+    K -->|Yes| N([Done])
+    
+    style A fill:#c8e6c9
+    style N fill:#c8e6c9
+    style M fill:#ffcdd2
+    style K fill:#ffe0b2
+```
+
 ## Quick Diagnosis
 
 ### Server Status Check
@@ -42,6 +115,63 @@ sqlite3 data/pds.db "SELECT COUNT(*) FROM accounts;"
 # Check database integrity
 sqlite3 data/pds.db "PRAGMA integrity_check;"
 ```
+
+## HTTP Error Code Quick Reference
+
+```mermaid
+flowchart TD
+    A[HTTP Error Code] --> B{Which code?}
+    
+    B -->|400| C[Bad Request]
+    B -->|401| D[Unauthorized]
+    B -->|403| E[Forbidden]
+    B -->|404| F[Not Found]
+    B -->|429| G[Rate Limited]
+    B -->|500| H[Server Error]
+    B -->|503| I[Service Unavailable]
+    
+    C --> C1[Check request format]
+    C1 --> C2[Validate JSON syntax]
+    C2 --> C3[Check required fields]
+    
+    D --> D1[Check Authorization header]
+    D1 --> D2[Verify token not expired]
+    D2 --> D3[Validate token signature]
+    
+    E --> E1[Check session validity]
+    E1 --> E2[Verify account status]
+    E2 --> E3[Check permission scope]
+    
+    F --> F1[Verify URI path]
+    F1 --> F2[Check record exists]
+    F2 --> F3[Validate collection name]
+    
+    G --> G1[Wait and retry]
+    G1 --> G2[Check rate limit headers]
+    G2 --> G3[Implement backoff]
+    
+    H --> H1[Check server logs]
+    H1 --> H2[Review database errors]
+    H2 --> H3[Check external service health]
+    
+    I --> I1[Server overloaded]
+    I1 --> I2[Check resources]
+    I2 --> I3[Restart if needed]
+    
+    style A fill:#c8e6c9
+    style H fill:#ffcdd2
+    style I fill:#ffcdd2
+```
+
+| Code | Meaning | Quick Fix |
+|------|---------|-----------|
+| 400 | Bad Request | Validate JSON format |
+| 401 | Unauthorized | Check access token |
+| 403 | Forbidden | Verify session valid |
+| 404 | Not Found | Check URI path |
+| 429 | Rate Limited | Wait and retry |
+| 500 | Internal Error | Check server logs |
+| 503 | Unavailable | Restart server |
 
 ## Common Issues and Solutions
 
@@ -518,3 +648,12 @@ make deps && make build
 ```
 
 This troubleshooting guide covers the most common issues. For unresolved problems, please include the diagnostic information above when seeking help.
+
+## Related Documentation
+
+- **[Development Workflows](docs/guides/DEVELOPMENT_WORKFLOWS.md)** - Build, test, and debug process diagrams
+- **[Architecture Diagrams](docs/architecture/README.md)** - System architecture reference
+- **[Database Schema](docs/architecture/database_schema.dot)** - Entity relationships
+- **[Authentication Flow](docs/architecture/authentication_flow.dot)** - Auth process details
+- **[Request Flow](docs/architecture/request_flow.dot)** - HTTP request pipeline
+- **[API Documentation](http://localhost:2583/explore/api/docs)** - Interactive API docs (when server running)
