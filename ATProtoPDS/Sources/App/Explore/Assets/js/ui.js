@@ -3,10 +3,24 @@ import { CIDDecoder } from './cid.js';
 import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
 
+console.log('ui.js loading...');
+
 let currentDid = null;
 let currentCollection = null;
 
-export function init() {
+// Register global helpers early
+window.viewCollection = (collection) => {
+    console.log('window.viewCollection called for collection:', collection);
+    currentCollection = collection;
+    showRecords(collection);
+};
+
+window.viewRecordDetail = (uri) => {
+    console.log('window.viewRecordDetail called for uri:', uri);
+    showRecordDetail(uri);
+};
+
+function init() {
     // Search Enter key
     document.getElementById('lookup-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleLookup();
@@ -149,6 +163,7 @@ async function showDidDocument(did) {
 }
 
 function renderCollections(describe) {
+    console.log('renderCollections called with:', describe);
     const content = document.getElementById('collections-content');
     
     if (describe.error) {
@@ -167,7 +182,10 @@ function renderCollections(describe) {
             Select a collection below to browse its records.
         </p>
         <table class="param-table">
-            <tr><th>Collection NSID</th><th>Action</th></tr>
+            <thead>
+                <tr><th>Collection NSID</th><th>Action</th></tr>
+            </thead>
+            <tbody>
     `;
     
     for (const collection of describe.collections) {
@@ -179,45 +197,56 @@ function renderCollections(describe) {
         `;
     }
     
-    html += '</table>';
+    html += '</tbody></table>';
     content.innerHTML = html;
 }
 
-// Global helper for the button onclick
-window.viewCollection = (collection) => {
-    currentCollection = collection;
-    showRecords(collection);
-};
-
 async function showRecords(collection) {
-    showSection('records', `Records: ${collection}`);
+    console.log('showRecords called for collection:', collection);
+    if (!currentDid) {
+        console.error('No currentDid set');
+        return;
+    }
     
     // Update nav visibility
     const recordsNav = document.getElementById('nav-records');
-    recordsNav.style.display = 'flex';
-    recordsNav.click(); // Select it
+    if (recordsNav) {
+        recordsNav.style.display = 'flex';
+    }
+    
+    showSection('records', `Records: ${collection}`);
     
     document.getElementById('records-title').textContent = collection;
     
     const content = document.getElementById('records-content');
     content.innerHTML = '<p class="loading">Loading records...</p>';
     
-    const result = await API.listRecords(currentDid, collection, { limit: 20 });
-    renderRecordsList(result.records, collection);
+    try {
+        const result = await API.listRecords(currentDid, collection, { limit: 20 });
+        console.log('listRecords result:', result);
+        renderRecordsList(result.records, collection);
+    } catch (e) {
+        console.error('Failed to list records:', e);
+        content.innerHTML = `<p class="error">Error loading records: ${escapeHtml(e.message)}</p>`;
+    }
 }
 
 function renderRecordsList(records, collection) {
+    console.log('renderRecordsList called with:', records);
     const content = document.getElementById('records-content');
     
     if (!records || records.length === 0) {
-        content.innerHTML = '<p class="empty">No records in this collection</p>';
+        content.innerHTML = `<p class="empty">No records in collection ${escapeHtml(collection)}</p>`;
         return;
     }
     
     let html = `
-        <p class="description">Found <strong>${records.length}</strong> records in ${collection}.</p>
+        <p class="description">Found <strong>${records.length}</strong> records in ${escapeHtml(collection)}.</p>
         <table>
-            <tr><th>RKey</th><th>CID</th><th>Action</th></tr>
+            <thead>
+                <tr><th>RKey</th><th>CID</th><th>Action</th></tr>
+            </thead>
+            <tbody>
     `;
     
     for (const record of records) {
@@ -225,36 +254,45 @@ function renderRecordsList(records, collection) {
         html += `
             <tr>
                 <td><code>${escapeHtml(record.rkey)}</code></td>
-                <td><code>${escapeHtml(displayCid)}</code></td>
+                <td><code title="${escapeHtml(record.cid || '')}">${escapeHtml(displayCid)}</code></td>
                 <td><button class="btn-secondary" onclick="window.viewRecordDetail('${escapeHtml(record.uri)}')">View Detail</button></td>
             </tr>
         `;
     }
     
-    html += '</table>';
+    html += '</tbody></table>';
     content.innerHTML = html;
 }
 
-window.viewRecordDetail = (uri) => {
-    showRecordDetail(uri);
-};
-
 async function showRecordDetail(uri) {
-    showSection('record-detail', 'Record Detail');
-    
+    console.log('showRecordDetail called for uri:', uri);
+    if (!currentDid) {
+        console.error('No currentDid set');
+        return;
+    }
+
     // Update nav
     const detailNav = document.getElementById('nav-record-detail');
-    detailNav.style.display = 'flex';
-    detailNav.click();
+    if (detailNav) {
+        detailNav.style.display = 'flex';
+    }
+    
+    showSection('record-detail', 'Record Detail');
     
     document.getElementById('record-title').textContent = uri;
     document.getElementById('record-content').textContent = 'Loading...';
     
-    const record = await API.getRecord(uri);
-    if (record.error) {
-        document.getElementById('record-content').textContent = record.error;
-    } else {
-        document.getElementById('record-content').textContent = JSON.stringify(record, null, 2);
+    try {
+        const record = await API.getRecord(uri);
+        console.log('getRecord result:', record);
+        if (record.error) {
+            document.getElementById('record-content').textContent = record.error;
+        } else {
+            document.getElementById('record-content').textContent = JSON.stringify(record, null, 2);
+        }
+    } catch (e) {
+        console.error('Failed to get record:', e);
+        document.getElementById('record-content').textContent = 'Error: ' + e.message;
     }
 }
 
@@ -284,6 +322,7 @@ async function handleCidDecode() {
 }
 
 function showSection(sectionId, breadcrumbLabel) {
+    console.log('showSection called for:', sectionId);
     // Hide all sections
     document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
     
@@ -291,6 +330,8 @@ function showSection(sectionId, breadcrumbLabel) {
     const section = document.getElementById(sectionId);
     if (section) {
         section.classList.add('active');
+    } else {
+        console.error('Section not found:', sectionId);
     }
     
     // Update nav selection
@@ -298,8 +339,12 @@ function showSection(sectionId, breadcrumbLabel) {
     const activeNav = document.querySelector(`.nav-row[data-section="${sectionId}"]`);
     if (activeNav) {
         activeNav.classList.add('active');
-        // Ensure parent tree is expanded
-        activeNav.closest('.nav-item').classList.add('expanded');
+        // Ensure all parent nav-items are expanded
+        let parentItem = activeNav.closest('.nav-item');
+        while (parentItem) {
+            parentItem.classList.add('expanded');
+            parentItem = parentItem.parentElement.closest('.nav-item');
+        }
     }
     
     // Update breadcrumb
@@ -328,4 +373,5 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// Initialize
+init();
