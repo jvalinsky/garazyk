@@ -97,11 +97,11 @@ export const API = {
         });
     },
     
-    async listRecords(collection, options = {}) {
-        const cacheKey = `records:${collection}:${options.limit || 20}:${options.cursor || ''}`;
+    async listRecords(did, collection, options = {}) {
+        const cacheKey = `records:${did}:${collection}:${options.limit || 20}:${options.cursor || ''}`;
         return getCachedOrFetch(cacheKey, CACHE_TTL.records, async () => {
             try {
-                const params = new URLSearchParams({ collection });
+                const params = new URLSearchParams({ did, collection });
                 if (options.limit) params.set('limit', String(options.limit));
                 if (options.cursor) params.set('cursor', options.cursor);
                 const response = await fetch(`${API_BASE}/records?${params}`);

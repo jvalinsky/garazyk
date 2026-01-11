@@ -202,7 +202,7 @@ async function showRecords(collection) {
     const content = document.getElementById('records-content');
     content.innerHTML = '<p class="loading">Loading records...</p>';
     
-    const result = await API.listRecords(collection, { limit: 20 });
+    const result = await API.listRecords(currentDid, collection, { limit: 20 });
     renderRecordsList(result.records, collection);
 }
 

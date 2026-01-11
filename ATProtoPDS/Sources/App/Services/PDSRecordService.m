@@ -32,11 +32,20 @@
         return nil;
     }
 
+    NSDictionary *parsedValue = @{};
+    if (record.value) {
+        NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+        if (data) {
+            parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+        }
+    }
+
     return @{
         @"uri": record.uri,
         @"cid": record.cid,
         @"collection": record.collection,
-        @"rkey": record.rkey
+        @"rkey": record.rkey,
+        @"value": parsedValue
     };
 }
 
@@ -106,6 +115,12 @@
     record.rkey = rkey;
     record.cid = cidString;
     record.createdAt = [NSDate date];
+    
+    // Store serialized JSON value
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
+    if (jsonData) {
+        record.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    }
 
     __block BOOL success = NO;
     __block NSError *blockError = nil;
@@ -144,47 +159,48 @@
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
-    if (!store) return nil;
+    if (!store) {
+        NSLog(@"[PDSRecordService] Failed to get store for DID: %@", did);
+        return nil;
+    }
     
-    __block NSArray *collections = nil;
+    __block NSMutableArray *results = [NSMutableArray array];
     __block NSInteger totalCount = 0;
     __block NSError *blockError = nil;
     
     [store readWithBlock:^(id<PDSActorStoreReader> reader) {
         PDSActorStore *actorStore = (PDSActorStore *)reader;
-        sqlite3 *db = actorStore.db;
-        sqlite3_stmt *stmt;
-        const char *sql = "SELECT collection, COUNT(*) as count FROM records GROUP BY collection ORDER BY collection";
+        NSString *sql = @"SELECT collection, COUNT(*) as count FROM records GROUP BY collection ORDER BY collection";
+        sqlite3_stmt *stmt = [actorStore prepareStatement:sql error:&blockError];
         
-        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
-            NSMutableArray *results = [NSMutableArray array];
+        if (stmt) {
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 const char *colName = (const char *)sqlite3_column_text(stmt, 0);
                 int count = sqlite3_column_int(stmt, 1);
                 
-                [results addObject:@{
-                    @"collection": colName ? [NSString stringWithUTF8String:colName] : @"",
-                    @"count": @(count)
-                }];
-                totalCount += count;
+                if (colName) {
+                    [results addObject:@{
+                        @"collection": [NSString stringWithUTF8String:colName],
+                        @"count": @(count)
+                    }];
+                    totalCount += count;
+                }
             }
-            sqlite3_finalize(stmt);
-            collections = results;
+            [actorStore finalizeStatement:stmt];
         } else {
-            blockError = [NSError errorWithDomain:@"PDSRecordService"
-                                             code:sqlite3_errcode(db)
-                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
+            NSLog(@"[PDSRecordService] Failed to prepare stats statement: %@", blockError);
         }
     } error:&blockError];
     
     if (blockError) {
+        NSLog(@"[PDSRecordService] Error during stats read: %@", blockError);
         if (error) *error = blockError;
         return nil;
     }
     
     return @{
         @"did": did,
-        @"collections": collections ?: @[],
+        @"collections": results,
         @"recordCount": @(totalCount)
     };
 }

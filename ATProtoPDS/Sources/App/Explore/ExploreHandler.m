@@ -301,6 +301,7 @@
 
     response.statusCode = 200;
     response.contentType = @"text/html; charset=utf-8";
+    response.keepAlive = NO;
     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
@@ -319,6 +320,7 @@
     
     response.statusCode = 200;
     response.contentType = @"text/css; charset=utf-8";
+    response.keepAlive = NO;
     [response setBodyData:[css dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
@@ -341,6 +343,7 @@
     
     response.statusCode = 200;
     response.contentType = @"application/javascript; charset=utf-8";
+    response.keepAlive = NO;
     [response setBodyData:[js dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
@@ -389,9 +392,6 @@
     else if ([endpoint isEqualToString:@"collections"]) {
         [self handleApiCollections:params response:response];
     }
-    else if ([endpoint isEqualToString:@"did"]) {
-        [self handleApiDidResolve:params response:response];
-    }
     else if ([endpoint isEqualToString:@"account-details"]) {
         [self handleApiAccountDetails:params response:response];
     }
@@ -436,120 +436,33 @@
     return parts.firstObject ?: @"";
 }
 
-- (sqlite3 *)openDatabaseWithError:(NSString **)errorMessage {
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSArray *possiblePaths = @[
-        [cwd stringByAppendingPathComponent:@"data/pds.db"],
-        [cwd stringByAppendingPathComponent:@"pds.db"],
-        [cwd stringByAppendingPathComponent:@"data/service.sqlite"],
-        [cwd stringByAppendingPathComponent:@"service.sqlite"]
-    ];
-    
-    NSString *dbPath = nil;
-    for (NSString *path in possiblePaths) {
-        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
-            dbPath = path;
-            NSLog(@"openDatabaseWithError: Found database at %@", path);
-            break;
-        }
-    }
-    
-    if (!dbPath) {
-        // Default to data/pds.db if nothing found
-        dbPath = [cwd stringByAppendingPathComponent:@"data/pds.db"];
-        NSLog(@"openDatabaseWithError: No database found, defaulting to %@", dbPath);
-    }
-
-    sqlite3 *db = NULL;
-    int rc = sqlite3_open(dbPath.fileSystemRepresentation, &db);
-    if (rc != SQLITE_OK) {
-        if (errorMessage) *errorMessage = [NSString stringWithFormat:@"Failed to open database: %s", sqlite3_errmsg(db)];
-        return NULL;
-    }
-
-    // Add value column if it doesn't exist (migration)
-    char *errMsg = NULL;
-    (void)sqlite3_exec(db, "ALTER TABLE records ADD COLUMN value TEXT", NULL, NULL, &errMsg);
-    if (errMsg) {
-        sqlite3_free(errMsg);
-        errMsg = NULL;
-    }
-
-    return db;
-}
-
 - (void)handleApiRepositories:(NSDictionary *)params response:(HttpResponse *)response {
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
+    NSError *error = nil;
+    NSArray<PDSDatabaseAccount *> *accounts = [self.controller getAllAccountsWithError:&error];
 
-    if (!db) {
+    if (!accounts) {
         [response setJsonBody:@{
             @"repositories": @[],
-            @"error": errorMessage ?: @"Failed to open database"
+            @"error": error.localizedDescription ?: @"Failed to get accounts"
         }];
-        return;
-    }
-
-    // Force WAL checkpoint
-    sqlite3_wal_checkpoint(db, NULL);
-
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, "SELECT did, handle, email, created_at, updated_at FROM accounts ORDER BY created_at DESC LIMIT 1000", -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        [response setJsonBody:@{
-            @"repositories": @[],
-            @"error": @"Failed to prepare statement",
-            @"sqlite_error": @(sqlite3_errmsg(db))
-        }];
-        sqlite3_close(db);
         return;
     }
 
     NSMutableArray *accountData = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        const unsigned char *did = sqlite3_column_text(stmt, 0);
-        const unsigned char *handle = sqlite3_column_text(stmt, 1);
-        const unsigned char *email = sqlite3_column_text(stmt, 2);
-
+    for (PDSDatabaseAccount *account in accounts) {
         [accountData addObject:@{
-            @"did": did ? @((const char *)did) : @"",
-            @"handle": handle ? @((const char *)handle) : @"",
-            @"email": email ? @((const char *)email) : @"",
-            @"createdAt": @(sqlite3_column_int64(stmt, 3)),
-            @"updatedAt": @(sqlite3_column_int64(stmt, 4))
+            @"did": account.did ?: @"",
+            @"handle": account.handle ?: @"",
+            @"email": account.email ?: [NSNull null],
+            @"createdAt": @(account.createdAt),
+            @"updatedAt": @(account.updatedAt)
         }];
     }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
 
     [response setJsonBody:@{
         @"repositories": accountData,
         @"count": @(accountData.count)
     }];
-}
-
-- (void)handleApiDidResolve:(NSDictionary *)params response:(HttpResponse *)response {
-    NSString *did = params[@"did"];
-    if (!did) {
-        [response setJsonBody:@{@"error": @"Missing did parameter"}];
-        return;
-    }
-
-    // Try to resolve DID using our cache/API
-    NSString *cached = [self.cache getDidDocument:did];
-    if (cached) {
-        [response setBody:[cached dataUsingEncoding:NSUTF8StringEncoding]];
-        return;
-    }
-
-    NSString *doc = [self fetchDidDocument:did];
-    if (doc) {
-        [self.cache setDidDocument:did value:doc];
-        [response setBody:[doc dataUsingEncoding:NSUTF8StringEncoding]];
-    } else {
-        [response setJsonBody:@{@"error": @"Failed to resolve DID", @"did": did}];
-    }
 }
 
 - (void)handleApiCreateRecord:(NSDictionary *)params response:(HttpResponse *)response {
@@ -578,67 +491,26 @@
         return;
     }
 
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-
-    NSString *cid = [self generateCIDForValue:value];
-    if (!cid) {
-        [response setJsonBody:@{@"error": @"Failed to generate CID for value"}];
-        return;
-    }
-
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
-
-    if (!db) {
-        [response setJsonBody:@{@"error": errorMessage ?: @"Failed to open database"}];
-        return;
-    }
-
-    NSString *createdAt = [[NSDate date] description];
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, created_at, value) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
+    NSError *error = nil;
+    if ([self.controller putRecord:collection rkey:rkey value:value forDid:did error:&error]) {
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSDictionary *record = [self.controller getRecord:uri forDid:did error:nil];
+        
         [response setJsonBody:@{
-            @"error": @"Failed to prepare statement",
-            @"sqlite_error": @(sqlite3_errmsg(db))
+            @"uri": uri,
+            @"did": did,
+            @"collection": collection,
+            @"rkey": rkey,
+            @"cid": record[@"cid"] ?: @"",
+            @"value": value,
+            @"createdAt": record[@"createdAt"] ?: [[NSDate date] description]
         }];
-        sqlite3_close(db);
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, collection.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 4, rkey.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 5, cid.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 6, createdAt.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 7, valueJson.UTF8String, -1, SQLITE_TRANSIENT);
-
-    rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
-
-    if (rc != SQLITE_DONE) {
+    } else {
         [response setJsonBody:@{
-            @"error": @"Failed to insert record",
-            @"sqlite_error": @(sqlite3_errmsg(db))
+            @"error": error.localizedDescription ?: @"Failed to create record",
+            @"did": did
         }];
-        sqlite3_close(db);
-        return;
     }
-
-    sqlite3_close(db);
-
-    [response setJsonBody:@{
-        @"uri": uri,
-        @"did": did,
-        @"collection": collection,
-        @"rkey": rkey,
-        @"cid": cid,
-        @"value": value,
-        @"createdAt": createdAt
-    }];
 }
 
 - (NSString *)generateCIDForValue:(NSDictionary *)value {
@@ -692,24 +564,15 @@
         return;
     }
 
-    // Get basic account info from our database
     NSError *error = nil;
-    PDSDatabaseAccount *account = [self.controller.database getAccountByDid:did error:&error];
+    NSDictionary *account = [self.controller getAccountForDid:did error:&error];
 
     if (!account) {
         [response setJsonBody:@{@"error": @"Account not found", @"did": did}];
         return;
     }
 
-    NSDictionary *accountInfo = @{
-        @"did": account.did ?: @"",
-        @"handle": account.handle ?: @"",
-        @"email": account.email ?: [NSNull null],
-        @"createdAt": @(account.createdAt),
-        @"updatedAt": @(account.updatedAt)
-    };
-
-    [response setJsonBody:accountInfo];
+    [response setJsonBody:account];
 }
 
 - (void)handleApiCollections:(NSDictionary *)params response:(HttpResponse *)response {
@@ -719,46 +582,14 @@
         return;
     }
 
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
+    NSError *error = nil;
+    NSDictionary *stats = [self.controller getRepoStatsForDid:did error:&error];
 
-    if (!db) {
-        [response setJsonBody:@{@"error": errorMessage ?: @"Failed to open database"}];
-        return;
+    if (stats) {
+        [response setJsonBody:stats];
+    } else {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to get collections", @"did": did}];
     }
-
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, "SELECT DISTINCT collection, COUNT(*) as count FROM records WHERE did = ? GROUP BY collection ORDER BY collection", -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        [response setJsonBody:@{
-            @"error": @"Failed to prepare statement",
-            @"sqlite_error": @(sqlite3_errmsg(db))
-        }];
-        sqlite3_close(db);
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-
-    NSMutableArray *collections = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *collection = (const char *)sqlite3_column_text(stmt, 0);
-        int count = sqlite3_column_int(stmt, 1);
-
-        [collections addObject:@{
-            @"collection": collection ? @(collection) : @"",
-            @"count": @(count)
-        }];
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    [response setJsonBody:@{
-        @"did": did,
-        @"collections": collections,
-        @"count": @(collections.count)
-    }];
 }
 
 - (void)handleApiDescribe:(NSDictionary *)params response:(HttpResponse *)response {
@@ -768,67 +599,13 @@
         return;
     }
 
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
-
-    if (!db) {
-        [response setJsonBody:@{@"error": errorMessage ?: @"Failed to open database"}];
-        return;
+    NSError *error = nil;
+    NSDictionary *repoDesc = [self.controller describeRepo:did error:&error];
+    if (repoDesc) {
+        [response setJsonBody:repoDesc];
+    } else {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to describe repository", @"did": did}];
     }
-
-    // Get collections with counts
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, "SELECT collection, COUNT(*) as count FROM records WHERE did = ? GROUP BY collection ORDER BY collection", -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        [response setJsonBody:@{
-            @"error": @"Failed to prepare statement",
-            @"sqlite_error": @(sqlite3_errmsg(db))
-        }];
-        sqlite3_close(db);
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-
-    NSMutableArray *collections = [NSMutableArray array];
-    int totalRecords = 0;
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *collection = (const char *)sqlite3_column_text(stmt, 0);
-        int count = sqlite3_column_int(stmt, 1);
-
-        [collections addObject:@{
-            @"collection": collection ? @(collection) : @"",
-            @"count": @(count)
-        }];
-        totalRecords += count;
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    // Get account info
-    NSString *handle = @"";
-    db = [self openDatabaseWithError:nil];
-    if (db) {
-        rc = sqlite3_prepare_v2(db, "SELECT handle FROM accounts WHERE did = ?", -1, &stmt, NULL);
-        if (rc == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                const char *h = (const char *)sqlite3_column_text(stmt, 0);
-                handle = h ? @(h) : @"";
-            }
-        }
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-    }
-
-    [response setJsonBody:@{
-        @"did": did,
-        @"handle": handle,
-        @"collections": collections,
-        @"recordCount": @(totalRecords),
-        @"tree": @"MST (simulated)"
-    }];
 }
 
 - (void)handleApiAccountRecords:(NSDictionary *)params response:(HttpResponse *)response {
@@ -844,83 +621,24 @@
     NSUInteger limit = [limitStr integerValue];
     if (limit > 200) limit = 200;
 
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:collection forDid:did limit:limit cursor:nil error:&error];
 
-    if (!db) {
-        [response setJsonBody:@{@"error": errorMessage ?: @"Failed to open database"}];
-        return;
-    }
-
-    NSString *sql;
-    sqlite3_stmt *stmt;
-    int rc;
-
-    if (collection && collection.length > 0) {
-        sql = @"SELECT uri, did, collection, rkey, cid, created_at, value FROM records WHERE did = ? AND collection = ? ORDER BY created_at DESC LIMIT ?";
-        rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-        if (rc == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, collection.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_int64(stmt, 3, limit);
-        }
-    } else {
-        sql = @"SELECT uri, did, collection, rkey, cid, created_at, value FROM records WHERE did = ? ORDER BY created_at DESC LIMIT ?";
-        rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-        if (rc == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_int64(stmt, 2, limit);
-        }
-    }
-
-    if (rc != SQLITE_OK) {
+    if (records) {
         [response setJsonBody:@{
-            @"error": @"Failed to prepare query",
-            @"sqlite_error": @(sqlite3_errmsg(db))
+            @"did": did,
+            @"collection": collection ?: [NSNull null],
+            @"records": records,
+            @"count": @(records.count)
         }];
-        sqlite3_close(db);
-        return;
+    } else {
+        [response setJsonBody:@{
+            @"did": did,
+            @"collection": collection ?: [NSNull null],
+            @"records": @[],
+            @"error": error.localizedDescription ?: @"Failed to fetch records"
+        }];
     }
-
-    NSMutableArray *recordArray = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *uri = (const char *)sqlite3_column_text(stmt, 0);
-        const char *col = (const char *)sqlite3_column_text(stmt, 2);
-        const char *rkey = (const char *)sqlite3_column_text(stmt, 3);
-        const char *cid = (const char *)sqlite3_column_text(stmt, 4);
-        const char *createdAt = (const char *)sqlite3_column_text(stmt, 5);
-        const char *valueStr = (const char *)sqlite3_column_text(stmt, 6);
-
-        NSMutableDictionary *record = [NSMutableDictionary dictionary];
-        record[@"uri"] = uri ? @(uri) : @"";
-        record[@"did"] = did;
-        record[@"collection"] = col ? @(col) : @"";
-        record[@"rkey"] = rkey ? @(rkey) : @"";
-        record[@"cid"] = cid ? @(cid) : @"";
-        record[@"createdAt"] = createdAt ? @(createdAt) : @"";
-
-        // Parse value JSON
-        if (valueStr) {
-            NSData *jsonData = [NSData dataWithBytes:valueStr length:strlen(valueStr)];
-            NSError *parseError = nil;
-            NSDictionary *parsedValue = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&parseError];
-            record[@"value"] = parsedValue ?: @{@"raw": @(valueStr)};
-        } else {
-            record[@"value"] = @{};
-        }
-
-        [recordArray addObject:record];
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    [response setJsonBody:@{
-        @"did": did,
-        @"collection": collection ?: [NSNull null],
-        @"records": recordArray,
-        @"count": @(recordArray.count)
-    }];
 }
 
 - (void)handleApiRecordDetails:(NSDictionary *)params response:(HttpResponse *)response {
@@ -939,68 +657,14 @@
         return;
     }
 
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
-
-    if (!db) {
-        [response setJsonBody:@{@"error": errorMessage ?: @"Failed to open database"}];
-        return;
+    NSError *error = nil;
+    NSDictionary *record = [self.controller getRecord:uri forDid:did error:&error];
+    
+    if (record) {
+        [response setJsonBody:record];
+    } else {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Record not found", @"uri": uri}];
     }
-
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, "SELECT uri, did, collection, rkey, cid, created_at, value FROM records WHERE uri = ?", -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        [response setJsonBody:@{
-            @"error": @"Failed to prepare statement",
-            @"sqlite_error": @(sqlite3_errmsg(db))
-        }];
-        sqlite3_close(db);
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
-
-    NSDictionary *recordValue = @{};
-    NSString *recordCid = @"";
-    NSString *recordCollection = @"";
-    NSString *recordRkey = @"";
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *cid = (const char *)sqlite3_column_text(stmt, 4);
-        const char *col = (const char *)sqlite3_column_text(stmt, 2);
-        const char *rkey = (const char *)sqlite3_column_text(stmt, 3);
-        const char *valueStr = (const char *)sqlite3_column_text(stmt, 6);
-
-        recordCid = cid ? @(cid) : @"";
-        recordCollection = col ? @(col) : @"";
-        recordRkey = rkey ? @(rkey) : @"";
-
-        if (valueStr) {
-            NSData *jsonData = [NSData dataWithBytes:valueStr length:strlen(valueStr)];
-            NSError *parseError = nil;
-            recordValue = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&parseError];
-            if (!recordValue) {
-                recordValue = @{@"raw": @(valueStr)};
-            }
-        }
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    if (recordCid.length == 0) {
-        [response setJsonBody:@{@"error": @"Record not found", @"uri": uri}];
-        return;
-    }
-
-    [response setJsonBody:@{
-        @"uri": uri,
-        @"did": did,
-        @"cid": recordCid,
-        @"collection": recordCollection,
-        @"rkey": recordRkey,
-        @"value": recordValue
-    }];
 }
 
 - (void)handleApiCidInfo:(NSDictionary *)params response:(HttpResponse *)response {
@@ -1180,7 +844,7 @@
 - (void)handleApiRecords:(NSDictionary *)params response:(HttpResponse *)response {
     NSString *collection = params[@"collection"];
     NSString *did = params[@"did"];
-    NSString *limit = params[@"limit"] ?: @"20";
+    NSString *limitStr = params[@"limit"] ?: @"20";
     NSString *cursor = params[@"cursor"];
     
     if (!collection) {
@@ -1193,11 +857,17 @@
         return;
     }
     
-    NSString *recordsJson = [self fetchRecordsForCollection:collection did:did limit:limit cursor:cursor];
-    if (recordsJson) {
-        [response setBody:[recordsJson dataUsingEncoding:NSUTF8StringEncoding]];
+    NSUInteger limit = [limitStr integerValue];
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:collection forDid:did limit:limit cursor:cursor error:&error];
+    
+    if (records) {
+        [response setJsonBody:@{
+            @"records": records,
+            @"cursor": records.lastObject[@"uri"] ?: [NSNull null]
+        }];
     } else {
-        [response setJsonBody:@{@"error": @"Failed to fetch records"}];
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to fetch records", @"records": @[]}];
     }
 }
 
@@ -1217,68 +887,14 @@
         return;
     }
 
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
-
-    if (!db) {
-        [response setJsonBody:@{@"error": errorMessage ?: @"Failed to open database"}];
-        return;
+    NSError *error = nil;
+    NSDictionary *record = [self.controller getRecord:uri forDid:did error:&error];
+    
+    if (record) {
+        [response setJsonBody:record];
+    } else {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Record not found", @"uri": uri}];
     }
-
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, "SELECT uri, did, collection, rkey, cid, created_at, value FROM records WHERE uri = ?", -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        [response setJsonBody:@{
-            @"error": @"Failed to prepare statement",
-            @"sqlite_error": @(sqlite3_errmsg(db))
-        }];
-        sqlite3_close(db);
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
-
-    NSDictionary *recordValue = @{};
-    NSString *recordCid = @"";
-    NSString *recordCollection = @"";
-    NSString *recordRkey = @"";
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *cid = (const char *)sqlite3_column_text(stmt, 4);
-        const char *col = (const char *)sqlite3_column_text(stmt, 2);
-        const char *rkey = (const char *)sqlite3_column_text(stmt, 3);
-        const char *valueStr = (const char *)sqlite3_column_text(stmt, 6);
-
-        recordCid = cid ? @(cid) : @"";
-        recordCollection = col ? @(col) : @"";
-        recordRkey = rkey ? @(rkey) : @"";
-
-        if (valueStr) {
-            NSData *jsonData = [NSData dataWithBytes:valueStr length:strlen(valueStr)];
-            NSError *parseError = nil;
-            recordValue = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&parseError];
-            if (!recordValue) {
-                recordValue = @{@"raw": @(valueStr)};
-            }
-        }
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    if (recordCid.length == 0) {
-        [response setJsonBody:@{@"error": @"Record not found", @"uri": uri}];
-        return;
-    }
-
-    [response setJsonBody:@{
-        @"uri": uri,
-        @"did": did,
-        @"cid": recordCid,
-        @"collection": recordCollection,
-        @"rkey": recordRkey,
-        @"value": recordValue
-    }];
 }
 
 - (void)handleApiBlob:(NSDictionary *)params response:(HttpResponse *)response {
@@ -1738,117 +1354,6 @@
     
     if (jsonError) {
         return @"{\"collections\":[],\"error\":\"JSON serialization failed\"}";
-    }
-    
-    return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-}
-
-- (NSString *)fetchRecordsForCollection:(NSString *)collection did:(NSString *)did limit:(NSString *)limitStr cursor:(NSString *)cursor {
-    NSUInteger limit = limitStr ? [limitStr integerValue] : 20;
-    if (limit > 100) limit = 100;
-    
-    // Try controller first (optional, but good for consistency if controller is active)
-    if (self.controller) {
-        NSError *error = nil;
-        NSArray *records = [self.controller listRecords:collection 
-                                             forDid:did 
-                                              limit:limit 
-                                             cursor:cursor 
-                                              error:&error];
-        if (records) {
-            NSMutableArray *recordArray = [NSMutableArray array];
-            for (NSDictionary *record in records) {
-                [recordArray addObject:@{
-                    @"uri": record[@"uri"] ?: @"",
-                    @"cid": record[@"cid"] ?: @"",
-                    @"value": record[@"value"] ?: @{}
-                }];
-            }
-            
-            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@{
-                @"records": recordArray,
-                @"cursor": records.lastObject[@"uri"] ?: @""
-            } options:0 error:nil];
-            return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-        }
-    }
-    
-    // Fallback: Direct SQLite Access
-    NSString *errorMessage = nil;
-    sqlite3 *db = [self openDatabaseWithError:&errorMessage];
-    
-    if (!db) {
-        return [NSString stringWithFormat:@"{\"records\":[],\"error\":\"%@\"}", errorMessage ?: @"Failed to open database"];
-    }
-    
-    sqlite3_stmt *stmt = NULL;
-    NSString *sql = @"SELECT uri, did, collection, rkey, cid, value FROM records WHERE did = ? AND collection = ? LIMIT ?";
-    
-    // Handle cursor? For simplicity, we ignore it in fallback or implementing offset requires more SQL.
-    // Given this is a local dev fallback, ignore cursor is acceptable, implies page 1.
-    
-    int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        NSString *err = [NSString stringWithUTF8String:sqlite3_errmsg(db)];
-        sqlite3_close(db);
-        return [NSString stringWithFormat:@"{\"records\":[],\"error\":\"Failed to prepare query: %@\"}", err];
-    }
-    
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, collection.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 3, limit);
-    
-    NSMutableArray *records = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *uri = (const char *)sqlite3_column_text(stmt, 0);
-        const char *cid = (const char *)sqlite3_column_text(stmt, 4);
-        const char *valueStr = (const char *)sqlite3_column_text(stmt, 5);
-        
-        NSDictionary *value = @{};
-        if (valueStr) {
-            NSData *data = [NSData dataWithBytes:valueStr length:strlen(valueStr)];
-            value = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            if (!value) value = @{@"raw": [NSString stringWithUTF8String:valueStr]};
-        }
-        
-        [records addObject:@{
-            @"uri": uri ? [NSString stringWithUTF8String:uri] : @"",
-            @"cid": cid ? [NSString stringWithUTF8String:cid] : @"",
-            @"value": value
-        }];
-    }
-    
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@{
-        @"records": records,
-        @"cursor": @"" // Cursor support omitted in fallback
-    } options:0 error:nil];
-    
-    return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-}
-
-- (NSString *)fetchRecord:(NSString *)uri {
-    if (!self.controller || !uri) {
-        return nil;
-    }
-    
-    NSError *error = nil;
-    // Extract DID from URI
-    NSArray *uriParts = [uri componentsSeparatedByString:@"/"];
-    NSString *did = uriParts.count >= 2 ? uriParts[2] : nil;
-    NSDictionary *record = [self.controller getRecord:uri forDid:did error:&error];
-    
-    if (error || !record) {
-        return nil;
-    }
-    
-    NSError *jsonError = nil;
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:&jsonError];
-    
-    if (jsonError) {
-        return nil;
     }
     
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];

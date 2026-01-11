@@ -158,43 +158,6 @@
         [exploreHandler handleRequest:request response:response];
     }];
 
-    // Add API endpoints
-    [httpServer addHandlerForPath:@"/explore/api/accounts" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![request.methodString isEqualToString:@"GET"]) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setJsonBody:@{@"error": @"Method not allowed"}];
-            return;
-        }
-
-        // Use the same database access as CLI account commands
-        NSError *error = nil;
-        NSArray *accounts = [PDSAccountManager listAccountsWithContext:context
-                                                               filter:nil
-                                                                limit:1000];
-        NSLog(@"PDSCLIServeCommand API: Found %lu accounts", (unsigned long)accounts.count);
-        if (!accounts) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"Failed to load accounts"}];
-            return;
-        }
-
-        // Convert accounts to JSON-friendly format
-        NSMutableArray *accountData = [NSMutableArray array];
-        for (PDSDatabaseAccount *account in accounts) {
-            [accountData addObject:@{
-                @"did": account.did ?: @"",
-                @"handle": account.handle ?: @"",
-                @"createdAt": @(account.createdAt),
-                @"updatedAt": @(account.updatedAt)
-            }];
-        }
-
-        [response setJsonBody:@{
-            @"accounts": accountData,
-            @"count": @(accountData.count)
-        }];
-    }];
-
     // Start HTTP server
     NSError *serverError = nil;
     if (![httpServer startWithError:&serverError]) {

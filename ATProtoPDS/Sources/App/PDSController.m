@@ -241,12 +241,37 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 - (nullable NSDictionary *)describeRepo:(NSString *)repo error:(NSError **)error {
     NSData *root = [self getRepoRoot:repo error:error];
-    if (!root) return nil;
     
-    return @{
-        @"did": repo,
-        @"root": [root base64EncodedStringWithOptions:0]
-    };
+    NSDictionary *stats = [_recordService getRepoStatsForDid:repo error:nil];
+    NSDictionary *account = [_accountService getAccountForDid:repo error:nil];
+    
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"did"] = repo;
+    if (root) {
+        result[@"root"] = [root base64EncodedStringWithOptions:0];
+    }
+    
+    if (account[@"handle"]) {
+        result[@"handle"] = account[@"handle"];
+    }
+    
+    if (stats[@"collections"]) {
+        NSMutableArray *colNames = [NSMutableArray array];
+        for (NSDictionary *col in stats[@"collections"]) {
+            if (col[@"collection"]) {
+                [colNames addObject:col[@"collection"]];
+            }
+        }
+        result[@"collections"] = colNames;
+    } else {
+        result[@"collections"] = @[];
+    }
+    
+    if (stats[@"recordCount"]) {
+        result[@"recordCount"] = stats[@"recordCount"];
+    }
+    
+    return [result copy];
 }
 
 - (nullable NSData *)getRepoDataForDid:(NSString *)did error:(NSError **)error {
