@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSAccountService : NSObject
 
 @property (nonatomic, weak) PDSDatabasePool *databasePool;
-@property (nonatomic, weak) PDSServiceDatabases *serviceDatabases;
+@property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 

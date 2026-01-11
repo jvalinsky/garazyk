@@ -24,6 +24,7 @@
 #import "Services/PDSRecordService.h"
 #import "Services/PDSBlobService.h"
 #import "Services/PDSRepositoryService.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -316,7 +317,15 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                              error:error];
     if (!success) return nil;
 
-    NSData *recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+    // Use DAG-CBOR for record CID calculation
+    NSError *cborError = nil;
+    NSData *recordData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cborError];
+    
+    if (!recordData) {
+        // Fallback to JSON if CBOR fails (shouldn't happen for valid JSON types)
+        recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+    }
+    
     NSData *digest = [CID sha256Digest:recordData];
     CID *cid = [CID cidWithMultihash:digest codec:0x71]; // Use dag-cbor codec
     

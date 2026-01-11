@@ -316,7 +316,12 @@ static const NSUInteger kMaxVarintSize = 9;
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
 
-    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+    // Construct full multihash: 0x12 (sha2-256) + 0x20 (length 32) + hash
+    NSMutableData *multihash = [NSMutableData dataWithCapacity:2 + CC_SHA256_DIGEST_LENGTH];
+    uint8_t header[] = {0x12, 0x20};
+    [multihash appendBytes:header length:2];
+    [multihash appendBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+    return multihash;
 }
 
 @end
