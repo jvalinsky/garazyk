@@ -299,6 +299,9 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! Date when the record was created. */
 @property (nonatomic, strong) NSDate *createdAt;
 
+/*! The raw value of the record (JSON string). */
+@property (nonatomic, copy, nullable) NSString *value;
+
 @end
 
 /*!

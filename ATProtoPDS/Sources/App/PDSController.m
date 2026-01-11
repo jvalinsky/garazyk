@@ -177,6 +177,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                              error:error];
 }
 
+- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error {
+    return [_accountService getAccountForDid:did error:error];
+}
+
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
                                    password:(NSString *)password
                                       error:(NSError **)error {
@@ -293,14 +297,36 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
              value:(NSDictionary *)value
             forDid:(NSString *)did
              error:(NSError **)error {
-    return [_recordService putRecord:collection rkey:rkey value:value forDid:did error:error];
+    if (![_recordService putRecord:collection rkey:rkey value:value forDid:did error:error]) {
+        return NO;
+    }
+    
+    // Update MST
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSDictionary *record = [_recordService getRecord:uri forDid:did error:nil];
+    if (record && record[@"cid"]) {
+        CID *cid = [CID cidFromString:record[@"cid"]];
+        NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+        return [_repositoryService updateMSTForDid:did key:key cid:cid error:error];
+    }
+    return YES;
 }
 
 - (BOOL)deleteRecord:(NSString *)collection
                   rkey:(NSString *)rkey
                 forDid:(NSString *)did
                  error:(NSError **)error {
-    return [_recordService deleteRecord:collection rkey:rkey forDid:did error:error];
+    if (![_recordService deleteRecord:collection rkey:rkey forDid:did error:error]) {
+        return NO;
+    }
+    
+    // Update MST (remove)
+    NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+    return [_repositoryService updateMSTForDid:did key:key cid:nil error:error];
+}
+
+- (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
+    return [_recordService getRepoStatsForDid:did error:error];
 }
 
 #pragma mark - Legacy Record Operations (for backward compatibility)
@@ -452,8 +478,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #pragma mark - Admin Operations
 
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error {
-    return [_userDatabasePool getAllAccountsWithError:error];
+    return [_accountService getAllAccountsWithError:error];
 }
+
+
 
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
     return NO;

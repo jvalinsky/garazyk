@@ -31,6 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
               forDid:(NSString *)did
                error:(NSError **)error;
 
+- (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

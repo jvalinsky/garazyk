@@ -332,31 +332,25 @@
 
     NSArray *sortedKeys = [[self.storage allKeys] sortedArrayUsingSelector:@selector(compare:)];
     for (NSString *fullKey in sortedKeys) {
-        NSString *key = fullKey;
-        NSString *subKey = nil;
-
-        NSRange slashRange = [fullKey rangeOfString:@"/"];
-        if (slashRange.location != NSNotFound) {
-            key = [fullKey substringToIndex:slashRange.location];
-            subKey = [fullKey substringFromIndex:slashRange.location + 1];
-        }
-
         CID *valueCID = self.storage[fullKey];
         NSData *cidBytes = [valueCID bytes];
+        NSData *keyBytes = [fullKey dataUsingEncoding:NSUTF8StringEncoding];
 
         NSMutableDictionary<CBORValue *, CBORValue *> *entryDict = [NSMutableDictionary dictionary];
-        entryDict[[CBORValue textString:@"k"]] = [CBORValue textString:key];
+        
+        // k: key (bytes)
+        entryDict[[CBORValue textString:@"k"]] = [CBORValue byteString:keyBytes];
+        // v: value (CID)
         entryDict[[CBORValue textString:@"v"]] = [CBORValue byteString:cidBytes];
-
-        if (subKey) {
-            entryDict[[CBORValue textString:@"sub"]] = [CBORValue textString:subKey];
-        }
+        // p: prefix length (0 for flat list)
+        entryDict[[CBORValue textString:@"p"]] = [CBORValue unsignedInteger:0];
 
         [entries addObject:[CBORValue map:entryDict]];
     }
 
+    // Root node with entries 'e'
     NSDictionary<CBORValue *, CBORValue *> *treeDict = @{
-        [CBORValue textString:@"l"]: [CBORValue array:entries]
+        [CBORValue textString:@"e"]: [CBORValue array:entries]
     };
 
     CBORValue *treeValue = [CBORValue map:treeDict];
@@ -371,7 +365,8 @@
 
     MST *mst = [[MST alloc] init];
 
-    CBORValue *entriesArray = cbor.map[[CBORValue textString:@"l"]];
+    // Read entries from 'e'
+    CBORValue *entriesArray = cbor.map[[CBORValue textString:@"e"]];
     if (entriesArray && entriesArray.type == CBORTypeArray) {
         for (CBORValue *entryCbor in entriesArray.array) {
             if (entryCbor.type != CBORTypeMap) {
@@ -380,23 +375,21 @@
 
             CBORValue *keyVal = entryCbor.map[[CBORValue textString:@"k"]];
             CBORValue *valVal = entryCbor.map[[CBORValue textString:@"v"]];
-            CBORValue *subVal = entryCbor.map[[CBORValue textString:@"sub"]];
-
-            if (!keyVal || !valVal || keyVal.type != CBORTypeTextString || valVal.type != CBORTypeByteString) {
+            
+            // k must be bytes
+            if (!keyVal || !valVal || keyVal.type != CBORTypeByteString || valVal.type != CBORTypeByteString) {
                 continue;
             }
 
-            NSString *key = keyVal.textString;
+            NSString *key = [[NSString alloc] initWithData:keyVal.byteString encoding:NSUTF8StringEncoding];
             NSData *cidData = valVal.byteString;
-            CID *cid = [CID cidWithMultihash:cidData codec:0x71];
-
-            NSString *subKey = nil;
-            if (subVal && subVal.type == CBORTypeTextString) {
-                subKey = subVal.textString;
-            }
+            // Parse CID from bytes (assuming it's a CIDv1 byte array)
+            // Wait, CID class 'cidWithMultihash' expects full multihash?
+            // If it's stored as CID bytes, we should use 'cidFromBytes'.
+            CID *cid = [CID cidFromBytes:cidData];
 
             if (key && cid) {
-                [mst put:key valueCID:cid subKey:subKey];
+                [mst put:key valueCID:cid subKey:nil];
             }
         }
     }

@@ -67,8 +67,10 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
                                              did:(nullable NSString *)did
                                             error:(NSError **)error;
 
+- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
+
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
-                                 password:(NSString *)password
+                                   password:(NSString *)password
                                     error:(NSError **)error;
 
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
@@ -139,6 +141,8 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
                  collection:(NSString *)collection
                       rkey:(NSString *)rkey
                      error:(NSError **)error;
+
+- (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error;
 
 - (BOOL)putRecordForDid:(NSString *)did
               collection:(NSString *)collection

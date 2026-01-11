@@ -24,6 +24,10 @@ NS_ASSUME_NONNULL_BEGIN
                                  password:(NSString *)password
                                     error:(NSError **)error;
 
+- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
+
+- (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
+
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
                                        error:(NSError **)error;
 

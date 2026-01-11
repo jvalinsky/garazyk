@@ -4,6 +4,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
 
+@class MST;
+@class CID;
+
 @interface PDSRepositoryService : NSObject
 
 @property (nonatomic, weak) PDSDatabasePool *databasePool;
@@ -11,6 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
 #pragma mark - Repo Operations
+
+- (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
+
+- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(CID *)cid error:(NSError **)error;
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
 
