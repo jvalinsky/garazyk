@@ -145,6 +145,21 @@
     };
 }
 
+- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error {
+    PDSDatabaseAccount *account = [_serviceDatabases getAccountByDid:did error:error];
+    if (!account) return nil;
+    
+    return @{
+        @"did": account.did ?: @"",
+        @"handle": account.handle ?: @"",
+        @"email": account.email ?: @""
+    };
+}
+
+- (nullable NSArray *)getAllAccountsWithError:(NSError **)error {
+    return [_serviceDatabases getAllAccountsWithError:error];
+}
+
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
                                        error:(NSError **)error {
 

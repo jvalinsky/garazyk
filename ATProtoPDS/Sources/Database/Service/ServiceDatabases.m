@@ -265,6 +265,14 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     return success;
 }
 
+- (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return @[];
+    NSArray *accounts = [db getAllAccountsWithError:error];
+    [db close];
+    return accounts ?: @[];
+}
+
 #pragma mark - Refresh Token Operations
 
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error {
