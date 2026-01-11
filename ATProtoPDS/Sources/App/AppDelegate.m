@@ -10,23 +10,38 @@
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
     self.log = os_log_create("com.atproto.pds", "AppDelegate");
     os_log_info(self.log, "ATProto PDS starting up...");
+#else
+    NSLog(@"ATProto PDS starting up...");
+#endif
     
     self.pdsController = [[PDSController alloc] init];
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
+#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
         os_log_error(self.log, "Failed to start server: %@", error);
+#else
+        NSLog(@"Failed to start server: %@", error);
+#endif
     }
     
+#if TARGET_OS_OSX || defined(__APPLE__)
     [self setupStatusBar];
+#endif
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
+#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
     os_log_info(self.log, "ATProto PDS shutting down...");
+#else
+    NSLog(@"ATProto PDS shutting down...");
+#endif
     [self.pdsController stopServer];
 }
 
+#if TARGET_OS_OSX || defined(__APPLE__)
 - (void)setupStatusBar {
     self.statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
     self.statusItem.button.title = @"PDS";
@@ -40,11 +55,16 @@
     
     self.statusItem.menu = menu;
 }
+#endif
 
 - (void)startServer:(id)sender {
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
+#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
         os_log_error(self.log, "Failed to start server: %@", error);
+#else
+        NSLog(@"Failed to start server: %@", error);
+#endif
     }
 }
 
