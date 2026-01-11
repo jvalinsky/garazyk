@@ -73,9 +73,9 @@
 
     NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:did
                                                           collection:nil
-                                                               limit:100
-                                                              offset:0
-                                                               error:&error];
+                                                                limit:100
+                                                               offset:0
+                                                                error:&error];
     if (error) {
         [context printError:[NSString stringWithFormat:@"Failed to list records: %@", error.localizedDescription]];
         return;
@@ -188,3 +188,17 @@
 }
 
 @end
+
+#pragma mark - Register
+
+@interface PDSRepoCommandRegistrar : NSObject
+@end
+
+@implementation PDSRepoCommandRegistrar
+
++ (void)load {
+    [[PDSCLIDispatcher sharedDispatcher] addCommand:[[PDSCLIRepoCommand alloc] init]];
+}
+
+@end
+
