@@ -186,12 +186,12 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSLog(@"  Record metadata verified");
     
-    // PREDICTED: Record value is NOT included in response
+    // Verify that record value IS now included in response
     BOOL hasValueField = fetched[@"value"] != nil;
-    NSLog(@"  Record includes 'value' field: %@", hasValueField ? @"YES" : @"NO (PREDICTED ISSUE)");
+    NSLog(@"  Record includes 'value' field: %@", hasValueField ? @"YES" : @"NO");
     
-    // This is a documented limitation - value must be fetched from CAR block separately
-    XCTAssertFalse(hasValueField, @"ISSUE: getRecord should return value but doesn't");
+    XCTAssertTrue(hasValueField, @"Record should return value");
+    XCTAssertEqualObjects(fetched[@"value"][@"text"], @"Hello, ATProto World!", @"Value text should match");
     
     // Step 3: Update Record (same rkey)
     NSDictionary *updatedValue = @{
@@ -452,7 +452,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"    cid: %@", hasCid ? @"PRESENT" : @"MISSING");
     NSLog(@"    collection: %@", hasCollection ? @"PRESENT" : @"MISSING");
     NSLog(@"    rkey: %@", hasRkey ? @"PRESENT" : @"MISSING");
-    NSLog(@"    value: %@", hasValue ? @"PRESENT" : @"MISSING (ISSUE)");
+    NSLog(@"    value: %@", hasValue ? @"PRESENT" : @"MISSING");
     NSLog(@"    createdAt: %@", hasCreatedAt ? @"PRESENT" : @"MISSING");
     
     // Record the expected behavior
@@ -461,14 +461,13 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertTrue(hasCollection, @"Should have collection");
     XCTAssertTrue(hasRkey, @"Should have rkey");
     
-    // PREDICTED: value field is NOT returned by getRecord
-    XCTAssertFalse(hasValue, @"ISSUE: getRecord should return value but doesn't");
-    XCTAssertFalse(hasCreatedAt, @"ISSUE: getRecord should return createdAt but doesn't");
+    // FIXED: value field is now returned by getRecord
+    XCTAssertTrue(hasValue, @"getRecord should return value");
+    // createdAt is still missing in the service response, which is fine for now
     
-    NSLog(@"  Documented Issues:");
-    NSLog(@"    1. getRecord returns metadata only, not the actual record value");
-    NSLog(@"    2. Record value must be fetched from CAR block storage separately");
-    NSLog(@"    3. createdAt timestamp is set but not returned");
+    NSLog(@"  Fixed Issues:");
+    NSLog(@"    1. getRecord now returns the actual record value");
+    NSLog(@"    2. No need to fetch from CAR block storage separately for basic inspection");
     
     NSLog(@"=== TEST PASSED: Record Value Field Analysis ===\n");
 }

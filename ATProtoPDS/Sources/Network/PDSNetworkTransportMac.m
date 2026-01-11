@@ -44,6 +44,7 @@
     nw_connection_set_state_changed_handler(_connection, ^(nw_connection_state_t state, nw_error_t error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
+        
         if (strongSelf.stateChangedHandler) {
             PDSNetworkConnectionState pdsState;
             switch (state) {
