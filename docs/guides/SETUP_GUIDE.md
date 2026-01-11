@@ -19,46 +19,30 @@ This guide covers building, installing, and running the ATProto PDS server.
 
 ## Installation Methods
 
-### Method 1: Quick Setup
+### Method 1: Standard Setup (Recommended)
 
 ```bash
 # Clone repository
 git clone https://github.com/jvalinsky/NSPds.git
 cd NSPds
 
-# Build and run
-make build
-./scripts/start_server.sh
+# Generate the Xcode project
+xcodegen generate
+
+# Build the CLI tool
+xcodebuild -scheme ATProtoPDS-CLI build
+
+# Run the server
+./build/bin/atprotopds-cli serve
 ```
 
 Server available at `http://localhost:2583`
 
-### Method 2: Development Setup
+### Method 2: Development with Xcode
 
-```bash
-# Clone with submodules
-git clone --recursive https://github.com/jvalinsky/NSPds.git
-cd NSPds
-
-# Install dependencies
-make deps
-
-# Build debug version
-make build-debug
-
-# Run with verbose logging
-./build/debug/atprotopds-cli serve --port 2583 --verbose
-```
-
-### Method 3: Xcode Development
-
-```bash
-# Open in Xcode
-open ATProtoPDS.xcodeproj
-
-# Select scheme: ATProtoPDS-CLI
-# Build and run
-```
+1. Open `ATProtoPDS.xcodeproj`
+2. Select the `ATProtoPDS-CLI` scheme
+3. Build and run (Cmd+R)
 
 ## Build System
 
@@ -188,15 +172,15 @@ nohup ./scripts/start_server.sh &
 ### Command Line Options
 
 ```bash
-./atprotopds-cli serve --help
+./build/bin/atprotopds-cli serve --help
 
 Options:
   --port PORT          Server port (default: 2583)
   --data-dir PATH      Data directory (default: ./data)
-  --cache-dir PATH     Cache directory (default: ./cache)
+  --config PATH        Config file path (default: ./config.json)
   --log-level LEVEL    Log level: error, warn, info, debug
-  --verbose           Enable verbose logging
-  --help              Show this help
+  --foreground         Run in foreground (default)
+  --help               Show this help
 ```
 
 ### Systemd Service (Optional)
