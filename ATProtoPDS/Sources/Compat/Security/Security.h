@@ -75,7 +75,7 @@ enum {
 // Functions
 SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error);
 SecKeyRef SecKeyCopyPublicKey(SecKeyRef key);
-NSData * SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error);
+CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error);
 SecKeyRef SecKeyCreateWithData(CFDataRef keyData, CFDictionaryRef attributes, CFErrorRef *error);
 BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef signedData, CFDataRef signature, CFErrorRef *error);
 CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef dataToSign, CFErrorRef *error);
