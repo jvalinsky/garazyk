@@ -10,6 +10,7 @@
 
 #define CC_SHA256_DIGEST_LENGTH 32 // SHA256_DIGEST_LENGTH might rely on deprecated headers
 #define CC_SHA1_DIGEST_LENGTH 20
+#define CC_MD5_DIGEST_LENGTH 16
 
 typedef uint32_t CC_LONG;
 
@@ -35,6 +36,15 @@ static inline int CC_SHA256_Final(unsigned char *md, CC_SHA256_CTX *c) {
 static inline unsigned char *CC_SHA256(const void *data, CC_LONG len, unsigned char *md) {
     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
+    EVP_DigestUpdate(ctx, data, len);
+    EVP_DigestFinal_ex(ctx, md, NULL);
+    EVP_MD_CTX_free(ctx);
+    return md;
+}
+
+static inline unsigned char *CC_MD5(const void *data, CC_LONG len, unsigned char *md) {
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
     EVP_DigestUpdate(ctx, data, len);
     EVP_DigestFinal_ex(ctx, md, NULL);
     EVP_MD_CTX_free(ctx);
