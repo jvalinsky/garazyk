@@ -13,8 +13,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                      algorithm:(NSString *)algorithm {
     if (!privateKey || !publicKey || !keyID) return nil;
 
+#if defined(__APPLE__)
     CFRetain(privateKey);
     CFRetain(publicKey);
+#else
+    CFRetain((__bridge CFTypeRef)privateKey);
+    CFRetain((__bridge CFTypeRef)publicKey);
+#endif
 
     KeyPair *keyPair = [[KeyPair alloc] init];
     keyPair.keyID = keyID;
