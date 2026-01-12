@@ -19,6 +19,8 @@ static const uint8_t WS_MASK = 0x80;
 @interface WebSocketConnection ()
 
 @property (nonatomic, assign, readwrite) WebSocketConnectionState state;
+@property (nonatomic, copy, readwrite) NSString *queryString;
+@property (nonatomic, copy, readwrite, nullable) NSDictionary<NSString *, NSString *> *queryParams;
 
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
 @property (nonatomic, strong) dispatch_queue_t connectionQueue;
@@ -49,8 +51,40 @@ static const uint8_t WS_MASK = 0x80;
         _writeQueue = dispatch_queue_create("com.atproto.pds.websocket.write", DISPATCH_QUEUE_SERIAL);
         _messageQueue = [NSMutableArray array];
         _waitingForPong = NO;
+
+        NSRange queryRange = [path rangeOfString:@"?"];
+        if (queryRange.location != NSNotFound) {
+            _queryString = [path substringFromIndex:queryRange.location + 1];
+            _queryParams = [self parseQueryParams:_queryString];
+            _path = [path substringToIndex:queryRange.location];
+        } else {
+            _queryString = @"";
+            _queryParams = nil;
+        }
     }
     return self;
+}
+
+- (NSDictionary<NSString *, NSString *> *)parseQueryParams:(NSString *)queryString {
+    if (queryString.length == 0) {
+        return nil;
+    }
+
+    NSMutableDictionary<NSString *, NSString *> *params = [NSMutableDictionary dictionary];
+    NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
+
+    for (NSString *pair in pairs) {
+        NSArray<NSString *> *keyValue = [pair componentsSeparatedByString:@"="];
+        if (keyValue.count == 2) {
+            NSString *key = [keyValue[0] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+            NSString *value = [keyValue[1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+            if (key && value) {
+                params[key] = value;
+            }
+        }
+    }
+
+    return params.count > 0 ? [params copy] : nil;
 }
 
 - (void)dealloc {

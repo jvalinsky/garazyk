@@ -52,4 +52,21 @@
                      @"Should handle broadcast with ops and blobs");
 }
 
+- (void)testBroadcastIdentityChange {
+    XCTAssertNoThrow([self.handler broadcastIdentityChange:@"did:plc:test" handle:@"test.bsky.social"],
+                     @"Should handle identity broadcast with handle");
+    XCTAssertNoThrow([self.handler broadcastIdentityChange:@"did:plc:test2" handle:nil],
+                     @"Should handle identity broadcast without handle");
+}
+
+- (void)testBroadcastAccountTakedown {
+    XCTAssertNoThrow([self.handler broadcastAccountTakedown:@"did:plc:malicious"],
+                     @"Should handle account takedown broadcast");
+}
+
+- (void)testBroadcastInfoEvent {
+    XCTAssertNoThrow([self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"],
+                     @"Should handle info event broadcast");
+}
+
 @end
