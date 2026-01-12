@@ -309,15 +309,15 @@ NS_ASSUME_NONNULL_BEGIN
                                     ip:(nullable NSString *)ip {
     if (did) {
         NSDictionary *didHeaders = [self rateLimitHeadersForDid:did];
-        [didHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
-            [response setHeader:value forKey:key];
+        [didHeaders enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
+            [response setHeader:value forKey:(NSString *)key];
         }];
     }
     
     if (ip) {
         NSDictionary *ipHeaders = [self rateLimitHeadersForIP:ip];
-        [ipHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
-            [response setHeader:value forKey:key];
+        [ipHeaders enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
+            [response setHeader:value forKey:(NSString *)key];
         }];
     }
 }
