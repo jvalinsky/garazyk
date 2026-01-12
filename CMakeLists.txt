@@ -211,6 +211,9 @@ if(NOT APPLE)
 
   # SSLPinningManager.m uses NSURLSession (not available on VM's GNUstep)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
+
+  # WebSocketServer.m uses Network.framework (macOS-only)
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
