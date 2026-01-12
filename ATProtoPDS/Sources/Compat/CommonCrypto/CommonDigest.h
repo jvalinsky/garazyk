@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #define CC_SHA256_DIGEST_LENGTH 32 // SHA256_DIGEST_LENGTH might rely on deprecated headers
+#define CC_SHA1_DIGEST_LENGTH 20
 
 typedef uint32_t CC_LONG;
 
