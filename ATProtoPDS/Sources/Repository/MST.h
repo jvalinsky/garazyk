@@ -153,16 +153,6 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
  */
 + (uint32_t)keyDepth:(NSString *)key;
 
-/*!
- @method keyDepthBytes:
- 
- @abstract Computes the depth of a key based on its SHA-256 hash.
- 
- @param keyBytes The key as raw bytes.
- @return The computed depth (number of leading zero bits divided by 2).
- */
-+ (uint32_t)keyDepthBytes:(NSData *)keyBytes;
-
 @end
 
 NS_ASSUME_NONNULL_END
