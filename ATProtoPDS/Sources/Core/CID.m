@@ -14,6 +14,20 @@ static const NSUInteger kMaxVarintSize = 9;
 
 #pragma mark - Initialization
 
++ (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec {
+    if (!digest || digest.length == 0 || codec > UINT32_MAX) {
+        return nil;
+    }
+    
+    // Construct full multihash: 0x12 (sha2-256) + 0x20 (length 32) + digest
+    NSMutableData *multihash = [NSMutableData dataWithCapacity:2 + digest.length];
+    uint8_t header[] = {0x12, (uint8_t)digest.length};
+    [multihash appendBytes:header length:2];
+    [multihash appendData:digest];
+    
+    return [self cidWithMultihash:multihash codec:codec];
+}
+
 + (nullable instancetype)cidWithMultihash:(NSData *)multihash codec:(NSUInteger)codec {
     if (!multihash || multihash.length == 0 || codec > UINT32_MAX) {
         return nil;
@@ -236,29 +250,20 @@ static const NSUInteger kMaxVarintSize = 9;
     NSUInteger length = data.length;
     NSMutableString *result = [NSMutableString stringWithCapacity:((length * 8) + 4) / 5];
 
-    NSUInteger i = 0;
-    uint64_t shiftBuffer = 0;
-    NSUInteger bitsInBuffer = 0;
-
-    while (i < length) {
-        if (bitsInBuffer < 8) {
-            shiftBuffer = (shiftBuffer << 8) | bytes[i++];
-            bitsInBuffer += 8;
-        }
-
-        while (bitsInBuffer >= 5) {
-            NSUInteger index = (shiftBuffer >> (bitsInBuffer - 5)) & 0x1F;
-            [result appendFormat:@"%c", kBase32Alphabet[index]];
-            bitsInBuffer -= 5;
+    uint32_t buffer = 0;
+    int bitsLeft = 0;
+    for (NSUInteger i = 0; i < length; i++) {
+        buffer = (buffer << 8) | bytes[i];
+        bitsLeft += 8;
+        while (bitsLeft >= 5) {
+            int shift = bitsLeft - 5;
+            [result appendFormat:@"%c", kBase32Alphabet[(buffer >> shift) & 0x1F]];
+            bitsLeft -= 5;
         }
     }
 
-    // Pad remaining bits to complete final 5-bit group
-    if (bitsInBuffer > 0) {
-        shiftBuffer <<= (5 - bitsInBuffer);
-        bitsInBuffer = 5;
-        NSUInteger index = (shiftBuffer >> 0) & 0x1F;
-        [result appendFormat:@"%c", kBase32Alphabet[index]];
+    if (bitsLeft > 0) {
+        [result appendFormat:@"%c", kBase32Alphabet[(buffer << (5 - bitsLeft)) & 0x1F]];
     }
 
     return [result copy];
@@ -309,19 +314,13 @@ static const NSUInteger kMaxVarintSize = 9;
 
 + (CID *)sha256:(NSData *)data {
     NSData *digest = [self sha256Digest:data];
-    return [self cidWithMultihash:digest codec:0x55];
+    return [self cidWithDigest:digest codec:0x55];
 }
 
 + (NSData *)sha256Digest:(NSData *)data {
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
-
-    // Construct full multihash: 0x12 (sha2-256) + 0x20 (length 32) + hash
-    NSMutableData *multihash = [NSMutableData dataWithCapacity:2 + CC_SHA256_DIGEST_LENGTH];
-    uint8_t header[] = {0x12, 0x20};
-    [multihash appendBytes:header length:2];
-    [multihash appendBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-    return multihash;
+    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 }
 
 @end

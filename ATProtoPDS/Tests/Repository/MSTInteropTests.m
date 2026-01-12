@@ -10,17 +10,19 @@
 - (void)testLeadingZeros {
     // MST 'depth' computation (SHA-256 leading zeros)
     // Reference values from indigo/mst/mst_interop_test.go
-    // Note: indigo returns raw bit count, MST.m returns bits/2.
     
     XCTAssertEqual([MST keyDepthBytes:[@"" dataUsingEncoding:NSUTF8StringEncoding]], 0);
     XCTAssertEqual([MST keyDepthBytes:[@"asdf" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"blue" dataUsingEncoding:NSUTF8StringEncoding]], 0); // 1 bit -> depth 0
-    XCTAssertEqual([MST keyDepthBytes:[@"2653ae71" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"88bfafc7" dataUsingEncoding:NSUTF8StringEncoding]], 1); // 2 bits -> depth 1
-    XCTAssertEqual([MST keyDepthBytes:[@"2a92d355" dataUsingEncoding:NSUTF8StringEncoding]], 2); // 4 bits -> depth 2
-    XCTAssertEqual([MST keyDepthBytes:[@"884976f5" dataUsingEncoding:NSUTF8StringEncoding]], 3); // 6 bits -> depth 3
-    XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/454397e440ec" dataUsingEncoding:NSUTF8StringEncoding]], 2); // 4 bits -> depth 2
-    XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/9adeb165882c" dataUsingEncoding:NSUTF8StringEncoding]], 4); // 8 bits -> depth 4
+    
+    uint32_t blueDepth = (uint32_t)[MST keyDepthString:@"blue"];
+    XCTAssertEqual(blueDepth, 1); // 1 bit -> depth 1
+    
+    XCTAssertEqual([MST keyDepthString:@"2653ae71"], 0);
+    XCTAssertEqual([MST keyDepthString:@"88bfafc7"], 2); // 2 bits -> depth 2
+    XCTAssertEqual([MST keyDepthString:@"2a92d355"], 4); // 4 bits -> depth 4
+    XCTAssertEqual([MST keyDepthString:@"884976f5"], 6); // 6 bits -> depth 6
+    XCTAssertEqual([MST keyDepthString:@"app.bsky.feed.post/454397e440ec"], 4); // 4 bits -> depth 4
+    XCTAssertEqual([MST keyDepthString:@"app.bsky.feed.post/9adeb165882c"], 8); // 8 bits -> depth 8
 }
 
 - (void)testInteropKnownMaps {
@@ -29,18 +31,8 @@
     
     // Empty map
     MST *emptyMST = [[MST alloc] init];
-    // We need a way to get the root CID. MST has rootCID property.
-    // However, the current implementation might not compute it automatically on empty tree.
-    // The reference says: bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm
-    // But wait, our MST implementation currently returns nil for rootCID if empty.
     XCTAssertEqualObjects(emptyMST.rootCID.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
 
-    // Let's use serializeToCBOR and hash it if rootCID is not available, 
-    // but the spec says root CID is the hash of the root node.
-    
-    // For now, I'll follow the Go test structure and use whatever method 
-    // we have to get the root CID.
-    
     // Trivial map
     MST *trivialMST = [[MST alloc] init];
     [trivialMST put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
@@ -160,4 +152,3 @@
 }
 
 @end
-

@@ -3,18 +3,42 @@
 #import "Core/CID.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <arpa/inet.h>
+#import <objc/runtime.h>
 
 #pragma mark - Internal Classes
 
-@interface MSTNode : NSObject
+@interface MSTInternalNode : NSObject <NSCopying>
 @property (nonatomic, assign) uint32_t level;
-@property (nonatomic, strong, nullable) MSTNode *left;
+@property (nonatomic, strong, nullable) MSTInternalNode *left;
 @property (nonatomic, strong) NSMutableArray<MSTNodeEntry *> *entries;
 - (instancetype)initWithLevel:(uint32_t)level;
-- (CID *)getCID:(NSMutableDictionary<MSTNode *, CID *> *)cache;
+- (CID *)getCID:(NSMutableDictionary<MSTInternalNode *, CID *> *)cache;
+- (void)split:(NSString *)key left:(MSTInternalNode * _Nullable * _Nonnull)leftOut right:(MSTInternalNode * _Nullable * _Nonnull)rightOut;
+- (MSTInternalNode *)trim;
 @end
 
-@implementation MSTEntry (Internal)
+// We'll use associated objects to store the full key and internal subtree in MSTNodeEntry
+static char const * const kMSTNodeEntryFullKey = "fullKey";
+static char const * const kMSTNodeEntryInternalTree = "internalTree";
+
+@interface MSTNodeEntry (Internal)
+@property (nonatomic, copy, nullable) NSString *fullKey;
+@property (nonatomic, strong, nullable) MSTInternalNode *internalTree;
+@end
+
+@implementation MSTNodeEntry (Internal)
+- (void)setFullKey:(NSString *)fullKey {
+    objc_setAssociatedObject(self, kMSTNodeEntryFullKey, fullKey, OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
+- (NSString *)fullKey {
+    return objc_getAssociatedObject(self, kMSTNodeEntryFullKey);
+}
+- (void)setInternalTree:(MSTInternalNode *)internalTree {
+    objc_setAssociatedObject(self, kMSTNodeEntryInternalTree, internalTree, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+- (MSTInternalNode *)internalTree {
+    return objc_getAssociatedObject(self, kMSTNodeEntryInternalTree);
+}
 @end
 
 @implementation MSTEntry
@@ -47,18 +71,13 @@
 
 - (NSData *)serialize {
     NSMutableData *data = [NSMutableData data];
-
     uint16_t keyLen = htons((uint16_t)[self keyLength]);
     [data appendBytes:&keyLen length:2];
-
-    NSData *keyData = [self keyBytes];
-    [data appendData:keyData];
-
+    [data appendData:[self keyBytes]];
     NSData *cidBytes = [self.valueCID bytes];
     uint16_t cidLen = htons((uint16_t)cidBytes.length);
     [data appendBytes:&cidLen length:2];
     [data appendData:cidBytes];
-
     return [data copy];
 }
 
@@ -68,79 +87,69 @@
 
 @end
 
-#pragma mark - MSTNodeEntry
-
 @implementation MSTNodeEntry
 
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
-                          keySuffix:(NSData *)keySuffix
-                              value:(CID *)value
-                              tree:(CID *)tree {
+                         keySuffix:(NSData *)keySuffix
+                             value:(CID *)value
+                             tree:(CID *)tree {
     MSTNodeEntry *entry = [[MSTNodeEntry alloc] init];
     entry.prefixLen = prefixLen;
     entry.keySuffix = keySuffix;
     entry.value = value;
-    // Note: tree in MST.h is CID, but internally we might want to store MSTNode*
-    // For now, we'll use an internal property or just cast.
+    entry.tree = tree;
     return entry;
-}
-
-// Internal version for tree operations
-- (instancetype)initWithKey:(NSString *)key value:(CID *)value tree:(MSTNode *)tree {
-    self = [super init];
-    if (self) {
-        _value = value;
-        // We'll use a private property for internal tree reference
-        objc_setAssociatedObject(self, @"internalTree", tree, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(self, @"fullKey", key, OBJC_ASSOCIATION_COPY_NONATOMIC);
-    }
-    return self;
-}
-
-- (NSString *)key {
-    return objc_getAssociatedObject(self, @"fullKey");
-}
-
-- (MSTNode *)internalTree {
-    return objc_getAssociatedObject(self, @"internalTree");
-}
-
-- (void)setInternalTree:(MSTNode *)tree {
-    objc_setAssociatedObject(self, @"internalTree", tree, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 - (NSData *)serialize {
     NSMutableData *data = [NSMutableData data];
-
     uint8_t p = (uint8_t)self.prefixLen;
     [data appendBytes:&p length:1];
-
     uint16_t kLen = htons((uint16_t)self.keySuffix.length);
     [data appendBytes:&kLen length:2];
     [data appendData:self.keySuffix];
-
     NSData *vBytes = [self.value bytes];
     uint16_t vLen = htons((uint16_t)vBytes.length);
     [data appendBytes:&vLen length:2];
     [data appendData:vBytes];
-
-    // This method is for the old serialization format.
-    // For the tree pointer, we should use the CID if available.
-    CID *tCID = self.tree;
-    uint16_t tLen = tCID ? htons((uint16_t)[tCID bytes].length) : 0;
+    uint16_t tLen = self.tree ? htons((uint16_t)[self.tree bytes].length) : 0;
     [data appendBytes:&tLen length:2];
-    if (tCID) {
-        [data appendData:[tCID bytes]];
+    if (self.tree) {
+        [data appendData:[self.tree bytes]];
     }
-
     return data;
 }
 
 @end
 
-#pragma mark - MSTNode implementation
-
 @implementation MSTNode
+@synthesize nodeHash = _nodeHash;
+@synthesize entries = _entries;
+@synthesize left = _left;
+@synthesize kind = _kind;
+
++ (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries {
+    return [[self alloc] initWithKind:MSTNodeKindLeaf entries:entries left:nil];
+}
++ (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries left:(CID *)left {
+    return [[self alloc] initWithKind:MSTNodeKindNonLeaf entries:entries left:left];
+}
+- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(CID *)left {
+    self = [super init];
+    if (self) {
+        _kind = kind;
+        _entries = [entries copy];
+        _left = left;
+    }
+    return self;
+}
+- (NSData *)serialize { return [NSData data]; }
+- (NSData *)computeHash { return [NSData data]; }
+- (void)setNodeHash:(CID *)hash { _nodeHash = hash; }
+- (NSArray<MSTEntry *> *)fullEntries { return @[]; }
+@end
+
+@implementation MSTInternalNode
 
 - (instancetype)initWithLevel:(uint32_t)level {
     self = [super init];
@@ -151,29 +160,36 @@
     return self;
 }
 
-- (instancetype)initWithLevel:(uint32_t)level left:(MSTNode *)left entries:(NSArray<MSTNodeEntry *> *)entries {
-    self = [self initWithLevel:level];
-    if (self) {
-        _left = left;
-        [_entries addObjectsFromArray:entries];
+- (id)copyWithZone:(NSZone *)zone {
+    MSTInternalNode *copy = [[MSTInternalNode allocWithZone:zone] initWithLevel:self.level];
+    copy.left = [self.left copyWithZone:zone];
+    for (MSTNodeEntry *entry in self.entries) {
+        // Entries are objects too, but we need to copy them correctly
+        // Since we use associated objects, we should probably implement copying for MSTNodeEntry as well.
+        MSTNodeEntry *entryCopy = [[MSTNodeEntry alloc] init];
+        entryCopy.fullKey = entry.fullKey;
+        entryCopy.value = entry.value; // CID is immutable
+        entryCopy.internalTree = [entry.internalTree copyWithZone:zone];
+        [copy.entries addObject:entryCopy];
     }
-    return self;
+    return copy;
 }
 
-- (CID *)getCID:(NSMutableDictionary<MSTNode *, CID *> *)cache {
+- (CID *)getCID:(NSMutableDictionary<MSTInternalNode *, CID *> *)cache {
     if (cache[self]) return cache[self];
-    
     NSData *cbor = [self serializeToCBOR:cache];
-    CID *cid = [CID cidWithMultihash:[CID sha256Digest:cbor] codec:0x71];
+    // Use Dag-CBOR (0x71)
+    CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
     cache[self] = cid;
     return cid;
 }
 
-- (NSData *)serializeToCBOR:(NSMutableDictionary<MSTNode *, CID *> *)cache {
+
+- (NSData *)serializeToCBOR:(NSMutableDictionary<MSTInternalNode *, CID *> *)cache {
     NSMutableArray<CBORValue *> *entriesCBOR = [NSMutableArray array];
     NSString *prevKey = @"";
     for (MSTNodeEntry *entry in self.entries) {
-        NSString *fullKey = entry.key;
+        NSString *fullKey = entry.fullKey;
         NSUInteger p = 0;
         NSUInteger minLen = MIN(prevKey.length, fullKey.length);
         for (NSUInteger i = 0; i < minLen; i++) {
@@ -215,62 +231,57 @@
         nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
     }
     
+    // ATProto DAG-CBOR requires lexicographical key sorting for maps.
+    // Our CBORValue map should already handle this if the dictionary keys are sorted correctly.
+    // However, since we only have 'e' and possibly 'l', and 'e' comes before 'l' alphabetically,
+    // we should make sure the map is encoded in that order.
+    
     return [[CBORValue map:nodeDict] encode];
 }
 
-- (void)split:(NSString *)key left:(MSTNode **)leftOut right:(MSTNode **)rightOut {
+- (void)split:(NSString *)key left:(MSTInternalNode **)leftOut right:(MSTInternalNode **)rightOut {
     NSInteger idx = 0;
-    while (idx < self.entries.count && [self.entries[idx].key compare:key] == NSOrderedAscending) {
+    while (idx < self.entries.count && [self.entries[idx].fullKey compare:key] == NSOrderedAscending) {
         idx++;
     }
-    
-    MSTNode *subtree = (idx == 0) ? self.left : self.entries[idx-1].internalTree;
-    MSTNode *splitLeft = nil;
-    MSTNode *splitRight = nil;
+    MSTInternalNode *subtree = (idx == 0) ? self.left : self.entries[idx-1].internalTree;
+    MSTInternalNode *splitLeft = nil;
+    MSTInternalNode *splitRight = nil;
     if (subtree) {
         [subtree split:key left:&splitLeft right:&splitRight];
     }
-    
-    NSMutableArray *leftEntries = [NSMutableArray array];
+    MSTInternalNode *leftNode = [[MSTInternalNode alloc] initWithLevel:self.level];
+    leftNode.left = self.left;
     for (NSInteger i = 0; i < idx; i++) {
-        [leftEntries addObject:self.entries[i]];
+        [leftNode.entries addObject:self.entries[i]];
     }
-    MSTNode *leftNode = [[MSTNode alloc] initWithLevel:self.level left:self.left entries:leftEntries];
     if (idx == 0) {
         leftNode.left = splitLeft;
     } else {
-        leftEntries[idx-1].internalTree = splitLeft;
+        leftNode.entries[idx-1].internalTree = splitLeft;
     }
-    
-    NSMutableArray *rightEntries = [NSMutableArray array];
+    MSTInternalNode *rightNode = [[MSTInternalNode alloc] initWithLevel:self.level];
+    rightNode.left = splitRight;
     for (NSInteger i = idx; i < self.entries.count; i++) {
-        [rightEntries addObject:self.entries[i]];
+        [rightNode.entries addObject:self.entries[i]];
     }
-    MSTNode *rightNode = [[MSTNode alloc] initWithLevel:self.level left:splitRight entries:rightEntries];
-    
     *leftOut = [leftNode trim];
     *rightOut = [rightNode trim];
 }
 
-- (MSTNode *)trim {
+- (MSTInternalNode *)trim {
     if (self.entries.count == 0 && self.left) {
         return [self.left trim];
     }
     return self;
 }
 
-#pragma mark - Old stubs
-- (NSData *)serialize { return [NSData data]; }
-- (NSData *)computeHash { return [NSData data]; }
-- (void)setNodeHash:(CID *)hash {}
-- (NSArray<MSTEntry *> *)fullEntries { return @[]; }
-
 @end
 
-#pragma mark - MST implementation
+#pragma mark - MST Implementation
 
 @interface MST ()
-@property (nonatomic, strong, readwrite) MSTNode *root;
+@property (nonatomic, strong, readwrite) MSTInternalNode *root;
 @property (nonatomic, strong, readwrite) NSData *emptyTreeHash;
 @end
 
@@ -279,13 +290,7 @@
 - (instancetype)initWithRootCID:(CID *)rootCID {
     self = [super init];
     if (self) {
-        if (rootCID) {
-            // In a real implementation, we would load the tree from storage.
-            // For now, we'll start empty if we don't have the node data.
-            _root = [[MSTNode alloc] initWithLevel:0];
-        } else {
-            _root = [[MSTNode alloc] initWithLevel:0];
-        }
+        _root = [[MSTInternalNode alloc] initWithLevel:0];
         _emptyTreeHash = [self computeEmptyTreeHash];
     }
     return self;
@@ -296,10 +301,10 @@
 }
 
 - (NSData *)computeEmptyTreeHash {
-    // Empty tree root is hash of {"e":[]}
     NSDictionary *dict = @{[CBORValue textString:@"e"]: [CBORValue array:@[]]};
     NSData *cbor = [[CBORValue map:dict] encode];
-    return [CID sha256Digest:cbor];
+    CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
+    return cid.bytes;
 }
 
 - (CID *)rootCID {
@@ -307,36 +312,37 @@
     return [self.root getCID:cache];
 }
 
-+ (uint32_t)keyDepth:(NSString *)key {
++ (NSUInteger)keyDepthString:(NSString *)key {
     return [self keyDepthBytes:[key dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
-+ (uint32_t)keyDepthBytes:(NSData *)keyBytes {
++ (NSUInteger)keyDepthBytes:(NSData *)keyBytes {
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(keyBytes.bytes, (CC_LONG)keyBytes.length, hash);
-
-    uint32_t zeroCount = 0;
+    NSUInteger total = 0;
     for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
-        uint8_t byte = hash[i];
-        if (byte == 0) {
-            zeroCount += 8;
-        } else {
-            if ((byte & 0xF0) == 0) {
-                zeroCount += 4;
-                byte <<= 4;
-            }
-            if ((byte & 0xC0) == 0) {
-                zeroCount += 2;
-                byte <<= 2;
-            }
-            if ((byte & 0x80) == 0) {
-                zeroCount += 1;
-            }
+        uint8_t b = hash[i];
+        if ((b & 0xC0) != 0) {
             break;
         }
+        if (b == 0x00) {
+            total += 4;
+            continue;
+        }
+        if ((b & 0xFC) == 0x00) {
+            total += 3;
+        } else if ((b & 0xF0) == 0x00) {
+            total += 2;
+        } else {
+            total += 1;
+        }
+        break;
     }
+    return total;
+}
 
-    return zeroCount / 2;
++ (NSUInteger)keyDepth:(NSData *)keyBytes {
+    return [self keyDepthBytes:keyBytes];
 }
 
 - (nullable CID *)get:(NSString *)key {
@@ -348,17 +354,15 @@
     return [self getRecursive:self.root key:fullKey];
 }
 
-- (CID *)getRecursive:(MSTNode *)node key:(NSString *)key {
+- (CID *)getRecursive:(MSTInternalNode *)node key:(NSString *)key {
     NSInteger idx = 0;
-    while (idx < node.entries.count && [node.entries[idx].key compare:key] == NSOrderedAscending) {
+    while (idx < node.entries.count && [node.entries[idx].fullKey compare:key] == NSOrderedAscending) {
         idx++;
     }
-    
-    if (idx < node.entries.count && [node.entries[idx].key isEqualToString:key]) {
+    if (idx < node.entries.count && [node.entries[idx].fullKey isEqualToString:key]) {
         return node.entries[idx].value;
     }
-    
-    MSTNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
+    MSTInternalNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
     if (subtree) {
         return [self getRecursive:subtree key:key];
     }
@@ -371,69 +375,82 @@
 
 - (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(NSString *)subKey {
     NSString *fullKey = subKey ? [NSString stringWithFormat:@"%@/%@", key, subKey] : key;
-    uint32_t depth = [MST keyDepth:fullKey];
+    uint32_t depth = (uint32_t)[MST keyDepthString:fullKey];
     self.root = [self addRecursive:self.root key:fullKey value:valueCID depth:depth];
 }
 
-- (MSTNode *)addRecursive:(MSTNode *)node key:(NSString *)key value:(CID *)value depth:(uint32_t)depth {
+- (MSTInternalNode *)addRecursive:(MSTInternalNode *)node key:(NSString *)key value:(CID *)value depth:(uint32_t)depth {
     if (depth > node.level) {
-        MSTNode *splitLeft = nil;
-        MSTNode *splitRight = nil;
+        MSTInternalNode *splitLeft = nil;
+        MSTInternalNode *splitRight = nil;
         [node split:key left:&splitLeft right:&splitRight];
-        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:splitRight];
-        return [[MSTNode alloc] initWithLevel:depth left:splitLeft entries:@[newEntry]];
+        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] init];
+        newEntry.fullKey = key;
+        newEntry.value = value;
+        newEntry.internalTree = splitRight;
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:depth];
+        newNode.left = splitLeft;
+        [newNode.entries addObject:newEntry];
+        return newNode;
     }
-    
     NSInteger idx = 0;
-    while (idx < node.entries.count && [node.entries[idx].key compare:key] == NSOrderedAscending) {
+    while (idx < node.entries.count && [node.entries[idx].fullKey compare:key] == NSOrderedAscending) {
         idx++;
     }
-    
-    if (idx < node.entries.count && [node.entries[idx].key isEqualToString:key]) {
+    if (idx < node.entries.count && [node.entries[idx].fullKey isEqualToString:key]) {
         MSTNodeEntry *oldEntry = node.entries[idx];
-        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:oldEntry.internalTree];
-        NSMutableArray *newEntries = [node.entries mutableCopy];
-        newEntries[idx] = newEntry;
-        return [[MSTNode alloc] initWithLevel:node.level left:node.left entries:newEntries];
+        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] init];
+        newEntry.fullKey = key;
+        newEntry.value = value;
+        newEntry.internalTree = oldEntry.internalTree;
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:node.level];
+        newNode.left = node.left;
+        [newNode.entries addObjectsFromArray:node.entries];
+        newNode.entries[idx] = newEntry;
+        return newNode;
     }
-    
     if (depth == node.level) {
-        MSTNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
-        MSTNode *splitLeft = nil;
-        MSTNode *splitRight = nil;
+        MSTInternalNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
+        MSTInternalNode *splitLeft = nil;
+        MSTInternalNode *splitRight = nil;
         if (subtree) {
             [subtree split:key left:&splitLeft right:&splitRight];
         }
-        
-        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:splitRight];
-        NSMutableArray *newEntries = [node.entries mutableCopy];
-        [newEntries insertObject:newEntry atIndex:idx];
-        
-        MSTNode *newNode = [[MSTNode alloc] initWithLevel:node.level left:node.left entries:newEntries];
+        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] init];
+        newEntry.fullKey = key;
+        newEntry.value = value;
+        newEntry.internalTree = splitRight;
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:node.level];
+        newNode.left = node.left;
+        [newNode.entries addObjectsFromArray:node.entries];
+        [newNode.entries insertObject:newEntry atIndex:idx];
         if (idx == 0) {
             newNode.left = splitLeft;
         } else {
-            // Note: we need to update the previous entry's tree pointer
-            MSTNodeEntry *prevEntry = newEntries[idx-1];
-            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.key value:prevEntry.value tree:splitLeft];
-            newEntries[idx-1] = updatedPrev;
+            MSTNodeEntry *prevEntry = newNode.entries[idx-1];
+            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] init];
+            updatedPrev.fullKey = prevEntry.fullKey;
+            updatedPrev.value = prevEntry.value;
+            updatedPrev.internalTree = splitLeft;
+            newNode.entries[idx-1] = updatedPrev;
         }
         return newNode;
     }
-    
-    // depth < node.level
-    MSTNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
-    if (!subtree) subtree = [[MSTNode alloc] initWithLevel:0];
-    MSTNode *newSubtree = [self addRecursive:subtree key:key value:value depth:depth];
-    
-    NSMutableArray *newEntries = [node.entries mutableCopy];
-    MSTNode *newNode = [[MSTNode alloc] initWithLevel:node.level left:node.left entries:newEntries];
+    MSTInternalNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
+    if (!subtree) subtree = [[MSTInternalNode alloc] initWithLevel:0];
+    MSTInternalNode *newSubtree = [self addRecursive:subtree key:key value:value depth:depth];
+    MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:node.level];
+    newNode.left = node.left;
+    [newNode.entries addObjectsFromArray:node.entries];
     if (idx == 0) {
         newNode.left = newSubtree;
     } else {
-        MSTNodeEntry *prevEntry = newEntries[idx-1];
-        MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.key value:prevEntry.value tree:newSubtree];
-        newEntries[idx-1] = updatedPrev;
+        MSTNodeEntry *prevEntry = newNode.entries[idx-1];
+        MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] init];
+        updatedPrev.fullKey = prevEntry.fullKey;
+        updatedPrev.value = prevEntry.value;
+        updatedPrev.internalTree = newSubtree;
+        newNode.entries[idx-1] = updatedPrev;
     }
     return newNode;
 }
@@ -447,80 +464,92 @@
     self.root = [self deleteRecursive:self.root key:fullKey];
 }
 
-- (MSTNode *)deleteRecursive:(MSTNode *)node key:(NSString *)key {
+- (MSTInternalNode *)deleteRecursive:(MSTInternalNode *)node key:(NSString *)key {
     NSInteger idx = 0;
-    while (idx < node.entries.count && [node.entries[idx].key compare:key] == NSOrderedAscending) {
+    while (idx < node.entries.count && [node.entries[idx].fullKey compare:key] == NSOrderedAscending) {
         idx++;
     }
-    
-    if (idx < node.entries.count && [node.entries[idx].key isEqualToString:key]) {
+    if (idx < node.entries.count && [node.entries[idx].fullKey isEqualToString:key]) {
         MSTNodeEntry *entryToDelete = node.entries[idx];
-        MSTNode *leftSubtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
-        MSTNode *rightSubtree = entryToDelete.internalTree;
-        
-        MSTNode *merged = [self merge:leftSubtree and:rightSubtree];
-        
-        NSMutableArray *newEntries = [node.entries mutableCopy];
-        [newEntries removeObjectAtIndex:idx];
-        
-        MSTNode *newNode = [[MSTNode alloc] initWithLevel:node.level left:node.left entries:newEntries];
+        MSTInternalNode *leftSubtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
+        MSTInternalNode *rightSubtree = entryToDelete.internalTree;
+        MSTInternalNode *merged = [self merge:leftSubtree and:rightSubtree];
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:node.level];
+        newNode.left = node.left;
+        [newNode.entries addObjectsFromArray:node.entries];
+        [newNode.entries removeObjectAtIndex:idx];
         if (idx == 0) {
             newNode.left = merged;
         } else {
-            MSTNodeEntry *prevEntry = newEntries[idx-1];
-            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.key value:prevEntry.value tree:merged];
-            newEntries[idx-1] = updatedPrev;
+            MSTNodeEntry *prevEntry = newNode.entries[idx-1];
+            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] init];
+            updatedPrev.fullKey = prevEntry.fullKey;
+            updatedPrev.value = prevEntry.value;
+            updatedPrev.internalTree = merged;
+            newNode.entries[idx-1] = updatedPrev;
         }
         return [newNode trim];
     }
-    
-    MSTNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
+    MSTInternalNode *subtree = (idx == 0) ? node.left : node.entries[idx-1].internalTree;
     if (subtree) {
-        MSTNode *newSubtree = [self deleteRecursive:subtree key:key];
-        NSMutableArray *newEntries = [node.entries mutableCopy];
-        MSTNode *newNode = [[MSTNode alloc] initWithLevel:node.level left:node.left entries:newEntries];
+        MSTInternalNode *newSubtree = [self deleteRecursive:subtree key:key];
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:node.level];
+        newNode.left = node.left;
+        [newNode.entries addObjectsFromArray:node.entries];
         if (idx == 0) {
             newNode.left = newSubtree;
         } else {
-            MSTNodeEntry *prevEntry = newEntries[idx-1];
-            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.key value:prevEntry.value tree:newSubtree];
-            newEntries[idx-1] = updatedPrev;
+            MSTNodeEntry *prevEntry = newNode.entries[idx-1];
+            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] init];
+            updatedPrev.fullKey = prevEntry.fullKey;
+            updatedPrev.value = prevEntry.value;
+            updatedPrev.internalTree = newSubtree;
+            newNode.entries[idx-1] = updatedPrev;
         }
         return [newNode trim];
     }
     return node;
 }
 
-- (MSTNode *)merge:(MSTNode *)left and:(MSTNode *)right {
+- (MSTInternalNode *)merge:(MSTInternalNode *)left and:(MSTInternalNode *)right {
     if (!left) return right;
     if (!right) return left;
-    
     if (left.level > right.level) {
-        NSMutableArray *newEntries = [left.entries mutableCopy];
-        MSTNodeEntry *lastEntry = newEntries.lastObject;
-        MSTNodeEntry *updatedLast = [[MSTNodeEntry alloc] initWithKey:lastEntry.key value:lastEntry.value tree:[self merge:lastEntry.internalTree and:right]];
-        newEntries[newEntries.count-1] = updatedLast;
-        return [[MSTNode alloc] initWithLevel:left.level left:left.left entries:newEntries];
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:left.level];
+        newNode.left = left.left;
+        [newNode.entries addObjectsFromArray:left.entries];
+        MSTNodeEntry *lastEntry = newNode.entries.lastObject;
+        MSTNodeEntry *updatedLast = [[MSTNodeEntry alloc] init];
+        updatedLast.fullKey = lastEntry.fullKey;
+        updatedLast.value = lastEntry.value;
+        updatedLast.internalTree = [self merge:lastEntry.internalTree and:right];
+        newNode.entries[newNode.entries.count-1] = updatedLast;
+        return newNode;
     } else if (right.level > left.level) {
-        return [[MSTNode alloc] initWithLevel:right.level left:[self merge:left and:right.left] entries:right.entries];
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:right.level];
+        newNode.left = [self merge:left and:right.left];
+        [newNode.entries addObjectsFromArray:right.entries];
+        return newNode;
     } else {
-        // Levels are equal, which shouldn't happen in a valid MST if keys are unique and properly depth-assigned
-        // But for robustness, we merge entries.
-        NSMutableArray *newEntries = [left.entries mutableCopy];
-        [newEntries addObjectsFromArray:right.entries];
-        return [[MSTNode alloc] initWithLevel:left.level left:left.left entries:newEntries];
+        MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:left.level];
+        newNode.left = left.left;
+        [newNode.entries addObjectsFromArray:left.entries];
+        MSTInternalNode *middle = [self merge:newNode.entries.lastObject.internalTree and:right.left];
+        newNode.entries[newNode.entries.count-1].internalTree = middle;
+        [newNode.entries addObjectsFromArray:right.entries];
+        return newNode;
     }
 }
 
 - (NSArray<MSTEntry *> *)allEntries {
     NSMutableArray<MSTEntry *> *result = [NSMutableArray array];
     [self walk:self.root callback:^(MSTNodeEntry *entry) {
-        [result addObject:[MSTEntry entryWithKey:entry.key valueCID:entry.value]];
+        [result addObject:[MSTEntry entryWithKey:entry.fullKey valueCID:entry.value]];
     }];
     return result;
 }
 
-- (void)walk:(MSTNode *)node callback:(void(^)(MSTNodeEntry *))callback {
+- (void)walk:(MSTInternalNode *)node callback:(void(^)(MSTNodeEntry *))callback {
     if (node.left) [self walk:node.left callback:callback];
     for (MSTNodeEntry *entry in node.entries) {
         callback(entry);
@@ -531,24 +560,18 @@
 - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix {
     NSMutableArray<MSTEntry *> *result = [NSMutableArray array];
     [self walk:self.root callback:^(MSTNodeEntry *entry) {
-        if ([entry.key hasPrefix:prefix]) {
-            [result addObject:[MSTEntry entryWithKey:entry.key valueCID:entry.value]];
+        if ([entry.fullKey hasPrefix:prefix]) {
+            [result addObject:[MSTEntry entryWithKey:entry.fullKey valueCID:entry.value]];
         }
     }];
     return result;
 }
 
-- (NSData *)exportCAR {
-    return [NSData data]; // Stub
-}
-
+- (NSData *)exportCAR { return [NSData data]; }
 - (NSData *)serializeToCBOR {
     NSMutableDictionary *cache = [NSMutableDictionary dictionary];
     return [self.root serializeToCBOR:cache];
 }
-
-+ (nullable instancetype)deserializeFromCBOR:(NSData *)data {
-    return nil; // Stub
-}
++ (nullable instancetype)deserializeFromCBOR:(NSData *)data { return nil; }
 
 @end
