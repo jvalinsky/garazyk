@@ -111,16 +111,11 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 #if defined(GNUSTEP)
     dispatch_sync(self.cacheQueue, ^{
-        CFIndex count = CFDictionaryGetCount(self.statementCache);
-        if (count > 0) {
-            sqlite3_stmt *statements[count];
-            CFDictionaryGetKeysAndValues(self.statementCache, NULL, (const void **)statements);
-            for (CFIndex i = 0; i < count; i++) {
-                sqlite3_finalize(statements[i]);
-            }
+        for (NSValue *val in [self.statementCache allValues]) {
+            sqlite3_finalize([val pointerValue]);
         }
-        CFRelease(self.statementCache);
-        self.statementCache = NULL;
+        [self.statementCache removeAllObjects];
+        self.statementCache = nil;
     });
 #else
     if (_db) {
@@ -151,27 +146,30 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (nullable sqlite3_stmt *)cachedStatementForKey:(NSString *)key {
     __block sqlite3_stmt *stmt = NULL;
     dispatch_sync(self.cacheQueue, ^{
-        stmt = (sqlite3_stmt *)CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
+        NSValue *val = self.statementCache[key];
+        if (val) {
+            stmt = [val pointerValue];
+        }
     });
     return stmt;
 }
 
 - (void)cacheStatement:(sqlite3_stmt *)stmt forKey:(NSString *)key {
     dispatch_sync(self.cacheQueue, ^{
-        sqlite3_stmt *existing = (sqlite3_stmt *)CFDictionaryGetValue(self.statementCache, (__bridge const void *)(key));
-        if (existing) {
-            sqlite3_finalize(existing);
+        NSValue *existingVal = self.statementCache[key];
+        if (existingVal) {
+            sqlite3_finalize([existingVal pointerValue]);
         }
-        CFIndex count = CFDictionaryGetCount(self.statementCache);
-        if (count >= 100) {
-            const void *keys[1];
-            const void *values[1];
-            CFDictionaryGetKeysAndValues(self.statementCache, keys, values);
-            sqlite3_stmt *oldStmt = (sqlite3_stmt *)values[0];
-            sqlite3_finalize(oldStmt);
-            CFDictionaryRemoveValue(self.statementCache, keys[0]);
+        
+        if (self.statementCache.count >= 100) {
+            NSString *keyToRemove = [self.statementCache allKeys].firstObject;
+            if (keyToRemove) {
+                 NSValue *valToRemove = self.statementCache[keyToRemove];
+                 sqlite3_finalize([valToRemove pointerValue]);
+                 [self.statementCache removeObjectForKey:keyToRemove];
+            }
         }
-        CFDictionarySetValue(self.statementCache, (__bridge const void *)(key), stmt);
+        self.statementCache[key] = [NSValue valueWithPointer:stmt];
     });
 }
 #else

@@ -8,12 +8,16 @@
 
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
-@property (nonatomic, strong) id<PDSNetworkListener> listener;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t serverQueue;
+@property (nonatomic, assign) dispatch_semaphore_t readySemaphore;
+#else
 @property (nonatomic, strong) dispatch_queue_t serverQueue;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
-@property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
 @property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
+#endif
+@property (nonatomic, strong) NSMutableArray<HttpRoute *> *routes;
+@property (nonatomic, strong) NSMutableArray *middlewares;
+@property (nonatomic, assign) int socketFileDescriptor;
 @property (nonatomic, assign) BOOL listenerReady;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 

@@ -3,7 +3,15 @@
 @interface PDSLogger ()
 @property (nonatomic, strong) NSDateFormatter *dateFormatter;
 @property (nonatomic, strong) NSFileHandle *logFileHandle;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t logQueue;
+#else
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t logQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t logQueue;
+#endif
+#endif
 @end
 
 @implementation PDSLogger
