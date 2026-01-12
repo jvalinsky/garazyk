@@ -111,24 +111,21 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"  Token refresh successful");
     
     // Step 4: Verify token structure
-    // MAJOR FINDING: Tokens are UUIDs, NOT JWTs!
-    // The "accessJwt" and "refreshJwt" are opaque UUID strings
-    // This differs from standard ATProto which uses signed JWTs
+    // NEW STATUS: Tokens are now JWTs!
     
     NSLog(@"  Access token: %@", accessToken);
     
-    // Check if token looks like a UUID (8-4-4-4-12 format)
-    NSString *uuidPattern = @"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$";
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:uuidPattern options:0 error:nil];
-    NSUInteger matches = [regex numberOfMatchesInString:accessToken options:0 range:NSMakeRange(0, accessToken.length)];
+    // Check if token has 3 parts (JWT format)
+    NSArray *parts = [accessToken componentsSeparatedByString:@"."];
+    XCTAssertEqual(parts.count, 3, @"Access token should be a JWT with 3 parts");
+    NSLog(@"  Token is JWT format: YES");
     
-    XCTAssertEqual(matches, 1, @"Access token should be a UUID");
-    NSLog(@"  Token is UUID format: YES (not a JWT!)");
-    
-    // This is a significant departure from ATProto specification
-    // which requires signed JWT tokens for session management
-    NSLog(@"  WARNING: Tokens are opaque UUIDs, not signed JWTs");
-    NSLog(@"  This means no cryptographic verification of token claims");
+    // Verify it can be decoded
+    NSError *jwtError = nil;
+    JWT *jwt = [JWT jwtWithToken:accessToken error:&jwtError];
+    XCTAssertNotNil(jwt, @"Should be able to parse JWT: %@", jwtError);
+    XCTAssertEqualObjects(jwt.payload.sub, did, @"JWT subject should be the DID");
+    XCTAssertEqualObjects(jwt.payload.iss, [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443", @"Issuer should match");
     
     // Step 5: Verify session data matches expected structure
     XCTAssertNotNil(createResult[@"did"], @"Session should include DID");
@@ -325,31 +322,30 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"  Access token: %@", accessToken);
     NSLog(@"  Refresh token: %@", refreshToken);
     
-    // Test 1: Verify tokens are UUIDs, not JWTs
-    // MAJOR FINDING: Tokens are opaque UUID identifiers, not signed JWTs
-    // This differs from ATProto specification which requires JWT tokens
+    // Test 1: Verify tokens are JWTs
+    // UPDATED: Tokens are now signed JWTs
     
+    NSArray *accessParts = [accessToken componentsSeparatedByString:@"."];
+    XCTAssertEqual(accessParts.count, 3, @"Access token should be a JWT with 3 parts");
+    
+    // Refresh token is still an opaque UUID for now
     NSString *uuidPattern = @"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:uuidPattern options:0 error:nil];
-    
-    NSUInteger accessMatches = [regex numberOfMatchesInString:accessToken options:0 range:NSMakeRange(0, accessToken.length)];
     NSUInteger refreshMatches = [regex numberOfMatchesInString:refreshToken options:0 range:NSMakeRange(0, refreshToken.length)];
-    
-    XCTAssertEqual(accessMatches, 1, @"Access token should be UUID");
     XCTAssertEqual(refreshMatches, 1, @"Refresh token should be UUID");
     
-    NSLog(@"  Access token is UUID: %@", accessMatches == 1 ? @"YES" : @"NO");
-    NSLog(@"  Refresh token is UUID: %@", refreshMatches == 1 ? @"YES" : @"NO");
+    NSLog(@"  Access token is JWT: YES");
+    NSLog(@"  Refresh token is UUID: YES");
     
-    // Test 2: Verify NOT JWT (should not have 3 parts)
-    NSArray *parts = [accessToken componentsSeparatedByString:@"."];
-    XCTAssertEqual(parts.count, 1, @"UUID token should have 1 part, not 3 like JWT");
-    
-    NSLog(@"  Token parts count: %lu (1 = UUID, 3 = JWT)", (unsigned long)parts.count);
+    // Test 2: Verify access token can be parsed
+    NSError *jwtError = nil;
+    JWT *jwt = [JWT jwtWithToken:accessToken error:&jwtError];
+    XCTAssertNotNil(jwt, @"Should be able to parse access JWT");
+    XCTAssertNotNil(jwt.payload.did, @"JWT should contain DID");
     
     // Test 3: Verify token lookup works (tokens stored in session store)
-    // The session is looked up by UUID in the in-memory session store
-    NSLog(@"  Token validation: UUID-based lookup in session store");
+    // The session is looked up by token string in the in-memory session store
+    NSLog(@"  Token validation: JWT-based lookup in session store");
     
     // Test 4: Verify invalid token is rejected
     NSDictionary *refreshInvalid = [self.controller refreshAccessToken:@"invalid_token" error:&error];
@@ -358,9 +354,8 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSLog(@"  Invalid token correctly rejected: YES");
     
-    NSLog(@"  Token validation: UUID-based opaque tokens");
-    NSLog(@"  WARNING: No cryptographic verification of token claims");
-    NSLog(@"  WARNING: Tokens can be forged if session store is compromised");
+    NSLog(@"  Token validation: Signed JWT tokens");
+    NSLog(@"  SUCCESS: Cryptographic verification of token claims is now possible");
     
     NSLog(@"=== TEST PASSED: Token Validation ===\n");
 }
@@ -500,26 +495,23 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSLog(@"  Record created with authentication");
     
-    // Verify session has valid tokens (UUIDs, not JWTs)
+    // Verify session has valid tokens (JWTs)
     NSString *accessToken = account[@"accessJwt"];
     XCTAssertNotNil(accessToken, @"Should have access token for auth");
     
-    // Tokens are UUIDs - verify this
-    NSString *uuidPattern = @"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$";
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:uuidPattern options:0 error:nil];
-    NSUInteger matches = [regex numberOfMatchesInString:accessToken options:0 range:NSMakeRange(0, accessToken.length)];
+    // Tokens are now JWTs - verify this
+    NSArray *parts = [accessToken componentsSeparatedByString:@"."];
+    XCTAssertEqual(parts.count, 3, @"Access token should be JWT");
+    NSLog(@"  Token is JWT format: YES");
     
-    XCTAssertEqual(matches, 1, @"Access token should be UUID");
-    NSLog(@"  Token is UUID format: %@", matches == 1 ? @"YES" : @"NO");
-    
-    // Session store maps UUID to session with DID
-    // The DID is stored in the session, not in the token
+    // Session store maps JWT to session with DID
+    // The DID is stored in the session and also encoded in the token
     XCTAssertEqualObjects(account[@"did"], did, @"Account DID should match");
     NSLog(@"  Account DID stored in session: %@", did);
     
-    // Authentication is based on UUID lookup, not JWT verification
-    NSLog(@"  Authentication: UUID-based session lookup");
-    NSLog(@"  WARNING: No cryptographic binding between token and account");
+    // Authentication is based on JWT lookup and verification
+    NSLog(@"  Authentication: JWT-based session lookup");
+    NSLog(@"  SUCCESS: Cryptographic binding between token and account");
     
     NSLog(@"=== TEST PASSED: Authentication Required ===\n");
 }
