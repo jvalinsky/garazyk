@@ -20,6 +20,15 @@ if(NOT APPLE)
     set(CMAKE_OBJC_STANDARD 20)
     add_compile_definitions(GNUSTEP LINUX)
 
+    # Use Clang for Objective-C on Linux (required for ARC and blocks)
+    find_program(OBJC_COMPILER NAMES clang clang-14)
+    if(OBJC_COMPILER)
+        set(CMAKE_OBJC_COMPILER ${OBJC_COMPILER})
+        message(STATUS "Using ${OBJC_COMPILER} for Objective-C")
+    else()
+        message(FATAL_ERROR "Clang compiler not found for Objective-C")
+    endif()
+
     # GNUstep Configuration with pkg-config fallback
     find_program(GNUSTEP_CONFIG gnustep-config)
     if(GNUSTEP_CONFIG)
