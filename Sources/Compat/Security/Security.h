@@ -46,7 +46,7 @@ typedef const struct SecKeyAlgorithm *SecKeyAlgorithm;
 static inline SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef parameters, OSStatus *error) {
     (void)parameters;
     (void)error;
-    return NULL;
+    return (SecKeyRef)NULL;
 }
 
 static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, OSStatus *error) {
@@ -57,7 +57,14 @@ static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, OSStatus
 
 static inline SecKeyRef SecKeyCopyPublicKey(SecKeyRef key) {
     (void)key;
-    return NULL;
+    return (SecKeyRef)NULL;
+}
+
+static inline SecKeyRef SecKeyCreateWithData(CFDataRef keyData, CFDictionaryRef attributes, OSStatus *error) {
+    (void)keyData;
+    (void)attributes;
+    (void)error;
+    return (SecKeyRef)NULL;
 }
 
 static inline CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef dataToSign, OSStatus *error) {
