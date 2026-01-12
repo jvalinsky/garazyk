@@ -230,7 +230,11 @@
                                           (__bridge CFDataRef)signature,
                                           &keyError);
     
+#if defined(__APPLE__)
     CFRelease(key);
+#else
+    CFRelease((__bridge CFTypeRef)key);
+#endif
     
     if (!verified) {
         if (error) *error = [self errorWithCode:2008 message:@"Signature verification failed"];

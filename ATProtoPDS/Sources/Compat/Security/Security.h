@@ -123,6 +123,11 @@ SecPolicyRef SecPolicyCreateBasicX509();
 OSStatus SecTrustCreateWithCertificates(CFTypeRef certificates, CFTypeRef policies, SecTrustRef *trust);
 OSStatus SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result);
 
+// Byte Order Shims
+uint64_t CFSwapInt64HostToBig(uint64_t arg);
+uint32_t CFSwapInt32BigToHost(uint32_t arg);
+uint16_t CFSwapInt16BigToHost(uint16_t arg);
+
 #endif // !defined(__APPLE__)
 
 #endif /* Security_Compat_h */
