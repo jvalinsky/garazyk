@@ -9,6 +9,10 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 
+#ifndef kCCSuccess
+#define kCCSuccess 0
+#endif
+
 @interface PDSAccountService ()
 
 @property (nonatomic, strong) os_log_t log;
