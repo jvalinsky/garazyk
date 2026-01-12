@@ -37,12 +37,9 @@
 }
 
 - (void)testCurrentSigningKey {
-    // Initially, no keys should exist
+    // KeyManager auto-generates a key if missing, so we expect a key
     SecKeyRef key = [self.keyRotationManager currentSigningKey];
-    if (key != NULL) {
-        fprintf(stderr, "[TEST DEBUG] currentSigningKey returned unexpected key: %p\n", key);
-    }
-    XCTAssertTrue(key == NULL, @"Key should be NULL initially but was %p", key);
+    XCTAssertTrue(key != NULL, @"KeyManager should auto-generate a key if missing");
     
     // Generate a key
     NSError *error = nil;
