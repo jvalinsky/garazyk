@@ -60,6 +60,7 @@ int main(int argc, char * argv[]) {
             @"OAuth2Tests",
             @"SubscribeReposHandlerTests",
             @"GetServiceAuthMethodTests",
+            @"PDSCLITests",
             @"ActorStoreTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",
