@@ -103,23 +103,9 @@
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"status"] = @"ok";
 
-#if defined(__APPLE__)
-    struct task_vm_info vmInfo;
-    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    kern_return_t kr = task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vmInfo, &count);
-
-    if (kr == KERN_SUCCESS) {
-        unsigned long long usedBytes = vmInfo.phys_footprint;
-        unsigned long long limitBytes = 1024ULL * 1024 * 1024;
-
-        result[@"used_bytes"] = @(usedBytes);
-        result[@"limit_bytes"] = @(limitBytes);
-        double usageRatio = (double)usedBytes / (double)limitBytes;
-        if (usedBytes > limitBytes * 0.9) {
-            result[@"status"] = @"warn";
-            result[@"message"] = @"High memory usage";
-        }
-    }
+#else
+    return 0;
+#endif
 
     return result;
 }
