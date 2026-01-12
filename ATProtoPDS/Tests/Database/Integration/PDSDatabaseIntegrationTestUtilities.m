@@ -262,9 +262,13 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     // Create test accounts for each tenant DID
     for (NSString *did in self.testDIDs) {
         PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"%@.example.com", did.lastPathComponent]];
-        if (![self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        __autoreleasing NSError *transactionError = nil;
+        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
             [transactor createAccount:account error:nil];
-        } error:error]) {
+        } error:&transactionError];
+        
+        if (transactionError) {
+            if (error) *error = transactionError;
             return NO;
         }
     }
@@ -859,11 +863,12 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 __autoreleasing NSError *localError = nil;
                 [self.pool readWithDid:@"did:plc:concurrent-test" block:^(id<PDSActorStoreReader> reader) {
                     // Perform a read operation
-                    PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&localError];
-                    if (localError && localError.code != PDSActorStoreErrorNotFound) {
+                    __autoreleasing NSError *tempError = nil;
+                    PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&tempError];
+                    if (tempError && tempError.code != PDSActorStoreErrorNotFound) {
                         @synchronized(self) {
                             if (!readError) {
-                                readError = localError;
+                                readError = tempError;
                             }
                             success = NO;
                         }
@@ -908,10 +913,11 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"write%lu.example.com", (unsigned long)i]];
 
                 [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-                    if (![transactor createAccount:account error:&localError]) {
+                    __autoreleasing NSError *tempError = nil;
+                    if (![transactor createAccount:account error:&tempError]) {
                         @synchronized(self) {
                             if (!writeError) {
-                                writeError = localError;
+                                writeError = tempError;
                             }
                             success = NO;
                         }
@@ -1023,8 +1029,9 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
                 [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
                     // Perform some database operations that might conflict
+                    __autoreleasing NSError *tempError = nil;
                     PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:@"deadlock.example.com"];
-                    [transactor createAccount:account error:&localError];
+                    [transactor createAccount:account error:&tempError];
 
                     // Add small delay to increase chance of interleaving
                     usleep(1000);
