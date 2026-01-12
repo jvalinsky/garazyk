@@ -5,7 +5,11 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Migration/PDSMigrationManager.h"
 #import <sqlite3.h>
+#if defined(__APPLE__)
 #import <CommonCrypto/CommonCrypto.h>
+#else
+#import "CommonCrypto.h"
+#endif
 
 NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integrationtest";
 

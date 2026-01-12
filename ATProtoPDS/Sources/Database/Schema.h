@@ -10,6 +10,7 @@ extern NSString * const kPDSRecordTableName;
 extern NSString * const kPDSBlockTableName;
 extern NSString * const kPDSBlobTableName;
 extern NSString * const kPDSInviteCodeTableName;
+extern NSString * const kPDSAdminTakedownTableName;
 extern NSString * const kPDSPasskeysTableName;
 extern NSString * const kPDSOAuthClientsTableName;
 

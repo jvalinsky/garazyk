@@ -304,7 +304,7 @@ if(BUILD_TESTS)
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/test_main.m")
   
   # Exclude problematic tests (preserved from original)
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
   # Exclude top-level Integration tests only
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
