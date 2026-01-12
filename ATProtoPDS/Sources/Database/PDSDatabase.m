@@ -21,8 +21,8 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, readwrite) NSURL *databaseURL;
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
-#if defined(GNUSTEP)
-@property (nonatomic, assign) CFMutableDictionaryRef statementCache;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, strong) NSMutableDictionary *statementCache;
 @property (nonatomic, assign) dispatch_queue_t cacheQueue;
 #else
 @property (nonatomic, strong) NSMutableDictionary *statementCache;
@@ -54,8 +54,8 @@ static NSDateFormatter * iso8601Formatter(void) {
     database.databaseURL = url;
     database.isOpen = NO;
     database.db = NULL;
-#if defined(GNUSTEP)
-    database.statementCache = CFDictionaryCreateMutable(kCFAllocatorDefault, 100, &kCFTypeDictionaryKeyCallBacks, NULL);
+#if defined(__linux__) || defined(__GNUstep__)
+    database.statementCache = [NSMutableDictionary dictionary];
     database.cacheQueue = dispatch_queue_create("com.atproto.pds.database.cache", DISPATCH_QUEUE_SERIAL);
 #else
     database.statementCache = [NSMutableDictionary dictionary];
@@ -109,7 +109,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (void)close {
     if (!self.isOpen) return;
 
-#if defined(GNUSTEP)
+#if defined(__linux__) || defined(__GNUstep__)
     dispatch_sync(self.cacheQueue, ^{
         for (NSValue *val in [self.statementCache allValues]) {
             sqlite3_finalize([val pointerValue]);
@@ -142,7 +142,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     [self close];
 }
 
-#if defined(GNUSTEP)
+#if defined(__linux__) || defined(__GNUstep__)
 - (nullable sqlite3_stmt *)cachedStatementForKey:(NSString *)key {
     __block sqlite3_stmt *stmt = NULL;
     dispatch_sync(self.cacheQueue, ^{
