@@ -1,13 +1,19 @@
 #import <Foundation/Foundation.h>
+
+#ifdef __APPLE__
 #import <XCTest/XCTest.h>
+#else
+#import <ATProtoPDS/LinuxXCTestCompat.h>
+#endif
 #import <objc/runtime.h>
 
-@interface SimpleTestObserver : NSObject <XCTestObservation>
+@interface SimpleTestObserver : NSObject
 @property (nonatomic, assign) int failureCount;
 @property (nonatomic, assign) int testCount;
 @property (nonatomic, assign) int unexpectedFailureCount;
 @end
 
+#ifdef __APPLE__
 @implementation SimpleTestObserver
 - (instancetype)init {
     self = [super init];
@@ -27,6 +33,19 @@
     self.failureCount++;
 }
 @end
+#else
+@implementation SimpleTestObserver
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _failureCount = 0;
+        _testCount = 0;
+        _unexpectedFailureCount = 0;
+    }
+    return self;
+}
+@end
+#endif
 
 NSArray *discoverTestMethodsForClass(Class testClass) {
     NSMutableArray *methods = [NSMutableArray array];
@@ -79,8 +98,10 @@ int main(int argc, char * argv[]) {
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
 
+#ifdef __APPLE__
         XCTestObservationCenter *center = [XCTestObservationCenter sharedTestObservationCenter];
         [center addTestObserver:observer];
+#endif
 
         XCTestSuite *mainSuite = [XCTestSuite testSuiteWithName:@"All Tests"];
 
