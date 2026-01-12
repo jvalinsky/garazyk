@@ -232,7 +232,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
 
     if (pubError) {
+#if defined(__APPLE__)
         CFRelease(privateKey);
+#else
+        CFRelease((__bridge CFTypeRef)privateKey);
+#endif
         if (error) {
             *error = (__bridge_transfer NSError *)pubError;
         }
@@ -300,8 +304,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     dispatch_sync(self.accessQueue, ^{
         KeyPair *keyPair = self.keyPairs[keyID];
         if (keyPair) {
+#if defined(__APPLE__)
             if (keyPair.privateKey) CFRelease(keyPair.privateKey);
             if (keyPair.publicKey) CFRelease(keyPair.publicKey);
+#else
+            if (keyPair.privateKey) CFRelease((__bridge CFTypeRef)keyPair.privateKey);
+            if (keyPair.publicKey) CFRelease((__bridge CFTypeRef)keyPair.publicKey);
+#endif
             [self.keyPairs removeObjectForKey:keyID];
             success = YES;
         }
@@ -501,8 +510,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                 }
             }
 
+#if defined(__APPLE__)
             if (privateKey) CFRelease(privateKey);
             if (publicKey) CFRelease(publicKey);
+#else
+            if (privateKey) CFRelease((__bridge CFTypeRef)privateKey);
+            if (publicKey) CFRelease((__bridge CFTypeRef)publicKey);
+#endif
         }
     });
 }
