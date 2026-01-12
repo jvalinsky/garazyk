@@ -329,4 +329,10 @@ static const NSUInteger kMaxVarintSize = 9;
     return multihash;
 }
 
++ (NSData *)rawSha256:(NSData *)data {
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+}
+
 @end
