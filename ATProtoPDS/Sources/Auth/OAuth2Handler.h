@@ -51,6 +51,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
 
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
 

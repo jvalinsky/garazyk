@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
+#import "Auth/OAuth2.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
@@ -78,7 +79,7 @@
     setenv("PDS_ISSUER", "https://custom.pds.example.com", 1);
 
     OAuth2Handler *handler = [[OAuth2Handler alloc] init];
-    XCTAssertEqualObjects(handler.oauthServer.issuer, @"https://custom.pds.example.com",
+    XCTAssertEqualObjects(handler.server.issuer, @"https://custom.pds.example.com",
                          @"Should use custom issuer from environment");
 
     // Clean up
