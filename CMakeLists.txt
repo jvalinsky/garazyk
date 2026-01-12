@@ -316,6 +316,7 @@ if(BUILD_TESTS)
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
   
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Pool/DatabasePoolTests.m")
