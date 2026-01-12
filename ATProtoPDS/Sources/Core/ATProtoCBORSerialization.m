@@ -1,5 +1,6 @@
 #import "ATProtoCBORSerialization.h"
 #import "Repository/CBOR.h"
+#import <Security/Security.h>
 
 @implementation ATProtoCBORSerialization
 
