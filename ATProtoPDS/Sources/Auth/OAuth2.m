@@ -454,7 +454,12 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
                          dpopJWK:(nullable NSString *)dpopJWK {
     Session *session = [[Session alloc] initWithDID:did
                                              handle:handle
-                                              scope:scope];
+                                              scope:scope
+                                             minter:self.jwtMinter];
+
+    if (dpopJWK) {
+        session.dpopKeyThumbprint = dpopJWK;
+    }
 
     self.activeSessions[session.sessionID] = session;
 

@@ -213,6 +213,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @synthesize expectedAudience = _expectedAudience;
 @synthesize allowedAlgorithms = _allowedAlgorithms;
 @synthesize clockOffset = _clockOffset;
+@synthesize publicKey = _publicKey;
 @synthesize keyRotationManager = _keyRotationManager;
 
 - (instancetype)init {
@@ -234,13 +235,24 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return NO;
     }
 
-    // Verify signature if key rotation manager is available
-    if (self.keyRotationManager) {
+    // Verify signature if key rotation manager or public key is available
+    if (self.keyRotationManager || self.publicKey) {
         NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
         NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
         if (!signatureData) return NO;
         
-        if (![self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error]) {
+        BOOL verified = NO;
+        if (self.keyRotationManager) {
+            verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
+        } else if (self.publicKey) {
+            Secp256k1 *secp = [Secp256k1 shared];
+            unsigned char hash[32];
+            CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+            NSData *hashData = [NSData dataWithBytes:hash length:32];
+            verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+        }
+        
+        if (!verified) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:JWTErrorDomain
                                              code:JWTErrorInvalidSignature
@@ -318,6 +330,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @synthesize signingAlgorithm = _signingAlgorithm;
 @synthesize defaultExpiration = _defaultExpiration;
 @synthesize privateKey = _privateKey;
+@synthesize publicKey = _publicKey;
 @synthesize keyRotationManager = _keyRotationManager;
 
 - (instancetype)init {

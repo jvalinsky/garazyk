@@ -1016,6 +1016,10 @@
 
     // Create verifier and set expected issuer
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    if (controller.jwtMinter) {
+        verifier.keyRotationManager = controller.jwtMinter.keyRotationManager;
+        verifier.publicKey = controller.jwtMinter.publicKey;
+    }
 
     // Use configurable issuer from environment, default to localhost
     NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";

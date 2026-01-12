@@ -12,19 +12,22 @@
 
 @implementation OAuth2Handler
 
+@synthesize minter = _minter;
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
-        self.server = [[OAuth2Server alloc] init];
+        self.oauthServer = [[OAuth2Server alloc] init];
+        self.oauthServer.jwtMinter = self.minter;
 
         // Use configurable issuer from environment, default to localhost
         NSString *issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
-        self.server.issuer = issuer;
+        self.oauthServer.issuer = issuer;
 
         // Build other endpoints relative to issuer
-        self.server.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
-        self.server.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
-        self.server.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
+        self.oauthServer.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
+        self.oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
+        self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
 
         // Seed test client for development
         NSError *seedError = nil;
@@ -162,7 +165,7 @@
     authRequest.nonce = params[@"nonce"];
     authRequest.loginHint = params[@"login_hint"];
     
-    [self.server handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
+    [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
         if (error) {
             response.statusCode = 400;
             [response setJsonBody:@{
@@ -267,7 +270,7 @@
     tokenRequest.scope = params[@"scope"];
     tokenRequest.tfaCode = params[@"tfa_code"];
     
-    [self.server handleTokenRequest:tokenRequest completion:^(Session * _Nullable session, NSError * _Nullable error) {
+    [self.oauthServer handleTokenRequest:tokenRequest completion:^(Session * _Nullable session, NSError * _Nullable error) {
         if (error) {
             response.statusCode = 400;
             NSDictionary *errorResponse = @{
@@ -356,8 +359,8 @@
     
     // Find the session for this token (client validation already done above)
     NSString *sessionIdToRemove = nil;
-    for (NSString *sessionId in self.server.activeSessions) {
-        Session *session = self.server.activeSessions[sessionId];
+    for (NSString *sessionId in self.oauthServer.activeSessions) {
+        Session *session = self.oauthServer.activeSessions[sessionId];
         if ([session.accessToken isEqualToString:token] || [session.refreshToken isEqualToString:token]) {
             sessionIdToRemove = sessionId;
             break;
@@ -365,7 +368,7 @@
     }
 
     if (sessionIdToRemove) {
-        [self.server.activeSessions removeObjectForKey:sessionIdToRemove];
+        [self.oauthServer.activeSessions removeObjectForKey:sessionIdToRemove];
     } else {
         // Token not found - still return success for security (don't reveal if token exists)
     }

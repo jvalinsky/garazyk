@@ -406,7 +406,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, strong) NSMutableDictionary *activeSessions;
 
 /*! JWT minting service. */
-@property (nonatomic, strong) JWTMinter *jwtMinter;
+@property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
 
 /*! Key management service. */
 @property (nonatomic, strong) KeyManager *keyManager;

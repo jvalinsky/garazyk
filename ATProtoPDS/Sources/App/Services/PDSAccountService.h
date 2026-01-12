@@ -4,11 +4,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
+@class JWTMinter;
 
 @interface PDSAccountService : NSObject
 
 @property (nonatomic, weak) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
+@property (nonatomic, strong, nullable) JWTMinter *minter;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 

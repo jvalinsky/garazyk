@@ -17,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSRecordService;
 @class PDSBlobService;
 @class PDSRepositoryService;
+@class JWTMinter;
 
 extern NSString * const PDSControllerErrorDomain;
 
@@ -42,6 +43,7 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 @property (nonatomic, strong, readonly) PDSRecordService *recordService;
 @property (nonatomic, strong, readonly) PDSBlobService *blobService;
 @property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
+@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
 
