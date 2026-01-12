@@ -110,6 +110,9 @@
     
     // Verify the token
     BOOL valid = [verifier verifyJWT:token error:&error];
+    if (!valid) {
+        fprintf(stderr, "[TEST DEBUG] Verify failed with error: %s\n", [[error description] UTF8String]);
+    }
     XCTAssertTrue(valid);
     XCTAssertNil(error);
 }
