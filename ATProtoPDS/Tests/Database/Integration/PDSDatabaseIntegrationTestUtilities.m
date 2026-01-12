@@ -8,7 +8,7 @@
 #if defined(__APPLE__)
 #import <CommonCrypto/CommonCrypto.h>
 #else
-#import "CommonCrypto.h"
+#import <CommonCrypto/CommonCrypto.h>
 #endif
 
 NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integrationtest";
@@ -856,7 +856,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         dispatch_group_enter(group);
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             @autoreleasepool {
-                NSError *localError = nil;
+                __autoreleasing NSError *localError = nil;
                 [self.pool readWithDid:@"did:plc:concurrent-test" block:^(id<PDSActorStoreReader> reader) {
                     // Perform a read operation
                     PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&localError];
@@ -903,7 +903,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         dispatch_group_enter(group);
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             @autoreleasepool {
-                NSError *localError = nil;
+                __autoreleasing NSError *localError = nil;
                 NSString *did = [NSString stringWithFormat:@"did:plc:write-test-%lu", (unsigned long)i];
                 PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"write%lu.example.com", (unsigned long)i]];
 
@@ -961,13 +961,15 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     dispatch_group_enter(group);
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+            __autoreleasing NSError *tempError = nil;
             PDSDatabaseRecord *record = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:did collection:@"app.bsky.feed.post" rkey:@"isolation-test"];
-            if ([transactor putRecord:record forDid:did error:&isolationError]) {
+            if ([transactor putRecord:record forDid:did error:&tempError]) {
                 createdRecord = record;
             } else {
                 success = NO;
+                isolationError = tempError;
             }
-        } error:&isolationError];
+        } error:nil];
         dispatch_group_leave(group);
     });
 
@@ -976,14 +978,19 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     // Verify the record is now visible after transaction commit
     if (success && createdRecord) {
         [self.pool readWithDid:did block:^(id<PDSActorStoreReader> reader) {
-            PDSDatabaseRecord *fetched = [reader getRecord:createdRecord.uri forDid:did error:&isolationError];
+            __autoreleasing NSError *tempError = nil;
+            PDSDatabaseRecord *fetched = [reader getRecord:createdRecord.uri forDid:did error:&tempError];
             if (!fetched) {
                 success = NO;
-                isolationError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                 if (tempError) {
+                     isolationError = tempError;
+                 } else {
+                    isolationError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
                                                   code:PDSDatabaseIntegrationTestErrorConcurrentAccessFailed
                                               userInfo:@{NSLocalizedDescriptionKey: @"Transaction isolation failed - record not visible after commit"}];
+                 }
             }
-        } error:&isolationError];
+        } error:nil];
     }
 
     if (!success && error) {
@@ -1011,7 +1018,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         dispatch_group_enter(group);
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             @autoreleasepool {
-                NSError *localError = nil;
+                __autoreleasing NSError *localError = nil;
                 NSString *did = @"did:plc:deadlock-test";
 
                 [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
