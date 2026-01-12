@@ -164,6 +164,17 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return self.refreshTokenData && [self.refreshTokenData isValid];
 }
 
+- (NSString *)refreshAccessToken {
+    NSTimeInterval accessTokenLifetime = 3600;
+    self.accessTokenData = [SessionToken tokenWithValue:[[NSUUID UUID] UUIDString]
+                                              expiresIn:accessTokenLifetime
+                                                  scope:self.scope
+                                          isRefreshToken:NO];
+    self.accessToken = self.accessTokenData.value;
+    self.accessTokenExpiresAt = self.accessTokenData.expiresAt;
+    return self.accessToken;
+}
+
 @end
 
 @interface SessionStore ()
