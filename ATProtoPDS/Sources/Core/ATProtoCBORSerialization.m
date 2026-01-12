@@ -1,4 +1,5 @@
 #import "ATProtoCBORSerialization.h"
+#import <CoreFoundation/CoreFoundation.h>
 #import "Repository/CBOR.h"
 
 @implementation ATProtoCBORSerialization
