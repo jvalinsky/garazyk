@@ -29,11 +29,13 @@
         self.oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
         self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
 
-        // Seed test client for development
+        #ifdef DEBUG
+        // Seed test client for development only
         NSError *seedError = nil;
         if (![_database seedTestClient:&seedError]) {
             NSLog(@"Warning: Failed to seed test OAuth client: %@", seedError.localizedDescription);
         }
+        #endif
     }
     return self;
 }
@@ -77,6 +79,36 @@
         }
         return NO;
     }
+
+    // Validate URL scheme (HTTPS required in production, HTTP allowed for localhost in debug)
+    NSURL *url = [NSURL URLWithString:redirectURI];
+    if (!url) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid redirect_uri format"}];
+        }
+        return NO;
+    }
+
+    #ifndef DEBUG
+    // Production: require HTTPS
+    if (![url.scheme isEqualToString:@"https"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"redirect_uri must use HTTPS in production"}];
+        }
+        return NO;
+    }
+    #else
+    // Development: allow HTTP for localhost only
+    if ([url.scheme isEqualToString:@"http"]) {
+        NSString *host = url.host;
+        if (![host isEqualToString:@"localhost"] && ![host isEqualToString:@"127.0.0.1"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"HTTP redirect_uri only allowed for localhost in development"}];
+            }
+            return NO;
+        }
+    }
+    #endif
 
     // Check if the redirect URI is in the client's registered URIs
     NSArray *allowedURIs = client[@"redirect_uris"];
