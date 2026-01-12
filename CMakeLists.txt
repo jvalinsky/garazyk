@@ -199,6 +199,9 @@ if(NOT APPLE)
 
   # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO) which are macOS-specific
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
+
+  # DID.m uses NSURLSession - the VM's GNUstep library doesn't have NSURLSession compiled in
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
