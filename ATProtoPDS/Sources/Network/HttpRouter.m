@@ -33,7 +33,11 @@
 @interface HttpRouter ()
 
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *routes;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t routingQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t routingQueue;
+#endif
 
 @end
 
