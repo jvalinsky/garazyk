@@ -1,6 +1,7 @@
 #import "Admin/AdminService.h"
 #import "Database/PDSDatabase.h"
 #import <CommonCrypto/CommonHMAC.h>
+#import <CommonCrypto/CommonDigest.h>
 
 NSString * const AdminServiceErrorDomain = @"com.atproto.pds.admin";
 
