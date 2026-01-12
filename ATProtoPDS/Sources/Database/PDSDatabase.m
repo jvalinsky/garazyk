@@ -1465,6 +1465,14 @@ static NSDateFormatter * iso8601Formatter(void) {
 }
 
 - (BOOL)seedTestClient:(NSError **)error {
+    #ifndef DEBUG
+    if (error) {
+        *error = [NSError errorWithDomain:@"PDSDatabase"
+                                     code:-1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Test client seeding disabled in release builds"}];
+    }
+    return NO;
+    #else
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
         @"client_secret": @"test-secret",
@@ -1473,6 +1481,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         @"scope": @"atproto"
     };
     return [self createClient:testClient error:error];
+    #endif
 }
 
 @end
