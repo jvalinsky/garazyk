@@ -21,7 +21,7 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 - (instancetype)initWithKeyStore:(KeyManager *)keyStore {
     self = [super init];
     if (self) {
-        _keyStore = keyStore;
+        _keyManager = keyStore;
         _accessQueue = dispatch_queue_create("com.atproto.pds.keyrotation", DISPATCH_QUEUE_SERIAL);
     }
     return self;
@@ -31,7 +31,7 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     __block SecKeyRef keyRef = NULL;
     
     dispatch_sync(self.accessQueue, ^{
-        KeyPair *activeKeyPair = [self.keyStore getActiveKeyPair:nil];
+        KeyPair *activeKeyPair = [self.keyManager getActiveKeyPair:nil];
         if (activeKeyPair) {
             keyRef = activeKeyPair.privateKey;
             CFRetain(keyRef);
@@ -45,7 +45,7 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     __block NSMutableArray *validKeys = [NSMutableArray array];
     
     dispatch_sync(self.accessQueue, ^{
-        NSArray<KeyPair *> *allKeyPairs = [self.keyStore allKeyPairs:nil];
+        NSArray<KeyPair *> *allKeyPairs = [self.keyManager allKeyPairs:nil];
         for (KeyPair *keyPair in allKeyPairs) {
             if (keyPair.isActive) {
                 [validKeys addObject:(__bridge id)keyPair.publicKey];
@@ -62,11 +62,11 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     dispatch_sync(self.accessQueue, ^{
         // Generate a new key pair
         NSError *error = nil;
-        KeyPair *newKeyPair = [self.keyStore generateKeyPairWithAlgorithm:@"ECDSA" keySize:256 error:&error];
+        KeyPair *newKeyPair = [self.keyManager generateKeyPairWithAlgorithm:@"ECDSA" keySize:256 error:&error];
         
         if (newKeyPair) {
             // Set the new key as active
-            success = [self.keyStore setKeyPairActive:newKeyPair.keyID error:&error];
+            success = [self.keyManager setKeyPairActive:newKeyPair.keyID error:&error];
             
             if (success) {
                 // Optionally, deactivate old keys after a grace period
@@ -86,9 +86,9 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     __block NSError *localError = nil;
     
     dispatch_sync(self.accessQueue, ^{
-        KeyPair *active = [self.keyStore getActiveKeyPair:&localError];
+        KeyPair *active = [self.keyManager getActiveKeyPair:&localError];
         if (active) {
-            signature = [self.keyStore signData:data withKeyID:active.keyID error:&localError];
+            signature = [self.keyManager signData:data withKeyID:active.keyID error:&localError];
         }
     });
     
@@ -100,7 +100,7 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     NSArray *publicKeys = [self allValidPublicKeys];
     for (id keyObj in publicKeys) {
         SecKeyRef publicKey = (__bridge SecKeyRef)keyObj;
-        if ([self.keyStore verifySignature:signature forData:data withKey:publicKey error:nil]) {
+        if ([self.keyManager verifySignature:signature forData:data withKey:publicKey error:nil]) {
             return YES;
         }
     }
