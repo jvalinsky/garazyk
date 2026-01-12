@@ -38,6 +38,24 @@ BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef s
 int SecRandomCopyBytes(const void *rnd, size_t count, void *bytes);
 extern const void * kSecRandomDefault;
 
+// Keychain Constants
+extern const void * kSecClass;
+extern const void * kSecClassGenericPassword;
+extern const void * kSecAttrService;
+extern const void * kSecAttrAccount;
+extern const void * kSecValueData;
+extern const void * kSecReturnData;
+extern const void * kSecMatchLimit;
+extern const void * kSecMatchLimitOne;
+extern const void * kSecValueRef;
+extern const void * kSecAttrAccessible;
+extern const void * kSecAttrAccessibleAfterFirstUnlock;
+
+// Keychain Functions
+OSStatus SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result);
+OSStatus SecItemDelete(CFDictionaryRef query);
+OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result);
+
 #endif // !defined(__APPLE__)
 
 #endif /* Security_Compat_h */
