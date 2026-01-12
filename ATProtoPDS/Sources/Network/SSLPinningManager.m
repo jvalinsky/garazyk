@@ -65,12 +65,14 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
         return [challenge.sender respondsToSelector:@selector(performDefaultHandlingForAuthenticationChallenge:)];
     }
 
+#if defined(__APPLE__)
     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
         SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
         if (!serverTrust) return NO;
 
         return [self validateServerTrust:serverTrust forDomain:domain];
     }
+#endif
 
     return NO;
 }
@@ -160,6 +162,7 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler {
 
+#if defined(__APPLE__)
     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
         NSString *host = challenge.protectionSpace.host;
 
@@ -175,6 +178,11 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
         // For other authentication methods, use default handling
         completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
     }
+#else
+    // On Linux/GNUstep, serverTrust might not be available on NSURLProtectionSpace
+    // Default handling
+    completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+#endif
 }
 
 @end
