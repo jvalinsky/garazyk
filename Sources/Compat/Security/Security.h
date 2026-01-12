@@ -14,6 +14,7 @@ typedef int32_t OSStatus;
 
 typedef struct __CFType *CFTypeRef;
 typedef struct __CFDictionary *CFDictionaryRef;
+typedef struct __CFDictionary *CFMutableDictionaryRef;
 typedef struct __CFString *CFStringRef;
 typedef struct __CFData *CFDataRef;
 typedef struct __CFBoolean *CFBooleanRef;
