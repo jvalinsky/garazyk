@@ -79,6 +79,16 @@ NS_ASSUME_NONNULL_BEGIN
         XCTFail(__VA_ARGS__); \
     }
 
+#define XCTAssertGreaterThanOrEqual(expression1, expression2, ...) \
+    if ((expression1) < (expression2)) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
+#define XCTAssertLessThanOrEqual(expression1, expression2, ...) \
+    if ((expression1) > (expression2)) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
 #define XCTAssertNoThrow(expression, ...) \
     @try { \
         (expression); \
@@ -126,7 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (readonly, copy) NSArray<XCTestCase *> *tests;
 
 + (instancetype)testSuiteWithName:(NSString *)name;
-- (void)addTest:(XCTestCase *)test; // Actually accepts XCTest (Case or Suite)
+- (void)addTest:(id)test; // Accepts XCTestCase or XCTestSuite
 - (void)performTest:(nullable id)run;
 @end
 
