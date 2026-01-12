@@ -9,10 +9,10 @@
 @interface MockExternalServer : NSObject
 
 @property (nonatomic, strong) HttpServer *server;
-@property (nonatomic, assign) UInt16 port;
+@property (nonatomic, assign) uint16_t port;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *mockResponses;
 
-- (instancetype)initWithPort:(UInt16)port;
+- (instancetype)initWithPort:(uint16_t)port;
 - (void)start;
 - (void)stop;
 - (void)addMockResponseForPath:(NSString *)path response:(NSDictionary *)response;
@@ -21,7 +21,7 @@
 
 @implementation MockExternalServer
 
-- (instancetype)initWithPort:(UInt16)port {
+- (instancetype)initWithPort:(uint16_t)port {
     self = [super init];
     if (self) {
         _port = port;
