@@ -33,6 +33,9 @@ static inline void CFRelease(CFTypeRef cf) {
     (void)cf;
 }
 
+#define kCFBooleanTrue ((CFBooleanRef)1)
+#define kCFBooleanFalse ((CFBooleanRef)0)
+
 static inline int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
     (void)drbg;
     arc4random_buf(bytes, count);
