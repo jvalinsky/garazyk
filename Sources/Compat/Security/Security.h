@@ -80,6 +80,7 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecKeyAlgorithmRSASignatureMessagePSSSHA256 ((SecKeyAlgorithm)0)
 #define kSecKeyAlgorithmECDSASignatureRFC6979SHA256 ((SecKeyAlgorithm)0)
 #define kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256 ((SecKeyAlgorithm)0)
+#define kSecKeyAlgorithmECDSASignatureMessageX962SHA256 ((SecKeyAlgorithm)0)
 
 #define kSecAttrKeyType ((CFStringRef)0)
 #define kSecAttrKeyTypeRSA ((CFStringRef)1)
@@ -87,6 +88,7 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecAttrKeySizeInBits ((CFStringRef)3)
 #define kSecAttrKeyClass ((CFStringRef)4)
 #define kSecAttrKeyClassPrivate ((CFStringRef)5)
+#define kSecAttrKeyClassPublic ((CFStringRef)6)
 
 #endif
 
