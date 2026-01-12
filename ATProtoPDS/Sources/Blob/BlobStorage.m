@@ -140,7 +140,14 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     }
 
     NSError *readError = nil;
+#if defined(__APPLE__)
     NSData *data = [NSData dataWithContentsOfURL:blobURL options:0 error:&readError];
+#else
+    NSData *data = [NSData dataWithContentsOfURL:blobURL];
+    if (!data) {
+        readError = [NSError errorWithDomain:@"BlobStorage" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to read blob data"}];
+    }
+#endif
 
     if (!data) {
         if (error) {
