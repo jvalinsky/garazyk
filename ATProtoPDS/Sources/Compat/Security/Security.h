@@ -95,6 +95,7 @@ extern const void * kSecAttrService;
 extern const void * kSecAttrAccount;
 extern const void * kSecValueData;
 extern const void * kSecReturnData;
+extern const void * kSecReturnRef;
 extern const void * kSecMatchLimit;
 extern const void * kSecMatchLimitOne;
 extern const void * kSecValueRef;
