@@ -221,6 +221,13 @@ BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef s
     }
 
     EVP_MD_CTX_free(mdctx);
+    if (result != 1) {
+        fprintf(stderr, "[SECURITY DEBUG] Verify failed. Result: %d. Sig len: %lu. Msg len: %lu\n", result, (unsigned long)[sig length], (unsigned long)[msg length]);
+        unsigned long err = ERR_get_error();
+        char buf[256];
+        ERR_error_string_n(err, buf, sizeof(buf));
+        fprintf(stderr, "[SECURITY DEBUG] OpenSSL Error: %s\n", buf);
+    }
     return (result == 1);
 }
 
@@ -242,6 +249,7 @@ CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFData
                  sig = OPENSSL_malloc(sigLen);
                  if(sig && EVP_DigestSignFinal(mdctx, sig, &sigLen) > 0) {
                      resultData = [NSData dataWithBytes:sig length:sigLen];
+                 fprintf(stderr, "[SECURITY DEBUG] Created signature. Len: %lu\n", (unsigned long)sigLen);
                  }
                  if(sig) OPENSSL_free(sig);
              }
