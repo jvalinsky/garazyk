@@ -64,6 +64,8 @@ int main(int argc, char * argv[]) {
             @"XrpcHandlerTests",
             @"PDSCLITests",
             @"ActorStoreTests",
+            @"PDSNewArchitectureTests",
+            @"DatabaseMigrationTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",
             @"PDSIntegrationTests",
