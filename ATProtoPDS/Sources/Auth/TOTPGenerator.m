@@ -1,5 +1,6 @@
 #import "Auth/TOTPGenerator.h"
 #import "Auth/CryptoUtils.h"
+#import <Security/Security.h>
 
 @interface TOTPGenerator ()
 @property (nonatomic, strong) NSData *secret;
