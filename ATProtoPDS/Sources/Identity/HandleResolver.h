@@ -15,8 +15,12 @@ typedef NS_ENUM(NSInteger, HandleError) {
 
 @interface HandleResolver : NSObject
 
+#if defined(__APPLE__)
 @property (nonatomic, strong) NSURLSession *session;
-@property (nonatomic, assign, readonly) BOOL skipSSRFCheck;  // Made readonly for security
+#else
+@property (nonatomic, strong) NSURLConnection *session;
+#endif
+@property (nonatomic, assign, readonly) BOOL skipSSRFCheck;
 @property (nonatomic, strong) NSCache<NSString *, NSString *> *resolutionCache;
 @property (nonatomic, assign) NSTimeInterval cacheExpirationInterval;
 @property (nonatomic, assign) NSUInteger rateLimitPerMinute;

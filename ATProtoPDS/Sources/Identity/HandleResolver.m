@@ -14,10 +14,14 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 - (instancetype)init {
     self = [super init];
     if (self) {
+#if defined(__APPLE__)
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
         config.timeoutIntervalForRequest = 10.0;
         config.timeoutIntervalForResource = 30.0;
         _session = [NSURLSession sessionWithConfiguration:config];
+#else
+        _session = nil;  // NSURLConnection uses class methods, no session object needed
+#endif
         _resolutionCache = [[NSCache alloc] init];
         _cacheExpirationInterval = 300.0; // 5 minutes
         _rateLimitPerMinute = 100; // Allow 100 resolutions per minute
@@ -100,7 +104,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 }
 
 - (void)resolveHandleViaHTTPS:(NSString *)handle
-                   completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+                    completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
     
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
     NSURL *url = [NSURL URLWithString:urlString];
@@ -113,18 +117,17 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         return;
     }
     
+#if defined(__APPLE__)
     NSURLSessionDataTask *task = [self.session dataTaskWithURL:url
                                               completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
-            // Pass error up to main method for DNS fallback
             completion(nil, error);
             return;
         }
 
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (httpResponse.statusCode != 200) {
-            // Pass error up to main method for DNS fallback
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
                                                       code:HandleErrorNotFound
                                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving handle", (long)httpResponse.statusCode]}];
@@ -151,7 +154,6 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
             return;
         }
         
-        // Basic validation that it's a DID
         if (![did hasPrefix:@"did:"]) {
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
                                                       code:HandleErrorResolutionFailed
@@ -163,6 +165,61 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         completion(did, nil);
     }];
     [task resume];
+    
+#else
+    // GNUstep: Use NSURLConnection with synchronous request on background queue
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSURLRequest *request = [NSURLRequest requestWithURL:url];
+        NSURLResponse *response = nil;
+        NSError *error = nil;
+        NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (error) {
+                completion(nil, error);
+                return;
+            }
+            
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+            if (httpResponse.statusCode != 200) {
+                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
+                                                          code:HandleErrorNotFound
+                                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving handle", (long)httpResponse.statusCode]}];
+                completion(nil, resolveError);
+                return;
+            }
+            
+            if (!data) {
+                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
+                                                          code:HandleErrorResolutionFailed
+                                                      userInfo:@{NSLocalizedDescriptionKey: @"No data received from handle resolution"}];
+                completion(nil, resolveError);
+                return;
+            }
+            
+            NSString *did = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            did = [did stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            
+            if (!did || did.length == 0) {
+                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
+                                                          code:HandleErrorResolutionFailed
+                                                      userInfo:@{NSLocalizedDescriptionKey: @"Empty DID in handle resolution response"}];
+                completion(nil, resolveError);
+                return;
+            }
+            
+            if (![did hasPrefix:@"did:"]) {
+                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
+                                                          code:HandleErrorResolutionFailed
+                                                      userInfo:@{NSLocalizedDescriptionKey: @"Response does not contain a valid DID"}];
+                completion(nil, resolveError);
+                return;
+            }
+            
+            completion(did, nil);
+        });
+    });
+#endif
 }
 
 - (void)resolveHandles:(NSArray<NSString *> *)handles
