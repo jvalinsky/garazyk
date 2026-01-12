@@ -19,6 +19,10 @@
 @property (nonatomic, strong) NSMutableArray *middlewares;
 @property (nonatomic, assign) int socketFileDescriptor;
 @property (nonatomic, assign) BOOL listenerReady;
+@property (nonatomic, strong) id<PDSNetworkListener> listener;
+@property (nonatomic, copy) RequestHandler requestHandler;
+@property (nonatomic, strong) NSMutableDictionary *pathHandlers;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 
 @end

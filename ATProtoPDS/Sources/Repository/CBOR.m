@@ -1,11 +1,12 @@
 #import "Repository/CBOR.h"
+#import "Compat/Endian.h"
 
 #pragma mark - CBORValue Implementation
 
 @implementation CBORValue
 
 + (instancetype)unsignedInteger:(NSUInteger)value {
-    return [[self alloc] initWithUnsignedInteger:@(value)];
+    return [[self alloc] initWithUnsignedNumber:@(value)];
 }
 
 + (instancetype)negativeInteger:(NSInteger)value {
@@ -52,7 +53,7 @@
     return self;
 }
 
-- (instancetype)initWithUnsignedInteger:(NSNumber *)value {
+- (instancetype)initWithUnsignedNumber:(NSNumber *)value {
     self = [self initWithType:CBORTypeUnsignedInteger];
     if (self) {
         _unsignedInteger = value;
