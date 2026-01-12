@@ -305,13 +305,18 @@ async function handleCidDecode() {
     
     try {
         const decoded = CIDDecoder.decode(cid);
+        if (decoded.error) {
+            resultEl.innerHTML = `<p class="error">${escapeHtml(decoded.error)}</p>`;
+            return;
+        }
+        
         // Custom render for the new style
         let html = '<div style="margin-top:20px">';
         html += `<h3>CID Version ${decoded.version}</h3>`;
         html += '<table><tr><th>Property</th><th>Value</th></tr>';
-        html += `<tr><td>Codec</td><td>${decoded.codec} (0x${decoded.code.toString(16)})</td></tr>`;
-        html += `<tr><td>Multihash</td><td>${decoded.multihashName} (0x${decoded.multihashCode.toString(16)})</td></tr>`;
-        html += `<tr><td>Digest Size</td><td>${decoded.size} bytes</td></tr>`;
+        html += `<tr><td>Codec</td><td>${decoded.codecName} (${decoded.codec})</td></tr>`;
+        html += `<tr><td>Hash Algorithm</td><td>${decoded.multihash.algorithm} (${decoded.multihash.algorithmCode})</td></tr>`;
+        html += `<tr><td>Digest Size</td><td>${decoded.multihash.size} bytes</td></tr>`;
         html += '</table>';
         html += '</div>';
         

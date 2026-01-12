@@ -97,10 +97,15 @@
             CID *cid = [CID cidWithMultihash:digest codec:0x71]; // dag-cbor
             record.cid = [cid stringValue];
         } else {
-            record.cid = [NSString stringWithFormat:@"bafkrei%@", [[NSUUID UUID] UUIDString].lowercaseString];
+            // Fallback: use sha256 of JSON
+            NSData *jsonData = [jsonValue dataUsingEncoding:NSUTF8StringEncoding];
+            NSData *digest = [CID sha256Digest:jsonData];
+            CID *cid = [CID cidWithMultihash:digest codec:0x71];
+            record.cid = [cid stringValue];
         }
     } else {
-        record.cid = [NSString stringWithFormat:@"bafkrei%@", [[NSUUID UUID] UUIDString].lowercaseString];
+        // Last resort fallback
+        record.cid = @"bafyreih5v3k4z5n5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q";
     }
 
     BOOL success = [store putRecord:record forDid:did error:&error];

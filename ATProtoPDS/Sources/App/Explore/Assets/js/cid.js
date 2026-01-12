@@ -121,6 +121,8 @@ export class CIDDecoder {
         
         for (let i = 0; i < str.length; i++) {
             const c = str[i].toLowerCase();
+            if (c === '-' || c === ' ' || c === '\n' || c === '\r' || c === '\t') continue;
+            
             let val = -1;
             for (let j = 0; j < alphabet.length; j++) {
                 if (alphabet[j] === c) {
@@ -128,7 +130,10 @@ export class CIDDecoder {
                     break;
                 }
             }
-            if (val === -1) continue;
+            if (val === -1) {
+                console.error('Invalid base32 character:', c);
+                return null;
+            }
             
             buffer = (buffer << 5) | val;
             bits += 5;
