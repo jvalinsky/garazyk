@@ -51,13 +51,12 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     dispatch_sync(self.accessQueue, ^{
         NSArray<KeyPair *> *allKeyPairs = [self.keyManager allKeyPairs:nil];
         for (KeyPair *keyPair in allKeyPairs) {
-            if (keyPair.isActive) {
-#if defined(__APPLE__)
+            // For verification, we check all available keys (active and inactive)
+            #if defined(__APPLE__)
                 [validKeys addObject:(__bridge id)keyPair.publicKey];
-#else
+            #else
                 [validKeys addObject:keyPair.publicKey];
-#endif
-            }
+            #endif
         }
     });
     
