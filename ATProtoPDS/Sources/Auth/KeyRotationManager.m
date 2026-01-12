@@ -3,8 +3,6 @@
 
 NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 
-#import <CoreFoundation/CoreFoundation.h>
-
 @interface KeyRotationManager ()
 
 @property (nonatomic, strong) PDSDatabase *database;
