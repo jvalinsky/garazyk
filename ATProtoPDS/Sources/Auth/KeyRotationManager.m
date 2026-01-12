@@ -75,4 +75,36 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     return success;
 }
 
+- (nullable NSData *)signData:(NSData *)data error:(NSError **)error {
+    __block NSData *signature = nil;
+    __block NSError *localError = nil;
+    
+    dispatch_sync(self.accessQueue, ^{
+        KeyPair *active = [self.keyStore getActiveKeyPair:&localError];
+        if (active) {
+            signature = [self.keyStore signData:data withKeyID:active.keyID error:&localError];
+        }
+    });
+    
+    if (error) *error = localError;
+    return signature;
+}
+
+- (BOOL)verifySignature:(NSData *)signature forData:(NSData *)data error:(NSError **)error {
+    NSArray *publicKeys = [self allValidPublicKeys];
+    for (id keyObj in publicKeys) {
+        SecKeyRef publicKey = (__bridge SecKeyRef)keyObj;
+        if ([self.keyStore verifySignature:signature forData:data withKey:publicKey error:nil]) {
+            return YES;
+        }
+    }
+    
+    if (error) {
+        *error = [NSError errorWithDomain:KeyRotationManagerErrorDomain
+                                     code:KeyRotationManagerErrorKeyNotFound
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Signature verification failed with all active keys"}];
+    }
+    return NO;
+}
+
 @end
