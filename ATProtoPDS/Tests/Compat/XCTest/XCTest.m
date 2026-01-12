@@ -76,6 +76,7 @@
 - (void)tearDown {}
 
 - (void)performTest:(id)run {
+    fprintf(stderr, "[XCTest] Test %s started\n", [self.name UTF8String]);
     @try {
         [self setUp];
         if ([self respondsToSelector:_selector]) {
