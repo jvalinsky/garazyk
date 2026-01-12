@@ -243,7 +243,7 @@
 }
 
 - (void)testConcurrentAccessPatterns {
-    XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Concurrent access"];
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Concurrent access"];
 
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     dispatch_group_t group = dispatch_group_create();
@@ -268,7 +268,7 @@
         [expectation fulfill];
     });
 
-    [self waitForExpectations:@[expectation] timeout:5.0];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
 
 - (void)testPoolExhaustionHandling {
@@ -300,7 +300,7 @@
 }
 
 - (void)testEvictionUnderLoad {
-    XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Eviction under load"];
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Eviction under load"];
 
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 
@@ -315,14 +315,14 @@
     dispatch_async(queue, ^{
         // Simulate load by accessing stores
         for (int i = 0; i < 10; i++) {
-            NSString *did = [NSString stringWithFormat:@"did:plc:load%d", i % self.pool.maxSize];
+            NSString *did = [NSString stringWithFormat:@"did:plc:load%lu", i % self.pool.maxSize];
             [self.pool storeForDid:did error:nil];
         }
         [self.pool evictUnusedStores];
         [expectation fulfill];
     });
 
-    [self waitForExpectations:@[expectation] timeout:5.0];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
     // Verify pool is still functional
     XCTAssertLessThanOrEqual(self.pool.currentSize, self.pool.maxSize);
 }
