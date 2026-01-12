@@ -39,7 +39,10 @@
 - (void)testCurrentSigningKey {
     // Initially, no keys should exist
     SecKeyRef key = [self.keyRotationManager currentSigningKey];
-    XCTAssertTrue(key == NULL);
+    if (key != NULL) {
+        fprintf(stderr, "[TEST DEBUG] currentSigningKey returned unexpected key: %p\n", key);
+    }
+    XCTAssertTrue(key == NULL, @"Key should be NULL initially but was %p", key);
     
     // Generate a key
     NSError *error = nil;
