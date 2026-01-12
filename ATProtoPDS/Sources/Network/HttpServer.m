@@ -4,6 +4,8 @@
 #import "Network/RateLimiter.h"
 #import "Network/PDSNetworkTransport.h"
 
+@class HttpRoute;
+
 @interface HttpServer ()
 
 @property (nonatomic, readwrite) NSUInteger port;
