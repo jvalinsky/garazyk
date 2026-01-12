@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <Security/Security.h>
 #import "PDSController.h"
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
