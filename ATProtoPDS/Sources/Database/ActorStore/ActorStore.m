@@ -14,7 +14,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
+#if defined(GNUSTEP)
+@property (nonatomic, assign) dispatch_queue_t transactionQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t transactionQueue;
+#endif
 @property (nonatomic, assign) SecKeyRef signingKey;
 
 @end

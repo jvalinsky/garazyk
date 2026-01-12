@@ -38,7 +38,9 @@ if(NOT APPLE)
     endif()
     
     include_directories(/usr/include/GNUstep)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
+    if(NOT APPLE)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat)
+    endif()
 endif()
 
 #=============================
@@ -141,6 +143,18 @@ file(GLOB_RECURSE ATProtoPDS_C_SOURCES "ATProtoPDS/Sources/**/*.c")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*main\.m$")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/tests/.*")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Tests/.*")
+
+if(APPLE)
+    list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/.*")
+endif()
+
+# Handle platform-specific WebSocketServer
+if(NOT APPLE)
+    list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*WebSocketServer_Mac\.m$")
+    list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Sync/WebSocketServer_Linux.m") 
+else()
+     # Mac default glob picks up WebSocketServer_Mac.m
+endif()
 
 # Handle platform-specific network transport implementations
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\.m$")
@@ -300,11 +314,9 @@ if(BUILD_TESTS)
     find_library(XCTest XCTest PATHS "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/Library/Frameworks" REQUIRED)
     target_link_libraries(AllTests PRIVATE ${XCTest})
   else()
-     # On GNUstep/Linux we need a test framework. 
-     # Usually gnustep-base provides NSAutoreleasePool etc, but XCTest is Apple specific.
-     # We might need a port of XCTest or use a different test runner.
-     # For now, we'll try to link what we have, but if the tests import XCTest, they will fail on Linux.
-     # The instructions don't explicitly ask to port tests yet, just build system setup.
+     # On GNUstep/Linux we need a test framework shim.
+     target_include_directories(AllTests PRIVATE ATProtoPDS/Tests/Compat)
+     target_sources(AllTests PRIVATE ATProtoPDS/Tests/Compat/XCTest/XCTest.m)
   endif()
 
   target_compile_definitions(AllTests PRIVATE

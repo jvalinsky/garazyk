@@ -65,6 +65,39 @@ static const uint8_t WS_MASK = 0x80;
     return self;
 }
 
+- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection {
+    self = [super init];
+    if (self) {
+        _connection = connection;
+        _state = WebSocketConnectionStateConnected;
+        _identifier = [NSUUID UUID];
+        _readBuffer = [NSMutableData data];
+        _writeBuffer = [NSMutableData data];
+        _writeQueue = dispatch_queue_create("com.atproto.pds.websocket.write", DISPATCH_QUEUE_SERIAL);
+        _messageQueue = [NSMutableArray array];
+        _heartbeatInterval = 30.0;
+        _heartbeatTimeout = 10.0;
+        _waitingForPong = NO;
+        
+        [self setupConnectionHandlers];
+    }
+    return self;
+}
+
+- (void)setupConnectionHandlers {
+    _connectionQueue = dispatch_queue_create("com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
+    
+    __weak typeof(self) weakSelf = self;
+    self.connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        [weakSelf handlePDSStateChange:state error:error];
+    };
+    
+    [self.connection startWithQueue:_connectionQueue];
+    
+    // If already connected/ready (which it might be for accepted sockets), trigger read
+    [self startReading];
+}
+
 - (NSDictionary<NSString *, NSString *> *)parseQueryParams:(NSString *)queryString {
     if (queryString.length == 0) {
         return nil;

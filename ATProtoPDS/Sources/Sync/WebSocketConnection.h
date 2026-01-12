@@ -43,6 +43,7 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 @property (nonatomic, copy, nullable) NSString *closeReason;
 
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path;
+- (instancetype)initWithConnection:(id)connection;
 - (BOOL)connect:(NSError **)error;
 - (void)close;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
