@@ -20,6 +20,7 @@
 }
 
 - (void)testCaseWillStart:(XCTestCase *)testCase {
+    printf("Test Case '%s' started.\n", [testCase.name UTF8String]);
     self.testCount++;
 }
 
