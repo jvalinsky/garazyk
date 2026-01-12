@@ -1,4 +1,5 @@
 #import "Repository/CBOR.h"
+#import <Security/Security.h>
 
 #pragma mark - CBORValue Implementation
 

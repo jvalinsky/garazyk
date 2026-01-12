@@ -1,5 +1,6 @@
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
+#import <Security/Security.h>
 
 #pragma mark - CARBlock Implementation
 
