@@ -7,7 +7,7 @@
 #endif
 #import <objc/runtime.h>
 
-@interface SimpleTestObserver : NSObject
+@interface SimpleTestObserver : NSObject <XCTestObservation>
 @property (nonatomic, assign) int failureCount;
 @property (nonatomic, assign) int testCount;
 @property (nonatomic, assign) int unexpectedFailureCount;
