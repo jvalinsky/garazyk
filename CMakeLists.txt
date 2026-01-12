@@ -192,6 +192,10 @@ endif()
 if(NOT APPLE)
   # AppDelegate is now guarded with ifdefs and can be compiled on Linux
   # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*AppDelegate\.m$")
+
+  # KeyManager uses extensive Security framework APIs not available on Linux
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManager\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationManager\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
