@@ -3,10 +3,18 @@
 
 NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 
+#import <CoreFoundation/CoreFoundation.h>
+
 @interface KeyRotationManager ()
 
-@property (nonatomic, strong) KeyManager *keyStore;
+@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) KeyManager *keyManager;
+@property (nonatomic, strong) NSTimer *rotationTimer;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t accessQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t accessQueue;
+#endif
 
 @end
 
