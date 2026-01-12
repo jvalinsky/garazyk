@@ -143,6 +143,42 @@ static inline void CFRelease(CFTypeRef cf) {
     (void)cf;
 }
 
+// CFHost stubs for HandleResolver.m
+static inline CFHostRef CFHostCreateWithName(CFAllocatorRef allocator, CFStringRef hostname) {
+    (void)allocator;
+    (void)hostname;
+    return (CFHostRef)malloc(sizeof(void *));
+}
+
+static inline Boolean CFHostStartInfoResolution(CFHostRef host, CFHostInfoType info, CFStreamError *error) {
+    (void)host;
+    (void)info;
+    (void)error;
+    return false;
+}
+
+static inline CFArrayRef CFHostGetAddressing(CFHostRef host, Boolean *hasName) {
+    (void)host;
+    (void)hasName;
+    return (CFArrayRef)malloc(sizeof(void *));
+}
+
+static inline CFIndex CFArrayGetCount(CFArrayRef theArray) {
+    (void)theArray;
+    return 0;
+}
+
+static inline const void *CFArrayGetValueAtIndex(CFArrayRef theArray, CFIndex idx) {
+    (void)theArray;
+    (void)idx;
+    return NULL;
+}
+
+static inline const UInt8 *CFDataGetBytePtr(CFDataRef theData) {
+    (void)theData;
+    return NULL;
+}
+
 // CFRunLoop stubs for server_main.m
 typedef struct __CFRunLoop *CFRunLoopRef;
 typedef struct __CFRunLoopMode *CFRunLoopModeRef;
