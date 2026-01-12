@@ -5,11 +5,13 @@
 @implementation CBORValue
 
 + (instancetype)unsignedInteger:(NSUInteger)value {
-    return [[self alloc] initWithUnsignedInteger:@(value)];
+    CBORValue *result = [[CBORValue alloc] initWithUnsignedInteger:@(value)];
+    return result;
 }
 
 + (instancetype)negativeInteger:(NSInteger)value {
-    return [[self alloc] initWithNegativeInteger:@(value)];
+    CBORValue *result = [[CBORValue alloc] initWithNegativeInteger:@(value)];
+    return result;
 }
 
 + (instancetype)byteString:(NSData *)data {

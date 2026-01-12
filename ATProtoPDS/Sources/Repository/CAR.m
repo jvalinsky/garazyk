@@ -41,7 +41,14 @@
 }
 
 + (instancetype)readFromPath:(NSString *)path error:(NSError **)error {
+#if defined(__APPLE__)
     NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+#else
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    if (!data && error) {
+        *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+    }
+#endif
     if (!data) {
         return nil;
     }
