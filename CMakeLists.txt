@@ -249,6 +249,8 @@ target_compile_definitions(atprotopds-cli PRIVATE
 set_target_properties(atprotopds-cli PROPERTIES
   OUTPUT_NAME "atprotopds-cli"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  BUILD_RPATH "/usr/lib"
+  INSTALL_RPATH "/usr/lib"
 )
 
 # Server Executable
@@ -274,6 +276,8 @@ target_compile_definitions(atprotopds-server PRIVATE
 set_target_properties(atprotopds-server PROPERTIES
   OUTPUT_NAME "atprotopds"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  BUILD_RPATH "/usr/lib"
+  INSTALL_RPATH "/usr/lib"
 )
 
 #=============================
