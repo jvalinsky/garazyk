@@ -17,7 +17,7 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 @interface WebSocketServer ()
 
 @property (nonatomic, strong) nw_listener_t listener;
-@property (nonatomic, assign) dispatch_queue_t listenerQueue;
+@property (nonatomic, strong) dispatch_queue_t listenerQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, WebSocketConnection *> *connectionsByFileDescriptor;
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
 

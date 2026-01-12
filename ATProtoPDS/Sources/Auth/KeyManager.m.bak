@@ -82,7 +82,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 @interface KeyManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, KeyPair *> *keyPairs;
-@property (nonatomic, assign) dispatch_queue_t accessQueue;
+@property (nonatomic, strong) dispatch_queue_t accessQueue;
 @end
 
 @implementation KeyManager
