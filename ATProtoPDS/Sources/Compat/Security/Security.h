@@ -46,8 +46,12 @@ typedef const void * SecCertificateRef;
 typedef const void * SecPolicyRef;
 #endif
 
+@interface ShimSecKey : NSObject
+@property (nonatomic, assign) EVP_PKEY *pkey;
+@end
+
 #ifndef SecKeyRef
-typedef EVP_PKEY* SecKeyRef;
+typedef ShimSecKey* SecKeyRef;
 #endif
 
 // Attribute Constants
