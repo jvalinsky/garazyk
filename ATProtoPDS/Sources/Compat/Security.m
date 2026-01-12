@@ -240,4 +240,15 @@ SecPolicyRef SecPolicyCreateBasicX509() { return NULL; }
 OSStatus SecTrustCreateWithCertificates(CFTypeRef certificates, CFTypeRef policies, SecTrustRef *trust) { return errSecSuccess; }
 OSStatus SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result) { return errSecSuccess; }
 
+// CoreFoundation Shims
+void CFRelease(CFTypeRef cf) {
+    if (cf) {
+        [(id)cf release];
+    }
+}
+
+void CFRunLoopRun(void) {
+    [[NSRunLoop currentRunLoop] run];
+}
+
 #endif

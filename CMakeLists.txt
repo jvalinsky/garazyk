@@ -125,6 +125,7 @@ else()
         OpenSSL::SSL
         OpenSSL::Crypto
         SQLite3::SQLite3
+        sqlite3
         ${DISPATCH_LIB}
         ${BLOCKS_RUNTIME_LIB}
         ${QRENCODE_LIB}
