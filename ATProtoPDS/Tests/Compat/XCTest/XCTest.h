@@ -45,7 +45,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
 #define XCTAssertEqualObjects(expression1, expression2, ...) \
-    if (![expression1 isEqual:expression2] && (expression1 != expression2)) { \
+    if (![expression1 isEqual:expression2] && ((id)expression1 != (id)expression2)) { \
         XCTFail(__VA_ARGS__); \
     }
 
@@ -80,6 +80,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)notifyTestCase:(XCTestCase *)testCase didFailWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber;
 @end
 
+@interface XCTestExpectation : NSObject
+@property (copy) NSString *description;
+@property (nonatomic, assign) BOOL fulfilled;
+- (void)fulfill;
+@end
+
 @interface XCTestCase : NSObject
 @property (readonly, copy) NSString *name;
 - (instancetype)initWithSelector:(SEL)selector;
@@ -88,6 +94,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)performTest:(nullable id)run;
 // Assertion support
 - (void)recordFailureWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber expected:(BOOL)expected;
+// Async testing
+- (XCTestExpectation *)expectationWithDescription:(NSString *)description;
+- (void)waitForExpectationsWithTimeout:(NSTimeInterval)timeout handler:(void (^ _Nullable)(NSError * _Nullable error))handler;
 @end
 
 @interface XCTestSuite : NSObject
