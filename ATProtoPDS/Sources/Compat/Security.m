@@ -28,6 +28,7 @@ const void * kSecAttrService = @"svce";
 const void * kSecAttrAccount = @"acct";
 const void * kSecValueData = @"v_Data";
 const void * kSecReturnData = @"r_Data";
+const void * kSecReturnRef = @"r_Ref";
 const void * kSecMatchLimit = @"m_Limit";
 const void * kSecMatchLimitOne = @"m_LimitOne";
 const void * kSecValueRef = @"v_Ref";
