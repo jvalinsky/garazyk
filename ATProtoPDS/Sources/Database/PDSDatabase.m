@@ -1,6 +1,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import <Security/Security.h>
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
