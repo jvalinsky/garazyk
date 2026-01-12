@@ -304,9 +304,10 @@ if(BUILD_TESTS)
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/test_main.m")
   
   # Exclude problematic tests (preserved from original)
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Integration/.*")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
+  # Exclude top-level Integration tests only
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/.*")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
