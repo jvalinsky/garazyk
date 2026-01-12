@@ -43,7 +43,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable instancetype)cidFromString:(NSString *)string {
-    fprintf(stderr, "cidFromString: %s\n", [string UTF8String]);
+    // fprintf(stderr, "cidFromString: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return nil;
     }
