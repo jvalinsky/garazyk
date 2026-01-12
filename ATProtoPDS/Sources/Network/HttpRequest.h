@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
                      queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                          version:(NSString *)version
                          headers:(NSDictionary<NSString *, NSString *> *)headers
-                            body:(NSData *)body
+                            body:(nullable NSData *)body
                     remoteAddress:(NSString *)remoteAddress;
 
 - (NSString *)headerForKey:(NSString *)key;

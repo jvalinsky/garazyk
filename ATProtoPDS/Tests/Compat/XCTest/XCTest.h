@@ -3,11 +3,21 @@
 
 #import <Foundation/Foundation.h>
 
+// #warning "DEBUG: XCTest Shim Loaded"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @class XCTestCase;
 @class XCTestSuite;
 @class XCTestRun;
+
+// --- Classes ---
+
+@interface XCTestExpectation : NSObject
+@property (copy) NSString *description;
+@property (nonatomic, assign) BOOL fulfilled;
+- (void)fulfill;
+@end
 
 // --- Macros ---
 
@@ -78,12 +88,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)notifyTestCaseWillStart:(XCTestCase *)testCase;
 - (void)notifyTestCaseDidFinish:(XCTestCase *)testCase;
 - (void)notifyTestCase:(XCTestCase *)testCase didFailWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber;
-@end
-
-@interface XCTestExpectation : NSObject
-@property (copy) NSString *description;
-@property (nonatomic, assign) BOOL fulfilled;
-- (void)fulfill;
 @end
 
 @interface XCTestCase : NSObject
