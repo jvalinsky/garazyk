@@ -53,6 +53,24 @@ endif()
 # Set compiler flags based on build type
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -O0")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
+
+# Valid values for OBJC_STANDARD are usually 99, 11. 20 is not standard for ObjC in CMake.
+# We will use C standard for C and leave ObjC to defaults or specific flags if needed.
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+if (APPLE)
+    enable_language(OBJC OBJCXX)
+endif()
+
+# Fix for SQLite3 target if not provided by older CMake output or weird find_package
+if(NOT TARGET SQLite3::SQLite3)
+    add_library(SQLite3::SQLite3 INTERFACE IMPORTED)
+    set_target_properties(SQLite3::SQLite3 PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIRS}"
+        INTERFACE_LINK_LIBRARIES "${SQLite3_LIBRARIES}"
+    )
+endif()
 set(CMAKE_OBJC_FLAGS_DEBUG "${CMAKE_OBJC_FLAGS_DEBUG} -g -O0")
 set(CMAKE_OBJC_FLAGS_RELEASE "${CMAKE_OBJC_FLAGS_RELEASE} -O2")
 
