@@ -5,6 +5,7 @@
 @class PDSController;
 @class EventFormatter;
 @class RepoCommit;
+@class CID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -29,7 +30,10 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (instancetype)initWithController:(PDSController *)controller;
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error;
 - (void)stop;
-- (void)broadcastRepositoryCommit:(RepoCommit *)commit forRepo:(NSString *)repoDid;
+- (void)broadcastRepositoryCommit:(RepoCommit *)commit 
+                          forRepo:(NSString *)repoDid 
+                              ops:(NSArray<NSDictionary *> *)ops 
+                            blobs:(NSArray<CID *> *)blobs;
 - (void)broadcastIdentityChange:(NSString *)did handle:(nullable NSString *)handle;
 
 @end
