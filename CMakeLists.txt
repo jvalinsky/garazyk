@@ -28,7 +28,16 @@ if(NOT APPLE)
         message(FATAL_ERROR "Clang compiler not found for Objective-C")
     endif()
 
-    # GNUstep Configuration with pkg-config fallback
+    # Find libobjc2 (modern Objective-C runtime with blocks/ARC support)
+    find_library(OBJC_RUNTIME objc)
+    if(OBJC_RUNTIME)
+        message(STATUS "Found libobjc2 at ${OBJC_RUNTIME}")
+        set(OBJC_FLAGS "-fblocks -fobjc-runtime=gnustep-2.0")
+    else()
+        message(FATAL_ERROR "libobjc2 not found. Build from https://github.com/gnustep/libobjc2")
+    endif()
+
+    # GNUstep Configuration
     find_program(GNUSTEP_CONFIG gnustep-config)
     if(GNUSTEP_CONFIG)
         execute_process(
@@ -41,7 +50,7 @@ if(NOT APPLE)
             OUTPUT_VARIABLE GNUSTEP_LIBS
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_CFLAGS} -fblocks -fobjc-runtime=gnustep-2.0")
+        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_CFLAGS} ${OBJC_FLAGS}")
         string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS}")
         message(STATUS "Found GNUstep via gnustep-config")
     else()
@@ -49,7 +58,7 @@ if(NOT APPLE)
         find_package(PkgConfig)
         if(PKG_CONFIG_FOUND AND pkg_check_modules(GNUSTEP_BASE gnustep-base))
             message(STATUS "Found GNUstep via pkg-config")
-            set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_BASE_CFLAGS} -fblocks -fobjc-runtime=gnustep-2.0")
+            set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_BASE_CFLAGS} ${OBJC_FLAGS}")
             string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_BASE_LIBS}")
         else()
             message(FATAL_ERROR "GNUstep not found. Install gnustep-devel or gnustep-base-dev package.")
@@ -57,6 +66,7 @@ if(NOT APPLE)
     endif()
 
     include_directories(/usr/include/GNUstep)
+    include_directories(/usr/include)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
 endif()
 
@@ -129,6 +139,7 @@ else()
     endif()
     
     set(PLATFORM_LIBRARIES
+        ${OBJC_RUNTIME}
         ${GNUSTEP_LIBS_LIST}
         OpenSSL::SSL
         OpenSSL::Crypto
