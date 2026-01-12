@@ -116,6 +116,22 @@
         [response setJsonBody:session];
     }];
 
+    [dispatcher registerComAtprotoServerGetServiceAuth:^(HttpRequest *request, HttpResponse *response) {
+        NSString *aud = [request queryParamForKey:@"aud"];
+        if (!aud) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing aud parameter"}];
+            return;
+        }
+        
+        // Simulate service auth token generation
+        // In a full implementation, this would use the PDS private key
+        NSString *token = [[NSUUID UUID] UUIDString];
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"token": token}];
+    }];
+
     [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSLog(@"createRecord XRPC handler called");
         NSDictionary *body = request.jsonBody;
