@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
+#import "Compat/Security/Security.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
