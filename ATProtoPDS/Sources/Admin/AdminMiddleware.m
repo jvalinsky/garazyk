@@ -7,7 +7,11 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
 
 @interface AdminMiddleware ()
 
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t accessQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t accessQueue;
+#endif
 
 @end
 
