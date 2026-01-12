@@ -23,6 +23,7 @@ typedef NS_ENUM(NSInteger, CBORType) {
 @property (nonatomic, copy, readonly, nullable) NSArray<CBORValue *> *array;
 @property (nonatomic, copy, readonly, nullable) NSDictionary<CBORValue *, CBORValue *> *map;
 @property (nonatomic, strong, readonly, nullable) NSNumber *tag;
+@property (nonatomic, strong, readonly, nullable) CBORValue *tagValue;
 @property (nonatomic, strong, readonly, nullable) NSNumber *simpleValue;
 @property (nonatomic, strong, readonly, nullable) NSNumber *floatValue;
 
