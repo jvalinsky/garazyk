@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+typedef uint8_t UInt8;
+
 #define kSecRandomDefault 0
 #define errSecSuccess 0
 
