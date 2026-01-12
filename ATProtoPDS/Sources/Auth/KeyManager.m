@@ -146,8 +146,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                              error:(NSError **)error {
     NSString *keyID = [[NSUUID UUID] UUIDString];
 
+    CFTypeRef keyType = kSecAttrKeyTypeRSA;
+    if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
+        keyType = kSecAttrKeyTypeECSECPrimeRandom;
+    }
+
     NSDictionary *parameters = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+        (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
         (__bridge id)kSecAttrKeySizeInBits: @(keySize),
         (__bridge id)kSecPrivateKeyAttrs: @{
             (__bridge id)kSecAttrIsPermanent: @NO,

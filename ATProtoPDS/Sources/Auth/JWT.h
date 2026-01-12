@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const JWTErrorDomain;
 
+@class KeyRotationManager;
+
 /*!
  @enum JWTError
  
@@ -281,6 +283,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! Clock offset for time-based validation. */
 @property (nonatomic, strong) NSDate *clockOffset;
 
+/*! Optional key rotation manager for verifying with multiple keys. */
+@property (nonatomic, strong, nullable) KeyRotationManager *keyRotationManager;
+
 /*!
  @method verifyJWT:error:
  
@@ -327,6 +332,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 
 /*! The private key for signing (PEM format). */
 @property (nonatomic, strong, nullable) NSData *privateKey;
+
+/*! Optional key rotation manager for signing with rotated keys. */
+@property (nonatomic, strong, nullable) KeyRotationManager *keyRotationManager;
 
 /*!
  @method signPayload:error:
