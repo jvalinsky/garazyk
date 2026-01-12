@@ -319,7 +319,7 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Pool/DatabasePoolTests.m")
+
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/XRPC/XrpcHandlerTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
