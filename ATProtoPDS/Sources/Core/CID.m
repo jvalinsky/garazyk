@@ -250,7 +250,7 @@ static const NSUInteger kMaxVarintSize = 9;
     NSUInteger length = data.length;
     NSMutableString *result = [NSMutableString stringWithCapacity:((length * 8) + 4) / 5];
 
-    uint32_t buffer = 0;
+    uint64_t buffer = 0;
     int bitsLeft = 0;
     for (NSUInteger i = 0; i < length; i++) {
         buffer = (buffer << 8) | bytes[i];
@@ -260,6 +260,7 @@ static const NSUInteger kMaxVarintSize = 9;
             [result appendFormat:@"%c", kBase32Alphabet[(buffer >> shift) & 0x1F]];
             bitsLeft -= 5;
         }
+        buffer &= ((1ULL << bitsLeft) - 1);
     }
 
     if (bitsLeft > 0) {

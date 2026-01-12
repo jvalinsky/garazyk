@@ -7,6 +7,13 @@
 
 @implementation MSTInteropTests
 
+- (void)testBase32Debug {
+    uint8_t bytes[] = {0x01, 0x71, 0x12, 0x20};
+    NSData *data = [NSData dataWithBytes:bytes length:4];
+    NSString *encoded = [CID base32Encode:data];
+    NSLog(@"DEBUG: 01711220 encoded: %@", encoded);
+}
+
 - (void)testLeadingZeros {
     // MST 'depth' computation (SHA-256 leading zeros)
     // Reference values from indigo/mst/mst_interop_test.go
@@ -31,7 +38,15 @@
     
     // Empty map
     MST *emptyMST = [[MST alloc] init];
-    XCTAssertEqualObjects(emptyMST.rootCID.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
+    CID *erc = emptyMST.rootCID;
+    const uint8_t *rb = erc.bytes.bytes;
+    NSMutableString *rhex = [NSMutableString string];
+    for (NSUInteger i = 0; i < erc.bytes.length; i++) {
+        [rhex appendFormat:@"%02x", rb[i]];
+    }
+    NSLog(@"DEBUG: Empty MST rootCID hex: %@", rhex);
+    NSLog(@"DEBUG: Empty MST rootCID string: %@", erc.stringValue);
+    XCTAssertEqualObjects(erc.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
 
     // Trivial map
     MST *trivialMST = [[MST alloc] init];

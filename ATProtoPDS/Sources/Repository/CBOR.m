@@ -104,6 +104,7 @@
     self = [self initWithType:CBORTypeTag];
     if (self) {
         _tag = tag;
+        _taggedValue = value;
     }
     return self;
 }
@@ -240,7 +241,7 @@
             [self encodeMap:value.map toData:data];
             break;
         case CBORTypeTag:
-            [self encodeTag:value.tag.unsignedIntegerValue value:value toData:data];
+            [self encodeTag:value.tag.unsignedIntegerValue value:value.taggedValue toData:data];
             break;
         case CBORTypeSimpleOrFloat:
             if (value.simpleValue) {
@@ -366,17 +367,16 @@
         NSData *d1 = [CBOREncoder encode:key1];
         NSData *d2 = [CBOREncoder encode:key2];
         
-        // Bytewise comparison
-        NSUInteger len1 = d1.length;
-        NSUInteger len2 = d2.length;
-        NSUInteger len = MIN(len1, len2);
-        int cmp = memcmp(d1.bytes, d2.bytes, len);
+        // DAG-CBOR sorting rules:
+        // 1. Sort by length (shorter first)
+        // 2. Sort by bytes (lexicographical)
         
-        if (cmp != 0) {
-            return cmp < 0 ? NSOrderedAscending : NSOrderedDescending;
-        }
-        if (len1 < len2) return NSOrderedAscending;
-        if (len1 > len2) return NSOrderedDescending;
+        if (d1.length < d2.length) return NSOrderedAscending;
+        if (d1.length > d2.length) return NSOrderedDescending;
+        
+        int cmp = memcmp(d1.bytes, d2.bytes, d1.length);
+        if (cmp < 0) return NSOrderedAscending;
+        if (cmp > 0) return NSOrderedDescending;
         return NSOrderedSame;
     }];
     
