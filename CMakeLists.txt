@@ -208,6 +208,9 @@ if(NOT APPLE)
 
   # PDSMetrics.m uses os_unfair_lock from os/lock.h (macOS-only)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Metrics/PDSMetrics\\.m$")
+
+  # SSLPinningManager.m uses NSURLSession (not available on VM's GNUstep)
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
