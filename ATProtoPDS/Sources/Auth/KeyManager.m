@@ -289,8 +289,10 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 - (nullable KeyPair *)getActiveKeyPair:(NSError **)error {
     if (self.currentKeyID) {
+        NSLog(@"[KEYMANAGER DEBUG] getActiveKeyPair: returning key with ID %@", self.currentKeyID);
         return [self getKeyPairWithID:self.currentKeyID error:error];
     }
+    NSLog(@"[KEYMANAGER DEBUG] getActiveKeyPair: no currentKeyID, searching allKeyPairs count=%lu", (unsigned long)[self allKeyPairs:error].count);
 
     NSArray *keys = [self allKeyPairs:error];
     for (KeyPair *keyPair in keys) {
