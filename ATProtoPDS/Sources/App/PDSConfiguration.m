@@ -71,7 +71,12 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
     }
 
     NSError *readError = nil;
+#if defined(__APPLE__)
     NSData *data = [NSData dataWithContentsOfFile:path options:0 error:&readError];
+#else
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    readError = nil; // GNUstep doesn't support error parameter
+#endif
     if (!data) {
         if (error) {
             *error = [NSError errorWithDomain:PDSConfigErrorDomain
