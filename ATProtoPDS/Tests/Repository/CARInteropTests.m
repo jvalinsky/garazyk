@@ -2,6 +2,7 @@
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
 #import "Core/CID.h"
+#import "Compat/Endian.h"
 
 @interface CARInteropTests : XCTestCase
 
