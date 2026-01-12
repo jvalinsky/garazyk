@@ -53,6 +53,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param data The data to hash
 + (NSData *)sha256Digest:(NSData *)data;
 
+/// Compute raw SHA-256 digest (32 bytes)
+/// @param data The data to hash
++ (NSData *)rawSha256:(NSData *)data;
+
 @end
 
 NS_ASSUME_NONNULL_END

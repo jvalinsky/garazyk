@@ -1,6 +1,5 @@
 #import <XCTest/XCTest.h>
 #import "Repository/MST.h"
-#import "Repository/CBOR.h"
 #import "Core/CID.h"
 
 @interface MSTInteropTests : XCTestCase
@@ -8,82 +7,40 @@
 
 @implementation MSTInteropTests
 
-- (void)testBase32Debug {
-    uint8_t bytes[] = {0x01, 0x71, 0x12, 0x20};
-    NSData *data = [NSData dataWithBytes:bytes length:4];
-    NSString *encoded = [CID base32Encode:data];
-    NSLog(@"DEBUG: 01711220 encoded: %@", encoded);
-}
-
 - (void)testLeadingZeros {
     // MST 'depth' computation (SHA-256 leading zeros)
     // Reference values from indigo/mst/mst_interop_test.go
     
     XCTAssertEqual([MST keyDepthBytes:[@"" dataUsingEncoding:NSUTF8StringEncoding]], 0);
     XCTAssertEqual([MST keyDepthBytes:[@"asdf" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    
-    uint32_t blueDepth = (uint32_t)[MST keyDepthString:@"blue"];
-    XCTAssertEqual(blueDepth, 1); // 1 bit -> depth 1
-    
-    XCTAssertEqual([MST keyDepthString:@"2653ae71"], 0);
-    XCTAssertEqual([MST keyDepthString:@"88bfafc7"], 2); // 2 bits -> depth 2
-    XCTAssertEqual([MST keyDepthString:@"2a92d355"], 4); // 4 bits -> depth 4
-    XCTAssertEqual([MST keyDepthString:@"884976f5"], 6); // 6 bits -> depth 6
-    XCTAssertEqual([MST keyDepthString:@"app.bsky.feed.post/454397e440ec"], 4); // 4 bits -> depth 4
-    XCTAssertEqual([MST keyDepthString:@"app.bsky.feed.post/9adeb165882c"], 8); // 8 bits -> depth 8
+    XCTAssertEqual([MST keyDepthBytes:[@"blue" dataUsingEncoding:NSUTF8StringEncoding]], 1);
+    XCTAssertEqual([MST keyDepthBytes:[@"2653ae71" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([MST keyDepthBytes:[@"88bfafc7" dataUsingEncoding:NSUTF8StringEncoding]], 2);
+    XCTAssertEqual([MST keyDepthBytes:[@"2a92d355" dataUsingEncoding:NSUTF8StringEncoding]], 4);
+    XCTAssertEqual([MST keyDepthBytes:[@"884976f5" dataUsingEncoding:NSUTF8StringEncoding]], 6);
+    XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/454397e440ec" dataUsingEncoding:NSUTF8StringEncoding]], 4);
+    XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/9adeb165882c" dataUsingEncoding:NSUTF8StringEncoding]], 8);
 }
 
 - (void)testInteropKnownMaps {
+    fprintf(stderr, "testInteropKnownMaps started\n");
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
     CID *cid1 = [CID cidFromString:cid1str];
+    fprintf(stderr, "cid1 created\n");
     
     // Empty map
     MST *emptyMST = [[MST alloc] init];
-    NSData *ec = [emptyMST serializeToCBOR];
-    const uint8_t *eb = ec.bytes;
-    NSMutableString *eh = [NSMutableString string];
-    for (NSUInteger i = 0; i < ec.length; i++) [eh appendFormat:@"%02x", eb[i]];
-    NSLog(@"DEBUG: Empty MST CBOR: %@", eh);
-    
-    CID *erc = emptyMST.rootCID;
-    const uint8_t *rb = erc.bytes.bytes;
-    NSMutableString *rhex = [NSMutableString string];
-    for (NSUInteger i = 0; i < erc.bytes.length; i++) {
-        [rhex appendFormat:@"%02x", rb[i]];
-    }
-    NSLog(@"DEBUG: Empty MST rootCID hex: %@", rhex);
-    NSLog(@"DEBUG: Empty MST rootCID string: %@", erc.stringValue);
-    XCTAssertEqualObjects(erc.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
+    fprintf(stderr, "emptyMST created\n");
+    XCTAssertEqualObjects(emptyMST.rootCID.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
+    fprintf(stderr, "emptyMST rootCID checked\n");
 
     // Trivial map
     MST *trivialMST = [[MST alloc] init];
+    fprintf(stderr, "trivialMST created\n");
     [trivialMST put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
-    NSData *tc = [trivialMST serializeToCBOR];
-    const uint8_t *tcb = tc.bytes;
-    NSMutableString *tch = [NSMutableString string];
-    for (NSUInteger i = 0; i < tc.length; i++) [tch appendFormat:@"%02x", tcb[i]];
-    NSLog(@"DEBUG: Trivial MST CBOR: %@", tch);
-    
-    // Log the TreeEntry CBOR specifically
-    NSData *kSuffix = [@"com.example.record/3jqfcqzm3fo2j" dataUsingEncoding:NSUTF8StringEncoding];
-    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    dict[[CBORValue textString:@"k"]] = [CBORValue byteString:kSuffix];
-    dict[[CBORValue textString:@"p"]] = [CBORValue unsignedInteger:0];
-    dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:cid1.bytes]];
-    NSData *entryCbor = [[CBORValue map:dict] encode];
-    const uint8_t *ecb = entryCbor.bytes;
-    NSMutableString *ech = [NSMutableString string];
-    for (NSUInteger i = 0; i < entryCbor.length; i++) [ech appendFormat:@"%02x", ecb[i]];
-    NSLog(@"DEBUG: TreeEntry CBOR: %@", ech);
-    
-    CID *trc = trivialMST.rootCID;
-    const uint8_t *trb = trc.bytes.bytes;
-    NSMutableString *trhex = [NSMutableString string];
-    for (NSUInteger i = 0; i < trc.bytes.length; i++) {
-        [trhex appendFormat:@"%02x", trb[i]];
-    }
-    NSLog(@"DEBUG: Trivial MST rootCID hex: %@", trhex);
+    fprintf(stderr, "trivialMST put finished\n");
     XCTAssertEqualObjects(trivialMST.rootCID.stringValue, @"bafyreibj4lsc3aqnrvphp5xmrnfoorvru4wynt6lwidqbm2623a6tatzdu");
+    fprintf(stderr, "trivialMST rootCID checked\n");
     
     // Layer 2 map
     MST *layer2MST = [[MST alloc] init];

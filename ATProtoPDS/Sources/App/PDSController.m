@@ -14,6 +14,7 @@
 #import "Auth/JWT.h"
 #import "Sync/SubscribeReposHandler.h"
 #import "Repository/RepoCommit.h"
+#import "Auth/OAuth2Handler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -39,7 +40,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     PDSAccountService *_accountService;
     PDSRecordService *_recordService;
     PDSBlobService *_blobService;
+    PDSRecordService *_serviceRecordService;
     PDSRepositoryService *_repositoryService;
+    JWTMinter *_jwtMinter;
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
     dispatch_queue_t _repoQueue;
@@ -89,6 +92,20 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:directory maxSize:userDatabaseSize];
         _accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
         _accountService.serviceDatabases = _serviceDatabases;
+        
+        // Initialize JWT Minter
+        _jwtMinter = [[JWTMinter alloc] init];
+        _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+        _jwtMinter.signingAlgorithm = @"ES256";
+        
+        // Use a generated server key for now
+        // In production, this should be loaded from secure storage or config
+        Secp256k1KeyPair *serverKey = [[Secp256k1 shared] generateKeyPairWithError:nil];
+        _jwtMinter.privateKey = serverKey.privateKey;
+        _jwtMinter.publicKey = serverKey.publicKey;
+        
+        _accountService.minter = _jwtMinter;
+        
         _recordService = [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
         _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool];
         _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
@@ -118,6 +135,12 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     // Start HTTP server with XRPC handlers
     _httpServer = [HttpServer serverWithPort:2583];
+    
+    // Add OAuth2 routes
+    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:[self serviceDatabaseWithError:nil]];
+    oauthHandler.minter = _jwtMinter;
+    [oauthHandler registerRoutesWithServer:_httpServer];
+    
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
     
     [XrpcMethodRegistry registerMethodsWithDispatcher:_xrpcDispatcher controller:self];

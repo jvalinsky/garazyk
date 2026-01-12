@@ -50,9 +50,31 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
 }
 
 int main(int argc, char * argv[]) {
+    fprintf(stderr, "test_main started\n");
     @autoreleasepool {
         NSArray *testClasses = @[
-            @"MSTInteropTests"
+            @"MSTInteropTests",
+            @"CARInteropTests",
+            @"RepoCommitTests",
+            @"PDSNetworkTransportTests",
+            @"OAuth2Tests",
+            @"SubscribeReposHandlerTests",
+            @"GetServiceAuthMethodTests",
+            @"XrpcHandlerTests",
+            @"PDSCLITests",
+            @"ActorStoreTests",
+            @"DatabasePoolTests",
+            @"PDSControllerTests",
+            @"PDSIntegrationTests",
+            @"ServiceDatabasesTests",
+            @"RateLimiterTests",
+            @"DIDResolverTests",
+            @"HandleResolverTests",
+            @"ATProtoHandleValidatorTests",
+            @"IdentifierTests",
+            @"TOTPTests",
+            @"CryptoTests",
+            @"OAuth2HandlerTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

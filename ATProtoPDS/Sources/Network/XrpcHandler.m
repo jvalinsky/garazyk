@@ -82,6 +82,10 @@
     [self registerMethod:@"com.atproto.server.refreshSession" handler:handler];
 }
 
+- (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
+}
+
 - (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.createRecord" handler:handler];
 }

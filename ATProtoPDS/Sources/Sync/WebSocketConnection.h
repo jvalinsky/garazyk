@@ -31,6 +31,8 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 @property (nonatomic, readonly) NSString *host;
 @property (nonatomic, readonly) uint16_t port;
 @property (nonatomic, readonly) NSString *path;
+@property (nonatomic, readonly, copy) NSString *queryString;
+@property (nonatomic, readonly, copy, nullable) NSDictionary<NSString *, NSString *> *queryParams;
 @property (nonatomic, readonly) WebSocketConnectionState state;
 @property (nonatomic, weak, nullable) id<WebSocketConnectionDelegate> delegate;
 @property (nonatomic, assign) NSTimeInterval heartbeatInterval;

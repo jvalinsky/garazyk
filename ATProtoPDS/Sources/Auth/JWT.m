@@ -1,5 +1,6 @@
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
+#import "Auth/KeyRotationManager.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const JWTErrorDomain = @"com.atproto.pds.jwt";
@@ -208,6 +209,13 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @implementation JWTVerifier
 
+@synthesize expectedIssuer = _expectedIssuer;
+@synthesize expectedAudience = _expectedAudience;
+@synthesize allowedAlgorithms = _allowedAlgorithms;
+@synthesize clockOffset = _clockOffset;
+@synthesize publicKey = _publicKey;
+@synthesize keyRotationManager = _keyRotationManager;
+
 - (instancetype)init {
     self = [super init];
     if (self) {
@@ -225,6 +233,33 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
                                      userInfo:@{NSLocalizedDescriptionKey: @"Algorithm not allowed"}];
         }
         return NO;
+    }
+
+    // Verify signature if key rotation manager or public key is available
+    if (self.keyRotationManager || self.publicKey) {
+        NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
+        NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
+        if (!signatureData) return NO;
+        
+        BOOL verified = NO;
+        if (self.keyRotationManager) {
+            verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
+        } else if (self.publicKey) {
+            Secp256k1 *secp = [Secp256k1 shared];
+            unsigned char hash[32];
+            CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+            NSData *hashData = [NSData dataWithBytes:hash length:32];
+            verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+        }
+        
+        if (!verified) {
+            if (error && !*error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidSignature
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT signature"}];
+            }
+            return NO;
+        }
     }
 
     if (![self validateClaims:jwt.payload ofJWT:jwt error:error]) {
@@ -291,6 +326,13 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @implementation JWTMinter
 
+@synthesize issuer = _issuer;
+@synthesize signingAlgorithm = _signingAlgorithm;
+@synthesize defaultExpiration = _defaultExpiration;
+@synthesize privateKey = _privateKey;
+@synthesize publicKey = _publicKey;
+@synthesize keyRotationManager = _keyRotationManager;
+
 - (instancetype)init {
     self = [super init];
     if (self) {
@@ -329,9 +371,16 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (NSString *)signData:(NSString *)data error:(NSError **)error {
+    NSData *dataBytes = [data dataUsingEncoding:NSUTF8StringEncoding];
+    
+    if (self.keyRotationManager) {
+        NSData *signature = [self.keyRotationManager signData:dataBytes error:error];
+        if (!signature) return nil;
+        return [signature base64EncodedStringWithOptions:0];
+    }
+    
     if (self.privateKey) {
         // Use Secp256k1 signing
-        NSData *dataBytes = [data dataUsingEncoding:NSUTF8StringEncoding];
         unsigned char hash[32];
         CC_SHA256(dataBytes.bytes, (CC_LONG)dataBytes.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:32];

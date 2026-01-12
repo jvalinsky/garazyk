@@ -7,25 +7,27 @@
 #import "Database/PDSDatabase.h"
 
 @interface OAuth2Handler ()
-@property (nonatomic, strong) OAuth2Server *oauthServer;
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
 @implementation OAuth2Handler
 
+@synthesize minter = _minter;
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
-        _oauthServer = [[OAuth2Server alloc] init];
+        self.oauthServer = [[OAuth2Server alloc] init];
+        self.oauthServer.jwtMinter = self.minter;
 
         // Use configurable issuer from environment, default to localhost
         NSString *issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
-        _oauthServer.issuer = issuer;
+        self.oauthServer.issuer = issuer;
 
         // Build other endpoints relative to issuer
-        _oauthServer.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
-        _oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
-        _oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
+        self.oauthServer.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
+        self.oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
+        self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
 
         // Seed test client for development
         NSError *seedError = nil;

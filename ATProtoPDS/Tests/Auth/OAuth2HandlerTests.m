@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
+#import "Auth/OAuth2.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 

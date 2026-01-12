@@ -33,7 +33,7 @@
 - (void)testCurrentSigningKey {
     // Initially, no keys should exist
     SecKeyRef key = [self.keyRotationManager currentSigningKey];
-    XCTAssertNull(key);
+    XCTAssertTrue(key == NULL);
     
     // Generate a key
     NSError *error = nil;
@@ -43,7 +43,7 @@
     
     // Now current signing key should be available
     key = [self.keyRotationManager currentSigningKey];
-    XCTAssertNotNil(key);
+    XCTAssertTrue(key != NULL);
     if (key) CFRelease(key);
 }
 

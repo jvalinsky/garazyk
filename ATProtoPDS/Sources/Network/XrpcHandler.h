@@ -94,6 +94,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.refreshSession. */
 - (void)registerComAtprotoServerRefreshSession:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.getServiceAuth. */
+- (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
+
 // MARK: - Repository Methods
 
 /*! Registers handler for com.atproto.repo.createRecord. */
