@@ -939,7 +939,7 @@
     __block NSError *networkError = nil;
     __block NSInteger statusCode = 0;
     
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] 
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
         dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
         if (res) {
             statusCode = ((NSHTTPURLResponse *)res).statusCode;
@@ -1066,7 +1066,7 @@
     __block NSError *networkError = nil;
     __block NSInteger statusCode = 0;
     
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] 
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
         dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
         if (res) {
             statusCode = ((NSHTTPURLResponse *)res).statusCode;
