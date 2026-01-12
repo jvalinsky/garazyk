@@ -72,7 +72,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     };
 
     CFErrorRef error = NULL;
-    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &error));
+    NSData *keyData = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(key, &error);
     if (error) return nil;
 
     return keyData;
@@ -169,7 +169,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     if (cfError) {
         if (error) {
-            *error = CFBridgingRelease(cfError);
+            *error = (__bridge_transfer NSError *)cfError;
         }
         return nil;
     }
@@ -180,7 +180,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     if (pubError) {
         CFRelease(privateKey);
         if (error) {
-            *error = CFBridgingRelease(pubError);
+            *error = (__bridge_transfer NSError *)pubError;
         }
         return nil;
     }
@@ -223,7 +223,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     if (cfError) {
         if (error) {
-            *error = CFBridgingRelease(cfError);
+            *error = (__bridge_transfer NSError *)cfError;
         }
         return nil;
     }
@@ -234,7 +234,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     if (pubError) {
         CFRelease(privateKey);
         if (error) {
-            *error = CFBridgingRelease(pubError);
+            *error = (__bridge_transfer NSError *)pubError;
         }
         return nil;
     }
@@ -346,14 +346,14 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     if (!keyPair) return nil;
 
     CFErrorRef cfError = NULL;
-    NSData *signature = CFBridgingRelease(SecKeyCreateSignature(keyPair.privateKey,
+    NSData *signature = (__bridge_transfer NSData *)SecKeyCreateSignature(keyPair.privateKey,
                                                                  self.signingAlgorithm,
                                                                  (__bridge CFDataRef)data,
-                                                                 &cfError));
+                                                                 &cfError);
 
     if (cfError) {
         if (error) {
-            *error = CFBridgingRelease(cfError);
+            *error = (__bridge_transfer NSError *)cfError;
         }
         return nil;
     }
@@ -522,8 +522,8 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     };
 
     CFErrorRef exportError = NULL;
-    NSData *privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
-    NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
+    NSData *privateKeyData = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError);
+    NSData *publicKeyData = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError);
 
     if (!privateKeyData || !publicKeyData) {
         if (error) {
