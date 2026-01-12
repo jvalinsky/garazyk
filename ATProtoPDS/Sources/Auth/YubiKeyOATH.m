@@ -8,7 +8,11 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 
 @property (nonatomic, assign, readwrite) YubiKeyConnectionState connectionState;
 @property (nonatomic, copy, readwrite, nullable) NSString *connectedKeySerial;
+#if TARGET_OS_LINUX
+@property (nonatomic, assign) os_log_t log;
+#else
 @property (nonatomic, strong) os_log_t log;
+#endif
 
 @end
 
