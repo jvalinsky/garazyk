@@ -99,6 +99,8 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecAttrKeyClass ((CFStringRef)4)
 #define kSecAttrKeyClassPrivate ((CFStringRef)5)
 #define kSecAttrKeyClassPublic ((CFStringRef)6)
+#define kSecPrivateKeyAttrs ((CFStringRef)7)
+#define kSecAttrIsPermanent ((CFStringRef)8)
 
 #endif
 
