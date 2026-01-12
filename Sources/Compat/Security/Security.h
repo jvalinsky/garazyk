@@ -105,6 +105,17 @@ static inline CFIndex CFDictionaryGetCount(CFDictionaryRef theDict) {
     return 0;
 }
 
+static inline const void *CFDictionaryGetValue(CFDictionaryRef theDict, const void *key) {
+    (void)theDict;
+    (void)key;
+    return NULL;
+}
+
+static inline void CFDictionaryRemoveValue(CFDictionaryRef theDict, const void *key) {
+    (void)theDict;
+    (void)key;
+}
+
 static inline void CFDictionaryGetKeysAndValues(CFDictionaryRef theDict, const void **keys, const void **values) {
     (void)theDict;
     (void)keys;
