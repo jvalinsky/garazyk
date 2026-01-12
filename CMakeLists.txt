@@ -17,7 +17,7 @@ set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -Wno-implicit-function-decl
 
 # Platform Specific Configuration
 if(NOT APPLE)
-    add_compile_definitions(GNUSTEP LINUX)
+    add_compile_definitions(GNUSTEP LINUX OS_OBJECT_USE_OBJC=0)
 
     # Use Clang for Objective-C on Linux (required for ARC and blocks)
     find_program(OBJC_COMPILER NAMES clang clang-14)
