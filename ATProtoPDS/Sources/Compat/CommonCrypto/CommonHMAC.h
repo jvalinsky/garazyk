@@ -19,7 +19,12 @@ typedef struct {
 
 static inline void CCHmacInit(CCHmacContext *ctx, CCHmacAlgorithm alg, const void *key, size_t keyLength) {
     ctx->ctx = HMAC_CTX_new();
-    const EVP_MD *md = EVP_sha256(); // Assume SHA256 for now as mapped above
+    const EVP_MD *md;
+    if (alg == kCCHmacAlgSHA1) {
+        md = EVP_sha1();
+    } else {
+        md = EVP_sha256();
+    }
     HMAC_Init_ex(ctx->ctx, key, (int)keyLength, md, NULL);
 }
 
@@ -33,7 +38,12 @@ static inline void CCHmacFinal(CCHmacContext *ctx, void *macOut) {
 }
 
 static inline void CCHmac(CCHmacAlgorithm alg, const void *key, size_t keyLength, const void *data, size_t dataLength, void *macOut) {
-    const EVP_MD *md = EVP_sha256();
+    const EVP_MD *md;
+    if (alg == kCCHmacAlgSHA1) {
+        md = EVP_sha1();
+    } else {
+        md = EVP_sha256();
+    }
     unsigned int len;
     HMAC(md, key, (int)keyLength, data, dataLength, macOut, &len);
 }
