@@ -19,9 +19,9 @@ set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -Wno-implicit-function-decl
 if(NOT APPLE)
     set(CMAKE_OBJC_STANDARD 20)
     add_compile_definitions(GNUSTEP LINUX)
-    
-    # GNUstep Configuration
-    find_program(GNUSTEP_CONFIG gnustep-config REQUIRED)
+
+    # GNUstep Configuration with pkg-config fallback
+    find_program(GNUSTEP_CONFIG gnustep-config)
     if(GNUSTEP_CONFIG)
         execute_process(
             COMMAND ${GNUSTEP_CONFIG} --objc-flags
@@ -35,8 +35,19 @@ if(NOT APPLE)
         )
         set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_CFLAGS} -fblocks -fobjc-runtime=gnustep-2.0")
         string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS}")
+        message(STATUS "Found GNUstep via gnustep-config")
+    else()
+        # Try pkg-config as fallback
+        find_package(PkgConfig)
+        if(PKG_CONFIG_FOUND AND pkg_check_modules(GNUSTEP_BASE gnustep-base))
+            message(STATUS "Found GNUstep via pkg-config")
+            set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_BASE_CFLAGS} -fblocks -fobjc-runtime=gnustep-2.0")
+            string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_BASE_LIBS}")
+        else()
+            message(FATAL_ERROR "GNUstep not found. Install gnustep-devel or gnustep-base-dev package.")
+        endif()
     endif()
-    
+
     include_directories(/usr/include/GNUstep)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
 endif()
