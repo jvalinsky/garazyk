@@ -17,7 +17,11 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 @property (nonatomic, strong) WebSocketServer *webSocketServer;
 @property (nonatomic, strong) EventFormatter *eventFormatter;
 @property (nonatomic, strong) PDSController *controller;
+#if TARGET_OS_LINUX
+@property (nonatomic, assign) os_log_t log;
+#else
 @property (nonatomic, strong) os_log_t log;
+#endif
 @property (nonatomic, assign) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger sequenceNumber;
 
