@@ -179,11 +179,19 @@ static char const * const kMSTNodeEntryInternalTree = "internalTree";
     return copy;
 }
 
+- (MSTInternalNode *)ensureLevel:(uint32_t)targetLevel {
+    if (self.level >= targetLevel) return self;
+    MSTInternalNode *node = [[MSTInternalNode alloc] initWithLevel:self.level + 1];
+    node.left = self;
+    return [node ensureLevel:targetLevel];
+}
+
 - (CID *)getCID:(NSMutableDictionary<MSTInternalNode *, CID *> *)cache {
-    if (cache[self]) return cache[self];
+    // Note: We don't cache by self pointer because multiple nodes can have same content
+    // But for efficiency during a single serialization run, it's fine.
+    // However, we must ensure the height invariant here if not already ensured.
     NSData *cbor = [self serializeToCBOR:cache];
     CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
-    cache[self] = cid;
     return cid;
 }
 
@@ -201,25 +209,72 @@ static char const * const kMSTNodeEntryInternalTree = "internalTree";
         NSData *kSuffix = [[fullKey substringFromIndex:p] dataUsingEncoding:NSUTF8StringEncoding];
         
         NSMutableDictionary<CBORValue *, CBORValue *> *dict = [NSMutableDictionary dictionary];
+        // Sorted keys: k, p, t (optional), v
         dict[[CBORValue textString:@"k"]] = [CBORValue byteString:kSuffix];
         dict[[CBORValue textString:@"p"]] = [CBORValue unsignedInteger:p];
+        
         if (entry.internalTree) {
             CID *tCID = [entry.internalTree getCID:cache];
-            dict[[CBORValue textString:@"t"]] = [CBORValue tag:42 value:[CBORValue byteString:tCID.bytes]];
+            NSData *tBytes = tCID.bytes;
+            NSMutableData *tData = [NSMutableData dataWithLength:1 + tBytes.length];
+            uint8_t *tBuffer = tData.mutableBytes;
+            tBuffer[0] = 0x00;
+            memcpy(tBuffer + 1, tBytes.bytes, tBytes.length);
+            dict[[CBORValue textString:@"t"]] = [CBORValue tag:42 value:[CBORValue byteString:tData]];
         }
-        dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:entry.value.bytes]];
+        NSData *vBytes = entry.value.bytes;
+        NSMutableData *vData = [NSMutableData dataWithLength:1 + vBytes.length];
+        uint8_t *vBuffer = vData.mutableBytes;
+        vBuffer[0] = 0x00;
+        memcpy(vBuffer + 1, vBytes.bytes, vBytes.length);
+        dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:vData]];
+        
         [entriesCBOR addObject:[CBORValue map:dict]];
         prevKey = fullKey;
     }
     
+    // Sort node keys alphabetically: 'e' comes before 'l'
     NSMutableDictionary<CBORValue *, CBORValue *> *nodeDict = [NSMutableDictionary dictionary];
     nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:entriesCBOR];
     if (self.left) {
         CID *lCID = [self.left getCID:cache];
-        nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lCID.bytes]];
+        NSData *lBytes = lCID.bytes;
+        NSMutableData *lData = [NSMutableData dataWithLength:1 + lBytes.length];
+        uint8_t *lBuffer = lData.mutableBytes;
+        lBuffer[0] = 0x00;
+        memcpy(lBuffer + 1, lBytes.bytes, lBytes.length);
+        nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
     } else {
         nodeDict[[CBORValue textString:@"l"]] = [CBORValue nilValue];
     }
+        NSData *vBytes = entry.value.bytes;
+        NSMutableData *vData = [NSMutableData dataWithLength:1 + vBytes.length];
+        uint8_t *vBuffer = vData.mutableBytes;
+        vBuffer[0] = 0x00;
+        [vBytes enumerateByteRangesUsingBlock:^(const void *bytes, NSRange byteRange, BOOL *stop) {
+            memcpy(vBuffer + 1 + byteRange.location, bytes, byteRange.length);
+        }];
+        dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:vData]];
+        
+        [entriesCBOR addObject:[CBORValue map:dict]];
+        prevKey = fullKey;
+    }
+    
+    // Sort node keys alphabetically: 'e' comes before 'l'
+    NSMutableDictionary<CBORValue *, CBORValue *> *nodeDict = [NSMutableDictionary dictionary];
+    nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:entriesCBOR];
+    
+    if (self.left) {
+        CID *lCID = [self.left getCID:cache];
+        NSData *lBytes = lCID.bytes;
+        NSMutableData *lData = [NSMutableData dataWithLength:1 + lBytes.length];
+        ((uint8_t *)lData.mutableBytes)[0] = 0x00;
+        memcpy((uint8_t *)lData.mutableBytes + 1, lBytes.bytes, lBytes.length);
+        nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
+    } else {
+        nodeDict[[CBORValue textString:@"l"]] = [CBORValue nilValue];
+    }
+    
     return [[CBORValue map:nodeDict] encode];
 }
 
@@ -238,14 +293,20 @@ static char const * const kMSTNodeEntryInternalTree = "internalTree";
     lNode.left = self.left;
     for (NSInteger i = 0; i < idx; i++) [lNode.entries addObject:[self.entries[i] copy]];
     if (idx == 0) lNode.left = splitLeft;
-    else lNode.entries[idx-1].internalTree = splitLeft;
+    else {
+        MSTNodeEntry *last = lNode.entries.lastObject;
+        last.internalTree = splitLeft;
+    }
     
     MSTInternalNode *rNode = [[MSTInternalNode alloc] initWithLevel:self.level];
     rNode.left = splitRight;
     for (NSInteger i = idx; i < self.entries.count; i++) [rNode.entries addObject:[self.entries[i] copy]];
     
-    *leftOut = [lNode trim];
-    *rightOut = [rNode trim];
+    MSTInternalNode *lTrimmed = [lNode trim];
+    MSTInternalNode *rTrimmed = [rNode trim];
+    
+    *leftOut = (lTrimmed.entries.count > 0 || lTrimmed.left) ? lTrimmed : nil;
+    *rightOut = (rTrimmed.entries.count > 0 || rTrimmed.left) ? rTrimmed : nil;
 }
 
 - (MSTInternalNode *)trim {
@@ -352,12 +413,17 @@ static char const * const kMSTNodeEntryInternalTree = "internalTree";
         MSTInternalNode *splitLeft = nil;
         MSTInternalNode *splitRight = nil;
         [node split:key left:&splitLeft right:&splitRight];
+        
+        MSTInternalNode *lNode = splitLeft ? [splitLeft ensureLevel:depth - 1] : nil;
+        MSTInternalNode *rNode = splitRight ? [splitRight ensureLevel:depth - 1] : nil;
+        
         MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] init];
         newEntry.fullKey = key;
         newEntry.value = value;
-        newEntry.internalTree = splitRight;
+        newEntry.internalTree = rNode;
+        
         MSTInternalNode *newNode = [[MSTInternalNode alloc] initWithLevel:depth];
-        newNode.left = splitLeft;
+        newNode.left = lNode;
         [newNode.entries addObject:newEntry];
         return newNode;
     }
@@ -467,8 +533,12 @@ static char const * const kMSTNodeEntryInternalTree = "internalTree";
     if (!right) return [left copy];
     if (left.level > right.level) {
         MSTInternalNode *newNode = [left copy];
-        MSTNodeEntry *lastEntry = newNode.entries.lastObject;
-        lastEntry.internalTree = [self merge:lastEntry.internalTree and:right];
+        if (newNode.entries.count > 0) {
+            MSTNodeEntry *lastEntry = newNode.entries.lastObject;
+            lastEntry.internalTree = [self merge:lastEntry.internalTree and:right];
+        } else {
+            newNode.left = [self merge:newNode.left and:right];
+        }
         return newNode;
     } else if (right.level > left.level) {
         MSTInternalNode *newNode = [right copy];
@@ -476,8 +546,13 @@ static char const * const kMSTNodeEntryInternalTree = "internalTree";
         return newNode;
     } else {
         MSTInternalNode *newNode = [left copy];
-        MSTInternalNode *middle = [self merge:newNode.entries.lastObject.internalTree and:right.left];
-        newNode.entries[newNode.entries.count-1].internalTree = middle;
+        MSTInternalNode *leftLastSubtree = (newNode.entries.count > 0) ? newNode.entries.lastObject.internalTree : newNode.left;
+        MSTInternalNode *middle = [self merge:leftLastSubtree and:right.left];
+        if (newNode.entries.count > 0) {
+            newNode.entries.lastObject.internalTree = middle;
+        } else {
+            newNode.left = middle;
+        }
         for (MSTNodeEntry *e in right.entries) [newNode.entries addObject:[e copy]];
         return newNode;
     }
