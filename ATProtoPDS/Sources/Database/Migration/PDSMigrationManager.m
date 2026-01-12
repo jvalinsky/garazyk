@@ -63,7 +63,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     if (sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM accounts", -1, &countStmt, NULL) != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                        code:PDSMigrationErrorSchemaValidationFailed
+                                        code:PDSMigrationErrorMigrationFailed
                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare accounts count query: %s", sqlite3_errmsg(sourceDb)]}];
         }
         sqlite3_close(sourceDb);
@@ -77,7 +77,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     if (sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM repos", -1, &countStmt, NULL) != SQLITE_OK) {
          if (error) {
              *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                         code:PDSMigrationErrorSchemaValidationFailed
+                                         code:PDSMigrationErrorMigrationFailed
                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare repos count query: %s", sqlite3_errmsg(sourceDb)]}];
          }
          sqlite3_close(sourceDb);
@@ -91,7 +91,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     if (sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM records", -1, &countStmt, NULL) != SQLITE_OK) {
          if (error) {
              *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                         code:PDSMigrationErrorSchemaValidationFailed
+                                         code:PDSMigrationErrorMigrationFailed
                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare records count query: %s", sqlite3_errmsg(sourceDb)]}];
          }
          sqlite3_close(sourceDb);
@@ -105,7 +105,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     if (sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM blocks", -1, &countStmt, NULL) != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                        code:PDSMigrationErrorSchemaValidationFailed
+                                        code:PDSMigrationErrorMigrationFailed
                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare blocks count query: %s", sqlite3_errmsg(sourceDb)]}];
         }
         sqlite3_close(sourceDb);
