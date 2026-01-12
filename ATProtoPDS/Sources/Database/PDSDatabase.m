@@ -21,24 +21,45 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, readwrite) NSURL *databaseURL;
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
-@property (nonatomic, assign) CFMutableDictionaryRef statementCache;
 #if defined(GNUSTEP)
+@property (nonatomic, assign) CFMutableDictionaryRef statementCache;
 @property (nonatomic, assign) dispatch_queue_t cacheQueue;
 #else
-@property (nonatomic, strong) dispatch_queue_t cacheQueue;
+@property (nonatomic, strong) NSMutableDictionary *statementCache;
 #endif
 
 @end
 
 @implementation PDSDatabase
 
++ (instancetype)sharedDatabase {
+    static PDSDatabase *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[PDSDatabase alloc] init];
+    });
+    return sharedInstance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _statementCache = [NSMutableDictionary dictionary];
+    }
+    return self;
+}
+
 + (instancetype)databaseAtURL:(NSURL *)url {
     PDSDatabase *database = [[PDSDatabase alloc] init];
     database.databaseURL = url;
     database.isOpen = NO;
     database.db = NULL;
+#if defined(GNUSTEP)
     database.statementCache = CFDictionaryCreateMutable(kCFAllocatorDefault, 100, &kCFTypeDictionaryKeyCallBacks, NULL);
     database.cacheQueue = dispatch_queue_create("com.atproto.pds.database.cache", DISPATCH_QUEUE_SERIAL);
+#else
+    database.statementCache = [NSMutableDictionary dictionary];
+#endif
     return database;
 }
 
@@ -65,9 +86,30 @@ static NSDateFormatter * iso8601Formatter(void) {
     return self.isOpen;
 }
 
+- (BOOL)openWithPath:(NSString *)path error:(NSError **)error {
+    if (sqlite3_open([path UTF8String], &_db) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSDatabaseError"
+                                         code:sqlite3_errcode(_db)
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+        }
+        return NO;
+    }
+    
+    // Enable WAL mode
+    char *errorMessage;
+    if (sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, &errorMessage) != SQLITE_OK) {
+        NSLog(@"Failed to enable WAL mode: %s", errorMessage);
+        sqlite3_free(errorMessage);
+    }
+    
+    return YES;
+}
+
 - (void)close {
     if (!self.isOpen) return;
 
+#if defined(GNUSTEP)
     dispatch_sync(self.cacheQueue, ^{
         CFIndex count = CFDictionaryGetCount(self.statementCache);
         if (count > 0) {
@@ -80,6 +122,21 @@ static NSDateFormatter * iso8601Formatter(void) {
         CFRelease(self.statementCache);
         self.statementCache = NULL;
     });
+#else
+    if (_db) {
+        // Finalize all cached statements
+        @synchronized(self.statementCache) {
+            for (NSValue *stmtValue in [self.statementCache allValues]) {
+                sqlite3_stmt *stmt = [stmtValue pointerValue];
+                sqlite3_finalize(stmt);
+            }
+            [self.statementCache removeAllObjects];
+        }
+        
+        sqlite3_close(_db);
+        _db = NULL;
+    }
+#endif
 
     sqlite3_close(_db);
     _db = NULL;
@@ -90,6 +147,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     [self close];
 }
 
+#if defined(GNUSTEP)
 - (nullable sqlite3_stmt *)cachedStatementForKey:(NSString *)key {
     __block sqlite3_stmt *stmt = NULL;
     dispatch_sync(self.cacheQueue, ^{
@@ -116,6 +174,36 @@ static NSDateFormatter * iso8601Formatter(void) {
         CFDictionarySetValue(self.statementCache, (__bridge const void *)(key), stmt);
     });
 }
+#else
+- (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query {
+    @synchronized(self.statementCache) {
+        NSValue *stmtValue = self.statementCache[query];
+        if (stmtValue) {
+            sqlite3_stmt *stmt = [stmtValue pointerValue];
+            sqlite3_reset(stmt);
+            return stmt;
+        }
+        
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(_db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+            // Primitive cache eviction if too large
+            if (self.statementCache.count >= 100) {
+                // Just remove one arbitrary key
+                NSString *keyToRemove = [self.statementCache allKeys].firstObject;
+                if (keyToRemove) {
+                    NSValue *sVal = self.statementCache[keyToRemove];
+                    sqlite3_finalize([sVal pointerValue]);
+                    [self.statementCache removeObjectForKey:keyToRemove];
+                }
+            }
+            
+            self.statementCache[query] = [NSValue valueWithPointer:stmt];
+            return stmt;
+        }
+    }
+    return NULL;
+}
+#endif
 
 - (BOOL)prepareStatement:(sqlite3_stmt **)stmt sql:(NSString *)sql error:(NSError **)error {
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, stmt, NULL);

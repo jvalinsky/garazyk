@@ -274,6 +274,87 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 
 #pragma mark - SSRF Protection
 
+#import <netdb.h>
+#import <arpa/inet.h>
+
+- (NSString *)resolveHandleToDid:(NSString *)handle error:(NSError **)error {
+    // 1. Check DNS TXT record
+    // _atproto.<handle>
+    
+    NSString *domain = [NSString stringWithFormat:@"_atproto.%@", handle];
+    
+    struct addrinfo hints, *res, *p;
+    int status;
+    char ipstr[INET6_ADDRSTRLEN];
+    
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; 
+    hints.ai_socktype = SOCK_STREAM;
+
+    // NOTE: resolving TXT records via getaddrinfo is NOT standard. 
+    // getaddrinfo resolves A/AAAA.
+    // We need res_query or similar for TXT records (libresolv).
+    // Or we can use `dig` command wrapper for a hack, OR standard `res_search`.
+    
+    // For Linux/BSD `res_search` is in <resolv.h>.
+    
+    return [self resolveTXTRecordForDomain:domain error:error];
+}
+
+// Helper using libresolv
+#include <resolv.h>
+#include <arpa/nameser.h>
+
+- (NSString *)resolveTXTRecordForDomain:(NSString *)domain error:(NSError **)error {
+    unsigned char buffer[NS_PACKETSZ];
+    int len;
+    
+    len = res_search([domain UTF8String], C_IN, T_TXT, buffer, NS_PACKETSZ);
+    
+    if (len < 0) {
+         if (error) {
+            *error = [NSError errorWithDomain:@"HandleResolverError" code:1 userInfo:@{NSLocalizedDescriptionKey: @"DNS lookup failed"}];
+        }
+        return nil;
+    }
+    
+    ns_msg handle;
+    if (ns_initparse(buffer, len, &handle) < 0) {
+        return nil;
+    }
+    
+    int count = ns_msg_count(handle, ns_s_an);
+    ns_rr rr;
+    
+    for (int i = 0; i < count; i++) {
+        if (ns_parserr(&handle, ns_s_an, i, &rr) == 0) {
+            if (ns_rr_type(rr) == ns_t_txt) {
+                const unsigned char *rdata = ns_rr_rdata(rr);
+                // TXT record format: length byte followed by text
+                // We might have multiple chunks
+                // Simple parsing:
+                int msg_len = ns_rr_rdlen(rr);
+                const unsigned char *p = rdata;
+                const unsigned char *end = rdata + msg_len;
+                
+                NSMutableString *txtRecord = [NSMutableString string];
+                while (p < end) {
+                    int chunkLen = *p++;
+                    if (p + chunkLen > end) break;
+                    NSString *chunk = [[NSString alloc] initWithBytes:p length:chunkLen encoding:NSUTF8StringEncoding];
+                    if (chunk) [txtRecord appendString:chunk];
+                    p += chunkLen;
+                }
+                
+                if ([txtRecord hasPrefix:@"did="]) {
+                    return [txtRecord substringFromIndex:4];
+                }
+            }
+        }
+    }
+    
+    return nil;
+}
 - (BOOL)validateHandleResolvesToPublicIP:(NSString *)handle error:(NSError **)error {
     // Resolve the handle to IP addresses to prevent DNS rebinding attacks
     CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)handle);
