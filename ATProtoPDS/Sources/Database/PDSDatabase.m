@@ -22,7 +22,11 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, assign) CFMutableDictionaryRef statementCache;
+#if defined(GNUSTEP)
+@property (nonatomic, assign) dispatch_queue_t cacheQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t cacheQueue;
+#endif
 
 @end
 

@@ -11,8 +11,13 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 @property (nonatomic, assign, readwrite) NSUInteger maxSize;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSActorStore *> *stores;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *lastAccessTime;
+#if defined(GNUSTEP)
+@property (nonatomic, assign) dispatch_queue_t poolQueue;
+@property (nonatomic, assign) dispatch_queue_t evictionQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t poolQueue;
 @property (nonatomic, strong) dispatch_queue_t evictionQueue;
+#endif
 @property (nonatomic, strong) NSTimer *evictionTimer;
 @property (nonatomic, assign, readwrite) NSUInteger openFileHandleCount;
 
