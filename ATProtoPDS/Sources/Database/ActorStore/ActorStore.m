@@ -168,7 +168,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     [self.blobCache removeAllObjects];
     
     if (self.signingKey) {
+#if defined(__APPLE__)
         CFRelease(self.signingKey);
+#else
+        CFRelease((__bridge CFTypeRef)self.signingKey);
+#endif
         self.signingKey = NULL;
     }
     
@@ -857,7 +861,15 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     };
     
     SecKeyRef keyRef = NULL;
+#if defined(__APPLE__)
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyRef);
+#else
+    CFTypeRef keyResult = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &keyResult);
+    if (keyResult) {
+        keyRef = (__bridge_transfer SecKeyRef)keyResult;
+    }
+#endif
     
     if (status == errSecItemNotFound) {
         if (error) {
@@ -906,7 +918,11 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
+#if defined(__APPLE__)
         (__bridge id)kSecValueRef: (__bridge id)key,
+#else
+        (__bridge id)kSecValueRef: key,
+#endif
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
     
@@ -922,10 +938,18 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     }
     
     if (self.signingKey) {
+#if defined(__APPLE__)
         CFRelease(self.signingKey);
+#else
+        CFRelease((__bridge CFTypeRef)self.signingKey);
+#endif
     }
     self.signingKey = key;
+#if defined(__APPLE__)
     CFRetain(self.signingKey);
+#else
+    CFRetain((__bridge CFTypeRef)self.signingKey);
+#endif
     
     return YES;
 }
@@ -951,7 +975,11 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     }
     
     BOOL success = [self storeSigningKey:privateKey error:error];
+#if defined(__APPLE__)
     CFRelease(privateKey);
+#else
+    CFRelease((__bridge CFTypeRef)privateKey);
+#endif
     
     return success;
 }
@@ -961,7 +989,11 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     if (!publicKey) return nil;
     
     NSData *data = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(publicKey, NULL);
+#if defined(__APPLE__)
     CFRelease(publicKey);
+#else
+    CFRelease((__bridge CFTypeRef)publicKey);
+#endif
     return data;
 }
 
