@@ -184,13 +184,17 @@
         [args addObject:@(limit)];
     }
 
-    BOOL success = [self.database executeParameterizedQuery:query params:args error:error];
+    NSError *queryError = nil;
+    NSArray *result = [self.database executeParameterizedQuery:query params:args error:&queryError];
 
-    if (!success && error) {
-        *error = [NSError errorWithDomain:@"NotificationService" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Failed to mark notifications as read"}];
+    if (queryError) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Failed to mark notifications as read", NSUnderlyingErrorKey: queryError}];
+        }
+        return NO;
     }
 
-    return success;
+    return YES;
 }
 
 @end
