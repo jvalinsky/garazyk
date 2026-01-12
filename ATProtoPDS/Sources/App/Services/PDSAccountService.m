@@ -15,7 +15,7 @@
 
 @interface PDSAccountService ()
 
-#if TARGET_OS_LINUX
+#if defined(GNUSTEP)
 @property (nonatomic, assign) os_log_t log;
 #else
 @property (nonatomic, strong) os_log_t log;
