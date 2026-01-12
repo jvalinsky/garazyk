@@ -15,14 +15,20 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 - **Token Refresh**: Implemented proper token refresh logic in `OAuth2.m`.
 - **Service Auth**: Added `com.atproto.server.getServiceAuth` endpoint.
 
-### 🏗️ Phase 3: The Firehose & Sync - IN PROGRESS
-- **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction.
-- **WebSocket**: WebSocket handler is implemented but needs robust testing.
+### ✅ Phase 3: The Firehose & Sync - COMPLETED
+- **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction in `SubscribeReposHandler.m`.
+- **WebSocket**: Full WebSocket server implementation in `WebSocketServer.m` supporting multiple connections and event broadcasting.
 
 ### 🏗️ Phase 4: Linux Support & Robustness - IN PROGRESS
-- **Linux Porting**: Implemented `PDSNetworkTransportLinux` using BSD sockets and libdispatch. Added unit tests.
+- **Linux Porting**: `PDSNetworkTransportLinux` structure in place using BSD sockets/libdispatch, but read logic is pending implementation.
 - **CLI Enhancements**: Added unit tests for CLI commands.
-- **Handle Resolution**: Implemented DNS TXT fallback for handle resolution.
+- **Handle Resolution**: COMPLETED. Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
+
+### 🗄️ Database Layer
+- **Actor Store**: `PDSActorStore` provides SQLite-based persistence for actor data, employing WAL mode and prepared statements for performance.
+
+### 🛠️ Development Tools
+- **PLC Server**: `tool-plc` contains a local PLC server for ATProto development/testing.
 
 ## Quick Reference
 

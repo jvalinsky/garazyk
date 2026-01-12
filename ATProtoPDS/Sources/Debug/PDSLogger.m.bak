@@ -3,7 +3,7 @@
 @interface PDSLogger ()
 @property (nonatomic, strong) NSDateFormatter *dateFormatter;
 @property (nonatomic, strong) NSFileHandle *logFileHandle;
-@property (nonatomic, assign) dispatch_queue_t logQueue;
+@property (nonatomic, strong) dispatch_queue_t logQueue;
 @end
 
 @implementation PDSLogger
