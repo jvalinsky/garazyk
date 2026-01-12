@@ -35,27 +35,31 @@ typedef int CFHostInfoType;
 
 // CFSwapInt* functions - byte swapping utilities
 static inline uint16_t CFSwapInt16BigToHost(uint16_t arg) {
-    return OSSwapBigToHostInt16(arg);
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
+    return __builtin_bswap16(arg);
+#else
+    return ((arg & 0x00FFU) << 8) | ((arg & 0xFF00U) >> 8);
+#endif
 }
 
 static inline uint32_t CFSwapInt32BigToHost(uint32_t arg) {
-    return OSSwapBigToHostInt32(arg);
+    return __builtin_bswap32(arg);
 }
 
 static inline uint64_t CFSwapInt64BigToHost(uint64_t arg) {
-    return OSSwapBigToHostInt64(arg);
+    return __builtin_bswap64(arg);
 }
 
 static inline uint16_t CFSwapInt16HostToBig(uint16_t arg) {
-    return OSSwapHostToBigInt16(arg);
+    return CFSwapInt16BigToHost(arg);
 }
 
 static inline uint32_t CFSwapInt32HostToBig(uint32_t arg) {
-    return OSSwapHostToBigInt32(arg);
+    return CFSwapInt32BigToHost(arg);
 }
 
 static inline uint64_t CFSwapInt64HostToBig(uint64_t arg) {
-    return OSSwapHostToBigInt64(arg);
+    return CFSwapInt64BigToHost(arg);
 }
 
 typedef int64_t CFIndex;
