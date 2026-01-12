@@ -18,7 +18,11 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 @property (nonatomic, strong) EventFormatter *eventFormatter;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, strong) os_log_t log;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t eventQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t eventQueue;
+#endif
 @property (nonatomic, assign) NSUInteger sequenceNumber;
 
 @end

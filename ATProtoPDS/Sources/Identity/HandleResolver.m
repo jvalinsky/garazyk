@@ -342,77 +342,52 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     return nil;
 }
 - (BOOL)validateHandleResolvesToPublicIP:(NSString *)handle error:(NSError **)error {
-    // Resolve the handle to IP addresses to prevent DNS rebinding attacks
-    CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)handle);
-    if (!hostRef) {
+    struct addrinfo hints, *res, *p;
+    int status;
+    
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; // AF_INET or AF_INET6
+    hints.ai_socktype = SOCK_STREAM;
+    
+    if ((status = getaddrinfo([handle UTF8String], NULL, &hints, &res)) != 0) {
         if (error) {
             *error = [NSError errorWithDomain:HandleErrorDomain
                                          code:HandleErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create host resolver"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Host resolution failed: %s", gai_strerror(status)]}];
         }
         return NO;
     }
-
-    CFStreamError streamError;
-    Boolean success = CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError);
-
-    if (!success) {
-        CFRelease(hostRef);
-        if (error) {
-            *error = [NSError errorWithDomain:HandleErrorDomain
-                                         code:HandleErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to resolve hostname"}];
-        }
-        return NO;
-    }
-
-    CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
-    if (!addresses || CFArrayGetCount(addresses) == 0) {
-        CFRelease(hostRef);
-        if (error) {
-            *error = [NSError errorWithDomain:HandleErrorDomain
-                                         code:HandleErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"No IP addresses found for hostname"}];
-        }
-        return NO;
-    }
-
-    // Check each resolved IP address
-    for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
-        struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
-
-        if (addr->sa_family == AF_INET) {
-            // IPv4
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
-            uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
-
+    
+    BOOL hasPrivateIP = NO;
+    
+    for (p = res; p != NULL; p = p->ai_next) {
+        if (p->ai_family == AF_INET) {
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+            uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
             if ([self isPrivateIPv4Address:ip]) {
-                CFRelease(hostRef);
-                if (error) {
-                    *error = [NSError errorWithDomain:HandleErrorDomain
-                                                 code:HandleErrorSSRFAttempt
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IP address (SSRF protection)"}];
-                }
-                return NO;
+                hasPrivateIP = YES;
+                break;
             }
-        } else if (addr->sa_family == AF_INET6) {
-            // IPv6
-            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
-            struct in6_addr ip6 = addr_in6->sin6_addr;
-
-            if ([self isPrivateIPv6Address:ip6]) {
-                CFRelease(hostRef);
-                if (error) {
-                    *error = [NSError errorWithDomain:HandleErrorDomain
-                                                 code:HandleErrorSSRFAttempt
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IPv6 address (SSRF protection)"}];
-                }
-                return NO;
+        } else if (p->ai_family == AF_INET6) {
+            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
+            if ([self isPrivateIPv6Address:ipv6->sin6_addr]) {
+                hasPrivateIP = YES;
+                break;
             }
         }
     }
-
-    CFRelease(hostRef);
+    
+    freeaddrinfo(res);
+    
+    if (hasPrivateIP) {
+        if (error) {
+            *error = [NSError errorWithDomain:HandleErrorDomain
+                                         code:HandleErrorSSRFAttempt
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IP address (SSRF protection)"}];
+        }
+        return NO;
+    }
+    
     return YES;
 }
 
