@@ -18,6 +18,7 @@ typedef struct __CFString *CFStringRef;
 typedef struct __CFData *CFDataRef;
 typedef struct __CFBoolean *CFBooleanRef;
 typedef struct __CFAllocator *CFAllocatorRef;
+typedef struct __CFError *CFErrorRef;
 
 typedef CFTypeRef CFBridgingRelease(CFTypeRef cf);
 typedef CFTypeRef CFRetain(CFTypeRef cf);
@@ -30,7 +31,7 @@ static inline int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
 }
 
 typedef struct __SecKey *SecKeyRef;
-
+typedef SecKeyRef SecKeyRef;
 typedef const struct SecKeyAlgorithm *SecKeyAlgorithm;
 
 static inline SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef parameters, OSStatus *error) {
@@ -39,8 +40,19 @@ static inline SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef parameters, OSStat
     return NULL;
 }
 
-#define kSecKeyAlgorithmRSASignatureMessagePSSSHA256 0
-#define kSecKeyAlgorithmECDSASignatureRFC6979SHA256 0
+static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, OSStatus *error) {
+    (void)key;
+    (void)error;
+    return NULL;
+}
+
+#define kSecKeyAlgorithmRSASignatureMessagePSSSHA256 ((SecKeyAlgorithm)0)
+#define kSecKeyAlgorithmECDSASignatureRFC6979SHA256 ((SecKeyAlgorithm)0)
+#define kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256 ((SecKeyAlgorithm)0)
+
+#define kSecAttrKeyType ((CFStringRef)0)
+#define kSecAttrKeyTypeRSA ((CFStringRef)1)
+#define kSecAttrKeyTypeECSECPrimeRandom ((CFStringRef)2)
 
 #endif
 
