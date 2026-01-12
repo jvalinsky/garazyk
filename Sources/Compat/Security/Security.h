@@ -103,6 +103,7 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecAttrIsPermanent ((CFStringRef)8)
 #define kSecClass ((CFStringRef)9)
 #define kSecClassKey ((CFStringRef)10)
+#define kSecClassGenericPassword ((CFStringRef)11)
 #define errSecItemNotFound (-25300)
 
 #endif
