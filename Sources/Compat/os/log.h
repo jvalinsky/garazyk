@@ -14,35 +14,22 @@ static inline os_log_t os_log_create(const char *subsystem, const char *category
     return (os_log_t)1;
 }
 
+#define PDS_LOG_CONVERT(fmt) @fmt
+
 #define os_log(log, format, ...) \
-    do { \
-        NSString *_fmt = [NSString stringWithFormat:format, ##__VA_ARGS__]; \
-        NSLog(@"[ATProtoPDS] %@", _fmt); \
-    } while(0)
+    NSLog(PDS_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_info(log, format, ...) \
-    do { \
-        NSString *_fmt = [NSString stringWithFormat:format, ##__VA_ARGS__]; \
-        NSLog(@"[ATProtoPDS INFO] %@", _fmt); \
-    } while(0)
+    NSLog(@"[ATProtoPDS INFO] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_error(log, format, ...) \
-    do { \
-        NSString *_fmt = [NSString stringWithFormat:format, ##__VA_ARGS__]; \
-        NSLog(@"[ATProtoPDS ERROR] %@", _fmt); \
-    } while(0)
+    NSLog(@"[ATProtoPDS ERROR] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_debug(log, format, ...) \
-    do { \
-        NSString *_fmt = [NSString stringWithFormat:format, ##__VA_ARGS__]; \
-        NSLog(@"[ATProtoPDS DEBUG] %@", _fmt); \
-    } while(0)
+    NSLog(@"[ATProtoPDS DEBUG] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_fault(log, format, ...) \
-    do { \
-        NSString *_fmt = [NSString stringWithFormat:format, ##__VA_ARGS__]; \
-        NSLog(@"[ATProtoPDS FAULT] %@", _fmt); \
-    } while(0)
+    NSLog(@"[ATProtoPDS FAULT] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #else
 #error "Unsupported platform"
