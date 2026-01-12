@@ -1,5 +1,6 @@
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import <Security/Security.h>
 #import <resolv.h>
 #import <arpa/nameser.h>
 #import <netdb.h>
