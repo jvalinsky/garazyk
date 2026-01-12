@@ -203,7 +203,11 @@
     
     __autoreleasing NSError *keyError = nil;
     SecKeyRef key = [self.store signingKeyWithError:&keyError];
+#if defined(__APPLE__)
     XCTAssertNotNil((__bridge id)key, @"Should have signing key now: %@", keyError);
+#else
+    XCTAssertNotNil(key, @"Should have signing key now: %@", keyError);
+#endif
 }
 
 - (void)testRecordCount {
