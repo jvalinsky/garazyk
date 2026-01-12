@@ -143,39 +143,32 @@ static inline void CFRelease(CFTypeRef cf) {
     (void)cf;
 }
 
-static inline CFHostRef CFHostCreateWithName(CFAllocatorRef allocator, CFStringRef hostname) {
-    (void)allocator;
-    (void)hostname;
-    return (CFHostRef)malloc(sizeof(void *));
-}
+// CFRunLoop stubs for server_main.m
+typedef struct __CFRunLoop *CFRunLoopRef;
+typedef struct __CFRunLoopMode *CFRunLoopModeRef;
 
-static inline Boolean CFHostStartInfoResolution(CFHostRef host, CFHostInfoType info, CFStreamError *error) {
-    (void)host;
-    (void)info;
-    (void)error;
-    return false;
-}
+#define kCFRunLoopDefaultMode ((CFStringRef)0)
 
-static inline CFArrayRef CFHostGetAddressing(CFHostRef host, Boolean *hasName) {
-    (void)host;
-    (void)hasName;
-    return (CFArrayRef)malloc(sizeof(void *));
-}
-
-static inline CFIndex CFArrayGetCount(CFArrayRef theArray) {
-    (void)theArray;
+static inline int CFRunLoopRun(void) {
     return 0;
 }
 
-static inline const void *CFArrayGetValueAtIndex(CFArrayRef theArray, CFIndex idx) {
-    (void)theArray;
-    (void)idx;
-    return NULL;
+static inline void CFRunLoopStop(CFRunLoopRef rl) {
+    (void)rl;
 }
 
-static inline const UInt8 *CFDataGetBytePtr(CFDataRef theData) {
-    (void)theData;
-    return NULL;
+static inline CFRunLoopRef CFRunLoopGetMain(void) {
+    return (CFRunLoopRef)NULL;
+}
+
+static inline CFRunLoopModeRef CFRunLoopGetCurrent(CFRunLoopRef rl) {
+    (void)rl;
+    return (CFRunLoopModeRef)NULL;
+}
+
+static inline Boolean CFRunLoopIsWaiting(CFRunLoopRef rl) {
+    (void)rl;
+    return false;
 }
 
 #define kCFBooleanTrue ((CFBooleanRef)1)
