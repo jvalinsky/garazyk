@@ -57,6 +57,7 @@ int main(int argc, char * argv[]) {
             @"CARInteropTests",
             @"RepoCommitTests",
             @"PDSNetworkTransportTests",
+            @"OAuth2Tests",
             @"ActorStoreTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",

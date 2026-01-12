@@ -472,11 +472,39 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
                      scope:(nullable NSString *)scope
                    dpopJWK:(nullable NSDictionary *)dpopJWK
                 completion:(OAuth2RefreshCompletion)completion {
-    // Implementation would go here
-    NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
-                                         code:OAuth2ErrorInvalidRequest
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Token refresh not implemented"}];
-    completion(nil, error);
+    // Find session with this refresh token
+    Session *foundSession = nil;
+    for (Session *session in self.activeSessions.allValues) {
+        if ([session.refreshToken isEqualToString:refreshToken]) {
+            foundSession = session;
+            break;
+        }
+    }
+    
+    if (!foundSession) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidGrant
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];
+        completion(nil, error);
+        return;
+    }
+    
+    // Check if refresh token is expired (assuming 30 days for now)
+    if ([foundSession.createdAt timeIntervalSinceNow] < -30 * 24 * 60 * 60) {
+        [self.activeSessions removeObjectForKey:foundSession.sessionID];
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidGrant
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Refresh token expired"}];
+        completion(nil, error);
+        return;
+    }
+    
+    // Issue new access token
+    NSString *newAccessToken = [foundSession refreshAccessToken];
+    
+    if (completion) {
+        completion(newAccessToken, nil);
+    }
 }
 
 #pragma mark - ATProto Identity Resolution

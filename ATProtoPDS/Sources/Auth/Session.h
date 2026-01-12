@@ -208,6 +208,15 @@ typedef NS_ENUM(NSInteger, SessionError) {
  */
 - (NSDictionary *)toBearerTokenResponse;
 
+/*!
+ @method refreshAccessToken
+ 
+ @abstract Generates a new access token for the session.
+ 
+ @return The new access token value.
+ */
+- (NSString *)refreshAccessToken;
+
 @end
 
 /*!
