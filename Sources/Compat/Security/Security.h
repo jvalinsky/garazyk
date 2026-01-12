@@ -20,6 +20,14 @@ typedef struct __CFData *CFDataRef;
 typedef struct __CFBoolean *CFBooleanRef;
 typedef struct __CFAllocator *CFAllocatorRef;
 typedef struct __CFError *CFErrorRef;
+typedef struct __CFHost *CFHostRef;
+typedef struct __CFArray *CFArrayRef;
+typedef struct __CFData *CFDataRef;
+
+typedef int32_t CFStreamError;
+typedef unsigned char Boolean;
+
+#define kCFHostAddresses 0
 
 typedef int64_t CFIndex;
 typedef uint64_t CFHashCode;
@@ -42,7 +50,8 @@ typedef struct {
 } CFDictionaryValueCallBacks;
 
 #define kCFAllocatorDefault ((CFAllocatorRef)0)
-#define kCFTypeDictionaryKeyCallBacks ((CFDictionaryKeyCallBacks *)0)
+
+static const CFDictionaryKeyCallBacks kCFTypeDictionaryKeyCallBacks = {0, NULL, NULL, NULL, NULL, NULL};
 
 static inline CFDictionaryRef CFDictionaryCreateMutable(CFAllocatorRef allocator, CFIndex capacity, const CFDictionaryKeyCallBacks *keyCallBacks, const CFDictionaryValueCallBacks *valueCallBacks) {
     (void)allocator;
