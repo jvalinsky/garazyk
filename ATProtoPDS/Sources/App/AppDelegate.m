@@ -3,7 +3,11 @@
 
 @interface AppDelegate ()
 
+#if defined(__APPLE__)
 @property (strong, nonatomic) os_log_t log;
+#else
+@property (assign, nonatomic) os_log_t log;
+#endif
 
 @end
 
