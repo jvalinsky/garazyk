@@ -33,6 +33,31 @@ typedef int CFHostInfoType;
 
 #define kCFHostAddresses 0
 
+// CFSwapInt* functions - byte swapping utilities
+static inline uint16_t CFSwapInt16BigToHost(uint16_t arg) {
+    return OSSwapBigToHostInt16(arg);
+}
+
+static inline uint32_t CFSwapInt32BigToHost(uint32_t arg) {
+    return OSSwapBigToHostInt32(arg);
+}
+
+static inline uint64_t CFSwapInt64BigToHost(uint64_t arg) {
+    return OSSwapBigToHostInt64(arg);
+}
+
+static inline uint16_t CFSwapInt16HostToBig(uint16_t arg) {
+    return OSSwapHostToBigInt16(arg);
+}
+
+static inline uint32_t CFSwapInt32HostToBig(uint32_t arg) {
+    return OSSwapHostToBigInt32(arg);
+}
+
+static inline uint64_t CFSwapInt64HostToBig(uint64_t arg) {
+    return OSSwapHostToBigInt64(arg);
+}
+
 typedef int64_t CFIndex;
 typedef uint64_t CFHashCode;
 
