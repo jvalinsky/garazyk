@@ -34,7 +34,11 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
         KeyPair *activeKeyPair = [self.keyManager getActiveKeyPair:nil];
         if (activeKeyPair) {
             keyRef = activeKeyPair.privateKey;
+#if defined(__APPLE__)
             CFRetain(keyRef);
+#else
+            CFRetain((__bridge CFTypeRef)keyRef);
+#endif
         }
     });
     
@@ -48,7 +52,11 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
         NSArray<KeyPair *> *allKeyPairs = [self.keyManager allKeyPairs:nil];
         for (KeyPair *keyPair in allKeyPairs) {
             if (keyPair.isActive) {
+#if defined(__APPLE__)
                 [validKeys addObject:(__bridge id)keyPair.publicKey];
+#else
+                [validKeys addObject:keyPair.publicKey];
+#endif
             }
         }
     });
@@ -99,7 +107,11 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 - (BOOL)verifySignature:(NSData *)signature forData:(NSData *)data error:(NSError **)error {
     NSArray *publicKeys = [self allValidPublicKeys];
     for (id keyObj in publicKeys) {
+#if defined(__APPLE__)
         SecKeyRef publicKey = (__bridge SecKeyRef)keyObj;
+#else
+        SecKeyRef publicKey = (SecKeyRef)keyObj;
+#endif
         if ([self.keyManager verifySignature:signature forData:data withKey:publicKey error:nil]) {
             return YES;
         }
