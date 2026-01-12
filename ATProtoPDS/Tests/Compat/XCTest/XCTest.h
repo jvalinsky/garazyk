@@ -49,6 +49,16 @@ NS_ASSUME_NONNULL_BEGIN
         XCTFail(__VA_ARGS__); \
     }
 
+#define XCTAssertNotEqual(expression1, expression2, ...) \
+    if ((expression1) == (expression2)) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
+#define XCTAssertNotEqualObjects(expression1, expression2, ...) \
+    if ([expression1 isEqual:expression2] || (expression1 == expression2)) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
 // --- Protocol ---
 
 @protocol XCTestObservation <NSObject>
