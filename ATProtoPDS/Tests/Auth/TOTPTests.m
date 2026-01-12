@@ -20,8 +20,8 @@
         @"foobar": @"MZXW6YTBOI======"
     };
     
-    [testCases enumerateKeysAndObjectsUsingBlock:^(NSString *input, NSString *expected, BOOL *stop) {
-        NSData *data = [input dataUsingEncoding:NSUTF8StringEncoding];
+    [testCases enumerateKeysAndObjectsUsingBlock:^(id input, id expected, BOOL *stop) {
+        NSData *data = [(NSString *)input dataUsingEncoding:NSUTF8StringEncoding];
         NSString *result = [Base32Utils base32StringFromData:data];
         XCTAssertEqualObjects(result, expected, @"Base32 encoding failed for input: %@", input);
     }];
@@ -38,7 +38,7 @@
         @"MZXW6YTBOI======": @"foobar"
     };
     
-    [testCases enumerateKeysAndObjectsUsingBlock:^(NSString *input, NSString *expected, BOOL *stop) {
+    [testCases enumerateKeysAndObjectsUsingBlock:^(id input, id expected, BOOL *stop) {
         NSData *resultData = [Base32Utils dataFromBase32String:input];
         NSString *result = [[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding];
         XCTAssertEqualObjects(result, expected, @"Base32 decoding failed for input: %@", input);
