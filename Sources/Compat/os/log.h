@@ -14,14 +14,6 @@ static inline os_log_t os_log_create(const char *subsystem, const char *category
     return (os_log_t)1;
 }
 
-static inline void os_log_internal(os_log_t log, NSString *level, NSString *format, ...) {
-    NSMutableString *fullFormat = [NSMutableString stringWithFormat:@"[%s] %@", subsystem ?: "unknown", format];
-    va_list args;
-    va_start(args, format);
-    NSLogv(fullFormat, args);
-    va_end(args);
-}
-
 #define os_log(log, format, ...) \
     do { \
         NSString *_fmt = [NSString stringWithFormat:format, ##__VA_ARGS__]; \

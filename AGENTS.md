@@ -145,3 +145,45 @@ Before pushing, ensure:
 2. ✅ `xcodebuild -scheme AllTests build` succeeds
 3. ✅ `./build/tests/AllTests` passes (zero failures)
 4. ✅ Fuzzers build successfully
+
+## Linux/GNUstep Compatibility
+
+This project targets both macOS and Linux (via GNUstep). See [docs/GNUSTEP_COMPATIBILITY.md](docs/GNUSTEP_COMPATIBILITY.md) for detailed compatibility information.
+
+### Key Findings
+
+| Feature | macOS | Linux (GNUstep) | Compat Layer Needed? |
+|---------|-------|-----------------|---------------------|
+| **NSLog** | ✅ Native | ✅ Native | No |
+| **os/log.h** | ✅ Native | ❌ Not implemented | Yes - see `Sources/Compat/os/log.h` |
+| **Security framework** | ✅ Native | ❌ Not implemented | Yes - see `Sources/Compat/Security/` |
+| **CommonCrypto** | ✅ Native | ❌ Not implemented | Yes - see `Sources/Compat/CommonCrypto/` |
+| **NSURLConnection** | ✅ Native | ✅ Native | No |
+| **NSURLSession** | ✅ Native | ⚠️ Declarations only | Use NSURLConnection |
+| **dispatch_queue_t** | ✅ Native | ✅ Native (via libdispatch) | No |
+
+### Common Patterns
+
+**os_log_t property declaration:**
+```objc
+#if TARGET_OS_LINUX
+@property (nonatomic, assign) os_log_t log;
+#else
+@property (nonatomic, strong) os_log_t log;
+#endif
+```
+
+**Importing platform-specific headers:**
+```objc
+#import <os/log.h>   // Uses compat layer on Linux, system on macOS
+#import <Security/Security.h>  // Same pattern
+```
+
+### Building on Linux
+
+```bash
+# On VM with GNUstep installed
+mkdir build-linux && cd build-linux
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+make -j$(nproc)
+```
