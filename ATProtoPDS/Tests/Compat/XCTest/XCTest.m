@@ -76,6 +76,7 @@
 - (void)tearDown {}
 
 - (void)performTest:(id)run {
+    [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCaseWillStart:self];
     fprintf(stderr, "[XCTest] Test %s started\n", [self.name UTF8String]);
     @try {
         [self setUp];
@@ -87,14 +88,16 @@
         }
         [self tearDown];
     } @catch (NSException *exception) {
-        printf("Test %s failed: Uncaught exception %s\n", [self.name UTF8String], [[exception reason] UTF8String]);
-        _failureCount++;
+        NSString *description = [NSString stringWithFormat:@"Uncaught exception %@", [exception reason]];
+        [self recordFailureWithDescription:description inFile:@"<unknown>" atLine:0 expected:NO];
     }
+    [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCaseDidFinish:self];
 }
 
 - (void)recordFailureWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber expected:(BOOL)expected {
     printf("Test %s failed: %s (%s:%lu)\n", [self.name UTF8String], [description UTF8String], [filePath UTF8String], (unsigned long)lineNumber);
     _failureCount++;
+    [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCase:self didFailWithDescription:description inFile:filePath atLine:lineNumber];
 }
 
 // Async Helper
