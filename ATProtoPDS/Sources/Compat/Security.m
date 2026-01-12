@@ -130,6 +130,7 @@ SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error) {
     // Generate EC Key P-256
     EVP_PKEY *pkey = NULL;
     EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
+    ShimSecKey *keyRaw = nil;
     
     if (!pctx) goto err;
     if (EVP_PKEY_keygen_init(pctx) <= 0) goto err;
@@ -138,7 +139,7 @@ SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error) {
     
     EVP_PKEY_CTX_free(pctx);
     
-    ShimSecKey *keyRaw = [[ShimSecKey alloc] init];
+    keyRaw = [[ShimSecKey alloc] init];
     keyRaw.pkey = pkey;
     return keyRaw;
 
