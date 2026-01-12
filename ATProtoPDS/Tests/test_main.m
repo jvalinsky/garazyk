@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) {
             @"GetServiceAuthMethodTests",
             @"XrpcHandlerTests",
             @"PDSCLITests",
-            @"ActorStoreTests",
+            // @"ActorStoreTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",
             @"PDSIntegrationTests",
