@@ -1,0 +1,82 @@
+2026-01-11 19:40:17.077 AllTests[57519:5010329] Warning: Test class OAuth2HandlerTests not found
+2026-01-11 19:40:17.077 AllTests[57519:5010329] 
+=== Starting Test Suite: All Tests ===
+2026-01-11 19:40:17.077 AllTests[57519:5010329] Test suites: 13
+Test Suite 'ActorStoreTests' started at 2026-01-11 19:40:17.078.
+Test Case '-[ActorStoreTests testStoreInitialization]' started.
+Test Case '-[ActorStoreTests testStoreInitialization]' passed (0.013 seconds).
+Test Case '-[ActorStoreTests testAccountCreation]' started.
+Test Case '-[ActorStoreTests testAccountCreation]' passed (0.005 seconds).
+Test Case '-[ActorStoreTests testAccountUpdate]' started.
+Test Case '-[ActorStoreTests testAccountUpdate]' passed (0.005 seconds).
+Test Case '-[ActorStoreTests testRecordOperations]' started.
+Test Case '-[ActorStoreTests testRecordOperations]' passed (0.005 seconds).
+Test Case '-[ActorStoreTests testBlockOperations]' started.
+Test Case '-[ActorStoreTests testBlockOperations]' passed (0.005 seconds).
+Test Case '-[ActorStoreTests testTransaction]' started.
+Test Case '-[ActorStoreTests testTransaction]' passed (0.003 seconds).
+Test Case '-[ActorStoreTests testSigningKeyGeneration]' started.
+Test Case '-[ActorStoreTests testSigningKeyGeneration]' passed (0.448 seconds).
+Test Case '-[ActorStoreTests testRecordCount]' started.
+Test Case '-[ActorStoreTests testRecordCount]' passed (0.006 seconds).
+Test Case '-[ActorStoreTests testSaveBlobAndListBlobsForDid]' started.
+Test Case '-[ActorStoreTests testSaveBlobAndListBlobsForDid]' passed (0.004 seconds).
+Test Case '-[ActorStoreTests testListBlobsExcludesOtherDids]' started.
+Test Case '-[ActorStoreTests testListBlobsExcludesOtherDids]' passed (0.004 seconds).
+Test Case '-[ActorStoreTests testDeleteBlobForCID]' started.
+Test Case '-[ActorStoreTests testDeleteBlobForCID]' passed (0.004 seconds).
+Test Suite 'ActorStoreTests' passed at 2026-01-11 19:40:17.585.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.503 (0.508) seconds
+Test Suite 'DatabasePoolTests' started at 2026-01-11 19:40:17.585.
+Test Case '-[DatabasePoolTests testPoolInitialization]' started.
+Test Case '-[DatabasePoolTests testPoolInitialization]' passed (0.000 seconds).
+Test Case '-[DatabasePoolTests testStoreRetrieval]' started.
+Test Case '-[DatabasePoolTests testStoreRetrieval]' passed (0.004 seconds).
+Test Case '-[DatabasePoolTests testSameStoreReturned]' started.
+Test Case '-[DatabasePoolTests testSameStoreReturned]' passed (0.005 seconds).
+Test Case '-[DatabasePoolTests testMultipleStores]' started.
+Test Case '-[DatabasePoolTests testMultipleStores]' passed (0.012 seconds).
+Test Case '-[DatabasePoolTests testEviction]' started.
+Test Case '-[DatabasePoolTests testEviction]' passed (0.019 seconds).
+Test Case '-[DatabasePoolTests testEvictSpecificStore]' started.
+Test Case '-[DatabasePoolTests testEvictSpecificStore]' passed (0.013 seconds).
+Test Case '-[DatabasePoolTests testCloseAll]' started.
+Test Case '-[DatabasePoolTests testCloseAll]' passed (0.008 seconds).
+Test Case '-[DatabasePoolTests testAccountOperations]' started.
+Test Case '-[DatabasePoolTests testAccountOperations]' passed (0.003 seconds).
+Test Case '-[DatabasePoolTests testMetricsCollection]' started.
+Test Case '-[DatabasePoolTests testMetricsCollection]' passed (0.005 seconds).
+Test Case '-[DatabasePoolTests testAcquireReleaseDetailed]' started.
+Test Case '-[DatabasePoolTests testAcquireReleaseDetailed]' passed (0.005 seconds).
+Test Case '-[DatabasePoolTests testAcquireTimeoutSimulation]' started.
+Test Case '-[DatabasePoolTests testAcquireTimeoutSimulation]' passed (0.012 seconds).
+Test Case '-[DatabasePoolTests testAcquireErrorConditions]' started.
+Test Case '-[DatabasePoolTests testAcquireErrorConditions]' passed (0.005 seconds).
+Test Case '-[DatabasePoolTests testConcurrentAccessPatterns]' started.
+Test Case '-[DatabasePoolTests testConcurrentAccessPatterns]' passed (0.020 seconds).
+Test Case '-[DatabasePoolTests testPoolExhaustionHandling]' started.
+Test Case '-[DatabasePoolTests testPoolExhaustionHandling]' passed (0.016 seconds).
+Test Case '-[DatabasePoolTests testEvictionUnderLoad]' started.
+Test Case '-[DatabasePoolTests testEvictionUnderLoad]' passed (0.039 seconds).
+Test Suite 'DatabasePoolTests' passed at 2026-01-11 19:40:17.753.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.166 (0.167) seconds
+Test Suite 'PDSControllerTests' started at 2026-01-11 19:40:17.753.
+Test Case '-[PDSControllerTests testControllerInitialization]' started.
+Test Case '-[PDSControllerTests testControllerInitialization]' passed (0.022 seconds).
+Test Case '-[PDSControllerTests testCreateAccount]' started.
+Test Case '-[PDSControllerTests testCreateAccount]' passed (0.014 seconds).
+Test Case '-[PDSControllerTests testCreateDuplicateAccount]' started.
+Test Case '-[PDSControllerTests testCreateDuplicateAccount]' passed (0.013 seconds).
+Test Case '-[PDSControllerTests testLogin]' started.
+Test Case '-[PDSControllerTests testLogin]' passed (0.015 seconds).
+Test Case '-[PDSControllerTests testLoginInvalidPassword]' started.
+Test Case '-[PDSControllerTests testLoginInvalidPassword]' passed (0.015 seconds).
+Test Case '-[PDSControllerTests testRefreshToken]' started.
+Test Case '-[PDSControllerTests testRefreshToken]' passed (0.014 seconds).
+Test Case '-[PDSControllerTests testRefreshInvalidToken]' started.
+Test Case '-[PDSControllerTests testRefreshInvalidToken]' passed (0.016 seconds).
+Test Case '-[PDSControllerTests testDeleteAccount]' started.
+Test Case '-[PDSControllerTests testDeleteAccount]' passed (0.015 seconds).
+Test Case '-[PDSControllerTests testDeleteAccountWrongPassword]' started.
+Test Case '-[PDSControllerTests testDeleteAccountWrongPassword]' passed (0.016 seconds).
+Test Case '-[PDSControllerTests testRecordOperations]' started.

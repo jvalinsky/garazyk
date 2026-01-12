@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Repository/MST.h"
+#import "Repository/CBOR.h"
 #import "Core/CID.h"
 
 @interface MSTInteropTests : XCTestCase
@@ -38,6 +39,12 @@
     
     // Empty map
     MST *emptyMST = [[MST alloc] init];
+    NSData *ec = [emptyMST serializeToCBOR];
+    const uint8_t *eb = ec.bytes;
+    NSMutableString *eh = [NSMutableString string];
+    for (NSUInteger i = 0; i < ec.length; i++) [eh appendFormat:@"%02x", eb[i]];
+    NSLog(@"DEBUG: Empty MST CBOR: %@", eh);
+    
     CID *erc = emptyMST.rootCID;
     const uint8_t *rb = erc.bytes.bytes;
     NSMutableString *rhex = [NSMutableString string];
@@ -51,6 +58,31 @@
     // Trivial map
     MST *trivialMST = [[MST alloc] init];
     [trivialMST put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
+    NSData *tc = [trivialMST serializeToCBOR];
+    const uint8_t *tcb = tc.bytes;
+    NSMutableString *tch = [NSMutableString string];
+    for (NSUInteger i = 0; i < tc.length; i++) [tch appendFormat:@"%02x", tcb[i]];
+    NSLog(@"DEBUG: Trivial MST CBOR: %@", tch);
+    
+    // Log the TreeEntry CBOR specifically
+    NSData *kSuffix = [@"com.example.record/3jqfcqzm3fo2j" dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    dict[[CBORValue textString:@"k"]] = [CBORValue byteString:kSuffix];
+    dict[[CBORValue textString:@"p"]] = [CBORValue unsignedInteger:0];
+    dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:cid1.bytes]];
+    NSData *entryCbor = [[CBORValue map:dict] encode];
+    const uint8_t *ecb = entryCbor.bytes;
+    NSMutableString *ech = [NSMutableString string];
+    for (NSUInteger i = 0; i < entryCbor.length; i++) [ech appendFormat:@"%02x", ecb[i]];
+    NSLog(@"DEBUG: TreeEntry CBOR: %@", ech);
+    
+    CID *trc = trivialMST.rootCID;
+    const uint8_t *trb = trc.bytes.bytes;
+    NSMutableString *trhex = [NSMutableString string];
+    for (NSUInteger i = 0; i < trc.bytes.length; i++) {
+        [trhex appendFormat:@"%02x", trb[i]];
+    }
+    NSLog(@"DEBUG: Trivial MST rootCID hex: %@", trhex);
     XCTAssertEqualObjects(trivialMST.rootCID.stringValue, @"bafyreibj4lsc3aqnrvphp5xmrnfoorvru4wynt6lwidqbm2623a6tatzdu");
     
     // Layer 2 map
