@@ -1,10 +1,12 @@
 #import <Foundation/Foundation.h>
+#import "Auth/JWT.h"
 
 @class OAuth2Server;
 @class HttpServer;
 @class PDSDatabase;
 @class HttpRequest;
 @class HttpResponse;
+@class JWTMinter;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -20,7 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 @interface OAuth2Handler : NSObject
 
 /*! The underlying OAuth 2.0 server implementation. */
-@property (nonatomic, strong) OAuth2Server *server;
+@property (nonatomic, strong) OAuth2Server *oauthServer;
+
+/*! JWT minting service. */
+@property (nonatomic, strong, nullable) JWTMinter *minter;
 
 /*!
  @method initWithDatabase:
@@ -51,6 +56,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
 
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
 

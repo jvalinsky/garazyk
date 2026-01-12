@@ -116,6 +116,22 @@
         [response setJsonBody:session];
     }];
 
+    [dispatcher registerComAtprotoServerGetServiceAuth:^(HttpRequest *request, HttpResponse *response) {
+        NSString *aud = [request queryParamForKey:@"aud"];
+        if (!aud) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing aud parameter"}];
+            return;
+        }
+        
+        // Simulate service auth token generation
+        // In a full implementation, this would use the PDS private key
+        NSString *token = [[NSUUID UUID] UUIDString];
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"token": token}];
+    }];
+
     [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSLog(@"createRecord XRPC handler called");
         NSDictionary *body = request.jsonBody;
@@ -1000,6 +1016,10 @@
 
     // Create verifier and set expected issuer
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    if (controller.jwtMinter) {
+        verifier.keyRotationManager = controller.jwtMinter.keyRotationManager;
+        verifier.publicKey = controller.jwtMinter.publicKey;
+    }
 
     // Use configurable issuer from environment, default to localhost
     NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
