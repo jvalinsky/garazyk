@@ -5,9 +5,12 @@
 #import <Security/Security.h>
 #else
 #include <stdlib.h>
+#include <stdint.h>
 
 #define kSecRandomDefault 0
 #define errSecSuccess 0
+
+typedef int32_t OSStatus;
 
 static inline int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
     (void)drbg;
