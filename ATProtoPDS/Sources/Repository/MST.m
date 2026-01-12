@@ -338,6 +338,29 @@
             zeroCount += 1;
         }
         break;
+    }
+
+    return zeroCount;
+}
+
++ (NSUInteger)keyDepthString:(NSString *)key {
+    return [self keyDepthBytes:[key dataUsingEncoding:NSUTF8StringEncoding]];
+}
+
++ (NSUInteger)keyDepthBytes:(NSData *)keyBytes {
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(keyBytes.bytes, (CC_LONG)keyBytes.length, hash);
+
+    uint32_t zeroCount = 0;
+    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
+        uint8_t byte = hash[i];
+        if (byte == 0) {
+            zeroCount += 4;
+            continue;
+        }
+        if ((byte & 0xC0) != 0) {
+            break;
+        }
         if ((byte & 0xFC) == 0) {
             zeroCount += 3;
         } else if ((byte & 0xF0) == 0) {
