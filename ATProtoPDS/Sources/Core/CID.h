@@ -15,6 +15,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// Multihash data (algorithm + digest)
 @property (readonly, nonatomic, strong) NSData *multihash;
 
+/// Create CID from raw digest data
+/// @param digest The raw digest bytes (e.g., 32 bytes for SHA-256)
+/// @param codec The codec identifier
++ (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec;
+
 /// Create CID from multihash data
 /// @param multihash The multihash bytes (algorithm + digest)
 /// @param codec The codec identifier

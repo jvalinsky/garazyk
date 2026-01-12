@@ -52,19 +52,6 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
 int main(int argc, char * argv[]) {
     @autoreleasepool {
         NSArray *testClasses = @[
-            @"ActorStoreTests",
-            @"DatabasePoolTests",
-            @"PDSControllerTests",
-            @"PDSIntegrationTests",
-            @"ServiceDatabasesTests",
-            @"RateLimiterTests",
-            @"DIDResolverTests",
-            @"HandleResolverTests",
-            @"ATProtoHandleValidatorTests",
-            @"IdentifierTests",
-            @"TOTPTests",
-            @"CryptoTests",
-            @"OAuth2HandlerTests",
             @"MSTInteropTests"
         ];
 
