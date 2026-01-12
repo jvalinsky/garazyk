@@ -93,7 +93,7 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
     SecCertificateRef leafCertificate = SecTrustGetCertificateAtIndex(serverTrust, 0);
     if (!leafCertificate) return NO;
 
-    // Extract public key from certificate
+    // Extract public key
     SecKeyRef publicKey = [self publicKeyFromCertificate:leafCertificate];
     if (!publicKey) return NO;
 
