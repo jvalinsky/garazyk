@@ -205,6 +205,9 @@ if(NOT APPLE)
 
   # FederationClient.m uses NSURLSession - same issue as DID.m
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
+
+  # PDSMetrics.m uses os_unfair_lock from os/lock.h (macOS-only)
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Metrics/PDSMetrics\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
