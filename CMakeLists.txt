@@ -97,7 +97,16 @@ else()
     # Linux Dependencies
     find_package(OpenSSL REQUIRED)
     find_package(SQLite3 REQUIRED)
-    
+
+    # Create SQLite3 imported target if not already created by find_package
+    if(NOT TARGET SQLite3::SQLite3)
+        add_library(SQLite3::SQLite3 INTERFACE IMPORTED)
+        set_target_properties(SQLite3::SQLite3 PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIRS}"
+            INTERFACE_LINK_LIBRARIES "${SQLite3_LIBRARIES}"
+        )
+    endif()
+
     find_library(DISPATCH_LIB dispatch)
     find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
     find_library(QRENCODE_LIB qrencode REQUIRED)
