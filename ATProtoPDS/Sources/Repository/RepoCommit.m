@@ -51,7 +51,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
 - (nullable NSData *)computeHash {
     NSData *serialized = [self serialize];
-    return [CID sha256Digest:serialized];
+    return [CID rawSha256:serialized];
 }
 
 - (CID *)computeCID {
