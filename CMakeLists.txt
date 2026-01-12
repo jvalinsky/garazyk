@@ -13,9 +13,13 @@ project(ATProtoPDS
 # Global Settings
 #=============================
 # Enable ARC for Objective-C and disable strict standards
-set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -Wno-implicit-function-declaration")
+set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -Wno-implicit-function-declaration")
 
 # Platform Specific Configuration
+if(APPLE)
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc")
+endif()
+
 if(NOT APPLE)
     add_compile_definitions(GNUSTEP LINUX OS_OBJECT_USE_OBJC=0)
 
