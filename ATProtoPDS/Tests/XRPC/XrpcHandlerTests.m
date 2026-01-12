@@ -1,3 +1,4 @@
+#import <XCTest/XCTest.h>
 #import "Network/XrpcHandler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
