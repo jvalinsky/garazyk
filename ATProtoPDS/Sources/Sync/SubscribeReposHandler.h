@@ -35,6 +35,8 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
                               ops:(NSArray<NSDictionary *> *)ops 
                             blobs:(NSArray<CID *> *)blobs;
 - (void)broadcastIdentityChange:(NSString *)did handle:(nullable NSString *)handle;
+- (void)broadcastAccountTakedown:(NSString *)did;
+- (void)broadcastInfo:(NSString *)kind message:(NSString *)message;
 
 @end
 
