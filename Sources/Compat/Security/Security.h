@@ -62,6 +62,14 @@ static inline uint64_t CFSwapInt64HostToBig(uint64_t arg) {
     return CFSwapInt64BigToHost(arg);
 }
 
+// OSSwap* aliases for code that uses them directly
+#define OSSwapBigToHostInt16(x) CFSwapInt16BigToHost(x)
+#define OSSwapBigToHostInt32(x) CFSwapInt32BigToHost(x)
+#define OSSwapBigToHostInt64(x) CFSwapInt64BigToHost(x)
+#define OSSwapHostToBigInt16(x) CFSwapInt16HostToBig(x)
+#define OSSwapHostToBigInt32(x) CFSwapInt32HostToBig(x)
+#define OSSwapHostToBigInt64(x) CFSwapInt64HostToBig(x)
+
 typedef int64_t CFIndex;
 typedef uint64_t CFHashCode;
 
