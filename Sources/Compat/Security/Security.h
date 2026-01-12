@@ -20,9 +20,18 @@ typedef struct __CFBoolean *CFBooleanRef;
 typedef struct __CFAllocator *CFAllocatorRef;
 typedef struct __CFError *CFErrorRef;
 
-typedef CFTypeRef CFBridgingRelease(CFTypeRef cf);
-typedef CFTypeRef CFRetain(CFTypeRef cf);
-typedef void CFRelease(CFTypeRef cf);
+static inline CFTypeRef CFBridgingRelease(CFTypeRef cf) {
+    (void)cf;
+    return NULL;
+}
+
+static inline CFTypeRef CFRetain(CFTypeRef cf) {
+    return cf;
+}
+
+static inline void CFRelease(CFTypeRef cf) {
+    (void)cf;
+}
 
 static inline int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
     (void)drbg;
@@ -46,6 +55,28 @@ static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, OSStatus
     return NULL;
 }
 
+static inline SecKeyRef SecKeyCopyPublicKey(SecKeyRef key) {
+    (void)key;
+    return NULL;
+}
+
+static inline CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef dataToSign, OSStatus *error) {
+    (void)key;
+    (void)algorithm;
+    (void)dataToSign;
+    (void)error;
+    return NULL;
+}
+
+static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef signedData, CFDataRef signature, OSStatus *error) {
+    (void)key;
+    (void)algorithm;
+    (void)signedData;
+    (void)signature;
+    (void)error;
+    return NO;
+}
+
 #define kSecKeyAlgorithmRSASignatureMessagePSSSHA256 ((SecKeyAlgorithm)0)
 #define kSecKeyAlgorithmECDSASignatureRFC6979SHA256 ((SecKeyAlgorithm)0)
 #define kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256 ((SecKeyAlgorithm)0)
@@ -53,6 +84,9 @@ static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, OSStatus
 #define kSecAttrKeyType ((CFStringRef)0)
 #define kSecAttrKeyTypeRSA ((CFStringRef)1)
 #define kSecAttrKeyTypeECSECPrimeRandom ((CFStringRef)2)
+#define kSecAttrKeySizeInBits ((CFStringRef)3)
+#define kSecAttrKeyClass ((CFStringRef)4)
+#define kSecAttrKeyClassPrivate ((CFStringRef)5)
 
 #endif
 
