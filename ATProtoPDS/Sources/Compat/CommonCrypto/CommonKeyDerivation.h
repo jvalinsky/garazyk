@@ -14,6 +14,11 @@ enum {
     kCCPRFHmacAlgSHA256 = 2,
 };
 
+enum {
+    kCCSuccess = 0,
+    kCCParamError = -4300,
+};
+
 typedef uint32_t CCPseudoRandomAlgorithm;
 
 int CCKeyDerivationPBKDF(unsigned int algorithm, const char *password, size_t passwordLen,

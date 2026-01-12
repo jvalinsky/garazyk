@@ -4,10 +4,27 @@
 #if !defined(__APPLE__)
 
 #import <Foundation/Foundation.h>
-#include <openssl/evp.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
+#import <stdint.h>
 
+typedef int32_t OSStatus;
+// CFTypeRef is usually id or void* in GNUstep/CoreFoundation. 
+// In GNUstep Base, many CF types are toll-free bridged or just typedefs.
+// If CFTypeRef is not defined, we can define it.
+#if !defined(CFTypeRef)
+typedef const void * CFTypeRef;
+#endif
+
+// Add specific CF types if needed for stricter typing or just use id/void*
+#if !defined(CFDictionaryRef)
+typedef const struct __CFDictionary * CFDictionaryRef;
+#endif
+
+enum {
+    errSecSuccess = 0,
+    errSecItemNotFound = -25300,
+    errSecAuthFailed = -25293,
+    errSecDuplicateItem = -25299
+};
 /*
  * GNUstep Security Compatibility Shim
  * Maps Apple Security Framework APIs to OpenSSL

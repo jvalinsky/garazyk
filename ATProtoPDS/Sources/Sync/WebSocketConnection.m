@@ -23,10 +23,15 @@ static const uint8_t WS_MASK = 0x80;
 @property (nonatomic, copy, readwrite, nullable) NSDictionary<NSString *, NSString *> *queryParams;
 
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
-@property (nonatomic, strong) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMutableData *readBuffer;
 @property (nonatomic, strong) NSMutableData *writeBuffer;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t connectionQueue;
+@property (nonatomic, assign) dispatch_queue_t writeQueue;
+#else
+@property (nonatomic, strong) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) dispatch_queue_t writeQueue;
+#endif
 @property (nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimer;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimeoutTimer;
