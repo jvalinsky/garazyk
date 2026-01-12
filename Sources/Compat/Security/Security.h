@@ -24,8 +24,10 @@ typedef struct __CFHost *CFHostRef;
 typedef struct __CFArray *CFArrayRef;
 typedef struct __CFData *CFDataRef;
 
-typedef int32_t CFStreamError;
 typedef unsigned char Boolean;
+
+typedef int32_t CFStreamError;
+typedef int CFHostInfoType;
 
 #define kCFHostAddresses 0
 
@@ -89,6 +91,41 @@ static inline CFTypeRef CFRetain(CFTypeRef cf) {
 
 static inline void CFRelease(CFTypeRef cf) {
     (void)cf;
+}
+
+static inline CFHostRef CFHostCreateWithName(CFAllocatorRef allocator, CFStringRef hostname) {
+    (void)allocator;
+    (void)hostname;
+    return (CFHostRef)malloc(sizeof(void *));
+}
+
+static inline Boolean CFHostStartInfoResolution(CFHostRef host, CFHostInfoType info, CFStreamError *error) {
+    (void)host;
+    (void)info;
+    (void)error;
+    return false;
+}
+
+static inline CFArrayRef CFHostGetAddressing(CFHostRef host, Boolean *hasName) {
+    (void)host;
+    (void)hasName;
+    return (CFArrayRef)malloc(sizeof(void *));
+}
+
+static inline CFIndex CFArrayGetCount(CFArrayRef theArray) {
+    (void)theArray;
+    return 0;
+}
+
+static inline const void *CFArrayGetValueAtIndex(CFArrayRef theArray, CFIndex idx) {
+    (void)theArray;
+    (void)idx;
+    return NULL;
+}
+
+static inline const UInt8 *CFDataGetBytePtr(CFDataRef theData) {
+    (void)theData;
+    return NULL;
 }
 
 #define kCFBooleanTrue ((CFBooleanRef)1)
