@@ -283,21 +283,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     
     NSString *domain = [NSString stringWithFormat:@"_atproto.%@", handle];
     
-    struct addrinfo hints, *res, *p;
-    int status;
-    char ipstr[INET6_ADDRSTRLEN];
-    
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; 
-    hints.ai_socktype = SOCK_STREAM;
-
-    // NOTE: resolving TXT records via getaddrinfo is NOT standard. 
-    // getaddrinfo resolves A/AAAA.
-    // We need res_query or similar for TXT records (libresolv).
-    // Or we can use `dig` command wrapper for a hack, OR standard `res_search`.
-    
-    // For Linux/BSD `res_search` is in <resolv.h>.
-    
+    // Use res_search via helper
     return [self resolveTXTRecordForDomain:domain error:error];
 }
 
