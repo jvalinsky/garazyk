@@ -162,7 +162,13 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, OAuthSession *> *sessions;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, OAuthSession *> *authCodes;
+@property (nonatomic, copy, readwrite) NSString *state;
+@property (nonatomic, copy, readwrite) NSString *codeVerifier;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t sessionQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t sessionQueue;
+#endif
 @property (nonatomic, copy) NSString *dpopNonce;
 @property (nonatomic, strong) NSDate *nonceExpiresAt;
 
