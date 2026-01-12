@@ -50,8 +50,11 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
 }
 
 int main(int argc, char * argv[]) {
+    fprintf(stderr, "test_main started\n");
     @autoreleasepool {
         NSArray *testClasses = @[
+            @"MSTInteropTests",
+            @"CARInteropTests",
             @"ActorStoreTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",

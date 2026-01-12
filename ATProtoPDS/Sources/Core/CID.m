@@ -29,6 +29,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable instancetype)cidFromString:(NSString *)string {
+    fprintf(stderr, "cidFromString: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return nil;
     }
@@ -265,6 +266,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (NSData *)base32Decode:(NSString *)string {
+    fprintf(stderr, "base32Decode started: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return [NSData data];
     }
@@ -282,8 +284,10 @@ static const NSUInteger kMaxVarintSize = 9;
         unichar c = [cleanString characterAtIndex:i];
         if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a'; // Convert to lowercase
 
+        fprintf(stderr, "char: %c\n", (char)c);
         const char *ptr = strchr(kBase32Alphabet, (char)c);
         if (!ptr) {
+            fprintf(stderr, "Invalid character: %c\n", (char)c);
             return nil; // Invalid character
         }
 
@@ -293,6 +297,7 @@ static const NSUInteger kMaxVarintSize = 9;
         bitsLeft += 5;
 
         while (bitsLeft >= 8) {
+            fprintf(stderr, "bitsLeft: %lu\n", (unsigned long)bitsLeft);
             NSUInteger byteShift = bitsLeft - 8;
             uint8_t byte = (buffer >> byteShift) & 0xFF;
             [result appendBytes:&byte length:1];
