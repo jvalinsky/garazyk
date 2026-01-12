@@ -32,6 +32,7 @@ typedef const void * CFTypeRef;
 
 // Add generic CF functions if missing
 void CFRelease(CFTypeRef cf);
+CFTypeRef CFRetain(CFTypeRef cf);
 
 #ifndef SecTrustRef
 typedef const void * SecTrustRef;
