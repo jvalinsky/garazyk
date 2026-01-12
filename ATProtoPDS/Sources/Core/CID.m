@@ -272,7 +272,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (NSData *)base32Decode:(NSString *)string {
-    fprintf(stderr, "base32Decode started: %s\n", [string UTF8String]);
+    // fprintf(stderr, "base32Decode started: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return [NSData data];
     }
