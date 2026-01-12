@@ -243,7 +243,7 @@ OSStatus SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result) { retur
 // CoreFoundation Shims
 void CFRelease(CFTypeRef cf) {
     if (cf) {
-        [(id)cf release];
+        (void)(__bridge_transfer id)cf;
     }
 }
 
