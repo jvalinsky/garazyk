@@ -40,7 +40,7 @@ typedef NS_ENUM(NSInteger, CBORType) {
 
 - (instancetype)initWithType:(CBORType)type;
 
-- (instancetype)initWithUnsignedInteger:(NSNumber *)value;
+- (instancetype)initWithUnsignedNumber:(NSNumber *)value;
 - (instancetype)initWithNegativeInteger:(NSNumber *)value;
 - (instancetype)initWithByteString:(NSData *)data;
 - (instancetype)initWithTextString:(NSString *)string;
