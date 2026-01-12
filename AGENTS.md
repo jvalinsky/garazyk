@@ -4,18 +4,25 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 ## Project Status
 
-### ✅ Phase 3: Build System & Testing Stabilization - COMPLETED
-- **Unified Build System**: Migrated to a unified CMake build system wrapped by XcodeGen, eliminating legacy Makefiles and disconnected Xcode project configurations.
-- **Fuzzing Integration**: Fuzzers (`xrpc`, `cbor`, `http`, `auth`) are now first-class build targets, with a local fallback driver for macOS/AppleClang environments.
-- **Test Suite Repair**: Fixed critical failures in `PDSControllerTests` (refresh token logic), `DIDResolverTests`, and `ATProtoCoreTests`.
-- **Test Consolidation**: 107 unit tests are now passing. Broken or obsolete tests (`OAuth2Tests`, `XRPCHandlerTests`) were removed or excluded.
-- **Dependency Management**: `secp256k1` is built as a CMake subproject, and `XCTest` linking is properly configured.
-- **Code Quality**: Resolved several compiler warnings related to retain cycles, format strings, and nullability.
+### ✅ Phase 1: Repository & MST Protocol Compliance - COMPLETED
+- **MST Interop**: Implemented `MSTInteropTests` verifying Merkle Search Tree compliance with reference implementations. Fixed critical bugs in fan-out, CBOR key ordering, and prefix calculation.
+- **CAR v1 Interop**: Implemented `CARInteropTests` and fixed binary CID parsing in `CAR.m`.
+- **Repo Commit**: Implemented signature verification and proper commit structure in `RepoCommit`.
+
+### ✅ Phase 2: Authentication & JWT Transition - COMPLETED
+- **JWT Transition**: Migrated from opaque UUID tokens to signed JWT access tokens with `JWTMinter` and `JWTVerifier`.
+- **Key Rotation**: Integrated `KeyRotationManager` for secure token signing and verification.
+- **Token Refresh**: Implemented proper token refresh logic in `OAuth2.m`.
+- **Service Auth**: Added `com.atproto.server.getServiceAuth` endpoint.
+
+### 🏗️ Phase 3: The Firehose & Sync - IN PROGRESS
+- **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction.
+- **WebSocket**: WebSocket handler is implemented but needs robust testing.
 
 ### 🏗️ Phase 4: Linux Support & Robustness - IN PROGRESS
-- **Linux Porting**: Implementing `PDSNetworkTransport` for Linux using GNUstep and libdispatch.
-- **CLI Enhancements**: Added `repo create-record` command for manual data manipulation.
-- **Account Management**: Implemented `getAllAccounts` for administrative tasks.
+- **Linux Porting**: Implemented `PDSNetworkTransportLinux` using BSD sockets and libdispatch. Added unit tests.
+- **CLI Enhancements**: Added unit tests for CLI commands.
+- **Handle Resolution**: Implemented DNS TXT fallback for handle resolution.
 
 ## Quick Reference
 
