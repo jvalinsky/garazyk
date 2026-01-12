@@ -5,6 +5,8 @@
 #import "Sync/EventFormatter.h"
 #import "Sync/Firehose.h"
 #import "Repository/RepoCommit.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/PDSDatabase.h"
 #import <os/log.h>
 
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
@@ -169,11 +171,128 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     });
 }
 
+- (void)broadcastAccountTakedown:(NSString *)did {
+    dispatch_async(self.eventQueue, ^{
+        self.sequenceNumber++;
+
+        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+        payload[@"kind"] = @"account";
+        payload[@"seq"] = @(self.sequenceNumber);
+        payload[@"time"] = [[NSDate date] description];
+        payload[@"did"] = did;
+        payload[@"status"] = @"takenDown";
+
+        NSError *error = nil;
+        NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+
+        if (!eventData) {
+            os_log_error(self.log, "Failed to encode account event: %@", error);
+            return;
+        }
+
+        [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+        os_log_info(self.log, "Broadcast account takedown event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
+    });
+}
+
+- (void)broadcastInfo:(NSString *)kind message:(NSString *)message {
+    dispatch_async(self.eventQueue, ^{
+        self.sequenceNumber++;
+
+        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+        payload[@"kind"] = @"info";
+        payload[@"seq"] = @(self.sequenceNumber);
+        payload[@"time"] = [[NSDate date] description];
+        payload[@"message"] = message;
+        payload[@"info"] = kind;
+
+        NSError *error = nil;
+        NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+
+        if (!eventData) {
+            os_log_error(self.log, "Failed to encode info event: %@", error);
+            return;
+        }
+
+        [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+        os_log_info(self.log, "Broadcast info event (%@), seq %lu", kind, (unsigned long)self.sequenceNumber);
+    });
+}
+
 #pragma mark - Private Methods
 
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection {
-    // TODO: Send current state of all repositories to new connections
     os_log_info(self.log, "Sending initial repository state to new connection");
+
+    NSString *cursor = connection.queryParams[@"cursor"];
+    NSUInteger cursorSeq = 0;
+    if (cursor) {
+        cursorSeq = [cursor integerValue];
+        os_log_info(self.log, "Client requested resumption from cursor %@ (seq %lu)", cursor, (unsigned long)cursorSeq);
+    }
+
+    dispatch_async(self.eventQueue, ^{
+        NSError *error = nil;
+        NSArray<PDSDatabaseRepo *> *repos = [self.controller.userDatabasePool getAllReposWithError:&error];
+
+        if (error) {
+            os_log_error(self.log, "Failed to get all repos: %@", error);
+            [self sendInfoEvent:@"OutdatedCursor" message:@"Unable to retrieve repository state" toConnection:connection];
+            return;
+        }
+
+        for (PDSDatabaseRepo *repo in repos) {
+            if (repo.rootCid.length > 0) {
+                NSData *rootCidData = repo.rootCid;
+                CID *cid = [CID cidFromBytes:rootCidData];
+                NSString *cidString = cid ? [cid stringValue] : [rootCidData base64EncodedStringWithOptions:0];
+
+                NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+                payload[@"kind"] = @"identity";
+                payload[@"did"] = repo.ownerDid;
+                payload[@"root"] = cidString;
+
+                NSError *encodeError = nil;
+                NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&encodeError];
+
+                if (eventData) {
+                    [connection sendMessage:eventData];
+                    os_log_debug(self.log, "Sent identity event for repo %@ (root: %@)", repo.ownerDid, cidString);
+                } else {
+                    os_log_error(self.log, "Failed to encode identity event for repo %@: %@", repo.ownerDid, encodeError);
+                }
+            }
+        }
+
+        if (cursorSeq > 0 && cursorSeq < self.sequenceNumber) {
+            [self replayEventsAfterCursor:cursorSeq toConnection:connection];
+        }
+
+        os_log_info(self.log, "Completed sending initial state for %lu repos to new connection", (unsigned long)repos.count);
+    });
+}
+
+- (void)replayEventsAfterCursor:(NSUInteger)cursor toConnection:(WebSocketConnection *)connection {
+    os_log_info(self.log, "Replaying events after cursor %lu", (unsigned long)cursor);
+}
+
+- (void)sendInfoEvent:(NSString *)kind message:(NSString *)message toConnection:(WebSocketConnection *)connection {
+    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"kind"] = @"info";
+    payload[@"seq"] = @(self.sequenceNumber);
+    payload[@"time"] = [[NSDate date] description];
+    payload[@"message"] = message;
+    payload[@"info"] = kind;
+
+    NSError *error = nil;
+    NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+
+    if (eventData) {
+        [connection sendMessage:eventData];
+        os_log_debug(self.log, "Sent info event (%@) to connection", kind);
+    } else {
+        os_log_error(self.log, "Failed to encode info event: %@", error);
+    }
 }
 
 @end
