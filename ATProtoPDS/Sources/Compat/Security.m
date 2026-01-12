@@ -117,6 +117,15 @@ OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
 // Crypto Implementation
 // ============================================================================
 
+@implementation ShimSecKey
+- (void)dealloc {
+    if (_pkey) {
+        EVP_PKEY_free(_pkey);
+        _pkey = NULL;
+    }
+}
+@end
+
 SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error) {
     // Generate EC Key P-256
     EVP_PKEY *pkey = NULL;
@@ -128,7 +137,10 @@ SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error) {
     if (EVP_PKEY_keygen(pctx, &pkey) <= 0) goto err;
     
     EVP_PKEY_CTX_free(pctx);
-    return pkey;
+    
+    ShimSecKey *keyRaw = [[ShimSecKey alloc] init];
+    keyRaw.pkey = pkey;
+    return keyRaw;
 
 err:
     if (pctx) EVP_PKEY_CTX_free(pctx);
@@ -140,16 +152,20 @@ err:
 
 SecKeyRef SecKeyCopyPublicKey(SecKeyRef key) {
     if (!key) return NULL;
-    EVP_PKEY_up_ref(key);
-    return key;
+    EVP_PKEY *pkey = key.pkey;
+    EVP_PKEY_up_ref(pkey);
+    
+    ShimSecKey *newKey = [[ShimSecKey alloc] init];
+    newKey.pkey = pkey;
+    return newKey;
 }
 
 CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error) {
-    if (!key) return NULL;
+    if (!key || !key.pkey) return NULL;
     
     // Export public key as DER
     unsigned char *buf = NULL;
-    int len = i2d_PublicKey(key, &buf);
+    int len = i2d_PublicKey(key.pkey, &buf);
     if (len < 0) return NULL;
     
     NSData *data = [NSData dataWithBytes:buf length:len];
@@ -171,11 +187,15 @@ SecKeyRef SecKeyCreateWithData(CFDataRef keyData, CFDictionaryRef attributes, CF
         pkey = d2i_PublicKey(EVP_PKEY_RSA, NULL, &p, [data length]);
     }
     
-    return pkey;
+    if (!pkey) return NULL;
+    
+    ShimSecKey *keyRaw = [[ShimSecKey alloc] init];
+    keyRaw.pkey = pkey;
+    return keyRaw;
 }
 
 BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef signedData, CFDataRef signature, CFErrorRef *error) {
-    if (!key) return NO;
+    if (!key || !key.pkey) return NO;
     
     // Declarations at top to avoid goto skips
     NSData *msg = (__bridge NSData *)signedData;
@@ -186,7 +206,7 @@ BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef s
 
     if(!mdctx) return NO;
 
-    if(EVP_DigestVerifyInit(mdctx, NULL, md, NULL, key) > 0) {
+    if(EVP_DigestVerifyInit(mdctx, NULL, md, NULL, key.pkey) > 0) {
         if(EVP_DigestVerifyUpdate(mdctx, [msg bytes], [msg length]) > 0) {
             result = EVP_DigestVerifyFinal(mdctx, [sig bytes], [sig length]);
         }
@@ -197,7 +217,7 @@ BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef s
 }
 
 CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef dataToSign, CFErrorRef *error) {
-    if (!key) return NULL;
+    if (!key || !key.pkey) return NULL;
     
     NSData *msg = (__bridge NSData *)dataToSign;
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
@@ -208,7 +228,7 @@ CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFData
 
     if(!mdctx) return NULL;
 
-    if(EVP_DigestSignInit(mdctx, NULL, md, NULL, key) > 0) {
+    if(EVP_DigestSignInit(mdctx, NULL, md, NULL, key.pkey) > 0) {
         if(EVP_DigestSignUpdate(mdctx, [msg bytes], [msg length]) > 0) {
              if(EVP_DigestSignFinal(mdctx, NULL, &sigLen) > 0) {
                  sig = OPENSSL_malloc(sigLen);

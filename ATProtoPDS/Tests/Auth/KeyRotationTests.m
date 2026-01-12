@@ -44,7 +44,7 @@
     // Now current signing key should be available
     key = [self.keyRotationManager currentSigningKey];
     XCTAssertTrue(key != NULL);
-    if (key) CFRelease(key);
+    // if (key) CFRelease(key); // Not needed with ARC managed ShimSecKey
 }
 
 - (void)testAllValidPublicKeys {
