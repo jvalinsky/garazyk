@@ -202,6 +202,9 @@ if(NOT APPLE)
 
   # DID.m uses NSURLSession - the VM's GNUstep library doesn't have NSURLSession compiled in
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
+
+  # FederationClient.m uses NSURLSession - same issue as DID.m
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
