@@ -53,7 +53,7 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
 int main(int argc, char * argv[]) {
     fprintf(stderr, "test_main started\n");
     @autoreleasepool {
-        NSArray *testClasses = @[
+        NSArray *allTestClasses = @[
             @"MSTInteropTests",
             @"CARInteropTests",
             @"RepoCommitTests",
@@ -79,6 +79,22 @@ int main(int argc, char * argv[]) {
             @"KeyRotationTests",
             @"OAuth2EndpointTests"
         ];
+
+        NSMutableArray *testClasses = [NSMutableArray array];
+        if (argc > 1) {
+            NSSet *filter = [NSSet set];
+            for (int i = 1; i < argc; i++) {
+                NSString *arg = [NSString stringWithUTF8String:argv[i]];
+                // Basic filtering
+                for (NSString *className in allTestClasses) {
+                    if ([className containsString:arg]) {
+                        [testClasses addObject:className];
+                    }
+                }
+            }
+        } else {
+            [testClasses addObjectsFromArray:allTestClasses];
+        }
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
 
