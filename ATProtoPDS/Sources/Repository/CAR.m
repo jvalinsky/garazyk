@@ -1,4 +1,5 @@
 #import "Repository/CAR.h"
+#import "Compat/Endian.h"
 #import "Repository/MST.h"
 
 #pragma mark - CARBlock Implementation
