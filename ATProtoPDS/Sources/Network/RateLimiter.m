@@ -26,7 +26,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, copy) NSString *databasePath;
 @property (nonatomic, assign) sqlite3 *db;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t dbQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t dbQueue;
+#endif
 
 @end
 
