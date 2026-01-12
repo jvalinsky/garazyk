@@ -6,6 +6,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <CommonCrypto/CommonKeyDerivation.h>
 
 @interface PDSAccountService ()
 
@@ -117,14 +118,32 @@
         return nil;
     }
 
-    // Verify password
+    // Verify password - try PBKDF2 first (new method)
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
-    if (![passwordHash isEqualToData:account.passwordHash]) {
+    BOOL isPasswordCorrect = [passwordHash isEqualToData:account.passwordHash];
+    BOOL usedLegacyHash = NO;
+
+    if (!isPasswordCorrect) {
+        // Fallback: try legacy SHA-256 method for migration support
+        NSData *legacyHash = [self legacyHashPassword:password salt:account.passwordSalt];
+        if ([legacyHash isEqualToData:account.passwordHash]) {
+            isPasswordCorrect = YES;
+            usedLegacyHash = YES;
+            os_log_info(self.log, "Account %@ using legacy password hash, will upgrade", account.did);
+        }
+    }
+
+    if (!isPasswordCorrect) {
         if (error) {
             *error = [NSError errorWithDomain:@"PDSController" code:1002
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid password"}];
         }
         return nil;
+    }
+
+    // Upgrade password hash if using legacy method
+    if (usedLegacyHash) {
+        [self upgradePasswordHashIfNeeded:password forAccount:account error:nil];
     }
 
     // Generate new tokens
@@ -229,18 +248,65 @@
 }
 
 - (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
+    // OWASP 2023 recommendation: 600,000 iterations for PBKDF2-HMAC-SHA256
+    const uint32_t iterations = 600000;
+    const size_t derivedKeyLength = 32; // 256 bits
+
+    unsigned char derivedKey[derivedKeyLength];
+
+    int result = CCKeyDerivationPBKDF(
+        kCCPBKDF2,                          // algorithm
+        password.UTF8String,                 // password
+        password.length,                     // passwordLen
+        salt.bytes,                          // salt
+        salt.length,                         // saltLen
+        kCCPRFHmacAlgSHA256,                // PRF (HMAC-SHA256)
+        iterations,                          // rounds
+        derivedKey,                          // derivedKey
+        derivedKeyLength                     // derivedKeyLen
+    );
+
+    if (result != kCCSuccess) {
+        os_log_error(self.log, "PBKDF2 derivation failed with error: %d", result);
+        return nil;
+    }
+
+    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
+}
+
+- (NSData *)legacyHashPassword:(NSString *)password salt:(NSData *)salt {
+    // Legacy SHA-256 method for migration support only
+    // This will be removed after all passwords are migrated
     NSMutableData *input = [NSMutableData data];
     [input appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
     [input appendData:salt];
 
-    // Simple SHA-256 hash for demo - in production use proper password hashing
-    return [[self sha256:input] copy];
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(input.bytes, (CC_LONG)input.length, hash);
+    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 }
 
-- (NSData *)sha256:(NSData *)data {
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
-    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+- (BOOL)upgradePasswordHashIfNeeded:(NSString *)password
+                         forAccount:(PDSDatabaseAccount *)account
+                              error:(NSError **)error {
+    // Called after successful login with legacy hash
+    // Re-hash with PBKDF2 and update database
+    NSData *newHash = [self hashPassword:password salt:account.passwordSalt];
+    if (!newHash) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSAccountService"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to rehash password"}];
+        }
+        return NO;
+    }
+
+    account.passwordHash = newHash;
+    BOOL success = [_serviceDatabases updateAccount:account error:error];
+    if (success) {
+        os_log_info(self.log, "Upgraded password hash for account: %@", account.did);
+    }
+    return success;
 }
 
 @end
