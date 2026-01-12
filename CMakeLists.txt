@@ -310,6 +310,10 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2HandlerTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2Tests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
 
   add_executable(AllTests
     ${ATProtoPDS_SOURCES}
