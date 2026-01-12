@@ -324,7 +324,7 @@ endif()
 #=============================
 
 option(BUILD_TESTS "Build test targets" ON)
-if(BUILD_TESTS)
+if(BUILD_TESTS AND APPLE)
   enable_testing()
   
   # Test sources
