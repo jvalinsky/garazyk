@@ -33,6 +33,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param data Binary CID data (version + codec + multihash)
 + (nullable instancetype)cidFromBytes:(NSData *)data;
 
+/// Base32 encode data
++ (NSString *)base32Encode:(NSData *)data;
+
 /// Convert CID to base-encoded string
 - (NSString *)stringValue;
 
