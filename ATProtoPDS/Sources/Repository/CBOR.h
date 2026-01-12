@@ -1,5 +1,4 @@
 #import <Foundation/Foundation.h>
-#import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -24,7 +23,7 @@ typedef NS_ENUM(NSInteger, CBORType) {
 @property (nonatomic, copy, readonly, nullable) NSArray<CBORValue *> *array;
 @property (nonatomic, copy, readonly, nullable) NSDictionary<CBORValue *, CBORValue *> *map;
 @property (nonatomic, strong, readonly, nullable) NSNumber *tag;
-@property (nonatomic, strong, readonly, nullable) CBORValue *taggedValue;
+@property (nonatomic, strong, readonly, nullable) CBORValue *tagValue;
 @property (nonatomic, strong, readonly, nullable) NSNumber *simpleValue;
 @property (nonatomic, strong, readonly, nullable) NSNumber *floatValue;
 

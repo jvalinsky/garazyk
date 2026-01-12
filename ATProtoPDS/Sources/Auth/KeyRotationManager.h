@@ -19,6 +19,8 @@ typedef NS_ENUM(NSInteger, KeyRotationManagerError) {
 - (SecKeyRef _Nullable)currentSigningKey;
 - (NSArray *)allValidPublicKeys;
 - (BOOL)rotateKeys;
+- (nullable NSData *)signData:(NSData *)data error:(NSError **)error;
+- (BOOL)verifySignature:(NSData *)signature forData:(NSData *)data error:(NSError **)error;
 
 @end
 
