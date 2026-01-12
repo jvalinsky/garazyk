@@ -25,7 +25,7 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 @property (nonatomic, readonly, nullable, copy) NSData *body;
 @property (nonatomic, readonly, nullable, copy) NSDictionary *jsonBody;
 @property (nonatomic, readonly, nullable, copy) NSDictionary *multipartFormData;
-@property (nonatomic, readonly, nullable, copy) NSString *remoteAddress;
+@property (nonatomic, readwrite, nullable, copy) NSString *remoteAddress;
 
 + (instancetype)requestWithData:(NSData *)data;
 + (instancetype)requestWithData:(NSData *)data remoteAddress:(NSString *)remoteAddress;

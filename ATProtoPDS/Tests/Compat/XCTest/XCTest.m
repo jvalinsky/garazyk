@@ -1,5 +1,6 @@
 #import "XCTest.h"
 #import <objc/runtime.h>
+#import <objc/runtime.h>
 
 @implementation XCTestObservationCenter {
     NSMutableArray<id<XCTestObservation>> *_observers;
@@ -73,34 +74,74 @@
 - (void)tearDown {}
 
 - (void)performTest:(id)run {
-    [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCaseWillStart:self];
-    
     @try {
         [self setUp];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        [self performSelector:_selector];
-#pragma clang diagnostic pop
-    }
-    @catch (NSException *exception) {
-        [self recordFailureWithDescription:[NSString stringWithFormat:@"Uncaught exception: %@", exception]
-                                    inFile:@"<unknown>"
-                                    atLine:0
-                                  expected:NO];
-    }
-    @finally {
+        [_invocation invoke];
         [self tearDown];
-        [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCaseDidFinish:self];
+    } @catch (NSException *exception) {
+        printf("Test %s failed: Uncaught exception %s\n", [self.name UTF8String], [[exception reason] UTF8String]);
+        _failureCount++;
     }
 }
 
 - (void)recordFailureWithDescription:(NSString *)description inFile:(NSString *)filePath atLine:(NSUInteger)lineNumber expected:(BOOL)expected {
-    [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCase:self
-                                                   didFailWithDescription:description
-                                                                   inFile:filePath
-                                                                   atLine:lineNumber];
+    printf("Test %s failed: %s (%s:%lu)\n", [self.name UTF8String], [description UTF8String], [filePath UTF8String], (unsigned long)lineNumber);
+    _failureCount++;
 }
 
+// Async Helper
+- (XCTestExpectation *)expectationWithDescription:(NSString *)description {
+    XCTestExpectation *exp = [[XCTestExpectation alloc] init];
+    exp.description = description;
+    
+    // Store expectation
+    NSMutableArray *exps = objc_getAssociatedObject(self, _cmd);
+    if (!exps) {
+        exps = [NSMutableArray array];
+        objc_setAssociatedObject(self, _cmd, exps, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    [exps addObject:exp];
+    
+    return exp;
+}
+
+- (void)waitForExpectationsWithTimeout:(NSTimeInterval)timeout handler:(void (^)(NSError *))handler {
+    // Retrieve stored expectations using the selector for 'expectationWithDescription:' as key
+    // Note: detailed implementation normally uses a cleaner property, but we use associated objects for shim simplicity
+    NSMutableArray<XCTestExpectation *> *exps = objc_getAssociatedObject(self, @selector(expectationWithDescription:));
+    
+    NSDate *startDate = [NSDate date];
+    BOOL allFulfilled = NO;
+    
+    while ([[NSDate date] timeIntervalSinceDate:startDate] < timeout) {
+        allFulfilled = YES;
+        for (XCTestExpectation *exp in exps) {
+            if (!exp.fulfilled) {
+                allFulfilled = NO;
+                break;
+            }
+        }
+        
+        if (allFulfilled) break;
+        
+        // Spin runloop briefly
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+    
+    if (!allFulfilled) {
+        [self recordFailureWithDescription:@"Wait for expectations timed out" inFile:@"<unknown>" atLine:0 expected:YES];
+    }
+    
+    // Clear expectations
+    [exps removeAllObjects];
+}
+
+@end
+
+@implementation XCTestExpectation
+- (void)fulfill {
+    self.fulfilled = YES;
+}
 @end
 
 @implementation XCTestSuite {

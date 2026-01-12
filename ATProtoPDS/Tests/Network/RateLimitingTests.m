@@ -8,6 +8,10 @@
 @property (nonatomic, strong) HttpServer *server;
 @end
 
+@interface HttpServer (Testing)
+- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+@end
+
 @implementation RateLimitingTests
 
 - (void)setUp {
@@ -32,9 +36,9 @@
                                                    }
                                                        version:@"1.1"
                                                        headers:@{}
-                                                          body:nil];
-    request.remoteAddress = @"127.0.0.1";
-
+                                                          body:nil
+                                                   remoteAddress:@"127.0.0.1"];
+    
     // First request should be allowed
     HttpResponse *response1 = [self.server dispatchRequest:request];
     XCTAssertEqual(response1.statusCode, 404, @"First request should be allowed (but handler not found, so 404)");
