@@ -316,7 +316,7 @@ NS_ASSUME_NONNULL_BEGIN
         [didHeaders enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
             NSString *headerField = (NSString *)key;
             NSString *headerValue = (NSString *)value;
-            [response setHeader:headerField value:headerValue];
+            [response setHeader:headerValue forKey:headerField];
         }];
     }
     
@@ -325,7 +325,7 @@ NS_ASSUME_NONNULL_BEGIN
         [ipHeaders enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
             NSString *headerField = (NSString *)key;
             NSString *headerValue = (NSString *)value;
-            [response setHeader:headerField value:headerValue];
+            [response setHeader:headerValue forKey:headerField];
         }];
     }
 }
