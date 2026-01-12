@@ -1523,10 +1523,12 @@
 
     for (NSUInteger i = 0; i < input.length; i++) {
         unichar c = [input characterAtIndex:i];
-        NSString *charStr = [NSString stringWithCharacters:&c length:1];
+        if (c == '-' || c == ' ' || c == '\n' || c == '\r' || c == '\t') continue;
+        
+        NSString *charStr = [[NSString stringWithCharacters:&c length:1] lowercaseString];
         NSNumber *val = alphabetMap[charStr];
 
-        if (!val) continue; // Skip invalid characters
+        if (!val) return nil; // Invalid character - reject the whole thing
 
         buffer = (buffer << 5) | [val intValue];
         bitsLeft += 5;

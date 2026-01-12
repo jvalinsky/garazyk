@@ -135,7 +135,9 @@
 
 + (NSString *)xContentTypeOptions { return @"nosniff"; }
 + (NSString *)xFrameOptions { return @"DENY"; }
-+ (NSString *)contentSecurityPolicy { return @"default-src 'self';"; }
++ (NSString *)contentSecurityPolicy {
+    return @"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
+}
 
 + (void)applySecurityHeaders:(NSMutableDictionary *)headers {
     headers[@"X-Content-Type-Options"] = self.xContentTypeOptions;
