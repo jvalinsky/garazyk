@@ -164,8 +164,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (!jwt.rawHeader) return nil;
     jwt.rawPayload = [self base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error];
     if (!jwt.rawPayload) return nil;
-    jwt.signature = signature;
-    jwt.encodedSignature = [self base64URLEncodeData:[signature dataUsingEncoding:NSUTF8StringEncoding] error:error] ?: @"";
+    jwt.signature = @"";
+    jwt.encodedSignature = signature;
     return jwt;
 }
 
