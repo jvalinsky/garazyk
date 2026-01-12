@@ -299,35 +299,41 @@ option(BUILD_TESTS "Build test targets" ON)
 if(BUILD_TESTS)
   enable_testing()
   
-  # Test sources
-  file(GLOB_RECURSE TEST_OBJC_SOURCES "ATProtoPDS/Tests/**/*.m")
-  list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/test_main.m")
+  file(GLOB_RECURSE MY_TEST_SOURCES "ATProtoPDS/Tests/**/*.m")
+  list(APPEND MY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/test_main.m")
+  list(APPEND MY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m")
+  list(APPEND MY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m")
+  
+  foreach(src ${MY_TEST_SOURCES})
+      message(STATUS "Test Source: ${src}")
+  endforeach()
   
   # Exclude problematic tests (preserved from original)
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
   # Exclude top-level Integration tests only
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/.*")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/.*")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2Tests.m")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2Tests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
   
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
 
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/XRPC/XrpcHandlerTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/XRPC/XrpcHandlerTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
+  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
 
   add_executable(AllTests
     ${ATProtoPDS_SOURCES}
-    ${TEST_OBJC_SOURCES}
+    ${MY_TEST_SOURCES}
+    "ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m"
   )
 
   target_include_directories(AllTests PRIVATE
