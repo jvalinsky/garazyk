@@ -1,4 +1,7 @@
 #import <Foundation/Foundation.h>
+#if defined(__linux__) || defined(__GNUstep__)
+#import <Security/Security.h>
+#endif
 #import <sqlite3.h>
 
 NS_ASSUME_NONNULL_BEGIN
