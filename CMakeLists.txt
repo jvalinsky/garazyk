@@ -17,7 +17,7 @@ set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -Wno-implicit-function-decl
 
 # Platform Specific Configuration
 if(NOT APPLE)
-    set(CMAKE_OBJC_STANDARD 20)
+
     add_compile_definitions(GNUSTEP LINUX)
     
     # GNUstep Configuration
