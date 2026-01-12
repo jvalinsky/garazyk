@@ -46,9 +46,10 @@
         return [CBORValue textString:obj];
     } else if ([obj isKindOfClass:[NSNumber class]]) {
         // Handle boolean
-        if (obj == (id)kCFBooleanTrue) {
+        NSNumber *num = (NSNumber *)obj;
+        if ([num boolValue]) {
             return [CBORValue simple:21];
-        } else if (obj == (id)kCFBooleanFalse) {
+        } else {
             return [CBORValue simple:20];
         }
         
