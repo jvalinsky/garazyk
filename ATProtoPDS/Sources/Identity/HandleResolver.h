@@ -9,7 +9,8 @@ typedef NS_ENUM(NSInteger, HandleError) {
     HandleErrorResolutionFailed,
     HandleErrorNetworkError,
     HandleErrorNotFound,
-    HandleErrorSSRFAttempt
+    HandleErrorSSRFAttempt,
+    HandleErrorRateLimitExceeded
 };
 
 @interface HandleResolver : NSObject

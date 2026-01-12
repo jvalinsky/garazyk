@@ -77,9 +77,10 @@ if(APPLE)
         ${SECURITY} 
         ${COREIMAGE} 
         ${APPKIT} 
-        ${IMAGEIO}
+        ${IMAGEIO} 
         ${COREGRAPHICS}
         ${SQLite3_LIBRARY}
+        resolv
     )
 else()
     # Linux Dependencies
@@ -110,6 +111,7 @@ else()
         pthread
         m
         dl
+        resolv
     )
 endif()
 

@@ -1,5 +1,8 @@
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import <resolv.h>
+#import <arpa/nameser.h>
+#import <netdb.h>
 #import <netinet/in.h>
 #import <sys/socket.h>
 #import <arpa/inet.h>
@@ -194,21 +197,57 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 
 - (void)resolveHandleViaDNS:(NSString *)handle
                   completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
-
-    // DNS TXT resolution: look for _atproto.{handle} TXT record
-    // Note: This is a placeholder implementation. Full DNS TXT support would require
-    // a dedicated DNS library or raw DNS query implementation.
+    if (![self checkRateLimit]) {
+        if (completion) {
+            completion(nil, [NSError errorWithDomain:HandleErrorDomain code:HandleErrorRateLimitExceeded userInfo:@{NSLocalizedDescriptionKey: @"Rate limit exceeded"}]);
+        }
+        return;
+    }
 
     NSString *dnsName = [NSString stringWithFormat:@"_atproto.%@", handle];
-
-    // For now, we simulate DNS resolution failure since we don't have TXT record support
-    // In a full implementation, this would query DNS TXT records and parse the DID
-
+    
+    unsigned char query_buffer[1024];
+    int response_len = res_query([dnsName UTF8String], ns_c_in, ns_t_txt, query_buffer, sizeof(query_buffer));
+    
+    if (response_len < 0) {
+        NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                           code:HandleErrorNotFound
+                                       userInfo:@{NSLocalizedDescriptionKey: @"DNS TXT record not found"}];
+        completion(nil, error);
+        return;
+    }
+    
+    ns_msg handle_msg;
+    if (ns_initparse(query_buffer, response_len, &handle_msg) < 0) {
+        NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                           code:HandleErrorResolutionFailed
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse DNS response"}];
+        completion(nil, error);
+        return;
+    }
+    
+    for (int i = 0; i < ns_msg_count(handle_msg, ns_s_an); i++) {
+        ns_rr rr;
+        if (ns_parserr(&handle_msg, ns_s_an, i, &rr) < 0) continue;
+        
+        if (ns_rr_type(rr) == ns_t_txt) {
+            const unsigned char *txt_data = ns_rr_rdata(rr);
+            if (txt_data == NULL) continue;
+            
+            int txt_len = txt_data[0];
+            NSString *txt_str = [[NSString alloc] initWithBytes:txt_data + 1 length:txt_len encoding:NSUTF8StringEncoding];
+            
+            if ([txt_str hasPrefix:@"did="]) {
+                NSString *did = [txt_str substringFromIndex:4];
+                completion(did, nil);
+                return;
+            }
+        }
+    }
+    
     NSError *error = [NSError errorWithDomain:HandleErrorDomain
-                                      code:HandleErrorNotFound
-                                  userInfo:@{NSLocalizedDescriptionKey: @"DNS TXT record resolution not implemented",
-                                            @"dns_name": dnsName,
-                                            @"note": @"DNS TXT fallback requires additional DNS library implementation"}];
+                                       code:HandleErrorNotFound
+                                   userInfo:@{NSLocalizedDescriptionKey: @"ATProto DID not found in DNS TXT records"}];
     completion(nil, error);
 }
 
