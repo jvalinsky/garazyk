@@ -8,6 +8,11 @@ static NSSet<NSString *> *kAdminMethods = nil;
 
 @interface PDSAuthzManager ()
 @property (nonatomic, strong) PDSDatabase *database;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t dbQueue;
+#else
+@property (nonatomic, strong) dispatch_queue_t dbQueue;
+#endif
 @end
 
 @implementation PDSAuthzManager

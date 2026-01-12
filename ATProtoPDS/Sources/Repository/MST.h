@@ -161,7 +161,7 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
  @param keyBytes The key as raw bytes.
  @return The computed depth (number of leading zero bits divided by 2).
  */
-+ (uint32_t)keyDepthBytes:(NSData *)keyBytes;
++ (NSUInteger)keyDepthBytes:(NSData *)keyBytes;
 
 @end
 
