@@ -2,6 +2,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class SessionToken;
+@class Session;
+@class SessionStore;
+@class JWTMinter;
+
 /*!
  @header Session.h
  
@@ -157,13 +162,16 @@ typedef NS_ENUM(NSInteger, SessionError) {
 @property (nonatomic, strong, readonly, nullable) NSDate *refreshTokenExpiresAt;
 
 /*! Thumbprint of the DPoP key used for this session. */
-@property (nonatomic, copy, readonly, nullable) NSString *dpopKeyThumbprint;
+@property (nonatomic, copy, readwrite, nullable) NSString *dpopKeyThumbprint;
+
+/*! Minter used for creating access tokens. */
+@property (nonatomic, strong, nullable) JWTMinter *minter;
 
 /*!
  @method sessionWithDID:handle:scope:
- 
+  
  @abstract Creates a new session with the specified identity.
- 
+  
  @param did The user's DID.
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
@@ -174,10 +182,26 @@ typedef NS_ENUM(NSInteger, SessionError) {
                                   scope:(NSString *)scope;
 
 /*!
+ @method sessionWithDID:handle:scope:minter:
+ 
+ @abstract Creates a new session with the specified identity and minter.
+ 
+ @param did The user's DID.
+ @param handle The user's handle.
+ @param scope The OAuth scope for the session.
+ @param minter The JWT minter to use for access tokens.
+ @return A new Session instance.
+ */
++ (nullable instancetype)sessionWithDID:(NSString *)did
+                                 handle:(NSString *)handle
+                                  scope:(NSString *)scope
+                                 minter:(nullable JWTMinter *)minter;
+
+/*!
  @method initWithDID:handle:scope:
- 
+  
  @abstract Initializes a session with identity information.
- 
+  
  @param did The user's DID.
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
@@ -186,6 +210,22 @@ typedef NS_ENUM(NSInteger, SessionError) {
 - (instancetype)initWithDID:(NSString *)did
                     handle:(NSString *)handle
                      scope:(NSString *)scope;
+
+/*!
+ @method initWithDID:handle:scope:minter:
+ 
+ @abstract Initializes a session with identity information and a minter.
+ 
+ @param did The user's DID.
+ @param handle The user's handle.
+ @param scope The OAuth scope for the session.
+ @param minter The JWT minter to use for access tokens.
+ @return An initialized Session instance.
+ */
+- (instancetype)initWithDID:(NSString *)did
+                    handle:(NSString *)handle
+                     scope:(NSString *)scope
+                    minter:(nullable JWTMinter *)minter;
 
 /*!
  @method toTokenResponse
@@ -207,6 +247,15 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return A dictionary for bearer token response.
  */
 - (NSDictionary *)toBearerTokenResponse;
+
+/*!
+ @method refreshAccessToken
+ 
+ @abstract Generates a new access token for the session.
+ 
+ @return The new access token value.
+ */
+- (NSString *)refreshAccessToken;
 
 @end
 
@@ -241,6 +290,9 @@ typedef NS_ENUM(NSInteger, SessionError) {
 
 /*! Clock skew tolerance in seconds for token validation. */
 @property (nonatomic, assign, readonly) NSTimeInterval clockSkew;
+
+/*! Minter used for creating access tokens. */
+@property (nonatomic, strong, nullable) JWTMinter *minter;
 
 /*!
  @method sharedStore
