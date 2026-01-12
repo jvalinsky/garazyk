@@ -99,7 +99,10 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 #pragma mark - Event Broadcasting
 
-- (void)broadcastRepositoryCommit:(RepoCommit *)commit forRepo:(NSString *)repoDid {
+- (void)broadcastRepositoryCommit:(RepoCommit *)commit 
+                          forRepo:(NSString *)repoDid 
+                              ops:(NSArray<NSDictionary *> *)ops 
+                            blobs:(NSArray<CID *> *)blobs {
     dispatch_async(self.eventQueue, ^{
         self.sequenceNumber++;
 
@@ -112,8 +115,20 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         if (commit.prevCID) {
             payload[@"previous"] = [commit.prevCID stringValue];
         }
-        payload[@"ops"] = @[]; // TODO: Extract operations from commit
-        payload[@"blobs"] = @[]; // TODO: Extract blobs from commit
+        
+        // Convert ops to suitable format
+        NSMutableArray *opsArray = [NSMutableArray array];
+        for (NSDictionary *op in ops) {
+            [opsArray addObject:op];
+        }
+        payload[@"ops"] = opsArray;
+        
+        // Convert blobs to string CIDs
+        NSMutableArray *blobsArray = [NSMutableArray array];
+        for (CID *blobCID in blobs) {
+            [blobsArray addObject:[blobCID stringValue]];
+        }
+        payload[@"blobs"] = blobsArray;
 
         NSError *error = nil;
         NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
