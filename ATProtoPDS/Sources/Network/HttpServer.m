@@ -13,7 +13,7 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
-@property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
+@property (nonatomic, assign) dispatch_semaphore_t readySemaphore;
 @property (nonatomic, assign) BOOL listenerReady;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 
