@@ -5,7 +5,9 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
+#include <openssl/err.h>
 #include <openssl/pem.h>
+#import "Endian.h"
 
 const void * kSecAttrKeyType = @"kSecAttrKeyType";
 const void * kSecAttrKeyTypeECSECPrimeRandom = @"kSecAttrKeyTypeECSECPrimeRandom";
@@ -247,8 +249,40 @@ void CFRelease(CFTypeRef cf) {
     }
 }
 
+CFTypeRef CFRetain(CFTypeRef cf) {
+    if (cf) {
+        return (__bridge_retained CFTypeRef)(__bridge id)cf;
+    }
+    return cf;
+}
+
 void CFRunLoopRun(void) {
     [[NSRunLoop currentRunLoop] run];
+}
+
+// Byte Order Shims
+uint64_t CFSwapInt64HostToBig(uint64_t arg) {
+#if defined(__linux__)
+    return htobe64(arg);
+#else
+    return arg; // Fallback or handle appropriately
+#endif
+}
+
+uint32_t CFSwapInt32BigToHost(uint32_t arg) {
+#if defined(__linux__)
+    return be32toh(arg);
+#else
+    return arg;
+#endif
+}
+
+uint16_t CFSwapInt16BigToHost(uint16_t arg) {
+#if defined(__linux__)
+    return be16toh(arg);
+#else
+    return arg;
+#endif
 }
 
 #endif
