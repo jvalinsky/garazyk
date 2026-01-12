@@ -243,6 +243,7 @@
         case CBORTypeTag:
             [self encodeTag:value.tag.unsignedIntegerValue value:value.taggedValue toData:data];
             break;
+
         case CBORTypeSimpleOrFloat:
             if (value.simpleValue) {
                 [self encodeSimpleValue:value.simpleValue.unsignedIntegerValue toData:data];
@@ -367,16 +368,17 @@
         NSData *d1 = [CBOREncoder encode:key1];
         NSData *d2 = [CBOREncoder encode:key2];
         
-        // DAG-CBOR sorting rules:
-        // 1. Sort by length (shorter first)
-        // 2. Sort by bytes (lexicographical)
+        // IPLD DAG-CBOR sorting rules:
+        // Pure bytewise lexicographical comparison of the encoded keys.
+        
+        NSUInteger minLen = MIN(d1.length, d2.length);
+        int cmp = memcmp(d1.bytes, d2.bytes, minLen);
+        if (cmp < 0) return NSOrderedAscending;
+        if (cmp > 0) return NSOrderedDescending;
         
         if (d1.length < d2.length) return NSOrderedAscending;
         if (d1.length > d2.length) return NSOrderedDescending;
         
-        int cmp = memcmp(d1.bytes, d2.bytes, d1.length);
-        if (cmp < 0) return NSOrderedAscending;
-        if (cmp > 0) return NSOrderedDescending;
         return NSOrderedSame;
     }];
     
@@ -387,7 +389,23 @@
 }
 
 + (void)encodeTag:(NSUInteger)tag value:(CBORValue *)value toData:(NSMutableData *)data {
-    [self encodeUnsignedInteger:tag toData:data];
+    if (tag < 24) {
+        uint8_t byte = 0xC0 | (uint8_t)tag;
+        [data appendBytes:&byte length:1];
+    } else if (tag < 256) {
+        uint8_t header[] = {0xd8, (uint8_t)tag};
+        [data appendBytes:header length:2];
+    } else if (tag < 65536) {
+        uint8_t header = 0xd9;
+        [data appendBytes:&header length:1];
+        uint16_t be = OSSwapHostToBigInt16((uint16_t)tag);
+        [data appendBytes:&be length:2];
+    } else {
+        uint8_t header = 0xda;
+        [data appendBytes:&header length:1];
+        uint32_t be = OSSwapHostToBigInt32((uint32_t)tag);
+        [data appendBytes:&be length:4];
+    }
     [self encodeValue:value toData:data];
 }
 
