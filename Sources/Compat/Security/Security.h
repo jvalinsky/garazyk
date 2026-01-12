@@ -20,6 +20,54 @@ typedef struct __CFBoolean *CFBooleanRef;
 typedef struct __CFAllocator *CFAllocatorRef;
 typedef struct __CFError *CFErrorRef;
 
+typedef int64_t CFIndex;
+typedef uint64_t CFHashCode;
+
+typedef struct {
+    CFIndex version;
+    void (*retain)(CFAllocatorRef, const void *);
+    void (*release)(CFAllocatorRef, void *);
+    CFStringRef (*copyDescription)(const void *);
+    bool (*equal)(const void *, const void *);
+    CFHashCode (*hash)(const void *);
+} CFDictionaryKeyCallBacks;
+
+typedef struct {
+    CFIndex version;
+    void (*retain)(CFAllocatorRef, const void *);
+    void (*release)(CFAllocatorRef, void *);
+    CFStringRef (*copyDescription)(const void *);
+    bool (*equal)(const void *, const void *);
+} CFDictionaryValueCallBacks;
+
+#define kCFAllocatorDefault ((CFAllocatorRef)0)
+#define kCFTypeDictionaryKeyCallBacks ((CFDictionaryKeyCallBacks *)0)
+
+static inline CFDictionaryRef CFDictionaryCreateMutable(CFAllocatorRef allocator, CFIndex capacity, const CFDictionaryKeyCallBacks *keyCallBacks, const CFDictionaryValueCallBacks *valueCallBacks) {
+    (void)allocator;
+    (void)capacity;
+    (void)keyCallBacks;
+    (void)valueCallBacks;
+    return (CFDictionaryRef)malloc(sizeof(void *) * 100);
+}
+
+static inline void CFDictionarySetValue(CFDictionaryRef theDict, const void *key, const void *value) {
+    (void)theDict;
+    (void)key;
+    (void)value;
+}
+
+static inline CFIndex CFDictionaryGetCount(CFDictionaryRef theDict) {
+    (void)theDict;
+    return 0;
+}
+
+static inline void CFDictionaryGetKeysAndValues(CFDictionaryRef theDict, const void **keys, const void **values) {
+    (void)theDict;
+    (void)keys;
+    (void)values;
+}
+
 static inline CFTypeRef CFBridgingRelease(CFTypeRef cf) {
     (void)cf;
     return NULL;
