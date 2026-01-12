@@ -926,7 +926,9 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
     
+    fprintf(stderr, "Debug: Calling SecItemAdd\n");
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
+    fprintf(stderr, "Debug: SecItemAdd returned %d\n", status);
     
     if (status != errSecSuccess) {
         if (error) {
@@ -963,7 +965,9 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         }
     };
     
+    fprintf(stderr, "Debug: Calling SecKeyCreateRandomKey\n");
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, NULL);
+    fprintf(stderr, "Debug: SecKeyCreateRandomKey returned %p\n", privateKey);
     
     if (!privateKey) {
         if (error) {
@@ -974,7 +978,9 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         return NO;
     }
     
+    fprintf(stderr, "Debug: Calling storeSigningKey\n");
     BOOL success = [self storeSigningKey:privateKey error:error];
+    fprintf(stderr, "Debug: storeSigningKey returned %d\n", success);
 #if defined(__APPLE__)
     CFRelease(privateKey);
 #else
