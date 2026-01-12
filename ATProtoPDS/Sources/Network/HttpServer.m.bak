@@ -9,7 +9,7 @@
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, strong) id<PDSNetworkListener> listener;
-@property (nonatomic, assign) dispatch_queue_t serverQueue;
+@property (nonatomic, strong) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);

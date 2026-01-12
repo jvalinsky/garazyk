@@ -33,7 +33,7 @@
 @interface HttpRouter ()
 
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *routes;
-@property (nonatomic, assign) dispatch_queue_t routingQueue;
+@property (nonatomic, strong) dispatch_queue_t routingQueue;
 
 @end
 
