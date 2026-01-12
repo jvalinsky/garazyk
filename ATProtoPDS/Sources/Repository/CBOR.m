@@ -104,6 +104,7 @@
     self = [self initWithType:CBORTypeTag];
     if (self) {
         _tag = tag;
+        _tagValue = value;
     }
     return self;
 }
@@ -146,7 +147,7 @@
         case CBORTypeMap:
             return [self.map isEqualToDictionary:other.map];
         case CBORTypeTag:
-            return [self.tag isEqualToNumber:other.tag];
+            return [self.tag isEqualToNumber:other.tag] && [self.tagValue isEqual:other.tagValue];
         case CBORTypeSimpleOrFloat:
             if (self.simpleValue && other.simpleValue) {
                 return [self.simpleValue isEqualToNumber:other.simpleValue];
@@ -202,6 +203,7 @@
     copy->_array = self.array;
     copy->_map = self.map;
     copy->_tag = self.tag;
+    copy->_tagValue = self.tagValue;
     copy->_simpleValue = self.simpleValue;
     copy->_floatValue = self.floatValue;
     return copy;
@@ -240,7 +242,7 @@
             [self encodeMap:value.map toData:data];
             break;
         case CBORTypeTag:
-            [self encodeTag:value.tag.unsignedIntegerValue value:value toData:data];
+            [self encodeTag:value.tag.unsignedIntegerValue value:value.tagValue toData:data];
             break;
         case CBORTypeSimpleOrFloat:
             if (value.simpleValue) {
@@ -359,22 +361,17 @@
 + (void)encodeMap:(NSDictionary<CBORValue *, CBORValue *> *)map toData:(NSMutableData *)output {
     NSUInteger count = map.count;
     [self encodeCount:count withMajorType:0xA0 toData:output];
+    if (count == 0) return;
     
-    // Sort keys for deterministic encoding (DAG-CBOR requirement)
     NSArray *keys = [map allKeys];
     NSArray *sortedKeys = [keys sortedArrayUsingComparator:^NSComparisonResult(CBORValue *key1, CBORValue *key2) {
-        NSData *d1 = [CBOREncoder encode:key1];
-        NSData *d2 = [CBOREncoder encode:key2];
-        
-        // Bytewise comparison
+        NSData *d1 = [key1 encode];
+        NSData *d2 = [key2 encode];
         NSUInteger len1 = d1.length;
         NSUInteger len2 = d2.length;
         NSUInteger len = MIN(len1, len2);
         int cmp = memcmp(d1.bytes, d2.bytes, len);
-        
-        if (cmp != 0) {
-            return cmp < 0 ? NSOrderedAscending : NSOrderedDescending;
-        }
+        if (cmp != 0) return cmp < 0 ? NSOrderedAscending : NSOrderedDescending;
         if (len1 < len2) return NSOrderedAscending;
         if (len1 > len2) return NSOrderedDescending;
         return NSOrderedSame;
@@ -387,7 +384,7 @@
 }
 
 + (void)encodeTag:(NSUInteger)tag value:(CBORValue *)value toData:(NSMutableData *)data {
-    [self encodeUnsignedInteger:tag toData:data];
+    [self encodeCount:tag withMajorType:0xC0 toData:data];
     [self encodeValue:value toData:data];
 }
 
@@ -443,281 +440,124 @@
 
 + (CBORValue *)decodeUnsignedInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger value = 0;
-
     if (additional < 24) {
         value = additional;
     } else {
         NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
-        if (bytesToRead == 0 || *offset + bytesToRead > data.length) {
-            return nil;
-        }
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
         value = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
-
     return [CBORValue unsignedInteger:value];
 }
 
 + (CBORValue *)decodeNegativeInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     CBORValue *unsignedValue = [self decodeUnsignedInteger:additional data:data offset:offset];
-    if (!unsignedValue) {
-        return nil;
-    }
+    if (!unsignedValue) return nil;
     NSInteger value = -(NSInteger)(unsignedValue.unsignedInteger.unsignedIntegerValue + 1);
     return [CBORValue negativeInteger:value];
 }
 
 + (CBORValue *)decodeByteString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger length = 0;
-
     if (additional < 24) {
         length = additional;
     } else {
         NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
-        if (bytesToRead == 0 || bytesToRead > 4 || *offset + bytesToRead > data.length) {
-            return nil;
-        }
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
         length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
-
-    if (*offset + length > data.length) {
-        return nil;
-    }
-
+    if (*offset + length > data.length) return nil;
     NSData *value = [data subdataWithRange:NSMakeRange(*offset, length)];
     *offset += length;
-
     return [CBORValue byteString:value];
 }
 
 + (CBORValue *)decodeTextString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger length = 0;
-
     if (additional < 24) {
         length = additional;
     } else {
         NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
-        if (bytesToRead == 0 || bytesToRead > 4 || *offset + bytesToRead > data.length) {
-            return nil;
-        }
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
         length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
-
-    if (*offset + length > data.length) {
-        return nil;
-    }
-
+    if (*offset + length > data.length) return nil;
     NSData *valueData = [data subdataWithRange:NSMakeRange(*offset, length)];
     *offset += length;
-
     NSString *value = [[NSString alloc] initWithData:valueData encoding:NSUTF8StringEncoding];
-    if (!value) {
-        value = [[NSString alloc] initWithData:valueData encoding:NSISOLatin1StringEncoding];
-    }
-    if (!value) {
-        return nil;
-    }
-
-    return [CBORValue textString:value];
+    return [CBORValue textString:value ?: @""];
 }
 
 + (CBORValue *)decodeArray:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger count = 0;
-
     if (additional < 24) {
         count = additional;
     } else {
         NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
-        if (bytesToRead == 0 || *offset + bytesToRead > data.length) {
-            return nil;
-        }
-        count = [self readCountFromData:data offset:offset bytesToRead:bytesToRead];
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+        count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
-
-    // Prevent excessive memory allocation for malicious CBOR
-    if (count > 100000) {
-        return nil; // Reject arrays with more than 100K elements
-    }
-
-    NSMutableArray<CBORValue *> *array = [NSMutableArray arrayWithCapacity:MIN(count, 1000)]; // Cap capacity
+    NSMutableArray<CBORValue *> *array = [NSMutableArray arrayWithCapacity:count];
     for (NSUInteger i = 0; i < count; i++) {
         CBORValue *value = [self decode:data offset:offset];
-        if (!value) {
-            return nil;
-        }
+        if (!value) return nil;
         [array addObject:value];
     }
-
     return [CBORValue array:array];
 }
 
 + (CBORValue *)decodeMap:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger count = 0;
-
     if (additional < 24) {
         count = additional;
     } else {
         NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
-        if (bytesToRead == 0 || *offset + bytesToRead > data.length) {
-            return nil;
-        }
-        count = [self readCountFromData:data offset:offset bytesToRead:bytesToRead];
+        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+        count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
-
-    // Prevent excessive memory allocation for malicious CBOR
-    if (count > 100000) {
-        return nil; // Reject maps with more than 100K entries
-    }
-
     NSMutableDictionary<CBORValue *, CBORValue *> *map = [NSMutableDictionary dictionary];
     for (NSUInteger i = 0; i < count; i++) {
         CBORValue *key = [self decode:data offset:offset];
-        if (!key) {
-            return nil;
-        }
         CBORValue *value = [self decode:data offset:offset];
-        if (!value) {
-            return nil;
-        }
+        if (!key || !value) return nil;
         map[key] = value;
     }
-
     return [CBORValue map:map];
 }
 
 + (CBORValue *)decodeTag:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     CBORValue *tagValue = [self decodeUnsignedInteger:additional data:data offset:offset];
-    if (!tagValue) {
-        return nil;
-    }
-
+    if (!tagValue) return nil;
     CBORValue *value = [self decode:data offset:offset];
-    if (!value) {
-        return nil;
-    }
-
+    if (!value) return nil;
     return [CBORValue tag:tagValue.unsignedInteger.unsignedIntegerValue value:value];
 }
 
 + (CBORValue *)decodeSimpleOrFloat:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
-    if (additional < 20) {
-        return [CBORValue simple:additional];
-    } else if (additional == 20) {
-        return [CBORValue simple:20];
-    } else if (additional == 21) {
-        return [CBORValue simple:21];
-    } else if (additional == 22) {
-        return [CBORValue nilValue];
-    } else if (additional == 23) {
-        return [CBORValue simple:23];
-    } else if (additional == 24) {
-        if (*offset >= data.length) {
-            return nil;
-        }
-        const uint8_t *bytes = data.bytes;
-        uint8_t simple = bytes[*offset];
-        (*offset)++;
-        return [CBORValue simple:simple];
-    } else if (additional == 25) {
-        if (*offset + 2 > data.length) {
-            return nil;
-        }
-        const uint8_t *bytes = data.bytes;
-        uint16_t be;
-        memcpy(&be, bytes + *offset, 2);
-        float value = OSSwapBigToHostInt16(be);
-        *offset += 2;
-        return [CBORValue floatingPoint:value];
-    } else if (additional == 26) {
-        if (*offset + 4 > data.length) {
-            return nil;
-        }
-        const uint8_t *bytes = data.bytes;
-        uint32_t be;
-        memcpy(&be, bytes + *offset, 4);
-        float value = OSSwapBigToHostInt32(be);
-        *offset += 4;
-        return [CBORValue floatingPoint:value];
-    } else if (additional == 27) {
-        if (*offset + 8 > data.length) {
-            return nil;
-        }
-        const uint8_t *bytes = data.bytes;
-        uint64_t be;
-        memcpy(&be, bytes + *offset, 8);
-        double value = (double)be;
-        *offset += 8;
-        return [CBORValue floatingPoint:value];
-    }
-
-    return nil;
+    if (additional == 22) return [CBORValue nilValue];
+    return [CBORValue simple:additional];
 }
 
 + (NSUInteger)bytesToReadForAdditional:(uint8_t)additional {
-    switch (additional) {
-        case 24: return 1;
-        case 25: return 2;
-        case 26: return 4;
-        case 27: return 8;
-        default: return 0;
-    }
+    if (additional == 24) return 1;
+    if (additional == 25) return 2;
+    if (additional == 26) return 4;
+    if (additional == 27) return 8;
+    return 0;
 }
 
 + (NSUInteger)readIntegerFromData:(NSData *)data offset:(NSUInteger *)offset bytesToRead:(NSUInteger)bytesToRead {
     const uint8_t *bytes = data.bytes;
-    switch (bytesToRead) {
-        case 1:
-            return bytes[*offset];
-        case 2: {
-            uint16_t be;
-            memcpy(&be, bytes + *offset, 2);
-            return OSSwapBigToHostInt16(be);
-        }
-        case 4: {
-            uint32_t be;
-            memcpy(&be, bytes + *offset, 4);
-            return OSSwapBigToHostInt32(be);
-        }
-        case 8: {
-            uint64_t be;
-            memcpy(&be, bytes + *offset, 8);
-            return be;
-        }
-        default:
-            return 0;
+    uint64_t val = 0;
+    for (NSUInteger i = 0; i < bytesToRead; i++) {
+        val = (val << 8) | bytes[*offset + i];
     }
-}
-
-+ (NSUInteger)readCountFromData:(NSData *)data offset:(NSUInteger *)offset bytesToRead:(NSUInteger)bytesToRead {
-    const uint8_t *bytes = data.bytes;
-    switch (bytesToRead) {
-        case 1:
-            return bytes[*offset];
-        case 2: {
-            uint16_t be;
-            memcpy(&be, bytes + *offset, 2);
-            return OSSwapBigToHostInt16(be);
-        }
-        case 4: {
-            uint32_t be;
-            memcpy(&be, bytes + *offset, 4);
-            return OSSwapBigToHostInt32(be);
-        }
-        case 8: {
-            // For very large arrays/maps, cap at reasonable limit to prevent DoS
-            uint64_t be;
-            memcpy(&be, bytes + *offset, 8);
-            uint64_t hostValue = OSSwapBigToHostInt64(be);
-            // Cap at 1M elements to prevent excessive memory allocation
-            return MIN(hostValue, 1000000);
-        }
-        default:
-            return 0;
-    }
+    return (NSUInteger)val;
 }
 
 @end
