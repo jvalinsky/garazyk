@@ -104,10 +104,31 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecAttrService ((CFStringRef)12)
 #define kSecAttrAccount ((CFStringRef)13)
 #define kSecAttrAccessGroup ((CFStringRef)14)
+#define kSecAttrAccessible ((CFStringRef)15)
+#define kSecAttrAccessibleAfterFirstUnlock ((CFStringRef)16)
+#define kSecReturnRef ((CFStringRef)17)
+#define kSecValueRef ((CFStringRef)18)
 #define kSecClass ((CFStringRef)9)
 #define kSecClassKey ((CFStringRef)10)
 #define kSecClassGenericPassword ((CFStringRef)11)
 #define errSecItemNotFound (-25300)
+
+static inline OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
+    (void)query;
+    (void)result;
+    return errSecItemNotFound;
+}
+
+static inline OSStatus SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
+    (void)attributes;
+    (void)result;
+    return errSecSuccess;
+}
+
+static inline OSStatus SecItemDelete(CFDictionaryRef query) {
+    (void)query;
+    return errSecSuccess;
+}
 
 #endif
 
