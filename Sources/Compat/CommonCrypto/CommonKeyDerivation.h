@@ -1,8 +1,23 @@
 #ifndef CommonKeyDerivation_h
 #define CommonKeyDerivation_h
 
+#if defined(__APPLE__)
+#include <CommonCrypto/CommonKeyDerivation.h>
+#else
 #include <CommonCrypto/CommonDigest.h>
 #include <openssl/evp.h>
+
+enum {
+    kCCSuccess = 0,
+    kCCParamError = -4300,
+    kCCBufferTooSmall = -4301,
+    kCCMemoryFailure = -4302,
+    kCCAlignmentError = -4303,
+    kCCDecodeError = -4304,
+    kCCUnimplemented = -4305,
+    kCCOverflowError = -4306,
+    kCCRNGError = -4307
+};
 
 enum {
     kCCPBKDF2 = 2
@@ -19,7 +34,7 @@ enum {
 typedef uint32_t CCPseudoRandomAlgorithm;
 
 static inline int CCKeyDerivationPBKDF(uint32_t algorithm, const char *password, size_t passwordLen, const unsigned char *salt, size_t saltLen, CCPseudoRandomAlgorithm prf, uint32_t rounds, unsigned char *derivedKey, size_t derivedKeyLen) {
-    if (algorithm != kCCPBKDF2) return -4300; // kCCParamError
+    if (algorithm != kCCPBKDF2) return kCCParamError;
     
     const EVP_MD *md = NULL;
     switch (prf) {
@@ -28,12 +43,13 @@ static inline int CCKeyDerivationPBKDF(uint32_t algorithm, const char *password,
         case kCCPRFHmacAlgSHA256: md = EVP_sha256(); break;
         case kCCPRFHmacAlgSHA384: md = EVP_sha384(); break;
         case kCCPRFHmacAlgSHA512: md = EVP_sha512(); break;
-        default: return -4300; // kCCParamError
+        default: return kCCParamError;
     }
     
-    // PKCS5_PBKDF2_HMAC returns 1 on success, 0 on error
     int res = PKCS5_PBKDF2_HMAC(password, (int)passwordLen, salt, (int)saltLen, (int)rounds, md, (int)derivedKeyLen, derivedKey);
-    return (res == 1) ? 0 : -1; // 0 is kCCSuccess
+    return (res == 1) ? kCCSuccess : kCCMemoryFailure;
 }
+
+#endif /* __APPLE__ */
 
 #endif /* CommonKeyDerivation_h */

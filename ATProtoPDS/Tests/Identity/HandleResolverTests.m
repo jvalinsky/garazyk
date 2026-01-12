@@ -1,14 +1,9 @@
 #import <XCTest/XCTest.h>
 #import "Identity/HandleResolver.h"
 
-@interface HandleResolver (Testing)
+@interface HandleResolver ()
 
-@property (nonatomic, strong) NSDictionary *mockResponse;
-@property (nonatomic, strong) NSError *mockError;
-@property (nonatomic, assign) NSTimeInterval mockDelay;
-
-- (void)resolveHandleViaHTTPS:(NSString *)handle
-                   completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion;
+@property (nonatomic, assign, readwrite) BOOL skipSSRFCheck;
 
 @end
 
