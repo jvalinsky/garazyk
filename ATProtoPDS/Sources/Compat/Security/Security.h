@@ -128,6 +128,9 @@ uint64_t CFSwapInt64HostToBig(uint64_t arg);
 uint32_t CFSwapInt32BigToHost(uint32_t arg);
 uint16_t CFSwapInt16BigToHost(uint16_t arg);
 
+// Test Helper
+void SecTestResetKeychain(void);
+
 #endif // !defined(__APPLE__)
 
 #endif /* Security_Compat_h */

@@ -14,6 +14,9 @@
 
 - (void)setUp {
     [super setUp];
+#if !defined(__APPLE__)
+    SecTestResetKeychain();
+#endif
     
     self.keyManager = [[KeyManager alloc] init];
     self.keyRotationManager = [[KeyRotationManager alloc] initWithKeyStore:self.keyManager];
@@ -22,6 +25,9 @@
 - (void)tearDown {
     self.keyManager = nil;
     self.keyRotationManager = nil;
+#if !defined(__APPLE__)
+    SecTestResetKeychain();
+#endif
     [super tearDown];
 }
 

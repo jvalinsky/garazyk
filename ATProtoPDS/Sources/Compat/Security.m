@@ -50,6 +50,13 @@ static void InitMockKeychain(void) {
     });
 }
 
+void SecTestResetKeychain(void) {
+    InitMockKeychain();
+    @synchronized(mockKeychainStore) {
+        [mockKeychainStore removeAllObjects];
+    }
+}
+
 static NSString *KeychainKey(CFDictionaryRef query) {
     NSDictionary *q = (__bridge NSDictionary *)query;
     NSString *service = q[(__bridge id)kSecAttrService];
