@@ -43,7 +43,6 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 @property (nonatomic, strong, readwrite) NSDate *createdAt;
 @property (nonatomic, strong, readwrite) NSDate *accessTokenExpiresAt;
 @property (nonatomic, strong, readwrite, nullable) NSDate *refreshTokenExpiresAt;
-@property (nonatomic, copy, readwrite, nullable) NSString *dpopKeyThumbprint;
 @property (nonatomic, strong) SessionToken *accessTokenData;
 @property (nonatomic, strong, nullable) SessionToken *refreshTokenData;
 @property (nonatomic, strong) KeyManager *keyManager;
@@ -51,15 +50,31 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 @implementation Session
 
+@synthesize minter = _minter;
+
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope {
     return [[Session alloc] initWithDID:did handle:handle scope:scope];
 }
 
++ (nullable instancetype)sessionWithDID:(NSString *)did
+                                 handle:(NSString *)handle
+                                  scope:(NSString *)scope
+                                 minter:(nullable JWTMinter *)minter {
+    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter];
+}
+
 - (instancetype)initWithDID:(NSString *)did
                      handle:(NSString *)handle
                       scope:(NSString *)scope {
+    return [self initWithDID:did handle:handle scope:scope minter:nil];
+}
+
+- (instancetype)initWithDID:(NSString *)did
+                     handle:(NSString *)handle
+                      scope:(NSString *)scope
+                     minter:(nullable JWTMinter *)minter {
     self = [super init];
     if (self) {
         _sessionID = [[NSUUID UUID] UUIDString];
@@ -69,6 +84,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         _tokenType = @"Bearer";
         _createdAt = [NSDate date];
         _keyManager = [[KeyManager alloc] init];
+        _minter = minter;
 
         [self mintTokens];
     }
@@ -77,7 +93,27 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 - (void)mintTokens {
     NSTimeInterval accessTokenLifetime = 3600;
-    self.accessTokenData = [SessionToken tokenWithValue:[[NSUUID UUID] UUIDString]
+    NSString *accessTokenValue = nil;
+    
+    if (self.minter) {
+        NSError *error = nil;
+        NSArray<NSString *> *scopes = [self.scope componentsSeparatedByString:@" "];
+        JWT *jwt = [self.minter mintAccessTokenForDID:self.did
+                                               handle:self.handle
+                                               scopes:scopes
+                                                 error:&error];
+        if (jwt) {
+            accessTokenValue = [jwt encodedToken];
+            self.tokenType = @"DPoP"; // Standard for ATProto
+        } else {
+            NSLog(@"Warning: Failed to mint JWT access token: %@", error);
+            accessTokenValue = [[NSUUID UUID] UUIDString];
+        }
+    } else {
+        accessTokenValue = [[NSUUID UUID] UUIDString];
+    }
+
+    self.accessTokenData = [SessionToken tokenWithValue:accessTokenValue
                                               expiresIn:accessTokenLifetime
                                                   scope:self.scope
                                           isRefreshToken:NO];
@@ -86,9 +122,9 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
     NSTimeInterval refreshTokenLifetime = 86400 * 30;
     self.refreshTokenData = [SessionToken tokenWithValue:[[NSUUID UUID] UUIDString]
-                                                expiresIn:refreshTokenLifetime
-                                                    scope:self.scope
-                                            isRefreshToken:YES];
+                                                 expiresIn:refreshTokenLifetime
+                                                     scope:self.scope
+                                             isRefreshToken:YES];
     self.refreshToken = self.refreshTokenData.value;
     self.refreshTokenExpiresAt = self.refreshTokenData.expiresAt;
 }
@@ -186,6 +222,8 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 @end
 
 @implementation SessionStore
+
+@synthesize minter = _minter;
 @synthesize clockSkew = _clockSkew;
 
 + (instancetype)sharedStore {
@@ -216,7 +254,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
                                      scope:(NSString *)scope
                                    dpopJWK:(nullable NSDictionary *)dpopJWK
                                      error:(NSError **)error {
-    Session *session = [[Session alloc] initWithDID:did handle:handle scope:scope];
+    Session *session = [[Session alloc] initWithDID:did handle:handle scope:scope minter:self.minter];
 
     if (dpopJWK[@"kid"]) {
         session.dpopKeyThumbprint = dpopJWK[@"kid"];
