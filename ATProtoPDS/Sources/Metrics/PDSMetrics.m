@@ -23,7 +23,14 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
+#if defined(__linux__) || defined(__GNUstep__)
+        // On Linux, os_unfair_lock might be a pthread mutex which needs runtime init if not using initializer macro
+        // But our shim defines it as pthread_mutex_t. PTHREAD_MUTEX_INITIALIZER only works at declaration.
+        // So we should init it here.
+       pthread_mutex_init(&_lock, NULL);
+#else
         _lock = OS_UNFAIR_LOCK_INIT;
+#endif
         _httpRequestsByEndpoint = [NSMutableDictionary dictionary];
         _httpRequestsByStatus = [NSMutableDictionary dictionary];
         _httpRequestsByMethod = [NSMutableDictionary dictionary];
