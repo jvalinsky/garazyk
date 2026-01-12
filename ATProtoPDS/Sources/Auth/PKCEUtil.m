@@ -1,5 +1,6 @@
 #import "Auth/PKCEUtil.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <Security/Security.h>
 
 static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
