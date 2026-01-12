@@ -934,6 +934,7 @@
     req.HTTPMethod = @"GET";
     req.timeoutInterval = 10.0; // 10 second timeout
     
+#if defined(__APPLE__)
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
     __block NSString *result = nil;
     __block NSError *networkError = nil;
@@ -953,7 +954,6 @@
     }];
     [task resume];
     
-    // Wait with timeout to prevent hanging
     dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.0 * NSEC_PER_SEC));
     long waitResult = dispatch_semaphore_wait(sem, timeout);
     
@@ -963,6 +963,39 @@
         [self.cache setDidDocument:did value:result];
         return result;
     }
+#else
+    // GNUstep: Use NSURLConnection (synchronous)
+    __block NSString *result = nil;
+    __block NSError *networkError = nil;
+    __block NSInteger statusCode = 0;
+    
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSURLResponse *response = nil;
+        NSData *data = [NSURLConnection sendSynchronousRequest:req returningResponse:&response error:&networkError];
+        
+        if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = ((NSHTTPURLResponse *)response).statusCode;
+        }
+        if (data) {
+            result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        }
+        
+        dispatch_semaphore_signal(sem);
+    });
+    
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.0 * NSEC_PER_SEC));
+    dispatch_semaphore_wait(sem, timeout);
+    
+    BOOL isValidResponse = !networkError && (statusCode == 200) && result && [result hasPrefix:@"{"] && [result hasSuffix:@"}"] && ![result containsString:@"DID not registered"];
+    
+    if (isValidResponse) {
+        [self.cache setDidDocument:did value:result];
+        return result;
+    }
+    
+    long waitResult = 0; // For the checks below
+#endif
     
     // Fallback: Check if this is a local account
     NSError *error = nil;
@@ -1034,11 +1067,17 @@
         }
     }
 
+#if defined(__APPLE__)
     if (waitResult != 0) {
         NSLog(@"fetchDidDocument timeout for %@", did);
         [task cancel];
         return nil;
     }
+#else
+    if (networkError) {
+        NSLog(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
+    }
+#endif
     
     if (networkError) {
         NSLog(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
@@ -1047,7 +1086,7 @@
     
     // Return the error response from PLC if local resolution failed
     // Exception: "DID not registered" errors to prevent caching as valid document
-    if ([result containsString:@"DID not registered"]) {
+    if (result && [result containsString:@"DID not registered"]) {
         return nil;
     }
     
@@ -1061,6 +1100,7 @@
     req.HTTPMethod = @"GET";
     req.timeoutInterval = 10.0; // 10 second timeout
     
+#if defined(__APPLE__)
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
     __block NSString *result = nil;
     __block NSError *networkError = nil;
@@ -1080,7 +1120,6 @@
     }];
     [task resume];
     
-    // Wait with timeout to prevent hanging
     dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.0 * NSEC_PER_SEC));
     long waitResult = dispatch_semaphore_wait(sem, timeout);
     
@@ -1090,6 +1129,39 @@
         [self.cache setPlcLog:did value:result];
         return result;
     }
+#else
+    // GNUstep: Use NSURLConnection (synchronous)
+    __block NSString *result = nil;
+    __block NSError *networkError = nil;
+    __block NSInteger statusCode = 0;
+    
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSURLResponse *response = nil;
+        NSData *data = [NSURLConnection sendSynchronousRequest:req returningResponse:&response error:&networkError];
+        
+        if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = ((NSHTTPURLResponse *)response).statusCode;
+        }
+        if (data) {
+            result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        }
+        
+        dispatch_semaphore_signal(sem);
+    });
+    
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.0 * NSEC_PER_SEC));
+    dispatch_semaphore_wait(sem, timeout);
+    
+    BOOL isValidResponse = !networkError && (statusCode == 200) && result && [result hasPrefix:@"["] && [result hasSuffix:@"]"];
+    
+    if (isValidResponse) {
+        [self.cache setPlcLog:did value:result];
+        return result;
+    }
+    
+    long waitResult = 0; // For the checks below
+#endif
     
     // Fallback: Check if this is a local account and generate a simulated log
     NSError *error = nil;
@@ -1157,11 +1229,17 @@
         }
     }
     
+#if defined(__APPLE__)
     if (waitResult != 0) {
         NSLog(@"fetchPlcLog timeout for %@", did);
         [task cancel];
         return nil;
     }
+#else
+    if (networkError) {
+        NSLog(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
+    }
+#endif
     
     if (networkError) {
         NSLog(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
