@@ -80,9 +80,15 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 @end
 
+#import <CoreFoundation/CoreFoundation.h>
+
 @interface KeyManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, KeyPair *> *keyPairs;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t accessQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t accessQueue;
+#endif
 @end
 
 @implementation KeyManager

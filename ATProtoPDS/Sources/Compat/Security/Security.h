@@ -31,18 +31,23 @@ enum {
  */
 
 typedef EVP_PKEY* SecKeyRef;
-typedef const void* CFDictionaryRef; // Simplified for shim
+// Duplicate definition removed
+// typedef const void* CFDictionaryRef; 
+
 typedef const void* CFDataRef;
 typedef const void* CFErrorRef;
+typedef const void* SecTrustRef; // Added SecTrustRef
 
 // Attribute Constants
 extern const void * kSecAttrKeyType;
+extern const void * kSecAttrKeyTypeRSA; // Added RSA
 extern const void * kSecAttrKeyTypeECSECPrimeRandom;
 extern const void * kSecAttrKeySizeInBits;
 
 // Algorithms
 typedef const void * SecKeyAlgorithm;
 extern const SecKeyAlgorithm kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+extern const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256; // Added RSA Algo
 
 // Functions
 SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error);

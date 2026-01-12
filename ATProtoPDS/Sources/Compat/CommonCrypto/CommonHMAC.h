@@ -8,7 +8,8 @@
 #include <openssl/hmac.h>
 
 enum {
-    kCCHmacAlgSHA256 = 0
+    kCCHmacAlgSHA256 = 0,
+    kCCHmacAlgSHA1 = 1,
 };
 typedef uint32_t CCHmacAlgorithm;
 
