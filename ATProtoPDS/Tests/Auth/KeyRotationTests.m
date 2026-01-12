@@ -27,7 +27,7 @@
 
 - (void)testKeyRotationManagerInitialization {
     XCTAssertNotNil(self.keyRotationManager);
-    XCTAssertEqualObjects(self.keyManager, [self.keyRotationManager valueForKey:@"keyStore"]);
+    XCTAssertEqualObjects(self.keyManager, [self.keyRotationManager valueForKey:@"keyManager"]);
 }
 
 - (void)testCurrentSigningKey {
