@@ -361,22 +361,22 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded];
 
-    NSString *signature = [self signData:signingInput error:error];
+    NSData *signature = [self signData:signingInput error:error];
     if (!signature) return nil;
 
-    NSString *signatureEncoded = [JWT base64URLEncodeData:[signature dataUsingEncoding:NSUTF8StringEncoding] error:error];
+    NSString *signatureEncoded = [JWT base64URLEncodeData:signature error:error];
     if (!signatureEncoded) return nil;
 
     return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, signatureEncoded];
 }
 
-- (NSString *)signData:(NSString *)data error:(NSError **)error {
+- (NSData *)signData:(NSString *)data error:(NSError **)error {
     NSData *dataBytes = [data dataUsingEncoding:NSUTF8StringEncoding];
     
     if (self.keyRotationManager) {
         NSData *signature = [self.keyRotationManager signData:dataBytes error:error];
         if (!signature) return nil;
-        return [signature base64EncodedStringWithOptions:0];
+        return signature;
     }
     
     if (self.privateKey) {
@@ -391,7 +391,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         NSData *signature = [keyPair signHash:hashData error:error];
         if (!signature) return nil;
         
-        return [signature base64EncodedStringWithOptions:0];
+        return signature;
     } else {
         // Fallback to stub
         if (error) {
@@ -420,7 +420,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     JWTHeader *header = [[JWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
 
-    NSString *signature = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
+    NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
+    NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
 
     return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
@@ -442,7 +443,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     JWTHeader *header = [[JWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
 
-    NSString *signature = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
+    NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
+    NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
 
     return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
