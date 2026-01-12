@@ -196,6 +196,9 @@ if(NOT APPLE)
   # KeyManager uses extensive Security framework APIs not available on Linux
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManager\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationManager\\.m$")
+
+  # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO) which are macOS-specific
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})

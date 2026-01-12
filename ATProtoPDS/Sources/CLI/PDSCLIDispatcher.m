@@ -22,7 +22,14 @@
         return @{};
     }
 
+#if defined(__APPLE__)
     NSData *data = [NSData dataWithContentsOfFile:configPath options:0 error:&error];
+#else
+    NSData *data = [NSData dataWithContentsOfFile:configPath];
+    if (!data) {
+        error = [NSError errorWithDomain:@"PDSCLI" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to read config"}];
+    }
+#endif
     if (error || !data) {
         [self printError:[NSString stringWithFormat:@"Failed to read config: %@", error.localizedDescription]];
         return @{};
