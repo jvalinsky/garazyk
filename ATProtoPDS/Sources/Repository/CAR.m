@@ -92,21 +92,7 @@
     NSData *rootCidData = [data subdataWithRange:NSMakeRange(offset, rootCidLength)];
     offset += rootCidLength;
 
-    NSString *rootCidString = [[NSString alloc] initWithData:rootCidData encoding:NSASCIIStringEncoding];
-    if (!rootCidString) {
-        rootCidString = [[NSString alloc] initWithData:rootCidData encoding:NSISOLatin1StringEncoding];
-    }
-
-    if (!rootCidString) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.car"
-                                         code:-4
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to decode root CID string"}];
-        }
-        return NO;
-    }
-
-    CID *rootCID = [CID cidFromString:rootCidString];
+    CID *rootCID = [CID cidFromBytes:rootCidData];
     if (!rootCID) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
