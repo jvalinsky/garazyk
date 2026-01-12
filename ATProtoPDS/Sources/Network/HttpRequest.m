@@ -4,7 +4,6 @@
 
 @property (nonatomic, readwrite, copy) NSDictionary *jsonBody;
 @property (nonatomic, readwrite, copy) NSDictionary *multipartFormData;
-@property (nonatomic, readwrite, copy) NSString *remoteAddress;
 
 @end
 
