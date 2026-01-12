@@ -117,7 +117,9 @@ static const NSUInteger kMaxVarintSize = 9;
     
     // Encode as base32 with 'b' prefix
     NSString *base32String = [CID base32Encode:binaryData];
-    return [@"b" stringByAppendingString:base32String];
+    NSString *result = [@"b" stringByAppendingString:base32String];
+    fprintf(stderr, "[CID DEBUG] stringValue: %s\n", [result UTF8String]);
+    return result;
 }
 
 #pragma mark - Comparison and Equality
