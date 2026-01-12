@@ -1,5 +1,5 @@
 #import "ATProtoCBORSerialization.h"
-#import <CoreFoundation/CoreFoundation.h>
+
 #import "Repository/CBOR.h"
 
 @implementation ATProtoCBORSerialization
@@ -46,9 +46,10 @@
         return [CBORValue textString:obj];
     } else if ([obj isKindOfClass:[NSNumber class]]) {
         // Handle boolean
-        if (obj == (id)kCFBooleanTrue) {
+// Handle boolean
+        if ([obj isEqual:@YES]) {
             return [CBORValue simple:21];
-        } else if (obj == (id)kCFBooleanFalse) {
+        } else if ([obj isEqual:@NO]) {
             return [CBORValue simple:20];
         }
         
