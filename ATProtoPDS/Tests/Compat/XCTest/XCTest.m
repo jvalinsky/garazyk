@@ -59,6 +59,7 @@
 
 @implementation XCTestCase {
     SEL _selector;
+    NSUInteger _failureCount;
 }
 
 - (instancetype)initWithSelector:(SEL)selector {
@@ -66,6 +67,7 @@
     if (self) {
         _selector = selector;
         _name = NSStringFromSelector(selector);
+        _failureCount = 0;
     }
     return self;
 }
@@ -76,7 +78,12 @@
 - (void)performTest:(id)run {
     @try {
         [self setUp];
-        [_invocation invoke];
+        if ([self respondsToSelector:_selector]) {
+            // Use IMP to avoid ARC warnings with performSelector
+            IMP imp = [self methodForSelector:_selector];
+            void (*func)(id, SEL) = (void *)imp;
+            func(self, _selector);
+        }
         [self tearDown];
     } @catch (NSException *exception) {
         printf("Test %s failed: Uncaught exception %s\n", [self.name UTF8String], [[exception reason] UTF8String]);

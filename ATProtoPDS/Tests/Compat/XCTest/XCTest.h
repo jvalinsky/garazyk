@@ -69,6 +69,24 @@ NS_ASSUME_NONNULL_BEGIN
         XCTFail(__VA_ARGS__); \
     }
 
+#define XCTAssertGreaterThan(expression1, expression2, ...) \
+    if ((expression1) <= (expression2)) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
+#define XCTAssertLessThan(expression1, expression2, ...) \
+    if ((expression1) >= (expression2)) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
+#define XCTAssertNoThrow(expression, ...) \
+    @try { \
+        (expression); \
+    } \
+    @catch (NSException *exception) { \
+        XCTFail(__VA_ARGS__); \
+    }
+
 // --- Protocol ---
 
 @protocol XCTestObservation <NSObject>
