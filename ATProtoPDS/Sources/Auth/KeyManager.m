@@ -28,8 +28,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 }
 
 - (void)dealloc {
+#if defined(__APPLE__)
     if (_privateKey) CFRelease(_privateKey);
     if (_publicKey) CFRelease(_publicKey);
+#else
+    if (_privateKey) CFRelease((__bridge CFTypeRef)_privateKey);
+    if (_publicKey) CFRelease((__bridge CFTypeRef)_publicKey);
+#endif
 }
 
 - (nullable NSDictionary *)publicKeyJWK {
@@ -178,7 +183,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
 
     if (pubError) {
+#if defined(__APPLE__)
         CFRelease(privateKey);
+#else
+        CFRelease((__bridge CFTypeRef)privateKey);
+#endif
         if (error) {
             *error = (__bridge_transfer NSError *)pubError;
         }
