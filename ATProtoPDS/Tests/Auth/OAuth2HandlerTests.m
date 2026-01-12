@@ -79,7 +79,7 @@
     setenv("PDS_ISSUER", "https://custom.pds.example.com", 1);
 
     OAuth2Handler *handler = [[OAuth2Handler alloc] init];
-    XCTAssertEqualObjects(handler.server.issuer, @"https://custom.pds.example.com",
+    XCTAssertEqualObjects(handler.oauthServer.issuer, @"https://custom.pds.example.com",
                          @"Should use custom issuer from environment");
 
     // Clean up

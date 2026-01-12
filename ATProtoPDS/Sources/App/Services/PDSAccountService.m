@@ -4,6 +4,7 @@
 #import "Database/PDSDatabase.h"
 #import "App/PDSConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Auth/JWT.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 
@@ -85,7 +86,13 @@
     }
 
     // Generate tokens
-    NSString *accessToken = [[NSUUID UUID] UUIDString];
+    NSString *accessToken = nil;
+    if (self.minter) {
+        JWT *jwt = [self.minter mintAccessTokenForDID:resolvedDid handle:handle scopes:@[@"atproto"] error:nil];
+        accessToken = [jwt encodedToken];
+    } else {
+        accessToken = [[NSUUID UUID] UUIDString];
+    }
     NSString *refreshToken = [[NSUUID UUID] UUIDString];
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
@@ -128,7 +135,13 @@
     }
 
     // Generate new tokens
-    NSString *accessToken = [[NSUUID UUID] UUIDString];
+    NSString *accessToken = nil;
+    if (self.minter) {
+        JWT *jwt = [self.minter mintAccessTokenForDID:account.did handle:account.handle scopes:@[@"atproto"] error:nil];
+        accessToken = [jwt encodedToken];
+    } else {
+        accessToken = [[NSUUID UUID] UUIDString];
+    }
     NSString *refreshToken = [[NSUUID UUID] UUIDString];
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
@@ -175,7 +188,13 @@
     }
 
     // Generate new access token
-    NSString *accessToken = [[NSUUID UUID] UUIDString];
+    NSString *accessToken = nil;
+    if (self.minter) {
+        JWT *jwt = [self.minter mintAccessTokenForDID:account.did handle:account.handle scopes:@[@"atproto"] error:nil];
+        accessToken = [jwt encodedToken];
+    } else {
+        accessToken = [[NSUUID UUID] UUIDString];
+    }
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     [_serviceDatabases updateAccount:account error:nil];
 
