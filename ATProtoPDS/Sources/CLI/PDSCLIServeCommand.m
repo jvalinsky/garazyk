@@ -5,11 +5,13 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/PDSNetworkTransport.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSController.h"
 #import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuth2Handler.h"
+#import "Sync/SubscribeReposHandler.h"
 
 // Forward declaration for PDSAccountManager
 @interface PDSAccountManager : NSObject
@@ -171,6 +173,35 @@
     // Configure XRPC dispatcher
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
     [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
+
+    // Configure WebSocket handler for subscribeRepos (firehose)
+    // This allows pdsls.dev and other clients to connect to the firehose on the main port
+    SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:controller];
+    [httpServer setWebSocketUpgradeHandler:^BOOL(HttpRequest *request, id<PDSNetworkConnection> connection) {
+        NSLog(@"WebSocket upgrade request for path: %@", request.path);
+        
+        // Send the WebSocket handshake response
+        NSData *handshakeResponse = [HttpServer webSocketHandshakeResponseDataForRequest:request];
+        if (!handshakeResponse) {
+            NSLog(@"Failed to create WebSocket handshake response");
+            return NO;
+        }
+        
+        // Send handshake and hand off to subscribeRepos handler
+        [connection sendData:handshakeResponse completion:^(NSError * _Nullable error) {
+            if (error) {
+                NSLog(@"Failed to send WebSocket handshake: %@", error);
+                [connection cancel];
+                return;
+            }
+            
+            // Hand off to subscribeRepos handler
+            [subscribeReposHandler acceptUpgradedConnection:connection withPath:request.path];
+        }];
+        
+        return YES;
+    } forPath:@"/xrpc/com.atproto.sync.subscribeRepos"];
+    NSLog(@"PDSCLIServeCommand: Registered WebSocket handler for subscribeRepos");
 
     [httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];

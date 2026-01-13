@@ -7,6 +7,7 @@
 #import "Repository/RepoCommit.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSDatabase.h"
+#import "Network/PDSNetworkTransport.h"
 #import <os/log.h>
 
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
@@ -101,6 +102,46 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 - (void)webSocketServer:(WebSocketServer *)server didFailWithError:(NSError *)error {
     os_log_error(self.log, "WebSocket server failed: %@", error);
+}
+
+#pragma mark - HTTP Server Integration
+
+- (BOOL)acceptUpgradedConnection:(id)connection withPath:(NSString *)path {
+    os_log_info(self.log, "Accepting upgraded WebSocket connection for subscribeRepos from HTTP server");
+    
+    // Create a WebSocketConnection wrapper for the network connection
+    // The connection has already completed the HTTP upgrade handshake
+    WebSocketConnection *wsConnection = [[WebSocketConnection alloc] initWithConnection:connection];
+    
+    // Parse query parameters from path
+    NSRange queryRange = [path rangeOfString:@"?"];
+    if (queryRange.location != NSNotFound) {
+        NSString *queryString = [path substringFromIndex:queryRange.location + 1];
+        // Parse cursor and other params from query string
+        // For now, we just accept the connection
+    }
+    
+    // Add to our tracked connections
+    if (self.webSocketServer) {
+        [self.webSocketServer addConnection:wsConnection];
+    } else {
+        // If no WebSocket server is running, we still need to track connections
+        // Create a minimal server instance just for connection tracking
+        if (!self.webSocketServer) {
+            self.webSocketServer = [[WebSocketServer alloc] initWithHost:@"localhost" port:0];
+        }
+        [self.webSocketServer addConnection:wsConnection];
+    }
+    
+    // Notify delegate
+    if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didAcceptConnection:)]) {
+        [self.delegate subscribeReposHandler:self didAcceptConnection:wsConnection];
+    }
+    
+    // Send initial state
+    [self sendInitialRepositoryStateToConnection:wsConnection];
+    
+    return YES;
 }
 
 - (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state {
