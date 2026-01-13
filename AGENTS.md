@@ -15,6 +15,17 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 - **Token Refresh**: Implemented proper token refresh logic in `OAuth2.m`.
 - **Service Auth**: Added `com.atproto.server.getServiceAuth` endpoint.
 
+### ✅ Phase 2.5: did:plc Account Creation - COMPLETED
+- **DIDKey**: Implemented `DIDKey.h/.m` for parsing/generating did:key identifiers with secp256k1 support.
+- **DIDKeyEncoder**: Implemented `DIDKeyEncoder.h/.m` for multicodec/multibase encoding per W3C spec.
+- **PLCOperation**: Implemented `PLCOperation.h/.m` data model for genesis/update/tombstone operations.
+- **PLCOperationSigner**: Implemented `PLCOperationSigner.h/.m` for DAG-CBOR signing with base64url output.
+- **PLCOperationBuilder**: Implemented `PLCOperationBuilder.h/.m` for building/signing PLC operations.
+- **PLCClient**: Implemented `PLCClient.h/.m` HTTP client for plc.directory operations.
+- **PLCAccountCreator**: Implemented `PLCAccountCreator.h/.m` orchestrating full account creation flow.
+- **PDSAccountService Integration**: Integrated PLC account creation into `createAccountForEmail()`.
+- **Fix Duplicate Symbols**: Resolved linker errors from duplicate `DIDKeyErrorDomain` and `PLCOperationErrorDomain` definitions across files.
+
 ### 🏗️ Phase 3: The Firehose & Sync - IN PROGRESS
 - **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction.
 - **WebSocket**: WebSocket handler is implemented but needs robust testing.
