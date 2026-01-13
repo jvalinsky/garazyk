@@ -6,7 +6,7 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 @interface KeyRotationManager ()
 
 @property (nonatomic, strong) KeyManager *keyStore;
-@property (nonatomic, assign) dispatch_queue_t accessQueue;
+@property (nonatomic, strong) dispatch_queue_t accessQueue;
 
 @end
 
