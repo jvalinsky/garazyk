@@ -7,6 +7,9 @@
 #import "Database/PDSDatabase.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
+#ifdef GNUSTEP
+#import "Compat/NSDataCompat.h"
+#endif
 
 #pragma mark - API Endpoint Descriptor Classes
 
@@ -149,7 +152,7 @@
 @property (nonatomic, assign) NSTimeInterval plcTTL;
 @property (nonatomic, assign) NSTimeInterval accountTTL;
 @property (nonatomic, strong) ExploreCache *cache;
-@property (nonatomic, weak) PDSController *controller;
+@property (nonatomic, assign) PDSController *controller;  // assign instead of weak for Linux (no ARC)
 @end
 
 @implementation ExploreHandler
@@ -352,6 +355,52 @@
     [response setBodyData:[js dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
+- (void)serveVendor:(HttpRequest *)request response:(HttpResponse *)response {
+    // Handle paths like /vendor/swagger-ui/swagger-ui.css
+    NSString *path = request.path;
+    
+    // Strip /vendor/ or /explore/vendor/ prefix
+    NSString *relativePath;
+    if ([path hasPrefix:@"/explore/vendor/"]) {
+        relativePath = [path substringFromIndex:[@"/explore/vendor/" length]];
+    } else if ([path hasPrefix:@"/vendor/"]) {
+        relativePath = [path substringFromIndex:[@"/vendor/" length]];
+    } else {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Invalid vendor path", @"path": path}];
+        return;
+    }
+    
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *vendorPath = [[cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/vendor"] stringByAppendingPathComponent:relativePath];
+    
+    // Read file as binary data (for both JS and CSS)
+    NSData *data = [NSData dataWithContentsOfFile:vendorPath];
+    
+    if (!data) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Vendor file not found", @"path": path}];
+        return;
+    }
+    
+    // Determine content type based on file extension
+    NSString *extension = [path pathExtension].lowercaseString;
+    NSString *contentType;
+    if ([extension isEqualToString:@"js"]) {
+        contentType = @"application/javascript; charset=utf-8";
+    } else if ([extension isEqualToString:@"css"]) {
+        contentType = @"text/css; charset=utf-8";
+    } else if ([extension isEqualToString:@"json"]) {
+        contentType = @"application/json; charset=utf-8";
+    } else {
+        contentType = @"application/octet-stream";
+    }
+    
+    response.statusCode = 200;
+    response.contentType = contentType;
+    response.keepAlive = NO;
+    [response setBodyData:data];
+}
 #pragma mark - API Endpoints
 
 - (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response endpoint:(NSString *)endpoint {

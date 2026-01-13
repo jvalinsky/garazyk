@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSRepositoryService : NSObject
 
 /*! Database pool for per-user repository storage. */
-@property (nonatomic, weak) PDSDatabasePool *databasePool;
+@property (nonatomic, assign) PDSDatabasePool *databasePool;
 
 /*!
  @method initWithDatabasePool:

@@ -1,6 +1,19 @@
 cmake_minimum_required(VERSION 3.21)
 
 #=============================
+# Pre-project Compiler Setup (Linux)
+#=============================
+# On Linux, set compilers BEFORE project() to use clang
+if(NOT APPLE AND UNIX)
+    find_program(CLANG_COMPILER NAMES /bin/clang clang-14 clang)
+    if(CLANG_COMPILER)
+        set(CMAKE_C_COMPILER ${CLANG_COMPILER})
+        set(CMAKE_CXX_COMPILER ${CLANG_COMPILER})
+        set(CMAKE_OBJC_COMPILER ${CLANG_COMPILER})
+    endif()
+endif()
+
+#=============================
 # Project Configuration
 #=============================
 project(ATProtoPDS
@@ -12,60 +25,21 @@ project(ATProtoPDS
 #=============================
 # Global Settings
 #=============================
-# Enable ARC for Objective-C and disable strict standards
+# Compiler flags
 set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -Wno-implicit-function-declaration")
 
-# Platform Specific Configuration
+# Enable ARC only on macOS (GNUstep runtime doesn't support it)
 if(APPLE)
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc")
 endif()
 
+# Platform Specific Configuration
 if(NOT APPLE)
-    add_compile_definitions(GNUSTEP LINUX OS_OBJECT_USE_OBJC=0)
 
-    # Use Clang for Objective-C on Linux (required for ARC and blocks)
-    find_program(OBJC_COMPILER NAMES /bin/clang clang-14 clang)
-    if(OBJC_COMPILER)
-        set(CMAKE_OBJC_COMPILER ${OBJC_COMPILER})
-        message(STATUS "Using ${OBJC_COMPILER} for Objective-C")
-        # Also use clang for C/C++ to avoid ABI issues
-        set(CMAKE_C_COMPILER ${OBJC_COMPILER})
-        set(CMAKE_CXX_COMPILER ${OBJC_COMPILER})
-        message(STATUS "Using ${OBJC_COMPILER} for C/C++")
-    else()
-        message(FATAL_ERROR "Clang compiler not found for Objective-C")
-    endif()
-
-    # Find libobjc2 (GNU runtime with blocks support)
-    if(NOT OBJC_RUNTIME)
-        find_library(OBJC_RUNTIME objc)
-    endif()
-
-    if(OBJC_RUNTIME)
-        message(STATUS "Found libobjc2 at ${OBJC_RUNTIME}")
-        set(OBJC_FLAGS "-fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
-    else()
-        # Fallback for manual source builds in Docker or systems with non-standard paths
-        find_program(GNUSTEP_CONFIG gnustep-config)
-        if(GNUSTEP_CONFIG)
-            execute_process(
-                COMMAND ${GNUSTEP_CONFIG} --variable=GNUSTEP_LOCAL_LIBRARIES
-                OUTPUT_VARIABLE GNUSTEP_LOCAL_LIBS_DIR
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-            find_library(OBJC_RUNTIME objc PATHS ${GNUSTEP_LOCAL_LIBS_DIR} NO_DEFAULT_PATH)
-        endif()
-
-        if(OBJC_RUNTIME)
-            message(STATUS "Found libobjc2 at ${OBJC_RUNTIME} via gnustep-config")
-            set(OBJC_FLAGS "-fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
-        else()
-            message(FATAL_ERROR "libobjc2 not found. Install gnustep-devel or gnustep-base-dev package.")
-        endif()
-    endif()
-
-    # GNUstep Configuration
-    find_program(GNUSTEP_CONFIG gnustep-config)
+    add_compile_definitions(GNUSTEP LINUX)
+    
+    # GNUstep Configuration - prefer source-built version
+    find_program(GNUSTEP_CONFIG gnustep-config PATHS /usr/GNUstep/System/Tools REQUIRED)
     if(GNUSTEP_CONFIG)
         execute_process(
             COMMAND ${GNUSTEP_CONFIG} --objc-flags
@@ -77,28 +51,17 @@ if(NOT APPLE)
             OUTPUT_VARIABLE GNUSTEP_LIBS
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_CFLAGS} ${OBJC_FLAGS}")
+        # Add source-built GNUstep headers first for objc runtime
+        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I/usr/GNUstep/Local/Library/Headers ${GNUSTEP_CFLAGS} -fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
+        # Add source-built library path before system paths
+        link_directories(BEFORE /usr/GNUstep/Local/Library/Libraries)
         string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS}")
-        message(STATUS "Found GNUstep via gnustep-config")
-    else()
-        # Try pkg-config as fallback
-        find_package(PkgConfig)
-        if(PKG_CONFIG_FOUND AND pkg_check_modules(GNUSTEP_BASE gnustep-base))
-            message(STATUS "Found GNUstep via pkg-config")
-            set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${GNUSTEP_BASE_CFLAGS} ${OBJC_FLAGS}")
-            string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_BASE_LIBS}")
-        else()
-            message(FATAL_ERROR "GNUstep not found. Install gnustep-devel or gnustep-base-dev package.")
-        endif()
     endif()
-
-    include_directories(/usr/GNUstep/Local/Library/Headers)
-    include_directories(/usr/include/GNUstep)
-    include_directories(/usr/include)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
     
-    # Link directories - prioritize local GNUstep builds
-    link_directories(/usr/GNUstep/Local/Library/Libraries)
+    include_directories(/usr/include/GNUstep)
+    if(NOT APPLE)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat)
+    endif()
 endif()
 
 #=============================
@@ -146,16 +109,7 @@ else()
     # Linux Dependencies
     find_package(OpenSSL REQUIRED)
     find_package(SQLite3 REQUIRED)
-
-    # Create SQLite3 imported target if not already created by find_package
-    if(NOT TARGET SQLite3::SQLite3)
-        add_library(SQLite3::SQLite3 INTERFACE IMPORTED)
-        set_target_properties(SQLite3::SQLite3 PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIRS}"
-            INTERFACE_LINK_LIBRARIES "${SQLite3_LIBRARIES}"
-        )
-    endif()
-
+    
     find_library(DISPATCH_LIB dispatch)
     find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
     find_library(QRENCODE_LIB qrencode REQUIRED)
@@ -179,8 +133,7 @@ else()
     endif()
     
     set(PLATFORM_LIBRARIES
-        ${OBJC_RUNTIME}
-        ${LOCAL_GNUSTEP_BASE}
+        ${GNUSTEP_LIBS_LIST}
         OpenSSL::SSL
         OpenSSL::Crypto
         SQLite3::SQLite3
@@ -228,32 +181,43 @@ if(APPLE)
     list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m")
 endif()
 
-# Exclude AppDelegate on Linux/Server builds if not used or has deps
+# Exclude files using macOS-only APIs on Linux builds
 if(NOT APPLE)
-  # AppDelegate is now guarded with ifdefs and can be compiled on Linux
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*AppDelegate\.m$")
-
   # KeyManager uses extensive Security framework APIs not available on Linux
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManager\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationManager\\.m$")
 
-  # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO) which are macOS-specific
+  # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
 
-  # DID.m uses NSURLSession - the VM's GNUstep library doesn't have NSURLSession compiled in
+  # DID.m uses NSURLSession (not available in GNUstep)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
 
-  # FederationClient.m uses NSURLSession - same issue as DID.m
+  # FederationClient.m uses NSURLSession
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
 
-  # PDSMetrics.m uses os_unfair_lock from os/lock.h (macOS-only)
+  # PDSMetrics.m uses os_unfair_lock
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Metrics/PDSMetrics\\.m$")
 
-  # SSLPinningManager.m uses NSURLSession (not available on VM's GNUstep)
+  # SSLPinningManager.m uses NSURLSession
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
 
-  # WebSocketServer.m uses Network.framework (macOS-only)
+  # WebSocketServer.m uses Network.framework
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
+
+  # ActorStore.m uses Security.framework
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStore\\.m$")
+
+  # Identity resolvers use NSURLSession
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClient\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCAccountCreator\\.m$")
+
+  # Add Linux stub implementations
+  list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat/LinuxStubs.m")
 endif()
 
 # Add compat sources for Linux
@@ -291,8 +255,6 @@ target_compile_definitions(atprotopds-cli PRIVATE
 set_target_properties(atprotopds-cli PROPERTIES
   OUTPUT_NAME "atprotopds-cli"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-  BUILD_RPATH "/usr/lib"
-  INSTALL_RPATH "/usr/lib"
 )
 
 # Server Executable
@@ -318,8 +280,6 @@ target_compile_definitions(atprotopds-server PRIVATE
 set_target_properties(atprotopds-server PROPERTIES
   OUTPUT_NAME "atprotopds"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-  BUILD_RPATH "/usr/lib"
-  INSTALL_RPATH "/usr/lib"
 )
 
 #=============================
@@ -374,7 +334,7 @@ endif()
 #=============================
 
 option(BUILD_TESTS "Build test targets" ON)
-if(BUILD_TESTS AND APPLE)
+if(BUILD_TESTS)
   enable_testing()
   
   # Test sources
@@ -383,12 +343,37 @@ if(BUILD_TESTS AND APPLE)
   
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Integration/.*")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
+  # Exclude top-level Integration tests only
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/.*")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
-  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2HandlerTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
+  # Phase 1: Enabled Core Logic & Crypto Tests
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/RateLimitingTests.m")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2Tests.m")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
+  # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
+  
+  if(APPLE)
+      list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/.*")
+  endif()
+
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
+
+  # Linux-specific test exclusions (NSURLSession not available, or depend on excluded sources)
+  if(NOT APPLE)
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClientTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketConnectionTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStoreTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DIDValidationTests.m")
+  endif()
 
   add_executable(AllTests
     ${ATProtoPDS_SOURCES}

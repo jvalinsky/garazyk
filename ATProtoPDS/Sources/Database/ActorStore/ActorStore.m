@@ -2,8 +2,10 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 #import <Security/Security.h>
+#import <CommonCrypto/CommonCrypto.h>
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
+#import "Auth/Secp256k1.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
@@ -15,8 +17,13 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
+#if defined(GNUSTEP)
+@property (nonatomic, assign) dispatch_queue_t transactionQueue;
+@property (nonatomic, strong) NSData *signingKeyData;
+#else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
 @property (nonatomic, assign) SecKeyRef signingKey;
+#endif
 
 @end
 
@@ -41,11 +48,15 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         _dbPath = [dbPath copy];
         _db = NULL;
         _open = NO;
-    _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
-    _blobCache = [NSMutableDictionary dictionary];
-    _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
-    _signingKey = NULL;
-    _useKeychainSigningKey = YES;
+        _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
+#if defined(GNUSTEP)
+        _signingKeyData = nil;
+#else
+        _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
+        _blobCache = [NSMutableDictionary dictionary];
+        _signingKey = NULL;
+        _useKeychainSigningKey = YES;
+#endif
     }
     return self;
 }
@@ -174,10 +185,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     
     [self.blobCache removeAllObjects];
     
-    if (self.signingKey) {
-        CFRelease(self.signingKey);
-        self.signingKey = NULL;
-    }
+    self.signingKeyData = nil;
     
     sqlite3_close(self.db);
     self.db = NULL;
@@ -331,6 +339,24 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     return account;
 }
 
+- (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
+    NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
+    
+    NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
+    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return nil;
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseAccount *account = [self accountFromStatement:stmt];
+        if (account) {
+            [accounts addObject:account];
+        }
+    }
+    
+    [self finalizeStatement:stmt];
+    return [accounts copy];
+}
+
 - (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
@@ -418,7 +444,9 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_double(stmt, 8, account.createdAt);
     sqlite3_bind_double(stmt, 9, account.updatedAt);
     
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
+    int stepResult = sqlite3_step(stmt);
+    BOOL success = (stepResult == SQLITE_DONE);
+    NSLog(@"[ActorStore] createAccount: sqlite3_step result=%d, success=%d, did=%@", stepResult, success, account.did);
     [self finalizeStatement:stmt];
 
     if (!success) {
@@ -441,6 +469,15 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             }
         }
         return NO;
+    }
+    
+    // Generate secp256k1 signing key for the new account using the account's DID
+    NSError *keyError = nil;
+    if (![self generateSigningKeyForDid:account.did error:&keyError]) {
+        NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
+        // Don't fail account creation if key generation fails - it can be retried later
+    } else {
+        NSLog(@"[ActorStore] Generated secp256k1 signing key for %@", account.did);
     }
 
     return YES;
@@ -845,6 +882,68 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     return [kSigningKeyAccountPrefix stringByAppendingString:did];
 }
 
+#if defined(GNUSTEP)
+- (nullable NSData *)loadSigningKeyDataWithError:(NSError **)error {
+    if (self.signingKeyData) {
+        return self.signingKeyData;
+    }
+    
+    if (!self.useKeychainSigningKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key not available in memory-only store"}];
+        }
+        return NULL;
+    }
+    
+    NSString *account = [self keychainAccountForDid:self.did];
+    
+    NSDictionary *query = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: kSigningKeyService,
+        (__bridge id)kSecAttrAccount: account,
+        (__bridge id)kSecReturnData: @YES,
+        (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
+    };
+    
+    CFDataRef keyData = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyData);
+    
+    if (status == errSecItemNotFound) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                        code:PDSActorStoreErrorSigningKeyNotFound
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Signing key not found in Keychain"}];
+        }
+        return nil;
+    }
+    
+    if (status != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                        code:PDSActorStoreErrorSigningKeyInvalid
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve signing key from Keychain"}];
+        }
+        return nil;
+    }
+    
+    NSData *data = (__bridge_transfer NSData *)keyData;
+    
+    if (data.length != 32) {
+        NSLog(@"Warning: Stored key is %lu bytes, expected 32 for secp256k1.", (unsigned long)data.length);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                        code:PDSActorStoreErrorSigningKeyInvalid
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Invalid key format - expected 32-byte secp256k1 key"}];
+        }
+        return nil;
+    }
+    
+    self.signingKeyData = data;
+    return data;
+}
+#else
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error {
     if (self.signingKey) {
         CFRetain(self.signingKey);
@@ -870,8 +969,8 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
     
-    SecKeyRef keyRef = NULL;
-    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyRef);
+    CFTypeRef keyRef = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &keyRef);
     
     if (status == errSecItemNotFound) {
         if (error) {
@@ -891,25 +990,30 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NULL;
     }
     
-    self.signingKey = keyRef;
+    self.signingKey = (SecKeyRef)keyRef;
     CFRetain(self.signingKey);
     CFRelease(keyRef);
-    return CFRetain(self.signingKey);
+    return self.signingKey;
+}
+#endif
+
+- (BOOL)storeSigningKeyData:(NSData *)keyData error:(NSError **)error {
+    return [self storeSigningKeyData:keyData forDid:self.did error:error];
 }
 
-- (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error {
-    NSString *account = [self keychainAccountForDid:self.did];
-    
-    NSData *keyData = [self exportPublicKeyData:key];
-    if (!keyData) {
+- (BOOL)storeSigningKeyData:(NSData *)keyData forDid:(NSString *)targetDid error:(NSError **)error {
+    if (keyData.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                         code:-1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to export key data"}];
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Signing key must be 32 bytes (secp256k1)"}];
         }
         return NO;
     }
     
+    NSString *account = [self keychainAccountForDid:targetDid];
+    
+    // Delete any existing key
     NSDictionary *query = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
@@ -918,11 +1022,12 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     
     SecItemDelete((__bridge CFDictionaryRef)query);
     
+    // Store the raw key data
     NSDictionary *attributes = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
-        (__bridge id)kSecValueRef: (__bridge id)key,
+        (__bridge id)kSecValueData: keyData,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
     
@@ -937,16 +1042,36 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NO;
     }
     
-    if (self.signingKey) {
-        CFRelease(self.signingKey);
+    // Only cache if this is for our own DID
+    if ([targetDid isEqualToString:self.did]) {
+        self.signingKeyData = keyData;
     }
-    self.signingKey = key;
-    CFRetain(self.signingKey);
-    
     return YES;
 }
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
+#if defined(GNUSTEP)
+    return [self generateSigningKeyForDid:self.did error:error];
+}
+
+- (BOOL)generateSigningKeyForDid:(NSString *)targetDid error:(NSError **)error {
+    // Generate secp256k1 key pair using the Secp256k1 wrapper
+    NSError *genError = nil;
+    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&genError];
+    
+    if (!keyPair) {
+        if (error) {
+            *error = genError ?: [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                                     code:-1
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate secp256k1 signing key"}];
+        }
+        return NO;
+    }
+    
+    // Store the 32-byte private key for the target DID
+    return [self storeSigningKeyData:keyPair.privateKey forDid:targetDid error:error];
+}
+#else
     NSDictionary *attributes = @{
         (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
         (__bridge id)kSecAttrKeySizeInBits: @(2048),
@@ -987,34 +1112,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
                                               &cfError);
         }
     }
-
-    if (!privateKey && !self.useKeychainSigningKey) {
-        if (cfError) {
-            CFRelease(cfError);
-            cfError = NULL;
-        }
-        SecKeyRef publicKey = NULL;
-        NSDictionary *pairAttributes = @{
-            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-            (__bridge id)kSecAttrKeySizeInBits: @(2048),
-            (__bridge id)kSecPrivateKeyAttrs: @{
-                (__bridge id)kSecAttrIsPermanent: @NO
-            },
-            (__bridge id)kSecPublicKeyAttrs: @{
-                (__bridge id)kSecAttrIsPermanent: @NO
-            }
-        };
-        OSStatus status = SecKeyGeneratePair((__bridge CFDictionaryRef)pairAttributes,
-                                             &publicKey,
-                                             &privateKey);
-        if (publicKey) {
-            CFRelease(publicKey);
-        }
-        if (status != errSecSuccess && privateKey) {
-            CFRelease(privateKey);
-            privateKey = NULL;
-        }
-    }
     
     if (!privateKey) {
         if (error) {
@@ -1031,19 +1128,15 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NO;
     }
     
-    BOOL success = [self storeSigningKey:privateKey error:error];
+    self.signingKey = privateKey;
     CFRelease(privateKey);
-    
-    return success;
+    return YES;
 }
+#endif
 
-- (NSData *)exportPublicKeyData:(SecKeyRef)key {
-    SecKeyRef publicKey = SecKeyCopyPublicKey(key);
-    if (!publicKey) return nil;
-    
-    NSData *data = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(publicKey, NULL);
-    CFRelease(publicKey);
-    return data;
+- (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
+    // Return the raw 32-byte secp256k1 private key
+    return [self loadSigningKeyDataWithError:error];
 }
 
 #pragma mark - Blob Operations
@@ -1154,6 +1247,267 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     return success;
 }
 
-#pragma mark - Error Handling
+#pragma mark - Rotation Key Management
+
+- (BOOL)storeRotationKeyPrivate:(NSData *)privateKey
+                     publicKey:(NSData *)compressedPublicKey
+              encryptedWithPassword:(NSString *)password
+                          error:(NSError **)error {
+    if (privateKey.length != 32) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Private key must be 32 bytes"}];
+        }
+        return NO;
+    }
+    
+    if (compressedPublicKey.length != 33) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Compressed public key must be 33 bytes"}];
+        }
+        return NO;
+    }
+    
+    // Generate a random salt
+    uint8_t saltBytes[16];
+    for (int i = 0; i < 16; i++) {
+        saltBytes[i] = (uint8_t)(arc4random() & 0xFF);
+    }
+    NSData *salt = [NSData dataWithBytes:saltBytes length:16];
+    
+    // Derive encryption key using PBKDF2
+    NSData *encryptionKey = [self deriveKeyFromPassword:password salt:salt];
+    if (!encryptionKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to derive encryption key"}];
+        }
+        return NO;
+    }
+    
+    // Encrypt the private key using AES-256-CBC
+    NSData *encryptedKey = [self encryptData:privateKey withKey:encryptionKey];
+    if (!encryptedKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to encrypt private key"}];
+        }
+        return NO;
+    }
+    
+    // Store in database
+    NSString *sql = @"INSERT OR REPLACE INTO rotation_keys "
+                    @"(did, encrypted_private_key, public_key_compressed, encryption_salt, created_at, updated_at) "
+                    @"VALUES (?, ?, ?, ?, ?, ?)";
+    
+    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return NO;
+    
+    double now = [[NSDate date] timeIntervalSince1970];
+    
+    sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 2, encryptedKey.bytes, (int)encryptedKey.length, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 3, compressedPublicKey.bytes, (int)compressedPublicKey.length, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 4, salt.bytes, (int)salt.length, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 5, now);
+    sqlite3_bind_double(stmt, 6, now);
+    
+    int result = sqlite3_step(stmt);
+    [self finalizeStatement:stmt];
+    
+    if (result != SQLITE_DONE) {
+        if (error) {
+            *error = [self errorWithSQLiteResult:result message:@"Failed to store rotation key"];
+        }
+        return NO;
+    }
+    
+    return YES;
+}
+
+- (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
+                                               error:(NSError **)error {
+    NSString *sql = @"SELECT encrypted_private_key, encryption_salt FROM rotation_keys WHERE did = ?";
+    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return nil;
+    
+    sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
+    
+    int result = sqlite3_step(stmt);
+    if (result != SQLITE_ROW) {
+        [self finalizeStatement:stmt];
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Rotation key not found"}];
+        }
+        return nil;
+    }
+    
+    const void *encryptedBytes = sqlite3_column_blob(stmt, 0);
+    int encryptedLen = sqlite3_column_bytes(stmt, 0);
+    NSData *encryptedKey = [NSData dataWithBytes:encryptedBytes length:encryptedLen];
+    
+    const void *saltBytes = sqlite3_column_blob(stmt, 1);
+    int saltLen = sqlite3_column_bytes(stmt, 1);
+    NSData *salt = [NSData dataWithBytes:saltBytes length:saltLen];
+    
+    [self finalizeStatement:stmt];
+    
+    // Derive decryption key
+    NSData *decryptionKey = [self deriveKeyFromPassword:password salt:salt];
+    if (!decryptionKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to derive decryption key"}];
+        }
+        return nil;
+    }
+    
+    // Decrypt the private key
+    NSData *privateKey = [self decryptData:encryptedKey withKey:decryptionKey];
+    if (!privateKey || privateKey.length != 32) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to decrypt rotation key (wrong password?)"}];
+        }
+        return nil;
+    }
+    
+    return privateKey;
+}
+
+- (nullable NSData *)rotationKeyCompressedPublicKeyWithError:(NSError **)error {
+    NSString *sql = @"SELECT public_key_compressed FROM rotation_keys WHERE did = ?";
+    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return nil;
+    
+    sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
+    
+    int result = sqlite3_step(stmt);
+    if (result != SQLITE_ROW) {
+        [self finalizeStatement:stmt];
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Rotation key not found"}];
+        }
+        return nil;
+    }
+    
+    const void *publicKeyBytes = sqlite3_column_blob(stmt, 0);
+    int publicKeyLen = sqlite3_column_bytes(stmt, 0);
+    NSData *publicKey = [NSData dataWithBytes:publicKeyBytes length:publicKeyLen];
+    
+    [self finalizeStatement:stmt];
+    return publicKey;
+}
+
+- (BOOL)hasRotationKey {
+    NSString *sql = @"SELECT 1 FROM rotation_keys WHERE did = ? LIMIT 1";
+    NSError *error;
+    sqlite3_stmt *stmt = [self prepareStatement:sql error:&error];
+    if (!stmt) return NO;
+    
+    sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
+    
+    BOOL hasKey = (sqlite3_step(stmt) == SQLITE_ROW);
+    [self finalizeStatement:stmt];
+    return hasKey;
+}
+
+#pragma mark - Encryption Helpers
+
+- (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt {
+    // PBKDF2 with SHA-256, 100000 iterations, 32-byte output
+    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+    
+    NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
+    
+    int result = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                      passwordData.bytes, passwordData.length,
+                                      salt.bytes, salt.length,
+                                      kCCPRFHmacAlgSHA256,
+                                      100000,
+                                      derivedKey.mutableBytes, 32);
+    
+    if (result != kCCSuccess) {
+        return nil;
+    }
+    
+    return derivedKey;
+}
+
+- (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
+    // AES-256-CBC with PKCS7 padding
+    // Generate random IV
+    uint8_t ivBytes[kCCBlockSizeAES128];
+    for (int i = 0; i < kCCBlockSizeAES128; i++) {
+        ivBytes[i] = (uint8_t)(arc4random() & 0xFF);
+    }
+    
+    size_t bufferSize = data.length + kCCBlockSizeAES128;
+    NSMutableData *cipherData = [NSMutableData dataWithLength:bufferSize];
+    
+    size_t numBytesEncrypted = 0;
+    CCCryptorStatus status = CCCrypt(kCCEncrypt,
+                                     kCCAlgorithmAES128,
+                                     kCCOptionPKCS7Padding,
+                                     key.bytes, kCCKeySizeAES256,
+                                     ivBytes,
+                                     data.bytes, data.length,
+                                     cipherData.mutableBytes, bufferSize,
+                                     &numBytesEncrypted);
+    
+    if (status != kCCSuccess) {
+        return nil;
+    }
+    
+    cipherData.length = numBytesEncrypted;
+    
+    // Prepend IV to ciphertext
+    NSMutableData *result = [NSMutableData dataWithBytes:ivBytes length:kCCBlockSizeAES128];
+    [result appendData:cipherData];
+    
+    return result;
+}
+
+- (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key {
+    // AES-256-CBC with PKCS7 padding
+    // IV is prepended to the ciphertext
+    if (data.length < kCCBlockSizeAES128) {
+        return nil;
+    }
+    
+    const uint8_t *iv = data.bytes;
+    NSData *ciphertext = [data subdataWithRange:NSMakeRange(kCCBlockSizeAES128, data.length - kCCBlockSizeAES128)];
+    
+    size_t bufferSize = ciphertext.length + kCCBlockSizeAES128;
+    NSMutableData *plainData = [NSMutableData dataWithLength:bufferSize];
+    
+    size_t numBytesDecrypted = 0;
+    CCCryptorStatus status = CCCrypt(kCCDecrypt,
+                                     kCCAlgorithmAES128,
+                                     kCCOptionPKCS7Padding,
+                                     key.bytes, kCCKeySizeAES256,
+                                     iv,
+                                     ciphertext.bytes, ciphertext.length,
+                                     plainData.mutableBytes, bufferSize,
+                                     &numBytesDecrypted);
+    
+    if (status != kCCSuccess) {
+        return nil;
+    }
+    
+    plainData.length = numBytesDecrypted;
+    return plainData;
+}
 
 @end
