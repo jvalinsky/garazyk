@@ -156,14 +156,17 @@
         if (signingKey) {
             NSError *signError = nil;
             if ([commit signWithPrivateKey:signingKey error:&signError]) {
-                // Commit is now signed
+                NSLog(@"[sync.getRecord] Commit signed successfully");
             } else {
                 // Signing failed, continue with unsigned commit
                 NSLog(@"Warning: Failed to sign commit: %@", signError);
             }
+        } else {
+            NSLog(@"[sync.getRecord] No signing key available for %@", did);
         }
         
-        commitCBOR = [commit serialize];
+        // Use serializeSigned to include the signature in the CBOR
+        commitCBOR = [commit serializeSigned];
         commitCid = [commit computeCID];
     }
     

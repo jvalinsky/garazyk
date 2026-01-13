@@ -461,6 +461,15 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
         return NO;
     }
+    
+    // Generate secp256k1 signing key for the new account using the account's DID
+    NSError *keyError = nil;
+    if (![self generateSigningKeyForDid:account.did error:&keyError]) {
+        NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
+        // Don't fail account creation if key generation fails - it can be retried later
+    } else {
+        NSLog(@"[ActorStore] Generated secp256k1 signing key for %@", account.did);
+    }
 
     return YES;
 }
@@ -915,6 +924,10 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 }
 
 - (BOOL)storeSigningKeyData:(NSData *)keyData error:(NSError **)error {
+    return [self storeSigningKeyData:keyData forDid:self.did error:error];
+}
+
+- (BOOL)storeSigningKeyData:(NSData *)keyData forDid:(NSString *)targetDid error:(NSError **)error {
     if (keyData.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
@@ -924,7 +937,7 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         return NO;
     }
     
-    NSString *account = [self keychainAccountForDid:self.did];
+    NSString *account = [self keychainAccountForDid:targetDid];
     
     // Delete any existing key
     NSDictionary *query = @{
@@ -955,11 +968,18 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         return NO;
     }
     
-    self.signingKeyData = keyData;
+    // Only cache if this is for our own DID
+    if ([targetDid isEqualToString:self.did]) {
+        self.signingKeyData = keyData;
+    }
     return YES;
 }
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
+    return [self generateSigningKeyForDid:self.did error:error];
+}
+
+- (BOOL)generateSigningKeyForDid:(NSString *)targetDid error:(NSError **)error {
     // Generate secp256k1 key pair using the Secp256k1 wrapper
     NSError *genError = nil;
     Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&genError];
@@ -973,8 +993,8 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         return NO;
     }
     
-    // Store the 32-byte private key
-    return [self storeSigningKeyData:keyPair.privateKey error:error];
+    // Store the 32-byte private key for the target DID
+    return [self storeSigningKeyData:keyPair.privateKey forDid:targetDid error:error];
 }
 
 - (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
