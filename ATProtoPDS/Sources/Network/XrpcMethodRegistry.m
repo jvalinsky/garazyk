@@ -133,6 +133,50 @@
         [response setJsonBody:@{@"token": token}];
     }];
 
+    // com.atproto.server.getSession - Returns current session info for authenticated user
+    // Required by pdsls.dev for OAuth authentication flow
+    [dispatcher registerComAtprotoServerGetSession:^(HttpRequest *request, HttpResponse *response) {
+        // Extract and verify the access token from Authorization header
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+        
+        // Look up account info for this DID
+        NSError *error = nil;
+        NSDictionary *account = [controller getAccountForDid:did error:&error];
+        
+        if (error || !account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": @"Account not found for this session"}];
+            return;
+        }
+        
+        // Build session response per ATProto spec
+        NSMutableDictionary *sessionInfo = [NSMutableDictionary dictionary];
+        sessionInfo[@"did"] = did;
+        sessionInfo[@"handle"] = account[@"handle"] ?: @"";
+        
+        // Optional fields
+        if (account[@"email"]) {
+            sessionInfo[@"email"] = account[@"email"];
+            sessionInfo[@"emailConfirmed"] = account[@"emailConfirmed"] ?: @NO;
+        }
+        
+        // Account status
+        sessionInfo[@"active"] = @YES;
+        
+        // Optional: Include DID document if available
+        // sessionInfo[@"didDoc"] = ...;
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:sessionInfo];
+    }];
+
     [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSLog(@"createRecord XRPC handler called");
         NSDictionary *body = request.jsonBody;
@@ -495,13 +539,52 @@
             return;
         }
 
-        NSDictionary *result = @{
-            @"blobs": blobs,
-            @"cursor": cursor ?: [NSNull null] // Would need proper cursor implementation
-        };
+        // Response uses 'cids' field per ATProto spec (pdsls expects this)
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"cids"] = blobs ?: @[];
+        if (blobs.count >= limit) {
+            // Simple cursor: use last CID as cursor for pagination
+            result[@"cursor"] = [blobs lastObject] ?: [NSNull null];
+        }
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
+    }];
+
+    // com.atproto.sync.getRecord - Returns a single record as CAR bytes
+    // Required by pdsls.dev for record integrity verification via @atcute/repo.verifyRecord()
+    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *collection = [request queryParamForKey:@"collection"];
+        NSString *rkey = [request queryParamForKey:@"rkey"];
+        
+        if (!did || !collection || !rkey) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
+            return;
+        }
+        
+        NSError *error = nil;
+        // Get the record as CAR bytes for cryptographic verification
+        // This includes the record block and proof chain to the repo root
+        NSData *carData = [controller getRecordAsCAR:did collection:collection rkey:rkey error:&error];
+        
+        if (error) {
+            response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"RecordNotFound", @"message": error.localizedDescription}];
+            return;
+        }
+        
+        if (!carData) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
+            return;
+        }
+        
+        // Return as CAR binary data
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"application/vnd.ipld.car";
+        [response setBodyData:carData];
     }];
 
     [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {

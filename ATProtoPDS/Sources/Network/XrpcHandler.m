@@ -86,6 +86,10 @@
     [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
 }
 
+- (void)registerComAtprotoServerGetSession:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.getSession" handler:handler];
+}
+
 - (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.createRecord" handler:handler];
 }
@@ -136,6 +140,10 @@
 
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.listBlobs" handler:handler];
+}
+
+- (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getRecord" handler:handler];
 }
 
 - (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler {
