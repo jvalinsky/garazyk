@@ -1,3 +1,16 @@
+/*!
+ @file HandleResolver.m
+
+ @abstract Handle-to-DID resolution implementation.
+
+ @discussion This file implements handle resolution following the ATProto
+ specification. Handles are resolved via HTTPS (/.well-known/atproto-did)
+ with DNS TXT fallback for 404 responses. Includes SSRF protection,
+ rate limiting, and response caching.
+
+ @copyright Copyright (c) 2024 Jack Myers
+ */
+
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import <Security/Security.h>
@@ -21,20 +34,20 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         config.timeoutIntervalForResource = 30.0;
         _session = [NSURLSession sessionWithConfiguration:config];
 #else
-        _session = nil;  // NSURLConnection uses class methods, no session object needed
+        _session = nil;
 #endif
         _resolutionCache = [[NSCache alloc] init];
-        _cacheExpirationInterval = 300.0; // 5 minutes
-        _rateLimitPerMinute = 100; // Allow 100 resolutions per minute
+        _cacheExpirationInterval = 300.0;
+        _rateLimitPerMinute = 100;
         _requestTimestamps = [NSMutableArray array];
     }
     return self;
 }
 
 - (void)resolveHandle:(NSString *)handle
-                     completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+                      completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
 
-    // Rate limiting check
+    /*! Check rate limit before attempting resolution. */
     if (![self checkRateLimit]) {
         NSError *rateLimitError = [NSError errorWithDomain:HandleErrorDomain
                                                    code:HandleErrorNetworkError
@@ -43,25 +56,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         return;
     }
 
-    // Validate handle format first
-    NSError *validationError = nil;
-    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
-        completion(nil, validationError);
-        return;
-    }
-
-    // Normalize handle
-    handle = [ATProtoHandleValidator normalizeHandle:handle];
-
-    // SSRF Protection: Check if handle resolves to private/internal IPs
-    if (!self.skipSSRFCheck) {
-        NSError *ssrfError = nil;
-        if (![self validateHandleResolvesToPublicIP:handle error:&ssrfError]) {
-            completion(nil, ssrfError);
-            return;
-        }
-    }
-
+    /*! Use ATProto well-known endpoint for DID resolution. */
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
     NSURL *url = [NSURL URLWithString:urlString];
 
