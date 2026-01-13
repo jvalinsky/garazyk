@@ -220,10 +220,7 @@
         }
     }
 
-    // Trigger a write check immediately
-    dispatch_async(_queue, ^{
-        [self handleWrite];
-    });
+    // Dispatch source will trigger handleWrite when socket writable
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
@@ -237,10 +234,7 @@
         [_receiveRequests addObject:request];
     }
     
-    // Trigger a read check immediately in case data is already there
-    dispatch_async(_queue, ^{
-        [self handleRead];
-    });
+    // Dispatch source will trigger handleRead when data available
 }
 
 @end
