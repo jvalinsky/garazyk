@@ -141,7 +141,6 @@
 - (void)handleRead {
     if (_cancelled) return;
 
-    size_t bytesAvailable = dispatch_source_get_data(_readSource);
     // Note: dispatch_source_get_data might be 0 if the peer sent a FIN
     
     @synchronized (_receiveRequests) {
@@ -209,7 +208,7 @@
 
     NSDictionary *request = @{
         @"data": data,
-        @"completion": completion ? [completion copy] : ^(NSError *e){}
+        @"completion": completion ? [completion copy] : (id)^(NSError *e){}
     };
     
     @synchronized (_writeRequests) {
