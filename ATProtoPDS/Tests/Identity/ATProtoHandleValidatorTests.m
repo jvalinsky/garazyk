@@ -161,17 +161,18 @@
 }
 
 - (void)testTLDMustStartWithLetter {
-    NSArray *invalid = @[
-        @"cn.8",
-        @"john.0",
-        @"example.1abc"
-    ];
-
-    for (NSString *handle in invalid) {
-        NSError *error = nil;
-        XCTAssertFalse([ATProtoHandleValidator validateHandle:handle error:&error], @"TLD must start with a letter: %@", handle);
-        XCTAssertEqual(error.code, 1009);
-    }
+    NSError *error = nil;
+    
+    // All-numeric TLD returns 1008
+    XCTAssertFalse([ATProtoHandleValidator validateHandle:@"cn.8" error:&error]);
+    XCTAssertEqual(error.code, 1008);
+    
+    XCTAssertFalse([ATProtoHandleValidator validateHandle:@"john.0" error:&error]);
+    XCTAssertEqual(error.code, 1008);
+    
+    // TLD starting with digit but not all numeric returns 1009
+    XCTAssertFalse([ATProtoHandleValidator validateHandle:@"example.1abc" error:&error]);
+    XCTAssertEqual(error.code, 1009);
 }
 
 - (void)testSpecExampleValidHandles {
@@ -220,7 +221,7 @@
 - (void)testTLDSingleCharacterInvalid {
     NSError *error = nil;
     XCTAssertFalse([ATProtoHandleValidator validateHandle:@"a.1" error:&error], @"Single char numeric TLD should be invalid");
-    XCTAssertEqual(error.code, 1009);
+    XCTAssertEqual(error.code, 1008);
 }
 
 - (void)testTLDSingleLetterValid {
@@ -232,7 +233,7 @@
 - (void)testTLDSingleLetterInvalid {
     NSError *error = nil;
     XCTAssertFalse([ATProtoHandleValidator validateHandle:@"example.1" error:&error], @"Single digit TLD should be invalid");
-    XCTAssertEqual(error.code, 1009);
+    XCTAssertEqual(error.code, 1008);
 }
 
 - (void)testHandleSyntaxMethod {
