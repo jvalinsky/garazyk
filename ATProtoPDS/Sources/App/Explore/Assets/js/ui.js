@@ -2,11 +2,14 @@ import { API } from './api.js';
 import { CIDDecoder } from './cid.js';
 import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
+import { RecordRenderers } from './records.js';
 
 console.log('ui.js loading...');
 
 let currentDid = null;
 let currentCollection = null;
+let currentRecord = null;
+let viewMode = 'formatted'; // 'formatted' or 'raw'
 
 // Register global helpers early
 window.viewCollection = (collection) => {
@@ -35,6 +38,10 @@ function init() {
     document.getElementById('back-records').addEventListener('click', () => {
         showSection('records', `Records: ${currentCollection || ''}`);
     });
+    
+    // View toggle buttons
+    document.getElementById('view-formatted').addEventListener('click', () => setViewMode('formatted'));
+    document.getElementById('view-raw').addEventListener('click', () => setViewMode('raw'));
     
     // Navigation handling
     document.querySelectorAll('.nav-row[data-section]').forEach(row => {
@@ -280,19 +287,50 @@ async function showRecordDetail(uri) {
     showSection('record-detail', 'Record Detail');
     
     document.getElementById('record-title').textContent = uri;
-    document.getElementById('record-content').textContent = 'Loading...';
+    document.getElementById('record-formatted').innerHTML = '<p class="loading">Loading...</p>';
+    document.getElementById('record-raw').textContent = 'Loading...';
     
     try {
         const record = await API.getRecord(uri);
         console.log('getRecord result:', record);
+        currentRecord = record;
+        
         if (record.error) {
-            document.getElementById('record-content').textContent = record.error;
+            document.getElementById('record-formatted').innerHTML = `<p class="error">${escapeHtml(record.error)}</p>`;
+            document.getElementById('record-raw').textContent = JSON.stringify(record, null, 2);
         } else {
-            document.getElementById('record-content').textContent = JSON.stringify(record, null, 2);
+            // Render formatted view
+            document.getElementById('record-formatted').innerHTML = RecordRenderers.render(record);
+            // Render raw JSON view
+            document.getElementById('record-raw').textContent = JSON.stringify(record, null, 2);
         }
+        
+        // Apply current view mode
+        updateViewDisplay();
     } catch (e) {
         console.error('Failed to get record:', e);
-        document.getElementById('record-content').textContent = 'Error: ' + e.message;
+        document.getElementById('record-formatted').innerHTML = `<p class="error">Error: ${escapeHtml(e.message)}</p>`;
+        document.getElementById('record-raw').textContent = 'Error: ' + e.message;
+    }
+}
+
+function setViewMode(mode) {
+    viewMode = mode;
+    document.getElementById('view-formatted').classList.toggle('active', mode === 'formatted');
+    document.getElementById('view-raw').classList.toggle('active', mode === 'raw');
+    updateViewDisplay();
+}
+
+function updateViewDisplay() {
+    const formattedEl = document.getElementById('record-formatted');
+    const rawEl = document.getElementById('record-raw');
+    
+    if (viewMode === 'formatted') {
+        formattedEl.style.display = 'block';
+        rawEl.style.display = 'none';
+    } else {
+        formattedEl.style.display = 'none';
+        rawEl.style.display = 'block';
     }
 }
 

@@ -157,11 +157,18 @@
                 <div class="section-header">
                     <h1>Record Detail</h1>
                 </div>
-                <div style="margin-bottom: 15px;">
+                <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
                     <button id="back-records" class="btn-secondary">Back to Records</button>
-                    <span id="record-title" style="font-weight:bold; margin-left:10px;"></span>
+                    <div class="view-toggle">
+                        <button id="view-formatted" class="active">Formatted</button>
+                        <button id="view-raw">Raw JSON</button>
+                    </div>
                 </div>
-                <pre id="record-content" class="code-block"></pre>
+                <div id="record-title-bar" style="margin-bottom: 15px;">
+                    <code id="record-title" style="font-size: 11px; word-break: break-all;"></code>
+                </div>
+                <div id="record-formatted"></div>
+                <pre id="record-raw" class="code-block" style="display: none;"></pre>
             </section>
 
             <!-- CID Decoder Section -->
