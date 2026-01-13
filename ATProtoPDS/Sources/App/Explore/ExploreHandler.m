@@ -248,23 +248,32 @@
 
 - (BOOL)canHandleRequest:(HttpRequest *)request {
     if (!self.enabled) return NO;
-    return [request.path hasPrefix:@"/explore"];
+    // Handle both root and /explore paths
+    return [request.path hasPrefix:@"/explore"] || 
+           [request.path isEqualToString:@"/"] ||
+           [request.path hasPrefix:@"/css/"] ||
+           [request.path hasPrefix:@"/js/"] ||
+           [request.path hasPrefix:@"/api/"];
 }
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
     NSLog(@"ExploreHandler handleRequest: %@", path);
     
-    if ([path isEqualToString:@"/explore/"] || [path isEqualToString:@"/explore"]) {
+    // Handle root and /explore paths for index
+    if ([path isEqualToString:@"/"] || [path isEqualToString:@"/explore/"] || [path isEqualToString:@"/explore"]) {
         [self serveIndex:response];
     }
-    else if ([path hasPrefix:@"/explore/css/"]) {
+    // Handle CSS - both /css/ and /explore/css/
+    else if ([path hasPrefix:@"/css/"] || [path hasPrefix:@"/explore/css/"]) {
         [self serveCss:request response:response];
     }
-    else if ([path hasPrefix:@"/explore/js/"]) {
+    // Handle JS - both /js/ and /explore/js/
+    else if ([path hasPrefix:@"/js/"] || [path hasPrefix:@"/explore/js/"]) {
         [self serveJs:request response:response];
     }
-    else if ([path hasPrefix:@"/explore/api/"]) {
+    // Handle API - both /api/ and /explore/api/
+    else if ([path hasPrefix:@"/api/"] || [path hasPrefix:@"/explore/api/"]) {
         [self handleApiRequest:request response:response];
     }
     else {
@@ -432,7 +441,16 @@
 }
 
 - (NSString *)apiEndpointForPath:(NSString *)path {
-    NSArray *parts = [[path substringFromIndex:[@"/explore/api/" length]] componentsSeparatedByString:@"/"];
+    // Handle both /api/ and /explore/api/ prefixes
+    NSString *apiPath;
+    if ([path hasPrefix:@"/explore/api/"]) {
+        apiPath = [path substringFromIndex:[@"/explore/api/" length]];
+    } else if ([path hasPrefix:@"/api/"]) {
+        apiPath = [path substringFromIndex:[@"/api/" length]];
+    } else {
+        apiPath = path;
+    }
+    NSArray *parts = [apiPath componentsSeparatedByString:@"/"];
     return parts.firstObject ?: @"";
 }
 

@@ -195,7 +195,13 @@
     }];
     NSLog(@"PDSCLIServeCommand: Registered XRPC routes");
 
-    // Register route handlers (using old routing system temporarily)
+    // Register route handlers - serve explore UI at root
+    [httpServer addHandlerForPath:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
+    // Also handle /explore for backward compatibility
     [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
         [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
         [exploreHandler handleRequest:request response:response];
@@ -330,15 +336,7 @@
         [response setJsonBody:@{@"version": @"0.1.0"}];
     }];
 
-    // Root handler
-    [httpServer addHandlerForPath:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
-        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-        // Redirect to explore UI or return server info
-        if ([request.path isEqualToString:@"/"]) {
-            response.statusCode = 302;
-            [response setHeader:@"/explore/" forKey:@"Location"];
-        }
-    }];
+    // Root is now handled by explore handler above
 
     // Start HTTP server
     NSError *serverError = nil;
@@ -348,7 +346,7 @@
     }
 
     printf("HTTP server started successfully on port %ld\n", (long)port);
-    printf("Web interface available at: http://localhost:%ld/explore\n", (long)port);
+    printf("Web interface available at: http://localhost:%ld/\n", (long)port);
 
     if (!foreground) {
         printf("Running in background...\n");

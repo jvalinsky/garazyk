@@ -1,4 +1,4 @@
-const API_BASE = '/explore/api';
+const API_BASE = '/api';
 
 // Client-side cache with TTL
 const clientCache = new Map();
