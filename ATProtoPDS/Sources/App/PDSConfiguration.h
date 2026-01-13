@@ -15,6 +15,7 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @property (nonatomic, readonly) NSString *serverHost;
 @property (nonatomic, readonly) NSUInteger serverPort;
 @property (nonatomic, readonly) NSString *dataDirectory;
+@property (nonatomic, readonly) NSString *publicUrl;  // Public URL for PLC registration (e.g., https://pds.example.com)
 
 @property (nonatomic, readonly) NSString *plcURL;
 @property (nonatomic, readonly) NSUInteger plcRetryCount;

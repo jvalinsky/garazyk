@@ -2,7 +2,8 @@
   "server": {
     "host": "0.0.0.0",
     "port": 8000,
-    "data_dir": "./data"
+    "data_dir": "./data",
+    "public_url": "https://september.exe.xyz:8000"
   },
   "plc": {
     "url": "https://plc.directory",
