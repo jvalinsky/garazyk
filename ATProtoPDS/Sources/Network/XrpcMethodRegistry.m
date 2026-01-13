@@ -539,12 +539,22 @@
             return;
         }
 
-        // Response uses 'cids' field per ATProto spec (pdsls expects this)
+        // ATProto spec: cids should be an array of CID strings, not objects
+        // The listBlobsForDID returns objects with {cid, mimeType, size}, extract just the CIDs
+        NSMutableArray *cidStrings = [NSMutableArray arrayWithCapacity:blobs.count];
+        for (NSDictionary *blob in blobs) {
+            NSString *cid = blob[@"cid"];
+            if (cid) {
+                [cidStrings addObject:cid];
+            }
+        }
+
+        // Response uses 'cids' field per ATProto spec
         NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        result[@"cids"] = blobs ?: @[];
-        if (blobs.count >= limit) {
+        result[@"cids"] = cidStrings;
+        if (cidStrings.count >= limit) {
             // Simple cursor: use last CID as cursor for pagination
-            result[@"cursor"] = [blobs lastObject] ?: [NSNull null];
+            result[@"cursor"] = [cidStrings lastObject];
         }
 
         response.statusCode = HttpStatusOK;
