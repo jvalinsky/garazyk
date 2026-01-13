@@ -19,7 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
                                rev:(nullable NSString *)rev
                              prev:(nullable CID *)prevCID;
 
-- (NSData *)serialize;
+- (NSData *)serialize;  // Unsigned commit (for computing hash to sign)
+- (NSData *)serializeSigned;  // Full commit including signature
 - (nullable NSData *)computeHash;
 - (CID *)computeCID;
 
