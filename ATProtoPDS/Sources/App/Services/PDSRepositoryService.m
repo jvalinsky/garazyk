@@ -90,8 +90,9 @@
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) return nil;
     
-    // Get the record from database
-    PDSDatabaseRecord *record = [store getRecordByKey:did collection:collection rkey:rkey error:error];
+    // Get the record from database - construct AT URI
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    PDSDatabaseRecord *record = [store getRecord:uri forDid:did error:error];
     if (!record) {
         if (error && !*error) {
             *error = [NSError errorWithDomain:@"PDSRepositoryService"
@@ -237,9 +238,9 @@
     
     if ([json isKindOfClass:[NSNumber class]]) {
         NSNumber *num = json;
-        // Check if it's a boolean
+        // Check if it's a boolean - CBOR uses simple values 20=false, 21=true
         if (strcmp([num objCType], @encode(BOOL)) == 0) {
-            return num.boolValue ? [CBORValue boolValue:YES] : [CBORValue boolValue:NO];
+            return num.boolValue ? [CBORValue simple:21] : [CBORValue simple:20];
         }
         // Check if it's an integer
         if (strcmp([num objCType], @encode(int)) == 0 ||
@@ -253,7 +254,7 @@
             }
         }
         // Floating point
-        return [CBORValue floatValue:num.doubleValue];
+        return [CBORValue floatingPoint:num.doubleValue];
     }
     
     if ([json isKindOfClass:[NSString class]]) {
