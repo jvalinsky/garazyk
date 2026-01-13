@@ -124,7 +124,7 @@
 
     [task resume];
     
-    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC);
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC);
     long waitResult = dispatch_semaphore_wait(sem, timeout);
 
     if (waitResult != 0) {
