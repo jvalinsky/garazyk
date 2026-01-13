@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATProto PDS API Documentation</title>
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css">
+    <link rel="stylesheet" href="/vendor/swagger-ui/swagger-ui.css">
+    <link rel="stylesheet" href="/vendor/swagger-ui/swagger-ui-custom.css">
     <style>
+        /* Classic Apple Developer Documentation Header */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -13,78 +15,93 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            font-size: 13px;
         }
         
+        /* Apple-style Header (matches main app) */
         .header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            padding: 20px 30px;
+            height: 50px;
+            background: linear-gradient(to bottom, #dcdcdc, #c0c0c0);
+            border-bottom: 1px solid #999;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 0 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         .header h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 400;
+            color: #333;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.5);
         }
         
         .header-links {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
         }
         
         .header-links a {
-            color: rgba(255,255,255,0.8);
+            color: #333;
             text-decoration: none;
-            font-size: 0.9rem;
-            padding: 8px 16px;
-            border-radius: 6px;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 3px;
             transition: all 0.2s;
+            background: linear-gradient(to bottom, #fff, #f0f0f0);
+            border: 1px solid #ccc;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
         }
         
         .header-links a:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
+            background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
         }
         
-        .header-links a.active {
-            background: rgba(255,255,255,0.15);
-            color: white;
+        .header-links a:active {
+            background: #e0e0e0;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         }
         
+        /* Aqua-style Download Button */
         .download-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: #00d4aa;
-            color: #1a1a2e;
+            gap: 6px;
+            padding: 4px 14px;
+            background: linear-gradient(to bottom, #6face4, #4889c8);
+            color: white;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 0.9rem;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 1px solid #3c7fb7;
+            text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             transition: all 0.2s;
         }
         
         .download-btn:hover {
-            background: #00e6b8;
-            transform: translateY(-1px);
+            background: linear-gradient(to bottom, #7fbef0, #5899d8);
+        }
+        
+        .download-btn:active {
+            background: #3c7fb7;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
         }
         
         .download-btn svg {
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
         }
         
         #swagger-ui {
-            max-width: 1400px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 20px 30px;
         }
         
         .info-wrapper {
@@ -93,10 +110,6 @@
         
         .topbar-wrapper {
             display: none;
-        }
-        
-        .swagger-ui .info .title {
-            font-size: 1.8rem;
         }
     </style>
 </head>
@@ -116,8 +129,8 @@
     
     <div id="swagger-ui"></div>
     
-    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
+    <script src="/vendor/swagger-ui/swagger-ui-bundle.js"></script>
+    <script src="/vendor/swagger-ui/swagger-ui-standalone-preset.js"></script>
     <script>
         window.onload = function() {
             const ui = SwaggerUIBundle({
