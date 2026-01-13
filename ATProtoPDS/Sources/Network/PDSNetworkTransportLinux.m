@@ -30,6 +30,7 @@
     dispatch_queue_t _queue;
     BOOL _cancelled;
     NSMutableArray *_receiveRequests;
+    NSMutableArray *_writeRequests;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -41,6 +42,7 @@
         _sockfd = -1;
         _remoteAddress = [NSString stringWithFormat:@"%@:%lu", host, (unsigned long)port];
         _receiveRequests = [NSMutableArray array];
+        _writeRequests = [NSMutableArray array];
     }
     return self;
 }
@@ -51,6 +53,7 @@
         _sockfd = sockfd;
         _remoteAddress = address;
         _receiveRequests = [NSMutableArray array];
+        _writeRequests = [NSMutableArray array];
         
         // Set non-blocking
         int flags = fcntl(_sockfd, F_GETFL, 0);
@@ -89,6 +92,50 @@
         // Socket closed
     });
     dispatch_resume(_readSource);
+
+    _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+    dispatch_source_set_event_handler(_writeSource, ^{
+        [weakSelf handleWrite];
+    });
+    // Don't resume write source until we have data to send
+}
+
+- (void)handleWrite {
+    if (_cancelled) return;
+
+    @synchronized (_writeRequests) {
+        while (_writeRequests.count > 0) {
+            NSDictionary *request = _writeRequests[0];
+            NSData *data = request[@"data"];
+            void (^completion)(NSError *) = request[@"completion"];
+            
+            ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
+            
+            if (sent > 0) {
+                if (sent < data.length) {
+                    // Partial send
+                    NSData *remaining = [data subdataWithRange:NSMakeRange(sent, data.length - sent)];
+                    _writeRequests[0] = @{@"data": remaining, @"completion": completion};
+                    break; // Wait for next write event
+                } else {
+                    // Full send
+                    [_writeRequests removeObjectAtIndex:0];
+                    if (completion) completion(nil);
+                }
+            } else if (sent == -1) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    break; // Wait for next write event
+                } else {
+                    [_writeRequests removeObjectAtIndex:0];
+                    if (completion) completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+                }
+            }
+        }
+        
+        if (_writeRequests.count == 0 && _writeSource) {
+            dispatch_suspend(_writeSource);
+        }
+    }
 }
 
 - (void)handleRead {
@@ -155,13 +202,29 @@
 }
 
 - (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
-    // Basic send implementation
-    ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
-    if (sent == -1) {
-        if (completion) completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
-    } else {
-        if (completion) completion(nil);
+    if (_cancelled) {
+        if (completion) completion([NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection closed"}]);
+        return;
     }
+
+    NSDictionary *request = @{
+        @"data": data,
+        @"completion": completion ? [completion copy] : ^(NSError *e){}
+    };
+    
+    @synchronized (_writeRequests) {
+        BOOL wasEmpty = (_writeRequests.count == 0);
+        [_writeRequests addObject:request];
+        
+        if (wasEmpty && _writeSource) {
+            dispatch_resume(_writeSource);
+        }
+    }
+
+    // Trigger a write check immediately
+    dispatch_async(_queue, ^{
+        [self handleWrite];
+    });
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
