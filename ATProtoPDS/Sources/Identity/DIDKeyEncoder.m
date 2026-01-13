@@ -22,7 +22,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
         default:
             if (error) {
                 *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                             code:DIDKeyErrorUnsupportedKeyType
+                                             code:DIDKeyEncoderErrorUnsupportedKeyType
                                          userInfo:@{NSLocalizedDescriptionKey: @"Unsupported key type"}];
             }
             return nil;
@@ -31,7 +31,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
     if (compressedPublicKey.length != expectedLength) {
         if (error) {
             *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                         code:DIDKeyErrorInvalidKey
+                                         code:DIDKeyEncoderErrorInvalidKey
                                      userInfo:@{NSLocalizedDescriptionKey: 
                                          [NSString stringWithFormat:@"Invalid key length: expected %lu, got %lu",
                                           (unsigned long)expectedLength, (unsigned long)compressedPublicKey.length]}];
@@ -77,7 +77,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
     if (![didKey hasPrefix:@"did:key:z"]) {
         if (error) {
             *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                         code:DIDKeyErrorInvalidFormat
+                                         code:DIDKeyEncoderErrorInvalidFormat
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid did:key format"}];
         }
         return nil;
@@ -90,7 +90,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
     if (!decoded || decoded.length < 2) {
         if (error) {
             *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                         code:DIDKeyErrorInvalidFormat
+                                         code:DIDKeyEncoderErrorInvalidFormat
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to decode multibase"}];
         }
         return nil;
@@ -110,7 +110,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
         if (shift > 21) { // Sanity check
             if (error) {
                 *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                             code:DIDKeyErrorInvalidFormat
+                                             code:DIDKeyEncoderErrorInvalidFormat
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid varint in multicodec"}];
             }
             return nil;
@@ -137,7 +137,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
         default:
             if (error) {
                 *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                             code:DIDKeyErrorUnsupportedKeyType
+                                             code:DIDKeyEncoderErrorUnsupportedKeyType
                                          userInfo:@{NSLocalizedDescriptionKey: 
                                              [NSString stringWithFormat:@"Unsupported multicodec: 0x%lx", (unsigned long)codec]}];
             }
@@ -149,7 +149,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
     if (keyLength != expectedKeyLength) {
         if (error) {
             *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                         code:DIDKeyErrorInvalidKey
+                                         code:DIDKeyEncoderErrorInvalidKey
                                      userInfo:@{NSLocalizedDescriptionKey: 
                                          [NSString stringWithFormat:@"Invalid key length: expected %lu, got %lu",
                                           (unsigned long)expectedKeyLength, (unsigned long)keyLength]}];
@@ -169,7 +169,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
     if (uncompressedPublicKey.length != 65) {
         if (error) {
             *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                         code:DIDKeyErrorInvalidKey
+                                         code:DIDKeyEncoderErrorInvalidKey
                                      userInfo:@{NSLocalizedDescriptionKey: @"Uncompressed secp256k1 key must be 65 bytes"}];
         }
         return nil;
@@ -179,7 +179,7 @@ NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
     if (bytes[0] != 0x04) {
         if (error) {
             *error = [NSError errorWithDomain:DIDKeyErrorDomain
-                                         code:DIDKeyErrorInvalidKey
+                                         code:DIDKeyEncoderErrorInvalidKey
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid uncompressed key format"}];
         }
         return nil;
