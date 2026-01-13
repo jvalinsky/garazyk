@@ -1,3 +1,15 @@
+/*!
+ @file Session.m
+
+ @abstract Session and SessionToken management for authenticated users.
+
+ @discussion This file implements session lifecycle management including token
+ minting, validation, storage, and refresh. Sessions are created with both
+ access tokens (short-lived) and refresh tokens (long-lived).
+
+ @copyright Copyright (c) 2024 Jack Myers
+ */
+
 #import "Auth/Session.h"
 #import "Auth/JWT.h"
 #import "Auth/KeyManager.h"
