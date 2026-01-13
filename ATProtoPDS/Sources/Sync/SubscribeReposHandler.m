@@ -123,14 +123,11 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     
     // Add to our tracked connections
     if (self.webSocketServer) {
-        [self.webSocketServer addConnection:wsConnection];
+        [self.webSocketServer.mutableConnections addObject:wsConnection];
     } else {
-        // If no WebSocket server is running, we still need to track connections
-        // Create a minimal server instance just for connection tracking
-        if (!self.webSocketServer) {
-            self.webSocketServer = [[WebSocketServer alloc] initWithHost:@"localhost" port:0];
-        }
-        [self.webSocketServer addConnection:wsConnection];
+        // If no WebSocket server is running, create one for connection tracking
+        self.webSocketServer = [[WebSocketServer alloc] initWithHost:@"localhost" port:0];
+        [self.webSocketServer.mutableConnections addObject:wsConnection];
     }
     
     // Notify delegate
