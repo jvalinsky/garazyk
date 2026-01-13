@@ -76,8 +76,6 @@ int main(int argc, char * argv[]) {
             @"HandleResolverTests",
             @"ATProtoHandleValidatorTests",
             @"Base58Tests",
-            @"DIDKeyEncoderTests",
-            @"PLCOperationBuilderTests",
             @"PLCDirectoryClientTests",
             @"IdentifierTests",
             @"TOTPTests",

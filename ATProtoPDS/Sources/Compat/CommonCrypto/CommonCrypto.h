@@ -7,6 +7,8 @@
 
 #include "CommonDigest.h"
 #include "CommonHMAC.h"
+#include "CommonCryptor.h"
+#include "CommonKeyDerivation.h"
 
 #endif
 #endif

@@ -1,6 +1,7 @@
 #import "PLCOperationSigner.h"
 #import "Auth/Secp256k1.h"
 #import "Identity/DIDKey.h"
+#import <CommonCrypto/CommonDigest.h>
 
 NSErrorDomain const PLCOperationSignerErrorDomain = @"com.atproto.plc.signer";
 
@@ -44,7 +45,12 @@ NSErrorDomain const PLCOperationSignerErrorDomain = @"com.atproto.plc.signer";
         return NO;
     }
 
-    NSData *signature = [[Secp256k1 shared] signHash:cborBytes
+    // Hash the CBOR bytes with SHA-256
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(cborBytes.bytes, (CC_LONG)cborBytes.length, hash);
+    NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+
+    NSData *signature = [[Secp256k1 shared] signHash:hashData
                                        withPrivateKey:self.privateKeyData
                                                   error:error];
     if (!signature) {

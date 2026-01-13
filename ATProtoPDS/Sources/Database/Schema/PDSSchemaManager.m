@@ -135,6 +135,19 @@
            @")";
 }
 
+- (NSString *)actorStoreRotationKeysTableSchema {
+    // Rotation keys for did:plc operations
+    // The private key is stored encrypted with the account's password-derived key
+    return @"CREATE TABLE IF NOT EXISTS rotation_keys ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    encrypted_private_key BLOB NOT NULL,"
+           @"    public_key_compressed BLOB NOT NULL,"
+           @"    encryption_salt BLOB NOT NULL,"
+           @"    created_at DATETIME NOT NULL,"
+           @"    updated_at DATETIME NOT NULL"
+           @")";
+}
+
 - (NSString *)actorStoreSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self actorStoreRepoRootTableSchema]];
@@ -148,6 +161,8 @@
     [sql appendString:[self inviteCodesTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreBlobsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreRotationKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_collection_rkey ON records(collection, rkey);"];
     [sql appendString:@";\n"];

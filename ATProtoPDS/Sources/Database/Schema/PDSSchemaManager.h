@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)actorStoreRecordsTableSchema;
 - (NSString *)actorStoreBlocksTableSchema;
 - (NSString *)actorStoreBlobsTableSchema;
+- (NSString *)actorStoreRotationKeysTableSchema;
 - (NSString *)actorStoreSchemaSQL;
 
 #pragma mark - Common
