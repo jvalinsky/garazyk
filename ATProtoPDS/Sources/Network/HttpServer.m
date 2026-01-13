@@ -395,16 +395,18 @@
 
 - (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection {
     NSData *responseData = [response serialize];
+    // NSLog(@"[HttpServer] Sending response: %lu bytes to %@", (unsigned long)responseData.length, connection.remoteAddress);
 
     __weak typeof(self) weakSelf = self;
     BOOL shouldKeepAlive = response.keepAlive;
     
     [connection sendData:responseData completion:^(NSError * _Nullable error) {
         if (error) {
-            NSLog(@"Failed to send response");
+            NSLog(@"[HttpServer] Failed to send response: %@", error);
             [connection cancel];
             return;
         }
+        // NSLog(@"[HttpServer] Response sent successfully");
 
         if (shouldKeepAlive) {
             // HTTP/1.1 keep-alive: read the next request on this connection
