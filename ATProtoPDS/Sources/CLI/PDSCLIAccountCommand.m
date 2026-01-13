@@ -471,8 +471,17 @@
     }
 
     if ([handle rangeOfString:@"."].location == NSNotFound) {
-        [context printError:@"Invalid handle: Handle must be a domain (e.g., alice.test)"];
-        return;
+        NSDictionary *config = [context loadConfig];
+        NSString *hostname = config[@"pds"][@"hostname"];
+        if (hostname.length > 0) {
+            handle = [NSString stringWithFormat:@"%@.%@", handle, hostname];
+            if (context.verbose) {
+                PDS_LOG_INFO(@"No domain specified, using default: %@", handle);
+            }
+        } else {
+            [context printError:@"Invalid handle: Handle must be a domain (e.g., alice.example.com) and no default hostname is configured."];
+            return;
+        }
     }
 
     BOOL success = [PDSAccountManager createAccountWithContext:context

@@ -68,6 +68,23 @@ static NSDateFormatter * iso8601Formatter(void) {
         return YES;
     }
 
+    // Ensure parent directory exists
+    NSURL *parentDir = [self.databaseURL URLByDeletingLastPathComponent];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:parentDir.path]) {
+        NSError *dirError = nil;
+        if (![[NSFileManager defaultManager] createDirectoryAtURL:parentDir
+                                      withIntermediateDirectories:YES
+                                                       attributes:nil
+                                                            error:&dirError]) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
+                                             code:PDSDatabaseErrorNotOpen
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to create database directory: %@", dirError.localizedDescription]}];
+            }
+            return NO;
+        }
+    }
+
     int rc = sqlite3_open(self.databaseURL.path.fileSystemRepresentation, &_db);
     if (rc != SQLITE_OK) {
         if (error) {
