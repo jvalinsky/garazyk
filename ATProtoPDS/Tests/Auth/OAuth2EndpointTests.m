@@ -44,6 +44,12 @@
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         
+        NSLog(@"[TEST DEBUG] Status: %ld, Error: %@", (long)httpResponse.statusCode, error);
+        if (data) {
+            NSString *body = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            NSLog(@"[TEST DEBUG] Body: %@", body);
+        }
+        
         // Should be 302 redirect
         XCTAssertEqual(httpResponse.statusCode, 302, @"Should return 302 redirect");
         
@@ -95,6 +101,12 @@
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        
+        NSLog(@"[TEST DEBUG] Token Status: %ld, Error: %@", (long)httpResponse.statusCode, error);
+        if (data) {
+            NSString *body = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            NSLog(@"[TEST DEBUG] Token Body: %@", body);
+        }
         
         XCTAssertEqual(httpResponse.statusCode, 200, @"Should return 200 for valid token exchange");
         
