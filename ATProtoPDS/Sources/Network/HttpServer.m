@@ -1,3 +1,15 @@
+/*!
+ @file HttpServer.m
+
+ @abstract HTTP server implementation for the PDS.
+
+ @discussion This file implements the HTTP server that handles incoming
+ requests, routes them to handlers, and sends responses. It supports
+ route registration, keep-alive connections, and request parsing.
+
+ @copyright Copyright (c) 2024 Jack Myers
+ */
+
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -25,6 +37,17 @@
     return [[self alloc] initWithPort:port];
 }
 
+/*!
+ @method initWithPort:
+
+ @abstract Initializes an HTTP server on the specified port.
+
+ @discussion The server is configured but not started. Call startWithError:
+ to begin listening for connections.
+
+ @param port The port number to listen on.
+ @return An initialized server instance.
+ */
 - (instancetype)initWithPort:(NSUInteger)port {
     self = [super init];
     if (self) {
