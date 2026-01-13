@@ -17,6 +17,7 @@
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
+        _database = database;
         self.oauthServer = [[OAuth2Server alloc] init];
         self.oauthServer.jwtMinter = self.minter;
 
