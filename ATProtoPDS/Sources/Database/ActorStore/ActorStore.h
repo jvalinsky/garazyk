@@ -100,6 +100,13 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error;
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
 
+/**
+ * Get the raw private key bytes for the signing key.
+ * @param error Error output
+ * @return 32-byte secp256k1 private key data, or nil on error
+ */
+- (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error;
+
 #pragma mark - Rotation Key Management (for did:plc)
 
 /**
