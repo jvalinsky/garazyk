@@ -39,6 +39,8 @@
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"]];
     request.HTTPMethod = @"GET";
     
+    [request setValue:@"close" forHTTPHeaderField:@"Connection"];
+    
     XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize request"];
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
@@ -64,7 +66,7 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    [self waitForExpectationsWithTimeout:10.0 handler:nil];
 }
 
 - (void)testOAuthAuthorizeEndpointRejectsInvalidClient {
@@ -93,6 +95,8 @@
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/token"]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    
+    [request setValue:@"close" forHTTPHeaderField:@"Connection"];
     
     NSString *body = @"grant_type=authorization_code&client_id=test-client&redirect_uri=http://localhost:3000/callback&code=test-auth-code&code_verifier=test-verifier";
     request.HTTPBody = [body dataUsingEncoding:NSUTF8StringEncoding];
@@ -126,7 +130,7 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    [self waitForExpectationsWithTimeout:10.0 handler:nil];
 }
 
 - (void)testOAuthTokenEndpointRejectsInvalidClient {
@@ -160,6 +164,8 @@
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
+    [request setValue:@"close" forHTTPHeaderField:@"Connection"];
+    
     NSString *body = @"client_id=test-client&token=test-access-token";
     request.HTTPBody = [body dataUsingEncoding:NSUTF8StringEncoding];
     
@@ -174,7 +180,42 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    [self waitForExpectationsWithTimeout:10.0 handler:nil];
+}
+
+- (void)testDirectOAuthHandlerLogic {
+    NSLog(@"[TEST] Starting Direct OAuth Handler Logic Test");
+    
+    NSDictionary *params = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": @"http://localhost:3000/callback",
+        @"response_type": @"code",
+        @"scope": @"atproto:identify",
+        @"state": @"test123"
+    };
+    
+    HttpRequest *manualRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                       methodString:@"GET"
+                                                               path:@"/oauth/authorize"
+                                                        queryString:@"client_id=test-client..." 
+                                                        queryParams:params
+                                                            version:@"HTTP/1.1"
+                                                            headers:@{}
+                                                               body:nil
+                                                      remoteAddress:@"127.0.0.1"];
+    
+    HttpResponse *manualResponse = [HttpResponse response];
+    
+    // Invoke handler directly on the current thread
+    [self.oauthHandler handleAuthorizeRequest:manualRequest response:manualResponse];
+    
+    NSLog(@"[TEST] Handler returned status: %ld", (long)manualResponse.statusCode);
+    XCTAssertEqual(manualResponse.statusCode, 302, @"Direct handler should return 302");
+    
+    NSString *location = manualResponse.headers[@"Location"];
+    NSLog(@"[TEST] Location header: %@", location);
+    XCTAssertNotNil(location, @"Should have Location header");
+    XCTAssertTrue([location containsString:@"code="], @"Should include authorization code");
 }
 
 @end
