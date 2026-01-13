@@ -149,6 +149,19 @@
                                             data:mstRootCid
                                              rev:nil
                                             prev:nil];
+        
+        // Try to sign the commit with the repo's signing key
+        NSData *signingKey = [store signingKeyPrivateBytesWithError:nil];
+        if (signingKey) {
+            NSError *signError = nil;
+            if ([commit signWithPrivateKey:signingKey error:&signError]) {
+                // Commit is now signed
+            } else {
+                // Signing failed, continue with unsigned commit
+                NSLog(@"Warning: Failed to sign commit: %@", signError);
+            }
+        }
+        
         commitCBOR = [commit serialize];
         commitCid = [commit computeCID];
     }
