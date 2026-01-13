@@ -323,17 +323,16 @@ if(BUILD_TESTS)
   
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
-  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
 
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/XRPC/XrpcHandlerTests.m")
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
-  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
 
   add_executable(AllTests
     ${ATProtoPDS_SOURCES}
     ${MY_TEST_SOURCES}
-    "ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m"
   )
 
   target_include_directories(AllTests PRIVATE
