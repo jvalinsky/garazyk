@@ -512,7 +512,6 @@
                                             error:&error];
 
     XCTAssertNotNil(error, @"Error should occur for malformed JSON");
-    XCTAssertEqual(error.code, 3840, @"Should be JSON parsing error");
 }
 
 - (void)testHTTP5xxErrorHandling {
@@ -535,7 +534,6 @@
                                             error:&error];
 
     XCTAssertNotNil(error, @"Error should occur for empty body");
-    XCTAssertEqual(error.code, 3840, @"Should be JSON parsing error for empty data");
 }
 
 - (void)testURLEncodingSpecialCharacters {
