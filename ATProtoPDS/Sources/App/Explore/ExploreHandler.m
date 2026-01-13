@@ -826,13 +826,16 @@
 }
 
 - (void)handleApiAccounts:(NSDictionary *)params response:(HttpResponse *)response {
+    NSLog(@"handleApiAccounts called");
     NSString *cached = [self.cache getAccountList];
+    NSLog(@"cache result: %@", cached ? @"HIT" : @"MISS");
     if (cached) {
         [response setBody:[cached dataUsingEncoding:NSUTF8StringEncoding]];
         return;
     }
     
     NSString *accounts = [self fetchAccountList];
+    NSLog(@"fetchAccountList returned: %@", accounts);
     if (accounts) {
         [self.cache setAccountList:accounts];
         [response setBody:[accounts dataUsingEncoding:NSUTF8StringEncoding]];
@@ -980,9 +983,9 @@
         if (!dataDir) dataDir = @"."; // Prevent crash if dataDir is nil
         
         NSArray *possiblePaths = @[
-            [dataDir stringByAppendingPathComponent:@"pds.db"],
+            [dataDir stringByAppendingPathComponent:@"service/service.db"],
             [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-            [@"./data/pds.db" stringByExpandingTildeInPath],
+            [@"./data/service/service.db" stringByExpandingTildeInPath],
             [@"./data/service.sqlite" stringByExpandingTildeInPath],
             [dataDir stringByAppendingPathComponent:@"data/pds.db"],
             [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
@@ -1105,9 +1108,9 @@
         if (!dataDir) dataDir = @".";
         
         NSArray *possiblePaths = @[
-            [dataDir stringByAppendingPathComponent:@"pds.db"],
+            [dataDir stringByAppendingPathComponent:@"service/service.db"],
             [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-            [@"./data/pds.db" stringByExpandingTildeInPath],
+            [@"./data/service/service.db" stringByExpandingTildeInPath],
             [@"./data/service.sqlite" stringByExpandingTildeInPath],
             [dataDir stringByAppendingPathComponent:@"data/pds.db"],
             [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
@@ -1172,6 +1175,7 @@
 }
 
 - (NSString *)fetchAccountList {
+    NSLog(@"fetchAccountList called, controller=%@", self.controller);
     if (!self.controller) {
         return @"{\"accounts\":[],\"error\":\"PDS controller not configured\"}";
     }
@@ -1179,9 +1183,9 @@
     // Try multiple possible database locations
     NSString *dataDir = self.controller.dataDirectory;
     NSArray *possiblePaths = @[
-        [dataDir stringByAppendingPathComponent:@"pds.db"],
+        [dataDir stringByAppendingPathComponent:@"service/service.db"],
         [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-        [@"./data/pds.db" stringByExpandingTildeInPath],
+        [@"./data/service/service.db" stringByExpandingTildeInPath],
         [@"./data/service.sqlite" stringByExpandingTildeInPath],
         [dataDir stringByAppendingPathComponent:@"data/pds.db"],
         [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
@@ -1196,6 +1200,8 @@
         }
     }
     
+    NSLog(@"fetchAccountList: dataDir=%@, checking paths", dataDir);
+    for (NSString *p in possiblePaths) { NSLog(@"  checking: %@ exists=%d", p, [[NSFileManager defaultManager] fileExistsAtPath:p]); }
     if (!dbPath) {
         NSLog(@"fetchAccountList: No database found in any of the expected locations");
         return @"{\"accounts\":[],\"error\":\"Database not found\"}";
@@ -1264,9 +1270,9 @@
     if (!dataDir) dataDir = @".";
     
     NSArray *possiblePaths = @[
-        [dataDir stringByAppendingPathComponent:@"pds.db"],
+        [dataDir stringByAppendingPathComponent:@"service/service.db"],
         [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-        [@"./data/pds.db" stringByExpandingTildeInPath],
+        [@"./data/service/service.db" stringByExpandingTildeInPath],
         [@"./data/service.sqlite" stringByExpandingTildeInPath],
         [dataDir stringByAppendingPathComponent:@"data/pds.db"],
         [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
