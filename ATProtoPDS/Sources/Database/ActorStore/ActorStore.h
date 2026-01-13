@@ -99,6 +99,42 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error;
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
 
+#pragma mark - Rotation Key Management (for did:plc)
+
+/**
+ * Store a rotation key encrypted with the given password.
+ * @param privateKey The 32-byte secp256k1 private key
+ * @param compressedPublicKey The 33-byte compressed public key
+ * @param password The password to derive encryption key from
+ * @param error Error output
+ * @return YES on success
+ */
+- (BOOL)storeRotationKeyPrivate:(NSData *)privateKey
+                     publicKey:(NSData *)compressedPublicKey
+              encryptedWithPassword:(NSString *)password
+                          error:(NSError **)error;
+
+/**
+ * Retrieve the rotation key decrypted with the given password.
+ * @param password The password to derive decryption key from
+ * @param error Error output
+ * @return The 32-byte private key, or nil on error
+ */
+- (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
+                                               error:(NSError **)error;
+
+/**
+ * Get the compressed public key for the rotation key (no password needed).
+ * @param error Error output
+ * @return The 33-byte compressed public key, or nil if not stored
+ */
+- (nullable NSData *)rotationKeyCompressedPublicKeyWithError:(NSError **)error;
+
+/**
+ * Check if a rotation key is stored.
+ */
+- (BOOL)hasRotationKey;
+
 // Internal methods for ServiceDatabases
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
 - (void)finalizeStatement:(sqlite3_stmt *)stmt;
