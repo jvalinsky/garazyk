@@ -8,6 +8,7 @@
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import <CommonCrypto/CommonCryptor.h>
 
 @interface PDSAccountService ()
 
@@ -269,9 +270,8 @@
 - (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
     // OWASP 2023 recommendation: 600,000 iterations for PBKDF2-HMAC-SHA256
     const uint32_t iterations = 600000;
-    const size_t derivedKeyLength = 32; // 256 bits
-
-    unsigned char derivedKey[derivedKeyLength];
+#define DERIVED_KEY_LENGTH 32
+    unsigned char derivedKey[DERIVED_KEY_LENGTH];
 
     int result = CCKeyDerivationPBKDF(
         kCCPBKDF2,                          // algorithm
@@ -282,7 +282,7 @@
         kCCPRFHmacAlgSHA256,                // PRF (HMAC-SHA256)
         iterations,                          // rounds
         derivedKey,                          // derivedKey
-        derivedKeyLength                     // derivedKeyLen
+        DERIVED_KEY_LENGTH                   // derivedKeyLen
     );
 
     if (result != kCCSuccess) {
@@ -290,7 +290,7 @@
         return nil;
     }
 
-    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
+    return [NSData dataWithBytes:derivedKey length:DERIVED_KEY_LENGTH];
 }
 
 - (NSData *)legacyHashPassword:(NSString *)password salt:(NSData *)salt {

@@ -295,7 +295,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     unsigned char buffer[NS_PACKETSZ];
     int len;
     
-    len = res_search([domain UTF8String], C_IN, T_TXT, buffer, NS_PACKETSZ);
+    len = res_search([domain UTF8String], ns_c_in, ns_t_txt, buffer, NS_PACKETSZ);
     
     if (len < 0) {
          if (error) {

@@ -19,7 +19,9 @@
     if (self) {
         _database = database;
         self.oauthServer = [[OAuth2Server alloc] init];
-        self.oauthServer.jwtMinter = self.minter;
+        if (self.minter) {
+            self.oauthServer.jwtMinter = self.minter;
+        }
 
         // Use configurable issuer from environment, default to localhost
         // Prefer getenv for runtime updates (e.g. in tests)
@@ -35,11 +37,13 @@
         self.oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
         self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
 
-        #ifdef DEBUG
+    #ifdef DEBUG
         // Seed test client for development only
         NSError *seedError = nil;
         if (![_database seedTestClient:&seedError]) {
-            NSLog(@"Warning: Failed to seed test OAuth client: %@", seedError.localizedDescription);
+            NSLog(@"[OAuth2Handler] WARNING: Failed to seed test OAuth client: %@", seedError.localizedDescription);
+        } else {
+            NSLog(@"[OAuth2Handler] SUCCESS: Test client seeded in database at %@", _database.databaseURL.path);
         }
         #endif
     }
@@ -153,13 +157,17 @@
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    NSLog(@"[OAuth2Handler] DEBUG: handleAuthorizeRequest called with path: %@", request.path);
     // Use request.queryParams if available, otherwise parse manually
     NSMutableDictionary *params = [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
+    NSLog(@"[OAuth2Handler] DEBUG: queryParams: %@", params);
 
     // Validate client from database
     NSString *clientID = params[@"client_id"];
+    NSLog(@"[OAuth2Handler] DEBUG: Looking for client_id: %@", clientID);
     NSError *clientError = nil;
     NSDictionary *client = [self validateClient:clientID error:&clientError];
+    NSLog(@"[OAuth2Handler] DEBUG: validateClient result: %@, error: %@", client ? @"FOUND" : @"NOT FOUND", clientError);
     if (!client) {
         response.statusCode = 400;
         [response setJsonBody:@{
@@ -208,17 +216,23 @@
     __block NSString *resultCode = nil;
     __block NSError *resultError = nil;
     
+    NSLog(@"[OAuth2Handler] DEBUG: Calling oauthServer handleAuthorizationRequest");
     [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
+        NSLog(@"[OAuth2Handler] DEBUG: oauthServer completion called - URL: %@, code: %@, error: %@", authorizationURL, authorizationCode, error);
         resultURL = authorizationURL;
         resultCode = authorizationCode;
         resultError = error;
+        NSLog(@"[OAuth2Handler] DEBUG: Signaling semaphore");
         dispatch_semaphore_signal(sem);
     }];
 
     dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC);
+    NSLog(@"[OAuth2Handler] DEBUG: Waiting for oauthServer (30s timeout)...");
     long waitResult = dispatch_semaphore_wait(sem, timeout);
+    NSLog(@"[OAuth2Handler] DEBUG: Semaphore wait completed with result: %ld", waitResult);
 
     if (waitResult != 0) {
+        NSLog(@"[OAuth2Handler] ERROR: Start authorization logic timed out!");
         response.statusCode = 500;
         [response setJsonBody:@{
             @"error": @"server_error",

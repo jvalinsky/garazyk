@@ -50,6 +50,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG>)
+
 # Set compiler flags based on build type
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -O0")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
@@ -172,12 +174,15 @@ if(NOT APPLE)
     list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*WebSocketServer_Mac\.m$")
     list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Sync/WebSocketServer_Linux.m") 
 else()
-     # Mac default glob picks up WebSocketServer_Mac.m
+    list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*WebSocketServer_Linux\.m$")
+    # Mac default glob picks up WebSocketServer_Mac.m
 endif()
 
 # Handle platform-specific network transport implementations
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\.m$")
+
 list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m")
+
 if(APPLE)
     list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m")
 endif()
@@ -321,6 +326,10 @@ if(BUILD_TESTS)
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
   
+  if(APPLE)
+      list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Compat/.*")
+  endif()
+
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")

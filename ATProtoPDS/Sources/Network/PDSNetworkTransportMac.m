@@ -129,6 +129,7 @@
     if (self) {
         _port = port;
         nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        nw_parameters_set_reuse_local_address(parameters, true);
         char portStr[16];
         snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)port);
         _listener = nw_listener_create_with_port(portStr, parameters);
