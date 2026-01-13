@@ -120,6 +120,29 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
 - (NSArray<MSTEntry *> *)allEntries;
 - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
 - (NSData *)exportCAR;
+
+/*!
+ @method getProofNodesForKey:
+ 
+ @abstract Gets all MST nodes in the proof path from root to the specified key.
+ 
+ @param key The key to find (format: "collection/rkey").
+ @return Array of MSTNode objects from root to leaf, or nil if key not found.
+ 
+ @discussion Each node in the returned array should be serialized and included
+ in a CAR file for cryptographic verification of the record.
+ */
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+
+/*!
+ @method serializeNode:
+ 
+ @abstract Serializes an MST node to DAG-CBOR format.
+ 
+ @param node The node to serialize.
+ @return DAG-CBOR encoded node data.
+ */
+- (NSData *)serializeNode:(MSTNode *)node;
 - (NSData *)serializeToCBOR;
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
 

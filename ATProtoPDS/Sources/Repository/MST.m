@@ -599,9 +599,65 @@
 }
 
 - (NSData *)exportCAR { return [NSData data]; }
+
 - (NSData *)serializeToCBOR {
     return [self.root serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
 }
+
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data { return nil; }
+
+#pragma mark - Proof Path Methods
+
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key {
+    if (!self.root) return nil;
+    
+    NSMutableArray<MSTNode *> *path = [NSMutableArray array];
+    BOOL found = [self collectProofPath:self.root key:key path:path];
+    
+    if (!found) return nil;
+    return [path copy];
+}
+
+- (BOOL)collectProofPath:(MSTNode *)node key:(NSString *)key path:(NSMutableArray<MSTNode *> *)path {
+    if (!node) return NO;
+    
+    // Add current node to path
+    [path addObject:node];
+    
+    // Find the entry or subtree containing this key
+    NSInteger idx = 0;
+    while (idx < node.internalEntries.count && 
+           [node.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
+        idx++;
+    }
+    
+    // Check if we found the key at this level
+    if (idx < node.internalEntries.count && 
+        [node.internalEntries[idx].fullKey isEqualToString:key]) {
+        return YES;
+    }
+    
+    // Recurse into the appropriate subtree
+    MSTNode *subtree = nil;
+    if (idx == 0) {
+        subtree = node.internalLeft;
+    } else if (idx > 0 && idx <= node.internalEntries.count) {
+        subtree = node.internalEntries[idx - 1].internalTree;
+    }
+    
+    if (subtree) {
+        return [self collectProofPath:subtree key:key path:path];
+    }
+    
+    // Key not found, but we still have a partial path
+    return NO;
+}
+
+- (NSData *)serializeNode:(MSTNode *)node {
+    if (!node) return nil;
+    
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    return [node serializeToCBOR:cache];
+}
 
 @end

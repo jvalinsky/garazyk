@@ -3,6 +3,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
+#import "Repository/RepoCommit.h"
 #import "Repository/CARv1Builder.h"
 #import "Repository/CBOR.h"
 #import "Core/CID.h"
@@ -123,12 +124,60 @@
         return nil;
     }
     
-    // Build CAR with the record CID as root and the record block
-    // Note: A complete implementation would also include:
-    // - The commit block (signs the repo root)
-    // - MST proof path from repo root to this record
-    // For now, we include just the record block which allows viewing but not full verification
-    CARv1Builder *builder = [CARv1Builder builderWithRoot:recordCid];
+    // Load the MST to get proof path
+    MST *mst = [self loadMSTForDid:did error:nil];
+    
+    // Build the key for MST lookup (collection/rkey format)
+    NSString *mstKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+    
+    // Get MST proof nodes if available
+    NSArray<MSTNode *> *proofNodes = nil;
+    CID *mstRootCid = nil;
+    if (mst) {
+        proofNodes = [mst getProofNodesForKey:mstKey];
+        mstRootCid = [mst rootCID];
+    }
+    
+    // Create a commit block that references the MST root
+    // The commit is what actually gets signed and serves as the repo root
+    RepoCommit *commit = nil;
+    CID *commitCid = nil;
+    NSData *commitCBOR = nil;
+    
+    if (mstRootCid) {
+        commit = [RepoCommit createCommitWithDid:did
+                                            data:mstRootCid
+                                             rev:nil
+                                            prev:nil];
+        commitCBOR = [commit serialize];
+        commitCid = [commit computeCID];
+    }
+    
+    // Determine the root CID for the CAR
+    // Should be: commit -> MST root -> ... -> record
+    CID *carRoot = commitCid ?: (mstRootCid ?: recordCid);
+    
+    CARv1Builder *builder = [CARv1Builder builderWithRoot:carRoot];
+    
+    // Add commit block first (it's the root)
+    if (commitCid && commitCBOR) {
+        [builder addBlockWithCID:commitCid data:commitCBOR];
+    }
+    
+    // Add MST proof nodes (from root to leaf)
+    if (proofNodes) {
+        for (MSTNode *node in proofNodes) {
+            NSData *nodeCBOR = [mst serializeNode:node];
+            if (nodeCBOR) {
+                // Compute CID for the node
+                NSData *nodeDigest = [CID sha256Digest:nodeCBOR];
+                CID *nodeCid = [CID cidWithDigest:nodeDigest codec:0x71]; // dag-cbor
+                [builder addBlockWithCID:nodeCid data:nodeCBOR];
+            }
+        }
+    }
+    
+    // Add the record block
     [builder addBlockWithCID:recordCid data:recordCBOR];
     
     return [builder build];
