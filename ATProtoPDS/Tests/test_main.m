@@ -3,7 +3,7 @@
 #ifdef __APPLE__
 #import <XCTest/XCTest.h>
 #else
-#import <ATProtoPDS/LinuxXCTestCompat.h>
+#import "Compat/XCTest/XCTest.h"
 #endif
 #import <objc/runtime.h>
 
