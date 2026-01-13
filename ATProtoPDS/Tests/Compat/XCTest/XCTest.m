@@ -100,16 +100,18 @@
     [[XCTestObservationCenter sharedTestObservationCenter] notifyTestCase:self didFailWithDescription:description inFile:filePath atLine:lineNumber];
 }
 
+static char const * const kXCTestExpectationsKey = "kXCTestExpectationsKey";
+
 // Async Helper
 - (XCTestExpectation *)expectationWithDescription:(NSString *)description {
     XCTestExpectation *exp = [[XCTestExpectation alloc] init];
     exp.description = description;
     
     // Store expectation
-    NSMutableArray *exps = objc_getAssociatedObject(self, _cmd);
+    NSMutableArray *exps = objc_getAssociatedObject(self, kXCTestExpectationsKey);
     if (!exps) {
         exps = [NSMutableArray array];
-        objc_setAssociatedObject(self, _cmd, exps, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(self, kXCTestExpectationsKey, exps, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
     [exps addObject:exp];
     
@@ -117,14 +119,17 @@
 }
 
 - (void)waitForExpectationsWithTimeout:(NSTimeInterval)timeout handler:(void (^)(NSError *))handler {
-    // Retrieve stored expectations using the selector for 'expectationWithDescription:' as key
-    // Note: detailed implementation normally uses a cleaner property, but we use associated objects for shim simplicity
-    NSMutableArray<XCTestExpectation *> *exps = objc_getAssociatedObject(self, @selector(expectationWithDescription:));
+    NSMutableArray<XCTestExpectation *> *exps = objc_getAssociatedObject(self, kXCTestExpectationsKey);
     
     NSDate *startDate = [NSDate date];
     BOOL allFulfilled = NO;
     
     while ([[NSDate date] timeIntervalSinceDate:startDate] < timeout) {
+        if (exps.count == 0) {
+            allFulfilled = YES;
+            break;
+        }
+
         allFulfilled = YES;
         for (XCTestExpectation *exp in exps) {
             if (!exp.fulfilled) {
@@ -136,15 +141,15 @@
         if (allFulfilled) break;
         
         // Spin runloop briefly
-        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
     }
     
-    if (!allFulfilled) {
+    if (!allFulfilled && exps.count > 0) {
         [self recordFailureWithDescription:@"Wait for expectations timed out" inFile:@"<unknown>" atLine:0 expected:YES];
     }
     
-    // Clear expectations
-    [exps removeAllObjects];
+    // Clean up associated object to avoid leaked state between tests
+    objc_setAssociatedObject(self, kXCTestExpectationsKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 @end
