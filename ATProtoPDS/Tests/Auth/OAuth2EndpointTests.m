@@ -36,7 +36,7 @@
 - (void)testOAuthAuthorizeEndpointReturnsRedirectForValidRequest {
     // This test should fail initially since we haven't implemented the handler yet
     
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"]];
     request.HTTPMethod = @"GET";
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize request"];
@@ -63,7 +63,7 @@
 
 - (void)testOAuthAuthorizeEndpointRejectsInvalidClient {
     // Test with invalid client_id
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"]];
     request.HTTPMethod = @"GET";
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize invalid client"];
@@ -84,7 +84,7 @@
 
 - (void)testOAuthTokenEndpointExchangesCodeForTokens {
     // Test token exchange with authorization code
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/token"]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
@@ -119,7 +119,7 @@
 
 - (void)testOAuthTokenEndpointRejectsInvalidClient {
     // Test with invalid client_id
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/token"]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
@@ -144,7 +144,7 @@
 
 - (void)testOAuthRevokeEndpointRevokesTokens {
     // Test token revocation
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/revoke"]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/revoke"]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
