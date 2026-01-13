@@ -469,14 +469,14 @@ function renderCollections(describe) {
 }
 
 function getBlobPreview(mimeType, blobUrl, cid) {
-    // Images - show thumbnail
+    // Images - show thumbnail with simpler error handling
     if (mimeType.startsWith('image/')) {
-        return `<img src="${blobUrl}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px; border-radius: 4px;" onerror="this.outerHTML='<div style=\\"height:80px;display:flex;align-items:center;justify-content:center;color:#999;font-size:40px;\\">🖼️</div>'">`;
+        return `<img src="${blobUrl}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px; border-radius: 4px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="height:80px;display:none;align-items:center;justify-content:center;color:#999;font-size:40px;">🖼️</div>`;
     }
     
-    // Videos - show video player
+    // Videos - show video player with simpler error handling
     if (mimeType.startsWith('video/')) {
-        return `<video src="${blobUrl}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px; border-radius: 4px;" controls preload="metadata" onerror="this.outerHTML='<div style=\\"height:80px;display:flex;align-items:center;justify-content:center;color:#999;font-size:40px;\\">🎬</div>'"></video>`;
+        return `<video src="${blobUrl}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px; border-radius: 4px;" controls preload="metadata" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="height:80px;display:none;align-items:center;justify-content:center;color:#999;font-size:40px;">🎬</div>`;
     }
     
     // Audio - show audio player
