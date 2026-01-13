@@ -89,23 +89,21 @@
     
     // Proper CID generation using DAG-CBOR
     NSError *cborError = nil;
-    NSDictionary *jsonObject = [NSJSONSerialization JSONObjectWithData:[jsonValue dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSError *jsonError = nil;
+    NSDictionary *jsonObject = [NSJSONSerialization JSONObjectWithData:[jsonValue dataUsingEncoding:NSUTF8StringEncoding] options:0 error:&jsonError];
     if (jsonObject) {
         NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObject error:&cborError];
         if (cborData) {
             NSData *digest = [CID sha256Digest:cborData];
-            CID *cid = [CID cidWithMultihash:digest codec:0x71]; // dag-cbor
+            CID *cid = [CID cidWithDigest:digest codec:0x71]; // dag-cbor
             record.cid = [cid stringValue];
         } else {
-            // Fallback: use sha256 of JSON
-            NSData *jsonData = [jsonValue dataUsingEncoding:NSUTF8StringEncoding];
-            NSData *digest = [CID sha256Digest:jsonData];
-            CID *cid = [CID cidWithMultihash:digest codec:0x71];
-            record.cid = [cid stringValue];
+            [context printError:[NSString stringWithFormat:@"Failed to encode CBOR: %@", cborError.localizedDescription]];
+            return;
         }
     } else {
-        // Last resort fallback
-        record.cid = @"bafyreih5v3k4z5n5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q";
+        [context printError:[NSString stringWithFormat:@"Failed to parse JSON: %@", jsonError.localizedDescription]];
+        return;
     }
 
     BOOL success = [store putRecord:record forDid:did error:&error];
