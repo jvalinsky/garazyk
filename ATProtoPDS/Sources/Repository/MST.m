@@ -162,7 +162,8 @@
     if (cached) return cached;
     
     NSData *cbor = [self serializeToCBOR:cache];
-    CID *cid = [CID cidWithMultihash:[CID sha256Digest:cbor] codec:0x71];
+    // Use cidWithDigest to ensure multihash header (0x12 0x20) is added
+    CID *cid = [CID cidWithDigest:cbor codec:0x71];
     [cache setObject:cid forKey:self];
     return cid;
 }
@@ -308,21 +309,13 @@
         [CBORValue textString:@"l"]: [CBORValue nilValue]
     };
     NSData *cbor = [[CBORValue map:dict] encode];
-    
-    // DEBUG: Print CBOR bytes
-    const uint8_t *bytes = cbor.bytes;
-    fprintf(stderr, "DEBUG: Empty MST CBOR (%lu bytes): ", (unsigned long)cbor.length);
-    for (NSUInteger i = 0; i < cbor.length; i++) {
-        fprintf(stderr, "%02X ", bytes[i]);
-    }
+    return [CID sha256Digest:cbor];
+}
     fprintf(stderr, "\n");
     
-    NSData *digest = [CID sha256Digest:cbor];
-    const uint8_t *dbytes = digest.bytes;
-    fprintf(stderr, "DEBUG: Empty MST Hash: ");
-    for (NSUInteger i = 0; i < digest.length; i++) {
-        fprintf(stderr, "%02X", dbytes[i]);
-    }
+    // Use cidWithDigest to ensure multihash header (0x12 0x20) is added
+    return [CID cidWithDigest:digest codec:0x71];
+}
     fprintf(stderr, "\n");
     
     return digest;
