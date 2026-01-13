@@ -4,6 +4,8 @@
 //   #/{did}                         - Account DID doc
 //   #/{did}/plc-ops                 - PLC operations
 //   #/{did}/collections             - Collections list
+//   #/{did}/blobs                   - Blobs list
+//   #/{did}/blobs/{cid}             - Specific blob detail
 //   #/{did}/{collection}            - Records in collection
 //   #/{did}/{collection}/{rkey}     - Specific record
 //   #/cid-decode                    - CID decoder tool
@@ -62,6 +64,10 @@ export class Router {
             return { type: 'collections', did };
         }
         if (section === 'blobs') {
+            // Check if there's a specific blob CID
+            if (parts.length >= 3) {
+                return { type: 'blob-detail', did, cid: parts[2] };
+            }
             return { type: 'blobs', did };
         }
         if (section === 'did-doc') {
@@ -107,6 +113,10 @@ export class Router {
                 return `#/${route.did}/plc-ops`;
             case 'collections':
                 return `#/${route.did}/collections`;
+            case 'blobs':
+                return `#/${route.did}/blobs`;
+            case 'blob-detail':
+                return `#/${route.did}/blobs/${route.cid}`;
             case 'records':
                 return `#/${route.did}/${route.collection}`;
             case 'record':
