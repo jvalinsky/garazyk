@@ -50,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller;
 
++ (void)registerSyncMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                               controller:(PDSController *)controller;
+
 @end
 
 NS_ASSUME_NONNULL_END
