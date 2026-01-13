@@ -40,8 +40,12 @@
 @implementation MockDataTask
 
 - (void)resume {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.mockDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    NSTimeInterval delay = self.mockDelay;
+    NSLog(@"MockDataTask resume called for URL %@ with delay %f", self.url, delay);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSLog(@"MockDataTask executing for URL %@", self.url);
         if (self.mockError) {
+            NSLog(@"MockDataTask returning error: %@", self.mockError);
             self.completionHandler(nil, nil, self.mockError);
         } else {
             NSNumber *statusCode = self.mockResponse[@"statusCode"] ?: @200;
@@ -53,6 +57,7 @@
                                                                       HTTPVersion:@"HTTP/1.1"
                                                                      headerFields:nil];
 
+            NSLog(@"MockDataTask returning success: status=%@, body=%@", statusCode, responseBody);
             self.completionHandler(data, response, nil);
         }
     });
