@@ -23,7 +23,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, assign) CFMutableDictionaryRef statementCache;
-@property (nonatomic, assign) dispatch_queue_t cacheQueue;
+@property (nonatomic, strong) dispatch_queue_t cacheQueue;
 
 @end
 
@@ -64,6 +64,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (void)close {
     if (!self.isOpen) return;
+    fprintf(stderr, "[DEBUG] PDSDatabase closing\n");
 
     dispatch_sync(self.cacheQueue, ^{
         CFIndex count = CFDictionaryGetCount(self.statementCache);
@@ -81,6 +82,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_close(_db);
     _db = NULL;
     self.isOpen = NO;
+    fprintf(stderr, "[DEBUG] PDSDatabase closed\n");
 }
 
 - (void)dealloc {

@@ -87,7 +87,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
     // Compute SHA-256 hash and create CID with DAG-CBOR codec (0x71)
     NSData *hash = [CID sha256Digest:serialized];
-    return [CID cidWithMultihash:hash codec:0x71]; // DAG-CBOR codec
+    return [CID cidWithDigest:hash codec:0x71]; // DAG-CBOR codec
 }
 
 - (BOOL)signWithPrivateKey:(NSData *)privateKey error:(NSError **)error {
