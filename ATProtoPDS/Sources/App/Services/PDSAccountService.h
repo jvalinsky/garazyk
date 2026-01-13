@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
                                     error:(NSError **)error;
 
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
+- (nullable NSDictionary *)getAccountForHandle:(NSString *)handle error:(NSError **)error;
 
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
 
