@@ -1,3 +1,15 @@
+/*!
+ @file CAR.m
+
+ @abstract CAR (Content Addressable aRchives) file format implementation.
+
+ @discussion This file implements CAR v1 format for ATProto repository
+ serialization. CAR archives contain content-addressable blocks with
+ CID references, used for MST export and import operations.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
 #import <Security/Security.h>

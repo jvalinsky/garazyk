@@ -1,3 +1,16 @@
+/*!
+ @file CID.m
+
+ @abstract CID (Content Identifier) implementation for content addressing.
+
+ @discussion This file implements CIDv1 per the IPFS specification, used
+ throughout ATProto for content-addressable record storage. CIDs combine
+ multicodec identification with multihash digests (SHA-256 by default)
+ encoded in Base32 (multibase 'b').
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Core/CID.h"
 #import <CommonCrypto/CommonCrypto.h>
 
