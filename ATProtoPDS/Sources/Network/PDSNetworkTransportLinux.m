@@ -27,8 +27,10 @@
     int _sockfd;
     dispatch_source_t _readSource;
     dispatch_source_t _writeSource;
+    dispatch_source_t _timeoutSource;
     dispatch_queue_t _queue;
     BOOL _cancelled;
+    BOOL _writeSourceSuspended;  // Track suspension state to avoid unbalanced suspend/resume
     NSMutableArray *_receiveRequests;
     NSMutableArray *_writeRequests;
 }
@@ -97,7 +99,32 @@
     dispatch_source_set_event_handler(_writeSource, ^{
         [weakSelf handleWrite];
     });
-    // Don't resume write source until we have data to send
+    // Write source starts suspended - track this state
+    _writeSourceSuspended = YES;
+    
+    // Add connection timeout (30 seconds of inactivity)
+    _timeoutSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _queue);
+    dispatch_source_set_timer(_timeoutSource,
+        dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+        DISPATCH_TIME_FOREVER,
+        1 * NSEC_PER_SEC);
+    dispatch_source_set_event_handler(_timeoutSource, ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf && !strongSelf->_cancelled) {
+            NSLog(@"[PDSNetworkTransport] Connection timed out: %@", strongSelf.remoteAddress);
+            [strongSelf cancel];
+        }
+    });
+    dispatch_resume(_timeoutSource);
+}
+
+- (void)resetTimeout {
+    if (_timeoutSource && !_cancelled) {
+        dispatch_source_set_timer(_timeoutSource,
+            dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+            DISPATCH_TIME_FOREVER,
+            1 * NSEC_PER_SEC);
+    }
 }
 
 - (void)handleWrite {
@@ -113,6 +140,9 @@
         }
         return;
     }
+
+    // Reset timeout on activity
+    [self resetTimeout];
 
     @synchronized (_writeRequests) {
         while (_writeRequests.count > 0) {
@@ -143,8 +173,10 @@
             }
         }
         
-        if (_writeRequests.count == 0 && _writeSource) {
+        // Only suspend if not already suspended (prevent unbalanced suspend/resume)
+        if (_writeRequests.count == 0 && _writeSource && !_writeSourceSuspended) {
             dispatch_suspend(_writeSource);
+            _writeSourceSuspended = YES;
         }
     }
 }
@@ -162,6 +194,9 @@
         }
         return;
     }
+
+    // Reset timeout on activity
+    [self resetTimeout];
 
     // Note: dispatch_source_get_data might be 0 if the peer sent a FIN
     
@@ -209,8 +244,17 @@
         _readSource = nil;
     }
     if (_writeSource) {
+        // Must resume before canceling if suspended, otherwise crash
+        if (_writeSourceSuspended) {
+            dispatch_resume(_writeSource);
+            _writeSourceSuspended = NO;
+        }
         dispatch_source_cancel(_writeSource);
         _writeSource = nil;
+    }
+    if (_timeoutSource) {
+        dispatch_source_cancel(_timeoutSource);
+        _timeoutSource = nil;
     }
     if (_sockfd != -1) {
         close(_sockfd);
@@ -254,11 +298,12 @@
     };
     
     @synchronized (_writeRequests) {
-        BOOL wasEmpty = (_writeRequests.count == 0);
         [_writeRequests addObject:request];
         
-        if (wasEmpty && _writeSource) {
+        // Only resume if currently suspended (prevent unbalanced suspend/resume)
+        if (_writeSourceSuspended && _writeSource) {
             dispatch_resume(_writeSource);
+            _writeSourceSuspended = NO;
         }
     }
 
