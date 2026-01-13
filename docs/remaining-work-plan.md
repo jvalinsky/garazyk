@@ -85,5 +85,5 @@ Sign commits when exporting records for sync.getRecord.
 | 1.4 Verify locally | ✅ | ActorStoreTests + RepoCommitTests pass |
 | 2.1 Build and run | ✅ | Server starts, endpoints respond |
 | 2.2 Test endpoints | ✅ | createAccount, createRecord, sync.getRecord work |
-| 2.3 Test WebSocket | ⬜ | |
-| 2.4 Test pdsls | ⬜ | |
+| 2.3 Test WebSocket | ✅ | Handshake works, initial state sent |
+| 2.4 Test pdsls | ✅ | Full integration verified with real PLC |
