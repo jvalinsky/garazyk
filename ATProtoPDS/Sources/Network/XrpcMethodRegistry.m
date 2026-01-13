@@ -1002,6 +1002,30 @@
         [response setJsonBody:stats];
     }];
     
+    // com.atproto.identity.resolveHandle - Resolve handle to DID
+    [dispatcher registerMethod:@"com.atproto.identity.resolveHandle" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        
+        NSString *handle = request.queryParams[@"handle"];
+        if (!handle || handle.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle parameter"}];
+            return;
+        }
+        
+        // Look up handle in our database first
+        NSError *error = nil;
+        NSDictionary *account = [controller getAccountForHandle:handle error:&error];
+        
+        if (account && account[@"did"]) {
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"did": account[@"did"]}];
+        } else {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"UnableToResolveHandle", @"message": @"Unable to resolve handle"}];
+        }
+    }];
+    
     // Register sync methods
     [self registerSyncMethodsWithDispatcher:dispatcher controller:controller];
 }

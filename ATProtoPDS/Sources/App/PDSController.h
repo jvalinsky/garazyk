@@ -70,6 +70,7 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
                                             error:(NSError **)error;
 
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
+- (nullable NSDictionary *)getAccountForHandle:(NSString *)handle error:(NSError **)error;
 
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
                                    password:(NSString *)password

@@ -232,11 +232,18 @@
         NSString *host = request.headers[@"Host"] ?: request.headers[@"host"];
         NSString *hostname = [[host componentsSeparatedByString:@":"] firstObject]; // Remove port if present
         
-        // For subdomain-based DIDs: alice.september.exe.xyz -> did:web:alice.september.exe.xyz
-        NSString *did = [NSString stringWithFormat:@"did:web:%@", hostname];
+        // Look up the handle in database to get the did:plc
+        NSError *error = nil;
+        NSDictionary *account = [controller getAccountForHandle:hostname error:&error];
         
-        response.statusCode = HttpStatusOK;
-        [response setBody:[did dataUsingEncoding:NSUTF8StringEncoding]];
+        if (account && account[@"did"]) {
+            response.statusCode = HttpStatusOK;
+            [response setBody:[account[@"did"] dataUsingEncoding:NSUTF8StringEncoding]];
+        } else {
+            // Handle not found
+            response.statusCode = 404;
+            [response setBody:[@"Handle not found" dataUsingEncoding:NSUTF8StringEncoding]];
+        }
     }];
 
     // DID document endpoint for did:web resolution (hostname-level)

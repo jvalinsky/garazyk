@@ -211,6 +211,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return [_accountService getAccountForDid:did error:error];
 }
 
+- (nullable NSDictionary *)getAccountForHandle:(NSString *)handle error:(NSError **)error {
+    return [_accountService getAccountForHandle:handle error:error];
+}
+
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
                                    password:(NSString *)password
                                       error:(NSError **)error {
