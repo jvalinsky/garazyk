@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
  ATProto authentication. Includes authorization requests/responses,
  token management, and DPoP proof generation.
  
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024 Jack Valinsky
  */
 
 extern NSString * const OAuth2ErrorDomain;
@@ -21,7 +21,6 @@ extern NSString * const OAuth2ErrorDomain;
 @class JWTMinter;
 @class KeyManager;
 @class DIDResolver;
-@class HandleResolver;
 @class HandleResolver;
 @class Session;
 @class PDSDatabase;
