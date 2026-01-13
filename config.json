@@ -1,16 +1,16 @@
 {
   "server": {
     "host": "0.0.0.0",
-    "port": 8080,
+    "port": 8000,
     "data_dir": "./data"
   },
   "plc": {
-    "url": "mock",
+    "url": "https://plc.directory",
     "retry_count": 3,
     "retry_delay_ms": 1000
   },
   "debug": {
-    "skip_plc_operations": true,
+    "skip_plc_operations": false,
     "verbose_logging": true,
     "in_memory_databases": false,
     "reset_on_startup": false
