@@ -22,7 +22,12 @@
         self.oauthServer.jwtMinter = self.minter;
 
         // Use configurable issuer from environment, default to localhost
-        NSString *issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+        // Prefer getenv for runtime updates (e.g. in tests)
+        char *envIssuer = getenv("PDS_ISSUER");
+        NSString *issuer = envIssuer ? [NSString stringWithUTF8String:envIssuer] : nil;
+        if (!issuer) {
+            issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+        }
         self.oauthServer.issuer = issuer;
 
         // Build other endpoints relative to issuer
@@ -148,6 +153,8 @@
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    fprintf(stderr, "DEBUG: handleAuthorizeRequest entered for path %s\n", [request.path UTF8String]);
+    
     // Use request.queryParams if available, otherwise parse manually
     NSMutableDictionary *params = [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
 
