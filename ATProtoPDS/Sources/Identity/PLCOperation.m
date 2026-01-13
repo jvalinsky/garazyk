@@ -1,8 +1,7 @@
 #import "PLCOperation.h"
+#import "Identity/PLCOperationBuilder.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import <CommonCrypto/CommonDigest.h>
-
-NSErrorDomain const PLCOperationErrorDomain = @"com.atproto.plc.operation";
 
 static NSString * const kPLCOperationType = @"plc_operation";
 static NSString * const kPLCTombstoneType = @"plc_tombstone";

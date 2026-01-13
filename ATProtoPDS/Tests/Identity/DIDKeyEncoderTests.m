@@ -90,7 +90,7 @@
     
     XCTAssertNil(result);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, DIDKeyErrorInvalidKey);
+    XCTAssertEqual(error.code, DIDKeyEncoderErrorInvalidKey);
 }
 
 - (void)testInvalidDIDKeyFormat {

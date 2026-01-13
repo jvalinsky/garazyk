@@ -4,16 +4,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSErrorDomain const DIDKeyErrorDomain;
 
-typedef NS_ENUM(NSInteger, DIDKeyErrorCode) {
-    DIDKeyErrorInvalidFormat = 1,
-    DIDKeyErrorUnsupportedKeyType,
-    DIDKeyErrorInvalidKey,
-    DIDKeyErrorEncodingFailed,
+typedef NS_ENUM(NSInteger, DIDKeyEncoderErrorCode) {
+    DIDKeyEncoderErrorInvalidFormat = 1,
+    DIDKeyEncoderErrorUnsupportedKeyType = 3,
+    DIDKeyEncoderErrorInvalidKey = 10,
+    DIDKeyEncoderErrorEncodingFailed = 11,
 };
 
-/**
- * Key types supported by did:key encoding.
- */
 typedef NS_ENUM(NSUInteger, DIDKeyType) {
     DIDKeyTypeSecp256k1 = 0xE7,      // secp256k1 compressed public key
     DIDKeyTypeP256 = 0x1200,         // P-256 (secp256r1) compressed public key
