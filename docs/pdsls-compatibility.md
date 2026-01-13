@@ -98,9 +98,16 @@ Implemented. Returns a single record as a CAR file (bytes).
 
 **Response:** `application/vnd.ipld.car` (binary CAR data)
 
-**Note:** Current implementation returns a minimal CAR structure. Full MST proof path
-is not yet included, which means `@atcute/repo.verifyRecord()` may fail verification.
-The record data is still accessible via `com.atproto.repo.getRecord`.
+**Note:** Current implementation returns a CAR with:
+- Commit block (unsigned, references MST root)
+- MST proof path nodes from root to record
+- Record block itself
+
+Cryptographic verification may still fail if:
+- The commit is not properly signed
+- MST structure differs from what verifier expects
+
+Record data is always accessible via `com.atproto.repo.getRecord`.
 
 ## Firehose Notes
 
@@ -115,6 +122,10 @@ Our implementation runs on port 8081 separately. May need:
 
 ## Remaining Work
 
-1. **Priority 1**: Full MST proof in `com.atproto.sync.getRecord` for record verification
+1. ~~**Priority 1**: Full MST proof in `com.atproto.sync.getRecord`~~ ✅ Done (basic impl)
 2. ~~**Priority 2**: Route WebSocket on `/xrpc/com.atproto.sync.subscribeRepos`~~ ✅ Done
 3. ~~**Priority 3**: Implement `app.bsky.actor.searchActorsTypeahead`~~ ✅ Done
+
+### Optional Improvements
+- Sign commit blocks with repo key for full cryptographic verification
+- Store raw CBOR blocks for exact CID matching
