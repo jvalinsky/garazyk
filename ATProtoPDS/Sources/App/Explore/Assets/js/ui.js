@@ -367,6 +367,73 @@ function renderCollections(describe) {
     content.innerHTML = html;
 }
 
+function getBlobPreview(mimeType, blobUrl, cid) {
+    // Images - show thumbnail
+    if (mimeType.startsWith('image/')) {
+        return `<img src="${blobUrl}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px; border-radius: 4px;" onerror="this.outerHTML='<div style=\\"height:80px;display:flex;align-items:center;justify-content:center;color:#999;font-size:40px;\\">🖼️</div>'">`;
+    }
+    
+    // Videos - show video player
+    if (mimeType.startsWith('video/')) {
+        return `<video src="${blobUrl}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px; border-radius: 4px;" controls preload="metadata" onerror="this.outerHTML='<div style=\\"height:80px;display:flex;align-items:center;justify-content:center;color:#999;font-size:40px;\\">🎬</div>'"></video>`;
+    }
+    
+    // Audio - show audio player
+    if (mimeType.startsWith('audio/')) {
+        return `<div style="padding: 20px 10px;"><audio src="${blobUrl}" style="width: 100%;" controls preload="metadata"></audio></div>`;
+    }
+    
+    // PDFs
+    if (mimeType === 'application/pdf') {
+        return `<div style="height: 80px; display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 40px;">📄</div>`;
+    }
+    
+    // JSON/Text
+    if (mimeType === 'application/json' || mimeType.startsWith('text/')) {
+        return `<div style="height: 80px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 40px;">📝</div>`;
+    }
+    
+    // Archives
+    if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('gzip') || mimeType.includes('compressed')) {
+        return `<div style="height: 80px; display: flex; align-items: center; justify-content: center; color: #ffc107; font-size: 40px;">📦</div>`;
+    }
+    
+    // Generic file icon
+    return `<div style="height: 80px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 40px;">📁</div>`;
+}
+
+function getMimeTypeLabel(mimeType) {
+    const labels = {
+        'image/png': 'PNG Image',
+        'image/jpeg': 'JPEG Image',
+        'image/gif': 'GIF Image',
+        'image/webp': 'WebP Image',
+        'image/svg+xml': 'SVG Image',
+        'video/mp4': 'MP4 Video',
+        'video/webm': 'WebM Video',
+        'video/quicktime': 'QuickTime Video',
+        'audio/mpeg': 'MP3 Audio',
+        'audio/mp3': 'MP3 Audio',
+        'audio/ogg': 'OGG Audio',
+        'audio/wav': 'WAV Audio',
+        'application/pdf': 'PDF Document',
+        'application/json': 'JSON',
+        'text/plain': 'Plain Text',
+        'text/html': 'HTML',
+        'application/zip': 'ZIP Archive',
+        'application/gzip': 'GZIP Archive',
+        'application/octet-stream': 'Binary Data'
+    };
+    return labels[mimeType] || mimeType;
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return 'unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function renderBlobs(blobsResult, did) {
     const content = document.getElementById('blobs-content');
     
@@ -382,30 +449,46 @@ function renderBlobs(blobsResult, did) {
         return;
     }
     
+    // Group blobs by type
+    const images = cids.filter(b => (b.mimeType || '').startsWith('image/'));
+    const videos = cids.filter(b => (b.mimeType || '').startsWith('video/'));
+    const audio = cids.filter(b => (b.mimeType || '').startsWith('audio/'));
+    const others = cids.filter(b => {
+        const m = b.mimeType || '';
+        return !m.startsWith('image/') && !m.startsWith('video/') && !m.startsWith('audio/');
+    });
+    
     let html = `
         <p class="description">
-            This repository contains <strong>${cids.length}</strong> blob(s).
+            This repository contains <strong>${cids.length}</strong> blob(s)
+            ${images.length ? `• ${images.length} image${images.length > 1 ? 's' : ''}` : ''}
+            ${videos.length ? `• ${videos.length} video${videos.length > 1 ? 's' : ''}` : ''}
+            ${audio.length ? `• ${audio.length} audio file${audio.length > 1 ? 's' : ''}` : ''}
+            ${others.length ? `• ${others.length} other file${others.length > 1 ? 's' : ''}` : ''}
         </p>
-        <div class="blobs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+        <div class="blobs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;">
     `;
     
     for (const blob of cids) {
         const cid = blob.cid || blob;
-        const mimeType = blob.mimeType || 'unknown';
-        const size = blob.size ? `${Math.round(blob.size / 1024 * 10) / 10} KB` : 'unknown size';
-        const isImage = mimeType.startsWith('image/');
+        const mimeType = blob.mimeType || 'application/octet-stream';
+        const size = formatFileSize(blob.size);
+        const blobUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}`;
+        const preview = getBlobPreview(mimeType, blobUrl, cid);
+        const typeLabel = getMimeTypeLabel(mimeType);
         
         html += `
-            <div class="blob-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fafafa;">
-                ${isImage ? `<img src="/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'">` : `<div style="height: 50px; display: flex; align-items: center; justify-content: center; color: #666;">📄 ${escapeHtml(mimeType)}</div>`}
-                <div style="font-size: 11px; word-break: break-all; color: #666;">${escapeHtml(cid)}</div>
-                <div style="font-size: 12px; margin-top: 5px;">
-                    <span style="color: #888;">${escapeHtml(mimeType)}</span> • 
-                    <span style="color: #888;">${size}</span>
+            <div class="blob-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #fafafa; display: flex; flex-direction: column;">
+                <div style="flex: 1; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 4px; margin-bottom: 10px; overflow: hidden;">
+                    ${preview}
                 </div>
-                <a href="/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}" 
-                   class="btn-secondary" style="display: inline-block; margin-top: 8px; font-size: 12px;" 
-                   download>Download</a>
+                <div style="font-size: 11px; word-break: break-all; color: #666; font-family: monospace; margin-bottom: 6px;" title="${escapeHtml(cid)}">${escapeHtml(cid.substring(0, 20))}...</div>
+                <div style="font-size: 12px; color: #333; font-weight: 500;">${escapeHtml(typeLabel)}</div>
+                <div style="font-size: 11px; color: #888; margin-bottom: 8px;">${size}</div>
+                <div style="display: flex; gap: 8px;">
+                    <a href="${blobUrl}" class="btn-secondary" style="flex: 1; text-align: center; font-size: 11px; padding: 6px;" download>⬇ Download</a>
+                    <a href="${blobUrl}" class="btn-secondary" style="flex: 1; text-align: center; font-size: 11px; padding: 6px;" target="_blank">↗ Open</a>
+                </div>
             </div>
         `;
     }
