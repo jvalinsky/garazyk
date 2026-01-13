@@ -198,34 +198,56 @@
     authRequest.nonce = params[@"nonce"];
     authRequest.loginHint = params[@"login_hint"];
     
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    __block NSURL *resultURL = nil;
+    __block NSString *resultCode = nil;
+    __block NSError *resultError = nil;
+
     [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{
-                @"error": @"invalid_request",
-                @"error_description": error.localizedDescription
-            }];
-            return;
-        }
-        
-        if (authorizationURL) {
-            // For demo purposes, redirect with code
-            response.statusCode = 302;
-            NSString *redirectURL = [NSString stringWithFormat:@"%@?code=%@", 
-                                   authRequest.redirectURI ?: @"http://localhost:3000/callback",
-                                   authorizationCode];
-            if (authRequest.state) {
-                redirectURL = [NSString stringWithFormat:@"%@&state=%@", redirectURL, authRequest.state];
-            }
-            [response setHeader:redirectURL forKey:@"Location"];
-        } else {
-            response.statusCode = 500;
-            [response setJsonBody:@{
-                @"error": @"server_error",
-                @"error_description": @"Failed to generate authorization"
-            }];
-        }
+        resultURL = authorizationURL;
+        resultCode = authorizationCode;
+        resultError = error;
+        dispatch_semaphore_signal(sem);
     }];
+
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC);
+    long waitResult = dispatch_semaphore_wait(sem, timeout);
+
+    if (waitResult != 0) {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+            @"error": @"server_error",
+            @"error_description": @"Authorization request timed out"
+        }];
+        return;
+    }
+
+    if (resultError) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": resultError.localizedDescription
+        }];
+        return;
+    }
+
+    if (resultURL) {
+        // For demo purposes, redirect with code
+        response.statusCode = 302;
+        NSString *redirectURL = [NSString stringWithFormat:@"%@?code=%@", 
+                               authRequest.redirectURI ?: @"http://localhost:3000/callback",
+                               resultCode];
+        if (authRequest.state) {
+            redirectURL = [NSString stringWithFormat:@"%@&state=%@", redirectURL, authRequest.state];
+        }
+        [response setHeader:redirectURL forKey:@"Location"];
+    } else {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+            @"error": @"server_error",
+            @"error_description": @"Failed to generate authorization"
+        }];
+    }
 }
 
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response {
@@ -303,43 +325,63 @@
     tokenRequest.scope = params[@"scope"];
     tokenRequest.tfaCode = params[@"tfa_code"];
     
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    __block Session *resultSession = nil;
+    __block NSError *resultError = nil;
+
     [self.oauthServer handleTokenRequest:tokenRequest completion:^(Session * _Nullable session, NSError * _Nullable error) {
-        if (error) {
-            response.statusCode = 400;
-            NSDictionary *errorResponse = @{
-                @"error": @"invalid_grant",
-                @"error_description": error.localizedDescription
+        resultSession = session;
+        resultError = error;
+        dispatch_semaphore_signal(sem);
+    }];
+
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC);
+    long waitResult = dispatch_semaphore_wait(sem, timeout);
+
+    if (waitResult != 0) {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+            @"error": @"server_error",
+            @"error_description": @"Token request timed out"
+        }];
+        return;
+    }
+
+    if (resultError) {
+        response.statusCode = 400;
+        NSDictionary *errorResponse = @{
+            @"error": @"invalid_grant",
+            @"error_description": resultError.localizedDescription
+        };
+        
+        // Check for 2FA required
+        if (resultError.userInfo[@"error"] && [resultError.userInfo[@"error"] isEqualToString:@"mfa_required"]) {
+            errorResponse = @{
+                @"error": @"interaction_required",
+                @"error_description": resultError.localizedDescription
             };
-            
-            // Check for 2FA required
-            if (error.userInfo[@"error"] && [error.userInfo[@"error"] isEqualToString:@"mfa_required"]) {
-                errorResponse = @{
-                    @"error": @"interaction_required",
-                    @"error_description": error.localizedDescription
-                };
-            }
-            
-            [response setJsonBody:errorResponse];
-            return;
         }
         
-        if (session) {
-            response.statusCode = 200;
-            [response setJsonBody:@{
-                @"access_token": session.accessToken,
-                @"token_type": @"DPoP",
-                @"expires_in": @3600,
-                @"refresh_token": session.refreshToken,
-                @"scope": session.scope
-            }];
-        } else {
-            response.statusCode = 500;
-            [response setJsonBody:@{
-                @"error": @"server_error",
-                @"error_description": @"Failed to create session"
-            }];
-        }
-    }];
+        [response setJsonBody:errorResponse];
+        return;
+    }
+    
+    if (resultSession) {
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"access_token": resultSession.accessToken,
+            @"token_type": @"DPoP",
+            @"expires_in": @3600,
+            @"refresh_token": resultSession.refreshToken,
+            @"scope": resultSession.scope
+        }];
+    } else {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+            @"error": @"server_error",
+            @"error_description": @"Failed to create session"
+        }];
+    }
 }
 
 - (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response {
