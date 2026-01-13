@@ -95,17 +95,11 @@
     if (_cancelled) return;
 
     size_t bytesAvailable = dispatch_source_get_data(_readSource);
-    if (bytesAvailable == 0) {
-        // EOF or error
-        [self cancel];
-        return;
-    }
-
-    // Process pending receive requests
+    // Note: dispatch_source_get_data might be 0 if the peer sent a FIN
+    
     @synchronized (_receiveRequests) {
-        if (_receiveRequests.count > 0) {
+        while (_receiveRequests.count > 0) {
             NSDictionary *request = _receiveRequests[0];
-            [_receiveRequests removeObjectAtIndex:0];
             
             NSUInteger maxLength = [request[@"max"] unsignedIntegerValue];
             void (^completion)(NSData *, BOOL, NSError *) = request[@"completion"];
@@ -114,19 +108,23 @@
             ssize_t received = recv(_sockfd, buffer, maxLength, 0);
             
             if (received > 0) {
+                [_receiveRequests removeObjectAtIndex:0];
                 NSData *data = [NSData dataWithBytesNoCopy:buffer length:received freeWhenDone:YES];
                 completion(data, NO, nil);
             } else if (received == 0) {
                 // Connection closed
+                [_receiveRequests removeObjectAtIndex:0];
                 free(buffer);
                 completion(nil, YES, nil);
                 [self cancel];
+                break;
             } else {
                 free(buffer);
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // Put it back
-                    [_receiveRequests insertObject:request atIndex:0];
+                    // No more data to read right now
+                    break;
                 } else {
+                    [_receiveRequests removeObjectAtIndex:0];
                     completion(nil, NO, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
                 }
             }
