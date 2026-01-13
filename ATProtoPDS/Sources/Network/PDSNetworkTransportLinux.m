@@ -28,6 +28,7 @@
     dispatch_source_t _readSource;
     dispatch_source_t _writeSource;
     dispatch_queue_t _queue;
+    BOOL _cancelled;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -89,6 +90,9 @@
 }
 
 - (void)cancel {
+    if (_cancelled) return;
+    _cancelled = YES;
+
     if (_readSource) {
         dispatch_source_cancel(_readSource);
         _readSource = nil;
@@ -136,6 +140,7 @@
     int _listenfd;
     dispatch_source_t _source;
     dispatch_queue_t _queue;
+    BOOL _cancelled;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -219,6 +224,9 @@
 }
 
 - (void)cancel {
+    if (_cancelled) return;
+    _cancelled = YES;
+
     if (_source) {
         dispatch_source_cancel(_source);
         _source = nil;
