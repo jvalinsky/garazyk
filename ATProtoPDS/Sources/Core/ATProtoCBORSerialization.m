@@ -57,28 +57,8 @@
         
         // Handle integer vs float
         if (strcmp(objCType, @encode(float)) == 0 || strcmp(objCType, @encode(double)) == 0) {
-            // It's float
-            // But CBORValue only has simple/float?
-            // Actually CBORValue.m has decodeSimpleOrFloat but init methods are limited.
-            // Wait, CBORValue has +tag:value: but simplistic support.
-            // Let's check CBORValue class capabilities.
-            // It has initWithType... and properties like unsignedInteger, negativeInteger.
-            // But does it support float?
-            // encodeFloatValue implementation exists.
-            // But CBORValue structure...
-            // Let's assume NSNumber is integer for simplicity unless it forces float.
-            // DAG-CBOR prefers integers.
-            // But if it has decimal...
-            // For now, treat as integer if possible.
-            double d = [obj doubleValue];
-            long long l = [obj longLongValue];
-            if (d == (double)l) {
-                if (l >= 0) return [CBORValue unsignedInteger:(NSUInteger)l];
-                else return [CBORValue negativeInteger:(NSInteger)l];
-            }
-            // Float support missing in CBORValue object wrapper?
-            // Let's check CBORValue interface.
-            return nil; // Not fully supported yet
+            // It's a float
+            return [CBORValue floatingPoint:[obj doubleValue]];
         } else {
             long long l = [obj longLongValue];
             if (l >= 0) return [CBORValue unsignedInteger:(NSUInteger)l];
