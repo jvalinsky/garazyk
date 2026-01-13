@@ -24,6 +24,9 @@ typedef NS_ENUM(NSInteger, DIDKeyError) {
 
 + (instancetype)generateSecp256k1;
 
++ (NSString *)base58Encode:(NSData *)data;
++ (nullable NSData *)base58Decode:(NSString *)string;
+
 - (instancetype)initWithPublicKeyData:(NSData *)publicKeyData
                          didKeyString:(NSString *)didKeyString;
 
