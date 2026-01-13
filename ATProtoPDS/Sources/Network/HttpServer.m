@@ -422,11 +422,66 @@
 }
 
 - (void)stop {
-    if (self.listener) {
-        [self.listener cancel];
-        self.listener = nil;
+    if (!self.running) {
+        return;
     }
-    self.running = NO;
+
+    dispatch_semaphore_t drainSemaphore = dispatch_semaphore_create(0);
+
+    dispatch_async(self.serverQueue, ^{
+        if (self.listener) {
+            [self.listener cancel];
+            self.listener = nil;
+        }
+        self.running = NO;
+
+        NSUInteger activeCount = 0;
+        NSMutableArray *connectionsToCancel = nil;
+        @synchronized (self.activeConnections) {
+            activeCount = self.activeConnections.count;
+            if (activeCount > 0) {
+                connectionsToCancel = [[self.activeConnections allObjects] mutableCopy];
+            }
+        }
+
+        if (activeCount > 0) {
+            NSLog(@"[HttpServer] Cancelling %lu active connections...", (unsigned long)activeCount);
+
+            __block NSUInteger remaining = activeCount;
+            @synchronized (self.activeConnections) {
+                for (id<PDSNetworkConnection> connection in connectionsToCancel) {
+                    __weak typeof(self) weakSelf = self;
+                    __weak id<PDSNetworkConnection> weakConnection = connection;
+                    connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+                        __strong typeof(weakSelf) strongSelf = weakSelf;
+                        __strong typeof(weakConnection) strongConnection = weakConnection;
+                        if (!strongSelf || !strongConnection) return;
+
+                        if (state == PDSNetworkConnectionStateCancelled) {
+                            @synchronized (strongSelf.activeConnections) {
+                                [strongSelf.activeConnections removeObject:strongConnection];
+                            }
+                            remaining--;
+                            if (remaining == 0) {
+                                dispatch_semaphore_signal(drainSemaphore);
+                            }
+                        }
+                    };
+                    [connection cancel];
+                }
+            }
+
+            dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
+            long waitResult = dispatch_semaphore_wait(drainSemaphore, timeout);
+            if (waitResult != 0) {
+                NSLog(@"[HttpServer] Warning: Timeout waiting for connections to drain, %lu remaining", (unsigned long)remaining);
+            }
+        }
+
+        dispatch_semaphore_signal(drainSemaphore);
+    });
+
+    dispatch_semaphore_wait(drainSemaphore, DISPATCH_TIME_FOREVER);
 }
 
 - (void)addRoute:(NSString *)method path:(NSString *)path handler:(RequestHandler)handler {

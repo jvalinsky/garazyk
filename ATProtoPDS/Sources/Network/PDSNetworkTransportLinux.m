@@ -101,7 +101,18 @@
 }
 
 - (void)handleWrite {
-    if (_cancelled) return;
+    if (_cancelled) {
+        @synchronized (_writeRequests) {
+            for (NSDictionary *request in _writeRequests) {
+                void (^completion)(NSError *) = request[@"completion"];
+                if (completion) {
+                    completion([NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection closed"}]);
+                }
+            }
+            [_writeRequests removeAllObjects];
+        }
+        return;
+    }
 
     @synchronized (_writeRequests) {
         while (_writeRequests.count > 0) {
@@ -139,7 +150,18 @@
 }
 
 - (void)handleRead {
-    if (_cancelled) return;
+    if (_cancelled) {
+        @synchronized (_receiveRequests) {
+            for (NSDictionary *request in _receiveRequests) {
+                void (^completion)(NSData *, BOOL, NSError *) = request[@"completion"];
+                if (completion) {
+                    completion(nil, NO, [NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection closed"}]);
+                }
+            }
+            [_receiveRequests removeAllObjects];
+        }
+        return;
+    }
 
     // Note: dispatch_source_get_data might be 0 if the peer sent a FIN
     
@@ -194,7 +216,27 @@
         close(_sockfd);
         _sockfd = -1;
     }
-    
+
+    @synchronized (_writeRequests) {
+        for (NSDictionary *request in _writeRequests) {
+            void (^completion)(NSError *) = request[@"completion"];
+            if (completion) {
+                completion([NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection closed"}]);
+            }
+        }
+        [_writeRequests removeAllObjects];
+    }
+
+    @synchronized (_receiveRequests) {
+        for (NSDictionary *request in _receiveRequests) {
+            void (^completion)(NSData *, BOOL, NSError *) = request[@"completion"];
+            if (completion) {
+                completion(nil, NO, [NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection closed"}]);
+            }
+        }
+        [_receiveRequests removeAllObjects];
+    }
+
     if (self.stateChangedHandler) {
         self.stateChangedHandler(PDSNetworkConnectionStateCancelled, nil);
     }
