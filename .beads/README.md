@@ -4,7 +4,7 @@ Welcome to Beads! This repository uses **Beads** for issue tracking - a modern, 
 
 ## What is Beads?
 
-Beads is issue tracking that lives in your repo, making it perfect for AI coding agents and developers who want their issues close to their code. No web UI required - everything works through the CLI and integrates seamlessly with git.
+Beads is issue tracking that lives in your repo. CLI-based tool for managing issues alongside code. Integrates with git for version control.
 
 **Learn more:** [github.com/steveyegge/beads](https://github.com/steveyegge/beads)
 
@@ -40,20 +40,20 @@ Issues in Beads are:
 
 ## Why Beads?
 
-✨ **AI-Native Design**
-- Built specifically for AI-assisted development workflows
-- CLI-first interface works seamlessly with AI coding agents
-- No context switching to web UIs
+**AI-Native Design**
+- Built for AI-assisted development workflows
+- CLI-first interface works with AI coding agents
+- No web UI context switching
 
-🚀 **Developer Focused**
-- Issues live in your repo, right next to your code
-- Works offline, syncs when you push
-- Fast, lightweight, and stays out of your way
+**Developer Focused**
+- Issues stored in your repo alongside code
+- Works offline, syncs on push
+- Minimal overhead
 
-🔧 **Git Integration**
-- Automatic sync with git commits
+**Git Integration**
+- Syncs with git commits
 - Branch-aware issue tracking
-- Intelligent JSONL merge resolution
+- JSONL merge resolution
 
 ## Get Started with Beads
 
@@ -78,4 +78,4 @@ bd create "Try out Beads"
 
 ---
 
-*Beads: Issue tracking that moves at the speed of thought* ⚡
+Beads: Git-native issue tracking for AI-assisted development
