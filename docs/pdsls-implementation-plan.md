@@ -166,6 +166,6 @@ Implement basic typeahead search for actors.
 | 1.4 Build CAR file | ⬜ | |
 | 1.5 Add commit block | ⬜ | |
 | 1.6 Test verification | ⬜ | |
-| 3.1 Database query | ⬜ | |
-| 3.2 XRPC handler | ⬜ | |
-| 3.3 Test search | ⬜ | |
+| 3.1 Database query | ✅ | searchActorsTypeahead in ActorService |
+| 3.2 XRPC handler | ✅ | app.bsky.actor.searchActorsTypeahead registered |
+| 3.3 Test search | ⬜ | Need to test with pdsls |
