@@ -254,6 +254,7 @@
            [request.path isEqualToString:@"/"] ||
            [request.path hasPrefix:@"/css/"] ||
            [request.path hasPrefix:@"/js/"] ||
+           [request.path hasPrefix:@"/vendor/"] ||
            [request.path hasPrefix:@"/api/"];
 }
 
@@ -272,6 +273,10 @@
     // Handle JS - both /js/ and /explore/js/
     else if ([path hasPrefix:@"/js/"] || [path hasPrefix:@"/explore/js/"]) {
         [self serveJs:request response:response];
+    }
+    // Handle vendor files (Swagger UI, etc.)
+    else if ([path hasPrefix:@"/vendor/"] || [path hasPrefix:@"/explore/vendor/"]) {
+        [self serveVendor:request response:response];
     }
     // Handle API - both /api/ and /explore/api/
     else if ([path hasPrefix:@"/api/"] || [path hasPrefix:@"/explore/api/"]) {
@@ -355,6 +360,54 @@
     response.contentType = @"application/javascript; charset=utf-8";
     response.keepAlive = NO;
     [response setBodyData:[js dataUsingEncoding:NSUTF8StringEncoding]];
+}
+
+- (void)serveVendor:(HttpRequest *)request response:(HttpResponse *)response {
+    // Handle paths like /vendor/swagger-ui/swagger-ui.css
+    NSString *path = request.path;
+    
+    // Strip /vendor/ or /explore/vendor/ prefix
+    NSString *relativePath;
+    if ([path hasPrefix:@"/explore/vendor/"]) {
+        relativePath = [path substringFromIndex:[@"/explore/vendor/" length]];
+    } else if ([path hasPrefix:@"/vendor/"]) {
+        relativePath = [path substringFromIndex:[@"/vendor/" length]];
+    } else {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Invalid vendor path", @"path": path}];
+        return;
+    }
+    
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *vendorPath = [[cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/vendor"] stringByAppendingPathComponent:relativePath];
+    
+    // Read file as binary data (for both JS and CSS)
+    NSError *error = nil;
+    NSData *data = [NSData dataWithContentsOfFile:vendorPath options:0 error:&error];
+    
+    if (error || !data) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Vendor file not found", @"path": path}];
+        return;
+    }
+    
+    // Determine content type based on file extension
+    NSString *extension = [path pathExtension].lowercaseString;
+    NSString *contentType;
+    if ([extension isEqualToString:@"js"]) {
+        contentType = @"application/javascript; charset=utf-8";
+    } else if ([extension isEqualToString:@"css"]) {
+        contentType = @"text/css; charset=utf-8";
+    } else if ([extension isEqualToString:@"json"]) {
+        contentType = @"application/json; charset=utf-8";
+    } else {
+        contentType = @"application/octet-stream";
+    }
+    
+    response.statusCode = 200;
+    response.contentType = contentType;
+    response.keepAlive = NO;
+    [response setBodyData:data];
 }
 
 #pragma mark - API Endpoints
@@ -1078,8 +1131,8 @@
 }
 
 - (NSString *)fetchPlcLog:(NSString *)did {
-    // Correct URL format: <server>/<did>/log
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@/log", self.plcServerURL, did]];
+    // Use audit endpoint for full info including CID and timestamp
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@/log/audit", self.plcServerURL, did]];
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
     req.HTTPMethod = @"GET";
     req.timeoutInterval = 10.0; // 10 second timeout

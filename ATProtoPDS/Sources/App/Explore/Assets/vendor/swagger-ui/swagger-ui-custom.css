@@ -1,0 +1,820 @@
+/**
+ * ATProto PDS - Swagger UI Custom Theme
+ * Classic Apple Developer Documentation Style (2005-2007 era)
+ *
+ * This stylesheet transforms Swagger UI to match the app's retro Apple theme.
+ */
+
+/* ======================================
+   CSS Custom Properties (Theme Variables)
+   ====================================== */
+:root {
+    /* Color Palette */
+    --apple-header-bg-start: #dcdcdc;
+    --apple-header-bg-end: #c0c0c0;
+    --apple-sidebar-bg-start: #e8e8e8;
+    --apple-sidebar-bg-end: #d4d4d4;
+    --apple-section-header-start: #7ca7d8;
+    --apple-section-header-end: #5b8bc0;
+    --apple-selection-bg: #3d80df;
+    --apple-selection-text: #ffffff;
+    
+    --apple-link-color: #0066cc;
+    --apple-link-hover: #0033cc;
+    --apple-text-primary: #333333;
+    --apple-text-secondary: #666666;
+    
+    --apple-border-light: #cccccc;
+    --apple-border-dark: #999999;
+    --apple-bg-white: #ffffff;
+    --apple-bg-light: #f5f5f5;
+    --apple-bg-code: #f4f4f4;
+    
+    /* HTTP Method Colors - Apple-inspired */
+    --method-get: #5b8bc0;
+    --method-get-bg: #e8f0f8;
+    --method-post: #68b368;
+    --method-post-bg: #e8f8e8;
+    --method-put: #e8a849;
+    --method-put-bg: #f8f0e0;
+    --method-delete: #c95050;
+    --method-delete-bg: #f8e8e8;
+    --method-patch: #8b72c9;
+    --method-patch-bg: #f0e8f8;
+    --method-options: #666666;
+    --method-options-bg: #f0f0f0;
+    
+    /* Typography */
+    --font-family: 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    --font-mono: Monaco, Menlo, Consolas, monospace;
+    --font-size-base: 13px;
+    --font-size-heading: 18px;
+    --font-size-small: 11px;
+    
+    /* Shadows & Effects */
+    --shadow-light: 0 1px 2px rgba(0,0,0,0.1);
+    --shadow-medium: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ======================================
+   Global Overrides
+   ====================================== */
+.swagger-ui {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui * {
+    font-family: var(--font-family);
+}
+
+/* ======================================
+   Hide Default Topbar
+   ====================================== */
+.swagger-ui .topbar {
+    display: none !important;
+}
+
+/* ======================================
+   Info Section - Apple Blue Header Style
+   ====================================== */
+.swagger-ui .info {
+    margin: 0 0 20px 0;
+}
+
+.swagger-ui .info .title {
+    font-size: var(--font-size-heading);
+    font-weight: bold;
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui .info .title small {
+    background: var(--apple-section-header-end);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: var(--font-size-small);
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.swagger-ui .info .title small.version-stamp {
+    background: var(--apple-selection-bg);
+}
+
+.swagger-ui .info .description p {
+    color: var(--apple-text-secondary);
+    line-height: 1.6;
+}
+
+.swagger-ui .info a {
+    color: var(--apple-link-color);
+    text-decoration: none;
+}
+
+.swagger-ui .info a:hover {
+    color: var(--apple-link-hover);
+    text-decoration: underline;
+}
+
+/* ======================================
+   Tag Groups (API Sections)
+   ====================================== */
+.swagger-ui .opblock-tag-section {
+    margin-bottom: 15px;
+}
+
+.swagger-ui .opblock-tag {
+    background: linear-gradient(to bottom, var(--apple-section-header-start), var(--apple-section-header-end));
+    color: var(--apple-selection-text) !important;
+    border: 1px solid var(--apple-section-header-end);
+    border-radius: 4px 4px 0 0;
+    padding: 8px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-light);
+}
+
+.swagger-ui .opblock-tag:hover {
+    background: linear-gradient(to bottom, #8cb7e4, #6b9bce);
+}
+
+.swagger-ui .opblock-tag small {
+    color: rgba(255,255,255,0.8);
+    font-size: var(--font-size-small);
+}
+
+.swagger-ui .opblock-tag svg {
+    fill: white;
+}
+
+/* ======================================
+   Operation Blocks
+   ====================================== */
+.swagger-ui .opblock {
+    border: 1px solid var(--apple-border-light);
+    border-radius: 0 0 4px 4px;
+    margin: 0 0 10px 0;
+    box-shadow: var(--shadow-light);
+    background: var(--apple-bg-white);
+}
+
+.swagger-ui .opblock .opblock-summary {
+    border-bottom: 1px solid var(--apple-border-light);
+    padding: 8px 15px;
+}
+
+.swagger-ui .opblock .opblock-summary:hover {
+    background: var(--apple-bg-light);
+}
+
+/* HTTP Method Badges */
+.swagger-ui .opblock-summary-method {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 3px;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* GET */
+.swagger-ui .opblock.opblock-get {
+    border-color: var(--method-get);
+    background: var(--method-get-bg);
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary-method {
+    background: var(--method-get);
+    color: white;
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary {
+    border-color: var(--method-get);
+}
+
+/* POST */
+.swagger-ui .opblock.opblock-post {
+    border-color: var(--method-post);
+    background: var(--method-post-bg);
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary-method {
+    background: var(--method-post);
+    color: white;
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary {
+    border-color: var(--method-post);
+}
+
+/* PUT */
+.swagger-ui .opblock.opblock-put {
+    border-color: var(--method-put);
+    background: var(--method-put-bg);
+}
+
+.swagger-ui .opblock.opblock-put .opblock-summary-method {
+    background: var(--method-put);
+    color: white;
+}
+
+.swagger-ui .opblock.opblock-put .opblock-summary {
+    border-color: var(--method-put);
+}
+
+/* DELETE */
+.swagger-ui .opblock.opblock-delete {
+    border-color: var(--method-delete);
+    background: var(--method-delete-bg);
+}
+
+.swagger-ui .opblock.opblock-delete .opblock-summary-method {
+    background: var(--method-delete);
+    color: white;
+}
+
+.swagger-ui .opblock.opblock-delete .opblock-summary {
+    border-color: var(--method-delete);
+}
+
+/* PATCH */
+.swagger-ui .opblock.opblock-patch {
+    border-color: var(--method-patch);
+    background: var(--method-patch-bg);
+}
+
+.swagger-ui .opblock.opblock-patch .opblock-summary-method {
+    background: var(--method-patch);
+    color: white;
+}
+
+.swagger-ui .opblock.opblock-patch .opblock-summary {
+    border-color: var(--method-patch);
+}
+
+/* OPTIONS */
+.swagger-ui .opblock.opblock-options {
+    border-color: var(--method-options);
+    background: var(--method-options-bg);
+}
+
+.swagger-ui .opblock.opblock-options .opblock-summary-method {
+    background: var(--method-options);
+    color: white;
+}
+
+/* Operation Path */
+.swagger-ui .opblock-summary-path {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui .opblock-summary-path__deprecated {
+    text-decoration: line-through;
+    color: var(--apple-text-secondary);
+}
+
+/* Operation Description */
+.swagger-ui .opblock-summary-description {
+    font-size: var(--font-size-base);
+    color: var(--apple-text-secondary);
+}
+
+/* ======================================
+   Expanded Operation Body
+   ====================================== */
+.swagger-ui .opblock-body {
+    background: var(--apple-bg-white);
+}
+
+.swagger-ui .opblock-body pre {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--apple-bg-code);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 3px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.swagger-ui .opblock-section-header {
+    background: linear-gradient(to bottom, #f8f8f8, #eee);
+    border-bottom: 1px solid var(--apple-border-light);
+    padding: 8px 15px;
+}
+
+.swagger-ui .opblock-section-header h4 {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--apple-text-primary);
+}
+
+/* ======================================
+   Parameters Table
+   ====================================== */
+.swagger-ui table.parameters {
+    border: 1px solid var(--apple-border-light);
+    border-collapse: collapse;
+}
+
+.swagger-ui table.parameters thead tr {
+    background: var(--apple-sidebar-bg-start);
+}
+
+.swagger-ui table.parameters thead tr th {
+    color: var(--apple-text-primary);
+    font-weight: bold;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--apple-border-light);
+    text-align: left;
+}
+
+.swagger-ui table.parameters tbody tr {
+    background: var(--apple-bg-white);
+}
+
+.swagger-ui table.parameters tbody tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.swagger-ui table.parameters tbody tr td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+.swagger-ui .parameter__name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui .parameter__name.required {
+    font-weight: bold;
+}
+
+.swagger-ui .parameter__name.required::after {
+    content: " *";
+    color: var(--method-delete);
+}
+
+.swagger-ui .parameter__type {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--apple-section-header-end);
+}
+
+.swagger-ui .parameter__in {
+    font-size: var(--font-size-small);
+    color: var(--apple-text-secondary);
+    font-style: italic;
+}
+
+/* ======================================
+   Buttons - Apple Aqua Style
+   ====================================== */
+.swagger-ui .btn {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    border-radius: 3px;
+    padding: 5px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* Primary Button (Try it out, Execute) */
+.swagger-ui .btn.execute {
+    background: linear-gradient(to bottom, #6face4, #4889c8);
+    color: white;
+    border: 1px solid #3c7fb7;
+    font-weight: bold;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.swagger-ui .btn.execute:hover {
+    background: linear-gradient(to bottom, #7fbef0, #5899d8);
+}
+
+.swagger-ui .btn.execute:active {
+    background: #3c7fb7;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Try it out button */
+.swagger-ui .try-out__btn {
+    background: linear-gradient(to bottom, #fff, #f0f0f0);
+    border: 1px solid var(--apple-border-light);
+    color: var(--apple-text-primary);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+}
+
+.swagger-ui .try-out__btn:hover {
+    background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+}
+
+.swagger-ui .try-out__btn.cancel {
+    background: linear-gradient(to bottom, #f0e0e0, #e0d0d0);
+    border-color: #c0a0a0;
+    color: var(--method-delete);
+}
+
+/* Secondary Buttons */
+.swagger-ui .btn-group .btn {
+    background: linear-gradient(to bottom, #fff, #f0f0f0);
+    border: 1px solid var(--apple-border-light);
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui .btn-group .btn:hover {
+    background: linear-gradient(to bottom, #f5f5f5, #e5e5e5);
+}
+
+/* ======================================
+   Response Section
+   ====================================== */
+.swagger-ui .responses-wrapper {
+    padding: 15px;
+}
+
+.swagger-ui .responses-inner {
+    background: var(--apple-bg-light);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.swagger-ui .response {
+    margin-bottom: 10px;
+}
+
+.swagger-ui .response-col_status {
+    font-family: var(--font-mono);
+    font-weight: bold;
+}
+
+.swagger-ui .response-col_status .response-undocumented {
+    color: var(--apple-text-secondary);
+    font-style: italic;
+}
+
+/* Response Codes */
+.swagger-ui .responses-table .response-col_status {
+    font-size: 14px;
+}
+
+.swagger-ui .responses-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Code blocks in responses */
+.swagger-ui .response-col_description pre {
+    background: var(--apple-bg-code);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 3px;
+    padding: 10px;
+    overflow-x: auto;
+}
+
+/* ======================================
+   Models Section
+   ====================================== */
+.swagger-ui section.models {
+    border: 1px solid var(--apple-border-light);
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.swagger-ui section.models h4 {
+    background: linear-gradient(to bottom, var(--apple-section-header-start), var(--apple-section-header-end));
+    color: white;
+    padding: 8px 15px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    border-radius: 4px 4px 0 0;
+}
+
+.swagger-ui section.models h4 svg {
+    fill: white;
+}
+
+.swagger-ui section.models .model-container {
+    padding: 10px 15px;
+    background: var(--apple-bg-white);
+}
+
+.swagger-ui .model-box {
+    background: var(--apple-bg-light);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 3px;
+    padding: 10px;
+}
+
+.swagger-ui .model {
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.swagger-ui .model .property {
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui .model .property.primitive {
+    color: var(--apple-section-header-end);
+}
+
+.swagger-ui .model-title {
+    font-weight: bold;
+    color: var(--apple-text-primary);
+}
+
+/* ======================================
+   Form Inputs
+   ====================================== */
+.swagger-ui input[type="text"],
+.swagger-ui input[type="password"],
+.swagger-ui input[type="search"],
+.swagger-ui input[type="email"],
+.swagger-ui input[type="file"],
+.swagger-ui textarea,
+.swagger-ui select {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 3px;
+    padding: 5px 10px;
+    background: var(--apple-bg-white);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.swagger-ui input:focus,
+.swagger-ui textarea:focus,
+.swagger-ui select:focus {
+    outline: none;
+    border-color: #6699cc;
+    box-shadow: 0 0 0 2px rgba(102,153,204,0.3);
+}
+
+.swagger-ui textarea {
+    font-family: var(--font-mono);
+}
+
+/* ======================================
+   Server Selector
+   ====================================== */
+.swagger-ui .servers > label {
+    font-weight: bold;
+    color: var(--apple-text-primary);
+}
+
+.swagger-ui .servers > label select {
+    margin-left: 10px;
+    min-width: 300px;
+}
+
+/* ======================================
+   Filter Input
+   ====================================== */
+.swagger-ui .filter-container {
+    margin: 15px 0;
+}
+
+.swagger-ui .filter-container input {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* ======================================
+   Authorization
+   ====================================== */
+.swagger-ui .auth-wrapper {
+    margin: 15px 0;
+}
+
+.swagger-ui .authorization__btn {
+    background: linear-gradient(to bottom, #fff, #f0f0f0);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 3px;
+    padding: 5px 15px;
+    cursor: pointer;
+}
+
+.swagger-ui .authorization__btn:hover {
+    background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+}
+
+.swagger-ui .authorization__btn.locked {
+    background: linear-gradient(to bottom, #e8f0e8, #d8e8d8);
+    border-color: #a0c0a0;
+}
+
+.swagger-ui .authorization__btn svg {
+    fill: var(--apple-text-secondary);
+}
+
+/* ======================================
+   Loading Indicator
+   ====================================== */
+.swagger-ui .loading-container {
+    padding: 40px;
+    text-align: center;
+}
+
+.swagger-ui .loading-container .loading {
+    color: var(--apple-text-secondary);
+}
+
+/* ======================================
+   Errors & Warnings
+   ====================================== */
+.swagger-ui .errors-wrapper {
+    background: #fff0f0;
+    border: 1px solid #ffcccc;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.swagger-ui .errors-wrapper .errors h4 {
+    color: var(--method-delete);
+    margin: 0 0 10px 0;
+}
+
+.swagger-ui .errors-wrapper .errors .message {
+    color: var(--apple-text-primary);
+}
+
+/* ======================================
+   Markdown Content
+   ====================================== */
+.swagger-ui .markdown p {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.swagger-ui .markdown code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--apple-bg-code);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
+.swagger-ui .markdown pre code {
+    display: block;
+    padding: 10px;
+    overflow-x: auto;
+}
+
+.swagger-ui .markdown a {
+    color: var(--apple-link-color);
+}
+
+.swagger-ui .markdown a:hover {
+    text-decoration: underline;
+}
+
+/* ======================================
+   Copy to Clipboard Button
+   ====================================== */
+.swagger-ui .copy-to-clipboard {
+    background: linear-gradient(to bottom, #fff, #f0f0f0);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.swagger-ui .copy-to-clipboard:hover {
+    background: linear-gradient(to bottom, #f5f5f5, #e5e5e5);
+}
+
+.swagger-ui .copy-to-clipboard:active {
+    background: #e0e0e0;
+}
+
+/* ======================================
+   Curl Command Box
+   ====================================== */
+.swagger-ui .curl-command {
+    background: var(--apple-bg-code);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.swagger-ui .curl-command pre {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ======================================
+   Response Body
+   ====================================== */
+.swagger-ui .highlight-code {
+    background: var(--apple-bg-code);
+    border: 1px solid var(--apple-border-light);
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.swagger-ui .highlight-code pre {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+/* ======================================
+   Tab Navigation
+   ====================================== */
+.swagger-ui .tab {
+    border-bottom: 1px solid var(--apple-border-light);
+    margin-bottom: 15px;
+}
+
+.swagger-ui .tab li {
+    padding: 8px 15px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-right: 5px;
+    background: var(--apple-bg-light);
+}
+
+.swagger-ui .tab li:hover {
+    background: var(--apple-bg-white);
+}
+
+.swagger-ui .tab li.active {
+    background: var(--apple-bg-white);
+    border-color: var(--apple-border-light);
+    border-bottom: 1px solid var(--apple-bg-white);
+    margin-bottom: -1px;
+}
+
+/* ======================================
+   Schema/Type Display
+   ====================================== */
+.swagger-ui .model-toggle::after {
+    content: "▶";
+    font-size: 10px;
+    margin-left: 5px;
+    transition: transform 0.2s;
+}
+
+.swagger-ui .model-toggle.model-toggle--expanded::after {
+    transform: rotate(90deg);
+}
+
+/* ======================================
+   Scrollbar Styling (WebKit)
+   ====================================== */
+.swagger-ui ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.swagger-ui ::-webkit-scrollbar-track {
+    background: var(--apple-bg-light);
+    border-radius: 6px;
+}
+
+.swagger-ui ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to right, #c0c0c0, #a0a0a0);
+    border-radius: 6px;
+    border: 2px solid var(--apple-bg-light);
+}
+
+.swagger-ui ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to right, #b0b0b0, #909090);
+}
+
+/* ======================================
+   Print Styles
+   ====================================== */
+@media print {
+    .swagger-ui .topbar,
+    .swagger-ui .try-out,
+    .swagger-ui .btn.execute,
+    .swagger-ui .servers,
+    .swagger-ui .auth-wrapper {
+        display: none !important;
+    }
+    
+    .swagger-ui .opblock {
+        break-inside: avoid;
+    }
+}
