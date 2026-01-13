@@ -1,5 +1,8 @@
 #import "PDSController.h"
 #import "Database/PDSDatabase.h"
+#ifdef GNUSTEP
+#import "Compat/NSFileManagerCompat.h"
+#endif
 #import "Identity/ATProtoHandleValidator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -78,9 +81,16 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 }
 
 + (NSString *)defaultDataDirectory {
-    NSURL *appSupport = [[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory 
-                                                               inDomains:NSUserDomainMask].firstObject;
+#if defined(__APPLE__)
+    NSArray *urls = [[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory 
+                                                               inDomains:NSUserDomainMask];
+    NSURL *appSupport = [urls count] > 0 ? urls[0] : nil;
     return [[appSupport URLByAppendingPathComponent:@"ATProtoPDS"] path];
+#else
+    // Linux: use ~/.local/share/ATProtoPDS
+    NSString *home = NSHomeDirectory();
+    return [home stringByAppendingPathComponent:@".local/share/ATProtoPDS"];
+#endif
 }
 
 - (NSArray<NSString *> *)lexiconSearchPathsForDirectory:(NSString *)dataDirectory {
@@ -229,7 +239,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     [XrpcMethodRegistry registerMethodsWithDispatcher:_xrpcDispatcher controller:self];
     
-    __weak typeof(self) weakSelf = self;
+    __unsafe_unretained typeof(self) weakSelf = self;
     [_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         PDSController *strongSelf = weakSelf;
         if (strongSelf) {

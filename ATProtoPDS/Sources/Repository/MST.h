@@ -153,6 +153,26 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
  */
 + (uint32_t)keyDepth:(NSString *)key;
 
+/*!
+ @method getProofNodesForKey:
+ 
+ @abstract Gets the proof nodes from root to the given key.
+ 
+ @param key The key to get proof nodes for.
+ @return Array of MSTNode objects forming the proof path.
+ */
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+
+/*!
+ @method serializeNode:
+ 
+ @abstract Serializes an MST node to CBOR data.
+ 
+ @param node The node to serialize.
+ @return CBOR-encoded data for the node.
+ */
+- (nullable NSData *)serializeNode:(MSTNode *)node;
+
 @end
 
 NS_ASSUME_NONNULL_END
