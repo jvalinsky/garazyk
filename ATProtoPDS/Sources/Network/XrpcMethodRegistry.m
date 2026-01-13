@@ -1,4 +1,5 @@
 #import "Network/XrpcMethodRegistry.h"
+#import "Database/PDSDatabase.h"
 #import "Blob/BlobStorage.h"
 #import "Core/DID.h"
 #import "Identity/HandleResolver.h"
@@ -20,12 +21,12 @@
         NSDictionary *result = @{
             @"inviteCodeRequired": @NO,
             @"phoneVerificationRequired": @NO,
-            @"availableUserDomains": @[@"test.pds"],
+            @"availableUserDomains": @[@"september.shelley.exe.xyz"],
             @"links": @{
                 @"privacyPolicy": @"https://bsky.social/about/blog/privacy-policy",
                 @"termsOfService": @"https://bsky.social/about/blog/terms-of-service"
             },
-            @"did": @"did:web:test.pds" // Server DID
+            @"did": @"did:web:september.shelley.exe.xyz" // Server DID
         };
         
         response.statusCode = HttpStatusOK;
@@ -1043,6 +1044,49 @@
     }
 
     return did;
+}
+
++ (void)registerSyncMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                               controller:(PDSController *)controller {
+    // com.atproto.sync.listRepos - List all repos hosted by this PDS
+    [dispatcher registerMethod:@"com.atproto.sync.listRepos" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSError *error = nil;
+        NSArray *accounts = [controller getAllAccountsWithError:&error];
+        
+        NSMutableArray *repos = [NSMutableArray array];
+        for (PDSDatabaseAccount *account in accounts) {
+            [repos addObject:@{
+                @"did": account.did ?: @"",
+                @"head": @"bafyreihffx5a4n3janpjywqcl2snsuddool676y3v6x3nknwycaa5kzjmm",
+                @"rev": @"223mcbqznhk2l",
+                @"active": @YES
+            }];
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"repos": repos}];
+    }];
+    
+    // com.atproto.sync.getRepo - Get a repo as CAR file
+    [dispatcher registerMethod:@"com.atproto.sync.getRepo" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 501;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"getRepo not yet implemented"}];
+    }];
+    
+    // com.atproto.sync.getLatestCommit
+    [dispatcher registerMethod:@"com.atproto.sync.getLatestCommit" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = request.queryParams[@"did"];
+        if (!did) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"cid": @"bafyreihffx5a4n3janpjywqcl2snsuddool676y3v6x3nknwycaa5kzjmm",
+            @"rev": @"223mcbqznhk2l"
+        }];
+    }];
 }
 
 @end

@@ -184,7 +184,7 @@
         [args addObject:@(limit)];
     }
 
-    BOOL success = [self.database executeParameterizedQuery:query params:args error:error];
+    BOOL success = [self.database executeParameterizedUpdate:query params:args error:error];
 
     if (!success && error) {
         *error = [NSError errorWithDomain:@"NotificationService" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Failed to mark notifications as read"}];
