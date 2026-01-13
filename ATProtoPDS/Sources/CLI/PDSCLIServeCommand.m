@@ -143,8 +143,7 @@
     // Configure XRPC dispatcher
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
     [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
-    [XrpcMethodRegistry registerSyncMethodsWithDispatcher:dispatcher controller:controller];
-    
+
     [httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
         [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];

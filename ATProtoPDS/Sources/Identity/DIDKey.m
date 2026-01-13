@@ -1,8 +1,7 @@
 #import "DIDKey.h"
+#import "Identity/DIDKeyEncoder.h"
 #import "Auth/Secp256k1.h"
 #import <CommonCrypto/CommonDigest.h>
-
-NSErrorDomain const DIDKeyErrorDomain = @"com.atproto.didkey";
 
 static const uint8_t kMulticodecSecp256k1PublicKey = 0xe7;
 static const uint8_t kMulticodecSecp256k1PrivateKey = 0x02;
