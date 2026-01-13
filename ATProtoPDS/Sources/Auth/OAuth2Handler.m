@@ -176,7 +176,10 @@
     NSString *redirectURI = params[@"redirect_uri"];
     NSError *redirectError = nil;
     if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
-        fprintf(stderr, "DEBUG: validateRedirectURI failed: %s\n", [[redirectError localizedDescription] UTF8String]);
+        fprintf(stderr, "DEBUG: validateRedirectURI failed. Got: '%s'. Allowed: %s. Error: %s\n", 
+                [redirectURI UTF8String], 
+                [[client[@"redirect_uris"] description] UTF8String],
+                [[redirectError localizedDescription] UTF8String]);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
