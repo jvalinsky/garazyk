@@ -162,7 +162,7 @@
     if (cached) return cached;
     
     NSData *cbor = [self serializeToCBOR:cache];
-    CID *cid = [CID cidWithMultihash:[CID sha256Digest:cbor] codec:0x71];
+    CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
     [cache setObject:cid forKey:self];
     return cid;
 }
@@ -315,6 +315,10 @@
     return [self.root getCID:[NSMapTable strongToStrongObjectsMapTable]];
 }
 
++ (NSUInteger)keyDepthString:(NSString *)key {
+    return (NSUInteger)[self keyDepth:key];
+}
+
 + (uint32_t)keyDepth:(NSString *)key {
     const char *utf8 = [key UTF8String];
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
@@ -343,11 +347,11 @@
     return zeroCount;
 }
 
-+ (uint32_t)keyDepthBytes:(NSData *)keyBytes {
++ (NSUInteger)keyDepthBytes:(NSData *)keyBytes {
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(keyBytes.bytes, (CC_LONG)keyBytes.length, hash);
 
-    uint32_t zeroCount = 0;
+    NSUInteger zeroCount = 0;
     for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
         uint8_t byte = hash[i];
         if (byte == 0) {

@@ -14,7 +14,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
-@property (nonatomic, assign) dispatch_queue_t transactionQueue;
+@property (nonatomic, strong) dispatch_queue_t transactionQueue;
 @property (nonatomic, assign) SecKeyRef signingKey;
 
 @end
@@ -199,9 +199,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         char *errMsg = NULL;
         int result = sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
-            if (error) {
-                *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
-            }
+            localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
             sqlite3_free(errMsg);
             return;
         }
