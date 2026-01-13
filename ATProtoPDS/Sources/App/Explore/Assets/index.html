@@ -53,6 +53,12 @@
                             </div>
                         </li>
                         <li class="nav-item">
+                            <div class="nav-row" id="nav-blob-detail" data-section="blob-detail" style="display:none">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Blob Detail</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
                             <div class="nav-row" id="nav-records" data-section="records" style="display:none">
                                 <span class="disclosure"></span>
                                 <span class="nav-label">Records</span>
@@ -151,6 +157,19 @@
                 </div>
                 <div id="blobs-content">
                     <p class="placeholder">Select a DID to view its blobs.</p>
+                </div>
+            </section>
+
+            <!-- Blob Detail Section -->
+            <section id="blob-detail" class="doc-section">
+                <div class="section-header">
+                    <h1>Blob Detail</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-blobs" class="btn-secondary">← Back to Blobs</button>
+                </div>
+                <div id="blob-detail-content">
+                    <p class="placeholder">Loading blob...</p>
                 </div>
             </section>
 

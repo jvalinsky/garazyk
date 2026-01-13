@@ -127,6 +127,7 @@ export function renderDidSummary(doc) {
         <ul class="see-also-links">
             <li><a href="#" onclick="document.getElementById('nav-plc-ops').click(); return false;">PLC Operations</a></li>
             <li><a href="#" onclick="document.getElementById('nav-collections').click(); return false;">Collections</a></li>
+            <li><a href="#" onclick="document.getElementById('nav-blobs').click(); return false;">Blobs</a></li>
             <li><a href="https://atproto.com/specs/did" target="_blank">ATProto DID Specification</a></li>
         </ul>
     `;
