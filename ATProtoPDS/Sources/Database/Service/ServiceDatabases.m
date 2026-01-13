@@ -1,5 +1,8 @@
 #import "ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#ifdef GNUSTEP
+#import "Compat/NSFileManagerCompat.h"
+#endif
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Schema/PDSSchemaManager.h"
@@ -24,9 +27,13 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     static PDSServiceDatabases *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
+#if defined(__APPLE__)
         NSString *dir = [[[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory 
                                                                  inDomains:NSUserDomainMask].firstObject 
                     path];
+#else
+        NSString *dir = [NSHomeDirectory() stringByAppendingPathComponent:@".local/share"];
+#endif
         NSString *pdsDir = [dir stringByAppendingPathComponent:@"ATProtoPDS"];
         shared = [[PDSServiceDatabases alloc] initWithDirectory:pdsDir 
                                                     serviceMaxSize:100
