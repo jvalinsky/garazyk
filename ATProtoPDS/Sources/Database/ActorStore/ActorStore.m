@@ -423,7 +423,9 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_double(stmt, 8, account.createdAt);
     sqlite3_bind_double(stmt, 9, account.updatedAt);
     
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
+    int stepResult = sqlite3_step(stmt);
+    BOOL success = (stepResult == SQLITE_DONE);
+    NSLog(@"[ActorStore] createAccount: sqlite3_step result=%d, success=%d, did=%@", stepResult, success, account.did);
     [self finalizeStatement:stmt];
 
     if (!success) {

@@ -105,7 +105,7 @@
     // Add connection timeout (30 seconds of inactivity)
     _timeoutSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _queue);
     dispatch_source_set_timer(_timeoutSource,
-        dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+        dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC),
         DISPATCH_TIME_FOREVER,
         1 * NSEC_PER_SEC);
     dispatch_source_set_event_handler(_timeoutSource, ^{
@@ -121,7 +121,7 @@
 - (void)resetTimeout {
     if (_timeoutSource && !_cancelled) {
         dispatch_source_set_timer(_timeoutSource,
-            dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+            dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC),
             DISPATCH_TIME_FOREVER,
             1 * NSEC_PER_SEC);
     }

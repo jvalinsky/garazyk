@@ -105,10 +105,13 @@
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
 
     NSError *createError = nil;
+    NSLog(@"[PDSAccountService] Saving account to database: did=%@, handle=%@", account.did, account.handle);
     if (![_serviceDatabases createAccount:account error:&createError]) {
+        NSLog(@"[PDSAccountService] Failed to create account: %@", createError.localizedDescription);
         if (error) *error = createError;
         return nil;
     }
+    NSLog(@"[PDSAccountService] Account saved successfully");
 
     // Generate tokens
     NSString *accessToken = nil;
