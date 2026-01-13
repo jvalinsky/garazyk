@@ -153,8 +153,6 @@
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response {
-    fprintf(stderr, "DEBUG: handleAuthorizeRequest entered for path %s\n", [request.path UTF8String]);
-    
     // Use request.queryParams if available, otherwise parse manually
     NSMutableDictionary *params = [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
 
@@ -163,7 +161,6 @@
     NSError *clientError = nil;
     NSDictionary *client = [self validateClient:clientID error:&clientError];
     if (!client) {
-        fprintf(stderr, "DEBUG: validateClient failed: %s\n", [[clientError localizedDescription] UTF8String]);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"unauthorized_client",
@@ -176,10 +173,6 @@
     NSString *redirectURI = params[@"redirect_uri"];
     NSError *redirectError = nil;
     if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
-        fprintf(stderr, "DEBUG: validateRedirectURI failed. Got: '%s'. Allowed: %s. Error: %s\n", 
-                [redirectURI UTF8String], 
-                [[client[@"redirect_uris"] description] UTF8String],
-                [[redirectError localizedDescription] UTF8String]);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -191,7 +184,6 @@
     // Validate state parameter (CSRF protection)
     NSString *state = params[@"state"];
     if (!state || [state stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]].length == 0) {
-        fprintf(stderr, "DEBUG: State validation failed\n");
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -216,13 +208,7 @@
     __block NSString *resultCode = nil;
     __block NSError *resultError = nil;
     
-    fprintf(stderr, "DEBUG: [OAuth2Handler] Starting async wait for auth\n");
-
     [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
-        fprintf(stderr, "DEBUG: [OAuth2Handler] Completion block called. URL: %s, Code: %s, Error: %s\n", 
-                [authorizationURL.absoluteString UTF8String], 
-                [authorizationCode UTF8String], 
-                [error.localizedDescription UTF8String]);
         resultURL = authorizationURL;
         resultCode = authorizationCode;
         resultError = error;
@@ -233,7 +219,6 @@
     long waitResult = dispatch_semaphore_wait(sem, timeout);
 
     if (waitResult != 0) {
-        fprintf(stderr, "DEBUG: [OAuth2Handler] Semaphore timed out!\n");
         response.statusCode = 500;
         [response setJsonBody:@{
             @"error": @"server_error",
@@ -241,7 +226,6 @@
         }];
         return;
     }
-    fprintf(stderr, "DEBUG: [OAuth2Handler] Semaphore signaled. resultURL: %s\n", [resultURL.absoluteString UTF8String]);
 
     if (resultError) {
         response.statusCode = 400;
@@ -350,12 +334,7 @@
     __block Session *resultSession = nil;
     __block NSError *resultError = nil;
 
-    fprintf(stderr, "DEBUG: [OAuth2Handler] Starting async wait for token\n");
-
     [self.oauthServer handleTokenRequest:tokenRequest completion:^(Session * _Nullable session, NSError * _Nullable error) {
-        fprintf(stderr, "DEBUG: [OAuth2Handler] Token completion. Session: %s, Error: %s\n", 
-                [[session description] UTF8String], 
-                [error.localizedDescription UTF8String]);
         resultSession = session;
         resultError = error;
         dispatch_semaphore_signal(sem);
@@ -365,7 +344,6 @@
     long waitResult = dispatch_semaphore_wait(sem, timeout);
 
     if (waitResult != 0) {
-        fprintf(stderr, "DEBUG: [OAuth2Handler] Token semaphore timed out!\n");
         response.statusCode = 500;
         [response setJsonBody:@{
             @"error": @"server_error",
@@ -373,7 +351,6 @@
         }];
         return;
     }
-    fprintf(stderr, "DEBUG: [OAuth2Handler] Token semaphore signaled\n");
 
     if (resultError) {
         response.statusCode = 400;
