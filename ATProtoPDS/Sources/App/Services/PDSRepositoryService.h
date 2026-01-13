@@ -25,6 +25,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error;
 
+/*!
+ @method getRecordWithProof:collection:rkey:error:
+ @abstract Returns a record as CAR bytes with MST proof path.
+ @discussion Builds a CAR file containing the record block and the MST nodes
+             from root to the record, enabling cryptographic verification.
+ @param did The repository DID.
+ @param collection The collection NSID.
+ @param rkey The record key.
+ @param error Error output.
+ @return CAR bytes or nil on error.
+ */
+- (nullable NSData *)getRecordWithProof:(NSString *)did
+                             collection:(NSString *)collection
+                                   rkey:(NSString *)rkey
+                                  error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
