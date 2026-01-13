@@ -30,6 +30,17 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (instancetype)initWithController:(PDSController *)controller;
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error;
 - (void)stop;
+
+/*!
+ @method acceptUpgradedConnection:withPath:
+ @abstract Accepts a WebSocket connection that has already completed the HTTP upgrade.
+ @discussion This method is used when the main HTTP server handles the WebSocket
+             upgrade handshake and hands off the connection to this handler.
+ @param connection The network connection (post-upgrade).
+ @param path The request path including query string.
+ @return YES if the connection was accepted, NO otherwise.
+ */
+- (BOOL)acceptUpgradedConnection:(id)connection withPath:(NSString *)path;
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit 
                           forRepo:(NSString *)repoDid 
                               ops:(NSArray<NSDictionary *> *)ops 

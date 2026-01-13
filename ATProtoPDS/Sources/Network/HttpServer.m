@@ -3,6 +3,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 #import "Network/PDSNetworkTransport.h"
+#import <CommonCrypto/CommonDigest.h>
 
 @class HttpRoute;
 
@@ -26,6 +27,7 @@
 @property (nonatomic, strong) NSMutableDictionary *pathHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, WebSocketUpgradeHandler> *webSocketHandlers;
 
 @end
 
@@ -43,6 +45,7 @@
         _routeHandlers = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
         _activeConnections = [NSMutableSet set];
+        _webSocketHandlers = [NSMutableDictionary dictionary];
         _readySemaphore = dispatch_semaphore_create(0);
         _listenerReady = NO;
         _running = NO;
@@ -266,6 +269,33 @@
         [response setBodyString:@"Invalid request"];
         [self sendResponse:response onConnection:connection];
         return;
+    }
+
+    // Check for WebSocket upgrade request
+    if ([self isWebSocketUpgradeRequest:request]) {
+        WebSocketUpgradeHandler wsHandler = [self webSocketHandlerForPath:request.path];
+        if (wsHandler) {
+            // Remove connection from active set - the handler takes ownership
+            @synchronized (self.activeConnections) {
+                [self.activeConnections removeObject:connection];
+            }
+            
+            // Call the WebSocket handler with the request and connection
+            BOOL handled = wsHandler(request, connection);
+            if (!handled) {
+                // Handler rejected the upgrade, send error response
+                HttpResponse *response = [HttpResponse responseWithStatusCode:400];
+                [response setBodyString:@"WebSocket upgrade rejected"];
+                [self sendResponse:response onConnection:connection];
+            }
+            return;
+        } else {
+            // No WebSocket handler for this path
+            HttpResponse *response = [HttpResponse responseWithStatusCode:404];
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"No WebSocket handler for this path"}];
+            [self sendResponse:response onConnection:connection];
+            return;
+        }
     }
 
     // Dispatch request processing to background queue to avoid blocking network I/O
@@ -497,6 +527,104 @@
 
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler {
     self.pathHandlers[path] = [handler copy];
+}
+
+- (void)setWebSocketUpgradeHandler:(WebSocketUpgradeHandler)handler forPath:(NSString *)path {
+    if (handler) {
+        self.webSocketHandlers[path] = [handler copy];
+    } else {
+        [self.webSocketHandlers removeObjectForKey:path];
+    }
+}
+
+#pragma mark - WebSocket Upgrade Handling
+
+// WebSocket GUID per RFC 6455
+static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
++ (NSString *)createWebSocketAcceptKeyForKey:(NSString *)clientKey {
+    // Concatenate client key with WebSocket GUID
+    NSString *combined = [NSString stringWithFormat:@"%@%@", clientKey, kWebSocketGUID];
+    
+    // SHA-1 hash
+    NSData *data = [combined dataUsingEncoding:NSUTF8StringEncoding];
+    uint8_t digest[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(data.bytes, (CC_LONG)data.length, digest);
+    
+    // Base64 encode
+    NSData *hashData = [NSData dataWithBytes:digest length:CC_SHA1_DIGEST_LENGTH];
+    return [hashData base64EncodedStringWithOptions:0];
+}
+
++ (NSData *)webSocketHandshakeResponseDataForRequest:(HttpRequest *)request {
+    NSString *clientKey = [request headerForKey:@"Sec-WebSocket-Key"];
+    if (!clientKey) {
+        return nil;
+    }
+    
+    NSString *acceptKey = [self createWebSocketAcceptKeyForKey:clientKey];
+    
+    // Build HTTP 101 response
+    NSMutableString *response = [NSMutableString string];
+    [response appendString:@"HTTP/1.1 101 Switching Protocols\r\n"];
+    [response appendString:@"Upgrade: websocket\r\n"];
+    [response appendString:@"Connection: Upgrade\r\n"];
+    [response appendFormat:@"Sec-WebSocket-Accept: %@\r\n", acceptKey];
+    
+    // Include protocol if requested
+    NSString *protocol = [request headerForKey:@"Sec-WebSocket-Protocol"];
+    if (protocol) {
+        // Just echo back the first requested protocol for now
+        NSArray *protocols = [protocol componentsSeparatedByString:@","];
+        if (protocols.count > 0) {
+            NSString *selectedProtocol = [protocols[0] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            [response appendFormat:@"Sec-WebSocket-Protocol: %@\r\n", selectedProtocol];
+        }
+    }
+    
+    [response appendString:@"\r\n"];
+    
+    return [response dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (BOOL)isWebSocketUpgradeRequest:(HttpRequest *)request {
+    // Check for required WebSocket upgrade headers
+    NSString *upgrade = [request headerForKey:@"Upgrade"];
+    NSString *connection = [request headerForKey:@"Connection"];
+    NSString *wsKey = [request headerForKey:@"Sec-WebSocket-Key"];
+    
+    if (!upgrade || !connection || !wsKey) {
+        return NO;
+    }
+    
+    // Case-insensitive check for "websocket" upgrade
+    if ([upgrade caseInsensitiveCompare:@"websocket"] != NSOrderedSame) {
+        return NO;
+    }
+    
+    // Connection header must contain "Upgrade"
+    if ([connection rangeOfString:@"Upgrade" options:NSCaseInsensitiveSearch].location == NSNotFound) {
+        return NO;
+    }
+    
+    return YES;
+}
+
+- (WebSocketUpgradeHandler)webSocketHandlerForPath:(NSString *)path {
+    // Direct match first
+    WebSocketUpgradeHandler handler = self.webSocketHandlers[path];
+    if (handler) {
+        return handler;
+    }
+    
+    // Check for prefix matches (e.g., /xrpc/com.atproto.sync.subscribeRepos?cursor=...)
+    for (NSString *registeredPath in self.webSocketHandlers) {
+        if ([path hasPrefix:registeredPath]) {
+            return self.webSocketHandlers[registeredPath];
+        }
+    }
+    
+    return nil;
 }
 
 @end
