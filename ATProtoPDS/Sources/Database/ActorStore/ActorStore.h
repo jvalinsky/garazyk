@@ -27,6 +27,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 @protocol PDSActorStoreReader <NSObject>
 
 - (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError **)error;
+- (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
 - (nullable PDSDatabaseRepo *)getRepoForDid:(NSString *)did error:(NSError **)error;
 - (nullable NSData *)getRepoRootForDid:(NSString *)did error:(NSError **)error;
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;

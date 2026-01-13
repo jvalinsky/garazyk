@@ -266,10 +266,17 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return @[];
-    NSArray *accounts = [db getAllAccountsWithError:error];
-    [db close];
+    __block NSArray *accounts = nil;
+    __block NSError *localError = nil;
+    
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        accounts = [store getAllAccountsWithError:&localError];
+    } error:&localError];
+    
+    if (localError && error) {
+        *error = localError;
+    }
     return accounts ?: @[];
 }
 
