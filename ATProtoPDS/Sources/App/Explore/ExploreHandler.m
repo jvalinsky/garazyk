@@ -982,24 +982,18 @@
         return;
     }
     
-    // Call the XRPC listBlobs endpoint on the same server
-    // Use port 8000 as default - the explore handler runs on the same server
-    NSString *urlStr = [NSString stringWithFormat:@"http://localhost:8000/xrpc/com.atproto.sync.listBlobs?did=%@", did];
-    NSURL *url = [NSURL URLWithString:urlStr];
-    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
-    req.HTTPMethod = @"GET";
-    req.timeoutInterval = 10.0;
-    
+    // Get blobs directly from controller - returns rich metadata for UI display
+    // This is separate from the XRPC endpoint which returns only CID strings per ATProto spec
     NSError *error = nil;
-    NSHTTPURLResponse *httpResponse = nil;
-    NSData *data = [NSURLConnection sendSynchronousRequest:req returningResponse:&httpResponse error:&error];
+    NSArray *blobs = [self.controller listBlobsForDID:did limit:100 cursor:nil error:&error];
     
-    if (data && httpResponse.statusCode == 200) {
-        NSDictionary *result = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        [response setJsonBody:result ?: @{@"cids": @[]}];
-    } else {
-        [response setJsonBody:@{@"cids": @[], @"error": error.localizedDescription ?: @"Failed to list blobs"}];
+    if (error) {
+        [response setJsonBody:@{@"cids": @[], @"error": error.localizedDescription}];
+        return;
     }
+    
+    // Return rich blob info for the Explore UI (cid, mimeType, size)
+    [response setJsonBody:@{@"cids": blobs ?: @[]}];
 }
 
 - (void)handleApiBlob:(NSDictionary *)params response:(HttpResponse *)response {
