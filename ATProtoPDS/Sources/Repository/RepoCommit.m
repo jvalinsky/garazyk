@@ -49,6 +49,38 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     return [CBOREncoder encode:commitValue];
 }
 
+- (NSData *)serializeSigned {
+    // Create CBOR map for full signed commit (including signature)
+    NSMutableDictionary<CBORValue *, CBORValue *> *commitMap = [NSMutableDictionary dictionary];
+
+    // did (required)
+    commitMap[[CBORValue textString:@"did"]] = [CBORValue textString:self.did];
+
+    // version (required)
+    commitMap[[CBORValue textString:@"version"]] = [CBORValue unsignedInteger:self.version];
+
+    // data (optional)
+    if (self.dataCID) {
+        commitMap[[CBORValue textString:@"data"]] = [CBORValue textString:self.dataCID.stringValue];
+    }
+
+    // rev (required)
+    commitMap[[CBORValue textString:@"rev"]] = [CBORValue textString:self.rev];
+
+    // prev (optional)
+    if (self.prevCID) {
+        commitMap[[CBORValue textString:@"prev"]] = [CBORValue textString:self.prevCID.stringValue];
+    }
+
+    // sig (included if present)
+    if (self.signature) {
+        commitMap[[CBORValue textString:@"sig"]] = [CBORValue byteString:self.signature];
+    }
+
+    CBORValue *commitValue = [CBORValue map:commitMap];
+    return [CBOREncoder encode:commitValue];
+}
+
 - (nullable NSData *)computeHash {
     NSData *serialized = [self serialize];
     return [CID rawSha256:serialized];
