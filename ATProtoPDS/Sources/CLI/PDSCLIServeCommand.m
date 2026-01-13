@@ -7,6 +7,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSController.h"
+#import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuth2Handler.h"
 
@@ -96,6 +97,22 @@
     printf("Starting PDS server on port %ld...\n", (long)port);
     printf("Data directory: %s\n", [context.dataDir UTF8String]);
     printf("Press Ctrl+C to stop.\n");
+
+    // Load PDSConfiguration from config file if provided
+    PDSConfiguration *pdsConfig = [PDSConfiguration sharedConfiguration];
+    NSLog(@"Config path: %@, exists: %d", context.configPath, [[NSFileManager defaultManager] fileExistsAtPath:context.configPath]);
+    if (context.configPath && [[NSFileManager defaultManager] fileExistsAtPath:context.configPath]) {
+        NSError *configError = nil;
+        if ([pdsConfig loadFromPath:context.configPath error:&configError]) {
+            NSLog(@"Loaded configuration from: %@", context.configPath);
+            NSLog(@"  PLC URL: %@", pdsConfig.plcURL);
+            NSLog(@"  Skip PLC operations: %@", pdsConfig.debugSkipPlcOperations ? @"YES" : @"NO");
+        } else {
+            NSLog(@"Warning: Failed to load configuration: %@", configError.localizedDescription);
+        }
+    } else {
+        NSLog(@"No config file found or configPath not set");
+    }
 
     NSDictionary *config = [context loadConfig];
     if (config[@"pds"][@"hostname"]) {

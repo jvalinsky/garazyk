@@ -234,11 +234,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                               handle:(NSString *)handle
                                                   did:(NSString *)did
                                                  error:(NSError **)error {
-    return [self createAccountForEmail:identifier
-                              password:password
-                               handle:handle ?: identifier
-                                   did:did ?: [NSString stringWithFormat:@"did:web:%@", identifier]
-                                  error:error];
+    // This is login, not account creation
+    return [_accountService loginWithHandle:identifier password:password error:error];
 }
 
 - (nullable NSDictionary *)refreshSessionWithRefreshToken:(NSString *)refreshToken
