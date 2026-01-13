@@ -39,7 +39,7 @@
     self = [super init];
     if (self) {
         _port = port;
-        _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_SERIAL);
+        _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_CONCURRENT);
         _routeHandlers = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
         _activeConnections = [NSMutableSet set];
