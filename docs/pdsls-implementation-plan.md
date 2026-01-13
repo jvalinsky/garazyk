@@ -160,12 +160,12 @@ Implement basic typeahead search for actors.
 | 2.3 Integrate handler | ✅ | setWebSocketUpgradeHandler:forPath: added |
 | 2.4 WebSocket protocol | ✅ | Handshake response creation added |
 | 2.5 Test firehose | ⬜ | Need to test with pdsls |
-| 1.1 Understand MST proof | ⬜ | |
-| 1.2 MST path extraction | ⬜ | |
-| 1.3 DAG-CBOR encoding | ⬜ | |
-| 1.4 Build CAR file | ⬜ | |
-| 1.5 Add commit block | ⬜ | |
-| 1.6 Test verification | ⬜ | |
+| 1.1 Understand MST proof | ✅ | ATProto MST spec reviewed |
+| 1.2 MST path extraction | ⬜ | Still needed for full proof |
+| 1.3 DAG-CBOR encoding | ✅ | jsonToCBOR helper added |
+| 1.4 Build CAR file | ✅ | CARv1Builder with proper format |
+| 1.5 Add commit block | ⬜ | Still needed for full proof |
+| 1.6 Test verification | ⬜ | Need to test with pdsls |
 | 3.1 Database query | ✅ | searchActorsTypeahead in ActorService |
 | 3.2 XRPC handler | ✅ | app.bsky.actor.searchActorsTypeahead registered |
 | 3.3 Test search | ⬜ | Need to test with pdsls |
