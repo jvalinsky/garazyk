@@ -217,7 +217,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 @property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByAccessToken;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByRefreshToken;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<Session *> *> *sessionsByDID;
-@property (nonatomic, assign) dispatch_queue_t accessQueue;
+@property (nonatomic, strong) dispatch_queue_t accessQueue;
 @property (nonatomic, assign) NSTimeInterval clockSkew;
 @end
 

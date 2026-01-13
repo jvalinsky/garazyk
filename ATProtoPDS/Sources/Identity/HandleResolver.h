@@ -20,7 +20,7 @@ typedef NS_ENUM(NSInteger, HandleError) {
 #else
 @property (nonatomic, strong) NSURLConnection *session;
 #endif
-@property (nonatomic, assign, readonly) BOOL skipSSRFCheck;
+@property (nonatomic, assign) BOOL skipSSRFCheck;
 @property (nonatomic, strong) NSCache<NSString *, NSString *> *resolutionCache;
 @property (nonatomic, assign) NSTimeInterval cacheExpirationInterval;
 @property (nonatomic, assign) NSUInteger rateLimitPerMinute;
