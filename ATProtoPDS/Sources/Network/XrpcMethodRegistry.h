@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion This header defines the XrpcMethodRegistry class for
  registering all standard ATProto XRPC methods with a dispatcher.
  
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024 Jack Valinsky
  */
 
 /*!
