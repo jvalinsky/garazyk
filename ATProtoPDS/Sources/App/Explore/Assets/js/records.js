@@ -248,44 +248,131 @@ export const RecordRenderers = {
             // Extract DID from record URI (at://did:plc:xxx/collection/rkey)
             const did = RecordRenderers.extractDidFromUri(record.uri);
             
-            let bannerHtml = '';
-            if (value.banner) {
-                const bannerCid = RecordRenderers.extractBlobCid(value.banner);
-                if (bannerCid && did) {
-                    const bannerUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(bannerCid)}`;
-                    const detailUrl = `#/${did}/blobs/${bannerCid}`;
-                    bannerHtml = `
-                        <div class="profile-banner">
-                            <a href="${detailUrl}" title="View banner blob details">
-                                <img src="${bannerUrl}" alt="Profile banner" class="profile-banner-img" onerror="this.parentElement.innerHTML='🖼️ Banner (failed to load)'">
-                            </a>
-                            <div class="blob-link">
-                                <a href="${detailUrl}">🔗 View blob details</a>
-                            </div>
-                        </div>`;
-                } else {
-                    bannerHtml = `<div class="profile-banner">🖼️ Banner attached</div>`;
+            // Helper to format blob size
+            const formatSize = (size) => {
+                if (!size) return '';
+                if (size < 1024) return `${size} B`;
+                if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+                return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+            };
+            
+            // Helper to create error HTML for failed images
+            const createImageError = (type, cid) => {
+                const icon = type === 'banner' ? '🖼️' : '📷';
+                const cssClass = type === 'banner' ? 'banner-load-error' : 'avatar-load-error';
+                return `<div class="image-load-error ${cssClass}">
+                    <span class="error-icon">${icon}</span>
+                    <span class="error-text">${type === 'banner' ? 'Banner' : 'Avatar'} failed to load</span>
+                    ${cid ? `<span class="error-cid">${cid.substring(0, 20)}...</span>` : ''}
+                </div>`;
+            };
+            
+            const hasBanner = value.banner != null;
+            const hasAvatar = value.avatar != null;
+            const bannerCid = hasBanner ? RecordRenderers.extractBlobCid(value.banner) : null;
+            const avatarCid = hasAvatar ? RecordRenderers.extractBlobCid(value.avatar) : null;
+            
+            let headerImagesHtml = '';
+            
+            if (hasBanner || hasAvatar) {
+                const bannerUrl = bannerCid && did ? `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(bannerCid)}` : null;
+                const avatarUrl = avatarCid && did ? `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(avatarCid)}` : null;
+                const bannerDetailUrl = bannerCid ? `#/${did}/blobs/${bannerCid}` : null;
+                const avatarDetailUrl = avatarCid ? `#/${did}/blobs/${avatarCid}` : null;
+                
+                // Get blob metadata if available
+                const bannerMime = value.banner?.mimeType || 'image/*';
+                const bannerSize = value.banner?.size;
+                const avatarMime = value.avatar?.mimeType || 'image/*';
+                const avatarSize = value.avatar?.size;
+                
+                let bannerHtml = '';
+                if (hasBanner) {
+                    if (bannerUrl) {
+                        bannerHtml = `
+                            <div class="profile-banner">
+                                <a href="${bannerDetailUrl}" title="View banner blob details">
+                                    <img src="${bannerUrl}" alt="Profile banner" class="profile-banner-img" 
+                                         onerror="this.parentElement.outerHTML=decodeURIComponent('${encodeURIComponent(createImageError('banner', bannerCid))}')">
+                                </a>
+                            </div>`;
+                    } else {
+                        bannerHtml = `<div class="profile-banner">${createImageError('banner', null)}</div>`;
+                    }
                 }
-            }
-
-            let avatarHtml = '';
-            if (value.avatar) {
-                const avatarCid = RecordRenderers.extractBlobCid(value.avatar);
-                if (avatarCid && did) {
-                    const avatarUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(avatarCid)}`;
-                    const detailUrl = `#/${did}/blobs/${avatarCid}`;
-                    avatarHtml = `
-                        <div class="profile-avatar">
-                            <a href="${detailUrl}" title="View avatar blob details">
-                                <img src="${avatarUrl}" alt="Profile avatar" class="profile-avatar-img" onerror="this.parentElement.innerHTML='📷 Avatar (failed to load)'">
-                            </a>
-                            <div class="blob-link">
-                                <a href="${detailUrl}">🔗 View blob details</a>
-                            </div>
-                        </div>`;
-                } else {
-                    avatarHtml = `<div class="profile-avatar">📷 Avatar attached</div>`;
+                
+                let avatarHtml = '';
+                if (hasAvatar) {
+                    if (avatarUrl) {
+                        avatarHtml = `
+                            <div class="profile-avatar">
+                                <a href="${avatarDetailUrl}" title="View avatar blob details">
+                                    <img src="${avatarUrl}" alt="Profile avatar" class="profile-avatar-img"
+                                         onerror="this.parentElement.outerHTML=decodeURIComponent('${encodeURIComponent(createImageError('avatar', avatarCid))}')">
+                                </a>
+                            </div>`;
+                    } else {
+                        avatarHtml = `<div class="profile-avatar">${createImageError('avatar', null)}</div>`;
+                    }
                 }
+                
+                // Use combined header layout if we have banner
+                if (hasBanner) {
+                    headerImagesHtml = `
+                        <div class="profile-header-images">
+                            ${bannerHtml}
+                            ${avatarHtml}
+                        </div>`;
+                } else if (hasAvatar) {
+                    // Avatar only - standalone layout
+                    headerImagesHtml = `
+                        <div class="profile-avatar-standalone">
+                            ${avatarHtml.replace('profile-avatar', 'profile-avatar profile-avatar-standalone')}
+                        </div>`;
+                }
+                
+                // Blob metadata section
+                let blobMetaHtml = '';
+                if (bannerCid || avatarCid) {
+                    blobMetaHtml = `<div class="profile-blobs-info" style="margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 12px;">
+                        <div style="font-weight: 600; margin-bottom: 8px; color: #555;">📎 Attached Blobs</div>`;
+                    
+                    if (bannerCid) {
+                        blobMetaHtml += `
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px; background: #fff; border-radius: 4px;">
+                                <span style="font-size: 16px;">🖼️</span>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-weight: 500;">Banner</div>
+                                    <div style="font-size: 10px; color: #888; font-family: monospace; overflow: hidden; text-overflow: ellipsis;">${bannerCid}</div>
+                                    <div class="profile-blob-meta">
+                                        <span>📄 ${bannerMime}</span>
+                                        ${bannerSize ? `<span>📦 ${formatSize(bannerSize)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <a href="${bannerDetailUrl}" style="padding: 4px 8px; background: var(--link-color); color: #fff; border-radius: 4px; text-decoration: none; font-size: 11px;">View</a>
+                            </div>`;
+                    }
+                    
+                    if (avatarCid) {
+                        blobMetaHtml += `
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 6px; background: #fff; border-radius: 4px;">
+                                <span style="font-size: 16px;">📷</span>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-weight: 500;">Avatar</div>
+                                    <div style="font-size: 10px; color: #888; font-family: monospace; overflow: hidden; text-overflow: ellipsis;">${avatarCid}</div>
+                                    <div class="profile-blob-meta">
+                                        <span>📄 ${avatarMime}</span>
+                                        ${avatarSize ? `<span>📦 ${formatSize(avatarSize)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <a href="${avatarDetailUrl}" style="padding: 4px 8px; background: var(--link-color); color: #fff; border-radius: 4px; text-decoration: none; font-size: 11px;">View</a>
+                            </div>`;
+                    }
+                    
+                    blobMetaHtml += `</div>`;
+                }
+                
+                headerImagesHtml += blobMetaHtml;
             }
 
             return `
@@ -295,12 +382,11 @@ export const RecordRenderers = {
                         <span class="record-time">${RecordRenderers.formatTime(value.createdAt)}</span>
                     </div>
                     <div class="profile-content">
-                        ${bannerHtml}
-                        ${avatarHtml}
-                        <div class="profile-name">
-                            <strong>${escapeHtml(value.displayName || '(no display name)')}</strong>
+                        ${headerImagesHtml}
+                        <div class="profile-name" style="margin-top: ${hasBanner ? '0' : '10px'};">
+                            <strong style="font-size: 18px;">${escapeHtml(value.displayName || '(no display name)')}</strong>
                         </div>
-                        <div class="profile-description">${escapeHtml(value.description || '(no description)')}</div>
+                        <div class="profile-description" style="margin-top: 8px; color: #555; line-height: 1.5;">${escapeHtml(value.description || '(no description)')}</div>
                     </div>
                     ${RecordRenderers.renderRecordMeta(record)}
                 </div>
@@ -467,6 +553,14 @@ export const RecordRenderers = {
         },
     },
 
+    // Helper to format file size
+    formatFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    },
+
     // Render embeds (images, external links, quotes, etc.)
     renderEmbed(embed, did) {
         if (!embed) return '';
@@ -480,24 +574,36 @@ export const RecordRenderers = {
                 <div class="embed embed-images">
                     <div class="embed-label">🖼️ ${images.length} image(s) attached</div>
                     <div class="embed-images-grid">
-                        ${images.map(img => {
+                        ${images.map((img, index) => {
                             const imgCid = RecordRenderers.extractBlobCid(img.image);
+                            const mimeType = img.image?.mimeType || 'image/*';
+                            const size = img.image?.size;
+                            const aspectRatio = img.aspectRatio;
+                            
                             if (imgCid && did) {
                                 const imgUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(imgCid)}`;
                                 const detailUrl = `#/${did}/blobs/${imgCid}`;
                                 return `
                                     <div class="embed-image-item">
                                         <a href="${detailUrl}" title="View image blob details">
-                                            <img src="${imgUrl}" alt="${escapeHtml(img.alt || 'Embedded image')}" class="embed-image" onerror="this.outerHTML='<span class=\\'image-error\\'>🖼️ Image failed to load</span>'">
+                                            <img src="${imgUrl}" alt="${escapeHtml(img.alt || 'Embedded image')}" class="embed-image" 
+                                                 onerror="this.outerHTML='<div class=image-error><span style=font-size:24px>🖼️</span><br>Image failed to load</div>'">
                                         </a>
-                                        ${img.alt ? `<div class="image-alt">Alt: ${escapeHtml(img.alt)}</div>` : ''}
-                                        <div class="blob-link"><a href="${detailUrl}">🔗 View blob details</a></div>
+                                        ${img.alt ? `<div class="image-alt">📝 ${escapeHtml(img.alt)}</div>` : ''}
+                                        <div class="blob-meta">
+                                            📄 ${mimeType}${size ? ` · 📦 ${RecordRenderers.formatFileSize(size)}` : ''}${aspectRatio ? ` · 📐 ${aspectRatio.width}×${aspectRatio.height}` : ''}
+                                        </div>
+                                        <div class="blob-link"><a href="${detailUrl}">🔍 View blob details</a></div>
                                     </div>
                                 `;
                             }
                             return `
-                                <div class="embed-image-info">
-                                    ${img.alt ? `<span class="image-alt">Alt: ${escapeHtml(img.alt)}</span>` : '📷 Image attached'}
+                                <div class="embed-image-item" style="background: #f5f5f5;">
+                                    <div class="image-error">
+                                        <span style="font-size:24px">📷</span><br>
+                                        Image attached
+                                        ${img.alt ? `<br><span style="font-size:11px;font-style:italic">Alt: ${escapeHtml(img.alt)}</span>` : ''}
+                                    </div>
                                 </div>
                             `;
                         }).join('')}
