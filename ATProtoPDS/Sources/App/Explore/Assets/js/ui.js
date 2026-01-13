@@ -50,6 +50,11 @@ function init() {
             router.goToCollection(currentDid, currentCollection);
         }
     });
+    document.getElementById('back-blobs').addEventListener('click', () => {
+        if (currentDid) {
+            router.navigate({ type: 'blobs', did: currentDid });
+        }
+    });
     
     // View toggle buttons
     document.getElementById('view-formatted').addEventListener('click', () => setViewMode('formatted'));
@@ -133,6 +138,10 @@ async function handleRouteChange(route) {
                 
             case 'blobs':
                 await navigateToAccount(route.did, 'blobs');
+                break;
+                
+            case 'blob-detail':
+                await navigateToBlobDetail(route.did, route.cid);
                 break;
                 
             case 'records':
@@ -245,6 +254,98 @@ async function navigateToRecord(did, collection, rkey) {
         document.getElementById('record-formatted').innerHTML = `<p class="error">Error: ${escapeHtml(e.message)}</p>`;
         document.getElementById('record-raw').textContent = 'Error: ' + e.message;
     }
+}
+
+async function navigateToBlobDetail(did, cid) {
+    // Ensure account is loaded
+    if (currentDid !== did) {
+        currentDid = did;
+        highlightAccount(did);
+        await loadAccountData(did);
+    }
+    
+    // Show nav items
+    const blobDetailNav = document.getElementById('nav-blob-detail');
+    if (blobDetailNav) blobDetailNav.style.display = 'flex';
+    
+    showSection('blob-detail', 'Blob Detail');
+    
+    const blobUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}`;
+    
+    // Try to get blob metadata from cached blobs
+    const content = document.getElementById('blob-detail-content');
+    content.innerHTML = '<p class="loading">Loading blob...</p>';
+    
+    try {
+        // Fetch blob info via HEAD request to get content-type
+        const response = await fetch(blobUrl, { method: 'HEAD' });
+        const mimeType = response.headers.get('Content-Type') || 'application/octet-stream';
+        const contentLength = response.headers.get('Content-Length');
+        const size = contentLength ? parseInt(contentLength) : null;
+        
+        content.innerHTML = renderBlobDetail(did, cid, mimeType, size, blobUrl);
+    } catch (e) {
+        console.error('Failed to get blob info:', e);
+        // Fall back to basic rendering
+        content.innerHTML = renderBlobDetail(did, cid, 'application/octet-stream', null, blobUrl);
+    }
+}
+
+function renderBlobDetail(did, cid, mimeType, size, blobUrl) {
+    const typeLabel = getMimeTypeLabel(mimeType);
+    const sizeLabel = formatFileSize(size);
+    
+    let preview = '';
+    if (mimeType.startsWith('image/')) {
+        preview = `<img src="${blobUrl}" style="max-width: 100%; max-height: 500px; border-radius: 8px;" alt="Image preview">`;
+    } else if (mimeType.startsWith('video/')) {
+        preview = `<video src="${blobUrl}" style="max-width: 100%; max-height: 500px;" controls></video>`;
+    } else if (mimeType.startsWith('audio/')) {
+        preview = `<audio src="${blobUrl}" style="width: 100%;" controls></audio>`;
+    } else if (mimeType === 'application/pdf') {
+        preview = `<iframe src="${blobUrl}" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px;"></iframe>`;
+    } else if (mimeType.startsWith('text/') || mimeType === 'application/json') {
+        preview = `<div id="blob-text-preview" style="background: #f5f5f5; padding: 15px; border-radius: 8px; max-height: 400px; overflow: auto;"><p class="loading">Loading text content...</p></div>`;
+        // Async load text content
+        setTimeout(async () => {
+            try {
+                const resp = await fetch(blobUrl);
+                const text = await resp.text();
+                const previewEl = document.getElementById('blob-text-preview');
+                if (previewEl) {
+                    previewEl.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all;">${escapeHtml(text.substring(0, 10000))}${text.length > 10000 ? '\n... (truncated)' : ''}</pre>`;
+                }
+            } catch (e) {
+                const previewEl = document.getElementById('blob-text-preview');
+                if (previewEl) previewEl.innerHTML = '<p class="error">Failed to load text content</p>';
+            }
+        }, 0);
+    } else {
+        preview = `<div style="text-align: center; padding: 60px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 80px; margin-bottom: 20px;">📁</div>
+            <p>Preview not available for this file type</p>
+        </div>`;
+    }
+    
+    return `
+        <div style="margin-bottom: 20px;">
+            ${preview}
+        </div>
+        <table class="param-table">
+            <tbody>
+                <tr><th style="width: 120px;">CID</th><td><code style="word-break: break-all;">${escapeHtml(cid)}</code></td></tr>
+                <tr><th>Type</th><td>${escapeHtml(typeLabel)}</td></tr>
+                <tr><th>MIME Type</th><td><code>${escapeHtml(mimeType)}</code></td></tr>
+                <tr><th>Size</th><td>${sizeLabel}</td></tr>
+                <tr><th>DID</th><td><code>${escapeHtml(did)}</code></td></tr>
+            </tbody>
+        </table>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <a href="${blobUrl}" class="btn-primary" download>⬇ Download</a>
+            <a href="${blobUrl}" class="btn-secondary" target="_blank">↗ Open in New Tab</a>
+            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${blobUrl}')">📋 Copy URL</button>
+        </div>
+    `;
 }
 
 async function loadAccountData(did) {
@@ -477,15 +578,16 @@ function renderBlobs(blobsResult, did) {
         const preview = getBlobPreview(mimeType, blobUrl, cid);
         const typeLabel = getMimeTypeLabel(mimeType);
         
+        const detailUrl = `#/${did}/blobs/${cid}`;
         html += `
-            <div class="blob-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #fafafa; display: flex; flex-direction: column;">
+            <div class="blob-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #fafafa; display: flex; flex-direction: column; cursor: pointer; transition: box-shadow 0.2s;" onclick="window.location.hash='${detailUrl}'" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='none'">
                 <div style="flex: 1; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 4px; margin-bottom: 10px; overflow: hidden;">
                     ${preview}
                 </div>
                 <div style="font-size: 11px; word-break: break-all; color: #666; font-family: monospace; margin-bottom: 6px;" title="${escapeHtml(cid)}">${escapeHtml(cid.substring(0, 20))}...</div>
                 <div style="font-size: 12px; color: #333; font-weight: 500;">${escapeHtml(typeLabel)}</div>
                 <div style="font-size: 11px; color: #888; margin-bottom: 8px;">${size}</div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px;" onclick="event.stopPropagation()">
                     <a href="${blobUrl}" class="btn-secondary" style="flex: 1; text-align: center; font-size: 11px; padding: 6px;" download>⬇ Download</a>
                     <a href="${blobUrl}" class="btn-secondary" style="flex: 1; text-align: center; font-size: 11px; padding: 6px;" target="_blank">↗ Open</a>
                 </div>
