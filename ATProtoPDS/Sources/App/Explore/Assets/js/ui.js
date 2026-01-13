@@ -3,6 +3,7 @@ import { CIDDecoder } from './cid.js';
 import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
 import { RecordRenderers } from './records.js';
+import { router, Router } from './router.js';
 
 console.log('ui.js loading...');
 
@@ -10,17 +11,22 @@ let currentDid = null;
 let currentCollection = null;
 let currentRecord = null;
 let viewMode = 'formatted'; // 'formatted' or 'raw'
+let isNavigating = false; // Prevent recursive navigation
 
 // Register global helpers early
 window.viewCollection = (collection) => {
     console.log('window.viewCollection called for collection:', collection);
-    currentCollection = collection;
-    showRecords(collection);
+    if (currentDid) {
+        router.goToCollection(currentDid, collection);
+    }
 };
 
 window.viewRecordDetail = (uri) => {
     console.log('window.viewRecordDetail called for uri:', uri);
-    showRecordDetail(uri);
+    const parsed = Router.parseAtUri(uri);
+    if (parsed) {
+        router.goToRecord(parsed.did, parsed.collection, parsed.rkey);
+    }
 };
 
 function init() {
@@ -34,27 +40,37 @@ function init() {
         if (e.key === 'Enter') handleCidDecode();
     });
     
-    document.getElementById('back-collections').addEventListener('click', showCollectionsSection);
+    document.getElementById('back-collections').addEventListener('click', () => {
+        if (currentDid) {
+            router.navigate({ type: 'collections', did: currentDid });
+        }
+    });
     document.getElementById('back-records').addEventListener('click', () => {
-        showSection('records', `Records: ${currentCollection || ''}`);
+        if (currentDid && currentCollection) {
+            router.goToCollection(currentDid, currentCollection);
+        }
     });
     
     // View toggle buttons
     document.getElementById('view-formatted').addEventListener('click', () => setViewMode('formatted'));
     document.getElementById('view-raw').addEventListener('click', () => setViewMode('raw'));
     
-    // Navigation handling
+    // Navigation handling - integrate with router
     document.querySelectorAll('.nav-row[data-section]').forEach(row => {
         row.addEventListener('click', (e) => {
             const section = row.dataset.section;
-            const label = row.querySelector('.nav-label').textContent;
             
-            // Only switch if it's a static section or we have data
             if (section === 'cid-decode') {
-                showSection(section, label);
-            } else if (currentDid) {
-                showSection(section, label);
-            } else {
+                router.navigate({ type: 'cid-decode' });
+            } else if (section === 'did-doc' && currentDid) {
+                router.navigate({ type: 'did-doc', did: currentDid });
+            } else if (section === 'plc-ops' && currentDid) {
+                router.navigate({ type: 'plc-ops', did: currentDid });
+            } else if (section === 'collections' && currentDid) {
+                router.navigate({ type: 'collections', did: currentDid });
+            } else if (section === 'records' && currentDid && currentCollection) {
+                router.goToCollection(currentDid, currentCollection);
+            } else if (!currentDid) {
                 // If clicking nav items without a DID selected, try to select first account
                 const firstAccount = document.querySelector('.account-item');
                 if (firstAccount) {
@@ -66,9 +82,185 @@ function init() {
         });
     });
     
-    // Initial state
-    showSection('did-doc', 'DID Document');
-    loadAccounts();
+    // Set up router
+    router.onRouteChange(handleRouteChange);
+    
+    // Load accounts first, then handle initial route
+    loadAccounts().then(() => {
+        router.init();
+    });
+}
+
+async function handleRouteChange(route) {
+    console.log('Route changed:', route);
+    
+    if (isNavigating) return;
+    isNavigating = true;
+    
+    try {
+        switch (route.type) {
+            case 'home':
+                showSection('did-doc', 'DID Document');
+                document.getElementById('did-content').innerHTML = '<p class="placeholder">Select an account or search for a DID to view its document.</p>';
+                break;
+                
+            case 'lookup':
+                // Handle lookup
+                await handleLookupByHandle(route.handle);
+                break;
+                
+            case 'cid-decode':
+                showSection('cid-decode', 'CID Decoder');
+                if (route.cid) {
+                    document.getElementById('cid-input').value = route.cid;
+                    handleCidDecode();
+                }
+                break;
+                
+            case 'did-doc':
+                await navigateToAccount(route.did, 'did-doc');
+                break;
+                
+            case 'plc-ops':
+                await navigateToAccount(route.did, 'plc-ops');
+                break;
+                
+            case 'collections':
+                await navigateToAccount(route.did, 'collections');
+                break;
+                
+            case 'records':
+                await navigateToRecords(route.did, route.collection);
+                break;
+                
+            case 'record':
+                await navigateToRecord(route.did, route.collection, route.rkey);
+                break;
+        }
+    } finally {
+        isNavigating = false;
+    }
+}
+
+async function navigateToAccount(did, section) {
+    // Select the account if different
+    if (currentDid !== did) {
+        currentDid = did;
+        highlightAccount(did);
+        
+        // Load account data
+        document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
+        document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
+        document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
+        
+        await loadAccountData(did);
+    }
+    
+    // Show the appropriate section
+    const labels = {
+        'did-doc': 'DID Document',
+        'plc-ops': 'PLC Operations',
+        'collections': 'Collections'
+    };
+    showSection(section, labels[section] || section);
+}
+
+async function navigateToRecords(did, collection) {
+    // Ensure account is loaded
+    if (currentDid !== did) {
+        currentDid = did;
+        highlightAccount(did);
+        await loadAccountData(did);
+    }
+    
+    currentCollection = collection;
+    
+    // Show nav item
+    const recordsNav = document.getElementById('nav-records');
+    if (recordsNav) {
+        recordsNav.style.display = 'flex';
+    }
+    
+    showSection('records', `Records: ${collection}`);
+    document.getElementById('records-title').textContent = collection;
+    
+    const content = document.getElementById('records-content');
+    content.innerHTML = '<p class="loading">Loading records...</p>';
+    
+    try {
+        const result = await API.listRecords(did, collection, { limit: 50 });
+        renderRecordsList(result.records, collection);
+    } catch (e) {
+        console.error('Failed to list records:', e);
+        content.innerHTML = `<p class="error">Error loading records: ${escapeHtml(e.message)}</p>`;
+    }
+}
+
+async function navigateToRecord(did, collection, rkey) {
+    // Ensure account and collection are set
+    if (currentDid !== did) {
+        currentDid = did;
+        highlightAccount(did);
+        await loadAccountData(did);
+    }
+    
+    currentCollection = collection;
+    
+    // Show nav items
+    const recordsNav = document.getElementById('nav-records');
+    if (recordsNav) recordsNav.style.display = 'flex';
+    const detailNav = document.getElementById('nav-record-detail');
+    if (detailNav) detailNav.style.display = 'flex';
+    
+    showSection('record-detail', 'Record Detail');
+    
+    const uri = Router.buildAtUri(did, collection, rkey);
+    document.getElementById('record-title').textContent = uri;
+    document.getElementById('record-formatted').innerHTML = '<p class="loading">Loading...</p>';
+    document.getElementById('record-raw').textContent = 'Loading...';
+    
+    try {
+        const record = await API.getRecord(uri);
+        currentRecord = record;
+        
+        if (record.error) {
+            document.getElementById('record-formatted').innerHTML = `<p class="error">${escapeHtml(record.error)}</p>`;
+            document.getElementById('record-raw').textContent = JSON.stringify(record, null, 2);
+        } else {
+            document.getElementById('record-formatted').innerHTML = RecordRenderers.render(record);
+            document.getElementById('record-raw').textContent = JSON.stringify(record, null, 2);
+        }
+        
+        updateViewDisplay();
+    } catch (e) {
+        console.error('Failed to get record:', e);
+        document.getElementById('record-formatted').innerHTML = `<p class="error">Error: ${escapeHtml(e.message)}</p>`;
+        document.getElementById('record-raw').textContent = 'Error: ' + e.message;
+    }
+}
+
+async function loadAccountData(did) {
+    const [doc, ops, describe] = await Promise.all([
+        API.getDidDocument(did),
+        API.getPlcLog(did),
+        API.getRepoDescribe(did)
+    ]);
+    
+    const didContent = document.getElementById('did-content');
+    if (doc.error) {
+        didContent.innerHTML = `<p class="error">${escapeHtml(doc.error)}</p>`;
+    } else {
+        didContent.innerHTML = renderDidSummary(doc);
+    }
+    
+    document.getElementById('plc-content').innerHTML = renderPlcOperations(ops);
+    renderCollections(describe);
+}
+
+function highlightAccount(did) {
+    document.querySelectorAll('.account-item').forEach(li => {
+        li.classList.toggle('active', li.dataset.did === did);
+    });
 }
 
 async function loadAccounts() {
@@ -88,7 +280,9 @@ async function loadAccounts() {
                 <span style="font-size:14px">👤</span>
                 <span class="account-handle">${escapeHtml(account.handle || account.did)}</span>
             `;
-            li.addEventListener('click', () => selectAccount(account));
+            li.addEventListener('click', () => {
+                router.goToAccount(account.did, 'did-doc');
+            });
             list.appendChild(li);
         }
     } else {
@@ -96,77 +290,32 @@ async function loadAccounts() {
     }
 }
 
-async function selectAccount(account) {
-    // Highlight account
-    document.querySelectorAll('.account-item').forEach(li => {
-        li.classList.remove('active');
-        if (li.dataset.did === account.did) {
-            li.classList.add('active');
-        }
-    });
-    
-    currentDid = account.did;
-    
-    // Update loading states
-    document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
-    document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
-    document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
-    
-    showSection('did-doc', 'DID Document');
-    await showDidDocument(account.did);
-}
-
 async function handleLookup() {
     const input = document.getElementById('lookup-input').value.trim();
     if (!input) return;
     
+    if (input.startsWith('did:')) {
+        router.goToAccount(input, 'did-doc');
+    } else {
+        // It's a handle, resolve it first
+        await handleLookupByHandle(input);
+    }
+}
+
+async function handleLookupByHandle(handle) {
     document.getElementById('lookup-input').disabled = true;
+    document.getElementById('did-content').innerHTML = '<p class="loading">Looking up handle...</p>';
     
-    // Reset view
-    document.querySelectorAll('.account-item').forEach(li => li.classList.remove('active'));
-    document.getElementById('did-content').innerHTML = '<p class="loading">Looking up DID/handle...</p>';
-    
-    const result = await API.lookup(input);
+    const result = await API.lookup(handle);
     document.getElementById('lookup-input').disabled = false;
     
     if (result.error) {
-        alert('DID/handle not found: ' + result.error);
+        alert('Handle not found: ' + result.error);
         return;
     }
     
-    currentDid = result.did;
-    
-    // Highlight if it's in our list
-    document.querySelectorAll('.account-item').forEach(li => {
-        if (li.dataset.did === result.did) {
-            li.classList.add('active');
-        }
-    });
-    
-    showSection('did-doc', 'DID Document');
-    await showDidDocument(result.did);
-}
-
-async function showDidDocument(did) {
-    const didContent = document.getElementById('did-content');
-    const plcContent = document.getElementById('plc-content');
-    const collectionsContent = document.getElementById('collections-content');
-    
-    // Parallel API calls
-    const [doc, ops, describe] = await Promise.all([
-        API.getDidDocument(did),
-        API.getPlcLog(did),
-        API.getRepoDescribe(did)
-    ]);
-    
-    if (doc.error) {
-        didContent.innerHTML = `<p class="error">${escapeHtml(doc.error)}</p>`;
-    } else {
-        didContent.innerHTML = renderDidSummary(doc);
-    }
-    
-    plcContent.innerHTML = renderPlcOperations(ops);
-    renderCollections(describe);
+    // Navigate to the resolved DID
+    router.goToAccount(result.did, 'did-doc');
 }
 
 function renderCollections(describe) {
@@ -208,36 +357,6 @@ function renderCollections(describe) {
     content.innerHTML = html;
 }
 
-async function showRecords(collection) {
-    console.log('showRecords called for collection:', collection);
-    if (!currentDid) {
-        console.error('No currentDid set');
-        return;
-    }
-    
-    // Update nav visibility
-    const recordsNav = document.getElementById('nav-records');
-    if (recordsNav) {
-        recordsNav.style.display = 'flex';
-    }
-    
-    showSection('records', `Records: ${collection}`);
-    
-    document.getElementById('records-title').textContent = collection;
-    
-    const content = document.getElementById('records-content');
-    content.innerHTML = '<p class="loading">Loading records...</p>';
-    
-    try {
-        const result = await API.listRecords(currentDid, collection, { limit: 20 });
-        console.log('listRecords result:', result);
-        renderRecordsList(result.records, collection);
-    } catch (e) {
-        console.error('Failed to list records:', e);
-        content.innerHTML = `<p class="error">Error loading records: ${escapeHtml(e.message)}</p>`;
-    }
-}
-
 function renderRecordsList(records, collection) {
     console.log('renderRecordsList called with:', records);
     const content = document.getElementById('records-content');
@@ -271,49 +390,6 @@ function renderRecordsList(records, collection) {
     content.innerHTML = html;
 }
 
-async function showRecordDetail(uri) {
-    console.log('showRecordDetail called for uri:', uri);
-    if (!currentDid) {
-        console.error('No currentDid set');
-        return;
-    }
-
-    // Update nav
-    const detailNav = document.getElementById('nav-record-detail');
-    if (detailNav) {
-        detailNav.style.display = 'flex';
-    }
-    
-    showSection('record-detail', 'Record Detail');
-    
-    document.getElementById('record-title').textContent = uri;
-    document.getElementById('record-formatted').innerHTML = '<p class="loading">Loading...</p>';
-    document.getElementById('record-raw').textContent = 'Loading...';
-    
-    try {
-        const record = await API.getRecord(uri);
-        console.log('getRecord result:', record);
-        currentRecord = record;
-        
-        if (record.error) {
-            document.getElementById('record-formatted').innerHTML = `<p class="error">${escapeHtml(record.error)}</p>`;
-            document.getElementById('record-raw').textContent = JSON.stringify(record, null, 2);
-        } else {
-            // Render formatted view
-            document.getElementById('record-formatted').innerHTML = RecordRenderers.render(record);
-            // Render raw JSON view
-            document.getElementById('record-raw').textContent = JSON.stringify(record, null, 2);
-        }
-        
-        // Apply current view mode
-        updateViewDisplay();
-    } catch (e) {
-        console.error('Failed to get record:', e);
-        document.getElementById('record-formatted').innerHTML = `<p class="error">Error: ${escapeHtml(e.message)}</p>`;
-        document.getElementById('record-raw').textContent = 'Error: ' + e.message;
-    }
-}
-
 function setViewMode(mode) {
     viewMode = mode;
     document.getElementById('view-formatted').classList.toggle('active', mode === 'formatted');
@@ -338,6 +414,9 @@ async function handleCidDecode() {
     const cid = document.getElementById('cid-input').value.trim();
     if (!cid) return;
     
+    // Update URL to include CID
+    router.navigate({ type: 'cid-decode', cid }, true);
+    
     const resultEl = document.getElementById('cid-result');
     resultEl.innerHTML = '<p class="loading">Decoding...</p>';
     
@@ -348,7 +427,6 @@ async function handleCidDecode() {
             return;
         }
         
-        // Custom render for the new style
         let html = '<div style="margin-top:20px">';
         html += `<h3>CID Version ${decoded.version}</h3>`;
         html += '<table><tr><th>Property</th><th>Value</th></tr>';
@@ -394,13 +472,6 @@ function showSection(sectionId, breadcrumbLabel) {
     if (breadcrumbLabel) {
         document.getElementById('breadcrumb-current').textContent = breadcrumbLabel;
     }
-}
-
-function showCollectionsSection() {
-    showSection('collections', 'Collections');
-    // Hide temporary nav items
-    document.getElementById('nav-records').style.display = 'none';
-    document.getElementById('nav-record-detail').style.display = 'none';
 }
 
 function escapeHtml(str) {
