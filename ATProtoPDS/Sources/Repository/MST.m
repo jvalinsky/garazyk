@@ -317,7 +317,15 @@
     }
     fprintf(stderr, "\n");
     
-    return [CID sha256Digest:cbor];
+    NSData *digest = [CID sha256Digest:cbor];
+    const uint8_t *dbytes = digest.bytes;
+    fprintf(stderr, "DEBUG: Empty MST Hash: ");
+    for (NSUInteger i = 0; i < digest.length; i++) {
+        fprintf(stderr, "%02X", dbytes[i]);
+    }
+    fprintf(stderr, "\n");
+    
+    return digest;
 }
 
 - (CID *)rootCID {
