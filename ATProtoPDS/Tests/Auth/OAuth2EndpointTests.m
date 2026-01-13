@@ -17,6 +17,11 @@
     self.server = [HttpServer serverWithPort:8443];
     self.oauthHandler = [[OAuth2Handler alloc] init];
     [self.oauthHandler registerRoutesWithServer:self.server];
+    
+    NSError *error = nil;
+    if (![self.server startWithError:&error]) {
+        NSLog(@"Failed to start server: %@", error);
+    }
 }
 
 - (void)tearDown {
