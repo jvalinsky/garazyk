@@ -308,6 +308,15 @@
         [CBORValue textString:@"l"]: [CBORValue nilValue]
     };
     NSData *cbor = [[CBORValue map:dict] encode];
+    
+    // DEBUG: Print CBOR bytes
+    const uint8_t *bytes = cbor.bytes;
+    fprintf(stderr, "DEBUG: Empty MST CBOR (%lu bytes): ", (unsigned long)cbor.length);
+    for (NSUInteger i = 0; i < cbor.length; i++) {
+        fprintf(stderr, "%02X ", bytes[i]);
+    }
+    fprintf(stderr, "\n");
+    
     return [CID sha256Digest:cbor];
 }
 
