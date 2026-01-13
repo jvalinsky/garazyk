@@ -30,7 +30,7 @@
     
     // Empty map
     MST *emptyMST = [[MST alloc] init];
-    fprintf(stderr, "emptyMST created\n");
+    fprintf(stderr, "emptyMST created. Root: %s\n", [emptyMST.rootCID.stringValue UTF8String]);
     XCTAssertEqualObjects(emptyMST.rootCID.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
     fprintf(stderr, "emptyMST rootCID checked\n");
 
@@ -38,7 +38,7 @@
     MST *trivialMST = [[MST alloc] init];
     fprintf(stderr, "trivialMST created\n");
     [trivialMST put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
-    fprintf(stderr, "trivialMST put finished\n");
+    fprintf(stderr, "trivialMST put finished. Root: %s\n", [trivialMST.rootCID.stringValue UTF8String]);
     XCTAssertEqualObjects(trivialMST.rootCID.stringValue, @"bafyreibj4lsc3aqnrvphp5xmrnfoorvru4wynt6lwidqbm2623a6tatzdu");
     fprintf(stderr, "trivialMST rootCID checked\n");
     
