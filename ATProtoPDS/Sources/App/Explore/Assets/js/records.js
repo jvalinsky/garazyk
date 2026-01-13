@@ -131,6 +131,8 @@ export const RecordRenderers = {
     // Generic renderer for unknown types
     renderGeneric(record, value, options) {
         const type = value['$type'] || record.collection || 'Unknown';
+        const did = this.extractDidFromUri(record.uri);
+        
         return `
             <div class="record-card record-generic">
                 <div class="record-header">
@@ -144,7 +146,7 @@ export const RecordRenderers = {
                             .map(([k, v]) => `
                                 <tr>
                                     <td class="field-name">${escapeHtml(k)}</td>
-                                    <td class="field-value">${this.renderValue(v)}</td>
+                                    <td class="field-value">${this.renderValue(v, did)}</td>
                                 </tr>
                             `).join('')}
                     </table>
@@ -155,7 +157,8 @@ export const RecordRenderers = {
     },
 
     // Render a value (handles nested objects)
-    renderValue(value) {
+    // Render a value with optional DID context for blob links
+    renderValue(value, did = null) {
         if (value === null || value === undefined) {
             return '<span class="null">null</span>';
         }
@@ -164,10 +167,17 @@ export const RecordRenderers = {
                 return `<a class="at-uri" href="#" onclick="window.viewRecordDetail('${escapeHtml(value)}'); return false;">${escapeHtml(value)}</a>`;
             }
             if (value.startsWith('did:')) {
-                return `<span class="did">${escapeHtml(value)}</span>`;
+                return `<a class="did" href="#/${escapeHtml(value)}">${escapeHtml(value)}</a>`;
             }
             if (value.match(/^https?:\/\//)) {
                 return `<a href="${escapeHtml(value)}" target="_blank" rel="noopener">${escapeHtml(value)}</a>`;
+            }
+            // CID-like strings
+            if (value.match(/^b[a-z2-7]{50,}/i)) {
+                if (did) {
+                    return `<a class="cid-link" href="#/${did}/blobs/${escapeHtml(value)}">${escapeHtml(value.substring(0, 20))}...</a>`;
+                }
+                return `<code class="cid">${escapeHtml(value.substring(0, 20))}...</code>`;
             }
             return escapeHtml(value);
         }
@@ -181,11 +191,48 @@ export const RecordRenderers = {
         if (typeof value === 'object') {
             // Check for blob reference
             if (value['$type'] === 'blob' || value.ref) {
-                return `<span class="blob">📎 Blob (${value.mimeType || 'unknown type'})</span>`;
+                const cid = this.extractBlobCid(value);
+                const mimeType = value.mimeType || 'unknown';
+                const size = value.size;
+                const icon = this.getBlobIcon(mimeType);
+                
+                if (cid && did) {
+                    const detailUrl = `#/${did}/blobs/${cid}`;
+                    return `<a href="${detailUrl}" class="record-blob-ref">
+                        <span class="blob-icon">${icon}</span>
+                        <span class="blob-type">${escapeHtml(mimeType)}</span>
+                        ${size ? `<span class="blob-size">${this.formatFileSize(size)}</span>` : ''}
+                    </a>`;
+                }
+                return `<span class="record-blob-ref">
+                    <span class="blob-icon">${icon}</span>
+                    <span class="blob-type">${escapeHtml(mimeType)}</span>
+                    ${size ? `<span class="blob-size">${this.formatFileSize(size)}</span>` : ''}
+                </span>`;
             }
             return `<span class="object">{...}</span>`;
         }
         return escapeHtml(String(value));
+    },
+
+    // Get appropriate icon for blob MIME type
+    getBlobIcon(mimeType) {
+        if (!mimeType) return '📎';
+        if (mimeType.startsWith('image/')) return '🖼️';
+        if (mimeType.startsWith('video/')) return '🎬';
+        if (mimeType.startsWith('audio/')) return '🎵';
+        if (mimeType === 'application/pdf') return '📄';
+        if (mimeType.startsWith('text/') || mimeType === 'application/json') return '📝';
+        if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('compressed')) return '📦';
+        return '📎';
+    },
+
+    // Format file size (duplicated here for convenience)
+    formatFileSizeShort(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return `${bytes}B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
     },
 
     // Render record metadata (URI, CID)
@@ -615,15 +662,66 @@ export const RecordRenderers = {
         // External link
         if (type === 'app.bsky.embed.external' || embed.external) {
             const ext = embed.external || {};
+            const thumbCid = ext.thumb ? RecordRenderers.extractBlobCid(ext.thumb) : null;
+            const thumbMime = ext.thumb?.mimeType || 'image/*';
+            const thumbSize = ext.thumb?.size;
+            
+            let thumbHtml = '';
+            if (thumbCid && did) {
+                const thumbUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(thumbCid)}`;
+                const thumbDetailUrl = `#/${did}/blobs/${thumbCid}`;
+                thumbHtml = `
+                    <div class="external-thumb">
+                        <a href="${thumbDetailUrl}" title="View thumbnail blob" onclick="event.stopPropagation()">
+                            <img src="${thumbUrl}" alt="Link thumbnail" class="external-thumb-img"
+                                 onerror="this.parentElement.parentElement.innerHTML='<div class=thumb-placeholder>🖼️</div>'">
+                        </a>
+                        <div class="thumb-blob-info">
+                            <a href="${thumbDetailUrl}" onclick="event.stopPropagation()">🔍 Thumb</a>
+                            <span>📄 ${thumbMime}</span>
+                            ${thumbSize ? `<span>📦 ${RecordRenderers.formatFileSize(thumbSize)}</span>` : ''}
+                        </div>
+                    </div>`;
+            }
+            
+            // Try to determine link type from URL
+            const uri = ext.uri || '';
+            let linkIcon = '🔗';
+            let linkType = 'Link';
+            if (uri.includes('youtube.com') || uri.includes('youtu.be')) {
+                linkIcon = '▶️'; linkType = 'YouTube';
+            } else if (uri.includes('twitter.com') || uri.includes('x.com')) {
+                linkIcon = '🐦'; linkType = 'Twitter/X';
+            } else if (uri.includes('github.com')) {
+                linkIcon = '🐙'; linkType = 'GitHub';
+            } else if (uri.includes('wikipedia.org')) {
+                linkIcon = '📖'; linkType = 'Wikipedia';
+            } else if (uri.includes('spotify.com')) {
+                linkIcon = '🎵'; linkType = 'Spotify';
+            } else if (uri.includes('soundcloud.com')) {
+                linkIcon = '🌊'; linkType = 'SoundCloud';
+            } else if (uri.includes('twitch.tv')) {
+                linkIcon = '🟪'; linkType = 'Twitch';
+            } else if (uri.includes('reddit.com')) {
+                linkIcon = '🤖'; linkType = 'Reddit';
+            } else if (uri.includes('instagram.com')) {
+                linkIcon = '📷'; linkType = 'Instagram';
+            } else if (uri.includes('tiktok.com')) {
+                linkIcon = '🎬'; linkType = 'TikTok';
+            }
+            
             return `
                 <div class="embed embed-external">
-                    <div class="embed-label">🔗 External Link</div>
+                    <div class="embed-label">${linkIcon} ${linkType}</div>
                     <div class="external-card">
-                        <div class="external-title">${escapeHtml(ext.title || '')}</div>
-                        <div class="external-description">${escapeHtml(ext.description || '')}</div>
-                        <a href="${escapeHtml(ext.uri || '')}" target="_blank" rel="noopener" class="external-uri">
-                            ${escapeHtml(ext.uri || '')}
-                        </a>
+                        ${thumbHtml}
+                        <div class="external-content">
+                            <div class="external-title">${escapeHtml(ext.title || '(no title)')}</div>
+                            <div class="external-description">${escapeHtml(ext.description || '')}</div>
+                            <a href="${escapeHtml(uri)}" target="_blank" rel="noopener" class="external-uri">
+                                ${escapeHtml(uri)}
+                            </a>
+                        </div>
                     </div>
                 </div>
             `;
@@ -658,9 +756,101 @@ export const RecordRenderers = {
 
         // Video
         if (type === 'app.bsky.embed.video' || embed.video) {
+            const video = embed.video || embed;
+            const videoCid = RecordRenderers.extractBlobCid(video);
+            const videoMime = video.mimeType || 'video/*';
+            const videoSize = video.size;
+            const aspectRatio = embed.aspectRatio || video.aspectRatio;
+            const alt = embed.alt || '';
+            const thumbCid = embed.thumb ? RecordRenderers.extractBlobCid(embed.thumb) : null;
+            
+            let videoHtml = '';
+            if (videoCid && did) {
+                const videoUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(videoCid)}`;
+                const videoDetailUrl = `#/${did}/blobs/${videoCid}`;
+                
+                // Video player with poster from thumb if available
+                let posterAttr = '';
+                if (thumbCid) {
+                    const thumbUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(thumbCid)}`;
+                    posterAttr = `poster="${thumbUrl}"`;
+                }
+                
+                videoHtml = `
+                    <div class="embed-video-player">
+                        <video src="${videoUrl}" ${posterAttr} controls preload="metadata" class="embed-video-element"
+                               onerror="this.outerHTML='<div class=video-error>🎬 Video failed to load</div>'">
+                            Your browser doesn't support video playback.
+                        </video>
+                    </div>
+                    ${alt ? `<div class="video-alt">📝 ${escapeHtml(alt)}</div>` : ''}
+                    <div class="video-meta">
+                        <span>🎬 ${videoMime}</span>
+                        ${videoSize ? `<span>📦 ${RecordRenderers.formatFileSize(videoSize)}</span>` : ''}
+                        ${aspectRatio ? `<span>📐 ${aspectRatio.width}×${aspectRatio.height}</span>` : ''}
+                    </div>
+                    <div class="video-blob-links">
+                        <a href="${videoDetailUrl}">🔍 Video blob</a>
+                        ${thumbCid ? `<a href="#/${did}/blobs/${thumbCid}">🖼️ Thumbnail blob</a>` : ''}
+                    </div>
+                `;
+            } else {
+                videoHtml = `
+                    <div class="video-placeholder">
+                        <span style="font-size: 48px;">🎬</span>
+                        <p>Video attached</p>
+                        ${alt ? `<p class="video-alt">${escapeHtml(alt)}</p>` : ''}
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="embed embed-video">
-                    <div class="embed-label">🎬 Video attached</div>
+                    <div class="embed-label">🎬 Video</div>
+                    ${videoHtml}
+                </div>
+            `;
+        }
+
+        // Audio (for completeness)
+        if (type === 'app.bsky.embed.audio' || embed.audio) {
+            const audio = embed.audio || embed;
+            const audioCid = RecordRenderers.extractBlobCid(audio);
+            const audioMime = audio.mimeType || 'audio/*';
+            const audioSize = audio.size;
+            
+            let audioHtml = '';
+            if (audioCid && did) {
+                const audioUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(audioCid)}`;
+                const audioDetailUrl = `#/${did}/blobs/${audioCid}`;
+                
+                audioHtml = `
+                    <div class="embed-audio-player">
+                        <audio src="${audioUrl}" controls preload="metadata" class="embed-audio-element">
+                            Your browser doesn't support audio playback.
+                        </audio>
+                    </div>
+                    <div class="audio-meta">
+                        <span>🎵 ${audioMime}</span>
+                        ${audioSize ? `<span>📦 ${RecordRenderers.formatFileSize(audioSize)}</span>` : ''}
+                    </div>
+                    <div class="audio-blob-link">
+                        <a href="${audioDetailUrl}">🔍 View audio blob</a>
+                    </div>
+                `;
+            } else {
+                audioHtml = `
+                    <div class="audio-placeholder">
+                        <span style="font-size: 48px;">🎵</span>
+                        <p>Audio attached</p>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="embed embed-audio">
+                    <div class="embed-label">🎵 Audio</div>
+                    ${audioHtml}
                 </div>
             `;
         }
