@@ -202,8 +202,11 @@
     __block NSURL *resultURL = nil;
     __block NSString *resultCode = nil;
     __block NSError *resultError = nil;
+    
+    NSLog(@"[OAuth2Handler] handleAuthorizeRequest: Starting async wait");
 
     [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
+        NSLog(@"[OAuth2Handler] handleAuthorizeRequest: Completion block called. URL: %@, Code: %@, Error: %@", authorizationURL, authorizationCode, error);
         resultURL = authorizationURL;
         resultCode = authorizationCode;
         resultError = error;
@@ -214,6 +217,7 @@
     long waitResult = dispatch_semaphore_wait(sem, timeout);
 
     if (waitResult != 0) {
+        NSLog(@"[OAuth2Handler] handleAuthorizeRequest: Semaphore timed out!");
         response.statusCode = 500;
         [response setJsonBody:@{
             @"error": @"server_error",
@@ -221,6 +225,7 @@
         }];
         return;
     }
+    NSLog(@"[OAuth2Handler] handleAuthorizeRequest: Semaphore signaled");
 
     if (resultError) {
         response.statusCode = 400;
@@ -329,7 +334,10 @@
     __block Session *resultSession = nil;
     __block NSError *resultError = nil;
 
+    NSLog(@"[OAuth2Handler] handleTokenRequest: Starting async wait");
+
     [self.oauthServer handleTokenRequest:tokenRequest completion:^(Session * _Nullable session, NSError * _Nullable error) {
+        NSLog(@"[OAuth2Handler] handleTokenRequest: Completion block called. Session: %@, Error: %@", session, error);
         resultSession = session;
         resultError = error;
         dispatch_semaphore_signal(sem);
@@ -339,6 +347,7 @@
     long waitResult = dispatch_semaphore_wait(sem, timeout);
 
     if (waitResult != 0) {
+        NSLog(@"[OAuth2Handler] handleTokenRequest: Semaphore timed out!");
         response.statusCode = 500;
         [response setJsonBody:@{
             @"error": @"server_error",
@@ -346,6 +355,7 @@
         }];
         return;
     }
+    NSLog(@"[OAuth2Handler] handleTokenRequest: Semaphore signaled");
 
     if (resultError) {
         response.statusCode = 400;
