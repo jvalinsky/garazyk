@@ -216,6 +216,11 @@
         [exploreHandler handleRequest:request response:response];
     }];
     
+    [httpServer addHandlerForPath:@"/vendor" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
     // Also handle /explore for backward compatibility
     [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
         [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
