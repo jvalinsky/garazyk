@@ -143,19 +143,174 @@
     // Configure XRPC dispatcher
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
     [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
+    [XrpcMethodRegistry registerSyncMethodsWithDispatcher:dispatcher controller:controller];
     
     [httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization" forKey:@"Access-Control-Allow-Headers"];
+        if ([request.methodString isEqualToString:@"OPTIONS"]) {
+            response.statusCode = 204;
+            return;
+        }
         [dispatcher handleRequest:request response:response];
     }];
     
     [httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization" forKey:@"Access-Control-Allow-Headers"];
+        if ([request.methodString isEqualToString:@"OPTIONS"]) {
+            response.statusCode = 204;
+            return;
+        }
         [dispatcher handleRequest:request response:response];
     }];
     NSLog(@"PDSCLIServeCommand: Registered XRPC routes");
 
     // Register route handlers (using old routing system temporarily)
     [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
         [exploreHandler handleRequest:request response:response];
+    }];
+
+    // Well-known endpoint for ATProto DID discovery
+    // Returns the DID for the handle in the Host header
+    [httpServer addHandlerForPath:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"text/plain" forKey:@"Content-Type"];
+        
+        // Get the Host header to determine which user's DID to return
+        NSString *host = request.headers[@"Host"] ?: request.headers[@"host"];
+        NSString *hostname = [[host componentsSeparatedByString:@":"] firstObject]; // Remove port if present
+        
+        // For subdomain-based DIDs: alice.september.exe.xyz -> did:web:alice.september.exe.xyz
+        NSString *did = [NSString stringWithFormat:@"did:web:%@", hostname];
+        
+        response.statusCode = HttpStatusOK;
+        [response setBody:[did dataUsingEncoding:NSUTF8StringEncoding]];
+    }];
+
+    // DID document endpoint for did:web resolution (hostname-level)
+    // did:web:alice.september.exe.xyz -> https://alice.september.exe.xyz/.well-known/did.json
+    [httpServer addHandlerForPath:@"/.well-known/did.json" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"application/json" forKey:@"Content-Type"];
+        
+        // Get the Host header to determine which user's DID document to return
+        NSString *host = request.headers[@"Host"] ?: request.headers[@"host"];
+        NSString *hostname = [[host componentsSeparatedByString:@":"] firstObject]; // Remove port if present
+        
+        // The DID is simply did:web:<hostname>
+        NSString *did = [NSString stringWithFormat:@"did:web:%@", hostname];
+        
+        // Extract username from subdomain (e.g., alice.september.exe.xyz -> alice)
+        // The handle is the full hostname
+        NSString *handle = hostname;
+        
+        // TODO: Look up the user's signing key from the database
+        // For now, we generate a placeholder verification method
+        // In production, this should come from ActorStore.signingKeyWithError:
+        
+        // Return DID document per ATProto spec
+        // https://atproto.com/specs/did
+        NSDictionary *didDoc = @{
+            @"@context": @[@"https://www.w3.org/ns/did/v1"],
+            @"id": did,
+            @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
+            @"verificationMethod": @[
+                @{
+                    @"id": [NSString stringWithFormat:@"%@#atproto", did],
+                    @"type": @"Multikey",
+                    @"controller": did,
+                    // TODO: Replace with actual public key from user's ActorStore
+                    // This is a placeholder P-256 key - users need real keys generated on account creation
+                    @"publicKeyMultibase": @"zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169"
+                }
+            ],
+            @"service": @[@{
+                @"id": [NSString stringWithFormat:@"%@#atproto_pds", did],
+                @"type": @"AtprotoPersonalDataServer",
+                @"serviceEndpoint": @"https://september.exe.xyz"
+            }]
+        };
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:didDoc];
+    }];
+    
+    // Legacy path-based DID document endpoint (for backwards compatibility)
+    // did:web:september.exe.xyz:user:alice -> https://september.exe.xyz/user/alice/did.json
+    // NOTE: ATProto does NOT support path-based did:web, but we keep this for debugging
+    [httpServer addHandlerForPath:@"/user" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        
+        // Parse path like /user/alice/did.json
+        NSString *path = request.path;
+        if (![path hasSuffix:@"/did.json"]) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found", @"note": @"ATProto requires hostname-level did:web DIDs, not path-based"}];
+            return;
+        }
+        
+        // Extract username from /user/<username>/did.json
+        NSArray *parts = [path componentsSeparatedByString:@"/"];
+        if (parts.count < 3) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found"}];
+            return;
+        }
+        NSString *username = parts[2];
+        
+        // Return the CORRECT subdomain-based DID (not path-based)
+        NSString *did = [NSString stringWithFormat:@"did:web:%@.september.exe.xyz", username];
+        NSString *handle = [NSString stringWithFormat:@"%@.september.exe.xyz", username];
+        
+        // Return DID document with proper format
+        NSDictionary *didDoc = @{
+            @"@context": @[@"https://www.w3.org/ns/did/v1"],
+            @"id": did,
+            @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
+            @"verificationMethod": @[
+                @{
+                    @"id": [NSString stringWithFormat:@"%@#atproto", did],
+                    @"type": @"Multikey",
+                    @"controller": did,
+                    @"publicKeyMultibase": @"zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169"
+                }
+            ],
+            @"service": @[@{
+                @"id": [NSString stringWithFormat:@"%@#atproto_pds", did],
+                @"type": @"AtprotoPersonalDataServer",
+                @"serviceEndpoint": @"https://september.exe.xyz"
+            }]
+        };
+        
+        [response setHeader:@"application/json" forKey:@"Content-Type"];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:didDoc];
+    }];
+
+    // Health check endpoint
+    [httpServer addHandlerForPath:@"/xrpc/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        if ([request.methodString isEqualToString:@"OPTIONS"]) {
+            response.statusCode = 204;
+            return;
+        }
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"version": @"0.1.0"}];
+    }];
+
+    // Root handler
+    [httpServer addHandlerForPath:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        // Redirect to explore UI or return server info
+        if ([request.path isEqualToString:@"/"]) {
+            response.statusCode = 302;
+            [response setHeader:@"/explore/" forKey:@"Location"];
+        }
     }];
 
     // Start HTTP server
