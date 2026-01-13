@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Objective-C Playground - NSPds Tutorial</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #eee;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --success: #4ecca3;
+            --code-bg: #0f0f23;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--surface);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        header h1 span {
+            color: var(--highlight);
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 1fr auto 1fr;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .editor-section,
+        .output-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+        }
+
+        textarea,
+        .output {
+            flex: 1;
+            background: var(--code-bg);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: var(--text);
+            resize: none;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--highlight);
+        }
+
+        .output {
+            white-space: pre-wrap;
+            overflow: auto;
+        }
+
+        .output.error {
+            border-color: var(--highlight);
+        }
+
+        .output.success {
+            border-color: var(--success);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        button {
+            background: var(--highlight);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .status.running {
+            color: var(--highlight);
+        }
+
+        .status.success {
+            color: var(--success);
+        }
+
+        .status.error {
+            color: var(--highlight);
+        }
+
+        .examples {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .examples button {
+            background: var(--accent);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--highlight);
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1><span>Objective-C</span> Playground</h1>
+    </header>
+
+    <main>
+        <section class="editor-section">
+            <div class="section-header">
+                <span class="section-title">Code</span>
+                <div class="examples">
+                    <button onclick="loadExample('hello')">Hello World</button>
+                    <button onclick="loadExample('array')">Array</button>
+                    <button onclick="loadExample('dict')">Dictionary</button>
+                </div>
+            </div>
+            <textarea id="code" spellcheck="false">NSString *greeting = @"Hello from NSPds!";
+NSLog(@"%@", greeting);
+
+NSArray *items = @[@"AT Protocol", @"PDS", @"CBOR"];
+for (NSString *item in items) {
+    NSLog(@" - %@", item);
+}</textarea>
+        </section>
+
+        <div class="toolbar">
+            <button id="runBtn" onclick="runCode()">
+                <span>▶</span> Run
+            </button>
+            <span id="status" class="status"></span>
+        </div>
+
+        <section class="output-section">
+            <div class="section-header">
+                <span class="section-title">Output</span>
+            </div>
+            <div id="output" class="output">Click "Run" to execute your code...</div>
+        </section>
+    </main>
+
+    <footer>
+        Part of the <a href="/docs/tutorial">NSPds Tutorial</a> |
+        Powered by GNUstep
+    </footer>
+
+    <script>
+        const examples = {
+            hello: `NSLog(@"Hello, World!");`,
+            array: `NSArray *numbers = @[@1, @2, @3, @4, @5];
+NSLog(@"Array: %@", numbers);
+
+NSNumber *sum = [numbers valueForKeyPath:@"@sum.self"];
+NSLog(@"Sum: %@", sum);`,
+            dict: `NSDictionary *person = @{
+    @"name": @"Alice",
+    @"handle": @"alice.bsky.social",
+    @"did": @"did:plc:abc123"
+};
+
+NSLog(@"Person: %@", person);
+NSLog(@"Handle: %@", person[@"handle"]);`
+        };
+
+        function loadExample(name) {
+            document.getElementById('code').value = examples[name];
+        }
+
+        async function runCode() {
+            const code = document.getElementById('code').value;
+            const outputEl = document.getElementById('output');
+            const statusEl = document.getElementById('status');
+            const runBtn = document.getElementById('runBtn');
+
+            runBtn.disabled = true;
+            statusEl.textContent = 'Running...';
+            statusEl.className = 'status running';
+            outputEl.textContent = '';
+            outputEl.className = 'output';
+
+            try {
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, timeout: 5 })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    outputEl.textContent = result.stdout || '(no output)';
+                    if (result.stderr) {
+                        outputEl.textContent += '\n\nstderr:\n' + result.stderr;
+                    }
+                    outputEl.className = 'output success';
+                    statusEl.textContent = `Completed in ${result.executionTime}ms`;
+                    statusEl.className = 'status success';
+                } else {
+                    outputEl.textContent = result.stderr || result.stdout || 'Execution failed';
+                    outputEl.className = 'output error';
+                    statusEl.textContent = `Failed (${result.phase})`;
+                    statusEl.className = 'status error';
+                }
+            } catch (err) {
+                outputEl.textContent = 'Error: ' + err.message;
+                outputEl.className = 'output error';
+                statusEl.textContent = 'Request failed';
+                statusEl.className = 'status error';
+            } finally {
+                runBtn.disabled = false;
+            }
+        }
+
+        // Keyboard shortcut: Cmd/Ctrl + Enter to run
+        document.getElementById('code').addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                runCode();
+            }
+        });
+    </script>
+</body>
+
+</html>

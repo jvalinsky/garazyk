@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PORT=3001
+      - CORS_ORIGIN=*
+    depends_on:
+      - sandbox-build
+    restart: unless-stopped
+
+  # Dummy service to ensure sandbox is built first
+  sandbox-build:
+    build: ./sandbox
+    image: objc-sandbox
+    command: [ "echo", "Sandbox image built" ]
+    restart: "no"
