@@ -1,3 +1,16 @@
+/*!
+ @file HandleResolver.m
+
+ @abstract Handle-to-DID resolution implementation.
+
+ @discussion This file implements handle resolution following the ATProto
+ specification. Handles are resolved via HTTPS (/.well-known/atproto-did)
+ with DNS TXT fallback for 404 responses. Includes SSRF protection,
+ rate limiting, and response caching.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import <Security/Security.h>
@@ -32,9 +45,9 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 }
 
 - (void)resolveHandle:(NSString *)handle
-                     completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+                      completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
 
-    // Rate limiting check
+    /*! Check rate limit before attempting resolution. */
     if (![self checkRateLimit]) {
         NSError *rateLimitError = [NSError errorWithDomain:HandleErrorDomain
                                                    code:HandleErrorNetworkError
@@ -43,17 +56,17 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         return;
     }
 
-    // Validate handle format first
+    /*! Validate handle format before resolution. */
     NSError *validationError = nil;
     if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
         completion(nil, validationError);
         return;
     }
 
-    // Normalize handle
+    /*! Normalize handle to standard format. */
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
-    // SSRF Protection: Check if handle resolves to private/internal IPs
+    /*! Prevent SSRF attacks by validating public IP resolution. */
     if (!self.skipSSRFCheck) {
         NSError *ssrfError = nil;
         if (![self validateHandleResolvesToPublicIP:handle error:&ssrfError]) {
@@ -73,25 +86,25 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         return;
     }
     
-    // Check cache first
+    /*! Return cached DID if available. */
     NSString *cachedDID = [self.resolutionCache objectForKey:handle];
     if (cachedDID) {
         completion(cachedDID, nil);
         return;
     }
 
-    // Try HTTPS resolution first, then DNS TXT fallback for specific errors
+    /*! Attempt HTTPS resolution first, fallback to DNS TXT for 404 errors. */
     [self resolveHandleViaHTTPS:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         if (did) {
-            // Cache successful resolution
+            /*! Cache successful resolution for future requests. */
             [self.resolutionCache setObject:did forKey:handle];
             completion(did, nil);
         } else if (error && [error.domain isEqualToString:HandleErrorDomain] &&
                    error.code == HandleErrorNotFound) {
-            // Try DNS TXT fallback only for 404 Not Found errors
+            /*! Fallback to DNS TXT record lookup on 404 response. */
             [self resolveHandleViaDNS:handle completion:completion];
         } else {
-            // Ensure network errors are properly wrapped
+            /*! Wrap network errors in HandleErrorDomain for consistent error handling. */
             NSError *finalError = error;
             if (error && [error.domain isEqualToString:NSURLErrorDomain]) {
                 finalError = [NSError errorWithDomain:HandleErrorDomain
@@ -168,7 +181,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     [task resume];
     
 #else
-    // GNUstep: Use NSURLConnection with synchronous request on background queue
+    /*! Linux (GNUstep): Use NSURLConnection with synchronous request on background queue. */
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSURLRequest *request = [NSURLRequest requestWithURL:url];
         NSURLResponse *response = nil;
@@ -332,8 +345,21 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 
 #pragma mark - SSRF Protection
 
+/*!
+ @method validateHandleResolvesToPublicIP:error:
+
+ @abstract Validates that a handle resolves to a public IP address.
+
+ @discussion Performs DNS resolution and checks all resolved IP addresses
+ against private/reserved ranges to prevent SSRF attacks. This includes
+ RFC 1918 private addresses, loopback, link-local, and IPv6 private ranges.
+
+ @param handle The handle to validate (nonnull).
+ @param error On return, contains an error if validation failed.
+ @return YES if handle resolves to public IP, NO otherwise.
+ */
 - (BOOL)validateHandleResolvesToPublicIP:(NSString *)handle error:(NSError **)error {
-    // Resolve the handle to IP addresses to prevent DNS rebinding attacks
+    /*! Resolve hostname to prevent DNS rebinding attacks. */
     CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)handle);
     if (!hostRef) {
         if (error) {
@@ -368,12 +394,12 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         return NO;
     }
 
-    // Check each resolved IP address
+    /*! Validate each resolved IP address against private/reserved ranges. */
     for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
         struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
 
         if (addr->sa_family == AF_INET) {
-            // IPv4
+            /*! IPv4 address validation. */
             struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
             uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
 
@@ -387,7 +413,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
                 return NO;
             }
         } else if (addr->sa_family == AF_INET6) {
-            // IPv6
+            /*! IPv6 address validation. */
             struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
             struct in6_addr ip6 = addr_in6->sin6_addr;
 
@@ -407,50 +433,75 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     return YES;
 }
 
+/*!
+ @method isPrivateIPv4Address:
+
+ @abstract Checks if an IPv4 address is in a private or reserved range.
+
+ @discussion Blocks RFC 1918 private addresses (10.x, 172.16.x, 192.168.x),
+ loopback (127.x), link-local (169.254.x), multicast (224.x), and TEST-NET
+ ranges used for documentation (192.0.2.x, 198.51.100.x, 203.0.113.x).
+
+ @param ip The IPv4 address in network byte order (ntohl applied).
+ @return YES if address is private/reserved, NO if public.
+ */
 - (BOOL)isPrivateIPv4Address:(uint32_t)ip {
-    // RFC 1918 private ranges
+    /*! RFC 1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. */
     if ((ip & 0xFF000000) == 0x0A000000) return YES;      // 10.0.0.0/8
     if ((ip & 0xFFF00000) == 0xAC100000) return YES;      // 172.16.0.0/12
     if ((ip & 0xFFFF0000) == 0xC0A80000) return YES;      // 192.168.0.0/16
 
-    // Loopback
+    /*! Loopback: 127.0.0.0/8. */
     if ((ip & 0xFF000000) == 0x7F000000) return YES;      // 127.0.0.0/8
 
-    // Link-local
+    /*! Link-local: 169.254.0.0/16. */
     if ((ip & 0xFFFF0000) == 0xA9FE0000) return YES;      // 169.254.0.0/16
 
-    // Additional blocked ranges for enhanced security
-    if ((ip & 0xFF000000) == 0x00000000) return YES;      // 0.0.0.0/8 (current network)
-    if ((ip & 0xFFC00000) == 0x64400000) return YES;      // 100.64.0.0/10 (shared address space - RFC 6598)
-    if ((ip & 0xFFFFFF00) == 0xC0000000) return YES;      // 192.0.0.0/24 (IETF protocol assignments)
+    /*! TEST-NET documentation ranges (RFC 5737). */
+    if ((ip & 0xFF000000) == 0x00000000) return YES;      // 0.0.0.0/8
+    if ((ip & 0xFFC00000) == 0x64400000) return YES;      // 100.64.0.0/10 (RFC 6598)
+    if ((ip & 0xFFFFFF00) == 0xC0000000) return YES;      // 192.0.0.0/24 (IETF protocol)
     if ((ip & 0xFFFFFF00) == 0xC0000200) return YES;      // 192.0.2.0/24 (TEST-NET-1)
     if ((ip & 0xFFFFFF00) == 0xC6336400) return YES;      // 198.51.100.0/24 (TEST-NET-2)
     if ((ip & 0xFFFFFF00) == 0xCB007100) return YES;      // 203.0.113.0/24 (TEST-NET-3)
-    if ((ip & 0xF0000000) == 0xE0000000) return YES;      // 224.0.0.0/4 (multicast)
-    if ((ip & 0xF0000000) == 0xF0000000) return YES;      // 240.0.0.0/4 (reserved for future use)
+
+    /*! Multicast (224.0.0.0/4) and reserved for future use (240.0.0.0/4). */
+    if ((ip & 0xF0000000) == 0xE0000000) return YES;      // 224.0.0.0/4
+    if ((ip & 0xF0000000) == 0xF0000000) return YES;      // 240.0.0.0/4
 
     return NO;
 }
 
+/*!
+ @method isPrivateIPv6Address:
+
+ @abstract Checks if an IPv6 address is in a private or reserved range.
+
+ @discussion Blocks loopback (::1), unique local addresses (fc00::/7),
+ link-local (fe80::/10), and IPv4-mapped IPv6 addresses containing
+ private IPv4 addresses.
+
+ @param ip6 The IPv6 address structure.
+ @return YES if address is private/reserved, NO if public.
+ */
 - (BOOL)isPrivateIPv6Address:(struct in6_addr)ip6 {
-    // IPv6 private ranges
     const uint8_t *bytes = ip6.s6_addr;
 
-    // ::1/128 (loopback)
+    /*! Loopback: ::1/128. */
     if (memcmp(&ip6, &in6addr_loopback, sizeof(struct in6_addr)) == 0) return YES;
 
-    // fc00::/7 (unique local addresses)
+    /*! Unique local addresses (ULA): fc00::/7. */
     if ((bytes[0] & 0xFE) == 0xFC) return YES;
 
-    // fe80::/10 (link-local)
+    /*! Link-local: fe80::/10. */
     if (bytes[0] == 0xFE && (bytes[1] & 0xC0) == 0x80) return YES;
 
-    // ::ffff:0:0/96 (IPv4-mapped IPv6 addresses)
-    // Check if first 80 bits are zero and next 16 bits are 0xFFFF
+    /*! IPv4-mapped IPv6 addresses: ::ffff:0:0/96. */
+    /*! Validate embedded IPv4 to prevent IPv4 private address bypass. */
     if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF}, 12) == 0) {
-        // Extract the embedded IPv4 address from last 4 bytes
+        /*! Extract embedded IPv4 from last 4 bytes. */
         uint32_t ipv4 = ntohl(*(uint32_t *)(bytes + 12));
-        // Check if the embedded IPv4 address is private
+        /*! Recursively validate embedded IPv4 address. */
         return [self isPrivateIPv4Address:ipv4];
     }
 
