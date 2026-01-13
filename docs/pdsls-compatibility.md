@@ -99,13 +99,13 @@ Implemented. Returns a single record as a CAR file (bytes).
 **Response:** `application/vnd.ipld.car` (binary CAR data)
 
 **Note:** Current implementation returns a CAR with:
-- Commit block (unsigned, references MST root)
+- Commit block (signed with repo key when available)
 - MST proof path nodes from root to record
 - Record block itself
 
-Cryptographic verification may still fail if:
-- The commit is not properly signed
-- MST structure differs from what verifier expects
+Cryptographic verification requirements:
+- Repo has a signing key stored (generated on account creation)
+- Keys are now proper secp256k1 (32-byte private keys)
 
 Record data is always accessible via `com.atproto.repo.getRecord`.
 
@@ -127,5 +127,6 @@ Our implementation runs on port 8081 separately. May need:
 3. ~~**Priority 3**: Implement `app.bsky.actor.searchActorsTypeahead`~~ ✅ Done
 
 ### Optional Improvements
-- Sign commit blocks with repo key for full cryptographic verification
+- ~~Sign commit blocks with repo key~~ ✅ Done
 - Store raw CBOR blocks for exact CID matching
+- ~~Add proper secp256k1 key generation (currently RSA)~~ ✅ Done

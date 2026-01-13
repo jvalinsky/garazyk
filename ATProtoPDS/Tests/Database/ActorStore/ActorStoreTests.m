@@ -195,19 +195,18 @@
 - (void)testSigningKeyGeneration {
     __autoreleasing NSError *error = nil;
     
-    XCTAssertFalse([self.store signingKeyWithError:&error], @"Should not have signing key initially");
+    // Should not have signing key initially
+    NSData *initialKey = [self.store signingKeyPrivateBytesWithError:&error];
+    XCTAssertNil(initialKey, @"Should not have signing key initially");
     XCTAssertNotNil(error, @"Should have error for missing key");
     
     __autoreleasing NSError *genError = nil;
     XCTAssertTrue([self.store generateSigningKeyWithError:&genError], @"Generate key failed: %@", genError);
     
     __autoreleasing NSError *keyError = nil;
-    SecKeyRef key = [self.store signingKeyWithError:&keyError];
-#if defined(__APPLE__)
-    XCTAssertNotNil((__bridge id)key, @"Should have signing key now: %@", keyError);
-#else
+    NSData *key = [self.store signingKeyPrivateBytesWithError:&keyError];
     XCTAssertNotNil(key, @"Should have signing key now: %@", keyError);
-#endif
+    XCTAssertEqual(key.length, 32, @"secp256k1 private key should be 32 bytes");
 }
 
 - (void)testRecordCount {

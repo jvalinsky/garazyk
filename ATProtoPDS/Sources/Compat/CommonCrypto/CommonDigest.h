@@ -51,6 +51,15 @@ static inline unsigned char *CC_MD5(const void *data, CC_LONG len, unsigned char
     return md;
 }
 
+static inline unsigned char *CC_SHA1(const void *data, CC_LONG len, unsigned char *md) {
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+    EVP_DigestUpdate(ctx, data, len);
+    EVP_DigestFinal_ex(ctx, md, NULL);
+    EVP_MD_CTX_free(ctx);
+    return md;
+}
+
 
 #endif
 #endif

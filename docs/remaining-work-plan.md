@@ -82,7 +82,7 @@ Sign commits when exporting records for sync.getRecord.
 | 1.1 Review key storage | ✅ | Keys in ActorStore via Keychain |
 | 1.2 Load signing key | ✅ | signingKeyPrivateBytesWithError added |
 | 1.3 Sign commit | ✅ | commit.signWithPrivateKey called |
-| 1.4 Verify locally | ⬜ | |
+| 1.4 Verify locally | ✅ | ActorStoreTests + RepoCommitTests pass |
 | 2.1 Build and run | ⬜ | |
 | 2.2 Test endpoints | ⬜ | |
 | 2.3 Test WebSocket | ⬜ | |
