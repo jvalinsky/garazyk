@@ -24,6 +24,34 @@ export const RecordRenderers = {
         }
     },
 
+    // Extract DID from an AT URI (at://did:xxx/collection/rkey)
+    extractDidFromUri(uri) {
+        if (!uri) return null;
+        const match = uri.match(/^at:\/\/([^\/]+)/);
+        return match ? match[1] : null;
+    },
+
+    // Extract blob CID from a blob reference object
+    // Handles both formats:
+    //   { "$type": "blob", "ref": { "$link": "bafyrei..." }, ... }
+    //   { "cid": "bafyrei...", ... }
+    extractBlobCid(blob) {
+        if (!blob) return null;
+        // New format with $link
+        if (blob.ref && blob.ref['$link']) {
+            return blob.ref['$link'];
+        }
+        // Direct CID field
+        if (blob.cid) {
+            return blob.cid;
+        }
+        // Legacy format
+        if (blob['$link']) {
+            return blob['$link'];
+        }
+        return null;
+    },
+
     // Format a DID as a shorter display string
     formatDid(did) {
         if (!did) return '';
@@ -179,13 +207,14 @@ export const RecordRenderers = {
     renderers: {
         // Post renderer
         'app.bsky.feed.post': (record, value, options) => {
+            const did = RecordRenderers.extractDidFromUri(record.uri);
             const text = RecordRenderers.renderTextWithFacets(value.text || '', value.facets);
             const hasEmbed = value.embed != null;
             const hasReply = value.reply != null;
             
             let embedHtml = '';
             if (value.embed) {
-                embedHtml = RecordRenderers.renderEmbed(value.embed);
+                embedHtml = RecordRenderers.renderEmbed(value.embed, did);
             }
 
             let replyHtml = '';
@@ -216,13 +245,47 @@ export const RecordRenderers = {
 
         // Profile renderer
         'app.bsky.actor.profile': (record, value, options) => {
-            let avatarHtml = '';
-            if (value.avatar) {
-                avatarHtml = `<div class="profile-avatar">📷 Avatar attached</div>`;
-            }
+            // Extract DID from record URI (at://did:plc:xxx/collection/rkey)
+            const did = RecordRenderers.extractDidFromUri(record.uri);
+            
             let bannerHtml = '';
             if (value.banner) {
-                bannerHtml = `<div class="profile-banner">🖼️ Banner attached</div>`;
+                const bannerCid = RecordRenderers.extractBlobCid(value.banner);
+                if (bannerCid && did) {
+                    const bannerUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(bannerCid)}`;
+                    const detailUrl = `#/${did}/blobs/${bannerCid}`;
+                    bannerHtml = `
+                        <div class="profile-banner">
+                            <a href="${detailUrl}" title="View banner blob details">
+                                <img src="${bannerUrl}" alt="Profile banner" class="profile-banner-img" onerror="this.parentElement.innerHTML='🖼️ Banner (failed to load)'">
+                            </a>
+                            <div class="blob-link">
+                                <a href="${detailUrl}">🔗 View blob details</a>
+                            </div>
+                        </div>`;
+                } else {
+                    bannerHtml = `<div class="profile-banner">🖼️ Banner attached</div>`;
+                }
+            }
+
+            let avatarHtml = '';
+            if (value.avatar) {
+                const avatarCid = RecordRenderers.extractBlobCid(value.avatar);
+                if (avatarCid && did) {
+                    const avatarUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(avatarCid)}`;
+                    const detailUrl = `#/${did}/blobs/${avatarCid}`;
+                    avatarHtml = `
+                        <div class="profile-avatar">
+                            <a href="${detailUrl}" title="View avatar blob details">
+                                <img src="${avatarUrl}" alt="Profile avatar" class="profile-avatar-img" onerror="this.parentElement.innerHTML='📷 Avatar (failed to load)'">
+                            </a>
+                            <div class="blob-link">
+                                <a href="${detailUrl}">🔗 View blob details</a>
+                            </div>
+                        </div>`;
+                } else {
+                    avatarHtml = `<div class="profile-avatar">📷 Avatar attached</div>`;
+                }
             }
 
             return `
@@ -232,8 +295,8 @@ export const RecordRenderers = {
                         <span class="record-time">${RecordRenderers.formatTime(value.createdAt)}</span>
                     </div>
                     <div class="profile-content">
-                        ${avatarHtml}
                         ${bannerHtml}
+                        ${avatarHtml}
                         <div class="profile-name">
                             <strong>${escapeHtml(value.displayName || '(no display name)')}</strong>
                         </div>
@@ -405,7 +468,7 @@ export const RecordRenderers = {
     },
 
     // Render embeds (images, external links, quotes, etc.)
-    renderEmbed(embed) {
+    renderEmbed(embed, did) {
         if (!embed) return '';
 
         const type = embed['$type'];
@@ -416,11 +479,29 @@ export const RecordRenderers = {
             return `
                 <div class="embed embed-images">
                     <div class="embed-label">🖼️ ${images.length} image(s) attached</div>
-                    ${images.map(img => `
-                        <div class="embed-image-info">
-                            ${img.alt ? `<span class="image-alt">Alt: ${escapeHtml(img.alt)}</span>` : ''}
-                        </div>
-                    `).join('')}
+                    <div class="embed-images-grid">
+                        ${images.map(img => {
+                            const imgCid = RecordRenderers.extractBlobCid(img.image);
+                            if (imgCid && did) {
+                                const imgUrl = `/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(imgCid)}`;
+                                const detailUrl = `#/${did}/blobs/${imgCid}`;
+                                return `
+                                    <div class="embed-image-item">
+                                        <a href="${detailUrl}" title="View image blob details">
+                                            <img src="${imgUrl}" alt="${escapeHtml(img.alt || 'Embedded image')}" class="embed-image" onerror="this.outerHTML='<span class=\\'image-error\\'>🖼️ Image failed to load</span>'">
+                                        </a>
+                                        ${img.alt ? `<div class="image-alt">Alt: ${escapeHtml(img.alt)}</div>` : ''}
+                                        <div class="blob-link"><a href="${detailUrl}">🔗 View blob details</a></div>
+                                    </div>
+                                `;
+                            }
+                            return `
+                                <div class="embed-image-info">
+                                    ${img.alt ? `<span class="image-alt">Alt: ${escapeHtml(img.alt)}</span>` : '📷 Image attached'}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
             `;
         }
@@ -461,10 +542,10 @@ export const RecordRenderers = {
         if (type === 'app.bsky.embed.recordWithMedia') {
             let html = '';
             if (embed.record) {
-                html += this.renderEmbed({ ...embed.record, '$type': 'app.bsky.embed.record' });
+                html += this.renderEmbed({ ...embed.record, '$type': 'app.bsky.embed.record' }, did);
             }
             if (embed.media) {
-                html += this.renderEmbed(embed.media);
+                html += this.renderEmbed(embed.media, did);
             }
             return html;
         }
