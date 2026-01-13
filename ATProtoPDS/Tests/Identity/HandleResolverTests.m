@@ -3,7 +3,6 @@
 
 @interface HandleResolver (Testing)
 
-@property (nonatomic, assign, readwrite) BOOL skipSSRFCheck;
 @property (nonatomic, strong) NSDictionary *mockResponse;
 @property (nonatomic, strong) NSError *mockError;
 @property (nonatomic, assign) NSTimeInterval mockDelay;
@@ -97,7 +96,7 @@
 - (void)setUp {
     [super setUp];
     self.resolver = [[HandleResolver alloc] init];
-    self.resolver.skipSSRFCheck = YES;
+    [self.resolver setValue:@YES forKey:@"skipSSRFCheck"];
 }
 
 - (void)tearDown {
@@ -155,7 +154,7 @@
                                                                      error:nil
                                                                      delay:0.1];
     HandleResolver *mockResolver = [[HandleResolver alloc] init];
-    mockResolver.skipSSRFCheck = YES;
+    [mockResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [mockResolver setValue:mockSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Valid handle test"];
@@ -177,7 +176,7 @@
                                                                                            userInfo:nil]
                                                                      delay:0.1];
     HandleResolver *errorResolver = [[HandleResolver alloc] init];
-    errorResolver.skipSSRFCheck = YES;
+    [errorResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [errorResolver setValue:errorSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Network error test"];
@@ -197,7 +196,7 @@
                                                                          error:nil
                                                                          delay:0.1];
     HandleResolver *notFoundResolver = [[HandleResolver alloc] init];
-    notFoundResolver.skipSSRFCheck = YES;
+    [notFoundResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [notFoundResolver setValue:notFoundSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"404 error test"];
@@ -217,7 +216,7 @@
                                                                             error:nil
                                                                             delay:0.1];
     HandleResolver *serverErrorResolver = [[HandleResolver alloc] init];
-    serverErrorResolver.skipSSRFCheck = YES;
+    [serverErrorResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [serverErrorResolver setValue:serverErrorSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"500 error test"];
@@ -237,7 +236,7 @@
                                                                           error:nil
                                                                           delay:0.1];
     HandleResolver *emptyBodyResolver = [[HandleResolver alloc] init];
-    emptyBodyResolver.skipSSRFCheck = YES;
+    [emptyBodyResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [emptyBodyResolver setValue:emptyBodySession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Empty body test"];
@@ -257,7 +256,7 @@
                                                                            error:nil
                                                                            delay:0.1];
     HandleResolver *whitespaceResolver = [[HandleResolver alloc] init];
-    whitespaceResolver.skipSSRFCheck = YES;
+    [whitespaceResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [whitespaceResolver setValue:whitespaceSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Whitespace only test"];
@@ -277,7 +276,7 @@
                                                                            error:nil
                                                                            delay:0.1];
     HandleResolver *invalidDIDResolver = [[HandleResolver alloc] init];
-    invalidDIDResolver.skipSSRFCheck = YES;
+    [invalidDIDResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [invalidDIDResolver setValue:invalidDIDSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid DID test"];
@@ -297,7 +296,7 @@
                                                                              error:nil
                                                                              delay:0.1];
     HandleResolver *whitespaceDIDResolver = [[HandleResolver alloc] init];
-    whitespaceDIDResolver.skipSSRFCheck = YES;
+    [whitespaceDIDResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [whitespaceDIDResolver setValue:whitespaceDIDSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"DID with whitespace test"];
@@ -314,7 +313,7 @@
 
 - (void)testURLConstructionInvalidCharacters {
     HandleResolver *urlTestResolver = [[HandleResolver alloc] init];
-    urlTestResolver.skipSSRFCheck = YES;
+    [urlTestResolver setValue:@YES forKey:@"skipSSRFCheck"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid URL characters test"];
 
@@ -345,8 +344,8 @@
 
     HandleResolver *concurrentResolver1 = [[HandleResolver alloc] init];
     HandleResolver *concurrentResolver2 = [[HandleResolver alloc] init];
-    concurrentResolver1.skipSSRFCheck = YES;
-    concurrentResolver2.skipSSRFCheck = YES;
+    [concurrentResolver1 setValue:@YES forKey:@"skipSSRFCheck"];
+    [concurrentResolver2 setValue:@YES forKey:@"skipSSRFCheck"];
     [concurrentResolver1 setValue:concurrentSession1 forKey:@"session"];
     [concurrentResolver2 setValue:concurrentSession2 forKey:@"session"];
 
@@ -399,7 +398,7 @@
                                                                            error:nil
                                                                            delay:0.1];
     HandleResolver *specialCharResolver = [[HandleResolver alloc] init];
-    specialCharResolver.skipSSRFCheck = YES;
+    [specialCharResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [specialCharResolver setValue:specialCharSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Special characters test"];
@@ -417,7 +416,7 @@
 - (void)testMemoryManagement {
     @autoreleasepool {
         HandleResolver *tempResolver = [[HandleResolver alloc] init];
-        tempResolver.skipSSRFCheck = YES;
+        [tempResolver setValue:@YES forKey:@"skipSSRFCheck"];
         MockURLSession *tempSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:temp"}
                                                                          error:nil
                                                                          delay:0.1];
@@ -446,7 +445,7 @@
                                                                          error:nil
                                                                          delay:0.1];
     HandleResolver *multiDotResolver = [[HandleResolver alloc] init];
-    multiDotResolver.skipSSRFCheck = YES;
+    [multiDotResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [multiDotResolver setValue:multiDotSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Multiple dots test"];
@@ -470,7 +469,7 @@
                                                                          error:nil
                                                                          delay:0.1];
     HandleResolver *dnsResolver = [[HandleResolver alloc] init];
-    dnsResolver.skipSSRFCheck = YES;
+    [dnsResolver setValue:@YES forKey:@"skipSSRFCheck"];
     [dnsResolver setValue:notFoundSession forKey:@"session"];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS fallback test"];
