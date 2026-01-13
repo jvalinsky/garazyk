@@ -130,6 +130,19 @@ export const API = {
         });
     },
     
+    async getBlobs(did) {
+        try {
+            const params = new URLSearchParams({ did });
+            const response = await fetch(`${API_BASE}/blobs?${params}`);
+            if (!response.ok) {
+                return { cids: [] };
+            }
+            return await response.json();
+        } catch (e) {
+            return { cids: [] };
+        }
+    },
+    
     async getBlob(cid) {
         try {
             const params = new URLSearchParams({ cid });
