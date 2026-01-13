@@ -195,8 +195,23 @@
     }];
     NSLog(@"PDSCLIServeCommand: Registered XRPC routes");
 
-    // Register route handlers - serve explore UI at root
+    // Register route handlers - serve explore UI at root and sub-paths
     [httpServer addHandlerForPath:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
+    [httpServer addHandlerForPath:@"/api" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
+    [httpServer addHandlerForPath:@"/css" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
+    [httpServer addHandlerForPath:@"/js" handler:^(HttpRequest *request, HttpResponse *response) {
         [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
         [exploreHandler handleRequest:request response:response];
     }];
