@@ -56,3 +56,9 @@ xcuserdata/
 *.framework
 *.h.gch
 *.pch
+
+# Tutorial Site Artifacts
+docs/site/node_modules/
+docs/site/.vitepress/dist/
+docs/site/.vitepress/cache/
+docs/tutorial-site.tar.gz
