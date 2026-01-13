@@ -163,6 +163,7 @@
     NSError *clientError = nil;
     NSDictionary *client = [self validateClient:clientID error:&clientError];
     if (!client) {
+        fprintf(stderr, "DEBUG: validateClient failed: %s\n", [[clientError localizedDescription] UTF8String]);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"unauthorized_client",
@@ -175,6 +176,7 @@
     NSString *redirectURI = params[@"redirect_uri"];
     NSError *redirectError = nil;
     if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+        fprintf(stderr, "DEBUG: validateRedirectURI failed: %s\n", [[redirectError localizedDescription] UTF8String]);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -186,6 +188,7 @@
     // Validate state parameter (CSRF protection)
     NSString *state = params[@"state"];
     if (!state || [state stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]].length == 0) {
+        fprintf(stderr, "DEBUG: State validation failed\n");
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
