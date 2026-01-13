@@ -371,6 +371,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 
+    NSLog(@"Result 1: DID=%@, Error=%@", resultDID1, resultError1);
+    NSLog(@"Result 2: DID=%@, Error=%@", resultDID2, resultError2);
+
     XCTAssertEqualObjects(resultDID1, @"did:plc:concurrent1", @"First concurrent DID should match");
     XCTAssertNil(resultError1, @"No error for first resolution");
     XCTAssertEqualObjects(resultDID2, @"did:plc:concurrent2", @"Second concurrent DID should match");
