@@ -4,6 +4,7 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
+#import "Auth/Secp256k1.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
@@ -20,7 +21,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #else
 @property (nonatomic, strong) dispatch_queue_t transactionQueue;
 #endif
-@property (nonatomic, assign) SecKeyRef signingKey;
+@property (nonatomic, strong) NSData *signingKeyData;
 
 @end
 
@@ -46,7 +47,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
         _blobCache = [NSMutableDictionary dictionary];
         _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
-        _signingKey = NULL;
+        _signingKeyData = nil;
     }
     return self;
 }
@@ -168,14 +169,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     [self.stmtCache removeAllObjects];
     [self.blobCache removeAllObjects];
     
-    if (self.signingKey) {
-#if defined(__APPLE__)
-        CFRelease(self.signingKey);
-#else
-        CFRelease((__bridge CFTypeRef)self.signingKey);
-#endif
-        self.signingKey = NULL;
-    }
+    self.signingKeyData = nil;
     
     sqlite3_close(self.db);
     self.db = NULL;
@@ -866,9 +860,9 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     return [kSigningKeyAccountPrefix stringByAppendingString:did];
 }
 
-- (nullable SecKeyRef)signingKeyWithError:(NSError **)error {
-    if (self.signingKey) {
-        return self.signingKey;
+- (nullable NSData *)loadSigningKeyDataWithError:(NSError **)error {
+    if (self.signingKeyData) {
+        return self.signingKeyData;
     }
     
     NSString *account = [self keychainAccountForDid:self.did];
@@ -877,20 +871,12 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
-        (__bridge id)kSecReturnRef: @YES,
+        (__bridge id)kSecReturnData: @YES,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
     
-    SecKeyRef keyRef = NULL;
-#if defined(__APPLE__)
-    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyRef);
-#else
-    CFTypeRef keyResult = NULL;
-    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &keyResult);
-    if (keyResult) {
-        keyRef = (__bridge_transfer SecKeyRef)keyResult;
-    }
-#endif
+    CFDataRef keyData = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyData);
     
     if (status == errSecItemNotFound) {
         if (error) {
@@ -898,7 +884,7 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
                                         code:PDSActorStoreErrorSigningKeyNotFound
                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key not found in Keychain"}];
         }
-        return NULL;
+        return nil;
     }
     
     if (status != errSecSuccess) {
@@ -907,26 +893,40 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
                                         code:PDSActorStoreErrorSigningKeyInvalid
                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve signing key from Keychain"}];
         }
-        return NULL;
+        return nil;
     }
     
-    self.signingKey = keyRef;
-    return keyRef;
+    NSData *data = (__bridge_transfer NSData *)keyData;
+    
+    // Validate key size - secp256k1 private keys are 32 bytes
+    // Legacy RSA keys will be larger and need regeneration
+    if (data.length != 32) {
+        NSLog(@"Warning: Stored key is %lu bytes, expected 32 for secp256k1. May be legacy RSA key.", (unsigned long)data.length);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                        code:PDSActorStoreErrorSigningKeyInvalid
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Invalid key format - expected 32-byte secp256k1 key"}];
+        }
+        return nil;
+    }
+    
+    self.signingKeyData = data;
+    return data;
 }
 
-- (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error {
-    NSString *account = [self keychainAccountForDid:self.did];
-    
-    NSData *keyData = [self exportPublicKeyData:key];
-    if (!keyData) {
+- (BOOL)storeSigningKeyData:(NSData *)keyData error:(NSError **)error {
+    if (keyData.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                         code:-1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to export key data"}];
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Signing key must be 32 bytes (secp256k1)"}];
         }
         return NO;
     }
     
+    NSString *account = [self keychainAccountForDid:self.did];
+    
+    // Delete any existing key
     NSDictionary *query = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
@@ -935,15 +935,12 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     
     SecItemDelete((__bridge CFDictionaryRef)query);
     
+    // Store the raw key data
     NSDictionary *attributes = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
-#if defined(__APPLE__)
-        (__bridge id)kSecValueRef: (__bridge id)key,
-#else
-        (__bridge id)kSecValueRef: key,
-#endif
+        (__bridge id)kSecValueData: keyData,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
     
@@ -958,96 +955,31 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
         return NO;
     }
     
-    if (self.signingKey) {
-#if defined(__APPLE__)
-        CFRelease(self.signingKey);
-#else
-        CFRelease((__bridge CFTypeRef)self.signingKey);
-#endif
-    }
-    self.signingKey = key;
-#if defined(__APPLE__)
-    CFRetain(self.signingKey);
-#else
-    CFRetain((__bridge CFTypeRef)self.signingKey);
-#endif
-    
+    self.signingKeyData = keyData;
     return YES;
 }
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
-    NSDictionary *attributes = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeySizeInBits: @(2048),
-        (__bridge id)kSecPrivateKeyAttrs: @{
-            (__bridge id)kSecAttrIsPermanent: @NO
-        }
-    };
+    // Generate secp256k1 key pair using the Secp256k1 wrapper
+    NSError *genError = nil;
+    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&genError];
     
-    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, NULL);
-    
-    if (!privateKey) {
+    if (!keyPair) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:-1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate signing key"}];
+            *error = genError ?: [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                                     code:-1
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate secp256k1 signing key"}];
         }
         return NO;
     }
     
-    BOOL success = [self storeSigningKey:privateKey error:error];
-#if defined(__APPLE__)
-    CFRelease(privateKey);
-#else
-    // ARC manages privateKey (ShimSecKey*), no manual release needed or it will double-release
-    // CFRelease((__bridge CFTypeRef)privateKey);
-#endif
-    
-    return success;
+    // Store the 32-byte private key
+    return [self storeSigningKeyData:keyPair.privateKey error:error];
 }
 
 - (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
-    SecKeyRef key = [self signingKeyWithError:error];
-    if (!key) {
-        return nil;
-    }
-    
-    // Export the private key to external representation
-    CFErrorRef cfError = NULL;
-    CFDataRef keyData = SecKeyCopyExternalRepresentation(key, &cfError);
-    
-    if (!keyData) {
-        if (error && cfError) {
-            *error = (__bridge_transfer NSError *)cfError;
-        } else if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:PDSActorStoreErrorSigningKeyInvalid
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to export private key"}];
-        }
-        return nil;
-    }
-    
-    NSData *data = (__bridge_transfer NSData *)keyData;
-    
-    // For secp256k1 keys, the raw private key should be 32 bytes
-    // For RSA keys, it will be in PKCS#1 format which is larger
-    // If it's RSA format, we need to extract the actual private key
-    // For now, return the raw bytes - caller may need to handle format
-    return data;
-}
-
-- (NSData *)exportPublicKeyData:(SecKeyRef)key {
-    SecKeyRef publicKey = SecKeyCopyPublicKey(key);
-    if (!publicKey) return nil;
-    
-    NSData *data = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(publicKey, NULL);
-#if defined(__APPLE__)
-    CFRelease(publicKey);
-#else
-    // ARC manages publicKey (ShimSecKey*), no manual release needed
-    // CFRelease((__bridge CFTypeRef)publicKey);
-#endif
-    return data;
+    // Return the raw 32-byte secp256k1 private key
+    return [self loadSigningKeyDataWithError:error];
 }
 
 #pragma mark - Blob Operations
