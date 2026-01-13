@@ -324,7 +324,7 @@ if(BUILD_TESTS)
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
   list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
-  list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
+  # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
 
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/XRPC/XrpcHandlerTests.m")
   # list(FILTER MY_TEST_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
