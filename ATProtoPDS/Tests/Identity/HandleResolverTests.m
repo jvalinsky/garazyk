@@ -3,6 +3,7 @@
 
 @interface HandleResolver (Testing)
 
+@property (nonatomic, assign, readwrite) BOOL skipSSRFCheck;
 @property (nonatomic, strong) NSDictionary *mockResponse;
 @property (nonatomic, strong) NSError *mockError;
 @property (nonatomic, assign) NSTimeInterval mockDelay;
