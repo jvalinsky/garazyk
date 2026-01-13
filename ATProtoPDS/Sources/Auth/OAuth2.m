@@ -27,7 +27,16 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 @implementation OAuth2AuthorizationRequest
 
 - (NSURL *)authorizationURL {
-    NSURLComponents *components = [NSURLComponents componentsWithString:@"/oauth/authorize"];
+    // Use a full URL to ensure compatibility with GNUstep's NSURLComponents
+    NSURLComponents *components = [NSURLComponents componentsWithString:@"https://localhost/oauth/authorize"];
+    if (!components) {
+        // Fallback if parsing failed (unlikely with fixed string)
+        components = [[NSURLComponents alloc] init];
+        components.scheme = @"https";
+        components.host = @"localhost";
+        components.path = @"/oauth/authorize";
+    }
+    
     NSMutableArray<NSURLQueryItem *> *queryItems = [NSMutableArray array];
     if (self.clientID) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"client_id" value:self.clientID]];
     if (self.redirectURI) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"redirect_uri" value:self.redirectURI]];
