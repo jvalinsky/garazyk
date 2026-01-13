@@ -2,7 +2,7 @@
 #import "Repository/CBOR.h"
 #import "Core/CID.h"
 #import <CommonCrypto/CommonDigest.h>
-#import <arpa/inet.h>
+#import "Compat/Endian.h"
 #import <objc/runtime.h>
 
 #pragma mark - Internal Classes
@@ -53,14 +53,14 @@
 - (NSData *)serialize {
     NSMutableData *data = [NSMutableData data];
 
-    uint16_t keyLen = htons((uint16_t)[self keyLength]);
+    uint16_t keyLen = OSSwapHostToBigInt16((uint16_t)[self keyLength]);
     [data appendBytes:&keyLen length:2];
 
     NSData *keyData = [self keyBytes];
     [data appendData:keyData];
 
     NSData *cidBytes = [self.valueCID bytes];
-    uint16_t cidLen = htons((uint16_t)cidBytes.length);
+    uint16_t cidLen = OSSwapHostToBigInt16((uint16_t)cidBytes.length);
     [data appendBytes:&cidLen length:2];
     [data appendData:cidBytes];
 
@@ -105,17 +105,17 @@
     uint8_t p = (uint8_t)self.prefixLen;
     [data appendBytes:&p length:1];
 
-    uint16_t kLen = htons((uint16_t)self.keySuffix.length);
+    uint16_t kLen = OSSwapHostToBigInt16((uint16_t)self.keySuffix.length);
     [data appendBytes:&kLen length:2];
     [data appendData:self.keySuffix];
 
     NSData *vBytes = [self.value bytes];
-    uint16_t vLen = htons((uint16_t)vBytes.length);
+    uint16_t vLen = OSSwapHostToBigInt16((uint16_t)vBytes.length);
     [data appendBytes:&vLen length:2];
     [data appendData:vBytes];
 
     CID *tCID = self.tree;
-    uint16_t tLen = tCID ? htons((uint16_t)[tCID bytes].length) : 0;
+    uint16_t tLen = tCID ? OSSwapHostToBigInt16((uint16_t)[tCID bytes].length) : 0;
     [data appendBytes:&tLen length:2];
     if (tCID) {
         [data appendData:[tCID bytes]];
