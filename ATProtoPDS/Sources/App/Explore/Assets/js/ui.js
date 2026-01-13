@@ -68,6 +68,8 @@ function init() {
                 router.navigate({ type: 'plc-ops', did: currentDid });
             } else if (section === 'collections' && currentDid) {
                 router.navigate({ type: 'collections', did: currentDid });
+            } else if (section === 'blobs' && currentDid) {
+                router.navigate({ type: 'blobs', did: currentDid });
             } else if (section === 'records' && currentDid && currentCollection) {
                 router.goToCollection(currentDid, currentCollection);
             } else if (!currentDid) {
@@ -129,6 +131,10 @@ async function handleRouteChange(route) {
                 await navigateToAccount(route.did, 'collections');
                 break;
                 
+            case 'blobs':
+                await navigateToAccount(route.did, 'blobs');
+                break;
+                
             case 'records':
                 await navigateToRecords(route.did, route.collection);
                 break;
@@ -152,6 +158,7 @@ async function navigateToAccount(did, section) {
         document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
         document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
         document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
+        document.getElementById('blobs-content').innerHTML = '<p class="loading">Loading blobs...</p>';
         
         await loadAccountData(did);
     }
@@ -160,7 +167,8 @@ async function navigateToAccount(did, section) {
     const labels = {
         'did-doc': 'DID Document',
         'plc-ops': 'PLC Operations',
-        'collections': 'Collections'
+        'collections': 'Collections',
+        'blobs': 'Blobs'
     };
     showSection(section, labels[section] || section);
 }
@@ -240,10 +248,11 @@ async function navigateToRecord(did, collection, rkey) {
 }
 
 async function loadAccountData(did) {
-    const [doc, ops, describe] = await Promise.all([
+    const [doc, ops, describe, blobs] = await Promise.all([
         API.getDidDocument(did),
         API.getPlcLog(did),
-        API.getRepoDescribe(did)
+        API.getRepoDescribe(did),
+        API.getBlobs(did)
     ]);
     
     const didContent = document.getElementById('did-content');
@@ -255,6 +264,7 @@ async function loadAccountData(did) {
     
     document.getElementById('plc-content').innerHTML = renderPlcOperations(ops);
     renderCollections(describe);
+    renderBlobs(blobs, did);
 }
 
 function highlightAccount(did) {
@@ -354,6 +364,53 @@ function renderCollections(describe) {
     }
     
     html += '</tbody></table>';
+    content.innerHTML = html;
+}
+
+function renderBlobs(blobsResult, did) {
+    const content = document.getElementById('blobs-content');
+    
+    if (blobsResult.error) {
+        content.innerHTML = `<p class="error">${escapeHtml(blobsResult.error)}</p>`;
+        return;
+    }
+    
+    const cids = blobsResult.cids || [];
+    
+    if (cids.length === 0) {
+        content.innerHTML = '<p class="empty">No blobs found</p>';
+        return;
+    }
+    
+    let html = `
+        <p class="description">
+            This repository contains <strong>${cids.length}</strong> blob(s).
+        </p>
+        <div class="blobs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+    `;
+    
+    for (const blob of cids) {
+        const cid = blob.cid || blob;
+        const mimeType = blob.mimeType || 'unknown';
+        const size = blob.size ? `${Math.round(blob.size / 1024 * 10) / 10} KB` : 'unknown size';
+        const isImage = mimeType.startsWith('image/');
+        
+        html += `
+            <div class="blob-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fafafa;">
+                ${isImage ? `<img src="/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}" style="max-width: 100%; max-height: 150px; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'">` : `<div style="height: 50px; display: flex; align-items: center; justify-content: center; color: #666;">📄 ${escapeHtml(mimeType)}</div>`}
+                <div style="font-size: 11px; word-break: break-all; color: #666;">${escapeHtml(cid)}</div>
+                <div style="font-size: 12px; margin-top: 5px;">
+                    <span style="color: #888;">${escapeHtml(mimeType)}</span> • 
+                    <span style="color: #888;">${size}</span>
+                </div>
+                <a href="/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}" 
+                   class="btn-secondary" style="display: inline-block; margin-top: 8px; font-size: 12px;" 
+                   download>Download</a>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
     content.innerHTML = html;
 }
 
