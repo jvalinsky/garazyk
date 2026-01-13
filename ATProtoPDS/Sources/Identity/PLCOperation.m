@@ -71,7 +71,25 @@ static NSString * const kPLCTombstoneType = @"plc_tombstone";
 }
 
 - (nullable NSString *)computeCID:(NSError **)error {
-    NSData *cbor = [self serializeForSigning:error];
+    // CID is computed from the SIGNED operation (includes sig field)
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    dict[@"type"] = self.type;
+    dict[@"rotationKeys"] = self.rotationKeys;
+    dict[@"verificationMethods"] = self.verificationMethods;
+    dict[@"alsoKnownAs"] = self.alsoKnownAs;
+    dict[@"services"] = self.services;
+
+    if (self.prev) {
+        dict[@"prev"] = self.prev;
+    } else {
+        dict[@"prev"] = [NSNull null];
+    }
+
+    if (self.sig) {
+        dict[@"sig"] = self.sig;
+    }
+
+    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:error];
     if (!cbor) {
         return nil;
     }
@@ -79,16 +97,35 @@ static NSString * const kPLCTombstoneType = @"plc_tombstone";
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(cbor.bytes, (CC_LONG)cbor.length, hash);
 
-    NSMutableString *base32 = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 8 / 5 + 1];
+    // Base32 encode the hash (RFC 4648 base32 lowercase, no padding)
+    // Each 5 bytes produces 8 characters
+    NSMutableString *base32 = [NSMutableString stringWithCapacity:52]; // 32 bytes -> 52 chars
     static const char *alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+    
+    uint64_t buffer = 0;
+    int bitsInBuffer = 0;
+    
     for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
-        uint32_t value = hash[i];
-        for (int j = 7; j >= 0; j--) {
-            uint32_t bit = (value >> (j * 5)) & 0x1f;
-            [base32 appendFormat:@"%c", alphabet[bit]];
+        buffer = (buffer << 8) | hash[i];
+        bitsInBuffer += 8;
+        
+        while (bitsInBuffer >= 5) {
+            bitsInBuffer -= 5;
+            int index = (buffer >> bitsInBuffer) & 0x1f;
+            [base32 appendFormat:@"%c", alphabet[index]];
         }
     }
+    
+    // Handle remaining bits (pad with zeros on the right)
+    if (bitsInBuffer > 0) {
+        int index = (buffer << (5 - bitsInBuffer)) & 0x1f;
+        [base32 appendFormat:@"%c", alphabet[index]];
+    }
 
+    // Truncate to 24 characters for did:plc identifier
+    if (base32.length > 24) {
+        return [base32 substringToIndex:24];
+    }
     return [base32 copy];
 }
 
