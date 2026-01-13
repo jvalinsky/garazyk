@@ -1001,6 +1001,9 @@
         response.statusCode = HttpStatusOK;
         [response setJsonBody:stats];
     }];
+    
+    // Register sync methods
+    [self registerSyncMethodsWithDispatcher:dispatcher controller:controller];
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request {
