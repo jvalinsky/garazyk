@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSBlobService : NSObject
 
 /*! Database pool for user stores. */
-@property (nonatomic, weak) PDSDatabasePool *databasePool;
+@property (nonatomic, assign) PDSDatabasePool *databasePool;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
