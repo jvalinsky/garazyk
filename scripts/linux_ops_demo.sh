@@ -34,8 +34,8 @@ echo "--- Creating accounts ---"
 "$CLI" account create --email bob@test.com --handle bob --data-dir "$DATA" --config "$PROJECT_ROOT/config.json"
 
 # Capture DIDs
-ALICE=$("$CLI" account info alice.test --data-dir "$DATA" --config "$PROJECT_ROOT/config.json" --json | grep -o '"did":"[^"]*"' | head -1 | cut -d'"' -f4)
-BOB=$("$CLI" account info bob.test --data-dir "$DATA" --config "$PROJECT_ROOT/config.json" --json | grep -o '"did":"[^"]*"' | head -1 | cut -d'"' -f4)
+ALICE=$("$CLI" account info alice --data-dir "$DATA" --config "$PROJECT_ROOT/config.json" --json | grep -o '"did":"[^"]*"' | head -1 | cut -d'"' -f4)
+BOB=$("$CLI" account info bob --data-dir "$DATA" --config "$PROJECT_ROOT/config.json" --json | grep -o '"did":"[^"]*"' | head -1 | cut -d'"' -f4)
 
 echo "Alice DID: $ALICE"
 echo "Bob DID:   $BOB"

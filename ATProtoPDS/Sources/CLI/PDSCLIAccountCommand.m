@@ -418,6 +418,16 @@
     }
 
     NSString *identifier = args[0];
+    
+    // Support default domain for handles in info command
+    if ([identifier rangeOfString:@"."].location == NSNotFound && ![identifier hasPrefix:@"did:"]) {
+        NSDictionary *config = [context loadConfig];
+        NSString *hostname = config[@"pds"][@"hostname"];
+        if (hostname.length > 0) {
+            identifier = [NSString stringWithFormat:@"%@.%@", identifier, hostname];
+        }
+    }
+
     PDSDatabaseAccount *account = [PDSAccountManager getAccountWithContext:context identifier:identifier];
 
     if (!account) {
