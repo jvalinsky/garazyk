@@ -97,6 +97,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.getServiceAuth. */
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.getSession. */
+- (void)registerComAtprotoServerGetSession:(XrpcMethodHandler)handler;
+
 // MARK: - Repository Methods
 
 /*! Registers handler for com.atproto.repo.createRecord. */
@@ -139,6 +142,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.sync.listBlobs. */
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.getRecord - returns record as CAR bytes. */
+- (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler;
 
 /*! Registers handler for com.atproto.repo.deleteBlob. */
 - (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;

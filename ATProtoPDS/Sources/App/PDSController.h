@@ -104,6 +104,22 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 - (nullable NSData *)getRepoDataForDid:(NSString *)did error:(NSError **)error;
 - (nullable NSString *)getRepoHeadForDid:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method getRecordAsCAR:collection:rkey:error:
+ @abstract Returns a single record as CAR (Content Addressable aRchive) bytes.
+ @discussion This method returns the record along with its proof chain to the repo root,
+             suitable for cryptographic verification. Used by pdsls.dev for record integrity checks.
+ @param did The repository DID.
+ @param collection The record collection NSID.
+ @param rkey The record key.
+ @param error Error output.
+ @return CAR bytes containing the record and proof blocks, or nil on error.
+ */
+- (nullable NSData *)getRecordAsCAR:(NSString *)did
+                         collection:(NSString *)collection
+                               rkey:(NSString *)rkey
+                              error:(NSError **)error;
+
 #pragma mark - Record Operations
 
 - (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
