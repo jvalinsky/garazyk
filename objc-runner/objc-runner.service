@@ -1,0 +1,23 @@
+[Unit]
+Description=Objective-C Code Runner API
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/objc-runner/objc-runner
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+Environment=PORT=3001
+Environment=NODE_ENV=production
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/run/docker.sock
+
+[Install]
+WantedBy=multi-user.target
