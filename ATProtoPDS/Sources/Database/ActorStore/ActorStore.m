@@ -1006,6 +1006,36 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     return success;
 }
 
+- (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
+    SecKeyRef key = [self signingKeyWithError:error];
+    if (!key) {
+        return nil;
+    }
+    
+    // Export the private key to external representation
+    CFErrorRef cfError = NULL;
+    CFDataRef keyData = SecKeyCopyExternalRepresentation(key, &cfError);
+    
+    if (!keyData) {
+        if (error && cfError) {
+            *error = (__bridge_transfer NSError *)cfError;
+        } else if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                        code:PDSActorStoreErrorSigningKeyInvalid
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to export private key"}];
+        }
+        return nil;
+    }
+    
+    NSData *data = (__bridge_transfer NSData *)keyData;
+    
+    // For secp256k1 keys, the raw private key should be 32 bytes
+    // For RSA keys, it will be in PKCS#1 format which is larger
+    // If it's RSA format, we need to extract the actual private key
+    // For now, return the raw bytes - caller may need to handle format
+    return data;
+}
+
 - (NSData *)exportPublicKeyData:(SecKeyRef)key {
     SecKeyRef publicKey = SecKeyCopyPublicKey(key);
     if (!publicKey) return nil;
