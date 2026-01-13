@@ -56,7 +56,7 @@
 }
 
 - (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
-    NSInteger port = 2583;
+    NSInteger port = -1;  // -1 means use config, will default to 2583 if not set
     BOOL foreground = NO;
     NSString *logLevel = @"info";
 
@@ -106,12 +106,23 @@
         if ([pdsConfig loadFromPath:context.configPath error:&configError]) {
             NSLog(@"Loaded configuration from: %@", context.configPath);
             NSLog(@"  PLC URL: %@", pdsConfig.plcURL);
+            NSLog(@"  Public URL: %@", pdsConfig.publicUrl);
             NSLog(@"  Skip PLC operations: %@", pdsConfig.debugSkipPlcOperations ? @"YES" : @"NO");
+            
+            // Use config port if --port wasn't specified
+            if (port < 0 && pdsConfig.serverPort > 0) {
+                port = (NSInteger)pdsConfig.serverPort;
+            }
         } else {
             NSLog(@"Warning: Failed to load configuration: %@", configError.localizedDescription);
         }
     } else {
         NSLog(@"No config file found or configPath not set");
+    }
+    
+    // Default to 2583 if still not set
+    if (port < 0) {
+        port = 2583;
     }
 
     NSDictionary *config = [context loadConfig];

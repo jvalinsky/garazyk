@@ -31,6 +31,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _serverHost = @"0.0.0.0";
         _serverPort = 8080;
         _dataDirectory = @"./data";
+        _publicUrl = nil;  // Must be configured for PLC registration
 
         _plcURL = @"mock";
         _plcRetryCount = 3;
@@ -103,6 +104,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (server[@"host"]) _serverHost = [self resolveEnvOverrideForKey:@"PDS_HOST" default:server[@"host"]];
         if (server[@"port"]) _serverPort = [server[@"port"] unsignedIntegerValue];
         if (server[@"data_dir"]) _dataDirectory = [self resolveEnvOverrideForKey:@"PDS_DATA_DIR" default:server[@"data_dir"]];
+        if (server[@"public_url"]) _publicUrl = [self resolveEnvOverrideForKey:@"PDS_PUBLIC_URL" default:server[@"public_url"]];
     }
 
     NSDictionary *plc = config[@"plc"];

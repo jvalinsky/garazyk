@@ -55,8 +55,15 @@
     } else if (debugMode) {
         resolvedDid = [self generatePlcIdentifier];
     } else {
-        NSString *pdsURL = [NSString stringWithFormat:@"https://%@:%lu",
-                            config.serverHost, (unsigned long)config.serverPort];
+        NSString *pdsURL = config.publicUrl;
+        if (!pdsURL || pdsURL.length == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PDSController"
+                                             code:1004
+                                         userInfo:@{NSLocalizedDescriptionKey: @"PDS public URL not configured. Set server.public_url in config or PDS_PUBLIC_URL environment variable."}];
+            }
+            return nil;
+        }
         PLCAccountCreator *creator = [[PLCAccountCreator alloc] initWithPlcDirectoryURL:config.plcURL
                                                                                  pdsURL:pdsURL];
         NSError *plcError = nil;
