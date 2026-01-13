@@ -61,6 +61,9 @@ export class Router {
         if (section === 'collections') {
             return { type: 'collections', did };
         }
+        if (section === 'blobs') {
+            return { type: 'blobs', did };
+        }
         if (section === 'did-doc') {
             return { type: 'did-doc', did };
         }

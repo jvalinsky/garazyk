@@ -467,6 +467,9 @@
     else if ([endpoint isEqualToString:@"cid-info"]) {
         [self handleApiCidInfo:params response:response];
     }
+    else if ([endpoint isEqualToString:@"blobs"]) {
+        [self handleApiBlobs:params response:response];
+    }
     else if ([endpoint isEqualToString:@"create-record"]) {
         [self handleApiCreateRecord:params response:response];
     }
@@ -969,6 +972,33 @@
         [response setJsonBody:record];
     } else {
         [response setJsonBody:@{@"error": error.localizedDescription ?: @"Record not found", @"uri": uri}];
+    }
+}
+
+- (void)handleApiBlobs:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *did = params[@"did"];
+    if (!did) {
+        [response setJsonBody:@{@"error": @"Missing did parameter"}];
+        return;
+    }
+    
+    // Call the XRPC listBlobs endpoint on the same server
+    // Use port 8000 as default - the explore handler runs on the same server
+    NSString *urlStr = [NSString stringWithFormat:@"http://localhost:8000/xrpc/com.atproto.sync.listBlobs?did=%@", did];
+    NSURL *url = [NSURL URLWithString:urlStr];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"GET";
+    req.timeoutInterval = 10.0;
+    
+    NSError *error = nil;
+    NSHTTPURLResponse *httpResponse = nil;
+    NSData *data = [NSURLConnection sendSynchronousRequest:req returningResponse:&httpResponse error:&error];
+    
+    if (data && httpResponse.statusCode == 200) {
+        NSDictionary *result = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        [response setJsonBody:result ?: @{@"cids": @[]}];
+    } else {
+        [response setJsonBody:@{@"cids": @[], @"error": error.localizedDescription ?: @"Failed to list blobs"}];
     }
 }
 
