@@ -4,30 +4,41 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 ## Project Status
 
-### ✅ Phase 1: Repository & MST Protocol Compliance - COMPLETED
-- **MST Interop**: Implemented `MSTInteropTests` verifying Merkle Search Tree compliance with reference implementations. Fixed critical bugs in fan-out, CBOR key ordering, and prefix calculation.
+### Phase 1: Repository & MST Protocol Compliance - COMPLETED
+- **MST Interop**: Implemented `MSTInteropTests` verifying Merkle Search Tree compliance with reference implementations. Fixed MST fan-out calculation, CBOR key ordering, and prefix calculation bugs.
 - **CAR v1 Interop**: Implemented `CARInteropTests` and fixed binary CID parsing in `CAR.m`.
 - **Repo Commit**: Implemented signature verification and proper commit structure in `RepoCommit`.
 
-### ✅ Phase 2: Authentication & JWT Transition - COMPLETED
+### Phase 2: Authentication & JWT Transition - COMPLETED
 - **JWT Transition**: Migrated from opaque UUID tokens to signed JWT access tokens with `JWTMinter` and `JWTVerifier`.
 - **Key Rotation**: Integrated `KeyRotationManager` for secure token signing and verification.
 - **Token Refresh**: Implemented proper token refresh logic in `OAuth2.m`.
 - **Service Auth**: Added `com.atproto.server.getServiceAuth` endpoint.
 
-### ✅ Phase 3: The Firehose & Sync - COMPLETED
+### Phase 3: The Firehose & Sync - COMPLETED
 - **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction in `SubscribeReposHandler.m`.
 - **WebSocket**: Full WebSocket server implementation in `WebSocketServer.m` supporting multiple connections and event broadcasting.
 
-### 🏗️ Phase 4: Linux Support & Robustness - IN PROGRESS
+### Phase 4: macOS Build & Test - COMPLETED
+- **macOS Build**: All targets build successfully with xcodebuild
+  - ATProtoPDS-CLI: Builds without errors
+  - AllTests: Builds without errors
+  - Fuzzers: Available
+- **Test Suite**: All 168 tests passing (0 failures)
+- **Bug Fixes**:
+  - Fixed HandleResolver.skipSSRFCheck property accessibility (ATProtoPDS/Sources/Identity/HandleResolver.h:23)
+  - Fixed CBOR boolean encoding bug where all NSNumbers were treated as booleans (ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m:47-54)
+- **CLI Verification**: Application runs successfully with all commands functional
+
+### Phase 5: Linux Support & Reliability Improvements - IN PROGRESS
 - **Linux Porting**: `PDSNetworkTransportLinux` structure in place using BSD sockets/libdispatch, but read logic is pending implementation.
 - **CLI Enhancements**: Added unit tests for CLI commands.
 - **Handle Resolution**: COMPLETED. Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
 
-### 🗄️ Database Layer
+### Database Layer
 - **Actor Store**: `PDSActorStore` provides SQLite-based persistence for actor data, employing WAL mode and prepared statements for performance.
 
-### 🛠️ Development Tools
+### Development Tools
 - **PLC Server**: `tool-plc` contains a local PLC server for ATProto development/testing.
 
 ## Quick Reference
@@ -100,6 +111,7 @@ xcodebuild -scheme Fuzzers build
 **Unit Tests:**
 ```bash
 ./build/tests/AllTests
+# Expected output: Tests run: 168, Failures: 0
 ```
 
 **Fuzzers:**
@@ -141,10 +153,11 @@ The project uses GitHub Actions for continuous integration, defined in `.github/
 ### Quality Gates
 
 Before pushing, ensure:
-1. ✅ `xcodegen generate` succeeds
-2. ✅ `xcodebuild -scheme AllTests build` succeeds
-3. ✅ `./build/tests/AllTests` passes (zero failures)
-4. ✅ Fuzzers build successfully
+1. `xcodegen generate` succeeds
+2. `xcodebuild -scheme AllTests build` succeeds
+3. `./build/tests/AllTests` passes (168 tests, 0 failures)
+4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
+5. Fuzzers build successfully
 
 ## Linux/GNUstep Compatibility
 
@@ -154,13 +167,13 @@ This project targets both macOS and Linux (via GNUstep). See [docs/GNUSTEP_COMPA
 
 | Feature | macOS | Linux (GNUstep) | Compat Layer Needed? |
 |---------|-------|-----------------|---------------------|
-| **NSLog** | ✅ Native | ✅ Native | No |
-| **os/log.h** | ✅ Native | ❌ Not implemented | Yes - see `Sources/Compat/os/log.h` |
-| **Security framework** | ✅ Native | ❌ Not implemented | Yes - see `Sources/Compat/Security/` |
-| **CommonCrypto** | ✅ Native | ❌ Not implemented | Yes - see `Sources/Compat/CommonCrypto/` |
-| **NSURLConnection** | ✅ Native | ✅ Native | No |
-| **NSURLSession** | ✅ Native | ⚠️ Declarations only | Use NSURLConnection |
-| **dispatch_queue_t** | ✅ Native | ✅ Native (via libdispatch) | No |
+| **NSLog** | Native | Native | No |
+| **os/log.h** | Native | Not implemented | Yes - see `Sources/Compat/os/log.h` |
+| **Security framework** | Native | Not implemented | Yes - see `Sources/Compat/Security/` |
+| **CommonCrypto** | Native | Not implemented | Yes - see `Sources/Compat/CommonCrypto/` |
+| **NSURLConnection** | Native | Native | No |
+| **NSURLSession** | Native | Declarations only | Use NSURLConnection |
+| **dispatch_queue_t** | Native | Native (via libdispatch) | No |
 
 ### Common Patterns
 

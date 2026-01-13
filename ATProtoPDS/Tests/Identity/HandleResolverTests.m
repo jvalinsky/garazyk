@@ -1,11 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Identity/HandleResolver.h"
 
-@interface HandleResolver ()
-
-@property (nonatomic, assign, readwrite) BOOL skipSSRFCheck;
-
-@end
 
 @interface MockURLSession : NSObject
 

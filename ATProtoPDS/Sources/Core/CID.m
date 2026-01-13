@@ -1,6 +1,8 @@
 #import "Core/CID.h"
 #import <CommonCrypto/CommonCrypto.h>
 
+#define b32_debug_log(...) do {} while(0)
+
 /// Base32 alphabet (RFC 4648) - Lowercase for Multibase 'b'
 static const char kBase32Alphabet[] = "abcdefghijklmnopqrstuvwxyz234567";
 
@@ -43,7 +45,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable instancetype)cidFromString:(NSString *)string {
-    fprintf(stderr, "cidFromString: %s\n", [string UTF8String]);
+    b32_debug_log(stderr, "cidFromString: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return nil;
     }
@@ -272,7 +274,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (NSData *)base32Decode:(NSString *)string {
-    fprintf(stderr, "base32Decode started: %s\n", [string UTF8String]);
+    b32_debug_log(stderr, "base32Decode started: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return [NSData data];
     }
@@ -290,7 +292,7 @@ static const NSUInteger kMaxVarintSize = 9;
         unichar c = [cleanString characterAtIndex:i];
         if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a'; // Convert to lowercase
 
-        fprintf(stderr, "char: %c\n", (char)c);
+        b32_debug_log(stderr, "char: %c\n", (char)c);
         const char *ptr = strchr(kBase32Alphabet, (char)c);
         if (!ptr) {
             fprintf(stderr, "Invalid character: %c\n", (char)c);
@@ -303,7 +305,7 @@ static const NSUInteger kMaxVarintSize = 9;
         bitsLeft += 5;
 
         while (bitsLeft >= 8) {
-            fprintf(stderr, "bitsLeft: %lu\n", (unsigned long)bitsLeft);
+            b32_debug_log(stderr, "bitsLeft: %lu\n", (unsigned long)bitsLeft);
             NSUInteger byteShift = bitsLeft - 8;
             uint8_t byte = (buffer >> byteShift) & 0xFF;
             [result appendBytes:&byte length:1];

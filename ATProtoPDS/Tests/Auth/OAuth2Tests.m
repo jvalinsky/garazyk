@@ -23,9 +23,14 @@
     Session *session = [[Session alloc] initWithDID:@"did:plc:test"
                                              handle:@"test.bsky.social"
                                               scope:@"atproto"];
+    NSLog(@"[DEBUG] Created session: %@", session);
+    NSLog(@"[DEBUG] Session ID: %@", session.sessionID);
+    NSLog(@"[DEBUG] Active Sessions before: %@", self.server.activeSessions);
     self.server.activeSessions[session.sessionID] = session;
+    NSLog(@"[DEBUG] Active Sessions after: %@", self.server.activeSessions);
     
     NSString *refreshToken = session.refreshToken;
+    NSLog(@"[DEBUG] Refresh Token: %@", refreshToken);
     XCTAssertNotNil(refreshToken, @"Should have a refresh token");
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"Refresh token"];
@@ -34,6 +39,7 @@
                               scope:nil
                             dpopJWK:nil
                          completion:^(NSString * _Nullable accessToken, NSError * _Nullable error) {
+        NSLog(@"[DEBUG] Refresh completion block called");
         XCTAssertNotNil(accessToken, @"Should return new access token");
         XCTAssertNil(error, @"Should not have error");
         [expectation fulfill];

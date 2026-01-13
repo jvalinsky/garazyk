@@ -22,7 +22,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 #else
 @property (nonatomic, strong) os_log_t log;
 #endif
-@property (nonatomic, assign) dispatch_queue_t eventQueue;
+@property (nonatomic, strong) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger sequenceNumber;
 
 @end
