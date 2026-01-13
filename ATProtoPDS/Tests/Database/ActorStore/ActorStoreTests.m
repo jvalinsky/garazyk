@@ -193,20 +193,30 @@
 }
 
 - (void)testSigningKeyGeneration {
+    // Use a unique DID for this test to avoid keychain conflicts
+    NSString *uniqueDID = [NSString stringWithFormat:@"did:plc:test-signing-%@", [[NSUUID UUID] UUIDString]];
+    NSString *dbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[uniqueDID stringByAppendingString:@".db"]];
+    NSError *storeError = nil;
+    PDSActorStore *testStore = [PDSActorStore storeWithDid:uniqueDID dbPath:dbPath error:&storeError];
+    XCTAssertNotNil(testStore, @"Failed to create test store: %@", storeError);
+    
     __autoreleasing NSError *error = nil;
     
-    // Should not have signing key initially
-    NSData *initialKey = [self.store signingKeyPrivateBytesWithError:&error];
+    // Should not have signing key initially (fresh store, unique DID)
+    NSData *initialKey = [testStore signingKeyPrivateBytesWithError:&error];
     XCTAssertNil(initialKey, @"Should not have signing key initially");
     XCTAssertNotNil(error, @"Should have error for missing key");
     
     __autoreleasing NSError *genError = nil;
-    XCTAssertTrue([self.store generateSigningKeyWithError:&genError], @"Generate key failed: %@", genError);
+    XCTAssertTrue([testStore generateSigningKeyWithError:&genError], @"Generate key failed: %@", genError);
     
     __autoreleasing NSError *keyError = nil;
-    NSData *key = [self.store signingKeyPrivateBytesWithError:&keyError];
+    NSData *key = [testStore signingKeyPrivateBytesWithError:&keyError];
     XCTAssertNotNil(key, @"Should have signing key now: %@", keyError);
     XCTAssertEqual(key.length, 32, @"secp256k1 private key should be 32 bytes");
+    
+    [testStore close];
+    [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
 }
 
 - (void)testRecordCount {
