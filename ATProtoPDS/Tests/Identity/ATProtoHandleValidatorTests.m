@@ -149,16 +149,105 @@
         @"example.123",
         @"test.4567"
     ];
-    
+
     for (NSString *handle in invalid) {
         NSError *error = nil;
         XCTAssertFalse([ATProtoHandleValidator validateHandle:handle error:&error], @"Handle with all-numeric TLD should be invalid: %@", handle);
         XCTAssertEqual(error.code, 1008);
     }
-    
-    // Alphanumeric TLD is okay? ATProto spec says "The last segment (TLD) must not be all numeric."
-    // So "example.a123" should be okay if it's a valid DNS label.
+
+    // Alphanumeric TLD is okay per ATProto spec
     XCTAssertTrue([ATProtoHandleValidator validateHandle:@"example.a123" error:nil]);
+}
+
+- (void)testTLDMustStartWithLetter {
+    NSArray *invalid = @[
+        @"cn.8",
+        @"john.0",
+        @"example.1abc"
+    ];
+
+    for (NSString *handle in invalid) {
+        NSError *error = nil;
+        XCTAssertFalse([ATProtoHandleValidator validateHandle:handle error:&error], @"TLD must start with a letter: %@", handle);
+        XCTAssertEqual(error.code, 1009);
+    }
+}
+
+- (void)testSpecExampleValidHandles {
+    NSArray *valid = @[
+        @"jay.bsky.social",
+        @"8.cn",
+        @"name.t--t",
+        @"XX.LCS.MIT.EDU",
+        @"a.co",
+        @"xn--notarealidn.com",
+        @"xn--ls8h.test",
+        @"example.t"
+    ];
+
+    for (NSString *handle in valid) {
+        NSError *error = nil;
+        XCTAssertTrue([ATProtoHandleValidator validateHandle:handle error:&error], @"Handle should be valid per spec: %@", handle);
+        XCTAssertNil(error, @"Error should be nil for valid handle: %@", error);
+    }
+}
+
+- (void)testSpecExampleInvalidHandles {
+    NSArray *invalid = @[
+        @"jo@hn.test",
+        @"john..test",
+        @"xn--bcher-.tld",
+        @"john.0",
+        @"cn.8",
+        @"www.masełkowski.pl.com",
+        @"org",
+        @"name.org."
+    ];
+
+    for (NSString *handle in invalid) {
+        NSError *error = nil;
+        XCTAssertFalse([ATProtoHandleValidator validateHandle:handle error:&error], @"Handle should be invalid per spec: %@", handle);
+    }
+}
+
+- (void)testTLDSingleCharacter {
+    NSError *error = nil;
+    XCTAssertTrue([ATProtoHandleValidator validateHandle:@"a.b" error:&error], @"Single char TLD should be valid");
+    XCTAssertNil(error);
+}
+
+- (void)testTLDSingleCharacterInvalid {
+    NSError *error = nil;
+    XCTAssertFalse([ATProtoHandleValidator validateHandle:@"a.1" error:&error], @"Single char numeric TLD should be invalid");
+    XCTAssertEqual(error.code, 1009);
+}
+
+- (void)testTLDSingleLetterValid {
+    NSError *error = nil;
+    XCTAssertTrue([ATProtoHandleValidator validateHandle:@"example.a" error:&error], @"Single letter TLD should be valid");
+    XCTAssertNil(error);
+}
+
+- (void)testTLDSingleLetterInvalid {
+    NSError *error = nil;
+    XCTAssertFalse([ATProtoHandleValidator validateHandle:@"example.1" error:&error], @"Single digit TLD should be invalid");
+    XCTAssertEqual(error.code, 1009);
+}
+
+- (void)testHandleSyntaxMethod {
+    XCTAssertTrue([ATProtoHandleValidator validateHandleSyntax:@"alice.bsky.social" error:nil]);
+
+    NSError *error = nil;
+    XCTAssertFalse([ATProtoHandleValidator validateHandleSyntax:@"example.123" error:&error], @"Numeric TLD should fail syntax validation");
+    XCTAssertEqual(error.code, 1008);
+}
+
+- (void)testReservedTLDsSyntaxValid {
+    NSError *error = nil;
+    XCTAssertTrue([ATProtoHandleValidator validateHandleSyntax:@"test.arpa" error:nil], @"Reserved TLDs should pass syntax validation");
+    XCTAssertTrue([ATProtoHandleValidator validateHandleSyntax:@"test.local" error:nil], @"Reserved TLDs should pass syntax validation");
+    XCTAssertTrue([ATProtoHandleValidator validateHandleSyntax:@"test.example" error:nil], @"Reserved TLDs should pass syntax validation");
 }
 
 @end
