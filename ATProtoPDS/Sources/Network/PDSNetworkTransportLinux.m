@@ -29,6 +29,7 @@
     dispatch_source_t _writeSource;
     dispatch_queue_t _queue;
     BOOL _cancelled;
+    NSMutableArray *_receiveRequests;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -39,6 +40,7 @@
     if (self) {
         _sockfd = -1;
         _remoteAddress = [NSString stringWithFormat:@"%@:%lu", host, (unsigned long)port];
+        _receiveRequests = [NSMutableArray array];
     }
     return self;
 }
@@ -48,6 +50,7 @@
     if (self) {
         _sockfd = sockfd;
         _remoteAddress = address;
+        _receiveRequests = [NSMutableArray array];
         
         // Set non-blocking
         int flags = fcntl(_sockfd, F_GETFL, 0);
@@ -82,11 +85,53 @@
     dispatch_source_set_event_handler(_readSource, ^{
         [weakSelf handleRead];
     });
+    dispatch_source_set_cancel_handler(_readSource, ^{
+        // Socket closed
+    });
     dispatch_resume(_readSource);
 }
 
 - (void)handleRead {
-    // Basic read implementation
+    if (_cancelled) return;
+
+    size_t bytesAvailable = dispatch_source_get_data(_readSource);
+    if (bytesAvailable == 0) {
+        // EOF or error
+        [self cancel];
+        return;
+    }
+
+    // Process pending receive requests
+    @synchronized (_receiveRequests) {
+        if (_receiveRequests.count > 0) {
+            NSDictionary *request = _receiveRequests[0];
+            [_receiveRequests removeObjectAtIndex:0];
+            
+            NSUInteger maxLength = [request[@"max"] unsignedIntegerValue];
+            void (^completion)(NSData *, BOOL, NSError *) = request[@"completion"];
+            
+            uint8_t *buffer = malloc(maxLength);
+            ssize_t received = recv(_sockfd, buffer, maxLength, 0);
+            
+            if (received > 0) {
+                NSData *data = [NSData dataWithBytesNoCopy:buffer length:received freeWhenDone:YES];
+                completion(data, NO, nil);
+            } else if (received == 0) {
+                // Connection closed
+                free(buffer);
+                completion(nil, YES, nil);
+                [self cancel];
+            } else {
+                free(buffer);
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // Put it back
+                    [_receiveRequests insertObject:request atIndex:0];
+                } else {
+                    completion(nil, NO, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+                }
+            }
+        }
+    }
 }
 
 - (void)cancel {
@@ -122,16 +167,20 @@
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
-    // Basic receive implementation
-    uint8_t *buffer = malloc(maxLength);
-    ssize_t received = recv(_sockfd, buffer, maxLength, 0);
-    if (received == -1) {
-        free(buffer);
-        completion(nil, NO, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
-    } else {
-        NSData *data = [NSData dataWithBytesNoCopy:buffer length:received freeWhenDone:YES];
-        completion(data, NO, nil);
+    NSDictionary *request = @{
+        @"min": @(minLength),
+        @"max": @(maxLength),
+        @"completion": [completion copy]
+    };
+    
+    @synchronized (_receiveRequests) {
+        [_receiveRequests addObject:request];
     }
+    
+    // Trigger a read check immediately in case data is already there
+    dispatch_async(_queue, ^{
+        [self handleRead];
+    });
 }
 
 @end
