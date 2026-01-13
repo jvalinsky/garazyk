@@ -29,6 +29,19 @@ NS_ASSUME_NONNULL_BEGIN
  */
 typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
 
+@protocol PDSNetworkConnection;
+
+/*!
+ @typedef WebSocketUpgradeHandler
+ 
+ @abstract Block type for handling WebSocket upgrade requests.
+ 
+ @param request The incoming HTTP request with WebSocket upgrade headers.
+ @param connection The underlying network connection to hand off.
+ @return YES if the handler accepted the upgrade, NO to reject.
+ */
+typedef BOOL (^WebSocketUpgradeHandler)(HttpRequest *request, id<PDSNetworkConnection> connection);
+
 /*!
  @class HttpServer
  
@@ -107,6 +120,41 @@ typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
  @param handler The handler block to invoke for matching requests.
  */
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler;
+
+/*!
+ @method setWebSocketUpgradeHandler:forPath:
+ 
+ @abstract Registers a handler for WebSocket upgrade requests on a specific path.
+ 
+ @param handler The handler block to invoke for WebSocket upgrades.
+ @param path The URL path to handle WebSocket upgrades on.
+ 
+ @discussion When a request with "Upgrade: websocket" header is received
+ for the specified path, the handler will be called with the request
+ and the underlying connection. The handler should complete the WebSocket
+ handshake and take ownership of the connection.
+ */
+- (void)setWebSocketUpgradeHandler:(WebSocketUpgradeHandler)handler forPath:(NSString *)path;
+
+/*!
+ @method createWebSocketAcceptKeyForKey:
+ 
+ @abstract Creates the Sec-WebSocket-Accept value for a WebSocket handshake.
+ 
+ @param clientKey The Sec-WebSocket-Key from the client request.
+ @return The base64-encoded accept key to send in the response.
+ */
++ (NSString *)createWebSocketAcceptKeyForKey:(NSString *)clientKey;
+
+/*!
+ @method webSocketHandshakeResponseDataForRequest:
+ 
+ @abstract Creates the complete HTTP response data for a WebSocket upgrade.
+ 
+ @param request The WebSocket upgrade request.
+ @return The HTTP response data to send to complete the handshake.
+ */
++ (NSData *)webSocketHandshakeResponseDataForRequest:(HttpRequest *)request;
 
 @end
 
