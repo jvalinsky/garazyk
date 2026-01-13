@@ -4,6 +4,7 @@
 #import "Database/PDSDatabase.h"
 #import "App/PDSConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Identity/PLCAccountCreator.h"
 #import "Auth/JWT.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -54,7 +55,29 @@
     } else if (debugMode) {
         resolvedDid = [self generatePlcIdentifier];
     } else {
-        resolvedDid = [NSString stringWithFormat:@"did:web:%@", handle];
+        NSString *pdsURL = [NSString stringWithFormat:@"https://%@:%lu",
+                            config.serverHost, (unsigned long)config.serverPort];
+        PLCAccountCreator *creator = [[PLCAccountCreator alloc] initWithPlcDirectoryURL:config.plcURL
+                                                                                 pdsURL:pdsURL];
+        NSError *plcError = nil;
+        NSDictionary *plcResult = [creator createAccountWithHandle:handle
+                                                            email:email
+                                                        password:password
+                                                            error:&plcError];
+
+        if (!plcResult) {
+            os_log_error(self.log, "Failed to create did:plc account: %{public}@", plcError.localizedDescription);
+            if (error) {
+                *error = [NSError errorWithDomain:@"PDSController"
+                                             code:1003
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to create decentralized identifier. The PLC directory may be temporarily unavailable. Please try again later.",
+                                                    NSUnderlyingErrorKey: plcError ?: [NSNull null]}];
+            }
+            return nil;
+        }
+
+        resolvedDid = plcResult[@"did"];
+        os_log_info(self.log, "Created did:plc account: %{public}@", resolvedDid);
     }
 
     NSError *dbError = nil;
