@@ -3,6 +3,8 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
+#import "Repository/CARv1Builder.h"
+#import "Repository/CBOR.h"
 #import "Core/CID.h"
 
 @implementation PDSRepositoryService
@@ -87,8 +89,7 @@
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) return nil;
     
-    // Get the record
-    NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+    // Get the record from database
     PDSDatabaseRecord *record = [store getRecordByKey:did collection:collection rkey:rkey error:error];
     if (!record) {
         if (error && !*error) {
@@ -98,12 +99,6 @@
         }
         return nil;
     }
-    
-    // Build a CAR file with the record
-    // CAR format: header + blocks
-    // Header: DAG-CBOR encoded {version: 1, roots: [rootCid]}
-    
-    NSMutableData *carData = [NSMutableData data];
     
     // Get the record CID
     CID *recordCid = [CID cidFromString:record.cid];
@@ -116,84 +111,123 @@
         return nil;
     }
     
-    // For a minimal CAR, we include:
-    // 1. CAR header with the record CID as root
-    // 2. The record block itself
-    
-    // Build CAR header: {version: 1, roots: [cid]}
-    // Simplified CBOR encoding for header
-    NSData *cidBytes = [recordCid bytes];
-    
-    // Manual minimal CAR v1 header construction
-    // Map with 2 keys: "roots" and "version"
-    NSMutableData *headerData = [NSMutableData data];
-    
-    // CBOR map with 2 items (0xa2)
-    uint8_t mapHeader = 0xa2;
-    [headerData appendBytes:&mapHeader length:1];
-    
-    // Key "roots" (0x65 = text string length 5)
-    uint8_t rootsKeyLen = 0x65;
-    [headerData appendBytes:&rootsKeyLen length:1];
-    [headerData appendData:[@"roots" dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    // Value: array with 1 CID (0x81 = array length 1)
-    uint8_t arrayHeader = 0x81;
-    [headerData appendBytes:&arrayHeader length:1];
-    
-    // CID as CBOR tag 42 + bytes
-    uint8_t cidTag = 0xd8; // tag in next byte
-    uint8_t cidTagValue = 0x2a; // 42
-    [headerData appendBytes:&cidTag length:1];
-    [headerData appendBytes:&cidTagValue length:1];
-    
-    // CID bytes with length prefix
-    // Add null byte prefix for CIDv1 in CBOR
-    NSMutableData *cidWithPrefix = [NSMutableData dataWithBytes:"\x00" length:1];
-    [cidWithPrefix appendData:cidBytes];
-    
-    if (cidWithPrefix.length < 24) {
-        uint8_t bytesHeader = 0x40 + cidWithPrefix.length; // bytes major type + length
-        [headerData appendBytes:&bytesHeader length:1];
-    } else {
-        uint8_t bytesHeader = 0x58; // bytes with 1-byte length
-        [headerData appendBytes:&bytesHeader length:1];
-        uint8_t len = (uint8_t)cidWithPrefix.length;
-        [headerData appendBytes:&len length:1];
+    // Encode the record value as DAG-CBOR
+    // The record.value should be the JSON representation of the record
+    NSData *recordCBOR = [self encodeRecordToCBOR:record.value];
+    if (!recordCBOR) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService"
+                                         code:500
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to encode record to CBOR"}];
+        }
+        return nil;
     }
-    [headerData appendData:cidWithPrefix];
     
-    // Key "version" (0x67 = text string length 7)
-    uint8_t versionKeyLen = 0x67;
-    [headerData appendBytes:&versionKeyLen length:1];
-    [headerData appendData:[@"version" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Build CAR with the record CID as root and the record block
+    // Note: A complete implementation would also include:
+    // - The commit block (signs the repo root)
+    // - MST proof path from repo root to this record
+    // For now, we include just the record block which allows viewing but not full verification
+    CARv1Builder *builder = [CARv1Builder builderWithRoot:recordCid];
+    [builder addBlockWithCID:recordCid data:recordCBOR];
     
-    // Value: 1 (0x01)
-    uint8_t versionValue = 0x01;
-    [headerData appendBytes:&versionValue length:1];
+    return [builder build];
+}
+
+#pragma mark - CBOR Encoding Helpers
+
+- (nullable NSData *)encodeRecordToCBOR:(id)value {
+    if (!value) return nil;
     
-    // Write header length as varint
-    uint64_t headerLen = headerData.length;
-    NSMutableData *varintData = [NSMutableData data];
-    while (headerLen >= 0x80) {
-        uint8_t byte = (headerLen & 0x7F) | 0x80;
-        [varintData appendBytes:&byte length:1];
-        headerLen >>= 7;
+    // If value is already NSData (raw CBOR), return as-is
+    if ([value isKindOfClass:[NSData class]]) {
+        return value;
     }
-    uint8_t finalByte = (uint8_t)headerLen;
-    [varintData appendBytes:&finalByte length:1];
     
-    [carData appendData:varintData];
-    [carData appendData:headerData];
+    // If value is a dictionary or array, encode to DAG-CBOR
+    if ([value isKindOfClass:[NSDictionary class]] || [value isKindOfClass:[NSArray class]]) {
+        CBORValue *cborValue = [self jsonToCBOR:value];
+        if (cborValue) {
+            return [cborValue encode];
+        }
+    }
     
-    // Add record block: CID + data
-    // For now, we don't have the raw block data, so return what we have
-    // A full implementation would store and retrieve the actual DAG-CBOR block
+    // If value is a string (JSON), parse and encode
+    if ([value isKindOfClass:[NSString class]]) {
+        NSData *jsonData = [value dataUsingEncoding:NSUTF8StringEncoding];
+        NSError *jsonError = nil;
+        id jsonObj = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+        if (jsonObj && !jsonError) {
+            CBORValue *cborValue = [self jsonToCBOR:jsonObj];
+            if (cborValue) {
+                return [cborValue encode];
+            }
+        }
+    }
     
-    // The record value as JSON -> CBOR would go here
-    // For now, this CAR is incomplete but structurally valid
+    return nil;
+}
+
+- (CBORValue *)jsonToCBOR:(id)json {
+    if (!json || [json isKindOfClass:[NSNull class]]) {
+        return [CBORValue nilValue];
+    }
     
-    return carData;
+    if ([json isKindOfClass:[NSNumber class]]) {
+        NSNumber *num = json;
+        // Check if it's a boolean
+        if (strcmp([num objCType], @encode(BOOL)) == 0) {
+            return num.boolValue ? [CBORValue boolValue:YES] : [CBORValue boolValue:NO];
+        }
+        // Check if it's an integer
+        if (strcmp([num objCType], @encode(int)) == 0 ||
+            strcmp([num objCType], @encode(long)) == 0 ||
+            strcmp([num objCType], @encode(long long)) == 0) {
+            long long val = num.longLongValue;
+            if (val >= 0) {
+                return [CBORValue unsignedInteger:(uint64_t)val];
+            } else {
+                return [CBORValue negativeInteger:(int64_t)val];
+            }
+        }
+        // Floating point
+        return [CBORValue floatValue:num.doubleValue];
+    }
+    
+    if ([json isKindOfClass:[NSString class]]) {
+        return [CBORValue textString:json];
+    }
+    
+    if ([json isKindOfClass:[NSArray class]]) {
+        NSArray *arr = json;
+        NSMutableArray<CBORValue *> *cborArr = [NSMutableArray arrayWithCapacity:arr.count];
+        for (id item in arr) {
+            CBORValue *cborItem = [self jsonToCBOR:item];
+            if (cborItem) {
+                [cborArr addObject:cborItem];
+            }
+        }
+        return [CBORValue array:cborArr];
+    }
+    
+    if ([json isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dict = json;
+        NSMutableDictionary<CBORValue *, CBORValue *> *cborDict = [NSMutableDictionary dictionary];
+        for (NSString *key in dict) {
+            CBORValue *cborKey = [CBORValue textString:key];
+            CBORValue *cborValue = [self jsonToCBOR:dict[key]];
+            if (cborKey && cborValue) {
+                cborDict[cborKey] = cborValue;
+            }
+        }
+        return [CBORValue map:cborDict];
+    }
+    
+    if ([json isKindOfClass:[NSData class]]) {
+        return [CBORValue byteString:json];
+    }
+    
+    return nil;
 }
 
 @end
