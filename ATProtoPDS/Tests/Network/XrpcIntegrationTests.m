@@ -103,9 +103,9 @@
         [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     }
 
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     __block NSDictionary *result = nil;
     __block NSError *requestError = nil;
+    __block BOOL completed = NO;
 
     NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
                                                  completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
@@ -113,11 +113,20 @@
         if (!err && data) {
             result = [NSJSONSerialization JSONObjectWithData:data options:0 error:&requestError];
         }
-        dispatch_semaphore_signal(semaphore);
+        completed = YES;
     }];
 
     [task resume];
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    
+    NSDate *timeoutDate = [NSDate dateWithTimeIntervalSinceNow:10.0];
+    while (!completed && [timeoutDate timeIntervalSinceNow] > 0) {
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+
+    if (!completed) {
+        [task cancel];
+        requestError = [NSError errorWithDomain:@"XrpcTestClient" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timed out"}];
+    }
 
     if (error) *error = requestError;
     return result;

@@ -148,11 +148,12 @@
                 [strongSelf readRequestFromConnection:strongConnection];
                 break;
             case PDSNetworkConnectionStateFailed:
+                [strongConnection cancel];
+                break;
             case PDSNetworkConnectionStateCancelled:
                 @synchronized (strongSelf.activeConnections) {
                     [strongSelf.activeConnections removeObject:strongConnection];
                 }
-                [strongConnection cancel];
                 break;
             default:
                 break;
