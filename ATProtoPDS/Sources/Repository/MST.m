@@ -163,7 +163,7 @@
     
     NSData *cbor = [self serializeToCBOR:cache];
     // Use cidWithDigest to ensure multihash header (0x12 0x20) is added
-    CID *cid = [CID cidWithDigest:cbor codec:0x71];
+    CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
     [cache setObject:cid forKey:self];
     return cid;
 }
@@ -310,15 +310,6 @@
     };
     NSData *cbor = [[CBORValue map:dict] encode];
     return [CID sha256Digest:cbor];
-}
-    fprintf(stderr, "\n");
-    
-    // Use cidWithDigest to ensure multihash header (0x12 0x20) is added
-    return [CID cidWithDigest:digest codec:0x71];
-}
-    fprintf(stderr, "\n");
-    
-    return digest;
 }
 
 - (CID *)rootCID {
