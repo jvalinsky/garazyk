@@ -10,13 +10,8 @@
 
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
-#if defined(__linux__) || defined(__GNUstep__)
-@property (nonatomic, assign) dispatch_queue_t serverQueue;
-@property (nonatomic, assign) dispatch_semaphore_t readySemaphore;
-#else
 @property (nonatomic, strong) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
-#endif
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *routes;
 @property (nonatomic, strong) NSMutableArray *middlewares;
 @property (nonatomic, assign) int socketFileDescriptor;
@@ -39,7 +34,7 @@
     self = [super init];
     if (self) {
         _port = port;
-        _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_CONCURRENT);
+        _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_SERIAL);
         _routeHandlers = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
         _activeConnections = [NSMutableSet set];
