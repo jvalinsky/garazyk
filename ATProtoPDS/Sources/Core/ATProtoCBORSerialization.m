@@ -45,16 +45,18 @@
     } else if ([obj isKindOfClass:[NSString class]]) {
         return [CBORValue textString:obj];
     } else if ([obj isKindOfClass:[NSNumber class]]) {
-        // Handle boolean
-// Handle boolean
-        if ([obj isEqual:@YES]) {
-            return [CBORValue simple:21];
-        } else if ([obj isEqual:@NO]) {
-            return [CBORValue simple:20];
+        const char *objCType = [obj objCType];
+        
+        // Handle boolean vs integer
+        // Use objCType to distinguish. @YES/@NO have type 'c' (char) or 'B' (bool).
+        // Integers @1, @2 have 'i' (int), 'q' (long long), etc.
+        const char *objCType = [obj objCType];
+        if (strcmp(objCType, @encode(BOOL)) == 0 || strcmp(objCType, @encode(char)) == 0) {
+             if ([obj isEqual:@YES]) return [CBORValue simple:21];
+             if ([obj isEqual:@NO]) return [CBORValue simple:20];
         }
         
         // Handle integer vs float
-        const char *objCType = [obj objCType];
         if (strcmp(objCType, @encode(float)) == 0 || strcmp(objCType, @encode(double)) == 0) {
             // It's float
             // But CBORValue only has simple/float?
