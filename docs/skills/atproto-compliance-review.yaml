@@ -1,11 +1,17 @@
 name: atproto-compliance-review
+version: "1.1.0"
 description: |
   Comprehensive compliance review of ATProto PDS implementations against official specifications.
   Checks API endpoints, data models, authentication flows, and protocol adherence.
   Provides structured reports with gap analysis and remediation recommendations.
 
   Supports both server-side PDS compliance and client-side ATProto integration verification.
-  Covers all major ATProto specifications: ATP, XRPC, OAuth, Repository, DID, Handle, Lexicon, etc.
+  Covers all major ATProto specifications: XRPC, OAuth, Repository, DID, Handle, Lexicon,
+  Cryptography, and Data Model.
+
+  Shell scripts available:
+    - scripts/atproto-compliance-review.sh (comprehensive, all output formats)
+    - scripts/atproto-compliance-review-simple.sh (simplified, executive summary)
 
 parameters:
   - name: codebase_path
@@ -14,10 +20,12 @@ parameters:
     required: true
 
   - name: focus_areas
-    type: array
-    description: Specific ATProto areas to focus on (xrpc, oauth, repository, did, lexicon, etc.)
+    type: string
+    description: |
+      Comma-separated ATProto areas to focus on.
+      Options: oauth, xrpc, repository, did, lexicon, handle, crypto, data_model, all
     required: false
-    default: ["all"]
+    default: "all"
 
   - name: compliance_level
     type: string
@@ -32,3 +40,13 @@ parameters:
     enum: ["structured_checklist", "executive_summary", "detailed_gap_analysis", "all"]
     required: false
     default: "all"
+
+examples:
+  - description: "Basic compliance check of current directory"
+    command: "./scripts/atproto-compliance-review.sh ."
+  
+  - description: "Check specific path with executive summary only"
+    command: "./scripts/atproto-compliance-review.sh /path/to/pds all standard executive_summary"
+  
+  - description: "Simple compliance check"
+    command: "./scripts/atproto-compliance-review-simple.sh /path/to/pds"
