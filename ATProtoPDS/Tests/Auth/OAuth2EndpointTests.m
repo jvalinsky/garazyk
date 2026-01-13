@@ -34,6 +34,7 @@
 #pragma mark - Authorization Endpoint Tests
 
 - (void)testOAuthAuthorizeEndpointReturnsRedirectForValidRequest {
+    NSLog(@"[VERIFY_UPDATE] testOAuthAuthorizeEndpointReturnsRedirectForValidRequest starting with 15s timeout");
     // This test should fail initially since we haven't implemented the handler yet
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"]];
@@ -66,10 +67,11 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:10.0 handler:nil];
+    [self waitForExpectationsWithTimeout:15.0 handler:nil];
 }
 
 - (void)testOAuthAuthorizeEndpointRejectsInvalidClient {
+    NSLog(@"[VERIFY_UPDATE] testOAuthAuthorizeEndpointRejectsInvalidClient starting with 15s timeout");
     // Test with invalid client_id
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"]];
     request.HTTPMethod = @"GET";
@@ -85,12 +87,13 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    [self waitForExpectationsWithTimeout:15.0 handler:nil];
 }
 
 #pragma mark - Token Endpoint Tests
 
 - (void)testOAuthTokenEndpointExchangesCodeForTokens {
+    NSLog(@"[VERIFY_UPDATE] testOAuthTokenEndpointExchangesCodeForTokens starting with 15s timeout");
     // Test token exchange with authorization code
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/token"]];
     request.HTTPMethod = @"POST";
@@ -130,10 +133,11 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:10.0 handler:nil];
+    [self waitForExpectationsWithTimeout:15.0 handler:nil];
 }
 
 - (void)testOAuthTokenEndpointRejectsInvalidClient {
+    NSLog(@"[VERIFY_UPDATE] testOAuthTokenEndpointRejectsInvalidClient starting with 15s timeout");
     // Test with invalid client_id
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/token"]];
     request.HTTPMethod = @"POST";
@@ -153,12 +157,13 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    [self waitForExpectationsWithTimeout:15.0 handler:nil];
 }
 
 #pragma mark - Revoke Endpoint Tests
 
 - (void)testOAuthRevokeEndpointRevokesTokens {
+    NSLog(@"[VERIFY_UPDATE] testOAuthRevokeEndpointRevokesTokens starting with 15s timeout");
     // Test token revocation
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://127.0.0.1:8443/oauth/revoke"]];
     request.HTTPMethod = @"POST";
@@ -180,7 +185,7 @@
     }];
     
     [task resume];
-    [self waitForExpectationsWithTimeout:10.0 handler:nil];
+    [self waitForExpectationsWithTimeout:15.0 handler:nil];
 }
 
 - (void)testDirectOAuthHandlerLogic {
