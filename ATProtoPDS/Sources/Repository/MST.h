@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
  efficient key-value storage with cryptographic integrity guarantees through
  content addressing.
  
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024 Jack Valinsky
  */
 
 /*!

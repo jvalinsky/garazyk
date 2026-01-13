@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
  Addressable Records (CAR) format, used by ATProto for serializing
  repository data. CAR files contain blocks indexed by their CIDs.
  
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024 Jack Valinsky
  */
 
 /*!
