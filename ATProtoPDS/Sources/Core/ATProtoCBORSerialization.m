@@ -50,7 +50,6 @@
         // Handle boolean vs integer
         // Use objCType to distinguish. @YES/@NO have type 'c' (char) or 'B' (bool).
         // Integers @1, @2 have 'i' (int), 'q' (long long), etc.
-        const char *objCType = [obj objCType];
         if (strcmp(objCType, @encode(BOOL)) == 0 || strcmp(objCType, @encode(char)) == 0) {
              if ([obj isEqual:@YES]) return [CBORValue simple:21];
              if ([obj isEqual:@NO]) return [CBORValue simple:20];
