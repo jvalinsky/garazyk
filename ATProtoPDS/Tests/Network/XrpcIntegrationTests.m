@@ -112,6 +112,12 @@
         requestError = err;
         if (!err && data) {
             result = [NSJSONSerialization JSONObjectWithData:data options:0 error:&requestError];
+            if (requestError) {
+                NSString *raw = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                if (raw) NSLog(@"[XrpcTestClient] Received non-JSON response: %@", raw);
+            }
+        } else if (err) {
+            NSLog(@"[XrpcTestClient] Request error: %@", err);
         }
         completed = YES;
     }];
@@ -125,6 +131,7 @@
 
     if (!completed) {
         [task cancel];
+        NSLog(@"[XrpcTestClient] Request timed out for %@", request.URL);
         requestError = [NSError errorWithDomain:@"XrpcTestClient" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timed out"}];
     }
 
@@ -303,7 +310,7 @@
 - (void)testResolveDidValid {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:7HjwGtP5cLyq3vD5nDzDg"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:7HjwGtP5cLyq3vD5nDzDg"
                                          bodyDict:nil
                                             error:&error];
 
@@ -315,7 +322,7 @@
 - (void)testResolveDidMissingParameter {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid"
                                          bodyDict:nil
                                             error:&error];
 
@@ -327,7 +334,7 @@
 - (void)testResolveDidInvalidFormat {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=invalid-did"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=invalid-did"
                                          bodyDict:nil
                                             error:&error];
 
@@ -339,7 +346,7 @@
 - (void)testResolveDidNonExistent {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:nonexistent"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:nonexistent"
                                          bodyDict:nil
                                             error:&error];
 
@@ -351,7 +358,7 @@
 - (void)testResolveIdentityValidDID {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveIdentity?identifier=did:plc:7HjwGtP5cLyq3vD5nDzDg"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveIdentity?identifier=did:plc:7HjwGtP5cLyq3vD5nDzDg"
                                          bodyDict:nil
                                             error:&error];
 
@@ -364,7 +371,7 @@
 - (void)testResolveIdentityValidHandle {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveIdentity?identifier=test.example.com"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveIdentity?identifier=test.example.com"
                                          bodyDict:nil
                                             error:&error];
 
@@ -378,7 +385,7 @@
 - (void)testResolveIdentityMissingParameter {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveIdentity"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveIdentity"
                                          bodyDict:nil
                                             error:&error];
 
@@ -390,7 +397,7 @@
 - (void)testResolveIdentityInvalidHandle {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveIdentity?identifier=invalid-handle"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveIdentity?identifier=invalid-handle"
                                          bodyDict:nil
                                             error:&error];
 
@@ -402,7 +409,7 @@
 - (void)testResolveHandleValid {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveHandle?handle=test.example.com"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveHandle?handle=test.example.com"
                                          bodyDict:nil
                                             error:&error];
 
@@ -414,7 +421,7 @@
 - (void)testResolveHandleMissingParameter {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveHandle"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveHandle"
                                          bodyDict:nil
                                             error:&error];
 
@@ -426,7 +433,7 @@
 - (void)testResolveHandleInvalidFormat {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveHandle?handle=invalid"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveHandle?handle=invalid"
                                          bodyDict:nil
                                             error:&error];
 
@@ -438,7 +445,7 @@
 - (void)testHTTPMethodValidationPOSTvsGET {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"POST"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:7HjwGtP5cLyq3vD5nDzDg"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:7HjwGtP5cLyq3vD5nDzDg"
                                          bodyDict:nil
                                             error:&error];
 
@@ -459,7 +466,7 @@
         dispatch_async(concurrentQueue, ^{
             NSError *concurrentError = nil;
             NSDictionary *concurrentResult = [self.client makeRequest:@"GET"
-                                                                url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:7HjwGtP5cLyq3vD5nDzDg"
+                                                                url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:7HjwGtP5cLyq3vD5nDzDg"
                                                            bodyDict:nil
                                                               error:&concurrentError];
 
@@ -483,7 +490,7 @@
     largeHandle = [largeHandle stringByAppendingString:@".example.com"];
 
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:[NSString stringWithFormat:@"http://localhost:9090/xrpc/com.atproto.identity.resolveHandle?handle=%@", [largeHandle stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]]
+                                              url:[NSString stringWithFormat:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveHandle?handle=%@", [largeHandle stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]]
                                          bodyDict:nil
                                             error:&error];
 
@@ -500,7 +507,7 @@
 
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:malformed"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:malformed"
                                          bodyDict:nil
                                             error:&error];
 
@@ -511,7 +518,7 @@
 - (void)testHTTP5xxErrorHandling {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:server-error"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:server-error"
                                          bodyDict:nil
                                             error:&error];
 
@@ -523,7 +530,7 @@
 - (void)testEmptyResponseBody {
     NSError *error = nil;
     NSDictionary *result = [self.client makeRequest:@"GET"
-                                              url:@"http://localhost:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:empty-body"
+                                              url:@"http://127.0.0.1:9090/xrpc/com.atproto.identity.resolveDid?did=did:plc:empty-body"
                                          bodyDict:nil
                                             error:&error];
 
