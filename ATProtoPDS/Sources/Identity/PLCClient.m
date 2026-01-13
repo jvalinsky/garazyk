@@ -1,6 +1,16 @@
 #import "PLCClient.h"
+#import <os/log.h>
 
 NSErrorDomain const PLCClientErrorDomain = @"com.atproto.plc.client";
+
+static os_log_t PLCClientLog(void) {
+    static os_log_t log;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        log = os_log_create("com.atproto.plc", "client");
+    });
+    return log;
+}
 
 @interface PLCClient ()
 @property (nonatomic, strong) NSURLSession *session;
@@ -54,6 +64,10 @@ NSErrorDomain const PLCClientErrorDomain = @"com.atproto.plc.client";
     }
     request.HTTPBody = bodyData;
 
+    NSString *jsonString = [[NSString alloc] initWithData:bodyData encoding:NSUTF8StringEncoding];
+    NSLog(@"[PLCClient] Submitting operation to %@", urlString);
+    NSLog(@"[PLCClient] Request body: %@", jsonString);
+
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     __block NSError *resultError = nil;
     __block NSHTTPURLResponse *resultResponse = nil;
@@ -64,6 +78,9 @@ NSErrorDomain const PLCClientErrorDomain = @"com.atproto.plc.client";
         resultError = err;
         resultResponse = (NSHTTPURLResponse *)response;
         resultData = data;
+
+        NSString *responseStr = data.length > 0 ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"(empty)";
+        NSLog(@"[PLCClient] Response status: %ld, body: %@", (long)resultResponse.statusCode, responseStr);
 
         if (!resultError && data.length > 0) {
             NSDictionary *responseJson = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];

@@ -120,10 +120,12 @@ static const uint8_t kMultibaseBase58BTC = 'z';
     NSData *privateKey = keyPair.privateKey;
     NSData *publicKey = keyPair.compressedPublicKey;
 
+    // Build multicodec-prefixed public key for did:key
+    // secp256k1-pub multicodec is 0xe7 0x01 (varint encoding of 231)
     NSMutableData *multicodecData = [NSMutableData data];
-    uint8_t multicodec = kMulticodecSecp256k1PrivateKey;
-    [multicodecData appendBytes:&multicodec length:1];
-    [multicodecData appendData:privateKey];
+    uint8_t multicodecBytes[2] = {0xe7, 0x01}; // varint encoding of 0xe7 (231)
+    [multicodecData appendBytes:multicodecBytes length:2];
+    [multicodecData appendData:publicKey]; // Use compressed public key!
 
     NSString *encoded = [self base58Encode:multicodecData];
     NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", encoded];
