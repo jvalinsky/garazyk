@@ -96,9 +96,8 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
                 error:(NSError **)error;
 
-- (nullable SecKeyRef)signingKeyWithError:(NSError **)error;
-- (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error;
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
+- (BOOL)storeSigningKeyData:(NSData *)keyData error:(NSError **)error;
 
 /**
  * Get the raw private key bytes for the signing key.
