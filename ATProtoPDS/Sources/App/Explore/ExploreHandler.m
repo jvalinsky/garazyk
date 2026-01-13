@@ -3,6 +3,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "App/PDSController.h"
+#import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -168,7 +169,7 @@
         _cache = [ExploreCache sharedCache];
         _enabled = YES;
         _cacheDirectory = @"/tmp/pds-explore-cache";
-        _plcServerURL = @"http://localhost:2582"; // Local PLC
+        _plcServerURL = @"https://plc.directory"; // Production PLC directory
         _didTTL = 3600;
         _plcTTL = 86400;
         _accountTTL = 300;
@@ -1029,8 +1030,9 @@
     if (accounts) {
         for (PDSDatabaseAccount *account in accounts) {
             if ([account.did isEqualToString:did]) {
-                // Determine service endpoint
-                NSString *serviceEndpoint = @"http://localhost:2583";
+                // Determine service endpoint from config
+                PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+                NSString *serviceEndpoint = config.publicUrl ?: @"https://september.exe.xyz";
                 
                 NSDictionary *doc = @{
                     @"@context": @[@"https://www.w3.org/ns/did/v1", @"https://w3id.org/security/multikey/v1"],
@@ -1155,13 +1157,14 @@
         for (PDSDatabaseAccount *account in accounts) {
             if ([account.did isEqualToString:did]) {
                 // Generate a simulated PLC log for this local account
+                PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
                 // A minimal 'create' operation
                 NSDictionary *op = @{
                     @"sig": @"<simulated_signature>",
                     @"prev": [NSNull null],
                     @"type": @"create",
                     @"handle": account.handle ?: @"unknown",
-                    @"service": @"http://localhost:2583",
+                    @"service": config.publicUrl ?: @"https://september.exe.xyz",
                     @"signingKey": @"<simulated_key>",
                     @"recoveryKey": @"<simulated_key>"
                 };
