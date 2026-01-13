@@ -909,6 +909,33 @@
         [response setJsonBody:@{}];
     }];
     
+    // app.bsky.actor.searchActorsTypeahead - Typeahead search for actors
+    // Used by pdsls.dev for actor search functionality
+    [dispatcher registerAppBskyActorSearchActorsTypeahead:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        
+        NSString *query = [request queryParamForKey:@"q"];
+        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 10;
+        
+        if (!query || query.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing q (query) parameter"}];
+            return;
+        }
+        
+        NSError *error = nil;
+        NSArray *actors = [actorService searchActorsTypeahead:query limit:limit error:&error];
+        
+        if (error) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"SearchFailed", @"message": error.localizedDescription}];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"actors": actors ?: @[]}];
+    }];
+    
     [dispatcher registerAppBskyFeedGetTimeline:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 30;

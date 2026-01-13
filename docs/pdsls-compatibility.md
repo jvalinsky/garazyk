@@ -6,7 +6,7 @@ Analysis of API compatibility with [pdsls.dev](https://pdsls.dev) PDS viewer app
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 16 |
+| ✅ Implemented | 17 |
 | ⚠️ Partial | 1 |
 
 ## Required APIs
@@ -62,7 +62,7 @@ Analysis of API compatibility with [pdsls.dev](https://pdsls.dev) PDS viewer app
 | Endpoint | Status | Notes |
 |----------|--------|-------|
 | `app.bsky.actor.getProfile` | ✅ | Get actor profile |
-| `app.bsky.actor.searchActorsTypeahead` | ❌ | Not used by pdsls directly |
+| `app.bsky.actor.searchActorsTypeahead` | ✅ | Actor search by handle prefix |
 
 ### Labels
 
@@ -115,6 +115,6 @@ Our implementation runs on port 8081 separately. May need:
 
 ## Remaining Work
 
-1. **Priority 1**: Full MST proof in `com.atproto.sync.getRecord` for verification
-2. **Priority 2**: Route WebSocket on `/xrpc/com.atproto.sync.subscribeRepos`
-3. **Priority 3**: Implement `app.bsky.actor.searchActorsTypeahead` (optional)
+1. **Priority 1**: Full MST proof in `com.atproto.sync.getRecord` for record verification
+2. ~~**Priority 2**: Route WebSocket on `/xrpc/com.atproto.sync.subscribeRepos`~~ ✅ Done
+3. ~~**Priority 3**: Implement `app.bsky.actor.searchActorsTypeahead`~~ ✅ Done

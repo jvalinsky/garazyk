@@ -204,4 +204,59 @@
     return 0;
 }
 
+- (nullable NSArray<NSDictionary *> *)searchActorsTypeahead:(NSString *)query
+                                                      limit:(NSInteger)limit
+                                                      error:(NSError **)error {
+    if (!query || query.length == 0) {
+        return @[];
+    }
+    
+    // Sanitize and normalize query
+    NSString *searchTerm = [query lowercaseString];
+    
+    // Clamp limit to valid range (1-25, default 10)
+    if (limit <= 0) limit = 10;
+    if (limit > 25) limit = 25;
+    
+    // Search accounts by handle prefix
+    // Using LIKE for prefix matching with wildcard
+    NSString *handlePattern = [NSString stringWithFormat:@"%@%%", searchTerm];
+    
+    NSString *sql = @"SELECT did, handle FROM accounts WHERE LOWER(handle) LIKE ? LIMIT ?";
+    NSArray *rows = [self.database executeQuery:sql error:error];
+    
+    if (!rows) {
+        return @[];
+    }
+    
+    NSMutableArray<NSDictionary *> *results = [NSMutableArray array];
+    
+    for (NSDictionary *row in rows) {
+        NSString *did = row[@"did"];
+        NSString *handle = row[@"handle"];
+        
+        if (!did || !handle) continue;
+        
+        // Get profile info for display name and avatar
+        NSDictionary *profile = [self getProfileRecordForDID:did error:nil];
+        
+        NSMutableDictionary *actor = [NSMutableDictionary dictionary];
+        actor[@"did"] = did;
+        actor[@"handle"] = handle;
+        
+        if (profile[@"displayName"]) {
+            actor[@"displayName"] = profile[@"displayName"];
+        }
+        if (profile[@"avatar"]) {
+            actor[@"avatar"] = profile[@"avatar"];
+        }
+        
+        [results addObject:[actor copy]];
+        
+        if ((NSInteger)results.count >= limit) break;
+    }
+    
+    return [results copy];
+}
+
 @end
