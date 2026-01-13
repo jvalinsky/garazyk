@@ -336,6 +336,24 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     return account;
 }
 
+- (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
+    NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
+    
+    NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
+    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return nil;
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseAccount *account = [self accountFromStatement:stmt];
+        if (account) {
+            [accounts addObject:account];
+        }
+    }
+    
+    [self finalizeStatement:stmt];
+    return [accounts copy];
+}
+
 - (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
