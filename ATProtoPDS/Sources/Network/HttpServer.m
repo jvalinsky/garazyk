@@ -310,6 +310,13 @@
 
     NSString *routeKey = [NSString stringWithFormat:@"%@ %@", methodString, path];
     RequestHandler handler = self.pathHandlers[routeKey];
+    
+    if (!handler) {
+        NSArray *handlers = self.routeHandlers[routeKey];
+        if (handlers.count > 0) {
+            handler = handlers[0];
+        }
+    }
 
     if (!handler) {
         handler = self.pathHandlers[path];
