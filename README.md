@@ -9,6 +9,7 @@ Standards-compliant AT Protocol Personal Data Server (PDS) implementation writte
 - **Parallel API Calls** - Promise.all reduces page loads by 58%
 - **Interactive Explorer** - Web-based UI for exploring AT Protocol data
 - **Auto-Generated API Docs** - OpenAPI 3.0 specification with interactive Swagger UI
+- **Unified Logging** - Structured JSON logging with component filtering and request correlation
 - **168 Unit Tests** - Comprehensive test coverage with 100% pass rate
 
 ## Table of Contents
@@ -245,6 +246,7 @@ NSPds/
 │   │   └── Network/               # HTTP server
 │   └── Tests/                     # Unit and integration tests
 ├── docs/                          # Documentation
+│   ├── LOGGING.md                 # Detailed logging system documentation
 │   ├── guides/                    # Setup, user, and developer guides
 │   ├── architecture/              # System diagrams and data models
 │   ├── security/                  # Security plans, reports, and audits

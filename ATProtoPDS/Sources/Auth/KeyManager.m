@@ -1,6 +1,7 @@
 #import "Auth/KeyManager.h"
 #import "Auth/JWT.h"
 #import "Database/PDSDatabase.h"
+#import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
@@ -195,7 +196,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     // Save to database for persistence
     NSError *saveError = nil;
     if (![self saveKeyPairToDatabase:keyPair error:&saveError]) {
-        NSLog(@"Warning: Failed to save JWT signing key to database: %@", saveError);
+        PDS_LOG_AUTH_WARN(@"Failed to save JWT signing key to database: %@", saveError);
     }
 
     return keyPair;
@@ -448,7 +449,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
 
     if (error) {
-        NSLog(@"Failed to load JWT signing keys from database: %@", error);
+        PDS_LOG_AUTH_ERROR(@"Failed to load JWT signing keys from database: %@", error);
         return;
     }
 

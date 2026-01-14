@@ -45,7 +45,8 @@
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         
-        if (strongSelf.stateChangedHandler) {
+        void (^handler)(PDSNetworkConnectionState, NSError * _Nullable) = strongSelf.stateChangedHandler;
+        if (handler) {
             PDSNetworkConnectionState pdsState;
             switch (state) {
                 case nw_connection_state_waiting: pdsState = PDSNetworkConnectionStateWaiting; break;
@@ -59,7 +60,7 @@
             if (error) {
                 nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
             }
-            strongSelf.stateChangedHandler(pdsState, nsError);
+            handler(pdsState, nsError);
         }
     });
 }
@@ -70,7 +71,9 @@
 }
 
 - (void)cancel {
-    nw_connection_cancel(_connection);
+    if (_connection) {
+        nw_connection_cancel(_connection);
+    }
 }
 
 - (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
@@ -87,6 +90,10 @@
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+    if (!_connection) {
+        if (completion) completion(nil, NO, [NSError errorWithDomain:@"PDSNetwork" code:-1 userInfo:nil]);
+        return;
+    }
     nw_connection_receive(_connection, (uint32_t)minLength, (uint32_t)maxLength, ^(dispatch_data_t content, nw_content_context_t context, bool isComplete, nw_error_t receiveError) {
         NSData *data = nil;
         if (content) {
@@ -101,7 +108,9 @@
         if (receiveError) {
             nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(receiveError);
         }
-        completion(data, isComplete, nsError);
+        if (completion) {
+            completion(data, isComplete, nsError);
+        }
     });
 }
 
@@ -137,7 +146,8 @@
         nw_listener_set_state_changed_handler(_listener, ^(nw_listener_state_t state, nw_error_t error) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
-            if (strongSelf.stateChangedHandler) {
+            void (^handler)(PDSNetworkListenerState, NSError * _Nullable) = strongSelf.stateChangedHandler;
+            if (handler) {
                 PDSNetworkListenerState pdsState;
                 switch (state) {
                     case nw_listener_state_waiting: pdsState = PDSNetworkListenerStateWaiting; break;
@@ -153,16 +163,18 @@
                 if (error) {
                     nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
                 }
-                strongSelf.stateChangedHandler(pdsState, nsError);
+                handler(pdsState, nsError);
             }
         });
 
         nw_listener_set_new_connection_handler(_listener, ^(nw_connection_t connection) {
+            if (!connection) return;
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
-            if (strongSelf.newConnectionHandler) {
+            void (^handler)(id<PDSNetworkConnection>) = strongSelf.newConnectionHandler;
+            if (handler) {
                 PDSNetworkConnectionMac *pdsConn = [[PDSNetworkConnectionMac alloc] initWithConnection:connection];
-                strongSelf.newConnectionHandler(pdsConn);
+                handler(pdsConn);
             }
         });
     }
@@ -175,7 +187,8 @@
 }
 
 - (void)cancel {
-    nw_listener_cancel(_listener);
+    if (_listener) {
+        nw_listener_cancel(_listener);
+    }
 }
-
 @end

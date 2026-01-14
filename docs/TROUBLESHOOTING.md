@@ -538,6 +538,55 @@ iostat -d 1
 nettop -p atprotopds
 ```
 
+### Issue: EXC_BREAKPOINT inside libdispatch during teardown
+
+#### Symptoms
+- Server crashes with `EXC_BREAKPOINT` (or `SIGTRAP`) during `stopServer`
+- Backtrace points to `_dispatch_continuation_init_slow` or `dispatch_async`
+- Crash occurs when a Network framework listener or connection attempts to signal a state change
+
+#### Diagnosis
+The most common cause is a `dispatch_queue_t` property being declared with the `assign` (or `unsafe_unretained`) qualifier instead of `strong`. 
+
+Under ARC, `dispatch_queue_t` is an Objective-C object. If declared as `assign`, the queue is released immediately after initialization (if not held elsewhere), leading to a "use-after-free" or "NULL block" crash when the system attempts to dispatch to it.
+
+```objective-c
+// BAD: Queue will be released immediately
+@property (nonatomic, assign) dispatch_queue_t listenerQueue;
+
+// GOOD: Queue is retained for the life of the object
+@property (nonatomic, strong) dispatch_queue_t listenerQueue;
+```
+
+#### Solution
+1. Search the codebase for `@property (nonatomic, assign) dispatch_queue_t`.
+2. Change the qualifier to `strong`.
+3. Ensure the queue is initialized in `init` and not prematurely cleared in `stop`.
+
+---
+
+### Issue: Segmentation Fault (139) immediately after server stopped
+
+#### Symptoms
+- Test logs show "PDS server stopped"
+- Immediate crash with Exit Code 139 (SEGFAULT)
+- Backtrace might point to `printf` or file system operations
+
+#### Solution
+This is often caused by a logging system (like `PDSLogger`) attempting to write to a log file after the file handle has been closed or the directory has been deleted (common in integration tests).
+
+1. Ensure `PDSLogger` is flushed and closed *before* the server considers itself fully stopped.
+2. In `PDSController.m`:
+```objective-c
+- (void)stopServer {
+    // ... stop other components ...
+    [[PDSLogger sharedLogger] flush];
+    [[PDSLogger sharedLogger] closeLogFile];
+}
+```
+
+---
+
 ## Diagnostic Tools
 
 ### Built-in Diagnostics

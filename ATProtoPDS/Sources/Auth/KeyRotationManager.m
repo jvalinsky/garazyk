@@ -1,5 +1,6 @@
 #import "Auth/KeyRotationManager.h"
 #import "Auth/KeyManager.h"
+#import "Debug/PDSLogger.h"
 
 NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 
@@ -65,10 +66,10 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
             if (success) {
                 // Optionally, deactivate old keys after a grace period
                 // For now, keep all keys active during transition
-                NSLog(@"Key rotation completed successfully. New key ID: %@", newKeyPair.keyID);
+                PDS_LOG_AUTH_INFO(@"Key rotation completed successfully (new key ID: %@)", newKeyPair.keyID);
             }
         } else {
-            NSLog(@"Key rotation failed: %@", error);
+            PDS_LOG_AUTH_ERROR(@"Key rotation failed: %@", error);
         }
     });
     

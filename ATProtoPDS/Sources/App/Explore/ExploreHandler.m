@@ -3,6 +3,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "App/PDSController.h"
+#import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -253,7 +254,7 @@
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
-    NSLog(@"ExploreHandler handleRequest: %@", path);
+    PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"ExploreHandler handleRequest: %@", path);
     
     if ([path isEqualToString:@"/explore/"] || [path isEqualToString:@"/explore"]) {
         [self serveIndex:response];
@@ -265,7 +266,8 @@
         [self serveJs:request response:response];
     }
     else if ([path hasPrefix:@"/explore/api/"]) {
-        [self handleApiRequest:request response:response];
+        NSString *endpoint = [self apiEndpointForPath:request.path];
+        [self handleApiRequest:request response:response endpoint:endpoint];
     }
     else {
         response.statusCode = HttpStatusNotFound;
@@ -349,12 +351,11 @@
 
 #pragma mark - API Endpoints
 
-- (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *endpoint = [self apiEndpointForPath:request.path];
+- (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response endpoint:(NSString *)endpoint {
+    PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"handleApiRequest: path=%@, endpoint=%@", request.path, endpoint);
     NSString *query = request.queryString ?: @"";
     NSDictionary *params = [self parseQueryString:query];
 
-    NSLog(@"handleApiRequest: path=%@, endpoint=%@", request.path, endpoint);
     
     response.statusCode = 200;
     response.contentType = @"application/json; charset=utf-8";
@@ -422,7 +423,8 @@
         [self handleApiDocs:params response:response];
     }
     else if ([endpoint isEqualToString:@"openapi.yaml"] || [endpoint isEqualToString:@"openapi.json"]) {
-        NSLog(@"[ExploreHandler] OpenAPI spec request received");
+        PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"[ExploreHandler] OpenAPI spec request received");
+        response.statusCode = HttpStatusOK;
         [self handleApiOpenapiSpec:params response:response];
     }
     else {
@@ -1069,20 +1071,23 @@
 
 #if defined(__APPLE__)
     if (waitResult != 0) {
-        NSLog(@"fetchDidDocument timeout for %@", did);
+        if (networkError.domain == NSURLErrorDomain && networkError.code == NSURLErrorTimedOut) {
+            PDS_LOG_HTTP_WARN(@"fetchDidDocument timeout for %@", did);
+        } else {
+            PDS_LOG_HTTP_ERROR(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
+        }
         [task cancel];
         return nil;
     }
 #else
     if (networkError) {
-        NSLog(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
+        if (networkError.domain == NSURLErrorDomain && networkError.code == NSURLErrorTimedOut) {
+            PDS_LOG_HTTP_WARN(@"fetchDidDocument timeout for %@", did);
+        } else {
+            PDS_LOG_HTTP_ERROR(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
+        }
     }
 #endif
-    
-    if (networkError) {
-        NSLog(@"fetchDidDocument error for %@: %@", did, networkError.localizedDescription);
-        return nil;
-    }
     
     // Return the error response from PLC if local resolution failed
     // Exception: "DID not registered" errors to prevent caching as valid document
@@ -1231,20 +1236,23 @@
     
 #if defined(__APPLE__)
     if (waitResult != 0) {
-        NSLog(@"fetchPlcLog timeout for %@", did);
+        if (networkError.domain == NSURLErrorDomain && networkError.code == NSURLErrorTimedOut) {
+            PDS_LOG_HTTP_WARN(@"fetchPlcLog timeout for %@", did);
+        } else {
+            PDS_LOG_HTTP_ERROR(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
+        }
         [task cancel];
         return nil;
     }
 #else
     if (networkError) {
-        NSLog(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
+        if (networkError.domain == NSURLErrorDomain && networkError.code == NSURLErrorTimedOut) {
+            PDS_LOG_HTTP_WARN(@"fetchPlcLog timeout for %@", did);
+        } else {
+            PDS_LOG_HTTP_ERROR(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
+        }
     }
 #endif
-    
-    if (networkError) {
-        NSLog(@"fetchPlcLog error for %@: %@", did, networkError.localizedDescription);
-        return nil;
-    }
     
     return nil; // Return nil on failure to allow 404/error handling downstream
 }
@@ -1268,14 +1276,14 @@
     NSString *dbPath = nil;
     for (NSString *path in possiblePaths) {
         if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"Found database at: %@", path);
             dbPath = path;
-            NSLog(@"Found database at: %@", path);
             break;
         }
     }
     
     if (!dbPath) {
-        NSLog(@"fetchAccountList: No database found in any of the expected locations");
+        PDS_LOG_ERROR_C(PDSLogComponentExplore, @"fetchAccountList: No database found in any of the expected locations");
         return @"{\"accounts\":[],\"error\":\"Database not found\"}";
     }
 
@@ -1286,7 +1294,7 @@
     @try {
         accounts = [self.controller getAllAccountsWithError:&error];
     } @catch (NSException *exception) {
-        NSLog(@"Exception getting accounts from controller: %@", exception);
+        PDS_LOG_ERROR_C(PDSLogComponentExplore, @"Exception getting accounts from controller: %@", exception);
         error = [NSError errorWithDomain:@"ExploreHandler" 
                                    code:500 
                                userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
@@ -1294,7 +1302,7 @@
     
     // Fallback to direct database access if controller method fails
     if (!accounts || error) {
-        NSLog(@"Controller method failed, falling back to direct database access: %@", error.localizedDescription);
+        PDS_LOG_ERROR_C(PDSLogComponentExplore, @"Controller method failed, falling back to direct database access: %@", error.localizedDescription);
         
         PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
         if (![db openWithError:&error]) {
@@ -1309,8 +1317,8 @@
         }
     }
 
-    // Debug: log the number of accounts found
-    NSLog(@"fetchAccountList: Found %lu accounts", (unsigned long)accounts.count);
+    // Debug: log the number of accounts found    
+    PDS_LOG_INFO_C(PDSLogComponentExplore, @"fetchAccountList: Found %lu accounts", (unsigned long)accounts.count);
     
     NSMutableArray *accountArray = [NSMutableArray array];
     for (PDSDatabaseAccount *account in accounts) {

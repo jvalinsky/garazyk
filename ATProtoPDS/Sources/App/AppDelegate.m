@@ -1,13 +1,10 @@
 #import "AppDelegate.h"
 #import <os/log.h>
+#import "Network/HttpServer.h"
+#import "Database/PDSDatabase.h"
+#import "Debug/PDSLogger.h"
 
 @interface AppDelegate ()
-
-#if defined(__APPLE__)
-@property (strong, nonatomic) os_log_t log;
-#else
-@property (assign, nonatomic) os_log_t log;
-#endif
 
 @end
 
@@ -15,19 +12,19 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
-    self.log = os_log_create("com.atproto.pds", "AppDelegate");
-    os_log_info(self.log, "ATProto PDS starting up...");
+    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 480, 270) styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
+    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
 #else
-    NSLog(@"ATProto PDS starting up...");
+    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
 #endif
     
     self.pdsController = [[PDSController alloc] init];
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
-        os_log_error(self.log, "Failed to start server: %@", error);
+        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
 #else
-        NSLog(@"Failed to start server: %@", error);
+        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
 #endif
     }
     
@@ -37,11 +34,7 @@
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
-    os_log_info(self.log, "ATProto PDS shutting down...");
-#else
-    NSLog(@"ATProto PDS shutting down...");
-#endif
+    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS shutting down...");
     [self.pdsController stopServer];
 }
 
@@ -65,9 +58,9 @@
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
-        os_log_error(self.log, "Failed to start server: %@", error);
+        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
 #else
-        NSLog(@"Failed to start server: %@", error);
+        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
 #endif
     }
 }
