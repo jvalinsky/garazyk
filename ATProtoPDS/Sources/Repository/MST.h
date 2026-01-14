@@ -165,13 +165,61 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
 
 /*!
  @method serializeNode:
- 
+
  @abstract Serializes an MST node to CBOR data.
- 
+
  @param node The node to serialize.
  @return CBOR-encoded data for the node.
  */
 - (nullable NSData *)serializeNode:(MSTNode *)node;
+
+/*!
+ @method toJSON
+
+ @abstract Exports the complete tree structure as a JSON dictionary.
+
+ @discussion Returns a dictionary containing the tree's structure with:
+ - rootCID: The root CID as a string
+ - nodeCount: Total number of nodes
+ - entryCount: Total number of entries
+ - maxDepth: Maximum tree depth (level)
+ - nodes: Array of node dictionaries with cid, level, kind, entries, left
+
+ @return Dictionary suitable for JSON serialization, or nil if tree is empty.
+ */
+- (nullable NSDictionary *)toJSON;
+
+/*!
+ @method getStatistics
+
+ @abstract Computes tree statistics for debugging and monitoring.
+
+ @discussion Returns a dictionary with metrics including:
+ - nodeCount: Total number of nodes
+ - entryCount: Total number of key-value entries
+ - leafNodeCount: Number of leaf nodes
+ - internalNodeCount: Number of internal nodes
+ - maxDepth: Maximum tree depth
+ - avgDepth: Average depth across all nodes
+ - rootCID: Root CID as a string
+ - balanceFactor: Tree balance metric (0.0-1.0)
+
+ @return Dictionary with tree statistics.
+ */
+- (NSDictionary *)getStatistics;
+
+/*!
+ @method toDOT
+
+ @abstract Exports the tree structure in Graphviz DOT format.
+
+ @discussion Generates a DOT language representation suitable for
+ visualization with Graphviz tools. Nodes are color-coded by level
+ and edges show parent-child relationships.
+
+ @return DOT format string, or nil if tree is empty.
+ */
+- (nullable NSString *)toDOT;
 
 @end
 
