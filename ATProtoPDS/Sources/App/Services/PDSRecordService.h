@@ -14,6 +14,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
+@class ATProtoLexiconValidator;
+
+/*! Validation mode for record operations. */
+typedef NS_ENUM(NSInteger, PDSValidationMode) {
+    PDSValidationModeRequired,   /*! Fail if lexicon unknown or validation fails. */
+    PDSValidationModeOptimistic, /*! Validate if known, allow if unknown. */
+    PDSValidationModeOff         /*! Skip validation. */
+};
 
 /*!
  @class PDSRecordService
@@ -40,6 +48,14 @@ NS_ASSUME_NONNULL_BEGIN
                           error:(NSError **)error;
 
 /*! Creates or updates a record. */
+- (BOOL)putRecord:(NSString *)collection
+             rkey:(NSString *)rkey
+            value:(NSDictionary *)value
+           forDid:(NSString *)did
+   validationMode:(PDSValidationMode)mode
+            error:(NSError **)error;
+
+/*! Creates or updates a record (convenience method with default optimistic validation). */
 - (BOOL)putRecord:(NSString *)collection
              rkey:(NSString *)rkey
             value:(NSDictionary *)value

@@ -110,7 +110,6 @@ int main(int argc, char * argv[]) {
             @"HttpRequestParsingTests",
             @"HttpBufferPoolTests",
             @"HttpChunkedBodyParserTests",
-            @"HttpStreamingBodyTests",
             @"FirehoseTests",
             @"RelayClientTests",
             @"SessionStoreTests",

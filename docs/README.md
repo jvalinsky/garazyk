@@ -26,3 +26,7 @@
 ## Architecture Diagrams
 - [AT Protocol Models](architecture/atproto_data_models.md)
 - [System Architecture](architecture/ARCHITECTURE_DIAGRAMS.md)
+- [Lexicon Validation](architecture/LEXICON_VALIDATION.md) - Schema validation system
+
+## Validation & Schemas
+- [Lexicon Validation Guide](guides/LEXICON_VALIDATION_GUIDE.md) - Using and debugging validation

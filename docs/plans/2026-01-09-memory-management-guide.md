@@ -8,6 +8,14 @@
 
 **Tech Stack:** Markdown, Objective-C (analysis).
 
+**Status:** COMPLETED - Security fixes applied and documented in `docs/guides/objective_c_tips.md`
+
+**Key Security Updates Applied:**
+- SecKeyRef memory management fixes in KeyManager.m and ActorStore.m
+- Core Foundation ownership contract documentation
+- Queue property standardization with PDS_DISPATCH_QUEUE_STRONG macro
+- Input validation and bounds checking patterns
+
 ### Task 1: Research Retain Cycles & Block Patterns
 
 **Files:**
