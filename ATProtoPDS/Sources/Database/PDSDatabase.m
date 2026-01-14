@@ -1,4 +1,5 @@
 #import "Database/PDSDatabase.h"
+#import "Compat/PDSTypes.h"
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Debug/PDSLogger.h"
@@ -24,7 +25,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, assign) CFMutableDictionaryRef statementCache;
-@property (nonatomic, strong) dispatch_queue_t cacheQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 
 @end
 

@@ -1,4 +1,5 @@
 #import "HttpRouter.h"
+#import "Compat/PDSTypes.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"
 #import "Auth/OAuthServerMetadata.h"
@@ -35,7 +36,7 @@
 @interface HttpRouter ()
 
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *routes;
-@property (nonatomic, strong) dispatch_queue_t routingQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t routingQueue;
 @property (nonatomic, strong) WebSocketUpgradeHandler *wsUpgradeHandler;
 @property (nonatomic, copy, nullable) void (^wsUpgradeCallback)(HttpRequest *request, HttpResponse *response);
 @property (nonatomic, strong) HttpRouteTrie *routeTrie;

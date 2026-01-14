@@ -1,4 +1,5 @@
 #import "Sync/WebSocketConnection.h"
+#import "Compat/PDSTypes.h"
 #import "Network/PDSNetworkTransport.h"
 #import <CommonCrypto/CommonDigest.h>
 
@@ -24,10 +25,10 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 @property (nonatomic, copy, readwrite, nullable) NSDictionary<NSString *, NSString *> *queryParams;
 
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
-@property (nonatomic, strong) dispatch_queue_t connectionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMutableData *readBuffer;
 @property (nonatomic, strong) NSMutableData *writeBuffer;
-@property (nonatomic, strong) dispatch_queue_t writeQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t writeQueue;
 @property (nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimer;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimeoutTimer;

@@ -1,4 +1,5 @@
 #import "Sync/RelayClient.h"
+#import "Compat/PDSTypes.h"
 #import "Sync/Firehose.h"
 #import "Sync/WebSocketConnection.h"
 
@@ -19,7 +20,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 @property (nonatomic, strong, readwrite, nullable) Firehose *firehose;
 @property (nonatomic, strong, readwrite, nullable) FirehoseSubscription *subscription;
 @property (nonatomic, strong, readwrite) NSMutableDictionary<NSString *, NSString *> *cursorStorage;
-@property (nonatomic, strong, readwrite) dispatch_queue_t storageQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readwrite) dispatch_queue_t storageQueue;
 
 @end
 

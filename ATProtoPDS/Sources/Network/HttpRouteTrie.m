@@ -1,4 +1,5 @@
 #import "HttpRouteTrie.h"
+#import "Compat/PDSTypes.h"
 #import "HttpRouter.h"
 
 @interface HttpRouteNode : NSObject
@@ -29,7 +30,7 @@
 
 @property (nonatomic, strong) HttpRouteNode *root;
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *allRoutes;
-@property (nonatomic, strong) dispatch_queue_t trieQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t trieQueue;
 
 @end
 

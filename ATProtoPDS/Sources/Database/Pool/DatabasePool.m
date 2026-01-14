@@ -1,4 +1,5 @@
 #import "DatabasePool.h"
+#import "Compat/PDSTypes.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
@@ -12,8 +13,8 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 @property (nonatomic, assign, readwrite) NSUInteger maxSize;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSActorStore *> *stores;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *lastAccessTime;
-@property (nonatomic, strong) dispatch_queue_t poolQueue;
-@property (nonatomic, strong) dispatch_queue_t evictionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t evictionQueue;
 @property (nonatomic, strong) NSTimer *evictionTimer;
 @property (nonatomic, assign, readwrite) NSUInteger openFileHandleCount;
 
