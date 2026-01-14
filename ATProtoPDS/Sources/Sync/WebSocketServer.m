@@ -17,6 +17,8 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 
 @interface WebSocketServer ()
 
+@property (nonatomic, readwrite) uint16_t port;
+@property (nonatomic, readwrite) WebSocketServerState state;
 @property (nonatomic, strong) nw_listener_t listener;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t listenerQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, WebSocketConnection *> *connectionsByFileDescriptor;
@@ -59,9 +61,11 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 
     self.state = WebSocketServerStateStarting;
 
-    nw_parameters_t parameters = nw_parameters_create();
+    nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
 
-    nw_listener_t listener = nw_listener_create(parameters);
+    nw_listener_t listener;
+    NSString *portString = [NSString stringWithFormat:@"%hu", self.port];
+    listener = nw_listener_create_with_port(portString.UTF8String, parameters);
     if (!listener) {
         self.state = WebSocketServerStateFailed;
         if (error) {
@@ -74,32 +78,44 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 
     nw_listener_set_queue(listener, self.listenerQueue);
     
+    // Create a semaphore to wait for the listener to be ready
+    dispatch_semaphore_t readySemaphore = dispatch_semaphore_create(0);
+    __block BOOL startupSuccess = NO;
+    __block NSError *startupError = nil;
+    
     __weak typeof(self) weakSelf = self;
     nw_listener_set_state_changed_handler(listener, ^(nw_listener_state_t state, _Nullable nw_error_t error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            if (!strongSelf) return;
-            
-            switch (state) {
-                case nw_listener_state_ready:
-                    strongSelf.state = WebSocketServerStateRunning;
-                    break;
-                case nw_listener_state_failed:
-                    strongSelf.state = WebSocketServerStateFailed;
-                    if (error && strongSelf.delegate) {
-                        NSError *nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
-                        [strongSelf.delegate webSocketServer:strongSelf didFailWithError:nsError];
+        // Dispatch to a queue to handle state changes, but signal semaphore immediately if needed
+        // Note: nw_listener callbacks are on listenerQueue
+        
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        
+        switch (state) {
+            case nw_listener_state_ready:
+                strongSelf.state = WebSocketServerStateRunning;
+                strongSelf.port = nw_listener_get_port(listener);
+                startupSuccess = YES;
+                dispatch_semaphore_signal(readySemaphore);
+                break;
+            case nw_listener_state_failed:
+                strongSelf.state = WebSocketServerStateFailed;
+                if (error) {
+                    startupError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
+                    if (strongSelf.delegate) {
+                        [strongSelf.delegate webSocketServer:strongSelf didFailWithError:startupError];
                     }
-                    dispatch_semaphore_signal(strongSelf.stopSemaphore);
-                    break;
-                case nw_listener_state_cancelled:
-                    strongSelf.state = WebSocketServerStateIdle;
-                    dispatch_semaphore_signal(strongSelf.stopSemaphore);
-                    break;
-                default:
-                    break;
-            }
-        });
+                }
+                dispatch_semaphore_signal(strongSelf.stopSemaphore); // Also signal stop if we were stopping
+                dispatch_semaphore_signal(readySemaphore); // Signal ready semaphore to unblock start
+                break;
+            case nw_listener_state_cancelled:
+                strongSelf.state = WebSocketServerStateIdle;
+                dispatch_semaphore_signal(strongSelf.stopSemaphore);
+                break;
+            default:
+                break;
+        }
     });
 
     nw_listener_set_new_connection_handler(listener, ^(nw_connection_t connection) {
@@ -118,18 +134,31 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
         [webSocketConnection start];
     });
 
-    if (self.state == WebSocketServerStateFailed) {
+    nw_listener_start(listener);
+    
+    // Wait for ready state (max 2 seconds)
+    if (dispatch_semaphore_wait(readySemaphore, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)) != 0) {
         if (error) {
             *error = [NSError errorWithDomain:WebSocketServerErrorDomain
                                          code:WebSocketServerErrorCodeListenerFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Listener state failed"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Timed out waiting for WebSocket server to start"}];
+        }
+        nw_listener_cancel(listener);
+        return NO;
+    }
+    
+    if (!startupSuccess) {
+        if (error) {
+            *error = startupError ?: [NSError errorWithDomain:WebSocketServerErrorDomain
+                                         code:WebSocketServerErrorCodeListenerFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to start WebSocket server"}];
         }
         return NO;
     }
 
     self.listener = listener;
-    self.state = WebSocketServerStateRunning;
-
+    // self.state is already Running from handler
+    
     return YES;
 }
 
