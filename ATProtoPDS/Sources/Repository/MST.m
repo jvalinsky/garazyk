@@ -5,6 +5,7 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <arpa/inet.h>
 #import <objc/runtime.h>
+#import <math.h>
 
 #pragma mark - Internal Classes
 
@@ -647,5 +648,259 @@
     return [self.root serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
 }
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data { return nil; }
+
+#pragma mark - Visualization & Export
+
+- (nullable NSDictionary *)toJSON {
+    if (!self.root) return nil;
+
+    // Cache for CIDs
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+
+    // Compute root CID
+    CID *rootCID = [self.root getCID:cache];
+    if (!rootCID) return nil;
+
+    // BFS traversal to collect all nodes
+    NSMutableArray *queue = [NSMutableArray arrayWithObject:self.root];
+    NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
+    NSMutableArray *nodesArray = [NSMutableArray array];
+    NSUInteger entryCount = 0;
+    NSUInteger maxDepth = 0;
+
+    while (queue.count > 0) {
+        MSTNode *node = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+
+        CID *cid = [node getCID:cache];
+        if (!cid) continue;
+
+        NSString *cidString = [cid description];
+        if ([addedCIDs containsObject:cidString]) continue;
+        [addedCIDs addObject:cidString];
+
+        // Track max depth
+        if (node.level > maxDepth) {
+            maxDepth = node.level;
+        }
+
+        // Build node dictionary
+        NSMutableDictionary *nodeDict = [NSMutableDictionary dictionary];
+        nodeDict[@"cid"] = cidString;
+        nodeDict[@"level"] = @(node.level);
+        nodeDict[@"kind"] = (node.level == 0) ? @"leaf" : @"non-leaf";
+
+        // Build entries array
+        NSMutableArray *entriesArray = [NSMutableArray array];
+        for (MSTNodeEntry *entry in node.internalEntries) {
+            entryCount++;
+            NSMutableDictionary *entryDict = [NSMutableDictionary dictionary];
+            entryDict[@"fullKey"] = entry.fullKey ?: @"";
+            entryDict[@"value"] = [entry.value description] ?: @"";
+
+            if (entry.tree) {
+                entryDict[@"tree"] = [entry.tree description];
+            }
+
+            [entriesArray addObject:entryDict];
+        }
+        nodeDict[@"entries"] = entriesArray;
+
+        // Add left pointer
+        if (node.internalLeft) {
+            CID *leftCID = [node.internalLeft getCID:cache];
+            if (leftCID) {
+                nodeDict[@"left"] = [leftCID description];
+            }
+        }
+
+        [nodesArray addObject:nodeDict];
+
+        // Enqueue children
+        if (node.internalLeft) {
+            [queue addObject:node.internalLeft];
+        }
+
+        for (MSTNodeEntry *entry in node.internalEntries) {
+            if (entry.internalTree) {
+                [queue addObject:entry.internalTree];
+            }
+        }
+    }
+
+    return @{
+        @"rootCID": [rootCID description],
+        @"nodeCount": @(nodesArray.count),
+        @"entryCount": @(entryCount),
+        @"maxDepth": @(maxDepth),
+        @"nodes": nodesArray
+    };
+}
+
+- (NSDictionary *)getStatistics {
+    if (!self.root) {
+        return @{
+            @"nodeCount": @0,
+            @"entryCount": @0,
+            @"leafNodeCount": @0,
+            @"internalNodeCount": @0,
+            @"maxDepth": @0,
+            @"avgDepth": @0.0,
+            @"rootCID": @"",
+            @"balanceFactor": @0.0
+        };
+    }
+
+    // Cache for CIDs
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    CID *rootCID = [self.root getCID:cache];
+
+    // BFS traversal to collect statistics
+    NSMutableArray *queue = [NSMutableArray arrayWithObject:self.root];
+    NSMutableSet<NSString *> *visited = [NSMutableSet set];
+
+    NSUInteger nodeCount = 0;
+    NSUInteger entryCount = 0;
+    NSUInteger leafNodeCount = 0;
+    NSUInteger internalNodeCount = 0;
+    NSUInteger maxDepth = 0;
+    NSUInteger totalDepth = 0;
+
+    while (queue.count > 0) {
+        MSTNode *node = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+
+        CID *cid = [node getCID:cache];
+        if (!cid) continue;
+
+        NSString *cidString = [cid description];
+        if ([visited containsObject:cidString]) continue;
+        [visited addObject:cidString];
+
+        nodeCount++;
+        totalDepth += node.level;
+
+        if (node.level == 0) {
+            leafNodeCount++;
+        } else {
+            internalNodeCount++;
+        }
+
+        if (node.level > maxDepth) {
+            maxDepth = node.level;
+        }
+
+        entryCount += node.internalEntries.count;
+
+        // Enqueue children
+        if (node.internalLeft) {
+            [queue addObject:node.internalLeft];
+        }
+
+        for (MSTNodeEntry *entry in node.internalEntries) {
+            if (entry.internalTree) {
+                [queue addObject:entry.internalTree];
+            }
+        }
+    }
+
+    double avgDepth = nodeCount > 0 ? (double)totalDepth / nodeCount : 0.0;
+
+    // Balance factor: ratio of actual depth to ideal depth (log2(nodeCount))
+    // Closer to 1.0 means better balance
+    double idealDepth = nodeCount > 1 ? log2(nodeCount) : 0.0;
+    double balanceFactor = idealDepth > 0 ? avgDepth / idealDepth : 1.0;
+
+    return @{
+        @"nodeCount": @(nodeCount),
+        @"entryCount": @(entryCount),
+        @"leafNodeCount": @(leafNodeCount),
+        @"internalNodeCount": @(internalNodeCount),
+        @"maxDepth": @(maxDepth),
+        @"avgDepth": @(avgDepth),
+        @"rootCID": rootCID ? [rootCID description] : @"",
+        @"balanceFactor": @(balanceFactor)
+    };
+}
+
+- (nullable NSString *)toDOT {
+    if (!self.root) return nil;
+
+    // Cache for CIDs
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    CID *rootCID = [self.root getCID:cache];
+    if (!rootCID) return nil;
+
+    NSMutableString *dot = [NSMutableString stringWithString:@"digraph MST {\n"];
+    [dot appendString:@"  rankdir=TB;\n"];
+    [dot appendString:@"  node [shape=box, style=filled];\n\n"];
+
+    // BFS traversal
+    NSMutableArray *queue = [NSMutableArray arrayWithObject:self.root];
+    NSMutableSet<NSString *> *visited = [NSMutableSet set];
+    NSMutableArray *edges = [NSMutableArray array];
+
+    // Color palette for levels (blue gradient)
+    NSArray *colors = @[@"#e3f2fd", @"#90caf9", @"#42a5f5", @"#1e88e5", @"#1565c0"];
+
+    while (queue.count > 0) {
+        MSTNode *node = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+
+        CID *cid = [node getCID:cache];
+        if (!cid) continue;
+
+        NSString *cidString = [cid description];
+        NSString *nodeID = [cidString substringToIndex:MIN(12, cidString.length)];
+
+        if ([visited containsObject:cidString]) continue;
+        [visited addObject:cidString];
+
+        // Node label and color
+        NSString *color = colors[MIN(node.level, colors.count - 1)];
+        NSString *kind = (node.level == 0) ? @"leaf" : @"internal";
+        [dot appendFormat:@"  \"%@\" [label=\"L%u\\n%@\\n%lu entries\", fillcolor=\"%@\"];\n",
+         nodeID, node.level, kind, (unsigned long)node.internalEntries.count, color];
+
+        // Add left edge
+        if (node.internalLeft) {
+            CID *leftCID = [node.internalLeft getCID:cache];
+            if (leftCID) {
+                NSString *leftID = [[leftCID description] substringToIndex:MIN(12, [[leftCID description] length])];
+                [edges addObject:[NSString stringWithFormat:@"  \"%@\" -> \"%@\" [label=\"left\", color=\"#666666\"];\n",
+                                nodeID, leftID]];
+                [queue addObject:node.internalLeft];
+            }
+        }
+
+        // Add entry tree edges
+        for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
+            MSTNodeEntry *entry = node.internalEntries[i];
+            if (entry.internalTree) {
+                CID *treeCID = [entry.internalTree getCID:cache];
+                if (treeCID) {
+                    NSString *treeID = [[treeCID description] substringToIndex:MIN(12, [[treeCID description] length])];
+                    NSString *entryKey = entry.fullKey ?: @"";
+                    if (entryKey.length > 20) {
+                        entryKey = [[entryKey substringToIndex:17] stringByAppendingString:@"..."];
+                    }
+                    [edges addObject:[NSString stringWithFormat:@"  \"%@\" -> \"%@\" [label=\"%@\", color=\"#1976d2\"];\n",
+                                    nodeID, treeID, entryKey]];
+                    [queue addObject:entry.internalTree];
+                }
+            }
+        }
+    }
+
+    // Append all edges
+    [dot appendString:@"\n"];
+    for (NSString *edge in edges) {
+        [dot appendString:edge];
+    }
+
+    [dot appendString:@"}\n"];
+
+    return [dot copy];
+}
 
 @end
