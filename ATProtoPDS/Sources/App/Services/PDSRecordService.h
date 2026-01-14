@@ -1,36 +1,58 @@
+/*!
+ @file PDSRecordService.h
+
+ @abstract Record management service layer.
+
+ @discussion Provides CRUD operations for ATProto records within repositories.
+ Handles record listing with pagination and repository statistics.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
 
+/*!
+ @class PDSRecordService
+
+ @abstract Service for record management operations.
+ */
 @interface PDSRecordService : NSObject
 
+/*! Database pool for user stores. */
 @property (nonatomic, weak) PDSDatabasePool *databasePool;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
 #pragma mark - Record Operations
 
+/*! Gets a record by AT URI. */
 - (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
 
+/*! Lists records in a collection with pagination. */
 - (nullable NSArray *)listRecords:(NSString *)collection
                           forDid:(NSString *)did
                            limit:(NSUInteger)limit
                           cursor:(nullable NSString *)cursor
                           error:(NSError **)error;
 
+/*! Creates or updates a record. */
 - (BOOL)putRecord:(NSString *)collection
              rkey:(NSString *)rkey
             value:(NSDictionary *)value
            forDid:(NSString *)did
             error:(NSError **)error;
 
+/*! Deletes a record. */
 - (BOOL)deleteRecord:(NSString *)collection
                 rkey:(NSString *)rkey
               forDid:(NSString *)did
                error:(NSError **)error;
 
+/*! Gets repository statistics (record count, blob count, etc). */
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error;
 
 @end
