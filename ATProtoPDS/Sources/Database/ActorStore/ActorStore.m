@@ -1,4 +1,5 @@
 #import "ActorStore.h"
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 #import <Security/Security.h>
 #import "Database/PDSDatabase.h"
@@ -14,7 +15,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
-@property (nonatomic, strong) dispatch_queue_t transactionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
 @property (nonatomic, assign) SecKeyRef signingKey;
 
 @end
