@@ -109,8 +109,13 @@ int main(int argc, char * argv[]) {
             @"HttpRouterTests",
             @"HttpRequestParsingTests",
             @"HttpBufferPoolTests",
+            @"HttpChunkedBodyParserTests",
             @"FirehoseTests",
-            @"RelayClientTests"
+            @"RelayClientTests",
+            @"SessionStoreTests",
+            @"ExploreCacheTests",
+            @"ExploreHandlerTests",
+            @"HttpServerTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
