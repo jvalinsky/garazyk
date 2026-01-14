@@ -320,6 +320,7 @@ See `ARCHITECTURE_ANALYSIS.md` for:
 - **[XRPC Protocol Reference](docs/guides/XRPC_PROTOCOL_REFERENCE.md)** - Protocol quick reference
 - **[Diagram Quick Reference](DIAGRAM_QUICK_REFERENCE.md)** - All diagrams index
 - **[Data Models](atproto_data_models.md)** - ATProto data model details
+- **[Objective-C Implementation Patterns](docs/guides/objective_c_tips.md)** - Advanced GCD, SQLite, and Networking patterns used in this project
 
 ## Key Insights
 

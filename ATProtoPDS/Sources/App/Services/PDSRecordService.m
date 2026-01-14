@@ -2,6 +2,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Debug/PDSLogger.h"
 #import "Core/ATProtoBase32.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -160,7 +161,8 @@
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) {
-        NSLog(@"[PDSRecordService] Failed to get store for DID: %@", did);
+        PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to get store for DID: %@", did);
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.recordservice" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to get store"}];
         return nil;
     }
     
@@ -187,13 +189,14 @@
                 }
             }
             [actorStore finalizeStatement:stmt];
-        } else {
-            NSLog(@"[PDSRecordService] Failed to prepare stats statement: %@", blockError);
+            if (blockError) {
+                PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to prepare stats statement: %@", blockError);
+            }
         }
     } error:&blockError];
     
     if (blockError) {
-        NSLog(@"[PDSRecordService] Error during stats read: %@", blockError);
+        PDS_LOG_DB_ERROR(@"[PDSRecordService] Error during stats read: %@", blockError);
         if (error) *error = blockError;
         return nil;
     }

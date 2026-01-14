@@ -150,7 +150,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         return;
     }
     
-    // Finalize all cached statements to prevent memory leaks
+    // Finalize all cached statements
     NSMapTable *cache = self.stmtCache;
     for (NSString *sql in cache) {
         NSValue *stmtValue = [cache objectForKey:sql];
@@ -161,6 +161,13 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
     }
     [self.stmtCache removeAllObjects];
+    
+    // Finalize any other stray statements
+    sqlite3_stmt *strayStmt;
+    while ((strayStmt = sqlite3_next_stmt(self.db, NULL)) != NULL) {
+        sqlite3_finalize(strayStmt);
+    }
+    
     [self.blobCache removeAllObjects];
     
     if (self.signingKey) {
@@ -219,18 +226,13 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         if (success && !blockError) {
             result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
             if (result != SQLITE_OK) {
-                if (error) {
-                    *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
-                }
+                localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
                 sqlite3_free(errMsg);
-                
                 sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
             }
         } else {
             sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
-            if (error && blockError) {
-                *error = blockError;
-            }
+            localError = blockError;
         }
 
         [self.stmtCache removeAllObjects];

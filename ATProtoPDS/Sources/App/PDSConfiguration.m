@@ -1,4 +1,5 @@
 #import "PDSConfiguration.h"
+#import "Debug/PDSLogger.h"
 
 NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 
@@ -55,6 +56,15 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _rateLimitBurstSize = 100;
 
         _sslPinningEnabled = YES;
+
+        // Logging defaults
+        _logFilePath = nil; // No file logging by default
+        _logLevel = PDSLogLevelInfo;
+        _logFormat = PDSLogFormatText;
+        _maxLogFileSize = 10 * 1024 * 1024; // 10MB
+        _maxLogFiles = 5;
+        _asyncLogging = YES;
+        _enabledComponents = nil; // All components enabled
     }
     return self;
 }
@@ -150,6 +160,82 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
     NSDictionary *sslPinning = config[@"ssl_pinning"];
     if (sslPinning) {
         if (sslPinning[@"enabled"]) _sslPinningEnabled = [sslPinning[@"enabled"] boolValue];
+    }
+
+    NSDictionary *logging = config[@"logging"];
+    if (logging) {
+        if (logging[@"file_path"]) {
+            _logFilePath = [self resolveEnvOverrideForKey:@"PDS_LOG_FILE" default:logging[@"file_path"]];
+        }
+
+        if (logging[@"level"]) {
+            NSString *level = [[self resolveEnvOverrideForKey:@"PDS_LOG_LEVEL" default:logging[@"level"]] lowercaseString];
+            if ([level isEqualToString:@"debug"]) {
+                _logLevel = PDSLogLevelDebug;
+            } else if ([level isEqualToString:@"info"]) {
+                _logLevel = PDSLogLevelInfo;
+            } else if ([level isEqualToString:@"warn"]) {
+                _logLevel = PDSLogLevelWarn;
+            } else if ([level isEqualToString:@"error"]) {
+                _logLevel = PDSLogLevelError;
+            }
+        }
+
+        if (logging[@"format"]) {
+            NSString *format = [[self resolveEnvOverrideForKey:@"PDS_LOG_FORMAT" default:logging[@"format"]] lowercaseString];
+            if ([format isEqualToString:@"json"]) {
+                _logFormat = PDSLogFormatJSON;
+            } else if ([format isEqualToString:@"both"]) {
+                _logFormat = PDSLogFormatBoth;
+            } else {
+                _logFormat = PDSLogFormatText;
+            }
+        }
+
+        if (logging[@"max_file_size_mb"]) {
+            NSString *envValue = [[NSProcessInfo processInfo] environment][@"PDS_LOG_MAX_SIZE_MB"];
+            NSUInteger sizeMB = envValue ? [envValue integerValue] : [logging[@"max_file_size_mb"] unsignedIntegerValue];
+            _maxLogFileSize = sizeMB * 1024 * 1024; // Convert MB to bytes
+        }
+
+        if (logging[@"max_files"]) {
+            NSString *envValue = [[NSProcessInfo processInfo] environment][@"PDS_LOG_MAX_FILES"];
+            _maxLogFiles = envValue ? [envValue integerValue] : [logging[@"max_files"] unsignedIntegerValue];
+        }
+
+        if (logging[@"async"]) {
+            _asyncLogging = [self boolFromEnv:@"PDS_LOG_ASYNC" default:[logging[@"async"] boolValue]];
+        }
+
+        if (logging[@"components"]) {
+            NSString *envValue = [[NSProcessInfo processInfo] environment][@"PDS_LOG_COMPONENTS"];
+            if (envValue) {
+                _enabledComponents = [envValue componentsSeparatedByString:@","];
+            } else {
+                _enabledComponents = logging[@"components"];
+            }
+        }
+    }
+
+    // Also check environment variables if no config file logging section
+    if (!logging) {
+        NSString *logFile = [[NSProcessInfo processInfo] environment][@"PDS_LOG_FILE"];
+        if (logFile) _logFilePath = logFile;
+
+        NSString *logLevel = [[[NSProcessInfo processInfo] environment][@"PDS_LOG_LEVEL"] lowercaseString];
+        if (logLevel) {
+            if ([logLevel isEqualToString:@"debug"]) _logLevel = PDSLogLevelDebug;
+            else if ([logLevel isEqualToString:@"info"]) _logLevel = PDSLogLevelInfo;
+            else if ([logLevel isEqualToString:@"warn"]) _logLevel = PDSLogLevelWarn;
+            else if ([logLevel isEqualToString:@"error"]) _logLevel = PDSLogLevelError;
+        }
+
+        NSString *logFormat = [[[NSProcessInfo processInfo] environment][@"PDS_LOG_FORMAT"] lowercaseString];
+        if (logFormat) {
+            if ([logFormat isEqualToString:@"json"]) _logFormat = PDSLogFormatJSON;
+            else if ([logFormat isEqualToString:@"both"]) _logFormat = PDSLogFormatBoth;
+            else _logFormat = PDSLogFormatText;
+        }
     }
 }
 

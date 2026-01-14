@@ -171,6 +171,34 @@ NSBlockOperation *processOp = [NSBlockOperation blockOperationWithBlock:^{
 [processOp addDependency:fetchPostsOp];
 ```
 
+### 4.3 GCD Memory Management Best Practices (ARC)
+
+Under Automatic Reference Counting (ARC), GCD types like `dispatch_queue_t`, `dispatch_semaphore_t`, and `dispatch_group_t` are managed as Objective-C objects. Failing to handle their ownership correctly is a common source of crashes in networking code.
+
+#### Always Use `strong` for Queue Properties
+Networking listeners and connections often depend on a dedicated serial queue. Declaring these as `assign` or `unsafe_unretained` will lead to immediate deallocation and subsequent crashes when the framework attempts to use the queue.
+
+```objective-c
+// INCORRECT
+@property (nonatomic, assign) dispatch_queue_t connectionQueue;
+
+// CORRECT
+@property (nonatomic, strong) dispatch_queue_t connectionQueue;
+```
+
+#### Synchronized Lifecycle Management
+Network listeners should be cancelled and their asynchronous callbacks tracked using `dispatch_group_t` to ensure that objects are not deallocated while system-level callbacks are still pending.
+
+```objective-c
+- (void)stop {
+    [self.listener cancel];
+    // Wait for the final cancellation state
+    dispatch_semaphore_wait(self.stopSemaphore, DISPATCH_TIME_FOREVER);
+    // Ensure all active async tasks (e.g. request handlers) are finished
+    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
+}
+```
+
 ---
 
 ## 5. Library Comparison Matrix

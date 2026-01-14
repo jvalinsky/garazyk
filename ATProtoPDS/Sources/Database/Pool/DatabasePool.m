@@ -1,6 +1,7 @@
 #import "DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Debug/PDSLogger.h"
 #import <sqlite3.h>
 
 NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
@@ -36,7 +37,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             NSError *error = nil;
             [fm createDirectoryAtPath:dbDirectory withIntermediateDirectories:YES attributes:nil error:&error];
             if (error) {
-                NSLog(@"[PDSDatabasePool] Failed to create db directory: %@", error);
+                PDS_LOG_DB_ERROR(@"Failed to create database directory: %@ (error: %@)", dbDirectory, error);
             }
         }
         

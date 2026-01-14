@@ -82,6 +82,9 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 /*! The client's IP address. */
 @property (nonatomic, readonly, nullable, copy) NSString *remoteAddress;
 
+/*! Correlation ID for tracing this request across logs. */
+@property (nonatomic, readonly, copy) NSString *correlationID;
+
 /*! Creates a request from raw HTTP data. */
 + (instancetype)requestWithData:(NSData *)data;
 

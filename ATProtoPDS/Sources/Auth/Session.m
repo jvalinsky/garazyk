@@ -1,6 +1,7 @@
 #import "Auth/Session.h"
 #import "Auth/JWT.h"
 #import "Auth/KeyManager.h"
+#import "Debug/PDSLogger.h"
 
 NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
@@ -106,7 +107,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
             accessTokenValue = [jwt encodedToken];
             self.tokenType = @"DPoP"; // Standard for ATProto
         } else {
-            NSLog(@"Warning: Failed to mint JWT access token: %@", error);
+            PDS_LOG_AUTH_WARN(@"Failed to mint JWT access token (falling back to UUID): %@", error);
             accessTokenValue = [[NSUUID UUID] UUIDString];
         }
     } else {

@@ -57,7 +57,7 @@
             printf("%s\n", (const char *)data.bytes);
         }
     } else {
-        fprintf(stderr, "Error: %s\n", [error UTF8String]);
+        PDS_LOG_ERROR_C(PDSLogComponentCLI, @"Error: %@", error);
     }
 }
 

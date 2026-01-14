@@ -19,7 +19,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 @property (nonatomic, strong, readwrite, nullable) Firehose *firehose;
 @property (nonatomic, strong, readwrite, nullable) FirehoseSubscription *subscription;
 @property (nonatomic, strong, readwrite) NSMutableDictionary<NSString *, NSString *> *cursorStorage;
-@property (nonatomic, assign, readwrite) dispatch_queue_t storageQueue;
+@property (nonatomic, strong, readwrite) dispatch_queue_t storageQueue;
 
 @end
 
