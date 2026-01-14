@@ -36,7 +36,7 @@
         _queryString = [queryString copy];
         _queryParams = [queryParams copy];
         _version = [version copy];
-        _headers = [headers copy];
+        _headers = [self normalizeHeaders:headers];
         _body = [body copy];
         _remoteAddress = [remoteAddress copy];
         _correlationID = [headers[@"x-correlation-id"] ?: headers[@"x-request-id"] ?: [[NSUUID UUID] UUIDString] copy];
@@ -44,6 +44,15 @@
         _multipartFormData = [self parseMultipartFormData:body headers:headers];
     }
     return self;
+}
+
+- (NSDictionary *)normalizeHeaders:(NSDictionary *)headers {
+    if (!headers) return @{};
+    NSMutableDictionary *normalized = [NSMutableDictionary dictionaryWithCapacity:headers.count];
+    for (NSString *key in headers) {
+        normalized[key.lowercaseString] = headers[key];
+    }
+    return [normalized copy];
 }
 
 - (NSDictionary *)parseJsonBody:(NSData *)body {

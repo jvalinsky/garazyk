@@ -104,11 +104,6 @@
         current.methodRoutes = [NSMutableDictionary dictionary];
     }
     current.methodRoutes[route.method] = route;
-
-    NSString *wildcard = @"*";
-    if (!current.methodRoutes[wildcard]) {
-        current.methodRoutes[wildcard] = route;
-    }
 }
 
 - (nullable HttpRouteHandler)handlerForMethod:(NSString *)method
@@ -129,18 +124,16 @@
             HttpRouteNode *child = current.children[component];
             if (child) {
                 current = child;
-            } else if (current.children[@"*"]) {
+            } else if (current.children[@"*"] && current.children[@"*"].paramName) {
                 NSString *paramName = current.children[@"*"].paramName;
                 if (paramName) {
                     params[paramName] = component;
                 }
                 current = current.children[@"*"];
-
-                if (i == components.count - 1 && current.wildcardRoute) {
-                    foundHandler = current.wildcardRoute.handler;
-                    foundParams = [params copy];
-                    return;
-                }
+            } else if (current.wildcardRoute) {
+                foundHandler = current.wildcardRoute.handler;
+                foundParams = [params copy];
+                return;
             } else {
                 return;
             }
@@ -155,7 +148,7 @@
             }
 
             route = current.methodRoutes[@"*"];
-            if (route) {
+            if (route && [route.method isEqualToString:@"*"]) {
                 foundHandler = route.handler;
                 foundParams = [params copy];
                 return;
