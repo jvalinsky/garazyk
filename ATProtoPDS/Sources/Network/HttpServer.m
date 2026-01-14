@@ -28,6 +28,7 @@
 
 static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
 static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
+static const NSUInteger kHttpOutputQueueHighWaterMark = 256 * 1024;
 static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 
 @interface HttpConnectionState : NSObject
@@ -39,6 +40,9 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 @property (nonatomic, assign) NSTimeInterval headerStartTime;
 @property (nonatomic, assign) BOOL requestInFlight;
 @property (nonatomic, assign) NSUInteger headerEndOffset;
+@property (nonatomic, strong) NSMutableArray<NSData *> *outputQueue;
+@property (nonatomic, assign) BOOL readingPaused;
+@property (nonatomic, assign) NSUInteger outputQueueSize;
 
 @end
 
@@ -54,6 +58,9 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
         _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
         _requestInFlight = NO;
         _headerEndOffset = 0;
+        _outputQueue = [NSMutableArray array];
+        _readingPaused = NO;
+        _outputQueueSize = 0;
     }
     return self;
 }
@@ -75,6 +82,9 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
     _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
     _requestInFlight = NO;
     _headerEndOffset = 0;
+    [_outputQueue removeAllObjects];
+    _outputQueueSize = 0;
+    _readingPaused = NO;
 }
 
 @end
