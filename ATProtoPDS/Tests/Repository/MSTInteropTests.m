@@ -155,4 +155,56 @@
     return minLen;
 }
 
+- (void)testPutAndGet {
+    MST *mst = [[MST alloc] init];
+    CID *cid1 = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    CID *cid2 = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    
+    [mst put:@"com.example.record/1" valueCID:cid1];
+    [mst put:@"com.example.record/2" valueCID:cid2];
+    
+    XCTAssertEqualObjects([mst get:@"com.example.record/1"], cid1);
+    XCTAssertEqualObjects([mst get:@"com.example.record/2"], cid2);
+    XCTAssertNil([mst get:@"com.example.record/3"]);
+}
+
+- (void)testDeletion {
+    MST *mst = [[MST alloc] init];
+    CID *cid1 = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    
+    [mst put:@"com.example.record/1" valueCID:cid1];
+    XCTAssertEqualObjects([mst get:@"com.example.record/1"], cid1);
+    
+    [mst delete:@"com.example.record/1"];
+    XCTAssertNil([mst get:@"com.example.record/1"]);
+    XCTAssertEqualObjects(mst.rootCID.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm"); // Empty tree
+}
+
+- (void)testListing {
+    MST *mst = [[MST alloc] init];
+    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    
+    // Insert out of order
+    [mst put:@"b" valueCID:cid];
+    [mst put:@"a" valueCID:cid];
+    [mst put:@"c" valueCID:cid];
+    
+    NSArray<MSTEntry *> *entries = [mst allEntries];
+    XCTAssertEqual(entries.count, 3);
+    XCTAssertEqualObjects(entries[0].key, @"a");
+    XCTAssertEqualObjects(entries[1].key, @"b");
+    XCTAssertEqualObjects(entries[2].key, @"c");
+}
+
+- (void)testCARGeneration {
+    MST *mst = [[MST alloc] init];
+    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    [mst put:@"test" valueCID:cid];
+    
+    NSData *carData = [mst exportCAR];
+    XCTAssertNotNil(carData);
+    XCTAssertGreaterThan(carData.length, 0);
+    // Further CAR validation would require a full CAR parser test util
+}
+
 @end

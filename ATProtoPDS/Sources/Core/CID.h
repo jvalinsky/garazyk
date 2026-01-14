@@ -28,55 +28,101 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface CID : NSObject <NSCopying, NSSecureCoding>
 
-/// Version of the CID (currently 1)
+/*! Version of the CID (currently 1). */
 @property (readonly, nonatomic) NSUInteger version;
 
-/// Codec identifier (e.g., 0x55 for raw, 0x71 for dag-cbor)
+/*! Codec identifier (e.g., 0x55 for raw, 0x71 for dag-cbor). */
 @property (readonly, nonatomic) NSUInteger codec;
 
-/// Multihash data (algorithm + digest)
+/*! Multihash data (algorithm + digest). */
 @property (readonly, nonatomic, strong) NSData *multihash;
 
-/// Create CID from raw digest data
-/// @param digest The raw digest bytes (e.g., 32 bytes for SHA-256)
-/// @param codec The codec identifier
+/*!
+ @method cidWithDigest:codec:
+ @abstract Create CID from raw digest data.
+ @param digest The raw digest bytes (e.g., 32 bytes for SHA-256).
+ @param codec The codec identifier.
+ @return A new CID instance.
+ */
 + (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec;
 
-/// Create CID from multihash data
-/// @param multihash The multihash bytes (algorithm + digest)
-/// @param codec The codec identifier
+/*!
+ @method cidWithMultihash:codec:
+ @abstract Create CID from multihash data.
+ @param multihash The multihash bytes (algorithm + digest).
+ @param codec The codec identifier.
+ @return A new CID instance.
+ */
 + (nullable instancetype)cidWithMultihash:(NSData *)multihash codec:(NSUInteger)codec;
 
-/// Create CID from base-encoded string
-/// @param string Base-encoded CID string
+/*!
+ @method cidFromString:
+ @abstract Create CID from base-encoded string.
+ @param string Base-encoded CID string.
+ @return A new CID instance.
+ */
 + (nullable instancetype)cidFromString:(NSString *)string;
 
-/// Create CID from binary data
-/// @param data Binary CID data (version + codec + multihash)
+/*!
+ @method cidFromBytes:
+ @abstract Create CID from binary data.
+ @param data Binary CID data (version + codec + multihash).
+ @return A new CID instance.
+ */
 + (nullable instancetype)cidFromBytes:(NSData *)data;
 
-/// Base32 encode data
+/*!
+ @method base32Encode:
+ @abstract Base32 encode data.
+ @param data The data to encode.
+ @return Base32 encoded string.
+ */
 + (NSString *)base32Encode:(NSData *)data;
 
-/// Convert CID to base-encoded string
+/*!
+ @method stringValue
+ @abstract Convert CID to base-encoded string.
+ @return The CID string representation.
+ */
 - (NSString *)stringValue;
 
-/// Compare two CIDs for equality
+/*!
+ @method isEqualToCID:
+ @abstract Compare two CIDs for equality.
+ @param other The other CID to compare.
+ @return YES if CIDs are equal, NO otherwise.
+ */
 - (BOOL)isEqualToCID:(CID *)other;
 
-/// Get the raw bytes representation
+/*!
+ @method bytes
+ @abstract Get the raw bytes representation.
+ @return The raw CID bytes.
+ */
 - (NSData *)bytes;
 
-/// Compute SHA-256 hash and return as CID with raw codec
-/// @param data The data to hash
+/*!
+ @method sha256:
+ @abstract Compute SHA-256 hash and return as CID with raw codec.
+ @param data The data to hash.
+ @return A new CID instance.
+ */
 + (CID *)sha256:(NSData *)data;
 
-/// Compute multihash SHA-256 digest
-/// @param data The data to hash
+/*!
+ @method sha256Digest:
+ @abstract Compute multihash SHA-256 digest.
+ @param data The data to hash.
+ @return The multihash digest.
+ */
 + (NSData *)sha256Digest:(NSData *)data;
 
-/// Compute raw SHA-256 digest (32 bytes)
-/// @param data The data to hash
+/*!
+ @method rawSha256:
+ @abstract Compute raw SHA-256 digest (32 bytes).
+ @param data The data to hash.
+ @return The raw 32-byte hash.
+ */
 + (NSData *)rawSha256:(NSData *)data;
 
 @end

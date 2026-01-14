@@ -74,7 +74,11 @@ NS_ASSUME_NONNULL_END
 
 - (void)setJsonBody:(NSDictionary *)json {
     _jsonBody = [json copy];
-    _body = nil; /*! Clear competing body representations */
+    NSError *error = nil;
+    _body = [NSJSONSerialization dataWithJSONObject:json options:0 error:&error];
+    if (error) {
+        _body = nil;
+    }
     _bodyString = nil;
     self.contentType = @"application/json; charset=utf-8";
 }
