@@ -29,3 +29,6 @@ xcuserdata/
 # Cache & Worktrees
 .cache/
 .worktrees/
+
+# Reference repositories (embedded git repos - do not track)
+reference/
