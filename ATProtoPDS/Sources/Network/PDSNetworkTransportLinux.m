@@ -23,11 +23,22 @@
 @end
 #endif
 
+@interface PDSReadRequest : NSObject
+@property (nonatomic, assign) NSUInteger minLength;
+@property (nonatomic, assign) NSUInteger maxLength;
+@property (nonatomic, copy) void (^completion)(NSData * _Nullable, BOOL, NSError * _Nullable);
+@end
+
+@implementation PDSReadRequest
+@end
+
 @implementation PDSNetworkConnectionLinux {
     int _sockfd;
     dispatch_source_t _readSource;
     dispatch_source_t _writeSource;
     dispatch_queue_t _queue;
+    NSMutableData *_inputBuffer;
+    NSMutableArray<PDSReadRequest *> *_readRequests;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -38,6 +49,8 @@
     if (self) {
         _sockfd = -1;
         _remoteAddress = [NSString stringWithFormat:@"%@:%lu", host, (unsigned long)port];
+        _inputBuffer = [NSMutableData data];
+        _readRequests = [NSMutableArray array];
     }
     return self;
 }
@@ -47,6 +60,8 @@
     if (self) {
         _sockfd = sockfd;
         _remoteAddress = address;
+        _inputBuffer = [NSMutableData data];
+        _readRequests = [NSMutableArray array];
         
         // Set non-blocking
         int flags = fcntl(_sockfd, F_GETFL, 0);
@@ -60,9 +75,12 @@
     
     if (_sockfd == -1) {
         // Connect logic would go here for client connections
-        if (self.stateChangedHandler) {
-            self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Client connection not implemented"}]);
-        }
+        // For now, simulate async failure for unimplemented client logic
+        dispatch_async(queue, ^{
+            if (self.stateChangedHandler) {
+                self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Client connection not implemented"}]);
+            }
+        });
         return;
     }
     
@@ -85,7 +103,65 @@
 }
 
 - (void)handleRead {
-    // Basic read implementation
+    uint8_t buffer[4096];
+    ssize_t received = recv(_sockfd, buffer, sizeof(buffer), 0);
+    
+    if (received > 0) {
+        [_inputBuffer appendBytes:buffer length:received];
+        [self processReadRequests:NO error:nil];
+    } else if (received == 0) {
+        // EOF
+        [self processReadRequests:YES error:nil];
+        [self cancel];
+    } else {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // No data, wait for next event
+            return;
+        }
+        // Error
+        NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        [self processReadRequests:YES error:error];
+        [self cancel];
+    }
+}
+
+- (void)processReadRequests:(BOOL)isComplete error:(NSError *)error {
+    while (_readRequests.count > 0) {
+        PDSReadRequest *request = _readRequests.firstObject;
+        
+        if (error) {
+            request.completion(nil, NO, error);
+            [_readRequests removeObjectAtIndex:0];
+            continue;
+        }
+        
+        if (_inputBuffer.length >= request.minLength || (isComplete && _inputBuffer.length > 0)) {
+            NSUInteger length = MIN(_inputBuffer.length, request.maxLength);
+            NSData *data = [_inputBuffer subdataWithRange:NSMakeRange(0, length)];
+            
+            // Remove processed data from buffer
+            // Optimization: if we consumed everything, just set length to 0
+            if (length == _inputBuffer.length) {
+                [_inputBuffer setLength:0];
+            } else {
+                NSData *remaining = [_inputBuffer subdataWithRange:NSMakeRange(length, _inputBuffer.length - length)];
+                _inputBuffer = [remaining mutableCopy];
+            }
+            
+            request.completion(data, isComplete, nil);
+            [_readRequests removeObjectAtIndex:0];
+        } else if (isComplete) {
+            // EOF and buffer empty (or less than minLength but minLength logic implies we should probably return what we have? 
+            // The protocol says "data has minLength bytes: Partial data available".
+            // If EOF, we might return less than minLength with isComplete=YES.
+            
+            request.completion([NSData data], YES, nil);
+            [_readRequests removeObjectAtIndex:0];
+        } else {
+            // Not enough data yet
+            break;
+        }
+    }
 }
 
 - (void)cancel {
@@ -108,26 +184,41 @@
 }
 
 - (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
-    // Basic send implementation
+    // Basic send implementation - strictly blocking/direct for now (assuming small writes/buffers)
+    // A proper implementation should use dispatch_source_set_event_handler(DISPATCH_SOURCE_TYPE_WRITE)
+    // to handle partial writes and buffering.
+    
     ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
     if (sent == -1) {
-        if (completion) completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // Should buffer and retry on write event
+             if (completion) completion([NSError errorWithDomain:@"PDSNetworkTransport" code:EAGAIN userInfo:@{NSLocalizedDescriptionKey: @"Socket buffer full (not implemented)"}]);
+        } else {
+             if (completion) completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+        }
+    } else if ((NSUInteger)sent < data.length) {
+        // Partial write
+         if (completion) completion([NSError errorWithDomain:@"PDSNetworkTransport" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Partial write (buffering not implemented)"}]);
     } else {
         if (completion) completion(nil);
     }
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
-    // Basic receive implementation
-    uint8_t *buffer = malloc(maxLength);
-    ssize_t received = recv(_sockfd, buffer, maxLength, 0);
-    if (received == -1) {
-        free(buffer);
-        completion(nil, NO, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
-    } else {
-        NSData *data = [NSData dataWithBytesNoCopy:buffer length:received freeWhenDone:YES];
-        completion(data, NO, nil);
-    }
+    PDSReadRequest *request = [[PDSReadRequest alloc] init];
+    request.minLength = minLength;
+    request.maxLength = maxLength;
+    request.completion = completion;
+    
+    // We must access _readRequests on the queue to be thread-safe if called from outside?
+    // PDSNetworkTransport protocol doesn't enforce thread safety but it's good practice.
+    // However, usually these methods are called from the same queue or we should dispatch.
+    // Assuming single-threaded event loop for now or caller respects queue.
+    
+    [_readRequests addObject:request];
+    
+    // Check if we can satisfy immediately
+    [self processReadRequests:NO error:nil];
 }
 
 @end
