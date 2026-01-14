@@ -12,7 +12,7 @@
  - Connection: Bidirectional data transfer (send/receive)
  - Listener: Inbound connection acceptance
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <stdint.h>

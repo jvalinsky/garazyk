@@ -6,7 +6,7 @@
  @discussion Resolves ATProto handles to DIDs via DNS TXT records and HTTP
  .well-known endpoints. Implements caching, rate limiting, and SSRF protection.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

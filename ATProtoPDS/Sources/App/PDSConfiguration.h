@@ -6,7 +6,7 @@
  @discussion Loads and provides access to PDS configuration from files or
  environment. Includes settings for server, database pools, tokens, and debugging.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
