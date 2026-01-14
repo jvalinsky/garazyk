@@ -1,11 +1,32 @@
+/*!
+ @file DID.h
+
+ @abstract Decentralized Identifier (DID) resolution and document handling.
+
+ @discussion Implements DID resolution for ATProto identity, supporting
+ did:plc and did:web methods. Provides caching with configurable TTLs,
+ batch resolution, and DID document parsing for service endpoints.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Error domain for DID operations
+/*! Error domain for DID operations. */
 extern NSErrorDomain const DIDErrorDomain;
 
-/// DID operation error codes
+/*!
+ @enum DIDErrorCode
+
+ @abstract Error codes for DID resolution failures.
+
+ @constant DIDErrorInvalidIdentifier Malformed DID string.
+ @constant DIDErrorResolutionFailed Resolution request failed.
+ @constant DIDErrorNetworkError Network connectivity issue.
+ @constant DIDErrorInvalidDocument Malformed DID document.
+ */
 typedef NS_ENUM(NSInteger, DIDErrorCode) {
     DIDErrorInvalidIdentifier = 1,
     DIDErrorResolutionFailed = 2,
@@ -13,26 +34,55 @@ typedef NS_ENUM(NSInteger, DIDErrorCode) {
     DIDErrorInvalidDocument = 4
 };
 
-/// Cache status for DID documents
+/*!
+ @enum DIDCacheStatus
+
+ @abstract Freshness status for cached DID documents.
+
+ @constant DIDCacheStatusFresh Document is within stale TTL.
+ @constant DIDCacheStatusStale Document is stale but usable.
+ @constant DIDCacheStatusExpired Document has exceeded max TTL.
+ */
 typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
     DIDCacheStatusFresh,
     DIDCacheStatusStale,
     DIDCacheStatusExpired,
 };
 
-/// DID Document structure
+/*!
+ @class DIDDocument
+
+ @abstract Parsed DID document with service endpoints.
+
+ @discussion Represents a resolved DID document containing identity
+ information, service endpoints, and verification methods.
+ */
 @interface DIDDocument : NSObject <NSSecureCoding>
 
+/*! The full JSON dictionary from resolution. */
 @property (readonly, nonatomic, strong) NSDictionary *jsonDictionary;
+
+/*! The DID this document describes. */
 @property (readonly, nonatomic, strong) NSString *id;
+
+/*! Alternative identifiers (handles) for this DID. */
 @property (readonly, nonatomic, strong, nullable) NSArray<NSString *> *alsoKnownAs;
+
+/*! Service endpoints dictionary. */
 @property (readonly, nonatomic, strong, nullable) NSDictionary *service;
 
 + (nullable instancetype)documentWithJSON:(NSDictionary *)json error:(NSError **)error;
 
 @end
 
-/// DID resolver for different DID methods
+/*!
+ @class DIDResolver
+
+ @abstract Resolves DIDs to their documents via network requests.
+
+ @discussion Supports did:plc and did:web methods with configurable
+ caching. Provides both async and sync resolution APIs.
+ */
 @interface DIDResolver : NSObject
 
 @property (nonatomic, strong) NSCache *cache;
