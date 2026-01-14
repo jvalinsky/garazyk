@@ -987,6 +987,34 @@ static NSString * const kFallbackECPrivateKeyBase64 =
                                               &cfError);
         }
     }
+
+    if (!privateKey && !self.useKeychainSigningKey) {
+        if (cfError) {
+            CFRelease(cfError);
+            cfError = NULL;
+        }
+        SecKeyRef publicKey = NULL;
+        NSDictionary *pairAttributes = @{
+            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+            (__bridge id)kSecAttrKeySizeInBits: @(2048),
+            (__bridge id)kSecPrivateKeyAttrs: @{
+                (__bridge id)kSecAttrIsPermanent: @NO
+            },
+            (__bridge id)kSecPublicKeyAttrs: @{
+                (__bridge id)kSecAttrIsPermanent: @NO
+            }
+        };
+        OSStatus status = SecKeyGeneratePair((__bridge CFDictionaryRef)pairAttributes,
+                                             &publicKey,
+                                             &privateKey);
+        if (publicKey) {
+            CFRelease(publicKey);
+        }
+        if (status != errSecSuccess && privateKey) {
+            CFRelease(privateKey);
+            privateKey = NULL;
+        }
+    }
     
     if (!privateKey) {
         if (error) {

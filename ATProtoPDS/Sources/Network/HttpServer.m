@@ -26,6 +26,7 @@
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_group_t taskGroup;
 @property (nonatomic, assign) BOOL listenerReady;
 @property (nonatomic, assign) BOOL startupFinished;
+@property (nonatomic, strong, nullable) NSError *startupError;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMapTable<id<PDSNetworkConnection>, id> *connectionStates;
@@ -171,6 +172,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                 strongSelf.listenerReady = NO;
                 strongSelf.running = NO;
                 strongSelf.startupFinished = YES;
+                strongSelf.startupError = error;
                 PDS_LOG_HTTP_ERROR(@"HTTPServer failed to start: %@", error);
                 dispatch_semaphore_signal(strongSelf.readySemaphore);
                 break;
@@ -209,9 +211,14 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     
     if (!self.listenerReady) {
         if (error) {
+            NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:@"Server failed to start"
+                                                                               forKey:NSLocalizedDescriptionKey];
+            if (self.startupError) {
+                userInfo[NSUnderlyingErrorKey] = self.startupError;
+            }
             *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
                                          code:-3
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Server failed to start"}];
+                                     userInfo:userInfo];
         }
         return NO;
     }
