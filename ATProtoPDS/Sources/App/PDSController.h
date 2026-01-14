@@ -1,3 +1,15 @@
+/*!
+ @file PDSController.h
+
+ @abstract Main application controller for the ATProto PDS.
+
+ @discussion PDSController is the central coordinator for all PDS operations.
+ It manages database connections, service instances, and provides high-level
+ APIs for account, repository, record, and blob operations.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,8 +31,23 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSRepositoryService;
 @class JWTMinter;
 
+/*! Error domain for PDSController operations. */
 extern NSString * const PDSControllerErrorDomain;
 
+/*!
+ @enum PDSControllerError
+
+ @abstract Error codes for controller operations.
+
+ @constant PDSControllerErrorAccountNotFound Account does not exist.
+ @constant PDSControllerErrorAccountAlreadyExists Handle/email already taken.
+ @constant PDSControllerErrorInvalidToken Token is invalid or expired.
+ @constant PDSControllerErrorInvalidHandle Handle format is invalid.
+ @constant PDSControllerErrorRepoNotFound Repository does not exist.
+ @constant PDSControllerErrorRecordNotFound Record does not exist.
+ @constant PDSControllerErrorBlobNotFound Blob does not exist.
+ @constant PDSControllerErrorUnauthorized Operation not authorized.
+ */
 typedef NS_ENUM(NSInteger, PDSControllerError) {
     PDSControllerErrorAccountNotFound = 1000,
     PDSControllerErrorAccountAlreadyExists,
@@ -32,24 +59,51 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
     PDSControllerErrorUnauthorized,
 };
 
+/*!
+ @class PDSController
+
+ @abstract Central controller for PDS operations.
+
+ @discussion Provides high-level APIs for managing accounts, repositories,
+ records, and blobs. Coordinates between database pools, service layers,
+ and JWT minting.
+ */
 @interface PDSController : NSObject
 
+/*! Path to the data directory. */
 @property (nonatomic, copy, readonly) NSString *dataDirectory;
+
+/*! URL of the PLC directory server. */
 @property (nonatomic, copy) NSString *plcServerURL;
+
+/*! Whether the HTTP server is running. */
 @property (nonatomic, assign, readonly, getter=isRunning) BOOL running;
+
+/*! Service-level database connections. */
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
+
+/*! Pool for user-specific databases. */
 @property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
+
+/*! Account management service. */
 @property (nonatomic, strong, readonly) PDSAccountService *accountService;
+
+/*! Record management service. */
 @property (nonatomic, strong, readonly) PDSRecordService *recordService;
+
+/*! Blob management service. */
 @property (nonatomic, strong, readonly) PDSBlobService *blobService;
+
+/*! Repository management service. */
 @property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
+
+/*! JWT minting for access tokens. */
 @property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
 
+/*! Returns a service database connection. */
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
 
-// NOTE: The 'database' property is deprecated in the single-tenant architecture
-// It returns nil to maintain API compatibility with code that expects it
-// Use 'serviceDatabases' and 'userDatabasePool' instead
+/*! Deprecated - use serviceDatabases and userDatabasePool. */
 @property (nonatomic, strong, readonly, nullable) id database;
 
 + (instancetype)sharedController;
