@@ -200,6 +200,14 @@
 - (void)parseConfig:(NSString *)content {
     NSArray *lines = [content componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
     BOOL inExploreSection = NO;
+    NSString *(^valueForLine)(NSString *) = ^NSString *(NSString *line) {
+        NSRange colonRange = [line rangeOfString:@":"];
+        if (colonRange.location == NSNotFound) {
+            return nil;
+        }
+        NSString *value = [line substringFromIndex:colonRange.location + 1];
+        return [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    };
     
     for (NSString *line in lines) {
         NSString *trimmed = [line stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -220,29 +228,24 @@
         if (!inExploreSection) continue;
         
         if ([trimmed containsString:@"enabled:"]) {
-            self.enabled = [[[trimmed componentsSeparatedByString:@":"] lastObject] 
-                           stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].boolValue;
+            NSString *value = valueForLine(trimmed);
+            self.enabled = value.boolValue;
         }
         else if ([trimmed containsString:@"plc_server:"]) {
-            self.plcServerURL = [[[trimmed componentsSeparatedByString:@":"] lastObject]
-                                stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            self.plcServerURL = valueForLine(trimmed);
         }
         else if ([trimmed containsString:@"cache_directory:"]) {
-            NSString *value = [[[trimmed componentsSeparatedByString:@":"] lastObject]
-                              stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            NSString *value = valueForLine(trimmed);
             self.cacheDirectory = [value stringByExpandingTildeInPath];
         }
         else if ([trimmed containsString:@"did_ttl_seconds:"]) {
-            self.didTTL = [[[trimmed componentsSeparatedByString:@":"] lastObject]
-                          stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].doubleValue;
+            self.didTTL = valueForLine(trimmed).doubleValue;
         }
         else if ([trimmed containsString:@"plc_log_ttl_seconds:"]) {
-            self.plcTTL = [[[trimmed componentsSeparatedByString:@":"] lastObject]
-                          stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].doubleValue;
+            self.plcTTL = valueForLine(trimmed).doubleValue;
         }
         else if ([trimmed containsString:@"account_list_ttl_seconds:"]) {
-            self.accountTTL = [[[trimmed componentsSeparatedByString:@":"] lastObject]
-                              stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].doubleValue;
+            self.accountTTL = valueForLine(trimmed).doubleValue;
         }
     }
 }

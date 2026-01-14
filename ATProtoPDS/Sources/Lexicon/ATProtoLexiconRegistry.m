@@ -1,0 +1,156 @@
+#import "ATProtoLexiconRegistry.h"
+#import "ATProtoLexiconSchema.h"
+#import "ATProtoLexiconError.h"
+#import "Debug/PDSLogger.h"
+
+@interface ATProtoLexiconRegistry ()
+
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoLexiconSchema *> *schemas;
+@property (nonatomic, strong) dispatch_queue_t registryQueue;
+
+@end
+
+@implementation ATProtoLexiconRegistry
+
++ (instancetype)sharedRegistry {
+    static ATProtoLexiconRegistry *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[self alloc] init];
+    });
+    return sharedInstance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _schemas = [NSMutableDictionary dictionary];
+        _registryQueue = dispatch_queue_create("com.atproto.pds.lexicon.registry",
+                                               DISPATCH_QUEUE_CONCURRENT);
+    }
+    return self;
+}
+
+- (BOOL)loadLexiconsFromDirectory:(NSString *)path error:(NSError **)error {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+
+    BOOL isDirectory = NO;
+    if (![fileManager fileExistsAtPath:path isDirectory:&isDirectory] || !isDirectory) {
+        if (error) {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain
+                                         code:NSFileNoSuchFileError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Directory does not exist"}];
+        }
+        return NO;
+    }
+
+    PDS_LOG_INFO(@"[LexiconRegistry] Loading lexicons from: %@", path);
+
+    NSError *enumError = nil;
+    NSArray *contents = [fileManager contentsOfDirectoryAtPath:path error:&enumError];
+
+    if (enumError) {
+        if (error) *error = enumError;
+        return NO;
+    }
+
+    NSUInteger loadedCount = 0;
+    NSUInteger errorCount = 0;
+
+    for (NSString *item in contents) {
+        NSString *fullPath = [path stringByAppendingPathComponent:item];
+
+        BOOL itemIsDirectory = NO;
+        [fileManager fileExistsAtPath:fullPath isDirectory:&itemIsDirectory];
+
+        if (itemIsDirectory) {
+            // Recursively load subdirectories
+            [self loadLexiconsFromDirectory:fullPath error:nil];
+        } else if ([item.pathExtension isEqualToString:@"json"]) {
+            // Load JSON file
+            NSError *loadError = nil;
+            if ([self loadLexiconFromFile:fullPath error:&loadError]) {
+                loadedCount++;
+            } else {
+                errorCount++;
+                PDS_LOG_WARN(@"[LexiconRegistry] Failed to load %@: %@",
+                              item, loadError.localizedDescription);
+            }
+        }
+    }
+
+    PDS_LOG_INFO(@"[LexiconRegistry] Loaded %lu lexicons (%lu errors) from %@",
+                (unsigned long)loadedCount, (unsigned long)errorCount, path);
+
+    return errorCount == 0;
+}
+
+- (BOOL)loadLexiconFromFile:(NSString *)filePath error:(NSError **)error {
+    NSError *readError = nil;
+    NSData *data = [NSData dataWithContentsOfFile:filePath options:0 error:&readError];
+
+    if (readError || !data) {
+        if (error) *error = readError;
+        return NO;
+    }
+
+    NSError *parseError = nil;
+    ATProtoLexiconSchema *schema = [ATProtoLexiconSchema schemaFromJSONData:data error:&parseError];
+
+    if (parseError || !schema) {
+        if (error) {
+            *error = parseError ?: [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorInvalidSchema
+                                                               message:@"Failed to parse lexicon"
+                                                               context:filePath];
+        }
+        return NO;
+    }
+
+    // Cache the schema
+    dispatch_barrier_async(self.registryQueue, ^{
+        self.schemas[schema.nsid] = schema;
+    });
+
+    PDS_LOG_DEBUG(@"[LexiconRegistry] Loaded lexicon: %@", schema.nsid);
+
+    return YES;
+}
+
+- (void)registerSchema:(ATProtoLexiconSchema *)schema {
+    if (!schema || !schema.nsid) return;
+    
+    dispatch_barrier_async(self.registryQueue, ^{
+        self.schemas[schema.nsid] = schema;
+    });
+    
+    PDS_LOG_DEBUG(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
+}
+
+- (nullable ATProtoLexiconSchema *)schemaForNSID:(NSString *)nsid {
+    __block ATProtoLexiconSchema *schema = nil;
+    dispatch_sync(self.registryQueue, ^{
+        schema = self.schemas[nsid];
+    });
+    return schema;
+}
+
+- (BOOL)hasSchemaForNSID:(NSString *)nsid {
+    return [self schemaForNSID:nsid] != nil;
+}
+
+- (void)clearCache {
+    dispatch_barrier_async(self.registryQueue, ^{
+        [self.schemas removeAllObjects];
+    });
+    PDS_LOG_INFO(@"[LexiconRegistry] Cache cleared");
+}
+
+- (NSArray<NSString *> *)loadedNSIDs {
+    __block NSArray *nsids = nil;
+    dispatch_sync(self.registryQueue, ^{
+        nsids = [self.schemas allKeys];
+    });
+    return nsids ?: @[];
+}
+
+@end
