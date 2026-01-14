@@ -7,6 +7,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSController.h"
+#import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuth2Handler.h"
 
@@ -106,9 +107,16 @@
     printf("Data directory: %s\n", [context.dataDir UTF8String]);
     printf("Press Ctrl+C to stop.\n");
 
-    NSDictionary *config = [context loadConfig];
-    if (config[@"pds"][@"hostname"]) {
-        printf("PDS hostname: %s\n", [config[@"pds"][@"hostname"] UTF8String]);
+    // Load configuration from file into shared PDSConfiguration
+    if (context.configPath && [[NSFileManager defaultManager] fileExistsAtPath:context.configPath]) {
+        NSError *configError = nil;
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        if (![config loadFromPath:context.configPath error:&configError]) {
+            printf("Warning: Failed to load config: %s\n", [configError.localizedDescription UTF8String]);
+        } else {
+            printf("Loaded config from: %s\n", [context.configPath UTF8String]);
+            printf("Server host: %s\n", [config.serverHost UTF8String]);
+        }
     }
 
     if (!foreground) {
