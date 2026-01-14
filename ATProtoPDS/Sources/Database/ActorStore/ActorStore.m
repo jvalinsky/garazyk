@@ -185,7 +185,14 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     
     [self.blobCache removeAllObjects];
     
+#if defined(GNUSTEP)
     self.signingKeyData = nil;
+#else
+    if (self.signingKey) {
+        CFRelease(self.signingKey);
+        self.signingKey = NULL;
+    }
+#endif
     
     sqlite3_close(self.db);
     self.db = NULL;
@@ -471,6 +478,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         return NO;
     }
     
+#if defined(GNUSTEP)
     // Generate secp256k1 signing key for the new account using the account's DID
     NSError *keyError = nil;
     if (![self generateSigningKeyForDid:account.did error:&keyError]) {
@@ -479,6 +487,15 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     } else {
         NSLog(@"[ActorStore] Generated secp256k1 signing key for %@", account.did);
     }
+#else
+    // Generate signing key using macOS Security framework
+    NSError *keyError = nil;
+    if (![self generateSigningKeyWithError:&keyError]) {
+        NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
+    } else {
+        NSLog(@"[ActorStore] Generated signing key for %@", account.did);
+    }
+#endif
 
     return YES;
 }
@@ -1042,10 +1059,12 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NO;
     }
     
+#if defined(GNUSTEP)
     // Only cache if this is for our own DID
     if ([targetDid isEqualToString:self.did]) {
         self.signingKeyData = keyData;
     }
+#endif
     return YES;
 }
 
@@ -1134,10 +1153,23 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 }
 #endif
 
+#if defined(GNUSTEP)
 - (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
     // Return the raw 32-byte secp256k1 private key
     return [self loadSigningKeyDataWithError:error];
 }
+#else
+- (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
+    // On macOS, we don't have the raw key data directly accessible
+    // Return nil for now - this method is primarily for Linux
+    if (error) {
+        *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                     code:-1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Raw signing key bytes not available on macOS"}];
+    }
+    return nil;
+}
+#endif
 
 #pragma mark - Blob Operations
 
