@@ -83,9 +83,11 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 }
 
 + (NSString *)signDPoPToken:(DPoPToken *)token error:(NSError **)error {
-    NSMutableDictionary *header = [NSMutableDictionary dictionary];
-    header[@"typ"] = @"dpop+jwt";
-    header[@"alg"] = @"ES256";
+    NSDictionary *headerDict = [token header];
+    NSMutableDictionary *header = [headerDict mutableCopy];
+    // Ensure typ and alg are set if not present (though [token header] sets them)
+    if (!header[@"typ"]) header[@"typ"] = @"dpop+jwt";
+    if (!header[@"alg"]) header[@"alg"] = @"ES256";
 
     NSError *jsonError = nil;
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:&jsonError];

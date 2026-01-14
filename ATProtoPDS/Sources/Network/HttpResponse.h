@@ -30,10 +30,15 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
     HttpStatusNotFound = 404,
     HttpStatusMethodNotAllowed = 405,
     HttpStatusConflict = 409,
+    HttpStatusPayloadTooLarge = 413,
+    HttpStatusUnsupportedMediaType = 415,
+    HttpStatusTooManyRequests = 429,
     HttpStatusInternalServerError = 500,
     HttpStatusNotImplemented = 501,
-    HttpStatusServiceUnavailable = 503
+    HttpStatusServiceUnavailable = 503,
+    HttpStatusGatewayTimeout = 504
 };
+
 
 /*!
  @class HttpResponse

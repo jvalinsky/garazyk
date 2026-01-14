@@ -77,11 +77,11 @@
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:8 userInfo:@{NSLocalizedDescriptionKey: @"CID must be base32 lowercase (start with 'b')"}];
         return NO;
     }
-
-    // Check for uppercase characters (strict lowercase base32)
-    NSRegularExpression *uppercaseRegex = [NSRegularExpression regularExpressionWithPattern:@"[A-Z]" options:0 error:nil];
-    if ([uppercaseRegex numberOfMatchesInString:cid options:0 range:NSMakeRange(0, cid.length)] > 0) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:9 userInfo:@{NSLocalizedDescriptionKey: @"CID must be lowercase"}];
+    
+    // Check minimum length (CIDv1 with SHA-256 is typically 59 chars)
+    // We'll enforce a safe minimum like 10 to avoid "b", "ba", etc.
+    if (cid.length < 10) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:14 userInfo:@{NSLocalizedDescriptionKey: @"CID too short"}];
         return NO;
     }
 
@@ -108,14 +108,10 @@
         return NO;
     }
 
-    // Base32 sortable: 234567abcdefghijklmnopqrstuvwxyz (clockid is part of it)
-    // Actually standard TID uses base32-sortable: 234567abcdefghijklmnopqrstuvwxyz
-    // Spec says: "13-char base32-sortable"
     // Regex: ^[2-7a-z]{13}$
-    
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[2-7a-z]{13}$" options:0 error:nil];
     if ([regex numberOfMatchesInString:tid options:0 range:NSMakeRange(0, tid.length)] == 0) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format"}];
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format (must be base32-sortable)"}];
         return NO;
     }
 
@@ -124,11 +120,57 @@
 
 + (BOOL)validateNSID:(NSString *)nsid error:(NSError **)error {
     if (!nsid) return NO;
-    // Simple check: reverse domain name style
-    if (![nsid containsString:@"."]) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:13 userInfo:@{NSLocalizedDescriptionKey: @"Invalid NSID"}];
+    
+    // NSID (Namespaced Identifier) - reversed domain name
+    // Max length 253
+    if (nsid.length > 253) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:15 userInfo:@{NSLocalizedDescriptionKey: @"NSID too long"}];
         return NO;
     }
+    
+    // Check for empty segs, uppercase, special chars
+    // Regex: ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$
+    // But allowing >1 segments
+    
+    // Must contain at least one dot
+    if (![nsid containsString:@"."]) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:13 userInfo:@{NSLocalizedDescriptionKey: @"NSID must contain segments"}];
+        return NO;
+    }
+    
+    // NSID can contain uppercase (e.g. XRPC methods like getRecord)
+    
+    NSArray *components = [nsid componentsSeparatedByString:@"."];
+    for (NSString *comp in components) {
+        if (comp.length == 0) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:17 userInfo:@{NSLocalizedDescriptionKey: @"NSID cannot have empty segments"}];
+            return NO;
+        }
+        if (comp.length > 63) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:18 userInfo:@{NSLocalizedDescriptionKey: @"NSID segment too long"}];
+            return NO;
+        }
+        
+        // Check valid chars: a-z, A-Z, 0-9, -
+        // Cannot start or end with -
+        if ([comp hasPrefix:@"-"] || [comp hasSuffix:@"-"]) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:19 userInfo:@{NSLocalizedDescriptionKey: @"NSID segment cannot start or end with hyphen"}];
+            return NO;
+        }
+        
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9-]+$" options:0 error:nil];
+        if ([regex numberOfMatchesInString:comp options:0 range:NSMakeRange(0, comp.length)] == 0) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:20 userInfo:@{NSLocalizedDescriptionKey: @"NSID contains invalid characters"}];
+            return NO;
+        }
+    }
+    
+    // Check for starts/ends with dot (components check handles empty start/end but let's be safe)
+    if ([nsid hasPrefix:@"."] || [nsid hasSuffix:@"."]) {
+         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:21 userInfo:@{NSLocalizedDescriptionKey: @"NSID cannot start or end with dot"}];
+         return NO;
+    }
+
     return YES;
 }
 

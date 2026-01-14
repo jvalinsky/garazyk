@@ -1,3 +1,4 @@
+#import "Repository/CAR.h"
 #import "Repository/MST.h"
 #import "Repository/CBOR.h"
 #import "Core/CID.h"
@@ -597,7 +598,51 @@
     return result;
 }
 
-- (NSData *)exportCAR { return [NSData data]; }
+- (NSData *)exportCAR {
+    if (!self.root) return nil;
+    
+    // Cache for CIDs during traversal
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    
+    // Compute root CID (ensures everything is hashed)
+    CID *rootCID = [self.root getCID:cache];
+    if (!rootCID) return nil;
+    
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    
+    // Walk the tree and add blocks
+    // We need a way to walk ALL nodes (internal + leaves).
+    // The existing 'walk' method iterates entries, but we need the nodes themselves.
+    
+    NSMutableArray<MSTNode *> *queue = [NSMutableArray arrayWithObject:self.root];
+    NSMutableSet<CID *> *addedCIDs = [NSMutableSet set];
+    
+    while (queue.count > 0) {
+        MSTNode *node = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+        
+        CID *cid = [node getCID:cache];
+        if (!cid || [addedCIDs containsObject:cid]) continue;
+        
+        [addedCIDs addObject:cid];
+        
+        NSData *data = [node serializeToCBOR:cache];
+        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
+        
+        // Enqueue children
+        if (node.internalLeft) {
+            [queue addObject:node.internalLeft];
+        }
+        
+        for (MSTNodeEntry *entry in node.internalEntries) {
+            if (entry.internalTree) {
+                [queue addObject:entry.internalTree];
+            }
+        }
+    }
+    
+    return [writer serialize];
+}
 - (NSData *)serializeToCBOR {
     return [self.root serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
 }
