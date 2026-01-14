@@ -48,6 +48,8 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Delete all MST data for DID. */
 - (BOOL)deleteMSTForDid:(NSString *)did error:(NSError **)error;
 
+@property (nonatomic, strong, nullable) PDSDatabase *database;
+
 @end
 
 NS_ASSUME_NONNULL_END

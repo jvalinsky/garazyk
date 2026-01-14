@@ -1,5 +1,7 @@
 #import "AppView/ActorService.h"
 #import "Database/PDSDatabase.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "Database/Schema.h"
 
 @interface ActorService ()
@@ -92,7 +94,7 @@
     }
 
     NSString *query = @"SELECT preferences FROM actor_preferences WHERE did = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID] error:error];
 
     if (rows && rows.count > 0) {
         NSDictionary *row = rows.firstObject;
@@ -127,15 +129,15 @@
     }
 
     NSString *checkQuery = @"SELECT id FROM actor_preferences WHERE did = ?";
-    NSArray *existingRows = [self.database executeQuery:checkQuery error:nil];
+    NSArray *existingRows = [self.database executeParameterizedQuery:checkQuery params:@[actorDID] error:nil];
 
     BOOL success;
     if (existingRows && existingRows.count > 0) {
         NSString *updateQuery = @"UPDATE actor_preferences SET preferences = ?, updated_at = datetime('now') WHERE did = ?";
-        success = [self.database executeRawSQL:updateQuery error:error];
+        success = [self.database executeParameterizedUpdate:updateQuery params:@[prefsData, actorDID] error:error];
     } else {
         NSString *insertQuery = @"INSERT INTO actor_preferences (did, preferences, created_at, updated_at) VALUES (?, ?, datetime('now'), datetime('now'))";
-        success = [self.database executeRawSQL:insertQuery error:error];
+        success = [self.database executeParameterizedUpdate:insertQuery params:@[actorDID, prefsData] error:error];
     }
 
     if (!success && error) {
@@ -147,7 +149,7 @@
 
 - (nullable NSString *)resolveHandleForDID:(NSString *)did error:(NSError **)error {
     NSString *query = @"SELECT handle FROM accounts WHERE did = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did] error:error];
 
     if (rows && rows.count > 0) {
         return rows.firstObject[@"handle"];
@@ -157,34 +159,31 @@
 }
 
 - (nullable NSDictionary *)getProfileRecordForDID:(NSString *)did error:(NSError **)error {
-    NSString *query = @"SELECT record FROM records WHERE repo = ? AND collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.actor.profile"] error:error];
 
     if (rows && rows.count > 0) {
-        NSData *recordData = rows.firstObject[@"record"];
-        if (recordData) {
-            NSError *parseError = nil;
-            return [NSJSONSerialization JSONObjectWithData:recordData options:0 error:&parseError];
+        NSString *cidStr = rows.firstObject[@"cid"];
+        CID *cid = [CID cidFromString:cidStr];
+        if (cid) {
+            PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
+            if (block && block.blockData) {
+                return [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
+            }
         }
     }
-
     return nil;
 }
 
 - (NSInteger)getFollowersCountForDID:(NSString *)did error:(NSError **)error {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ? AND record LIKE ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
-
-    if (rows && rows.count > 0) {
-        return [rows.firstObject[@"count"] integerValue];
-    }
-
+    // Note: 'record' column doesn't exist in records table. efficiently counting followers requires an index which PDS doesn't have.
+    // Returning 0 for now as stub.
     return 0;
 }
 
 - (NSInteger)getFollowsCountForDID:(NSString *)did error:(NSError **)error {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE repo = ? AND collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE did = ? AND collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.graph.follow"] error:error];
 
     if (rows && rows.count > 0) {
         return [rows.firstObject[@"count"] integerValue];
@@ -194,8 +193,8 @@
 }
 
 - (NSInteger)getPostsCountForDID:(NSString *)did error:(NSError **)error {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE repo = ? AND collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE did = ? AND collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.feed.post"] error:error];
 
     if (rows && rows.count > 0) {
         return [rows.firstObject[@"count"] integerValue];
