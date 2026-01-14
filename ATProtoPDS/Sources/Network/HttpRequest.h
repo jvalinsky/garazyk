@@ -64,6 +64,9 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 /*! Parsed query parameters as key-value pairs. */
 @property (nonatomic, readonly, nullable, copy) NSDictionary<NSString *, NSString *> *queryParams;
 
+/*! Parsed path parameters extracted from the matched route pattern. */
+@property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *pathParameters;
+
 /*! The HTTP version (e.g., "HTTP/1.1"). */
 @property (nonatomic, readonly, copy) NSString *version;
 

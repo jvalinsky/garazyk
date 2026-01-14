@@ -245,29 +245,45 @@
 - (void)startWithQueue:(dispatch_queue_t)queue {
     _queue = queue;
     
-    _listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (_listenfd == -1) {
-        [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
-        return;
-    }
-    
-    int opt = 1;
-    setsockopt(_listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons((uint16_t)_port);
-    
-    if (bind(_listenfd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-        [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
-        return;
-    }
-    
-    if (listen(_listenfd, 128) == -1) {
-        [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
-        return;
+    NSUInteger portToBind = _port;
+    for (int attempt = 0; attempt < 2; attempt++) {
+        _listenfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (_listenfd == -1) {
+            [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+            return;
+        }
+        
+        int opt = 1;
+        setsockopt(_listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = INADDR_ANY;
+        addr.sin_port = htons((uint16_t)portToBind);
+        
+        if (bind(_listenfd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+            NSError *bindError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+            close(_listenfd);
+            _listenfd = -1;
+            if (errno == EADDRINUSE && attempt == 0) {
+                portToBind = 0;
+                continue;
+            }
+            [self failWithError:bindError];
+            return;
+        }
+        
+        socklen_t len = sizeof(addr);
+        if (getsockname(_listenfd, (struct sockaddr *)&addr, &len) == 0) {
+            _port = ntohs(addr.sin_port);
+        }
+        
+        if (listen(_listenfd, 128) == -1) {
+            [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+            return;
+        }
+        break;
     }
     
     // Set non-blocking

@@ -5,6 +5,10 @@
 #import "Debug/PDSLogger.h"
 #import "Core/ATProtoBase32.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoValidator.h"
+#import "Lexicon/ATProtoLexiconValidator.h"
+#import "Lexicon/ATProtoLexiconRegistry.h"
+#import "Lexicon/ATProtoLexiconError.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @interface PDSRecordService ()
@@ -91,7 +95,48 @@
              rkey:(NSString *)rkey
             value:(NSDictionary *)value
            forDid:(NSString *)did
+   validationMode:(PDSValidationMode)mode
             error:(NSError **)error {
+    // Validate collection NSID format
+    NSError *nsidError = nil;
+    if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+        PDS_LOG_ERROR(@"[PDSRecordService] Invalid collection NSID: %@", collection);
+        if (error) *error = nsidError;
+        return NO;
+    }
+
+    // Lexicon validation
+    if (mode != PDSValidationModeOff) {
+        ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+            initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+
+        // Map PDSValidationMode to ATProtoValidationMode
+        ATProtoValidationMode validationMode;
+        switch (mode) {
+            case PDSValidationModeRequired:
+                validationMode = ATProtoValidationModeRequired;
+                break;
+            case PDSValidationModeOptimistic:
+                validationMode = ATProtoValidationModeOptimistic;
+                break;
+            case PDSValidationModeOff:
+                validationMode = ATProtoValidationModeOff;
+                break;
+        }
+
+        NSError *validationError = nil;
+        if (![validator validateRecord:value
+                            collection:collection
+                                  mode:validationMode
+                                 error:&validationError]) {
+            PDS_LOG_ERROR(@"[PDSRecordService] Lexicon validation failed for %@: %@",
+                          collection, validationError.localizedDescription);
+            if (error) *error = validationError;
+            return NO;
+        }
+
+        PDS_LOG_DEBUG(@"[PDSRecordService] Lexicon validation passed for %@", collection);
+    }
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
 
@@ -102,7 +147,7 @@
         if (error) *error = cidError;
         return NO;
     }
-    
+
     NSString *cidString = [self generateCIDForData:cborData error:&cidError];
     if (!cidString) {
         if (error) *error = cidError;
@@ -116,7 +161,7 @@
     record.rkey = rkey;
     record.cid = cidString;
     record.createdAt = [NSDate date];
-    
+
     // Store serialized JSON value
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
     if (jsonData) {
@@ -135,6 +180,20 @@
     }
 
     return success;
+}
+
+- (BOOL)putRecord:(NSString *)collection
+             rkey:(NSString *)rkey
+            value:(NSDictionary *)value
+           forDid:(NSString *)did
+            error:(NSError **)error {
+    // Convenience method with default required validation
+    return [self putRecord:collection
+                      rkey:rkey
+                     value:value
+                    forDid:did
+            validationMode:PDSValidationModeRequired
+                     error:error];
 }
 
 - (BOOL)deleteRecord:(NSString *)collection

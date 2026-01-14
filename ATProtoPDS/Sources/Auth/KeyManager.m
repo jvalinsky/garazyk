@@ -168,12 +168,16 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     CFErrorRef cfError = NULL;
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
 
-    if (cfError) {
+    if (!privateKey) {
         if (error) {
-            *error = CFBridgingRelease(cfError);
+            *error = cfError ? CFBridgingRelease(cfError) : [NSError errorWithDomain:KeyManagerErrorDomain code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Key generation failed"}];
+        } else if (cfError) {
+            CFRelease(cfError);
         }
         return nil;
     }
+    // Release cfError even on success path if populated (defensive)
+    if (cfError) CFRelease(cfError);
 
     CFErrorRef pubError = NULL;
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
@@ -224,12 +228,16 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     CFErrorRef cfError = NULL;
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
 
-    if (cfError) {
+    if (!privateKey) {
         if (error) {
-            *error = CFBridgingRelease(cfError);
+            *error = cfError ? CFBridgingRelease(cfError) : [NSError errorWithDomain:KeyManagerErrorDomain code:-1 userInfo:@{NSLocalizedDescriptionKey: @"ECDSA key generation failed"}];
+        } else if (cfError) {
+            CFRelease(cfError);
         }
         return nil;
     }
+    // Release cfError even on success path if populated (defensive)
+    if (cfError) CFRelease(cfError);
 
     CFErrorRef pubError = NULL;
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
@@ -486,9 +494,16 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
             SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
                                                        (__bridge CFDictionaryRef)privateKeyAttrs,
                                                        &importError);
+            if (importError) {
+                CFRelease(importError);
+                importError = NULL;
+            }
             SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
                                                       (__bridge CFDictionaryRef)publicKeyAttrs,
                                                       &importError);
+            if (importError) {
+                CFRelease(importError);
+            }
 
             if (privateKey && publicKey) {
                 KeyPair *keyPair = [KeyPair keyPairFromPrivateKey:privateKey
@@ -528,7 +543,14 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     CFErrorRef exportError = NULL;
     NSData *privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+    if (exportError) {
+        CFRelease(exportError);
+        exportError = NULL;
+    }
     NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
+    if (exportError) {
+        CFRelease(exportError);
+    }
 
     if (!privateKeyData || !publicKeyData) {
         if (error) {

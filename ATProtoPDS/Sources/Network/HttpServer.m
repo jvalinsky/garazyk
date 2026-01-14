@@ -8,6 +8,9 @@
 #import "Network/HttpChunkedBodyParser.h"
 #import "Debug/PDSLogger.h"
 #import <CoreFoundation/CoreFoundation.h>
+#import "Network/HttpRouteTrie.h"
+
+@class HttpRouteTrie;
 
 @interface HttpServer ()
 
@@ -15,7 +18,7 @@
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, strong) id<PDSNetworkListener> listener;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t serverQueue;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, HttpRouteTrie *> *routeTries;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t readySemaphore;
@@ -119,7 +122,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     if (self) {
         _port = port;
         _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_SERIAL);
-        _routeHandlers = [NSMutableDictionary dictionary];
+        _routeTries = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
         _activeConnections = [NSMutableSet set];
         _connectionQueue = dispatch_queue_create("com.atproto.pds.httpserver.connections", DISPATCH_QUEUE_SERIAL);
@@ -620,6 +623,21 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     return NO;
 }
 
+- (RequestHandler _Nullable)handlerForRoute:(NSString *)path method:(NSString *)method parameters:(NSDictionary<NSString *, NSString *> * _Nullable * _Nullable)parameters {
+    NSString *normalizedMethod = [(method ?: @"") uppercaseString];
+    HttpRouteTrie *trie = self.routeTries[normalizedMethod];
+    NSDictionary<NSString *, NSString *> *matchedParams = nil;
+    RequestHandler handler = [trie handlerForMethod:normalizedMethod path:path outParameters:&matchedParams];
+    if (!handler) {
+        HttpRouteTrie *catchAll = self.routeTries[@"*"];
+        handler = [catchAll handlerForMethod:@"*" path:path outParameters:&matchedParams];
+    }
+    if (parameters) {
+        *parameters = handler ? matchedParams : nil;
+    }
+    return handler;
+}
+
 - (NSDictionary<NSString *, NSString *> *)parseQueryParamsFromString:(NSString *)queryString {
     if (queryString.length == 0) {
         return @{};
@@ -680,38 +698,15 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     NSString *methodString = request.methodString;
     NSString *path = request.path;
 
-    NSString *routeKey = [NSString stringWithFormat:@"%@ %@", methodString, path];
-    
-    // Check path handlers first (registered via addHandlerForPath)
-    // These handle any method for a given path
+    NSDictionary<NSString *, NSString *> *pathParameters = nil;
+
     RequestHandler handler = self.pathHandlers[path];
 
-    // Then check route handlers (registered via addRoute)
-    // These are specific to Method + Path
     if (!handler) {
-        NSMutableArray *handlers = self.routeHandlers[routeKey];
-        if (handlers && handlers.count > 0) {
-            handler = handlers[0];
-        }
+        handler = [self handlerForRoute:path method:methodString parameters:&pathParameters];
     }
 
-    // Then check wildcard/pattern matching for path handlers
-    if (!handler) {
-        for (NSString *registeredPath in self.pathHandlers) {
-            if ([self path:path matchesPattern:registeredPath]) {
-                handler = self.pathHandlers[registeredPath];
-                break;
-            }
-        }
-    }
-    
-    // Finally check pattern matching for route handlers
-    if (!handler) {
-        NSString *matchingKey = [self findMatchingPathForRoute:path method:methodString handlers:self.routeHandlers];
-        if (matchingKey) {
-            handler = self.routeHandlers[matchingKey][0];
-        }
-    }
+    request.pathParameters = pathParameters;
 
     if (handler) {
         handler(request, response);
@@ -721,27 +716,6 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     }
 
     return response;
-}
-
-- (NSString *)findMatchingPathForRoute:(NSString *)path method:(NSString *)method handlers:(NSDictionary *)handlers {
-    for (NSString *routeKey in handlers) {
-        // routeKey is "METHOD PATTERN"
-        NSArray *parts = [routeKey componentsSeparatedByString:@" "];
-        if (parts.count < 2) continue;
-        
-        NSString *routeMethod = parts[0];
-        NSString *routePattern = [parts subarrayWithRange:NSMakeRange(1, parts.count - 1)].firstObject; // Simplified join?
-        if (parts.count > 2) {
-            routePattern = [[parts subarrayWithRange:NSMakeRange(1, parts.count - 1)] componentsJoinedByString:@" "];
-        }
-        
-        if (![routeMethod isEqualToString:method]) continue;
-        
-        if ([self path:path matchesPattern:routePattern]) {
-            return routeKey;
-        }
-    }
-    return nil;
 }
 
 - (BOOL)path:(NSString *)path matchesPattern:(NSString *)pattern {
@@ -809,14 +783,16 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 }
 
 - (void)addRoute:(NSString *)method path:(NSString *)path handler:(RequestHandler)handler {
-    NSString *key = [NSString stringWithFormat:@"%@ %@", method, path];
-
-    NSMutableArray<RequestHandler> *handlers = self.routeHandlers[key];
-    if (!handlers) {
-        handlers = [NSMutableArray array];
-        self.routeHandlers[key] = handlers;
+    if (!method || !path || !handler) {
+        return;
     }
-    [handlers addObject:[handler copy]];
+    NSString *normalizedMethod = [method.uppercaseString length] ? method.uppercaseString : @"*";
+    HttpRouteTrie *trie = self.routeTries[normalizedMethod];
+    if (!trie) {
+        trie = [[HttpRouteTrie alloc] init];
+        self.routeTries[normalizedMethod] = trie;
+    }
+    [trie insertRoute:normalizedMethod pattern:path handler:[handler copy] priority:100];
 }
 
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler {

@@ -101,16 +101,21 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
 
     // Get public key data
     NSData *publicKeyData = [self dataFromPublicKey:publicKey];
-    if (!publicKeyData) return NO;
+    if (!publicKeyData) {
+        CFRelease(publicKey);
+        return NO;
+    }
 
     // Check if the public key matches any pinned key
     for (NSData *pinnedKeyData in pinnedKeys) {
         if ([publicKeyData isEqualToData:pinnedKeyData]) {
+            CFRelease(publicKey);
             return YES;
         }
     }
 
     // Public key not pinned
+    CFRelease(publicKey);
     return NO;
 }
 

@@ -213,7 +213,7 @@
             continue;
         }
         
-        if (inExploreSection && trimmed.length > 0 && ![trimmed hasPrefix:@"  "] && ![trimmed hasPrefix:@"\t"]) {
+        if (inExploreSection && trimmed.length > 0 && ![line hasPrefix:@"  "] && ![line hasPrefix:@"\t"]) {
             inExploreSection = NO;
         }
         
@@ -266,7 +266,7 @@
         [self serveJs:request response:response];
     }
     else if ([path hasPrefix:@"/explore/api/"]) {
-        NSString *endpoint = [self apiEndpointForPath:request.path];
+        NSString *endpoint = request.pathParameters[@"endpoint"] ?: [self apiEndpointForPath:request.path];
         [self handleApiRequest:request response:response endpoint:endpoint];
     }
     else {
@@ -494,7 +494,7 @@
     }
 
     NSError *error = nil;
-    if ([self.controller putRecord:collection rkey:rkey value:value forDid:did error:&error]) {
+    if ([self.controller putRecord:collection rkey:rkey value:value forDid:did validationMode:PDSValidationModeRequired error:&error]) {
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         NSDictionary *record = [self.controller getRecord:uri forDid:did error:nil];
         

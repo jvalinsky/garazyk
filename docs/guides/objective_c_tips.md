@@ -67,8 +67,22 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 *   **Synchronization:** Use serial queues (`dispatch_queue_t`) to protect mutable state.
 *   **ARC Ownership:** Always use `strong` for queue properties. Using `assign` will lead to immediate deallocation and subsequent crashes when the framework attempts to use the queue.
 
-```objective-c
+**Queue Property Standardization:**
+Use the `PDS_DISPATCH_QUEUE_STRONG` macro for consistent queue property declarations:
+
+```objc
+// Standard queue property declaration
 @property (nonatomic, strong) dispatch_queue_t connectionQueue;
+
+// Or use the macro for consistency
+PDS_DISPATCH_QUEUE_STRONG dispatch_queue_t connectionQueue;
+```
+
+**Queue Naming Convention:**
+```objc
+// Use reverse domain notation for queue names
+dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
+dispatch_queue_create("com.atproto.pds.network.events", DISPATCH_QUEUE_CONCURRENT);
 ```
 
 ---
@@ -176,6 +190,41 @@ while (serverRunning) {
 *   **`dealloc`**: Use this to release resources like `sqlite3` handles, `CFTypeRef` objects (`CFRelease`), or to invalidate `NSTimer`s.
 *   **Do not** call `[super dealloc]`.
 
+#### Core Foundation Object Ownership
+
+When working with Core Foundation objects (SecKeyRef, CFStringRef, etc.), follow strict ownership rules:
+
+**Ownership Contract:**
+- If you create or copy a CF object, you own it and must `CFRelease` it
+- If you receive a CF object from a function with "Get" or "Copy" in the name, you own it
+- If you receive a CF object from a function with "Create" in the name, you own it
+- Use `CFRetain` to take ownership of objects you don't own but need to keep
+
+**Example (`KeyManager.m`):**
+```objc
+// KeyPair creation - we retain the SecKeyRefs
+CFRetain(privateKey);
+CFRetain(publicKey);
+
+// Dealloc - we release what we retained
+- (void)dealloc {
+    if (_privateKey) CFRelease(_privateKey);
+    if (_publicKey) CFRelease(_publicKey);
+}
+```
+
+**Example (`ActorStore.m`):**
+```objc
+// Property declaration - assign for CFTypeRef
+@property (nonatomic, assign) SecKeyRef signingKey;
+
+// Cleanup - release if we own it
+if (_signingKey) {
+    CFRelease(_signingKey);
+    _signingKey = NULL;
+}
+```
+
 ---
 
 ## Part 3: Foundation Patterns
@@ -228,7 +277,90 @@ Use Class Extensions in the `.m` file to declare private properties and read-wri
 
 ---
 
-## Part 4: Runtime Features
+## Part 4: Security Best Practices
+
+### 1. Input Validation & Bounds Checking
+
+Always validate input data, especially when parsing binary formats or network data:
+
+**CBOR/Binary Parsing:**
+```objc
+// EventFormatter.m - Bounds checking for CBOR decoding
+if (*index >= length) {
+    if (error) {
+        *error = [NSError errorWithDomain:EventFormatterErrorDomain
+                                     code:EventFormatterErrorCodeDecodingFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Unexpected end of CBOR data"}];
+    }
+    return nil;
+}
+
+// Check for buffer overflow before reading
+if (*index + byteLength > length) return nil;
+```
+
+**WebAuthn Credential Validation:**
+```objc
+// WebAuthnVerifier.m - Validate credential data structure
+if (authData.length < 37) {
+    if (error) *error = [self errorWithCode:1007 message:@"authData too short"];
+    return nil;
+}
+
+// Check flags before accessing optional data
+uint8_t flags = ((const uint8_t *)authData.bytes)[32];
+BOOL hasAttestedCredentialData = (flags & 0x40) != 0;
+if (!hasAttestedCredentialData) {
+    if (error) *error = [self errorWithCode:1008 message:@"No attested credential data"];
+    return nil;
+}
+```
+
+### 2. Network Security Limits
+
+Implement size limits to prevent resource exhaustion attacks:
+
+**WebSocket Frame Size Limit:**
+```objc
+// WebSocketConnection.m - 16MB max frame size
+static const NSUInteger MAX_FRAME_SIZE = 16 * 1024 * 1024; // 16MB
+
+if (frameSize > MAX_FRAME_SIZE) {
+    // Close connection with policy violation
+    [self closeWithCode:1008 reason:@"Frame too large"];
+    return;
+}
+```
+
+### 3. Memory Safety Patterns
+
+**Prevent Buffer Overflows:**
+- Always check array bounds before access
+- Use bounded string operations (`strlcpy`, `strlcat`)
+- Validate input lengths before allocation
+
+**Prevent Use-After-Free:**
+- Set pointers to NULL after `CFRelease`
+- Use `weak` references for delegates to avoid retain cycles
+- Never access objects after `dealloc`
+
+### 4. Cryptographic Security
+
+**Key Management:**
+- Never store private keys in code or configuration files
+- Use the Keychain (`SecKeyRef`) for persistent key storage
+- Generate random values with `SecRandomCopyBytes`, not `rand()`
+
+**Constant-Time Comparisons:**
+```objc
+// For sensitive data comparison, use timing-safe approaches
+// Note: memcmp is generally sufficient on modern systems
+// For high-security contexts, consider custom constant-time implementations
+```
+
+---
+
+## Part 5: Runtime Features
 
 While rarely needed for day-to-day coding, understanding the runtime is useful for debugging.
 
