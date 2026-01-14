@@ -15,27 +15,35 @@
 </ruby>
 
 # Global Settings
-setg RHOSTS 127.0.0.1
-setg RPORT 8080
+# Only set RHOSTS/RPORT if not already set (allows command line override)
+<ruby>
+  if framework.datastore['RHOSTS'].nil? || framework.datastore['RHOSTS'].empty?
+    run_single("setg RHOSTS 127.0.0.1")
+  end
+  
+  if framework.datastore['RPORT'].nil? || framework.datastore['RPORT'].to_i == 0
+    run_single("setg RPORT 8080") 
+  end
+</ruby>
+
 setg SSL false
 
 # 1. Discovery & Fingerprinting
-print_status(">>> STEP 1: Discovery & Fingerprinting")
+<ruby>print_status(">>> STEP 1: Discovery & Fingerprinting")</ruby>
 use auxiliary/scanner/atproto/atproto_pds_scanner
 run
 
 # 2. Authentication Bypass Probing
-print_status(">>> STEP 2: Authentication Security Probe")
+<ruby>print_status(">>> STEP 2: Authentication Security Probe")</ruby>
 use auxiliary/admin/atproto/atproto_jwt_bypass
 set DID did:plc:admin
 run
 
 # 3. Denial of Service Stress Test (Safe Mode)
-# We set recursion depth low to test logic without crashing dev machine
-print_status(">>> STEP 3: CBOR DoS Logic Check (Depth: 100)")
+<ruby>print_status(">>> STEP 3: CBOR DoS Logic Check (Depth: 100)")</ruby>
 use auxiliary/dos/atproto/atproto_cbor_dos
 set RECURSION_DEPTH 100
 run
 
-print_status(">>> Suite Completed. Check results above.")
+<ruby>print_status(">>> Suite Completed. Check results above.")</ruby>
 exit
