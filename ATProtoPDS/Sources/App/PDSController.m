@@ -32,6 +32,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/PDSLogger.h"
 #import "App/Explore/ExploreHandler.h"
+#import "App/MSTViewer/MSTViewerHandler.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -271,6 +272,18 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
     [_httpServer addRoute:@"GET" path:@"/explore/api/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
+    }];
+
+    // MST Viewer (development/debugging tool)
+    MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
+    [mstViewerHandler setController:self];
+
+    [_httpServer addHandlerForPath:@"/mst-viewer" handler:^(HttpRequest *request, HttpResponse *response) {
+        [mstViewerHandler handleRequest:request response:response];
+    }];
+
+    [_httpServer addHandlerForPath:@"/api/mst" handler:^(HttpRequest *request, HttpResponse *response) {
+        [mstViewerHandler handleRequest:request response:response];
     }];
     
     NSError *httpError = nil;
