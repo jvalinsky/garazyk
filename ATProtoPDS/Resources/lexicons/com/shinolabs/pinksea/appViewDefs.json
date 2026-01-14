@@ -1,0 +1,84 @@
+{
+  "$schema": "https://internect.info/lexicon-schema.json",
+  "lexicon": 1,
+  "id": "com.shinolabs.pinksea.appViewDefs",
+  "defs": {
+    "hydratedOekaki": {
+      "type": "object",
+      "description": "A hydrated oekaki post returned from the PinkSea app view.",
+      "required": ["author", "image", "at", "cid", "creationTime", "nsfw"],
+      "properties": {
+        "author": {
+          "type": "ref",
+          "ref": "#author"
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "The image link."
+        },
+        "at": {
+          "type": "string",
+          "format": "uri",
+          "description": "The AT protocol link."
+        },
+        "cid": {
+          "type": "string",
+          "format": "cid",
+          "description": "The oekaki CID."
+        },
+        "creationTime": {
+          "type": "string",
+          "format": "datetime",
+          "description": "The creation time."
+        },
+        "nsfw": {
+          "type": "boolean",
+          "description": "Is this oekaki NSFW?"
+        },
+        "tags": {
+          "type": "array",
+          "description": "An array of tags this image had.",
+          "maxLength": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 640
+          }
+        },
+        "alt": {
+          "type": "string",
+          "description": "Alt text description of the image, for accessibility."
+        }
+      }
+    },
+    "author": {
+      "type": "object",
+      "description": "An author for an oekaki post",
+      "required": ["did", "handle"],
+      "properties": {
+        "did": {
+          "type": "string",
+          "format": "did",
+          "description": "The DID of the author"
+        },
+        "handle": {
+          "type": "string",
+          "format": "handle",
+          "description": "The handle of the author."
+        }
+      }
+    },
+    "oekakiTombstone": {
+      "type": "object",
+      "description": "A tombstone for a missing oekaki.",
+      "required": ["formerAt"],
+      "properties": {
+        "formerAt": {
+          "type": "string",
+          "format": "at-uri",
+          "description": "The AT uri of the former oekaki."
+        }
+      }
+    }
+  }
+}
