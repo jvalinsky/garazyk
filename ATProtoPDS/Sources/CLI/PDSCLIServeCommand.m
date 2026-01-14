@@ -158,6 +158,40 @@
         [exploreHandler handleRequest:request response:response];
     }];
 
+    // Register Health Check
+    [httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 200;
+        [response setJsonBody:@{@"status": @"ok", @"version": @"0.1.0"}];
+    }];
+
+    // Register Server DID Document (did:web support)
+    [httpServer addRoute:@"GET" path:@"/.well-known/did.json" handler:^(HttpRequest *request, HttpResponse *response) {
+        // Construct a did:web DID document for this server
+        // TODO: Get actual hostname from config
+        NSString *hostname = @"localhost";
+        if (port != 80 && port != 443) {
+            hostname = [NSString stringWithFormat:@"localhost:%ld", (long)port];
+        }
+        
+        NSString *did = [NSString stringWithFormat:@"did:web:%@", hostname];
+        NSString *serviceEndpoint = [NSString stringWithFormat:@"http://%@", hostname];
+        
+        NSDictionary *doc = @{
+            @"@context": @[@"https://www.w3.org/ns/did/v1"],
+            @"id": did,
+            @"service": @[@{
+                @"id": @"#atproto_pds",
+                @"type": @"AtprotoPersonalDataServer",
+                @"serviceEndpoint": serviceEndpoint
+            }],
+            @"verificationMethod": @[],
+            @"authentication": @[]
+        };
+        
+        response.statusCode = 200;
+        [response setJsonBody:doc];
+    }];
+
     // Start HTTP server
     NSError *serverError = nil;
     if (![httpServer startWithError:&serverError]) {
