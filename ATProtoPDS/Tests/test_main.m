@@ -101,7 +101,10 @@ int main(int argc, char * argv[]) {
             @"RecordPathValidationTests",
             @"XrpcInputValidationTests",
             @"XrpcErrorResponseTests",
-            @"BlobXrpcTests"
+            @"BlobXrpcTests",
+            @"CBORSecurityTests",
+            @"JWTSecurityTests",
+            @"HandleResolverSecurityTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
