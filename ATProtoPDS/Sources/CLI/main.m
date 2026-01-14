@@ -1,7 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
-#import "CLI/PDSCLIDispatcher.h" // Added import for PDSCLIDispatcher
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {

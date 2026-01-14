@@ -18,6 +18,7 @@
 #import <arpa/nameser.h>
 #import <netdb.h>
 #import <netinet/in.h>
+#import <string.h>
 #import <sys/socket.h>
 #import <arpa/inet.h>
 
@@ -500,7 +501,9 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     /*! Validate embedded IPv4 to prevent IPv4 private address bypass. */
     if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF}, 12) == 0) {
         /*! Extract embedded IPv4 from last 4 bytes. */
-        uint32_t ipv4 = ntohl(*(uint32_t *)(bytes + 12));
+        uint32_t ipv4;
+        memcpy(&ipv4, bytes + 12, sizeof(ipv4));
+        ipv4 = ntohl(ipv4);
         /*! Recursively validate embedded IPv4 address. */
         return [self isPrivateIPv4Address:ipv4];
     }

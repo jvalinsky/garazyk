@@ -3,12 +3,13 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h" // Added import
+#import "Compat/PDSTypes.h"
 
 NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware";
 
 @interface AdminMiddleware ()
 
-@property (nonatomic, assign) dispatch_queue_t accessQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 
 @end
 

@@ -35,19 +35,33 @@ ln -sf $(pwd)/security/metasploit/atproto_jwt_bypass.rb ~/.msf4/modules/auxiliar
 ```
 
 **Method B: Loading at Runtime**
-Pass the module directory to msfconsole (requires correct folder structure `auxiliary/...` inside `security/metasploit`, which we currently don't have, so **use Method A**).
+Pass the module directory to msfconsole (requires correct folder structure `auxiliary/...` inside `security/metasploit`).
+
+**Method C: Using Docker Compose (Highly Recommended for CI/Clean Environment)**
+Run the entire suite in isolated containers.
+
+```bash
+docker-compose -f docker-compose.metasploit.yml up --build --exit-code-from msf-harness
+```
 
 ## 3. Run the Automated Security Suite
 
-We have a resource script (`security/metasploit/run_pds_suite.rc`) that automates the attack flow:
-1.  **Discovery**: Fingerprints the server.
-2.  **Auth Probe**: Checks for `alg: none` and signature bypasses.
-3.  **DoS Check**: Sends a controlled "Recursion Bomb" (Depth 100) to verify logic without crashing the dev machine.
+We have a resource script (`security/metasploit/run_pds_suite.rc`) and a runner script (`scripts/run-metasploit-tests.sh`) that automate the attack flow:
+1.  **Discovery**: Fingerprints the server and probes for standard endpoints.
+2.  **Repo Sync Probe**: [NEW] Checks if CAR files can be retrieved without authorization.
+3.  **Auth Probe**: Checks for `alg: none`, signature bypasses, and [NEW] Blob access control.
+4.  **DoS Check**: Sends Allocation Bombs, Recursion Bombs, and [NEW] Large String Bombs.
 
-**Command:**
+**Commands:**
+
+*Local Run (requires Metasploit installed):*
 ```bash
-# Run against localhost:2583 (default in the script is 8080, so we override it)
-msfconsole -x "setg RPORT 2583; resource security/metasploit/run_pds_suite.rc"
+./scripts/run-metasploit-tests.sh
+```
+
+*Docker Run (automatic setup):*
+```bash
+docker-compose -f docker-compose.metasploit.yml up --build
 ```
 
 ## 4. Manual Testing
@@ -84,6 +98,30 @@ set RPORT 2583
 set DID did:plc:admin
 run
 ```
+
+**Run Blob Access Check:**
+```bash
+use auxiliary/admin/atproto/blob_access_check
+set RHOSTS 127.0.0.1
+set RPORT 2583
+set CID <blob-cid>
+run
+```
+
+**Run Repo Sync Probe:**
+```bash
+use auxiliary/scanner/atproto/repo_sync_probe
+set RHOSTS 127.0.0.1
+set RPORT 2583
+run
+```
+
+## Reporting
+
+The automated suite generates a JSON report `msf_report.json` in the current directory (or inside the container if using Docker). This report includes:
+-   Host information.
+-   Discovered vulnerabilities and service findings.
+-   Timestamp and workspace details.
 
 ## Troubleshooting
 
