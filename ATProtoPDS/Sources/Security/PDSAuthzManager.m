@@ -1,3 +1,15 @@
+/*!
+ @file PDSAuthzManager.m
+
+ @abstract Authorization manager implementation with policy enforcement.
+
+ @discussion Implements access control checks for repo access, record operations,
+ and admin functions. Validates DID formats, URI patterns, and enforces ownership
+ rules. Manages admin endpoint detection and authorization verification.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Security/PDSAuthzManager.h"
 #import "Database/PDSDatabase.h"
 #import "Security/PDSInputValidator.h"

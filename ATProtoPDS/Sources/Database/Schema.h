@@ -2,6 +2,27 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/*!
+ @file Schema.h
+
+ @abstract Database schema constants for ATProto PDS.
+
+ @discussion This header defines the database schema version, table names,
+ and CREATE TABLE statements for all PDS database tables:
+ - accounts: User accounts with credentials
+ - repos: Repository root CID storage
+ - records: Repository records
+ - blocks: CAR blocks
+ - blobs: Blob metadata
+ - invite_codes: Invitation codes
+ - passkeys: WebAuthn credentials
+ - oauth_clients: OAuth client registrations
+ - jwt_signing_keys: JWT signing keys
+
+ @see PDSDatabase
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 extern NSInteger const kPDSDatabaseSchemaVersion;
 
 extern NSString * const kPDSAccountTableName;
