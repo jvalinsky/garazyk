@@ -1,3 +1,15 @@
+/*!
+ @file JWT.m
+
+ @abstract JWT (JSON Web Token) implementation for ATProto authentication.
+
+ @discussion This file provides concrete implementations for JWT token parsing,
+ encoding, verification, and minting. It includes JWTHeader, JWTPayload, JWT,
+ JWTVerifier, and JWTMinter classes.
+
+ @copyright Copyright (c) 2024 Jack Myers
+ */
+
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/KeyRotationManager.h"
@@ -5,6 +17,7 @@
 
 NSString * const JWTErrorDomain = @"com.atproto.pds.jwt";
 
+/*! Base64URL character set for JWT encoding. */
 static NSCharacterSet *Base64URLCharacterSet(void) {
     static NSCharacterSet *set = nil;
     static dispatch_once_t onceToken;

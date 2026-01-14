@@ -1,3 +1,15 @@
+/*!
+ @file DID.m
+
+ @abstract DID (Decentralized Identifier) document parsing and handling.
+
+ @discussion This file implements DID document deserialization per the W3C
+ DID specification. DIDs are used throughout ATProto for identity verification
+ and are resolved to DID documents containing verification methods and services.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Core/DID.h"
 #import <os/log.h>
 

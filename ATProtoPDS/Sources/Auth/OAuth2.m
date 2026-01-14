@@ -1,3 +1,15 @@
+/*!
+ @file OAuth2.m
+
+ @abstract OAuth 2.0 with DPoP implementation for ATProto.
+
+ @discussion This file implements the OAuth 2.0 authorization server including
+ authorization request handling, token issuance with DPoP proof binding,
+ PKCE support, and token refresh. Follows ATProto OAuth 2.0 specification.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Auth/OAuth2.h"
 #import "Auth/Session.h"
 #import "Auth/KeyManager.h"
