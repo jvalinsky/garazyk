@@ -9,12 +9,13 @@
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, strong) id<PDSNetworkListener> listener;
-@property (nonatomic, assign) dispatch_queue_t serverQueue;
+@property (nonatomic, strong) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
 @property (nonatomic, assign) dispatch_semaphore_t readySemaphore;
 @property (nonatomic, assign) BOOL listenerReady;
+@property (nonatomic, assign) BOOL startupFinished;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 
 @end
@@ -35,6 +36,7 @@
         _activeConnections = [NSMutableSet set];
         _readySemaphore = dispatch_semaphore_create(0);
         _listenerReady = NO;
+        _startupFinished = NO;
         _running = NO;
     }
     return self;
@@ -63,22 +65,22 @@
 
         switch (state) {
             case PDSNetworkListenerStateReady:
-                strongSelf.running = YES;
                 strongSelf.listenerReady = YES;
+                strongSelf.running = YES;
                 strongSelf.port = strongSelf.listener.port;
-                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                strongSelf.startupFinished = YES;
                 NSLog(@"HTTPServer listening on port %lu", (unsigned long)strongSelf.port);
                 break;
             case PDSNetworkListenerStateFailed:
-                strongSelf.running = NO;
                 strongSelf.listenerReady = NO;
-                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                strongSelf.running = NO;
+                strongSelf.startupFinished = YES;
                 NSLog(@"HTTPServer failed to start: %@", error);
                 break;
             case PDSNetworkListenerStateCancelled:
-                strongSelf.running = NO;
                 strongSelf.listenerReady = NO;
-                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                strongSelf.running = NO;
+                strongSelf.startupFinished = YES;
                 NSLog(@"HTTPServer cancelled");
                 break;
             default:
@@ -90,33 +92,16 @@
         [weakSelf handleNewConnection:connection];
     };
 
+    self.startupFinished = NO;
+    self.running = YES; // Optimistically set running to YES so the main loop can start
+    
     [self.listener startWithQueue:self.serverQueue];
 
-    // Wait for the listener to become ready or fail
-    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
-    long result = dispatch_semaphore_wait(self.readySemaphore, timeout);
-
-    if (result != 0) {
-        // Timeout - listener didn't become ready
-        [self.listener cancel];
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Listener failed to start within timeout"}];
-        }
-        return NO;
-    }
-
-    if (!self.listenerReady) {
-        // Listener failed to start
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Listener failed to start"}];
-        }
-        return NO;
-    }
-
+    // We no longer wait synchronously here.
+    // PDSCLIServeCommand runs a runloop while httpServer.running is YES.
+    // If the listener fails asynchronously, it will set self.running = NO,
+    // causing the CLI command to exit.
+    
     return YES;
 }
 
