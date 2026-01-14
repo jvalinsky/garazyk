@@ -6,7 +6,7 @@
  @discussion Provides RFC 4648 Base32 encoding/decoding for TOTP secrets
  and other binary data that needs text representation.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

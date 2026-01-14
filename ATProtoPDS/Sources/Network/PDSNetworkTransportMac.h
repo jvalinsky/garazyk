@@ -9,7 +9,7 @@
 
  This file is only compiled on Apple platforms.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import "PDSNetworkTransport.h"

@@ -7,7 +7,7 @@
  Supports major types 0-7 including integers, byte/text strings, arrays, maps,
  tags, and simple values. Used for repository data and DAG-CBOR encoding.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

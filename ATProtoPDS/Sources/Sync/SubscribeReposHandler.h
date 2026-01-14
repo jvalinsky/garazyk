@@ -7,7 +7,7 @@
  endpoint. Broadcasts repository commits, identity changes, and account
  status updates to connected subscribers.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

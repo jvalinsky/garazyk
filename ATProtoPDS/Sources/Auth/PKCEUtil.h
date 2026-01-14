@@ -6,7 +6,7 @@
  @discussion Implements RFC 7636 PKCE for public OAuth clients. Generates
  code verifiers and S256 code challenges to secure authorization code flows.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
