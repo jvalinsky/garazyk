@@ -13,6 +13,7 @@
 #import "Core/TID.h"
 #import "Auth/JWT.h"
 #import "Sync/SubscribeReposHandler.h"
+#import "Sync/WebSocketServer.h"
 #import "Repository/RepoCommit.h"
 #import "Auth/OAuth2Handler.h"
 #import "Network/HttpRequest.h"
@@ -280,7 +281,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         if (error) *error = streamingError;
         return NO;
     }
-    _wsPort = self.wsPort;
+    _wsPort = _subscribeReposHandler.webSocketServer.port;
     
     _running = YES;
     os_log_info(_log, "PDS server started successfully - XRPC at port %lu, WebSocket at port %lu", (unsigned long)_httpPort, (unsigned long)_wsPort);

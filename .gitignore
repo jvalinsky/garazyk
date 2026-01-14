@@ -1,6 +1,8 @@
 # Build directories
 build/
 build_verify/
+DerivedData/
+node_modules/
 
 # IDE
 .DS_Store

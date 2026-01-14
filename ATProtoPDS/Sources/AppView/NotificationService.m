@@ -62,16 +62,16 @@
     }
 
     NSString *checkQuery = @"SELECT id FROM actor_push_tokens WHERE did = ? AND device_token = ?";
-    NSArray *existingRows = [self.database executeQuery:checkQuery error:nil];
+    NSArray *existingRows = [self.database executeParameterizedQuery:checkQuery params:@[actorDID, deviceToken] error:nil];
 
     NSString *query;
     if (existingRows && existingRows.count > 0) {
         query = @"UPDATE actor_push_tokens SET platform_token = ?, service_endpoint = ?, updated_at = datetime('now') WHERE did = ? AND device_token = ?";
-        BOOL success = [self.database executeRawSQL:query error:error];
+        BOOL success = [self.database executeParameterizedUpdate:query params:@[platformToken ?: [NSNull null], serviceEndpoint, actorDID, deviceToken] error:error];
         return success;
     } else {
         query = @"INSERT INTO actor_push_tokens (did, device_token, platform_token, service_endpoint) VALUES (?, ?, ?, ?)";
-        BOOL success = [self.database executeRawSQL:query error:error];
+        BOOL success = [self.database executeParameterizedUpdate:query params:@[actorDID, deviceToken, platformToken ?: [NSNull null], serviceEndpoint] error:error];
         return success;
     }
 }
@@ -85,7 +85,7 @@
     }
 
     NSString *query = @"DELETE FROM actor_push_tokens WHERE did = ?";
-    BOOL success = [self.database executeRawSQL:query error:error];
+    BOOL success = [self.database executeParameterizedUpdate:query params:@[actorDID] error:error];
 
     if (!success && error) {
         *error = [NSError errorWithDomain:@"NotificationService" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Failed to unregister push tokens"}];
@@ -121,7 +121,7 @@
     }
     [args addObject:@(limit)];
 
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
         NSString *reason = row[@"reason"];
         NSString *reasonSubject = row[@"reason_subject"];
@@ -147,7 +147,7 @@
 
 - (nullable NSDictionary *)getSubjectForNotification:(NSInteger)notificationId {
     NSString *query = @"SELECT subject_uri, subject_cid FROM notifications WHERE id = ?";
-    NSArray *rows = [self.database executeQuery:query error:nil];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@(notificationId)] error:nil];
 
     if (rows && rows.count > 0) {
         NSDictionary *row = rows.firstObject;

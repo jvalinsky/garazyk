@@ -3,7 +3,9 @@
 #import "AppView/ActorService.h"
 #import "Core/TID.h"
 #import <CommonCrypto/CommonDigest.h>
-
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
+#import "Database/Schema.h"
 @interface FeedService ()
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) ActorService *actorService;
@@ -18,6 +20,14 @@
         _actorService = [[ActorService alloc] initWithDatabase:database];
     }
     return self;
+}
+
+- (nullable NSDictionary *)getRecordBodyFromCID:(NSString *)cidStr did:(NSString *)did error:(NSError **)error {
+    CID *cid = [CID cidFromString:cidStr];
+    if (!cid) return nil;
+    PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
+    if (!block || !block.blockData) return nil;
+    return [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
 }
 
 - (nullable NSDictionary *)getTimelineForActor:(NSString *)actorDID
@@ -186,7 +196,7 @@
 
     NSMutableArray *feedItems = [NSMutableArray array];
 
-    NSString *query = @"SELECT rkey, record FROM records WHERE repo = ? AND collection = ?";
+    NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
     if (cursor) {
         query = [query stringByAppendingString:@" AND rkey < ?"];
     }
@@ -198,29 +208,25 @@
     }
     [args addObject:@(limit)];
 
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
-        NSData *recordData = row[@"record"];
-        if (recordData) {
-            NSError *parseError = nil;
-            NSDictionary *record = [NSJSONSerialization JSONObjectWithData:recordData options:0 error:&parseError];
-            if (record && record[@"subject"]) {
-                NSDictionary *subjectURI = record[@"subject"];
-                NSString *subject = subjectURI[@"uri"];
+        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
+        if (record && record[@"subject"]) {
+            NSDictionary *subjectURI = record[@"subject"];
+            NSString *subject = subjectURI[@"uri"];
 
-                NSDictionary *likedPost = [self getPostByURI:subject error:error];
-                if (likedPost) {
-                    NSString *rkey = row[@"rkey"] ?: [self generateRkey];
-                    NSDictionary *feedItem = @{
-                        @"post": [self formatPostRecord:subject ?: @"" cid:[self generateCIDForRecord:likedPost] record:likedPost],
-                        @"like": @{
-                            @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.like/%@", actorDID, rkey],
-                            @"cid": [self generateCIDForRecord:record],
-                            @"actor": [self.actorService getProfileForActor:actorDID error:error] ?: @{@"did": actorDID}
-                        }
-                    };
-                    [feedItems addObject:feedItem];
-                }
+            NSDictionary *likedPost = [self getPostByURI:subject error:error];
+            if (likedPost) {
+                NSString *rkey = row[@"rkey"] ?: [self generateRkey];
+                NSDictionary *feedItem = @{
+                    @"post": [self formatPostRecord:subject ?: @"" cid:[self generateCIDForRecord:likedPost] record:likedPost],
+                    @"like": @{
+                        @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.like/%@", actorDID, rkey],
+                        @"cid": row[@"cid"],
+                        @"actor": [self.actorService getProfileForActor:actorDID error:error] ?: @{@"did": actorDID}
+                    }
+                };
+                [feedItems addObject:feedItem];
             }
         }
     }
@@ -235,16 +241,12 @@
 - (nullable NSArray<NSString *> *)getFollowedDIDsForActor:(NSString *)actorDID error:(NSError **)error {
     NSMutableArray *followedDIDs = [NSMutableArray array];
 
-    NSString *query = @"SELECT record FROM records WHERE repo = ? AND collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID, @"app.bsky.graph.follow"] error:error];
     for (NSDictionary *row in rows) {
-        NSData *recordData = row[@"record"];
-        if (recordData) {
-            NSError *parseError = nil;
-            NSDictionary *record = [NSJSONSerialization JSONObjectWithData:recordData options:0 error:&parseError];
-            if (record && record[@"subject"]) {
-                [followedDIDs addObject:record[@"subject"]];
-            }
+        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
+        if (record && record[@"subject"]) {
+            [followedDIDs addObject:record[@"subject"]];
         }
     }
 
@@ -266,7 +268,7 @@
         [placeholders addObject:@"?"];
     }
 
-    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT repo, rkey, record FROM records WHERE repo IN (%@) AND collection = ?",
+    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid FROM records WHERE did IN (%@) AND collection = ?",
                              [placeholders componentsJoinedByString:@","]];
     if (cursor) {
         [query appendString:@" AND rkey < ?"];
@@ -280,16 +282,14 @@
     }
     [args addObject:@(limit)];
 
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
-        NSString *repo = row[@"repo"];
+        NSString *repo = row[@"did"];
         NSString *rkey = row[@"rkey"];
-        NSData *recordData = row[@"record"];
-        NSError *parseError = nil;
-        NSDictionary *record = [NSJSONSerialization JSONObjectWithData:recordData options:0 error:&parseError];
+        NSString *cid = row[@"cid"];
+        NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", repo, rkey];
-        NSString *cid = [self generateCIDForRecord:record];
 
         [posts addObject:@{
             @"uri": uri,
@@ -312,15 +312,11 @@
     NSString *repo = components[2];
     NSString *rkey = components[4];
 
-    NSString *query = @"SELECT record FROM records WHERE repo = ? AND collection = ? AND rkey = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:error];
 
     if (rows && rows.count > 0) {
-        NSData *recordData = rows.firstObject[@"record"];
-        if (recordData) {
-            NSError *parseError = nil;
-            return [NSJSONSerialization JSONObjectWithData:recordData options:0 error:&parseError];
-        }
+        return [self getRecordBodyFromCID:rows.firstObject[@"cid"] did:repo error:error];
     }
 
     return nil;
@@ -329,15 +325,20 @@
 - (NSArray<NSString *> *)getReplyURIsForParentURI:(NSString *)parentURI error:(NSError **)error {
     NSMutableArray *replyURIs = [NSMutableArray array];
 
-    NSString *query = @"SELECT repo, rkey FROM records WHERE collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.post"] error:error];
     for (NSDictionary *row in rows) {
-        NSData *recordData = row[@"record"];
-        if (recordData) {
-            NSError *parseError = nil;
-            NSString *recordStr = [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding];
-            if (recordStr && [recordStr containsString:parentURI]) {
-                NSString *repo = row[@"repo"];
+        NSString *cid = row[@"cid"];
+        NSString *repo = row[@"did"];
+        NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
+        if (record) {
+            // Need to convert to JSON string to check containment or check known fields?
+            // "reply": { "root": { "uri": ... }, "parent": { "uri": ... } }
+            // Checking if parentURI is in record.
+            // Converting dict to string is expensive but simple port of `containsString`.
+            // Better: Check `record[@"reply"][@"parent"][@"uri"]`.
+            NSString *parent = record[@"reply"][@"parent"][@"uri"];
+            if (parent && [parent isEqualToString:parentURI]) {
                 NSString *rkey = row[@"rkey"];
                 [replyURIs addObject:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", repo, rkey]];
             }
@@ -348,8 +349,10 @@
 }
 
 - (NSInteger)getReplyCountForURI:(NSString *)uri {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:nil];
+    // TODO: Implement proper reply counting (requires index)
+    // For now, just check if the post exists (returns 1 or 0)
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE uri = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[uri] error:nil];
 
     if (rows && rows.count > 0) {
         return [rows.firstObject[@"count"] integerValue];
@@ -358,22 +361,12 @@
 }
 
 - (NSInteger)getRepostCountForURI:(NSString *)uri {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:nil];
-
-    if (rows && rows.count > 0) {
-        return [rows.firstObject[@"count"] integerValue];
-    }
+    // Stubbed due to lack of index
     return 0;
 }
 
 - (NSInteger)getLikeCountForURI:(NSString *)uri {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ?";
-    NSArray *rows = [self.database executeQuery:query error:nil];
-
-    if (rows && rows.count > 0) {
-        return [rows.firstObject[@"count"] integerValue];
-    }
+    // Stubbed due to lack of index
     return 0;
 }
 
@@ -383,11 +376,11 @@
         NSString *repo = components[2];
         NSString *rkey = components[4];
 
-        NSString *query = @"SELECT indexedAt FROM records WHERE repo = ? AND collection = ? AND rkey = ?";
-        NSArray *rows = [self.database executeQuery:query error:nil];
+        NSString *query = @"SELECT created_at FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+        NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:nil];
 
         if (rows && rows.count > 0) {
-            return rows.firstObject[@"indexedAt"];
+            return rows.firstObject[@"created_at"];
         }
     }
     return nil;
@@ -443,20 +436,15 @@
 - (nullable NSArray *)getFeedGeneratorItems:(NSString *)feedGeneratorURI limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
     NSMutableArray *items = [NSMutableArray array];
 
-    NSString *query = @"SELECT record FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
-    NSArray *rows = [self.database executeQuery:query error:error];
+    NSString *query = @"SELECT cid, did FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.generator", @(limit)] error:error];
 
     for (NSDictionary *row in rows) {
-        NSData *recordData = row[@"record"];
-        if (recordData) {
-            NSError *parseError = nil;
-            NSDictionary *record = [NSJSONSerialization JSONObjectWithData:recordData options:0 error:&parseError];
-
-            if (record && record[@"items"]) {
-                NSArray *feedItems = record[@"items"];
-                for (NSDictionary *item in feedItems) {
-                    [items addObject:item];
-                }
+        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:row[@"did"] error:nil];
+        if (record && record[@"items"]) {
+            NSArray *feedItems = record[@"items"];
+            for (NSDictionary *item in feedItems) {
+                [items addObject:item];
             }
         }
     }

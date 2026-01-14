@@ -553,14 +553,16 @@ add_custom_target(run-tests COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-tests.sh"
   DEPENDS AllTests
 )
 
-# Alias targets matching old Makefile names
-add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite)
-add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
-add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
-add_custom_target(fuzz-http DEPENDS fuzz_http)
-add_custom_target(fuzz-auth DEPENDS fuzz_auth)
-add_custom_target(fuzz-blob DEPENDS fuzz_blob)
-add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
+if(BUILD_FUZZERS)
+  # Alias targets matching old Makefile names
+  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite)
+  add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
+  add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
+  add_custom_target(fuzz-http DEPENDS fuzz_http)
+  add_custom_target(fuzz-auth DEPENDS fuzz_auth)
+  add_custom_target(fuzz-blob DEPENDS fuzz_blob)
+  add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
+endif()
 
 # Print build instructions
 message(STATUS "")
