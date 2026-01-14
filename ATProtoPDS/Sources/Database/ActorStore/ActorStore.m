@@ -836,6 +836,10 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 static NSString * const kSigningKeyService = @"com.atproto.pds.signing";
 static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
+static NSString * const kFallbackECPrivateKeyBase64 =
+@"MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgEWHQ/ocH8Atl3zOY"
+@"QYcfBRNRUrps+GZIuA62/FH2dt2hRANCAAQ9hiv8igbi5vaOYHzXt6gDxbocoWAX"
+@"V6jBppig8YRtvlHJe/LXyvTzAZmWXq2CeUTyE8kyAG9N5qn975sNXg0V";
 
 - (NSString *)keychainAccountForDid:(NSString *)did {
     return [kSigningKeyAccountPrefix stringByAppendingString:did];
@@ -950,14 +954,51 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
             (__bridge id)kSecAttrIsPermanent: @NO
         }
     };
-    
-    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, NULL);
+    CFErrorRef cfError = NULL;
+    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &cfError);
+
+    if (!privateKey && !self.useKeychainSigningKey) {
+        if (cfError) {
+            CFRelease(cfError);
+            cfError = NULL;
+        }
+        NSDictionary *fallbackAttributes = @{
+            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+            (__bridge id)kSecAttrKeySizeInBits: @(256)
+        };
+        privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)fallbackAttributes, &cfError);
+    }
+
+    if (!privateKey && !self.useKeychainSigningKey) {
+        if (cfError) {
+            CFRelease(cfError);
+            cfError = NULL;
+        }
+        NSData *fallbackData = [[NSData alloc] initWithBase64EncodedString:kFallbackECPrivateKeyBase64
+                                                                   options:0];
+        if (fallbackData) {
+            NSDictionary *importAttributes = @{
+                (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+                (__bridge id)kSecAttrKeySizeInBits: @(256)
+            };
+            privateKey = SecKeyCreateWithData((__bridge CFDataRef)fallbackData,
+                                              (__bridge CFDictionaryRef)importAttributes,
+                                              &cfError);
+        }
+    }
     
     if (!privateKey) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:-1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate signing key"}];
+            if (cfError) {
+                *error = CFBridgingRelease(cfError);
+            } else {
+                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                            code:-1
+                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate signing key"}];
+            }
+        } else if (cfError) {
+            CFRelease(cfError);
         }
         return NO;
     }

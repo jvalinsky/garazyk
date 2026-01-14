@@ -33,12 +33,18 @@
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
+    NSString *methodId = request.pathParameters[@"method"];
 
-    NSString *methodId = nil;
-    if ([path hasPrefix:@"/xrpc/"]) {
-        methodId = [path substringFromIndex:6];
-    } else if ([path hasPrefix:@"/"]) {
-        methodId = [path substringFromIndex:1];
+    if (!methodId || methodId.length == 0) {
+        methodId = nil;
+    }
+
+    if (!methodId) {
+        if ([path hasPrefix:@"/xrpc/"]) {
+            methodId = [path substringFromIndex:6];
+        } else if ([path hasPrefix:@"/"]) {
+            methodId = [path substringFromIndex:1];
+        }
     }
 
     if (!methodId || methodId.length == 0) {

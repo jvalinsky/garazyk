@@ -210,6 +210,7 @@
                                            rkey:@"test-post-1" 
                                           value:record 
                                          forDid:did 
+                   validationMode:PDSValidationModeRequired
                                           error:&putError];
     
     XCTAssertTrue(putResult, @"Put record should succeed: %@", putError);
@@ -235,9 +236,13 @@
     
     NSString *did = @"did:web:deleterecord.example.com";
     
-    NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": @"Test"};
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Test",
+        @"createdAt": @"2026-01-08T00:00:00Z"
+    };
     __autoreleasing NSError *putError = nil;
-    [self.controller putRecord:@"app.bsky.feed.post" rkey:@"delete-me" value:record forDid:did error:&putError];
+    [self.controller putRecord:@"app.bsky.feed.post" rkey:@"delete-me" value:record forDid:did validationMode:PDSValidationModeRequired error:&putError];
     
     __autoreleasing NSError *deleteError = nil;
     BOOL deleted = [self.controller deleteRecord:@"app.bsky.feed.post" rkey:@"delete-me" forDid:did error:&deleteError];
@@ -256,12 +261,17 @@
     NSString *did = @"did:web:listuser.example.com";
     
     for (int i = 0; i < 3; i++) {
-        NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": [NSString stringWithFormat:@"Post %d", i]};
+        NSDictionary *record = @{
+            @"$type": @"app.bsky.feed.post",
+            @"text": [NSString stringWithFormat:@"Post %d", i],
+            @"createdAt": @"2026-01-08T00:00:00Z"
+        };
         __autoreleasing NSError *putError = nil;
         [self.controller putRecord:@"app.bsky.feed.post" 
                              rkey:[NSString stringWithFormat:@"list-post-%d", i] 
                             value:record 
                            forDid:did 
+                    validationMode:PDSValidationModeRequired
                             error:&putError];
     }
     
