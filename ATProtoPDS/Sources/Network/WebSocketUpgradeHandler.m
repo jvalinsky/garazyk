@@ -66,8 +66,8 @@ static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     }
 
     NSString *acceptKey = [self computeAcceptKey:wsKey];
-    [response setHeader:@"Upgrade" forKey:@"websocket"];
-    [response setHeader:@"Connection" forKey:@"Upgrade"];
+    [response setHeader:@"websocket" forKey:@"Upgrade"];
+    [response setHeader:@"Upgrade" forKey:@"Connection"];
     [response setHeader:acceptKey forKey:@"Sec-WebSocket-Accept"];
     [response setHeader:@"13" forKey:@"Sec-WebSocket-Version"];
 
@@ -89,12 +89,7 @@ static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
     CC_SHA1(cStr, (CC_LONG)strlen(cStr), digest);
 
-    NSMutableString *output = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-        [output appendFormat:@"%02x", digest[i]];
-    }
-
-    NSData *data = [output dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *data = [NSData dataWithBytes:digest length:CC_SHA1_DIGEST_LENGTH];
     return [data base64EncodedStringWithOptions:0];
 }
 
