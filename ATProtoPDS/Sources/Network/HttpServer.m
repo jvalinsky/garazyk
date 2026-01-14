@@ -234,13 +234,20 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                 [strongSelf readRequestFromConnection:strongConnection];
                 break;
             }
-            case PDSNetworkConnectionStateFailed:
-            case PDSNetworkConnectionStateCancelled: {
+            case PDSNetworkConnectionStateFailed: {
                 dispatch_async(strongSelf.connectionQueue, ^{
                     [strongSelf.activeConnections removeObject:strongConnection];
                     [strongSelf.connectionStates removeObjectForKey:strongConnection];
                 });
                 [strongConnection cancel];
+                break;
+            }
+            case PDSNetworkConnectionStateCancelled: {
+                // Already cancelled, just clean up
+                dispatch_async(strongSelf.connectionQueue, ^{
+                    [strongSelf.activeConnections removeObject:strongConnection];
+                    [strongSelf.connectionStates removeObjectForKey:strongConnection];
+                });
                 break;
             }
             default:
