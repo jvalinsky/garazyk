@@ -3,6 +3,7 @@
 #import "HttpResponse.h"
 #import "Auth/OAuthServerMetadata.h"
 #import "WebSocketUpgradeHandler.h"
+#import "HttpRouteTrie.h"
 
 @interface HttpRoute ()
 
@@ -37,6 +38,7 @@
 @property (nonatomic, strong) dispatch_queue_t routingQueue;
 @property (nonatomic, strong) WebSocketUpgradeHandler *wsUpgradeHandler;
 @property (nonatomic, copy, nullable) void (^wsUpgradeCallback)(HttpRequest *request, HttpResponse *response);
+@property (nonatomic, strong) HttpRouteTrie *routeTrie;
 
 @end
 
@@ -48,6 +50,7 @@
         _routes = [NSMutableArray array];
         _routingQueue = dispatch_queue_create("com.atproto.pds.router", DISPATCH_QUEUE_CONCURRENT);
         _wsUpgradeHandler = [[WebSocketUpgradeHandler alloc] init];
+        _routeTrie = [[HttpRouteTrie alloc] init];
     }
     return self;
 }
@@ -112,6 +115,7 @@
 
     dispatch_barrier_async(self.routingQueue, ^{
         [self.routes addObject:route];
+        [self.routeTrie insertRoute:method pattern:pattern handler:handler priority:priority];
 
         // Sort routes by priority (higher priority first)
         [self.routes sortUsingComparator:^NSComparisonResult(HttpRoute *a, HttpRoute *b) {
@@ -123,27 +127,14 @@
 }
 
 - (nullable HttpRouteHandler)handlerForRequest:(HttpRequest *)request {
-    __block HttpRouteHandler foundHandler = nil;
+    NSString *requestMethod = request.methodString;
+    NSString *requestPath = request.path;
 
-    dispatch_sync(self.routingQueue, ^{
-        NSString *requestMethod = request.methodString;
-        NSString *requestPath = request.path;
+    if ([requestPath containsString:@".."] || [requestPath hasPrefix:@"/"]) {
+        requestPath = [self normalizePath:requestPath];
+    }
 
-        // Prevent path traversal attacks
-        if ([requestPath containsString:@".."] || [requestPath hasPrefix:@"/"]) {
-            // Normalize path to prevent traversal
-            requestPath = [self normalizePath:requestPath];
-        }
-
-        for (HttpRoute *route in self.routes) {
-            if ([self route:route matchesMethod:requestMethod path:requestPath]) {
-                foundHandler = route.handler;
-                break;
-            }
-        }
-    });
-
-    return foundHandler;
+    return [self.routeTrie handlerForMethod:requestMethod path:requestPath outParameters:NULL];
 }
 
 - (BOOL)route:(HttpRoute *)route matchesMethod:(NSString *)method path:(NSString *)path {
