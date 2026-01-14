@@ -1,3 +1,15 @@
+/*!
+ @file main.m
+
+ @abstract Application entry point for macOS ATProto PDS.
+
+ @discussion Launches the NSApplication and sets up the application delegate.
+ The delegate handles initialization of the PDS server and lifecycle management.
+ This is the entry point for the GUI application.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Cocoa/Cocoa.h>
 #import "AppDelegate.h"
 
