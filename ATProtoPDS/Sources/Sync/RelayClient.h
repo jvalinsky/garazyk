@@ -1,3 +1,14 @@
+/*!
+ @file RelayClient.h
+
+ @abstract Client for subscribing to ATProto relay/BGS feeds.
+
+ @discussion Connects to ATProto relay servers to receive Firehose events.
+ Supports cursor-based resumption and automatic reconnection.
+
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 @class RelayClient;
@@ -7,10 +18,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/*! Error domain for relay client. */
 extern NSString * const RelayClientErrorDomain;
+
+/*! Error code when connection fails. */
 extern NSInteger const RelayClientErrorCodeConnectionFailed;
+
+/*! Error code when authentication fails. */
 extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 
+/*!
+ @protocol RelayClientDelegate
+
+ @abstract Delegate for relay client events.
+ */
 @protocol RelayClientDelegate <NSObject>
 @optional
 - (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event;
@@ -21,21 +42,49 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 - (void)relayClient:(RelayClient *)client didReceiveCursor:(NSString *)cursor;
 @end
 
+/*!
+ @class RelayClient
+
+ @abstract Client for ATProto relay Firehose subscription.
+
+ @discussion Maintains a WebSocket connection to a relay server.
+ */
 @interface RelayClient : NSObject
 
+/*! Delegate for events. */
 @property (nonatomic, weak, nullable, readonly) id<RelayClientDelegate> delegate;
+
+/*! URL of the relay server. */
 @property (nonatomic, readonly) NSURL *serverURL;
+
+/*! Whether connected to the server. */
 @property (nonatomic, readonly) BOOL isConnected;
+
+/*! Current cursor position. */
 @property (nonatomic, copy, nullable, readonly) NSString *currentCursor;
+
+/*! Interval between reconnect attempts. */
 @property (nonatomic, assign, readonly) NSTimeInterval reconnectInterval;
+
+/*! Maximum reconnect attempts. */
 @property (nonatomic, assign, readonly) NSInteger maxReconnectAttempts;
 
 - (instancetype)initWithServerURL:(NSURL *)serverURL;
 - (instancetype)initWithServerURL:(NSURL *)serverURL accessToken:(NSString *)accessToken;
+
+/*! Connects to the relay server. */
 - (void)connect;
+
+/*! Disconnects from the server. */
 - (void)disconnect;
+
+/*! Sets the access token for authentication. */
 - (void)setAccessToken:(NSString *)accessToken;
+
+/*! Gets stored cursor for a repo. */
 - (nullable NSString *)getStoredCursorForRepo:(NSString *)repo;
+
+/*! Stores a cursor for a repo. */
 - (void)storeCursor:(NSString *)cursor forRepo:(NSString *)repo;
 
 @end
