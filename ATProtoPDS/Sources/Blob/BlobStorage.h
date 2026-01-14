@@ -1,3 +1,16 @@
+/*!
+ @file BlobStorage.h
+
+ @abstract Blob storage management with CID-based addressing.
+
+ @discussion Provides persistent blob storage with CIDv1 identification using
+ raw codec and SHA-256 hashing. Manages blob lifecycle including upload, retrieval,
+ listing, deletion, and validation. Implements magic number verification to prevent
+ MIME type spoofing.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -20,6 +33,18 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 @property (nonatomic, readonly) NSURL *storageDirectory;
 @property (nonatomic, readonly) PDSDatabase *database;
 
+/*!
+ @method initWithDatabase:storageDirectory:
+
+ @abstract Designated initializer for blob storage.
+
+ @discussion Creates blob storage with the specified database for metadata
+ and directory for blob files. Creates the storage directory if needed.
+
+ @param database The SQLite database for blob metadata.
+ @param storageDirectory The filesystem directory for blob files.
+ @return An initialized blob storage instance.
+ */
 - (instancetype)initWithDatabase:(PDSDatabase *)database storageDirectory:(NSURL *)storageDirectory;
 
 /// Upload a blob and return its CID

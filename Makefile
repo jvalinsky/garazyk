@@ -4,7 +4,7 @@ CC = clang
 CFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -framework CoreImage -lsqlite3 -fobjc-arc
 CFLAGS += -Isecp256k1/include
 CFLAGS += -IATProtoPDS/Sources
-LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -framework CoreImage -lsqlite3 -Lsecp256k1/build/lib -lsecp256k1
+LDFLAGS = -framework Foundation -framework AppKit -framework Network -framework Security -framework CoreImage -lsqlite3 -lresolv -Lsecp256k1/build/lib -lsecp256k1
 BUILD_DIR = build
 EXECUTABLE = atprotopds
 

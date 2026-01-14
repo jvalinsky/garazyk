@@ -1,3 +1,15 @@
+/*!
+ @file server_main.m
+
+ @abstract Command-line server entry point for ATProto PDS.
+
+ @discussion Provides a non-GUI entry point for running the PDS as a standalone
+ server. Initializes the controller and HTTP server, registers XRPC methods,
+ and runs the main run loop. Used for headless or container deployments.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 #import "PDSController.h"
