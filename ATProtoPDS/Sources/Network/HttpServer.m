@@ -3,6 +3,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 #import "Network/PDSNetworkTransport.h"
+#import "Network/HttpBufferPool.h"
 #import "Debug/PDSLogger.h"
 #import <CoreFoundation/CoreFoundation.h>
 
@@ -51,7 +52,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _buffer = [NSMutableData data];
+        _buffer = [[HttpBufferPool sharedPool] acquireBufferOfSize:1024];
         _message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true);
         _headersComplete = NO;
         _expectedBodyLength = 0;
@@ -70,6 +71,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
         CFRelease(_message);
         _message = NULL;
     }
+    [[HttpBufferPool sharedPool] releaseBuffer:_buffer];
 }
 
 - (void)resetForNextRequest {
@@ -85,6 +87,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
     [_outputQueue removeAllObjects];
     _outputQueueSize = 0;
     _readingPaused = NO;
+    [_buffer setLength:0];
 }
 
 @end
