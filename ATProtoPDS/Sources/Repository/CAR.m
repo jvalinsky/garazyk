@@ -151,8 +151,8 @@
 }
 
 - (CID *)computeBlockCID:(NSData *)blockData {
-    NSData *multihash = [CID sha256Digest:blockData];
-    return [CID cidWithMultihash:multihash codec:0x71];
+    NSData *digest = [CID sha256Digest:blockData];
+    return [CID cidWithDigest:digest codec:0x71];
 }
 
 - (CARBlock *)blockWithCID:(CID *)cid {

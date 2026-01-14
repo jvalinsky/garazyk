@@ -76,6 +76,9 @@ int main(int argc, char * argv[]) {
             @"CARInteropTests",
             @"RepoCommitTests",
             @"PDSNetworkTransportTests",
+            @"OAuthPKCETests",
+            @"OAuthDPoPTests",
+            @"JWTTests",
             @"OAuth2Tests",
             @"SubscribeReposHandlerTests",
             @"GetServiceAuthMethodTests",
@@ -93,7 +96,12 @@ int main(int argc, char * argv[]) {
             @"IdentifierTests",
             @"TOTPTests",
             @"CryptoTests",
-            @"OAuth2HandlerTests"
+            @"OAuth2HandlerTests",
+            @"LexiconValidationTests",
+            @"RecordPathValidationTests",
+            @"XrpcInputValidationTests",
+            @"XrpcErrorResponseTests",
+            @"BlobXrpcTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

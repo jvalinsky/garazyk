@@ -190,4 +190,81 @@
     XCTAssertEqual(otherDIDList.count, 1, @"Other DID should have 1 blob");
 }
 
+- (void)testBlobMimeTypeWhitelist {
+    NSError *error = nil;
+    NSData *data = [@"some-executable-code" dataUsingEncoding:NSUTF8StringEncoding];
+    // application/x-msdownload is typically not allowed
+    BOOL isValid = [self.blobStorage validateBlob:data mimeType:@"application/x-msdownload" error:&error];
+
+    XCTAssertFalse(isValid, @"Unsupported MIME type should fail validation");
+    XCTAssertNotNil(error, @"Error should be set for unsupported MIME type");
+    XCTAssertEqual(error.code, BlobStorageErrorInvalidMIMEType, @"Error code should be InvalidMIMEType");
+}
+
+- (void)testBlobMagicBytesMismatch {
+    NSError *error = nil;
+    // "NotATrueJPEG" is definitely not a JPEG
+    NSData *data = [@"NotATrueJPEG" dataUsingEncoding:NSUTF8StringEncoding];
+    
+    // This should fail if magic byte validation is enforced
+    // Note: If this fails to be invalid (i.e. returns true), it means implementation is loose.
+    // We expect it to be loose currently if the previous test used "fake-image-data" and passed.
+    // However, if we want to enforce it, we should update strictness.
+    // Let's assume strict validation is desired and see if it fails.
+    BOOL isValid = [self.blobStorage validateBlob:data mimeType:@"image/jpeg" error:&error];
+    
+    // For now, if the implementation is loose, this might pass. 
+    // If I want to enforce strictness, I should assert False.
+    // Given the task is "Test magic bytes validation", I should expect it to fail (return NO).
+    // If it currently passes, I will have to fix MimeTypeValidator.
+    XCTAssertFalse(isValid, @"Magic byte mismatch should fail validation");
+    XCTAssertNotNil(error, @"Error should be set for magic byte mismatch");
+}
+
+- (void)testBlobRefCountingAcrossDIDs {
+    NSError *error = nil;
+    NSString *did1 = @"did:web:user1";
+    NSString *did2 = @"did:web:user2";
+    
+    // Upload same data for both DIDs
+    CID *cid1 = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:did1 error:&error];
+    XCTAssertNotNil(cid1);
+    
+    CID *cid2 = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:did2 error:&error];
+    XCTAssertNotNil(cid2);
+    
+    XCTAssertEqualObjects(cid1.stringValue, cid2.stringValue, @"CIDs should match for same data");
+    
+    // Delete for DID1
+    BOOL deleted1 = [self.blobStorage deleteBlobWithCID:cid1 did:did1 error:&error];
+    XCTAssertTrue(deleted1);
+    
+    // Verify DID1 cannot retrieve it
+    NSData *data1 = [self.blobStorage getBlobWithCID:cid1 error:&error]; // This retrieves based on CID only?
+    // Wait, getBlobWithCID:error: in BlobStorage.h doesn't take DID?
+    // - (nullable NSData *)getBlobWithCID:(CID *)cid error:(NSError **)error;
+    // If it retrieves from global storage, it might still return data if DID2 has it?
+    // Implementation likely checks if file exists.
+    // If BlobStorage is just a wrapper around file system, getBlobWithCID checks if file exists.
+    // If file exists (kept alive by DID2), it should return data.
+    // But logically, if DID1 deleted it, should they be able to get it?
+    // The method signature doesn't restrict by DID.
+    // So:
+    // 1. If global storage, data should still exist.
+    // 2. If we want to test that DID1 *lost access* conceptually, we'd need a method like `getBlobWithCID:did:`.
+    // The current BlobStorage API `getBlobWithCID:error:` implies global access if you know the CID.
+    // So the test should verify the DATA is still there (because DID2 has it).
+    
+    NSData *remainingData = [self.blobStorage getBlobWithCID:cid1 error:&error];
+    XCTAssertNotNil(remainingData, @"Data should persist because DID2 still references it");
+    
+    // Delete for DID2
+    BOOL deleted2 = [self.blobStorage deleteBlobWithCID:cid2 did:did2 error:&error];
+    XCTAssertTrue(deleted2);
+    
+    // Now data should be gone from disk (if ref counting works)
+    NSData *goneData = [self.blobStorage getBlobWithCID:cid1 error:&error];
+    XCTAssertNil(goneData, @"Data should be removed after last reference is deleted");
+}
+
 @end

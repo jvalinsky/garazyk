@@ -234,4 +234,41 @@
     XCTAssertNotEqualObjects(hash1, hash2, @"Hash should change with different data CID");
 }
 
+- (void)testCommitParsingFromCAR {
+    NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
+    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    NSString *rev = @"3l66k7pp33p";
+    CID *prevCID = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    
+    RepoCommit *originalCommit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
+    
+    // Sign it first
+    Secp256k1 *secp = [Secp256k1 shared];
+    NSError *error = nil;
+    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    [originalCommit signWithPrivateKey:keyPair.privateKey error:&error];
+    
+    // Serialize to CAR
+    NSData *carData = [originalCommit exportCAR];
+    XCTAssertNotNil(carData, @"CAR data should be generated");
+    
+    // Parse back
+    RepoCommit *parsedCommit = [RepoCommit fromCARData:carData error:&error];
+    
+    XCTAssertNotNil(parsedCommit, @"Should parse commit from CAR data");
+    XCTAssertNil(error, @"Should parse without error: %@", error.localizedDescription);
+    
+    if (parsedCommit) {
+        XCTAssertEqualObjects(parsedCommit.did, did, @"DID should match");
+        XCTAssertEqualObjects(parsedCommit.dataCID, dataCID, @"Data CID should match");
+        XCTAssertEqualObjects(parsedCommit.rev, rev, @"Rev should match");
+        XCTAssertEqualObjects(parsedCommit.prevCID, prevCID, @"Prev CID should match");
+        XCTAssertNotNil(parsedCommit.signature, @"Signature should be present");
+        
+        // Verify signature on parsed commit
+        BOOL verified = [parsedCommit verifySignatureWithPublicKey:keyPair.publicKey error:&error];
+        XCTAssertTrue(verified, @"Parsed commit signature should verify");
+    }
+}
+
 @end

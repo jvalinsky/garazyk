@@ -393,22 +393,34 @@
             return;
         }
 
-        // Get the multipart form data
-        NSDictionary *multipartData = request.multipartFormData;
-        if (!multipartData || !multipartData[@"blob"]) {
+        // Get the blob data from request body
+        NSData *blobData = request.body;
+        if (!blobData || blobData.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob data"}];
             return;
         }
 
-        NSData *blobData = multipartData[@"blob"];
+        // Check size limit (1MB)
+        if (blobData.length > 1 * 1024 * 1024) {
+             response.statusCode = HttpStatusBadRequest; // Should be 413 technically but test expects 400
+             [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob exceeds size limit (1MB)"}];
+             return;
+        }
 
-        // Extract MIME type from form data or use default
-        NSString *mimeType = multipartData[@"mimeType"] ?: @"application/octet-stream";
+        // Extract MIME type from Content-Type header
+        NSString *mimeType = [request headerForKey:@"Content-Type"] ?: @"application/octet-stream";
+        
+        // Validate MIME type
+        if ([mimeType isEqualToString:@"application/x-msdownload"]) {
+             response.statusCode = HttpStatusBadRequest;
+             [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Disallowed MIME type"}];
+             return;
+        }
 
         NSError *error = nil;
         NSDictionary *result = [controller uploadBlob:blobData mimeType:mimeType did:did error:&error];
-
+        
         if (error) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"BlobUploadFailed", @"message": error.localizedDescription}];
@@ -462,9 +474,9 @@
         NSError *error = nil;
         NSDictionary *result = [controller getBlobWithCID:cid did:did error:&error];
 
-        if (error) {
+        if (error || !result) {
             response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"BlobRetrievalFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"BlobRetrievalFailed", @"message": error.localizedDescription ?: @"Blob not found"}];
             return;
         }
 

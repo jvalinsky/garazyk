@@ -24,36 +24,70 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface TID : NSObject <NSCopying, NSSecureCoding>
 
-/// The raw TID string (13-character base32)
+/*! The raw TID string (13-character base32). */
 @property (readonly, nonatomic, strong) NSString *stringValue;
 
-/// The timestamp component (microseconds since Unix epoch)
+/*! The timestamp component (microseconds since Unix epoch). */
 @property (readonly, nonatomic) uint64_t timestamp;
 
-/// Create a new TID with current timestamp
+/*!
+ @method tid
+ @abstract Create a new TID with current timestamp.
+ @return A new TID instance.
+ */
 + (instancetype)tid;
 
-/// Create TID from string
+/*!
+ @method tidFromString:
+ @abstract Create TID from string.
+ @param string The TID string.
+ @return A new TID instance.
+ */
 + (nullable instancetype)tidFromString:(NSString *)string;
 
-/// Create TID from timestamp
+/*!
+ @method tidWithTimestamp:
+ @abstract Create TID from timestamp.
+ @param timestamp Microseconds since Unix epoch.
+ @return A new TID instance.
+ */
 + (instancetype)tidWithTimestamp:(uint64_t)timestamp;
 
-/// Create TID from date
+/*!
+ @method tidWithDate:
+ @abstract Create TID from date.
+ @param date The date.
+ @return A new TID instance.
+ */
 + (instancetype)tidWithDate:(NSDate *)date;
 
-/// Compare two TIDs chronologically
+/*!
+ @method compare:
+ @abstract Compare two TIDs chronologically.
+ @param other The other TID to compare.
+ @return Comparison result.
+ */
 - (NSComparisonResult)compare:(TID *)other;
 
-/// Check if this TID is before another
+/*!
+ @method isBefore:
+ @abstract Check if this TID is before another.
+ @param other The other TID.
+ @return YES if this TID is before the other, NO otherwise.
+ */
 - (BOOL)isBefore:(TID *)other;
 
-/// Check if this TID is after another
+/*!
+ @method isAfter:
+ @abstract Check if this TID is after another.
+ @param other The other TID.
+ @return YES if this TID is after the other, NO otherwise.
+ */
 - (BOOL)isAfter:(TID *)other;
 
 @end
 
-/// Base32-sortable alphabet for TIDs: 234567abcdefghijklmnopqrstuvwxyz
+/*! Base32-sortable alphabet for TIDs: 234567abcdefghijklmnopqrstuvwxyz. */
 static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
 
 NS_ASSUME_NONNULL_END
