@@ -1,4 +1,5 @@
 #import "Sync/SubscribeReposHandler.h"
+#import "Compat/PDSTypes.h"
 #import "Sync/WebSocketServer.h"
 #import "Sync/WebSocketConnection.h"
 #import "App/PDSController.h"
@@ -22,7 +23,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 #else
 @property (nonatomic, strong) os_log_t log;
 #endif
-@property (nonatomic, strong) dispatch_queue_t eventQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger sequenceNumber;
 
 @end
