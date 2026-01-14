@@ -1,3 +1,15 @@
+/*!
+ @file KeyManager.m
+
+ @abstract Cryptographic key management for authentication.
+
+ @discussion This file implements key pair generation, storage, and retrieval
+ using the iOS/macOS Security framework. Keys are persisted to the database
+ and used for JWT signing and DPoP proof generation.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Auth/KeyManager.h"
 #import "Auth/JWT.h"
 #import "Database/PDSDatabase.h"

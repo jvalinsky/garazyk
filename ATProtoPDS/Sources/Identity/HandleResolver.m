@@ -35,11 +35,11 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         config.timeoutIntervalForResource = 30.0;
         _session = [NSURLSession sessionWithConfiguration:config];
 #else
-        _session = nil;  // NSURLConnection uses class methods, no session object needed
+        _session = nil;
 #endif
         _resolutionCache = [[NSCache alloc] init];
-        _cacheExpirationInterval = 300.0; // 5 minutes
-        _rateLimitPerMinute = 100; // Allow 100 resolutions per minute
+        _cacheExpirationInterval = 300.0;
+        _rateLimitPerMinute = 100;
         _requestTimestamps = [NSMutableArray array];
     }
     return self;
@@ -76,6 +76,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         }
     }
 
+    /*! Use ATProto well-known endpoint for DID resolution. */
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
     NSURL *url = [NSURL URLWithString:urlString];
 
