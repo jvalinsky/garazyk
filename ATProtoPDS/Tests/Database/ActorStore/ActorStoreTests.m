@@ -207,11 +207,8 @@
     }
     
     __autoreleasing NSError *genError = nil;
-    BOOL generated = [self.store generateSigningKeyWithError:&genError];
-    
-    if (!generated) {
-        // If generation fails (e.g. no keychain access in CI), we skip rather than fail.
-        NSLog(@"Skipping signing key test due to generation failure: %@", genError);
+    if (![self.store generateSigningKeyWithError:&genError]) {
+        XCTSkip(@"Signing key generation unavailable in this environment: %@", genError);
         return;
     }
     
