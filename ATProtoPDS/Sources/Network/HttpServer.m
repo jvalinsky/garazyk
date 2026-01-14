@@ -1,4 +1,5 @@
 #import "Network/HttpServer.h"
+#import "Compat/PDSTypes.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
@@ -13,17 +14,17 @@
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, strong) id<PDSNetworkListener> listener;
-@property (nonatomic, strong) dispatch_queue_t serverQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
-@property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
-@property (nonatomic, strong) dispatch_semaphore_t stopSemaphore;
-@property (nonatomic, strong) dispatch_group_t taskGroup;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t readySemaphore;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t stopSemaphore;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_group_t taskGroup;
 @property (nonatomic, assign) BOOL listenerReady;
 @property (nonatomic, assign) BOOL startupFinished;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
-@property (nonatomic, strong) dispatch_queue_t connectionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMapTable<id<PDSNetworkConnection>, id> *connectionStates;
 
 @end
@@ -408,7 +409,12 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     CFHTTPMessageRef message = state.message;
     NSString *method = (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(message);
     CFURLRef urlRef = CFHTTPMessageCopyRequestURL(message);
+#if defined(__APPLE__)
     NSURL *url = urlRef ? CFBridgingRelease(urlRef) : nil;
+#else
+    NSURL *url = CFURLToNSURL(urlRef);
+    if (urlRef) CFURLRelease(urlRef);
+#endif
     NSString *version = (__bridge_transfer NSString *)CFHTTPMessageCopyVersion(message);
     NSDictionary *headers = [self headersFromMessage:message];
 

@@ -1,4 +1,5 @@
 #import "Sync/WebSocketServer.h"
+#import "Compat/PDSTypes.h"
 #import "Sync/WebSocketConnection.h"
 #import <Network/Network.h>
 
@@ -17,7 +18,7 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 @interface WebSocketServer ()
 
 @property (nonatomic, strong) nw_listener_t listener;
-@property (nonatomic, strong) dispatch_queue_t listenerQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t listenerQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, WebSocketConnection *> *connectionsByFileDescriptor;
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
 @property (nonatomic, strong) dispatch_semaphore_t stopSemaphore;
