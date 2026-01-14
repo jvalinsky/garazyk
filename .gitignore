@@ -1,59 +1,31 @@
-# Deciduous database (local)
-.deciduous/
-.worktrees
+# Build directories
 build/
-
-# Reference repositories (not part of this project)
-# atproto/
-# pegasus-ocaml/
-# cocoon/
-# deciduous/
-# indigo/
-reference/
-data/
-
-# Worktrees
-.worktrees/
-
-# Additional git directories to exclude
-.worktree/
-reference/
-
-# Database files
-data/*.db
-data/*.db-shm
-data/*.db-wal
-test_streaming.db*
-*.db
-*.db-shm
-*.db-wal
-
-# Log files
-*.log
-server.log
-
-# Runtime/generated files
-server.pid
-spam_accounts.txt
-fix_result.json
-
-# Generated documentation
-docs/html/
-docs/index.html
-docs/graph-data.json
-
-# macOS
-.DS_Store
+build_verify/
 
 # IDE
-.xcuserdata/
-xcuserdata/
+.DS_Store
+.idea/
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
 
-# Objective-C build artifacts
-*.o
-*.a
-*.dylib
-*.framework
-*.h.gch
-*.pch
-build_verify/
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.pbxproj.bak
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.mode2v3
+*.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Cache & Worktrees
+.cache/
+.worktrees/
