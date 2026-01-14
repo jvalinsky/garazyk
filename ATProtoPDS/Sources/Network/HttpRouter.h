@@ -4,6 +4,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpRequest;
 @class HttpResponse;
+@class WebSocketUpgradeHandler;
 
 /*!
  @header HttpRouter.h

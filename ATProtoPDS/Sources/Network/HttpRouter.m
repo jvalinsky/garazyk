@@ -2,6 +2,7 @@
 #import "HttpRequest.h"
 #import "HttpResponse.h"
 #import "Auth/OAuthServerMetadata.h"
+#import "WebSocketUpgradeHandler.h"
 
 @interface HttpRoute ()
 
@@ -34,6 +35,8 @@
 
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *routes;
 @property (nonatomic, strong) dispatch_queue_t routingQueue;
+@property (nonatomic, strong) WebSocketUpgradeHandler *wsUpgradeHandler;
+@property (nonatomic, copy, nullable) void (^wsUpgradeCallback)(HttpRequest *request, HttpResponse *response);
 
 @end
 
@@ -44,6 +47,7 @@
     if (self) {
         _routes = [NSMutableArray array];
         _routingQueue = dispatch_queue_create("com.atproto.pds.router", DISPATCH_QUEUE_CONCURRENT);
+        _wsUpgradeHandler = [[WebSocketUpgradeHandler alloc] init];
     }
     return self;
 }
@@ -58,6 +62,19 @@
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     [self setupRoutes];
+
+    if ([self.wsUpgradeHandler isWebSocketUpgradeRequest:request]) {
+        if (self.wsUpgradeCallback) {
+            BOOL shouldUpgrade = [self.wsUpgradeHandler handleUpgradeRequest:request response:response];
+            if (shouldUpgrade) {
+                self.wsUpgradeCallback(request, response);
+            }
+        } else {
+            [self.wsUpgradeHandler handleUpgradeRequest:request response:response];
+        }
+        return;
+    }
+
     HttpRouteHandler handler = [self handlerForRequest:request];
     if (handler) {
         handler(request, response);
@@ -332,6 +349,10 @@
         [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
         response.statusCode = HttpStatusOK;
     }];
+}
+
+- (void)addWebSocketRoute:(NSString *)pattern handler:(void (^)(HttpRequest *request, HttpResponse *response))handler {
+    self.wsUpgradeCallback = handler;
 }
 
 @end
