@@ -7,6 +7,7 @@
 #import "AppView/NotificationService.h"
 #import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
+#import "App/PDSConfiguration.h"
 
 @implementation XrpcMethodRegistry
 
@@ -14,19 +15,22 @@
                            controller:(PDSController *)controller {
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
         // Return server capabilities and available DIDs
-        NSArray *dids = [controller.database getAllAccountsWithError:nil];
-        NSMutableArray *availableUserDomains = [NSMutableArray array];
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *hostname = config.serverHost ?: @"localhost";
+        NSString *serverDid = [NSString stringWithFormat:@"did:web:%@", hostname];
         
-        // This is a simplified implementation - normally we'd return more server metadata
+        // Build available user domains from config
+        NSArray *availableUserDomains = @[hostname];
+        
         NSDictionary *result = @{
-            @"inviteCodeRequired": @NO,
+            @"inviteCodeRequired": @(config.inviteCodeRequired),
             @"phoneVerificationRequired": @NO,
-            @"availableUserDomains": @[@"test.pds"],
+            @"availableUserDomains": availableUserDomains,
             @"links": @{
                 @"privacyPolicy": @"https://bsky.social/about/blog/privacy-policy",
                 @"termsOfService": @"https://bsky.social/about/blog/terms-of-service"
             },
-            @"did": @"did:web:test.pds" // Server DID
+            @"did": serverDid
         };
         
         response.statusCode = HttpStatusOK;
