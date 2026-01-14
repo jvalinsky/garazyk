@@ -6,7 +6,7 @@
  @discussion Provides key generation, signing, and verification using the
  secp256k1 curve. Used for repository commit signatures and DID key operations.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

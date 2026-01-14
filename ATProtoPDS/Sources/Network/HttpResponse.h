@@ -7,7 +7,7 @@
  headers, and various body formats (JSON, text, binary). Includes security
  header defaults.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

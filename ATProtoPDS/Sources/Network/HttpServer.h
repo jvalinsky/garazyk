@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
  incoming requests. The server supports route registration, request/response
  handling, and lifecycle management.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 /*!

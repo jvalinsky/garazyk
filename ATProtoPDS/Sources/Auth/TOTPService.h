@@ -7,7 +7,7 @@
  QR code creation for authenticator apps, and code verification. Integrates
  with hardware tokens via YubiKey OATH.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

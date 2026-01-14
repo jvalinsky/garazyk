@@ -7,7 +7,7 @@
  encoding microsecond timestamps. TIDs provide chronological ordering
  for records and serve as unique keys within collections.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

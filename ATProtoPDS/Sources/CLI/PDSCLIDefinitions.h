@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion This header defines the CLI framework including command
  protocols, context, and dispatcher for the pds command-line tool.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 /*!

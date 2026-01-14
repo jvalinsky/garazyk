@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
  PDS for OAuth 2.0 authentication. It includes SessionToken, Session, and
  SessionStore for managing user authentication state.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 extern NSString * const SessionErrorDomain;

@@ -7,7 +7,7 @@
  to user-specific databases. Handles opening, caching, and eviction of
  database connections based on usage patterns.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

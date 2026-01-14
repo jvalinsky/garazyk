@@ -7,7 +7,7 @@
  did:plc and did:web methods. Provides caching with configurable TTLs,
  batch resolution, and DID document parsing for service endpoints.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

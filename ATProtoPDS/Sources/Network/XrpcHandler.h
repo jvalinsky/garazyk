@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
  ATProto XRPC method calls. XRPC is the remote procedure call protocol
  used by ATProto for API requests.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 /*!

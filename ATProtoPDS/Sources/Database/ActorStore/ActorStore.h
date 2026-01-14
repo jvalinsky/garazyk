@@ -7,7 +7,7 @@
  accounts, repositories, records, blocks, and blobs. Uses SQLite with
  reader/writer protocols for safe concurrent access.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
