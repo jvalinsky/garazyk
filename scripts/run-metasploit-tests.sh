@@ -16,8 +16,14 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}>>> AT Protocol PDS Metasploit Test Runner <<<${NC}"
 
 # 1. Verify Prerequisites
-if ! command -v msfconsole &> /dev/null; then
-    echo -e "${RED}Error: msfconsole not found. Please install Metasploit Framework.${NC}"
+HAS_MSF=0
+if command -v msfconsole &> /dev/null; then
+    HAS_MSF=1
+elif command -v docker &> /dev/null; then
+    echo "msfconsole not found, falling back to Docker..."
+    HAS_MSF=2
+else
+    echo -e "${RED}Error: Neither msfconsole nor docker found.${NC}"
     exit 1
 fi
 
@@ -29,24 +35,40 @@ fi
 
 # 2. Setup Environment (Symlinks)
 echo "Setting up Metasploit environment..."
-mkdir -p "$MSF_DIR/auxiliary/scanner/atproto"
-mkdir -p "$MSF_DIR/auxiliary/dos/atproto"
-mkdir -p "$MSF_DIR/auxiliary/admin/atproto"
 
-# Link modules if not present or updated
-ln -sf "$MODULES_DIR/atproto_pds_scanner.rb" "$MSF_DIR/auxiliary/scanner/atproto/"
-ln -sf "$MODULES_DIR/atproto_cbor_dos.rb" "$MSF_DIR/auxiliary/dos/atproto/"
-ln -sf "$MODULES_DIR/atproto_jwt_bypass.rb" "$MSF_DIR/auxiliary/admin/atproto/"
+if [ "$HAS_MSF" -eq 1 ]; then
+    # Local setup
+    mkdir -p "$MSF_DIR/auxiliary/scanner/atproto"
+    mkdir -p "$MSF_DIR/auxiliary/dos/atproto"
+    mkdir -p "$MSF_DIR/auxiliary/admin/atproto"
 
-echo -e "${GREEN}✓ Modules linked${NC}"
+    # Link modules if not present or updated
+    ln -sf "$MODULES_DIR/auxiliary/scanner/atproto/atproto_pds_scanner.rb" "$MSF_DIR/auxiliary/scanner/atproto/"
+    ln -sf "$MODULES_DIR/auxiliary/dos/atproto/atproto_cbor_dos.rb" "$MSF_DIR/auxiliary/dos/atproto/"
+    ln -sf "$MODULES_DIR/auxiliary/admin/atproto/atproto_jwt_bypass.rb" "$MSF_DIR/auxiliary/admin/atproto/"
+    
+    echo -e "${GREEN}✓ Modules linked to ~/.msf4${NC}"
+else
+    echo -e "${GREEN}✓ Modules ready for Docker mount${NC}"
+fi
 
 # 3. Run Test Suite
 echo "Running automated security suite against localhost:$PDS_PORT..."
 echo "---------------------------------------------------"
 
-# We use -x to execute commands on startup: set the port globally, then run the resource script
-# -q: Quiet mode (suppress banner)
-msfconsole -q -x "setg RPORT $PDS_PORT; resource $RC_SCRIPT; exit"
+if [ "$HAS_MSF" -eq 1 ]; then
+    # Local Run
+    msfconsole -q -x "setg RPORT $PDS_PORT; resource $RC_SCRIPT; exit"
+else
+    # Docker Run
+    # We map the project directory to /modules and run the script inside
+    # We set RHOSTS to host.docker.internal to access the host machine
+    docker run --rm \
+        -v "$MODULES_DIR:/modules" \
+        -v "$HOME/.msf4:/root/.msf4" \
+        metasploitframework/metasploit-framework \
+        ./msfconsole -q -x "loadpath /modules; setg RHOSTS host.docker.internal; setg RPORT $PDS_PORT; resource /modules/run_pds_suite.rc; exit"
+fi
 
 echo "---------------------------------------------------"
 echo -e "${GREEN}>>> Test Suite Completed <<<${NC}"
