@@ -1,4 +1,5 @@
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 // Component constant definitions
 NSString * const PDSLogComponentDatabase = @"Database";
@@ -16,8 +17,8 @@ NSString * const PDSLogComponentCLI = @"CLI";
 @property (nonatomic, strong) NSDateFormatter *dateFormatter;
 @property (nonatomic, strong) NSDateFormatter *isoDateFormatter;
 @property (nonatomic, strong) NSFileHandle *logFileHandle;
-@property (nonatomic, strong) dispatch_queue_t logQueue;
-@property (nonatomic, strong) dispatch_queue_t ioQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t logQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t ioQueue;
 @property (nonatomic, strong) NSMutableArray<NSString *> *logBuffer;
 @property (nonatomic, strong) NSTimer *flushTimer;
 // currentCorrelationID is now managed via thread-local storage to be thread-safe in concurrent environments

@@ -1,4 +1,5 @@
 #import "Auth/KeyRotationManager.h"
+#import "Compat/PDSTypes.h"
 #import "Auth/KeyManager.h"
 #import "Debug/PDSLogger.h"
 
@@ -7,7 +8,7 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
 @interface KeyRotationManager ()
 
 @property (nonatomic, strong) KeyManager *keyStore;
-@property (nonatomic, strong) dispatch_queue_t accessQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 
 @end
 

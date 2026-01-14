@@ -43,7 +43,7 @@ if(NOT APPLE)
 
     if(OBJC_RUNTIME)
         message(STATUS "Found libobjc2 at ${OBJC_RUNTIME}")
-        set(OBJC_FLAGS "-fblocks")
+        set(OBJC_FLAGS "-fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
     else()
         # Fallback for manual source builds in Docker or systems with non-standard paths
         find_program(GNUSTEP_CONFIG gnustep-config)
@@ -58,7 +58,7 @@ if(NOT APPLE)
 
         if(OBJC_RUNTIME)
             message(STATUS "Found libobjc2 at ${OBJC_RUNTIME} via gnustep-config")
-            set(OBJC_FLAGS "-fblocks")
+            set(OBJC_FLAGS "-fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
         else()
             message(FATAL_ERROR "libobjc2 not found. Install gnustep-devel or gnustep-base-dev package.")
         endif()
@@ -92,9 +92,13 @@ if(NOT APPLE)
         endif()
     endif()
 
+    include_directories(/usr/GNUstep/Local/Library/Headers)
     include_directories(/usr/include/GNUstep)
     include_directories(/usr/include)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
+    
+    # Link directories - prioritize local GNUstep builds
+    link_directories(/usr/GNUstep/Local/Library/Libraries)
 endif()
 
 #=============================
@@ -165,9 +169,18 @@ else()
         include_directories(${QRENCODE_INCLUDE_DIR})
     endif()
     
+    # Use local GNUstep libraries (from /usr/GNUstep/Local) which are compiled with libobjc2
+    find_library(LOCAL_GNUSTEP_BASE gnustep-base PATHS /usr/GNUstep/Local/Library/Libraries NO_DEFAULT_PATH)
+    if(LOCAL_GNUSTEP_BASE)
+        message(STATUS "Using local gnustep-base: ${LOCAL_GNUSTEP_BASE}")
+    else()
+        message(STATUS "Local gnustep-base not found, using system default")
+        set(LOCAL_GNUSTEP_BASE gnustep-base)
+    endif()
+    
     set(PLATFORM_LIBRARIES
         ${OBJC_RUNTIME}
-        ${GNUSTEP_LIBS_LIST}
+        ${LOCAL_GNUSTEP_BASE}
         OpenSSL::SSL
         OpenSSL::Crypto
         SQLite3::SQLite3
@@ -241,6 +254,12 @@ if(NOT APPLE)
 
   # WebSocketServer.m uses Network.framework (macOS-only)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
+endif()
+
+# Add compat sources for Linux
+if(NOT APPLE)
+  file(GLOB COMPAT_SOURCES "Sources/Compat/**/*.m")
+  list(APPEND ATProtoPDS_OBJC_SOURCES ${COMPAT_SOURCES})
 endif()
 
 set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
