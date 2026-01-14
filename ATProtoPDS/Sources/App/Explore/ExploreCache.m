@@ -44,7 +44,17 @@ static NSInteger const kMaxMemoryItems = 200;
 }
 
 - (NSString *)defaultCacheDirectory {
+    NSString *override = [NSProcessInfo processInfo].environment[@"PDS_EXPLORE_CACHE_DIR"];
+    if (override.length > 0) {
+        return override;
+    }
+
     NSString *libraryPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
+    if (libraryPath.length == 0) {
+        NSString *tempRoot = [NSTemporaryDirectory() stringByAppendingPathComponent:@"com.atproto.pds"];
+        return [tempRoot stringByAppendingPathComponent:@"explore-cache"];
+    }
+
     NSString *appSupportPath = [libraryPath stringByAppendingPathComponent:@"com.atproto.pds"];
     return [appSupportPath stringByAppendingPathComponent:@"explore-cache"];
 }

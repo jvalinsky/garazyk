@@ -1,6 +1,6 @@
 # Security Analysis Report - ATProto PDS
 
-**Date:** January 7, 2025
+**Date:** January 7, 2025 (Updated: January 14, 2026)
 **Analysis Tools:** clang-tidy + Fuzzers
 
 ---
@@ -12,6 +12,36 @@
 - **Medium Priority Issues:** 5
 - **Low Priority Issues:** 12
 - **Fuzzer Crashes:** 0
+
+---
+
+## Security Fixes Applied (January 14, 2026)
+
+### Memory Management Fixes
+**Files:** `KeyManager.m`, `ActorStore.m`
+**Issues Fixed:**
+- Fixed SecKeyRef memory leaks with proper CFRelease calls in dealloc
+- Clarified SecKeyRef ownership contract with assign property declarations
+- Added CFRetain/CFRelease pairing for KeyPair lifecycle management
+
+### Input Validation Enhancements
+**Files:** `EventFormatter.m`, `WebAuthnVerifier.m`
+**Issues Fixed:**
+- Added bounds checking for CBOR decoding to prevent buffer overflows
+- Enhanced credential data validation in WebAuthn verification
+- Added proper error handling for malformed input data
+
+### Network Security Improvements
+**File:** `WebSocketConnection.m`
+**Issues Fixed:**
+- Added 16MB max frame size limit to prevent resource exhaustion
+- Implemented connection closure for oversized frames
+
+### Queue Property Standardization
+**Multiple Files**
+**Issues Fixed:**
+- Standardized dispatch_queue_t properties with PDS_DISPATCH_QUEUE_STRONG macro
+- Ensured proper ARC memory management for queue objects
 
 ---
 
