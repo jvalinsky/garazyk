@@ -6,7 +6,7 @@
  @discussion Implements RFC 9449 DPoP for binding OAuth tokens to public keys.
  Prevents token theft by requiring proof of private key possession on each request.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

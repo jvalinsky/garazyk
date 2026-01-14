@@ -6,7 +6,7 @@
  @discussion Implements RFC 6238 TOTP generation with configurable parameters.
  Used for two-factor authentication on ATProto accounts.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

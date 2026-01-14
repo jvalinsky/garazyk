@@ -7,7 +7,7 @@
  secure random generation, and hex encoding. Used throughout the PDS for
  hashing, signing, and token generation.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

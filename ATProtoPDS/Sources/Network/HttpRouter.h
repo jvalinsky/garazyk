@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
  - Parameter extraction and validation
  - Clean API design
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);

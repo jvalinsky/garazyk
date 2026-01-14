@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  and verifying JWT tokens. It includes JWTHeader, JWTPayload, JWT,
  JWTVerifier, and JWTMinter classes.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 extern NSString * const JWTErrorDomain;

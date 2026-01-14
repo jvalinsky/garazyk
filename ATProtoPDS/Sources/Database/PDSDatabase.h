@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
  ATProto data including accounts, repositories, records, blocks, and blobs.
  Uses SQLite for local storage with transactions and migrations.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 extern NSString * const PDSDatabaseErrorDomain;

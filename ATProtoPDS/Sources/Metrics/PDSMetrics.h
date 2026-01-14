@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion This header defines the PDSMetrics class for collecting
  and exporting operational metrics in Prometheus format.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 /*!

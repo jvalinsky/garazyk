@@ -7,7 +7,7 @@
  repository commits and identity updates. Provides WebSocket-based streaming
  with cursor-based replay support.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

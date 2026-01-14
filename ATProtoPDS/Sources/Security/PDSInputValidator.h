@@ -6,7 +6,7 @@
  @discussion Provides validation for ATProto identifiers (DIDs, handles, NSIDs,
  URIs) and sanitization against common injection attacks (SQL, XSS, path traversal).
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

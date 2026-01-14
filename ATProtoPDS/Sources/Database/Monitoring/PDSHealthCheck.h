@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
  Health status is returned as PDSHealthStatus (healthy, warning, critical).
 
  @see PDSDatabasePool
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 @class PDSDatabasePool;
