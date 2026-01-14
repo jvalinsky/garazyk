@@ -115,7 +115,12 @@ int main(int argc, char * argv[]) {
             @"SessionStoreTests",
             @"ExploreCacheTests",
             @"ExploreHandlerTests",
-            @"HttpServerTests"
+            @"HttpServerTests",
+            @"ActorServiceTests",
+            @"FeedServiceTests",
+            @"NotificationServiceTests",
+            @"WebSocketServerTests",
+            @"MSTPersistenceTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
