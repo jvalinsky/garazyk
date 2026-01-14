@@ -1,3 +1,15 @@
+/*!
+ @file BlobStorage.m
+
+ @abstract Blob storage implementation with file system persistence.
+
+ @discussion Stores blobs in a hierarchical directory structure based on CID prefix,
+ validates blobs against ATProto constraints, and maintains metadata in SQLite.
+ Computes CIDv1 with raw codec and verifies integrity on retrieval.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Blob/BlobStorage.h"
 #import "Blob/MimeTypeValidator.h"
 #import "Core/CID.h"

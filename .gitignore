@@ -56,3 +56,4 @@ xcuserdata/
 *.framework
 *.h.gch
 *.pch
+build_verify/
