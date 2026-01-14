@@ -29,3 +29,13 @@ xcuserdata/
 # Cache & Worktrees
 .cache/
 .worktrees/
+
+# Data and Logs
+data/
+*.log
+docs/tutorial-site.tar.gz
+
+# Research and Reference (local copies)
+reference/
+.beads/
+ATProtoPDS/Tests/Blob/debug_blob_test.txt

@@ -1,6 +1,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Debug/PDSLogger.h"
 #import <Security/Security.h>
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
@@ -64,25 +65,32 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (void)close {
     if (!self.isOpen) return;
-    fprintf(stderr, "[DEBUG] PDSDatabase closing\n");
+    PDS_LOG_DB_DEBUG(@"Closing database connection");
 
     dispatch_sync(self.cacheQueue, ^{
         CFIndex count = CFDictionaryGetCount(self.statementCache);
         if (count > 0) {
-            sqlite3_stmt *statements[count];
-            CFDictionaryGetKeysAndValues(self.statementCache, NULL, (const void **)statements);
+            const void **values = malloc(sizeof(void *) * count);
+            CFDictionaryGetKeysAndValues(self.statementCache, NULL, values);
             for (CFIndex i = 0; i < count; i++) {
-                sqlite3_finalize(statements[i]);
+                sqlite3_finalize((sqlite3_stmt *)values[i]);
             }
+            free(values);
         }
         CFRelease(self.statementCache);
         self.statementCache = NULL;
     });
 
+    // Finalize any other stray statements
+    sqlite3_stmt *strayStmt;
+    while ((strayStmt = sqlite3_next_stmt(self.db, NULL)) != NULL) {
+        sqlite3_finalize(strayStmt);
+    }
+
     sqlite3_close(_db);
     _db = NULL;
     self.isOpen = NO;
-    fprintf(stderr, "[DEBUG] PDSDatabase closed\n");
+    PDS_LOG_DB_DEBUG(@"Database connection closed");
 }
 
 - (void)dealloc {
@@ -1535,7 +1543,8 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
-        NSLog(@"saveRecord failed: %s (code: %d) for URI: %@", sqlite3_errmsg(_db), rc, record.uri);
+        PDS_LOG_DB_ERROR(@"Failed to save record: %s (SQLite code: %d, URI: %@)",
+                         sqlite3_errmsg(_db), rc, record.uri);
         if (error) {
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];

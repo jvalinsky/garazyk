@@ -15,12 +15,14 @@
 #import "PDSController.h"
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
+#import "App/PDSConfiguration.h"
+#import "Debug/PDSLogger.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Database/PDSDatabase.h"
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        NSLog(@"ATProto PDS Starting...");
+        PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS Starting...");
 
         NSError *error = nil;
         NSString *dataDirectory = @"/tmp/atproto_pds_data";
@@ -42,13 +44,13 @@ int main(int argc, const char * argv[]) {
         }];
 
         if (![server startWithError:&error]) {
-            NSLog(@"Failed to start server: %@", error);
+            PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
             return 1;
         }
 
-        NSLog(@"ATProto PDS running on port %hu", server.port);
-        NSLog(@"XRPC endpoint: /xrpc/*");
-        NSLog(@"Press Ctrl+C to stop");
+        PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS running on port %hu", server.port);
+        PDS_LOG_INFO_C(PDSLogComponentCore, @"XRPC endpoint: /xrpc/*");
+        PDS_LOG_INFO_C(PDSLogComponentCore, @"Press Ctrl+C to stop");
 
         CFRunLoopRun();
     }

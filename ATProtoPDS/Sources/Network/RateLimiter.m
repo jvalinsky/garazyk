@@ -1,5 +1,6 @@
 #import "Network/RateLimiter.h"
 #import "Network/HttpResponse.h"
+#import "Debug/PDSLogger.h"
 #import <sqlite3.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -75,7 +76,8 @@ NS_ASSUME_NONNULL_BEGIN
     dispatch_sync(self.dbQueue, ^{
         int result = sqlite3_open(self.databasePath.UTF8String, &_db);
         if (result != SQLITE_OK) {
-            NSLog(@"Failed to open rate limit database: %s", sqlite3_errmsg(_db));
+            PDS_LOG_DB_ERROR(@"Failed to open rate limit database: %s (SQLite code: %d)",
+                             sqlite3_errmsg(_db), result);
             return;
         }
         
@@ -91,7 +93,8 @@ NS_ASSUME_NONNULL_BEGIN
         char *errMsg = NULL;
         result = sqlite3_exec(_db, createTableSQL.UTF8String, NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
-            NSLog(@"Failed to create rate limit table: %s", errMsg);
+            PDS_LOG_DB_ERROR(@"Failed to create rate limit table: %s (SQLite code: %d)",
+                             errMsg, result);
             sqlite3_free(errMsg);
         }
         
@@ -108,7 +111,8 @@ NS_ASSUME_NONNULL_BEGIN
         
         result = sqlite3_exec(_db, createBlobTableSQL.UTF8String, NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
-            NSLog(@"Failed to create blob rate limit table: %s", errMsg);
+            PDS_LOG_DB_ERROR(@"Failed to create blob rate limit table: %s (SQLite code: %d)",
+                             errMsg, result);
             sqlite3_free(errMsg);
         }
     });
@@ -202,11 +206,12 @@ NS_ASSUME_NONNULL_BEGIN
     
     result = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
-    
+
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
-        NSLog(@"Failed to update rate limit: %s", sqlite3_errmsg(_db));
+        PDS_LOG_DB_ERROR(@"Failed to update rate limit: %s (SQLite code: %d)",
+                         sqlite3_errmsg(_db), result);
     }
-    
+
     return [RateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - requestCount - 1)
@@ -260,14 +265,15 @@ NS_ASSUME_NONNULL_BEGIN
     sqlite3_bind_double(stmt, 3, now);
     sqlite3_bind_double(stmt, 4, windowStart);
     sqlite3_bind_double(stmt, 5, now);
-    
+
     result = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
-    
+
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
-        NSLog(@"Failed to update blob rate limit: %s", sqlite3_errmsg(_db));
+        PDS_LOG_DB_ERROR(@"Failed to update blob rate limit: %s (SQLite code: %d)",
+                         sqlite3_errmsg(_db), result);
     }
-    
+
     return [RateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - uploadCount - 1)

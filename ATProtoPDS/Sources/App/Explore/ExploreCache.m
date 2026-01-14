@@ -1,4 +1,5 @@
 #import "ExploreCache.h"
+#import "Debug/PDSLogger.h"
 
 @interface ExploreCache ()
 @property (nonatomic, strong) NSCache *memoryCache;
@@ -52,9 +53,8 @@ static NSInteger const kMaxMemoryItems = 200;
     NSFileManager *fm = [NSFileManager defaultManager];
     if (![fm fileExistsAtPath:path]) {
         NSError *error = nil;
-        [fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error];
-        if (error) {
-            NSLog(@"ExploreCache: Failed to create directory %@: %@", path, error);
+        if (![fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error]) {
+            PDS_LOG_ERROR_C(PDSLogComponentExplore, @"ExploreCache: Failed to create directory %@: %@", path, error);
         }
     }
 }
