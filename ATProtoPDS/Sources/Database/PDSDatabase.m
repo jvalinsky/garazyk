@@ -30,7 +30,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 @property (nonatomic, strong) NSMutableDictionary *statementCache;
 @property (nonatomic, assign) dispatch_queue_t cacheQueue;
 #else
-@property (nonatomic, assign) CFMutableDictionaryRef statementCache;
+@property (nonatomic, strong) NSMutableDictionary *statementCache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 #endif
 
