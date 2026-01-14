@@ -108,6 +108,7 @@ int main(int argc, char * argv[]) {
             @"WebSocketUpgradeHandlerTests",
             @"HttpRouterTests",
             @"HttpRequestParsingTests",
+            @"HttpBufferPoolTests",
             @"FirehoseTests",
             @"RelayClientTests"
         ];
