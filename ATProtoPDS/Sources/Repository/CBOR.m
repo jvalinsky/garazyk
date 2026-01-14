@@ -504,6 +504,13 @@
         count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
+    
+    // Security check: Ensure we have enough data remaining to satisfy the count.
+    // Minimum size of an item is 1 byte.
+    if (data.length - *offset < count) {
+        return nil;
+    }
+    
     NSMutableArray<CBORValue *> *array = [NSMutableArray arrayWithCapacity:count];
     for (NSUInteger i = 0; i < count; i++) {
         CBORValue *value = [self decode:data offset:offset];
@@ -523,6 +530,13 @@
         count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
+    
+    // Security check: Ensure we have enough data remaining to satisfy the count.
+    // Minimum size of a map entry is 2 bytes (1 key + 1 value).
+    if (data.length - *offset < count * 2) {
+        return nil;
+    }
+    
     NSMutableDictionary<CBORValue *, CBORValue *> *map = [NSMutableDictionary dictionary];
     for (NSUInteger i = 0; i < count; i++) {
         CBORValue *key = [self decode:data offset:offset];
