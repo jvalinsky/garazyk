@@ -23,10 +23,10 @@ static const uint8_t WS_MASK = 0x80;
 @property (nonatomic, copy, readwrite, nullable) NSDictionary<NSString *, NSString *> *queryParams;
 
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
-@property (nonatomic, assign) dispatch_queue_t connectionQueue;
+@property (nonatomic, strong) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMutableData *readBuffer;
 @property (nonatomic, strong) NSMutableData *writeBuffer;
-@property (nonatomic, assign) dispatch_queue_t writeQueue;
+@property (nonatomic, strong) dispatch_queue_t writeQueue;
 @property (nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimer;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimeoutTimer;
@@ -39,18 +39,11 @@ static const uint8_t WS_MASK = 0x80;
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path {
     self = [super init];
     if (self) {
+        [self commonInit];
         _host = [host copy];
         _port = port;
         _path = [path copy];
         _state = WebSocketConnectionStateConnecting;
-        _identifier = [NSUUID UUID];
-        _heartbeatInterval = 30.0;
-        _heartbeatTimeout = 10.0;
-        _readBuffer = [NSMutableData data];
-        _writeBuffer = [NSMutableData data];
-        _writeQueue = dispatch_queue_create("com.atproto.pds.websocket.write", DISPATCH_QUEUE_SERIAL);
-        _messageQueue = [NSMutableArray array];
-        _waitingForPong = NO;
 
         NSRange queryRange = [path rangeOfString:@"?"];
         if (queryRange.location != NSNotFound) {
@@ -63,6 +56,45 @@ static const uint8_t WS_MASK = 0x80;
         }
     }
     return self;
+}
+
+- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection {
+    self = [super init];
+    if (self) {
+        [self commonInit];
+        _connection = connection;
+        _state = WebSocketConnectionStateConnected;
+        _host = [connection remoteAddress] ?: @"unknown";
+        _path = @"/";
+        _queryString = @"";
+    }
+    return self;
+}
+
+- (void)commonInit {
+    _identifier = [NSUUID UUID];
+    _heartbeatInterval = 30.0;
+    _heartbeatTimeout = 10.0;
+    _readBuffer = [NSMutableData data];
+    _messageQueue = [NSMutableArray array];
+    _writeQueue = dispatch_queue_create("com.atproto.pds.websocket.write", DISPATCH_QUEUE_SERIAL);
+    _connectionQueue = dispatch_queue_create("com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
+    _waitingForPong = NO;
+}
+
+- (void)start {
+    __weak typeof(self) weakSelf = self;
+    self.connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        [weakSelf handlePDSStateChange:state error:error];
+    };
+    
+    [self.connection startWithQueue:self.connectionQueue];
+    [self startReading];
+    [self startHeartbeat];
+}
+
+- (instancetype)init {
+    return [self initWithHost:@"localhost" port:0 path:@"/"];
 }
 
 - (NSDictionary<NSString *, NSString *> *)parseQueryParams:(NSString *)queryString {

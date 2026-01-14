@@ -3,6 +3,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 #import "Network/PDSNetworkTransport.h"
+#import "Debug/PDSLogger.h"
 
 @interface HttpServer ()
 
@@ -14,9 +15,13 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
 @property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
+@property (nonatomic, strong) dispatch_semaphore_t stopSemaphore;
+@property (nonatomic, strong) dispatch_group_t taskGroup;
 @property (nonatomic, assign) BOOL listenerReady;
 @property (nonatomic, assign) BOOL startupFinished;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
+@property (nonatomic, strong) dispatch_queue_t connectionQueue;
+@property (nonatomic, strong) NSMutableData *requestData;
 
 @end
 
@@ -34,7 +39,11 @@
         _routeHandlers = [NSMutableDictionary dictionary];
         _pathHandlers = [NSMutableDictionary dictionary];
         _activeConnections = [NSMutableSet set];
+        _connectionQueue = dispatch_queue_create("com.atproto.pds.httpserver.connections", DISPATCH_QUEUE_SERIAL);
         _readySemaphore = dispatch_semaphore_create(0);
+        _stopSemaphore = dispatch_semaphore_create(0);
+        _taskGroup = dispatch_group_create();
+        _requestData = [NSMutableData data];
         _listenerReady = NO;
         _startupFinished = NO;
         _running = NO;
@@ -69,19 +78,23 @@
                 strongSelf.running = YES;
                 strongSelf.port = strongSelf.listener.port;
                 strongSelf.startupFinished = YES;
-                NSLog(@"HTTPServer listening on port %lu", (unsigned long)strongSelf.port);
+                PDS_LOG_HTTP_INFO(@"HTTPServer listening on port %lu", (unsigned long)strongSelf.port);
+                dispatch_semaphore_signal(strongSelf.readySemaphore);
                 break;
             case PDSNetworkListenerStateFailed:
                 strongSelf.listenerReady = NO;
                 strongSelf.running = NO;
                 strongSelf.startupFinished = YES;
-                NSLog(@"HTTPServer failed to start: %@", error);
+                PDS_LOG_HTTP_ERROR(@"HTTPServer failed to start: %@", error);
+                dispatch_semaphore_signal(strongSelf.readySemaphore);
                 break;
             case PDSNetworkListenerStateCancelled:
                 strongSelf.listenerReady = NO;
                 strongSelf.running = NO;
                 strongSelf.startupFinished = YES;
-                NSLog(@"HTTPServer cancelled");
+                PDS_LOG_HTTP_INFO(@"HTTPServer cancelled");
+                dispatch_semaphore_signal(strongSelf.readySemaphore);
+                dispatch_semaphore_signal(strongSelf.stopSemaphore);
                 break;
             default:
                 break;
@@ -96,19 +109,34 @@
     self.running = YES; // Optimistically set running to YES so the main loop can start
     
     [self.listener startWithQueue:self.serverQueue];
-
-    // We no longer wait synchronously here.
-    // PDSCLIServeCommand runs a runloop while httpServer.running is YES.
-    // If the listener fails asynchronously, it will set self.running = NO,
-    // causing the CLI command to exit.
+    
+    // Wait for READY state with 5s timeout
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC));
+    if (dispatch_semaphore_wait(self.readySemaphore, timeout) != 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
+                                         code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Timed out waiting for server to start"}];
+        }
+        return NO;
+    }
+    
+    if (!self.listenerReady) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds.httpserver"
+                                         code:-3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Server failed to start"}];
+        }
+        return NO;
+    }
     
     return YES;
 }
 
 - (void)handleNewConnection:(id<PDSNetworkConnection>)connection {
-    @synchronized (self.activeConnections) {
-        [self.activeConnections addObject:connection];
-    }
+    dispatch_async(_connectionQueue, ^{
+        [self->_activeConnections addObject:connection];
+    });
 
     __weak typeof(self) weakSelf = self;
     __weak id<PDSNetworkConnection> weakConnection = connection;
@@ -119,16 +147,18 @@
         if (!strongSelf || !strongConnection) return;
 
         switch (state) {
-            case PDSNetworkConnectionStateReady:
+            case PDSNetworkConnectionStateReady: {
                 [strongSelf readRequestFromConnection:strongConnection];
                 break;
+            }
             case PDSNetworkConnectionStateFailed:
-            case PDSNetworkConnectionStateCancelled:
-                @synchronized (strongSelf.activeConnections) {
+            case PDSNetworkConnectionStateCancelled: {
+                dispatch_async(strongSelf.connectionQueue, ^{
                     [strongSelf.activeConnections removeObject:strongConnection];
-                }
+                });
                 [strongConnection cancel];
                 break;
+            }
             default:
                 break;
         }
@@ -156,13 +186,19 @@
 - (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
     __weak typeof(self) weakSelf = self;
 
+    dispatch_group_enter(self.taskGroup);
     [connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(NSData * _Nullable content, BOOL isComplete, NSError * _Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf || error) {
-            [connection cancel];
+        if (!strongSelf) {
             return;
         }
-
+        
+        if (error) {
+            [connection cancel];
+            dispatch_group_leave(strongSelf.taskGroup);
+            return;
+        }
+        
         if (content && content.length > 0) {
             [strongSelf parseRequest:content fromConnection:connection];
         } else if (isComplete) {
@@ -170,6 +206,7 @@
         } else {
             [strongSelf readRequestFromConnection:connection];
         }
+        dispatch_group_leave(strongSelf.taskGroup);
     }];
 }
 
@@ -247,17 +284,28 @@
     __weak id<PDSNetworkConnection> weakConnection = connection;
     HttpRequest *requestRef = request; // Capture request in block
 
+    dispatch_group_enter(self.taskGroup);
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
-        if (!strongSelf || !strongConnection) return;
+        if (!strongSelf) {
+            dispatch_group_leave(weakSelf.taskGroup);
+            return;
+        }
+
+        // Set correlation ID for logs on this thread
+        [[PDSLogger sharedLogger] setCorrelationID:requestRef.correlationID];
 
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
 
         // Send response back on the network queue
         dispatch_async(strongSelf.serverQueue, ^{
             [strongSelf sendResponse:response onConnection:strongConnection];
+            dispatch_group_leave(strongSelf.taskGroup);
         });
+
+        // Clear correlation ID after dispatch
+        [[PDSLogger sharedLogger] clearCorrelationID];
     });
 }
 
@@ -390,7 +438,7 @@
     
     [connection sendData:responseData completion:^(NSError * _Nullable error) {
         if (error) {
-            NSLog(@"Failed to send response");
+            PDS_LOG_HTTP_ERROR(@"Failed to send response: %@", error);
             [connection cancel];
             return;
         }
@@ -409,11 +457,26 @@
 }
 
 - (void)stop {
+    self.running = NO;
     if (self.listener) {
         [self.listener cancel];
+        
+        // Wait for CANCELLED state with 2s timeout
+        dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC));
+        dispatch_semaphore_wait(self.stopSemaphore, timeout);
+        
         self.listener = nil;
     }
-    self.running = NO;
+    
+    // Wait for all active tasks to complete
+    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
+    
+    dispatch_sync(_connectionQueue, ^{
+        for (id<PDSNetworkConnection> conn in self->_activeConnections) {
+            [conn cancel];
+        }
+        [self->_activeConnections removeAllObjects];
+    });
 }
 
 - (void)addRoute:(NSString *)method path:(NSString *)path handler:(RequestHandler)handler {

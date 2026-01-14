@@ -17,9 +17,11 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 @interface WebSocketServer ()
 
 @property (nonatomic, strong) nw_listener_t listener;
-@property (nonatomic, assign) dispatch_queue_t listenerQueue;
+@property (nonatomic, strong) dispatch_queue_t listenerQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, WebSocketConnection *> *connectionsByFileDescriptor;
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
+@property (nonatomic, strong) dispatch_semaphore_t stopSemaphore;
+@property (nonatomic, strong) dispatch_group_t taskGroup;
 
 @end
 
@@ -34,6 +36,8 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
         _mutableConnections = [NSMutableSet set];
         _connectionsByFileDescriptor = [NSMutableDictionary dictionary];
         _listenerQueue = dispatch_queue_create("com.atproto.pds.websocket.listener", DISPATCH_QUEUE_SERIAL);
+        _stopSemaphore = dispatch_semaphore_create(0);
+        _taskGroup = dispatch_group_create();
     }
     return self;
 }
@@ -68,27 +72,49 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
     }
 
     nw_listener_set_queue(listener, self.listenerQueue);
-
+    
+    __weak typeof(self) weakSelf = self;
     nw_listener_set_state_changed_handler(listener, ^(nw_listener_state_t state, _Nullable nw_error_t error) {
         dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            
             switch (state) {
                 case nw_listener_state_ready:
-                    self.state = WebSocketServerStateRunning;
+                    strongSelf.state = WebSocketServerStateRunning;
                     break;
                 case nw_listener_state_failed:
-                    self.state = WebSocketServerStateFailed;
-                    if (error && self.delegate) {
-                        NSError *nsError = (__bridge_transfer NSError *)(__bridge CFTypeRef)error;
-                        [self.delegate webSocketServer:self didFailWithError:nsError];
+                    strongSelf.state = WebSocketServerStateFailed;
+                    if (error && strongSelf.delegate) {
+                        NSError *nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
+                        [strongSelf.delegate webSocketServer:strongSelf didFailWithError:nsError];
                     }
+                    dispatch_semaphore_signal(strongSelf.stopSemaphore);
                     break;
                 case nw_listener_state_cancelled:
-                    self.state = WebSocketServerStateIdle;
+                    strongSelf.state = WebSocketServerStateIdle;
+                    dispatch_semaphore_signal(strongSelf.stopSemaphore);
                     break;
                 default:
                     break;
             }
         });
+    });
+
+    nw_listener_set_new_connection_handler(listener, ^(nw_connection_t connection) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        
+        WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:connection];
+        [strongSelf addConnection:webSocketConnection];
+        
+        if ([strongSelf.delegate respondsToSelector:@selector(webSocketServer:didAcceptConnection:)]) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [strongSelf.delegate webSocketServer:strongSelf didAcceptConnection:webSocketConnection];
+            });
+        }
+        
+        [webSocketConnection start];
     });
 
     if (self.state == WebSocketServerStateFailed) {
@@ -121,8 +147,16 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 
     if (self.listener) {
         nw_listener_cancel(self.listener);
+        
+        // Wait for CANCELLED state with 2s timeout
+        dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC));
+        dispatch_semaphore_wait(self.stopSemaphore, timeout);
+        
         self.listener = nil;
     }
+    
+    // Wait for all active tasks (broadcasting) to complete
+    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
 
     self.state = WebSocketServerStateIdle;
 }
@@ -141,7 +175,9 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
         : [self.mutableConnections copy];
 
     for (WebSocketConnection *connection in targets) {
+        dispatch_group_enter(self.taskGroup);
         [connection sendMessage:message];
+        dispatch_group_leave(self.taskGroup);
     }
 }
 

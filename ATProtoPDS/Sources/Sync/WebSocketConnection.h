@@ -11,6 +11,7 @@
 
 #import <Foundation/Foundation.h>
 #import <stdint.h>
+#import "Network/PDSNetworkTransport.h"
 
 @class WebSocketConnection;
 
@@ -108,9 +109,13 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 @property (nonatomic, copy, nullable) NSString *closeReason;
 
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path;
+- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection;
 
 /*! Establishes the WebSocket connection. */
 - (BOOL)connect:(NSError **)error;
+
+/*! Starts internal read loop for an already connected/accepted connection. */
+- (void)start;
 
 /*! Closes the connection. */
 - (void)close;

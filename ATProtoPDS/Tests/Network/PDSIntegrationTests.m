@@ -3,6 +3,8 @@
 #import "Database/PDSDatabase.h"
 #import "Auth/JWT.h"
 #import "Core/CID.h"
+#import "Network/HttpResponse.h"
+#import "Debug/PDSLogger.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -27,10 +29,13 @@ NS_ASSUME_NONNULL_BEGIN
     self.controller = [[PDSController alloc] initWithDirectory:self.testDirectory
                                                 serviceMaxSize:10
                                               userDatabaseSize:20];
+    self.controller.httpPort = 0;
+    self.controller.wsPort = 0;
 }
 
 - (void)tearDown {
     [self.controller stopServer];
+    usleep(200000); // Wait 0.2s for ports and files to be released
     
     NSFileManager *fm = [NSFileManager defaultManager];
     [fm removeItemAtPath:self.testDirectory error:nil];
@@ -514,6 +519,31 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"  SUCCESS: Cryptographic binding between token and account");
     
     NSLog(@"=== TEST PASSED: Authentication Required ===\n");
+}
+
+
+- (void)testRequestCorrelationID {
+    // Start server for integration test
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Correlation ID test"];
+    NSError *serverError = nil;
+    [self.controller startServerWithError:&serverError];
+    XCTAssertNil(serverError);
+    usleep(500000); // Wait 0.5s for port assignment and listener stabilization
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.server.describeServer", (unsigned long)self.controller.httpPort]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    NSString *testCorrelationID = [[NSUUID UUID] UUIDString];
+    [request setValue:testCorrelationID forHTTPHeaderField:@"X-Correlation-ID"];
+    
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        XCTAssertEqual(httpResponse.statusCode, 200);
+        
+        [expectation fulfill];
+    }];
+    [task resume];
+    
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
 
 @end

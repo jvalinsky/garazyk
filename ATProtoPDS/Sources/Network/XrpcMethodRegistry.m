@@ -6,6 +6,7 @@
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
 #import "Auth/JWT.h"
+#import "Debug/PDSLogger.h"
 
 @implementation XrpcMethodRegistry
 
@@ -133,13 +134,13 @@
     }];
 
     [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSLog(@"createRecord XRPC handler called");
+        PDS_LOG_HTTP_DEBUG(@"createRecord XRPC handler called");
         NSDictionary *body = request.jsonBody;
         NSString *repo = body[@"repo"];
         NSString *collection = body[@"collection"];
         NSDictionary *record = body[@"record"];
 
-        NSLog(@"createRecord params: repo=%@, collection=%@, record=%@", repo, collection, record);
+        PDS_LOG_HTTP_DEBUG(@"createRecord params: repo=%@, collection=%@, record=%@", repo, collection, record);
 
         if (!repo || !collection || !record) {
             response.statusCode = HttpStatusBadRequest;
@@ -1022,7 +1023,7 @@
     NSError *parseError = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
-        NSLog(@"Failed to parse JWT token from authorization header");
+        PDS_LOG_HTTP_WARN(@"Failed to parse JWT token from authorization header");
         return nil;
     }
 
@@ -1043,14 +1044,14 @@
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
-        NSLog(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
+        PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
         return nil;
     }
 
     // Extract DID from subject claim
     NSString *did = jwt.payload.sub;
     if (!did || ![did hasPrefix:@"did:"]) {
-        NSLog(@"Invalid DID in JWT subject claim: %@", did);
+        PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim: %@", did);
         return nil;
     }
 

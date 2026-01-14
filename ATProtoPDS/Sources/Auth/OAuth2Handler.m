@@ -6,6 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuthServerMetadata.h"
+#import "Debug/PDSLogger.h"
 
 @interface OAuth2Handler ()
 @property (nonatomic, strong) PDSDatabase *database;
@@ -34,7 +35,7 @@
         // Seed test client for development only
         NSError *seedError = nil;
         if (![_database seedTestClient:&seedError]) {
-            NSLog(@"Warning: Failed to seed test OAuth client: %@", seedError.localizedDescription);
+            PDS_LOG_AUTH_WARN(@"Failed to seed test OAuth client: %@", seedError.localizedDescription);
         }
         #endif
     }
@@ -48,7 +49,7 @@
     PDSDatabase *tempDB = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
     NSError *error = nil;
     if (![tempDB openWithError:&error]) {
-        NSLog(@"Failed to create temp database: %@", error);
+        PDS_LOG_AUTH_ERROR(@"Failed to create temporary OAuth database: %@", error);
         return nil;
     }
     return [self initWithDatabase:tempDB];

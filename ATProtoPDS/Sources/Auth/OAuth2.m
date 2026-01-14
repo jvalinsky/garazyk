@@ -8,6 +8,7 @@
 #import "Database/PDSDatabase.h"
 #import "Auth/TOTPService.h"
 #import "Auth/Base32Utils.h"
+#import "Debug/PDSLogger.h"
 #import <os/log.h>
 
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
@@ -236,7 +237,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         if (keyPair) {
             _jwtMinter.privateKey = keyPair.privateKey;
         } else {
-            NSLog(@"Failed to generate JWT signing key: %@", keyError);
+            PDS_LOG_AUTH_ERROR(@"Failed to generate JWT signing key: %@", keyError);
         }
     }
     return self;

@@ -13,6 +13,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+// Forward declarations for logging types
+typedef NS_ENUM(NSInteger, PDSLogLevel);
+typedef NS_ENUM(NSInteger, PDSLogFormat);
+
 /*! Error domain for configuration errors. */
 extern NSString *const PDSConfigErrorDomain;
 
@@ -103,6 +107,27 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 
 /*! Whether SSL pinning is enabled. */
 @property (nonatomic, readonly) BOOL sslPinningEnabled;
+
+/*! Path to write log file, or nil to disable file logging. */
+@property (nonatomic, readonly, nullable) NSString *logFilePath;
+
+/*! Minimum log level to output. */
+@property (nonatomic, readonly) PDSLogLevel logLevel;
+
+/*! Log output format (text, JSON, or both). */
+@property (nonatomic, readonly) PDSLogFormat logFormat;
+
+/*! Maximum log file size in bytes before rotation. */
+@property (nonatomic, readonly) NSUInteger maxLogFileSize;
+
+/*! Maximum number of rotated log files to keep. */
+@property (nonatomic, readonly) NSUInteger maxLogFiles;
+
+/*! If YES, use async logging with background queue. */
+@property (nonatomic, readonly) BOOL asyncLogging;
+
+/*! Array of enabled component tags, or nil for all components. */
+@property (nonatomic, readonly, nullable) NSArray<NSString *> *enabledComponents;
 
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;

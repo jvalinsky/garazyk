@@ -1,4 +1,5 @@
 #import "Core/CID.h"
+#import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 #define b32_debug_log(...) do {} while(0)
@@ -295,7 +296,7 @@ static const NSUInteger kMaxVarintSize = 9;
         b32_debug_log(stderr, "char: %c\n", (char)c);
         const char *ptr = strchr(kBase32Alphabet, (char)c);
         if (!ptr) {
-            fprintf(stderr, "Invalid character: %c\n", (char)c);
+            PDS_LOG_DEBUG_C(PDSLogComponentCore, @"Invalid character: %c", (char)c);
             return nil; // Invalid character
         }
 
