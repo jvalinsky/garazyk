@@ -26,6 +26,7 @@
 #import "Services/PDSBlobService.h"
 #import "Services/PDSRepositoryService.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Debug/PDSLogger.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -84,6 +85,25 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                   userDatabaseSize:(NSUInteger)userDatabaseSize {
     self = [super init];
     if (self) {
+        // Configure PDSLogger from PDSConfiguration if available
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        if (config) {
+            PDSLogger *logger = [PDSLogger sharedLogger];
+            if (config.logFilePath) {
+                logger.logFilePath = config.logFilePath;
+            }
+            logger.logLevel = config.logLevel;
+            logger.logFormat = config.logFormat;
+            logger.maxLogFileSize = config.maxLogFileSize;
+            logger.maxLogFiles = config.maxLogFiles;
+            logger.asyncLogging = config.asyncLogging;
+            if (config.enabledComponents.count > 0) {
+                logger.enabledComponents = [NSSet setWithArray:config.enabledComponents];
+            }
+
+            PDS_LOG_INFO_C(PDSLogComponentCore, @"PDSController initializing with data directory: %@", directory);
+        }
+
         _dataDirectory = [directory copy];
         _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:directory
                                                              serviceMaxSize:serviceMaxSize
@@ -95,6 +115,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         
         // Initialize JWT Minter
         _jwtMinter = [[JWTMinter alloc] init];
+        
+        _httpPort = 2583;
+        _wsPort = 8081;
         _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
         _jwtMinter.signingAlgorithm = @"ES256";
         
@@ -134,7 +157,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     os_log_info(_log, "Starting ATProto PDS server with single-tenant architecture...");
     
     // Start HTTP server with XRPC handlers
-    _httpServer = [HttpServer serverWithPort:2583];
+    _httpServer = [HttpServer serverWithPort:self.httpPort];
     
     // Add OAuth2 routes
     OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:[self serviceDatabaseWithError:nil]];
@@ -166,31 +189,41 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         if (error) *error = httpError;
         return NO;
     }
-    os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpServer.port);
+    _httpPort = _httpServer.port;
+    os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpPort);
     
     // Start WebSocket handler for subscribeRepos
     NSError *streamingError = nil;
     _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
     
-    if (![_subscribeReposHandler startOnPort:8081 error:&streamingError]) {
+    if (![_subscribeReposHandler startOnPort:self.wsPort error:&streamingError]) {
         os_log_error(_log, "Failed to start subscribeRepos WebSocket handler: %@", streamingError);
         if (error) *error = streamingError;
         return NO;
     }
+    _wsPort = self.wsPort;
     
     _running = YES;
-    os_log_info(_log, "PDS server started successfully - XRPC at port 2583, WebSocket at port 8081");
+    os_log_info(_log, "PDS server started successfully - XRPC at port %lu, WebSocket at port %lu", (unsigned long)_httpPort, (unsigned long)_wsPort);
     return YES;
 }
 
 - (void)stopServer {
-    os_log_info(_log, "Stopping ATProto PDS server...");
+    PDS_LOG_CORE_INFO(@"Stopping PDS server...");
+    
     [_httpServer stop];
     [_subscribeReposHandler stop];
+    
+    // Close databases
     [_userDatabasePool closeAll];
-    [_serviceDatabases closeAll];
+    [_serviceDatabases closeAll]; // Assuming PDSServiceDatabases has a closeAll method
+    
+    // Flush and close logger to release file handles in the data directory
+    [[PDSLogger sharedLogger] flush];
+    [[PDSLogger sharedLogger] closeLogFile];
+    
+    PDS_LOG_CORE_INFO(@"PDS server stopped.");
     _running = NO;
-    os_log_info(_log, "PDS server stopped");
 }
 
 #pragma mark - Account Operations

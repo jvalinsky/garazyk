@@ -1,5 +1,7 @@
-#import "Admin/AdminService.h"
+#import "AdminService.h"
+#import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
+#import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonHMAC.h>
 
 NSString * const AdminServiceErrorDomain = @"com.atproto.pds.admin";
@@ -81,8 +83,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
     if (!success) {
         return nil;
     }
-    
-    NSLog(@"[Admin] Updated handle for account %@ to %@", did, handle);
+    if (success) {
+        PDS_LOG_ADMIN_INFO(@"Updated handle for account %@ to %@", did, handle);
+    }
     
     return @{
         @"did": did,
@@ -106,8 +109,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
     if (!success) {
         return nil;
     }
-    
-    NSLog(@"[Admin] Updated email for account %@", did);
+    if (success) {
+        PDS_LOG_ADMIN_INFO(@"Updated email for account %@", did);
+    }
     
     return @{
         @"did": did,
@@ -135,8 +139,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
     if (!success) {
         return nil;
     }
-    
-    NSLog(@"[Admin] Updated password for account %@", did);
+    if (success) {
+        PDS_LOG_ADMIN_INFO(@"Updated password for account %@", did);
+    }
     
     return @{
         @"did": did,
@@ -161,8 +166,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
         if (error) *error = updateError;
         return nil;
     }
-    
-    NSLog(@"[Admin] Enabled invites for account %@", did);
+    if (success) {
+        PDS_LOG_ADMIN_INFO(@"Enabled invites for account %@", did);
+    }
     
     return @{
         @"did": did,
@@ -188,8 +194,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
         if (error) *error = updateError;
         return nil;
     }
-    
-    NSLog(@"[Admin] Disabled invites for account %@", did);
+    if (success) {
+        PDS_LOG_ADMIN_INFO(@"Disabled invites for account %@", did);
+    }
     
     return @{
         @"did": did,
@@ -234,8 +241,9 @@ static NSDateFormatter * adminIso8601Formatter(void) {
         if (error) *error = updateError;
         return nil;
     }
-    
-    NSLog(@"[Admin] Disabled invite codes for account %@", did);
+    if (success) {
+        PDS_LOG_ADMIN_INFO(@"Disabled invite codes for account %@", did);
+    }
     
     return @{
         @"accountDid": did,
@@ -281,8 +289,11 @@ static NSDateFormatter * adminIso8601Formatter(void) {
         if (!success) {
             return nil;
         }
-        
-        NSLog(@"[Admin] Applied takedown for subject %@: %@", subject, reason);
+        if (takedown) {
+            PDS_LOG_ADMIN_INFO(@"Applied takedown for subject %@: %@", subject, reason);
+        } else {
+            PDS_LOG_ADMIN_INFO(@"Removed takedown for subject %@", subject);
+        }
     } else {
         NSString *sql = [NSString stringWithFormat:
                          @"INSERT INTO admin_takedowns (id, subjectType, subjectId, reason, takedownRef, applied, createdBy, createdAt) "
@@ -294,8 +305,11 @@ static NSDateFormatter * adminIso8601Formatter(void) {
         if (!success) {
             return nil;
         }
-        
-        NSLog(@"[Admin] Removed takedown for subject %@", subject);
+        if (takedown) {
+            PDS_LOG_ADMIN_INFO(@"Applied takedown for subject %@: %@", subject, reason);
+        } else {
+            PDS_LOG_ADMIN_INFO(@"Removed takedown for subject %@", subject);
+        }
     }
     
     return @{
@@ -323,7 +337,8 @@ static NSDateFormatter * adminIso8601Formatter(void) {
         return nil;
     }
     
-    NSLog(@"[Admin] Sending email to %@ (did: %@): %@", account.email, did, subject);
+    // In a real implementation, this would send an actual email
+    PDS_LOG_ADMIN_INFO(@"Sending email to %@ (did: %@): %@", account.email, did, subject);
     
     return @{
         @"recipientDid": did,
