@@ -54,8 +54,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     return [CID rawSha256:serialized];
 }
 
-- (CID *)computeCID {
-    // Serialize the full signed commit (including signature)
+- (NSData *)serializeSigned {
     NSMutableDictionary<CBORValue *, CBORValue *> *commitMap = [NSMutableDictionary dictionary];
 
     // did
@@ -83,11 +82,28 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     }
 
     CBORValue *commitValue = [CBORValue map:commitMap];
-    NSData *serialized = [CBOREncoder encode:commitValue];
+    return [CBOREncoder encode:commitValue];
+}
 
+- (CID *)computeCID {
+    NSData *serialized = [self serializeSigned];
     // Compute SHA-256 hash and create CID with DAG-CBOR codec (0x71)
     NSData *hash = [CID sha256Digest:serialized];
     return [CID cidWithDigest:hash codec:0x71]; // DAG-CBOR codec
+}
+
+- (nullable NSData *)exportCAR {
+    if (!self.signature) {
+        return nil;
+    }
+
+    NSData *signedData = [self serializeSigned];
+    CID *commitCID = [self computeCID];
+    
+    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+    [writer addBlock:[CARBlock blockWithCID:commitCID data:signedData]];
+    
+    return [writer serialize];
 }
 
 - (BOOL)signWithPrivateKey:(NSData *)privateKey error:(NSError **)error {

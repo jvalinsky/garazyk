@@ -113,7 +113,7 @@ static NSData *HexToNSData(NSString *hex) {
     [carData appendData:cidBytes];
     
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
-    CID *block1CID = [CID cidWithMultihash:[CID sha256Digest:block1Data] codec:0x71];
+    CID *block1CID = [CID cidWithDigest:[CID sha256Digest:block1Data] codec:0x71];
     uint32_t block1Len = OSSwapHostToBigInt32((uint32_t)block1Data.length);
     [carData appendBytes:&block1Len length:4];
     [carData appendData:block1Data];
@@ -150,7 +150,7 @@ static NSData *HexToNSData(NSString *hex) {
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
     
     NSData *blockData = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *blockCID = [CID cidWithMultihash:[CID sha256Digest:blockData] codec:0x71];
+    CID *blockCID = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
     CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
     [writer addBlock:block];
     
@@ -192,13 +192,13 @@ static NSData *HexToNSData(NSString *hex) {
     [carData appendData:cidBytes];
     
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
-    CID *block1CID = [CID cidWithMultihash:[CID sha256Digest:block1Data] codec:0x71];
+    CID *block1CID = [CID cidWithDigest:[CID sha256Digest:block1Data] codec:0x71];
     uint32_t block1Len = OSSwapHostToBigInt32((uint32_t)block1Data.length);
     [carData appendBytes:&block1Len length:4];
     [carData appendData:block1Data];
     
     NSMutableData *block2Data = [NSMutableData dataWithBytes:"block2" length:6];
-    CID *block2CID = [CID cidWithMultihash:[CID sha256Digest:block2Data] codec:0x71];
+    CID *block2CID = [CID cidWithDigest:[CID sha256Digest:block2Data] codec:0x71];
     uint32_t block2Len = OSSwapHostToBigInt32((uint32_t)block2Data.length);
     [carData appendBytes:&block2Len length:4];
     [carData appendData:block2Data];
@@ -234,7 +234,7 @@ static NSData *HexToNSData(NSString *hex) {
     [carData appendData:cidBytes];
     
     NSData *blockData = [@"test block data for CID consistency" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *expectedBlockCID = [CID cidWithMultihash:[CID sha256Digest:blockData] codec:0x71];
+    CID *expectedBlockCID = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
     uint32_t blockLen = OSSwapHostToBigInt32((uint32_t)blockData.length);
     [carData appendBytes:&blockLen length:4];
     [carData appendData:blockData];

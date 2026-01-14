@@ -12,7 +12,9 @@ static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefg
 }
 
 + (NSString *)generateCodeChallengeWithVerifier:(NSString *)verifier {
-    NSData *verifierData = [self base64URLDecode:verifier];
+    // RFC 7636: S256 = BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
+    // We treat the verifier string as the input bytes, not as encoded data.
+    NSData *verifierData = [verifier dataUsingEncoding:NSUTF8StringEncoding];
     if (!verifierData) {
         return nil;
     }
