@@ -1,0 +1,41 @@
+# AT Protocol PDS Pentesting Suite
+# Usage: msfconsole -q -r run_pds_suite.rc
+
+<ruby>
+  print_status("Initializing ATProto PDS Pentesting Suite...")
+  
+  # Ensure workspace exists
+  begin
+    framework.db.add_workspace("ATProto_PDS")
+    framework.db.workspace = framework.db.find_workspace("ATProto_PDS")
+    print_good("Workspace set to: ATProto_PDS")
+  rescue ::Exception => e
+    print_warning("Database not connected or workspace creation failed: #{e.message}")
+  end
+</ruby>
+
+# Global Settings
+setg RHOSTS 127.0.0.1
+setg RPORT 8080
+setg SSL false
+
+# 1. Discovery & Fingerprinting
+print_status(">>> STEP 1: Discovery & Fingerprinting")
+use auxiliary/scanner/atproto/atproto_pds_scanner
+run
+
+# 2. Authentication Bypass Probing
+print_status(">>> STEP 2: Authentication Security Probe")
+use auxiliary/admin/atproto/atproto_jwt_bypass
+set DID did:plc:admin
+run
+
+# 3. Denial of Service Stress Test (Safe Mode)
+# We set recursion depth low to test logic without crashing dev machine
+print_status(">>> STEP 3: CBOR DoS Logic Check (Depth: 100)")
+use auxiliary/dos/atproto/atproto_cbor_dos
+set RECURSION_DEPTH 100
+run
+
+print_status(">>> Suite Completed. Check results above.")
+exit

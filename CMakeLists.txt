@@ -37,12 +37,31 @@ if(NOT APPLE)
     endif()
 
     # Find libobjc2 (GNU runtime with blocks support)
-    find_library(OBJC_RUNTIME objc)
+    if(NOT OBJC_RUNTIME)
+        find_library(OBJC_RUNTIME objc)
+    endif()
+
     if(OBJC_RUNTIME)
         message(STATUS "Found libobjc2 at ${OBJC_RUNTIME}")
         set(OBJC_FLAGS "-fblocks")
     else()
-        message(FATAL_ERROR "libobjc2 not found. Install gnustep-devel or gnustep-base-dev package.")
+        # Fallback for manual source builds in Docker or systems with non-standard paths
+        find_program(GNUSTEP_CONFIG gnustep-config)
+        if(GNUSTEP_CONFIG)
+            execute_process(
+                COMMAND ${GNUSTEP_CONFIG} --variable=GNUSTEP_LOCAL_LIBRARIES
+                OUTPUT_VARIABLE GNUSTEP_LOCAL_LIBS_DIR
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            find_library(OBJC_RUNTIME objc PATHS ${GNUSTEP_LOCAL_LIBS_DIR} NO_DEFAULT_PATH)
+        endif()
+
+        if(OBJC_RUNTIME)
+            message(STATUS "Found libobjc2 at ${OBJC_RUNTIME} via gnustep-config")
+            set(OBJC_FLAGS "-fblocks")
+        else()
+            message(FATAL_ERROR "libobjc2 not found. Install gnustep-devel or gnustep-base-dev package.")
+        endif()
     endif()
 
     # GNUstep Configuration
