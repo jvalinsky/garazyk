@@ -297,27 +297,35 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
     uint8_t majorType = (initialByte >> 5) & 0x7;
     uint8_t additionalInfo = initialByte & 0x1F;
 
+    id decoded = nil;
     switch (majorType) {
         case 0:
-            return [self decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index];
+            decoded = [self decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index];
+            break;
 
         case 1:
-            return [self decodeNegativeInteger:additionalInfo bytes:bytes length:length index:index];
+            decoded = [self decodeNegativeInteger:additionalInfo bytes:bytes length:length index:index];
+            break;
 
         case 2:
-            return [self decodeByteString:additionalInfo bytes:bytes length:length index:index];
+            decoded = [self decodeByteString:additionalInfo bytes:bytes length:length index:index];
+            break;
 
         case 3:
-            return [self decodeTextString:additionalInfo bytes:bytes length:length index:index];
+            decoded = [self decodeTextString:additionalInfo bytes:bytes length:length index:index];
+            break;
 
         case 4:
-            return [self decodeArray:additionalInfo bytes:bytes length:length index:index error:error];
+            decoded = [self decodeArray:additionalInfo bytes:bytes length:length index:index error:error];
+            break;
 
         case 5:
-            return [self decodeMap:additionalInfo bytes:bytes length:length index:index error:error];
+            decoded = [self decodeMap:additionalInfo bytes:bytes length:length index:index error:error];
+            break;
 
         case 7:
-            return [self decodeSpecial:additionalInfo bytes:bytes length:length index:index];
+            decoded = [self decodeSpecial:additionalInfo bytes:bytes length:length index:index];
+            break;
 
         default:
             if (error) {
@@ -327,6 +335,14 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
             }
             return nil;
     }
+
+    if (!decoded && error && !*error) {
+        *error = [NSError errorWithDomain:EventFormatterErrorDomain
+                                     code:EventFormatterErrorCodeDecodingFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Unexpected end of CBOR data"}];
+    }
+
+    return decoded;
 }
 
 - (NSNumber *)decodeUnsignedInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {
@@ -335,27 +351,25 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
     if (additionalInfo < 24) {
         value = additionalInfo;
     } else if (additionalInfo == 24) {
-        if (*index < length) value = bytes[*index];
+        if (*index >= length) return nil;
+        value = bytes[*index];
         (*index)++;
     } else if (additionalInfo == 25) {
-        if (*index + 1 < length) {
-            value = (uint64_t)bytes[*index] << 8 | bytes[*index + 1];
-            *index += 2;
-        }
+        if (*index + 1 >= length) return nil;
+        value = (uint64_t)bytes[*index] << 8 | bytes[*index + 1];
+        *index += 2;
     } else if (additionalInfo == 26) {
-        if (*index + 3 < length) {
-            value = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
-                    ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
-            *index += 4;
-        }
+        if (*index + 3 >= length) return nil;
+        value = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
+                ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
+        *index += 4;
     } else if (additionalInfo == 27) {
-        if (*index + 7 < length) {
-            value = 0;
-            for (int i = 0; i < 8; i++) {
-                value = (value << 8) | bytes[*index + i];
-            }
-            *index += 8;
+        if (*index + 7 >= length) return nil;
+        value = 0;
+        for (int i = 0; i < 8; i++) {
+            value = (value << 8) | bytes[*index + i];
         }
+        *index += 8;
     }
 
     return @(value);
@@ -363,6 +377,7 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
 
 - (NSNumber *)decodeNegativeInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {
     NSNumber *unsignedValue = [self decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index];
+    if (!unsignedValue) return nil;
     return @(-(int64_t)(unsignedValue.unsignedLongLongValue + 1));
 }
 
@@ -372,32 +387,28 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
     if (additionalInfo < 24) {
         byteLength = additionalInfo;
     } else if (additionalInfo == 24) {
-        if (*index < length) byteLength = bytes[*index];
+        if (*index >= length) return nil;
+        byteLength = bytes[*index];
         (*index)++;
     } else if (additionalInfo == 25) {
-        if (*index + 1 < length) {
-            byteLength = (uint64_t)bytes[*index] << 8 | bytes[*index + 1];
-            *index += 2;
-        }
+        if (*index + 1 >= length) return nil;
+        byteLength = (uint64_t)bytes[*index] << 8 | bytes[*index + 1];
+        *index += 2;
     } else if (additionalInfo == 26) {
-        if (*index + 3 < length) {
-            byteLength = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
-                         ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
-            *index += 4;
-        }
+        if (*index + 3 >= length) return nil;
+        byteLength = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
+                     ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
+        *index += 4;
     } else if (additionalInfo == 27) {
-        if (*index + 7 < length) {
-            byteLength = 0;
-            for (int i = 0; i < 8; i++) {
-                byteLength = (byteLength << 8) | bytes[*index + i];
-            }
-            *index += 8;
+        if (*index + 7 >= length) return nil;
+        byteLength = 0;
+        for (int i = 0; i < 8; i++) {
+            byteLength = (byteLength << 8) | bytes[*index + i];
         }
+        *index += 8;
     }
 
-    if (*index + byteLength > length) {
-        byteLength = length - *index;
-    }
+    if (*index > length || *index + byteLength > length) return nil;
 
     NSData *result = [NSData dataWithBytes:bytes + *index length:byteLength];
     *index += byteLength;
@@ -407,6 +418,7 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
 
 - (NSString *)decodeTextString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {
     NSData *byteData = [self decodeByteString:additionalInfo bytes:bytes length:length index:index];
+    if (!byteData) return nil;
     return [[NSString alloc] initWithData:byteData encoding:NSUTF8StringEncoding];
 }
 

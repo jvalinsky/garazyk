@@ -36,4 +36,8 @@
     }
 }
 
+- (void)testVersionCommand {
+    XCTAssertNoThrow([self.dispatcher dispatchWithCommandName:@"version" arguments:@[] context:self.context], @"Version command should not throw");
+}
+
 @end
