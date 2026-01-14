@@ -4,6 +4,7 @@
 #import "Network/RateLimiter.h"
 #import "Network/PDSNetworkTransport.h"
 #import "Debug/PDSLogger.h"
+#import <CoreFoundation/CoreFoundation.h>
 
 @interface HttpServer ()
 
@@ -21,7 +22,60 @@
 @property (nonatomic, assign) BOOL startupFinished;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
 @property (nonatomic, strong) dispatch_queue_t connectionQueue;
-@property (nonatomic, strong) NSMutableData *requestData;
+@property (nonatomic, strong) NSMapTable<id<PDSNetworkConnection>, id> *connectionStates;
+
+@end
+
+static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
+static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
+static const NSTimeInterval kHttpHeaderTimeout = 5.0;
+
+@interface HttpConnectionState : NSObject
+
+@property (nonatomic, strong) NSMutableData *buffer;
+@property (nonatomic, assign) CFHTTPMessageRef message;
+@property (nonatomic, assign) BOOL headersComplete;
+@property (nonatomic, assign) NSUInteger expectedBodyLength;
+@property (nonatomic, assign) NSTimeInterval headerStartTime;
+@property (nonatomic, assign) BOOL requestInFlight;
+@property (nonatomic, assign) NSUInteger headerEndOffset;
+
+@end
+
+@implementation HttpConnectionState
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _buffer = [NSMutableData data];
+        _message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true);
+        _headersComplete = NO;
+        _expectedBodyLength = 0;
+        _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
+        _requestInFlight = NO;
+        _headerEndOffset = 0;
+    }
+    return self;
+}
+
+- (void)dealloc {
+    if (_message) {
+        CFRelease(_message);
+        _message = NULL;
+    }
+}
+
+- (void)resetForNextRequest {
+    if (_message) {
+        CFRelease(_message);
+    }
+    _message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true);
+    _headersComplete = NO;
+    _expectedBodyLength = 0;
+    _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
+    _requestInFlight = NO;
+    _headerEndOffset = 0;
+}
 
 @end
 
@@ -43,7 +97,7 @@
         _readySemaphore = dispatch_semaphore_create(0);
         _stopSemaphore = dispatch_semaphore_create(0);
         _taskGroup = dispatch_group_create();
-        _requestData = [NSMutableData data];
+        _connectionStates = [NSMapTable strongToStrongObjectsMapTable];
         _listenerReady = NO;
         _startupFinished = NO;
         _running = NO;
@@ -155,6 +209,7 @@
             case PDSNetworkConnectionStateCancelled: {
                 dispatch_async(strongSelf.connectionQueue, ^{
                     [strongSelf.activeConnections removeObject:strongConnection];
+                    [strongSelf.connectionStates removeObjectForKey:strongConnection];
                 });
                 [strongConnection cancel];
                 break;
@@ -167,23 +222,15 @@
     [connection startWithQueue:self.serverQueue];
 }
 
-- (void)readMoreDataInto:(NSMutableData *)requestData connection:(id<PDSNetworkConnection>)connection {
-    [connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(NSData * _Nullable newContent, BOOL isComplete, NSError * _Nullable receiveError) {
-        if (newContent && newContent.length > 0) {
-            [requestData appendData:newContent];
-            [self parseRequest:requestData fromConnection:connection];
-        } else if (isComplete) {
-            // Connection closed by peer
-            [connection cancel];
-        } else if (receiveError) {
-            [connection cancel];
-        } else {
-            [self readMoreDataInto:requestData connection:connection];
-        }
-    }];
-}
-
 - (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
+    HttpConnectionState *state = [self connectionStateForConnection:connection];
+    if ([self tryProcessRequestFromState:state connection:connection]) {
+        return;
+    }
+    if (state.requestInFlight) {
+        return;
+    }
+
     __weak typeof(self) weakSelf = self;
 
     dispatch_group_enter(self.taskGroup);
@@ -200,89 +247,150 @@
         }
         
         if (content && content.length > 0) {
-            [strongSelf parseRequest:content fromConnection:connection];
+            [strongSelf appendData:content toConnection:connection];
         } else if (isComplete) {
             [connection cancel];
-        } else {
-            [strongSelf readRequestFromConnection:connection];
         }
         dispatch_group_leave(strongSelf.taskGroup);
     }];
 }
 
-- (void)parseRequest:(NSData *)data fromConnection:(id<PDSNetworkConnection>)connection {
-    NSMutableData *requestData = [NSMutableData dataWithData:data];
+- (void)appendData:(NSData *)data toConnection:(id<PDSNetworkConnection>)connection {
+    HttpConnectionState *state = [self connectionStateForConnection:connection];
+    [state.buffer appendData:data];
+    if (![self tryProcessRequestFromState:state connection:connection] && !state.requestInFlight) {
+        [self readRequestFromConnection:connection];
+    }
+}
 
-    NSString *requestString = [[NSString alloc] initWithData:requestData encoding:NSUTF8StringEncoding];
-    if (!requestString) {
-        requestString = [[NSString alloc] initWithData:requestData encoding:NSISOLatin1StringEncoding];
+- (HttpConnectionState *)connectionStateForConnection:(id<PDSNetworkConnection>)connection {
+    __block HttpConnectionState *state = nil;
+    dispatch_sync(self.connectionQueue, ^{
+        state = [self.connectionStates objectForKey:connection];
+        if (!state) {
+            state = [[HttpConnectionState alloc] init];
+            [self.connectionStates setObject:state forKey:connection];
+        }
+    });
+    return state;
+}
+
+- (BOOL)tryProcessRequestFromState:(HttpConnectionState *)state connection:(id<PDSNetworkConnection>)connection {
+    if (state.requestInFlight) {
+        return YES;
     }
 
-    if (!requestString) {
-        HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-        [response setBodyString:@"Invalid request"];
-        [self sendResponse:response onConnection:connection];
-        return;
+    if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime > kHttpHeaderTimeout) {
+        [connection cancel];
+        return YES;
     }
 
-    NSRange headerEndRange = [requestString rangeOfString:@"\r\n\r\n"];
-    if (headerEndRange.location == NSNotFound) {
-        if (data.length < 16384) {
-            // Headers not fully received yet
-            [self readMoreDataInto:requestData connection:connection];
-            return;
-        } else {
-            // Request too large or malformed
-            HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-            [response setBodyString:@"Request too large"];
+    if (!state.headersComplete) {
+        if (state.buffer.length > kHttpMaxHeaderBytes) {
+            HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusPayloadTooLarge];
+            response.keepAlive = NO;
+            [response setJsonBody:@{@"error": @"RequestTooLarge", @"message": @"Request headers too large"}];
+            state.requestInFlight = YES;
             [self sendResponse:response onConnection:connection];
-            return;
+            return YES;
+        }
+
+        NSRange headerEndRange = [self headerEndRangeInData:state.buffer];
+        if (headerEndRange.location == NSNotFound) {
+            return NO;
+        }
+
+        NSData *headerData = [state.buffer subdataWithRange:NSMakeRange(0, headerEndRange.location + headerEndRange.length)];
+        if (!CFHTTPMessageAppendBytes(state.message, headerData.bytes, headerData.length)) {
+            HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
+            response.keepAlive = NO;
+            [response setBodyString:@"Invalid request"];
+            state.requestInFlight = YES;
+            [self sendResponse:response onConnection:connection];
+            return YES;
+        }
+
+        if (!CFHTTPMessageIsHeaderComplete(state.message)) {
+            return NO;
+        }
+
+        state.headersComplete = YES;
+        state.headerEndOffset = headerEndRange.location + headerEndRange.length;
+        state.expectedBodyLength = [self contentLengthForMessage:state.message];
+
+        if (state.expectedBodyLength > kHttpMaxBodyBytes) {
+            HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusPayloadTooLarge];
+            response.keepAlive = NO;
+            [response setJsonBody:@{@"error": @"RequestTooLarge", @"message": @"Request body too large"}];
+            state.requestInFlight = YES;
+            [self sendResponse:response onConnection:connection];
+            return YES;
         }
     }
 
-    // Check for Content-Length
-    NSString *headersPart = [requestString substringToIndex:headerEndRange.location];
-    NSUInteger contentLength = 0;
-    
-    // Simple case-insensitive search for Content-Length
-    NSRange clRange = [headersPart rangeOfString:@"Content-Length:" options:NSCaseInsensitiveSearch];
-    if (clRange.location != NSNotFound) {
-        NSUInteger valueStart = clRange.location + clRange.length;
-        NSRange lineEnd = [headersPart rangeOfString:@"\r\n" options:0 range:NSMakeRange(valueStart, headersPart.length - valueStart)];
-        if (lineEnd.location != NSNotFound) {
-            NSString *valueString = [headersPart substringWithRange:NSMakeRange(valueStart, lineEnd.location - valueStart)];
-            contentLength = (NSUInteger)[valueString longLongValue];
-        } else {
-            // End of headers string
-            NSString *valueString = [headersPart substringFromIndex:valueStart];
-            contentLength = (NSUInteger)[valueString longLongValue];
-        }
-    }
-    
-    NSUInteger expectedLength = headerEndRange.location + 4 + contentLength;
-    
-    if (data.length < expectedLength) {
-        // Need more body data
-        [self readMoreDataInto:requestData connection:connection];
-        return;
+    NSUInteger bodyStart = state.headerEndOffset;
+    if (state.buffer.length < bodyStart + state.expectedBodyLength) {
+        return NO;
     }
 
-    // Get remote address from connection
-    NSString *remoteAddress = connection.remoteAddress;
+    NSData *bodyData = [state.buffer subdataWithRange:NSMakeRange(bodyStart, state.expectedBodyLength)];
 
-    HttpRequest *request = [HttpRequest requestWithData:requestData remoteAddress:remoteAddress];
+    CFHTTPMessageRef message = state.message;
+    NSString *method = (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(message);
+    CFURLRef urlRef = CFHTTPMessageCopyRequestURL(message);
+    NSURL *url = urlRef ? CFBridgingRelease(urlRef) : nil;
+    NSString *version = (__bridge_transfer NSString *)CFHTTPMessageCopyVersion(message);
+    NSDictionary *headers = [self headersFromMessage:message];
+
+    if (![self isSupportedTransferEncoding:headers]) {
+        HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusNotImplemented];
+        response.keepAlive = NO;
+        [response setJsonBody:@{@"error": @"UnsupportedTransferEncoding", @"message": @"Transfer-Encoding not supported"}];
+        state.requestInFlight = YES;
+        [self sendResponse:response onConnection:connection];
+        return YES;
+    }
+
+    NSString *path = url.path ?: @"/";
+    NSString *queryString = url.query ?: @"";
+    NSDictionary<NSString *, NSString *> *queryParams = [self parseQueryParamsFromString:queryString];
+    HttpMethod methodEnum = [self httpMethodFromString:method ?: @""];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:methodEnum
+                                                   methodString:method ?: @""
+                                                           path:path
+                                                    queryString:queryString
+                                                    queryParams:queryParams ?: @{}
+                                                        version:version ?: @"HTTP/1.1"
+                                                        headers:headers ?: @{}
+                                                           body:bodyData
+                                                   remoteAddress:connection.remoteAddress ?: @""];
 
     if (!request) {
         HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
+        response.keepAlive = NO;
         [response setBodyString:@"Invalid request"];
+        state.requestInFlight = YES;
         [self sendResponse:response onConnection:connection];
-        return;
+        return YES;
     }
 
-    // Dispatch request processing to background queue to avoid blocking network I/O
+    NSUInteger consumedLength = bodyStart + state.expectedBodyLength;
+    NSUInteger remainingLength = state.buffer.length - consumedLength;
+    NSData *remainingData = remainingLength > 0 ? [state.buffer subdataWithRange:NSMakeRange(consumedLength, remainingLength)] : nil;
+
+    [state.buffer setData:remainingData ?: [NSData data]];
+    [state resetForNextRequest];
+
+    state.requestInFlight = YES;
+    [self dispatchRequest:request onConnection:connection];
+    return YES;
+}
+
+- (void)dispatchRequest:(HttpRequest *)request onConnection:(id<PDSNetworkConnection>)connection {
     __weak typeof(self) weakSelf = self;
     __weak id<PDSNetworkConnection> weakConnection = connection;
-    HttpRequest *requestRef = request; // Capture request in block
+    HttpRequest *requestRef = request;
 
     dispatch_group_enter(self.taskGroup);
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -293,20 +401,98 @@
             return;
         }
 
-        // Set correlation ID for logs on this thread
         [[PDSLogger sharedLogger] setCorrelationID:requestRef.correlationID];
 
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
 
-        // Send response back on the network queue
         dispatch_async(strongSelf.serverQueue, ^{
             [strongSelf sendResponse:response onConnection:strongConnection];
             dispatch_group_leave(strongSelf.taskGroup);
         });
 
-        // Clear correlation ID after dispatch
         [[PDSLogger sharedLogger] clearCorrelationID];
     });
+}
+
+- (NSRange)headerEndRangeInData:(NSData *)data {
+    const uint8_t *bytes = data.bytes;
+    for (NSUInteger i = 0; i + 3 < data.length; i++) {
+        if (bytes[i] == '\r' && bytes[i + 1] == '\n' && bytes[i + 2] == '\r' && bytes[i + 3] == '\n') {
+            return NSMakeRange(i, 4);
+        }
+    }
+    return NSMakeRange(NSNotFound, 0);
+}
+
+- (NSUInteger)contentLengthForMessage:(CFHTTPMessageRef)message {
+    NSString *contentLengthString = (__bridge_transfer NSString *)CFHTTPMessageCopyHeaderFieldValue(message, CFSTR("Content-Length"));
+    if (!contentLengthString) {
+        return 0;
+    }
+    return (NSUInteger)[contentLengthString longLongValue];
+}
+
+- (NSDictionary<NSString *, NSString *> *)headersFromMessage:(CFHTTPMessageRef)message {
+    NSDictionary *rawHeaders = (__bridge_transfer NSDictionary *)CFHTTPMessageCopyAllHeaderFields(message);
+    if (!rawHeaders) {
+        return @{};
+    }
+    NSMutableDictionary<NSString *, NSString *> *headers = [NSMutableDictionary dictionaryWithCapacity:rawHeaders.count];
+    for (NSString *key in rawHeaders) {
+        NSString *value = rawHeaders[key];
+        if (key && value) {
+            headers[key.lowercaseString] = value;
+        }
+    }
+    return [headers copy];
+}
+
+- (BOOL)isSupportedTransferEncoding:(NSDictionary<NSString *, NSString *> *)headers {
+    NSString *transferEncoding = headers[@"transfer-encoding"];
+    if (!transferEncoding || transferEncoding.length == 0) {
+        return YES;
+    }
+    NSString *lowercased = transferEncoding.lowercaseString;
+    return [lowercased isEqualToString:@"identity"];
+}
+
+- (NSDictionary<NSString *, NSString *> *)parseQueryParamsFromString:(NSString *)queryString {
+    if (queryString.length == 0) {
+        return @{};
+    }
+
+    NSMutableDictionary<NSString *, NSString *> *params = [NSMutableDictionary dictionary];
+    NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
+
+    for (NSString *pair in pairs) {
+        NSRange eqRange = [pair rangeOfString:@"="];
+        if (eqRange.location != NSNotFound) {
+            NSString *key = [self urlDecode:[pair substringToIndex:eqRange.location]];
+            NSString *value = [self urlDecode:[pair substringFromIndex:eqRange.location + 1]];
+            params[key] = value;
+        } else {
+            params[[self urlDecode:pair]] = @"";
+        }
+    }
+
+    return [params copy];
+}
+
+- (NSString *)urlDecode:(NSString *)string {
+    NSString *result = [string stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+    result = [result stringByRemovingPercentEncoding];
+    return result ?: string;
+}
+
+- (HttpMethod)httpMethodFromString:(NSString *)methodString {
+    if ([methodString isEqualToString:@"GET"]) return HttpMethodGET;
+    if ([methodString isEqualToString:@"POST"]) return HttpMethodPOST;
+    if ([methodString isEqualToString:@"PUT"]) return HttpMethodPUT;
+    if ([methodString isEqualToString:@"DELETE"]) return HttpMethodDELETE;
+    if ([methodString isEqualToString:@"PATCH"]) return HttpMethodPATCH;
+    if ([methodString isEqualToString:@"OPTIONS"]) return HttpMethodOPTIONS;
+    if ([methodString isEqualToString:@"HEAD"]) return HttpMethodHEAD;
+    return HttpMethodUnknown;
 }
 
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
@@ -443,11 +629,16 @@
             return;
         }
 
+        HttpConnectionState *state = [weakSelf connectionStateForConnection:connection];
+        state.requestInFlight = NO;
+
         if (shouldKeepAlive) {
             // HTTP/1.1 keep-alive: read the next request on this connection
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (strongSelf) {
-                [strongSelf readRequestFromConnection:connection];
+                if (![strongSelf tryProcessRequestFromState:state connection:connection]) {
+                    [strongSelf readRequestFromConnection:connection];
+                }
             }
         } else {
             // Close connection after response
@@ -476,6 +667,7 @@
             [conn cancel];
         }
         [self->_activeConnections removeAllObjects];
+        [self.connectionStates removeAllObjects];
     });
 }
 
