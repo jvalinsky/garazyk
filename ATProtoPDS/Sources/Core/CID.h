@@ -1,9 +1,31 @@
+/*!
+ @file CID.h
+
+ @abstract Content Identifier (CID) implementation for ATProto repositories.
+
+ @discussion Implements CIDv1 content-addressed identifiers using multibase,
+ multicodec, and multihash. CIDs provide cryptographic verification of data
+ integrity through SHA-256 hashing. Used for blob references, commit roots,
+ and MST node addressing.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Content Identifier (CID) implementation for ATProto
-/// Supports CIDv1 format: base + codec + multihash
+/*!
+ @class CID
+
+ @abstract Content Identifier with cryptographic hash verification.
+
+ @discussion Represents a CIDv1 identifier containing version, codec, and
+ multihash components. Supports base32 encoding for string representation
+ and provides SHA-256 hashing utilities.
+
+ @see https://github.com/multiformats/cid
+ */
 @interface CID : NSObject <NSCopying, NSSecureCoding>
 
 /// Version of the CID (currently 1)

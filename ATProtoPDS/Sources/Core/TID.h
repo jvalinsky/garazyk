@@ -1,9 +1,27 @@
+/*!
+ @file TID.h
+
+ @abstract Timestamp Identifier (TID) for ATProto record keys.
+
+ @discussion Implements TIDs as 13-character base32-sortable identifiers
+ encoding microsecond timestamps. TIDs provide chronological ordering
+ for records and serve as unique keys within collections.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Timestamp Identifier (TID) implementation for ATProto
-/// TIDs are sortable, time-ordered identifiers for records
+/*!
+ @class TID
+
+ @abstract Time-ordered identifier for ATProto records.
+
+ @discussion Encodes microsecond timestamps in a sortable base32 format.
+ Used as record keys (rkeys) in repository collections.
+ */
 @interface TID : NSObject <NSCopying, NSSecureCoding>
 
 /// The raw TID string (13-character base32)
