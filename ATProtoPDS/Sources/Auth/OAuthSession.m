@@ -1,6 +1,7 @@
 #import "Auth/OAuthSession.h"
 #import "Auth/PKCEUtil.h"
 #import "Auth/DPoPUtil.h"
+#import "Compat/PDSTypes.h"
 
 NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
 
@@ -162,7 +163,7 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, OAuthSession *> *sessions;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, OAuthSession *> *authCodes;
-@property (nonatomic, strong) dispatch_queue_t sessionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t sessionQueue;
 @property (nonatomic, copy) NSString *dpopNonce;
 @property (nonatomic, strong) NSDate *nonceExpiresAt;
 

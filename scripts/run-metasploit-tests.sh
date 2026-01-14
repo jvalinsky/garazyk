@@ -36,16 +36,11 @@ fi
 # 2. Setup Environment (Symlinks)
 echo "Setting up Metasploit environment..."
 
-if [ "$HAS_MSF" -eq 1 ]; then
-    # Local setup
-    mkdir -p "$MSF_DIR/auxiliary/scanner/atproto"
-    mkdir -p "$MSF_DIR/auxiliary/dos/atproto"
-    mkdir -p "$MSF_DIR/auxiliary/admin/atproto"
-
-    # Link modules if not present or updated
-    ln -sf "$MODULES_DIR/auxiliary/scanner/atproto/atproto_pds_scanner.rb" "$MSF_DIR/auxiliary/scanner/atproto/"
-    ln -sf "$MODULES_DIR/auxiliary/dos/atproto/atproto_cbor_dos.rb" "$MSF_DIR/auxiliary/dos/atproto/"
-    ln -sf "$MODULES_DIR/auxiliary/admin/atproto/atproto_jwt_bypass.rb" "$MSF_DIR/auxiliary/admin/atproto/"
+    # Link all modules in the directories
+    for category in scanner dos admin; do
+        mkdir -p "$MSF_DIR/auxiliary/$category/atproto"
+        ln -sf "$MODULES_DIR/auxiliary/$category/atproto"/*.rb "$MSF_DIR/auxiliary/$category/atproto/"
+    done
     
     echo -e "${GREEN}✓ Modules linked to ~/.msf4${NC}"
 else
@@ -59,15 +54,19 @@ echo "---------------------------------------------------"
 if [ "$HAS_MSF" -eq 1 ]; then
     # Local Run
     msfconsole -q -x "setg RPORT $PDS_PORT; resource $RC_SCRIPT; exit"
+elif [ -f /.dockerenv ]; then
+    # Inside Docker (e.g., via docker-compose)
+    # RHOSTS and RPORT are expected to be set via ENV
+    msfconsole -q -x "setg RHOSTS $RHOSTS; setg RPORT $RPORT; resource $RC_SCRIPT; exit"
 else
-    # Docker Run
-    # We map the project directory to /modules and run the script inside
-    # We set RHOSTS to host.docker.internal to access the host machine
+    # One-off Docker Run from Host
+    # We map the project directory to /app and run the script inside
     docker run --rm \
-        -v "$MODULES_DIR:/modules" \
-        -v "$HOME/.msf4:/root/.msf4" \
+        -v "$PROJECT_ROOT:/app" \
+        -e RHOSTS=host.docker.internal \
+        -e RPORT=$PDS_PORT \
         metasploitframework/metasploit-framework \
-        ./msfconsole -q -x "loadpath /modules; setg RHOSTS host.docker.internal; setg RPORT $PDS_PORT; resource /modules/run_pds_suite.rc; exit"
+        /bin/bash /app/scripts/run-metasploit-tests.sh
 fi
 
 echo "---------------------------------------------------"

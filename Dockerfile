@@ -22,10 +22,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libsqlite3-dev \
     zlib1g-dev \
-    libdispatch-dev \
-    libblocksruntime-dev \
-    libkqueue-dev \
-    libpthread-workqueue-dev \
+    zlib1g-dev \
     libqrencode-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -67,17 +64,46 @@ RUN cd /src/gnustep-base && \
     ./configure --with-library-combo=ng-gnu-gnu && \
     make -j$(nproc) install
 
+# 4.5 Build Dispatch & Dependencies from Source
+RUN git clone https://github.com/mheily/libkqueue.git /src/libkqueue && \
+    cd /src/libkqueue && \
+    cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr/local . && \
+    make install
+
+RUN git clone https://github.com/mheily/libpwq.git /src/libpwq && \
+    cd /src/libpwq && \
+    cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_C_FLAGS="-fcommon" . && \
+    make install
+
+RUN apt-get update && apt-get install -y python3-pip && \
+    pip3 install cmake==3.28.0
+
+RUN git clone https://github.com/apple/swift-corelibs-libdispatch.git /src/libdispatch && \
+    cd /src/libdispatch && \
+    mkdir build && cd build && \
+    /usr/local/bin/cmake -G "Unix Makefiles" \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    -DUSE_PTHREAD_WORKQUEUE=ON \
+    -DPTHREAD_WORKQUEUE_INCLUDE_DIRS=/usr/local/include \
+    -DPTHREAD_WORKQUEUE_LIBRARIES=/usr/local/lib/libpthread_workqueue.so \
+    .. && \
+    make -j$(nproc) install && \
+    ldconfig
+
 # 5. Build ATProtoPDS Server
 WORKDIR /app
 COPY . .
 
 # We build specifically the server target in Release mode
-# Note: We must point to our custom built GNUstep
+# Using toolchain file to set compilers BEFORE project(), avoiding cache invalidation.
 RUN . /usr/GNUstep/System/Library/Makefiles/GNUstep.sh && \
+    rm -rf build && \
     cmake -S . -B build \
+    -DCMAKE_TOOLCHAIN_FILE=/app/cmake/gnustep-clang-toolchain.cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_COMPILER=/usr/bin/clang \
-    -DCMAKE_OBJC_COMPILER=/usr/bin/clang \
     -DCMAKE_PREFIX_PATH=/usr/GNUstep/System:/usr/GNUstep/Local \
     -DOBJC_RUNTIME:FILEPATH=/usr/GNUstep/Local/Library/Libraries/libobjc.so \
     -DLIBRARY_OUTPUT_PATH=/app/build/lib \

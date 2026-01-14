@@ -149,7 +149,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
                 error:(NSError **)error;
 
-/*! Gets the signing key from Keychain. */
+/*! Gets the signing key from Keychain. Caller must CFRelease the returned key. */
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error;
 
 /*! Stores a signing key in Keychain. */
@@ -157,6 +157,13 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 /*! Generates a new signing key. */
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
+
+/*! Whether signing keys should be persisted via the Keychain. Defaults to YES. */
+@property (nonatomic, assign) BOOL useKeychainSigningKey;
+
+/*! When YES (default), signing keys are persisted to the Keychain. When NO, keys stay in memory (useful for tests). */
+- (void)setUseKeychainSigningKey:(BOOL)useKeychain; // to maintain compatibility for non-ARC bridging
+- (BOOL)useKeychainSigningKey;
 
 // Internal methods for ServiceDatabases
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;

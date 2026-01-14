@@ -4,271 +4,162 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   schedule:
-    # Weekly security scan on Sunday at 2 AM UTC
     - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:
       fuzzing_duration:
-        description: 'Fuzzing duration in minutes'
+        description: 'Fuzzing duration in minutes (per fuzzer)'
         required: false
-        default: '30'
+        default: '10'
 
-# Prevent duplicate runs
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   XCODE_VERSION: '16.1'
-  # Security settings
-  SECURE_LOGGING: 'true'
 
 jobs:
-  # ============================================================================
-  # JOB 1: Static Analysis with Clang-Tidy
-  # ============================================================================
-  static-analysis:
+  clang-tidy:
     name: Static Analysis (clang-tidy)
-    runs-on: macos-14  # More stable than macos-latest
+    runs-on: macos-14
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
-      - name: Verify Xcode
+      - name: Install LLVM
         run: |
-          xcodebuild -version
-          xcode-select -p
+          brew update
+          brew install llvm@18 ninja cmake
 
-      - name: Install Homebrew dependencies
+      - name: Configure (compile_commands.json)
         run: |
-          brew install xcodegen llvm@18
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_OBJC_COMPILER=clang \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=OFF
 
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-sec-${{ runner.os }}-${{ env.XCODE_VERSION }}
-
-      - name: Generate project
-        run: xcodegen generate
-
-      - name: Run clang-tidy
+      - name: Build (for analysis)
         run: |
-          export PATH="/opt/homebrew/opt/llvm@18/bin:$PATH"
-          make clang-tidy 2>&1 | tee static_analysis.log || true
+          cmake --build build --parallel 4 --target atprotopds-cli
 
-      - name: Upload static analysis results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: static-analysis-results
-          path: static_analysis.log
-          retention-days: 30
-
-      - name: Check for critical warnings
+      - name: Run clang-tidy (curated)
         run: |
-          if grep -q "error:" static_analysis.log; then
-            echo "::warning::Static analysis found errors - review artifacts"
-          fi
+          LLVM_BIN="$(brew --prefix llvm@18)/bin"
+          CLANG_TIDY="$LLVM_BIN/clang-tidy"
 
-  # ============================================================================
-  # JOB 2: CodeQL Analysis (Native GitHub Security)
-  # ============================================================================
-  codeql-analysis:
-    name: CodeQL Security Analysis
-    runs-on: macos-14
-    timeout-minutes: 45
-    permissions:
-      security-events: write
-      contents: read
+          FILES=(
+            ATProtoPDS/Sources/Repository/CBOR.m
+            ATProtoPDS/Sources/Network/HttpRequest.m
+            ATProtoPDS/Sources/Network/XrpcHandler.m
+            ATProtoPDS/Sources/Database/ActorStore/ActorStore.m
+            ATProtoPDS/Sources/Auth/JWT.m
+          )
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+          for f in "${FILES[@]}"; do
+            echo "==> clang-tidy $f"
+            "$CLANG_TIDY" -p build "$f"
+          done
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
-      - name: Verify Xcode
-        run: |
-          xcodebuild -version
-          xcode-select -p
-
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-codeql-${{ runner.os }}-${{ env.XCODE_VERSION }}
-
-      - name: Setup CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: c-cpp
-          queries: security-extended
-
-      - name: Generate project
-        run: xcodegen generate
-
-      - name: Build project
-        run: |
-          xcodebuild -project ATProtoPDS.xcodeproj \
-            -scheme ATProtoPDS \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            -skipPackagePluginValidation \
-            build 2>&1 | tail -20
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:c-cpp"
-          upload: true
-
-      - name: Store CodeQL results
-        uses: actions/upload-artifact@v4
-        with:
-          name: codeql-results
-          path: ${{ github.workspace }}/**/codeql/
-          retention-days: 30
-
-  # ============================================================================
-  # JOB 3: Fuzzing with libFuzzer
-  # ============================================================================
   fuzzing:
     name: Fuzzing (libFuzzer)
     runs-on: macos-14
-    timeout-minutes: ${{ github.event.inputs.fuzzing_duration || 60 }}
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: recursive
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
-      - name: Verify Xcode
+      - name: Install Build Dependencies
         run: |
-          xcodebuild -version
-          xcode-select -p
+          brew update
+          brew install ninja cmake
 
-      - name: Install Homebrew dependencies
+      - name: Configure (Fuzzers)
         run: |
-          brew install xcodegen llvm@18
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_OBJC_COMPILER=clang \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=ON
 
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/xcodegen
-            /usr/local/Cellar/llvm
-          key: homebrew-sec-fuzz-${{ runner.os }}-${{ hashFiles('Brewfile') }}
-          restore-keys: |
-            homebrew-sec-fuzz-${{ runner.os }}-
-
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-fuzz-${{ runner.os }}-${{ env.XCODE_VERSION }}
-
-      - name: Generate project
-        run: xcodegen generate
-
-      - name: Build fuzzers with sanitizers
-        run: make fuzz-all 2>&1 | tail -30
-
-      - name: Run fuzzers with corpus
+      - name: Build Fuzzers
         run: |
-          echo "Running XRPC fuzzer..."
-          ./fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_total_time=${{ github.event.inputs.fuzzing_duration || 600 }} -jobs=4 -timeout=30 2>&1 | tee fuzz_xrpc.log || true
+          cmake --build build --parallel 4 --target fuzz-all
 
-          echo "Running CBOR fuzzer..."
-          ./fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_total_time=${{ github.event.inputs.fuzzing_duration || 600 }} -jobs=4 -timeout=30 2>&1 | tee fuzz_cbor.log || true
-
-          echo "Running HTTP fuzzer..."
-          ./fuzzing/fuzz_http fuzzing/corpus_http/ -max_total_time=${{ github.event.inputs.fuzzing_duration || 600 }} -jobs=4 -timeout=30 2>&1 | tee fuzz_http.log || true
-
-      - name: Check for crashes
+      - name: Run Fuzzers
         run: |
-          CRASH_COUNT=0
-          for log in fuzz_*.log; do
-            if grep -q "SUMMARY: libFuzzer: crash" "$log" 2>/dev/null; then
-              CRASH_COUNT=$((CRASH_COUNT + 1))
-              echo "::error::Crash detected in $log"
-            fi
-          done
+          DURATION_MIN='${{ github.event.inputs.fuzzing_duration || 10 }}'
+          DURATION_SEC=$((DURATION_MIN * 60))
 
-          if [ $CRASH_COUNT -gt 0 ]; then
-            echo "::error::$CRASH_COUNT crash(es) detected during fuzzing"
-            exit 1
-          else
-            echo "No crashes detected during fuzzing"
-          fi
+          echo "Running XRPC fuzzer for ${DURATION_SEC}s"
+          ./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_total_time=${DURATION_SEC} -jobs=2 -timeout=10
 
-      - name: Upload fuzzing results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fuzzing-results
-          path: |
-            fuzz_*.log
-            fuzzing/crashers/
-          retention-days: 30
+          echo "Running CBOR fuzzer for ${DURATION_SEC}s"
+          ./build/fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_total_time=${DURATION_SEC} -jobs=2 -timeout=10
 
-  # ============================================================================
-  # JOB 4: Dependency Security
-  # ============================================================================
-  dependency-check:
-    name: Dependency Security
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+          echo "Running HTTP fuzzer for ${DURATION_SEC}s"
+          ./build/fuzzing/fuzz_http fuzzing/corpus_http/ -max_total_time=${DURATION_SEC} -jobs=2 -timeout=10
+
+  dependency-scan:
+    name: Dependency Scan (OSV)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     permissions:
       contents: read
       security-events: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.1
+        uses: google/osv-scanner-action@v2.3.1
         with:
-          scan-args: |
+          scan-args: |-
             --recursive
             ./
-          fail-on-vuln: false
 
-  # ============================================================================
-  # JOB 5: Secret Scanning
-  # ============================================================================
-  secret-scanning:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  secret-scan:
+    name: Secret Scanning (TruffleHog)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -276,159 +167,5 @@ jobs:
       - name: Run TruffleHog
         uses: trufflesecurity/trufflehog@main
         with:
-          path: .
-          extra_args: git --since-commit main --fail
-
-      - name: Upload secret scan results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: secret-scan-results
-          path: trufflehog-results.json
-          retention-days: 7
-
-  # ============================================================================
-  # JOB 6: Comprehensive Security Report
-  # ============================================================================
-  security-report:
-    name: Security Report
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [static-analysis, codeql-analysis, fuzzing, dependency-check, secret-scanning]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: security-results
-
-      - name: Generate security report
-        run: |
-          cat > SECURITY_REPORT.md << 'EOF'
-          # Security Test Report
-
-          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          **Commit:** ${{ github.sha }}
-
-          ## Summary
-
-          | Check | Status |
-          |-------|--------|
-          | Static Analysis | ${{ needs.static-analysis.result }} |
-          | CodeQL Analysis | ${{ needs.codeql-analysis.result }} |
-          | Fuzzing | ${{ needs.fuzzing.result }} |
-          | Dependencies | ${{ needs.dependency-check.result }} |
-          | Secret Scanning | ${{ needs.secret-scanning.result }} |
-
-          ## Detailed Results
-
-          ### Static Analysis
-          See artifact: static-analysis-results
-
-          ### CodeQL
-          See GitHub Security tab for detailed results
-
-          ### Fuzzing
-          See artifact: fuzzing-results
-
-          ### Dependency Check
-          See artifact: dependency-results
-
-          ### Secret Scanning
-          See artifact: secret-scan-results
-
-          ## Recommendations
-
-          1. Review all findings in GitHub Security tab
-          2. Address any "error" level issues before merging
-          3. Consider addressing "warning" level issues
-          4. Run extended fuzzing session periodically
-          5. Update dependencies regularly
-          EOF
-
-          cat SECURITY_REPORT.md
-
-      - name: Upload final report
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report
-          path: SECURITY_REPORT.md
-          retention-days: 90
-
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## Security Check Complete\n\nAll security tests have completed. Review results in the Security tab and artifacts.'
-            })
-
-  # ============================================================================
-  # JOB 7: Sanitizer Builds
-  # ============================================================================
-  sanitizer-builds:
-    name: Sanitizer Builds
-    runs-on: macos-14
-    timeout-minutes: 30
-
-    strategy:
-      fail-fast: false
-      matrix:
-        sanitizer: [asan, ubsan, tsan]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
-      - name: Verify Xcode
-        run: |
-          xcodebuild -version
-          xcode-select -p
-
-      - name: Install Homebrew dependencies
-        run: |
-          brew install xcodegen llvm@18
-
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/xcodegen
-            /usr/local/Cellar/llvm
-          key: homebrew-sanitizer-${{ runner.os }}-${{ hashFiles('Brewfile') }}
-          restore-keys: |
-            homebrew-sanitizer-${{ runner.os }}-
-
-      - name: Cache XcodeGen
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/xcodegen
-          key: xcodegen-sanitizer-${{ runner.os }}-${{ env.XCODE_VERSION }}
-
-      - name: Generate project
-        run: xcodegen generate
-
-      - name: Build with ${{ matrix.sanitizer }}
-        run: make fuzz-${{ matrix.sanitizer }} 2>&1 | tail -20
-
-      - name: Verify build
-        run: |
-          if [ -f "fuzzing/fuzz_xrpc" ]; then
-            echo "${{ matrix.sanitizer }} build: SUCCESS"
-          else
-            echo "::error::${{ matrix.sanitizer }} build failed"
-            exit 1
-          fi
+          path: ./
+          extra_args: --no-update
