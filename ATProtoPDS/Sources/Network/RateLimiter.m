@@ -1,4 +1,5 @@
 #import "Network/RateLimiter.h"
+#import "Compat/PDSTypes.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
 #import <sqlite3.h>
@@ -27,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, copy) NSString *databasePath;
 @property (nonatomic, assign) sqlite3 *db;
-@property (nonatomic, strong) dispatch_queue_t dbQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
 
 @end
 

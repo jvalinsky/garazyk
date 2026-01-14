@@ -2,6 +2,7 @@
 #import "Auth/JWT.h"
 #import "Auth/KeyManager.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
@@ -218,7 +219,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 @property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByAccessToken;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByRefreshToken;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<Session *> *> *sessionsByDID;
-@property (nonatomic, strong) dispatch_queue_t accessQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 @property (nonatomic, assign) NSTimeInterval clockSkew;
 @end
 

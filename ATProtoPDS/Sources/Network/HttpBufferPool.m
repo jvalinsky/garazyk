@@ -1,4 +1,5 @@
 #import "HttpBufferPool.h"
+#import "Compat/PDSTypes.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"
 
@@ -10,7 +11,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<NSMutableData *> *> *bufferPools;
 @property (nonatomic, strong) NSMutableArray<HttpRequest *> *requestPool;
 @property (nonatomic, strong) NSMutableArray<HttpResponse *> *responsePool;
-@property (nonatomic, strong) dispatch_queue_t poolQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
 @property (nonatomic, strong) NSArray<NSNumber *> *sizeClasses;
 
 @end
