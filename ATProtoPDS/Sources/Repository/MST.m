@@ -291,17 +291,21 @@
 
 @implementation MST
 
-- (instancetype)initWithRootCID:(CID *)rootCID {
+- (instancetype)initWithRootNode:(nullable MSTNode *)rootNode {
     self = [super init];
     if (self) {
-        _root = [[MSTNode alloc] initWithLevel:0];
+        _root = rootNode ?: [[MSTNode alloc] initWithLevel:0];
         _emptyTreeHash = [self computeEmptyTreeHash];
     }
     return self;
 }
 
+- (instancetype)initWithRootCID:(CID *)rootCID {
+    return [self initWithRootNode:nil];
+}
+
 - (instancetype)init {
-    return [self initWithRootCID:nil];
+    return [self initWithRootNode:nil];
 }
 
 - (NSData *)computeEmptyTreeHash {
@@ -647,7 +651,63 @@
 - (NSData *)serializeToCBOR {
     return [self.root serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
 }
-+ (nullable instancetype)deserializeFromCBOR:(NSData *)data { return nil; }
+- (nullable NSData *)serializeNode:(MSTNode *)node {
+    if (!node) return nil;
+    return [node serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
+}
+
+- (nullable instancetype)deserializeFromCBOR:(NSData *)data {
+    if (!data) return nil;
+
+    CBORValue *rootValue = [CBORValue decode:data];
+    if (!rootValue || rootValue.type != CBORTypeMap) {
+        return nil;
+    }
+
+    CBORValue *entriesValue = rootValue.map[[CBORValue textString:@"e"]];
+    NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray)
+        ? entriesValue.array
+        : @[];
+
+    NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
+    NSString *prevKey = @"";
+
+    for (CBORValue *entryMap in entriesArray) {
+        if (entryMap.type != CBORTypeMap) {
+            continue;
+        }
+
+        CBORValue *keyValue = entryMap.map[[CBORValue textString:@"k"]];
+        NSData *suffixData = keyValue.byteString ?: [NSData data];
+
+        CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+        NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
+        NSUInteger safePrefixLen = MIN(prefixLen, prevKey.length);
+        NSString *prefix = [prevKey substringToIndex:safePrefixLen];
+
+        NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
+        NSString *fullKey = [prefix stringByAppendingString:suffix];
+        prevKey = fullKey;
+
+        CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
+        CBORValue *valueBytes = valueTag.tagValue;
+        if (!valueBytes || valueBytes.type != CBORTypeByteString || valueBytes.byteString.length <= 1) {
+            continue;
+        }
+
+        NSData *cidBytes = [valueBytes.byteString subdataWithRange:NSMakeRange(1, valueBytes.byteString.length - 1)];
+        CID *valueCID = [CID cidFromBytes:cidBytes];
+        if (!valueCID) {
+            continue;
+        }
+
+        MSTNodeEntry *entry = [[MSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:nil];
+        [entries addObject:entry];
+    }
+
+    MSTNode *rootNode = [[MSTNode alloc] initWithLevel:0 left:nil entries:entries];
+    return [[MST alloc] initWithRootNode:rootNode];
+}
 
 #pragma mark - Visualization & Export
 
