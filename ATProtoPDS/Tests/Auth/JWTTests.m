@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Auth/JWT.h"
+#import "Auth/Secp256k1.h"
 
 @interface JWTTests : XCTestCase
 @property (nonatomic, strong) JWTMinter *minter;
@@ -14,16 +15,20 @@
     // Create a test minter with a known private key
     self.minter = [[JWTMinter alloc] init];
     self.minter.issuer = @"test.issuer";
-    self.minter.signingAlgorithm = @"HS256";
+    self.minter.signingAlgorithm = @"ES256";
     self.minter.defaultExpiration = 3600;
 
-    // Use a test key for HMAC
-    self.minter.privateKey = [@"test-secret-key-for-jwt-signing" dataUsingEncoding:NSUTF8StringEncoding];
+    // Use a valid generated key pair
+    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    self.minter.privateKey = keyPair.privateKey;
 
     // Create verifier
     self.verifier = [[JWTVerifier alloc] init];
     self.verifier.expectedIssuer = @"test.issuer";
     self.verifier.expectedAudience = @"test.audience";
+    
+    // Set public key for verification
+    self.verifier.publicKey = keyPair.publicKey;
 }
 
 - (void)tearDown {
@@ -223,6 +228,32 @@
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
     XCTAssertFalse(verified, @"JWT with wrong audience should not verify");
     XCTAssertNotNil(error, @"Error should be returned for wrong audience");
+}
+
+- (void)testJWTNotBeforeClaim {
+    // Test JWT with future nbf is rejected
+    NSError *error = nil;
+
+    // Create a token not valid yet (starts in 1 hour)
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:7200] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970]),
+        @"nbf": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970])
+    };
+
+    NSString *token = [self.minter signPayload:payload error:&error];
+    XCTAssertNotNil(token);
+
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"JWT with future nbf should not verify");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorTokenNotYetValid, @"Error should indicate token not yet valid");
 }
 
 #pragma mark - JWTMinter Tests
