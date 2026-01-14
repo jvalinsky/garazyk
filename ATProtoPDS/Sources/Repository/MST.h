@@ -111,6 +111,7 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
 @property (nonatomic, strong, readonly) NSData *emptyTreeHash;
 
 - (instancetype)initWithRootCID:(nullable CID *)rootCID;
+- (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
 - (nullable CID *)get:(NSString *)key;
 - (nullable CID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
 - (void)put:(NSString *)key valueCID:(CID *)valueCID;

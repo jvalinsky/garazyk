@@ -130,6 +130,10 @@ cd ..
 clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 ```
 
+## Repository Skills
+
+- `skills/stub-finder/SKILL.md` documents the repository-level stub-finder skill that uses `scripts/stub_find.sh` to scan for `TODO`/`FIXME`/`not implemented` markers. Run `./scripts/stub_find.sh .` before code reviews to catch placeholder logic and report/find follow-up work.
+
 ## CI/CD Pipeline
 
 The project uses GitHub Actions for continuous integration, defined in `.github/workflows/ci.yml`.
