@@ -1,3 +1,15 @@
+/*!
+ @file ActorStore.h
+
+ @abstract Per-user SQLite database store for ATProto actors.
+
+ @discussion Provides transactional access to user-specific data including
+ accounts, repositories, records, blocks, and blobs. Uses SQLite with
+ reader/writer protocols for safe concurrent access.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
 #import <Security/Security.h>
@@ -11,8 +23,21 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseBlock;
 @class PDSDatabaseBlob;
 
+/*! Error domain for actor store operations. */
 extern NSString * const PDSActorStoreErrorDomain;
 
+/*!
+ @enum PDSActorStoreError
+
+ @abstract Error codes for actor store operations.
+
+ @constant PDSActorStoreErrorNotFound Item not found.
+ @constant PDSActorStoreErrorAlreadyExists Item already exists.
+ @constant PDSActorStoreErrorTransactionRequired Operation requires transaction.
+ @constant PDSActorStoreErrorDatabaseClosed Database is closed.
+ @constant PDSActorStoreErrorSigningKeyNotFound Signing key not found.
+ @constant PDSActorStoreErrorSigningKeyInvalid Signing key is invalid.
+ */
 typedef NS_ENUM(NSInteger, PDSActorStoreError) {
     PDSActorStoreErrorNotFound = 1000,
     PDSActorStoreErrorAlreadyExists,
@@ -22,6 +47,11 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
     PDSActorStoreErrorSigningKeyInvalid,
 };
 
+/*!
+ @protocol PDSActorStoreReader
+
+ @abstract Read-only operations on an actor store.
+ */
 @protocol PDSActorStoreReader <NSObject>
 
 - (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError **)error;
@@ -53,6 +83,11 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 @end
 
+/*!
+ @protocol PDSActorStoreTransactor
+
+ @abstract Write operations on an actor store.
+ */
 @protocol PDSActorStoreTransactor <NSObject>
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
@@ -73,28 +108,54 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 @end
 
+/*!
+ @class PDSActorStore
+
+ @abstract Per-user database store.
+
+ @discussion Manages a SQLite database for a single actor. Implements both
+ reader and transactor protocols.
+ */
 @interface PDSActorStore : NSObject <PDSActorStoreReader, PDSActorStoreTransactor>
 
+/*! The DID this store belongs to. */
 @property (nonatomic, copy, readonly) NSString *did;
+
+/*! Path to the SQLite database file. */
 @property (nonatomic, copy, readonly) NSString *dbPath;
+
+/*! Whether the database is currently open. */
 @property (nonatomic, assign, readonly, getter=isOpen) BOOL open;
+
+/*! Raw SQLite handle (internal use). */
 @property (nonatomic, assign, readonly) sqlite3 *db;
 
+/*! Creates a store for a DID at the given path. */
 + (instancetype)storeWithDid:(NSString *)did 
                     dbPath:(NSString *)dbPath
                       error:(NSError **)error;
 
+/*! Opens the database. */
 - (BOOL)openWithError:(NSError **)error;
+
+/*! Closes the database. */
 - (void)close;
 
+/*! Executes a write transaction. */
 - (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor))block 
                     error:(NSError **)error;
 
+/*! Executes a read-only transaction. */
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
                 error:(NSError **)error;
 
+/*! Gets the signing key from Keychain. */
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error;
+
+/*! Stores a signing key in Keychain. */
 - (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error;
+
+/*! Generates a new signing key. */
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
 
 // Internal methods for ServiceDatabases

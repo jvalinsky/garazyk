@@ -1,3 +1,15 @@
+/*!
+ @file PDSAccountService.h
+
+ @abstract Account management service layer.
+
+ @discussion Provides high-level account operations including creation,
+ authentication, token refresh, and deletion. Coordinates between
+ database pool and JWT minting.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -6,33 +18,49 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class JWTMinter;
 
+/*!
+ @class PDSAccountService
+
+ @abstract Service for account management operations.
+ */
 @interface PDSAccountService : NSObject
 
+/*! Database pool for user stores. */
 @property (nonatomic, weak) PDSDatabasePool *databasePool;
+
+/*! Service-level databases. */
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
+
+/*! JWT minter for token generation. */
 @property (nonatomic, strong, nullable) JWTMinter *minter;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
 #pragma mark - Account Operations
 
+/*! Creates a new account with email, password, and handle. */
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
                                         password:(NSString *)password
                                          handle:(NSString *)handle
                                              did:(nullable NSString *)did
                                           error:(NSError **)error;
 
+/*! Authenticates a user by handle and password. */
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
                                  password:(NSString *)password
                                     error:(NSError **)error;
 
+/*! Gets account info by DID. */
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
 
+/*! Gets all accounts. */
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
 
+/*! Refreshes an access token using a refresh token. */
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
                                        error:(NSError **)error;
 
+/*! Deletes an account after password verification. */
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error;
 
 @end
