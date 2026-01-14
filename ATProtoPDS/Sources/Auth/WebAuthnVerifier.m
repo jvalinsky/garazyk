@@ -97,7 +97,12 @@
         if (error) *error = [self errorWithCode:1008 message:@"No attested credential data"];
         return nil;
     }
-    
+
+    if (authData.length < 37 + 16 + 2) {
+        if (error) *error = [self errorWithCode:1009 message:@"Attested credential data too short"];
+        return nil;
+    }
+
     // Parse Attested Credential Data
     // 16 bytes AAGUID
     // 2 bytes credentialIdLength
@@ -112,12 +117,22 @@
     memcpy(&credIdLenNet, ptr, 2);
     uint16_t credIdLen = CFSwapInt16BigToHost(credIdLenNet);
     ptr += 2;
-    
+
+    NSUInteger remaining = authData.length - (ptr - (const uint8_t *)authData.bytes);
+    if (credIdLen > remaining) {
+        if (error) *error = [self errorWithCode:1010 message:@"Credential ID length exceeds available data"];
+        return nil;
+    }
+
     NSData *credentialId = [NSData dataWithBytes:ptr length:credIdLen];
     ptr += credIdLen;
-    
+
     // Remaining is Public Key (COSE format, CBOR)
-    NSUInteger remaining = authData.length - (ptr - (const uint8_t *)authData.bytes);
+    remaining = authData.length - (ptr - (const uint8_t *)authData.bytes);
+    if (remaining == 0) {
+        if (error) *error = [self errorWithCode:1011 message:@"Missing credential public key data"];
+        return nil;
+    }
     NSData *publicKeyCOSE = [NSData dataWithBytes:ptr length:remaining];
     
     return @{

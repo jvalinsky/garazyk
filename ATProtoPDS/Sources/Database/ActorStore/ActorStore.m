@@ -21,6 +21,8 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 @implementation PDSActorStore
 
+@synthesize useKeychainSigningKey = _useKeychainSigningKey;
+
 + (instancetype)storeWithDid:(NSString *)did 
                     dbPath:(NSString *)dbPath
                       error:(NSError **)error {
@@ -38,10 +40,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         _dbPath = [dbPath copy];
         _db = NULL;
         _open = NO;
-        _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
-        _blobCache = [NSMutableDictionary dictionary];
-        _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
-        _signingKey = NULL;
+    _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
+    _blobCache = [NSMutableDictionary dictionary];
+    _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
+    _signingKey = NULL;
+    _useKeychainSigningKey = YES;
     }
     return self;
 }
@@ -839,7 +842,17 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error {
     if (self.signingKey) {
+        CFRetain(self.signingKey);
         return self.signingKey;
+    }
+    
+    if (!self.useKeychainSigningKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key not available in memory-only store"}];
+        }
+        return NULL;
     }
     
     NSString *account = [self keychainAccountForDid:self.did];
@@ -874,7 +887,9 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     }
     
     self.signingKey = keyRef;
-    return keyRef;
+    CFRetain(self.signingKey);
+    CFRelease(keyRef);
+    return CFRetain(self.signingKey);
 }
 
 - (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error {

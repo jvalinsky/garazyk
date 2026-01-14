@@ -2,6 +2,7 @@
 #import "Auth/JWT.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
@@ -74,7 +75,10 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     CFErrorRef error = NULL;
     NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &error));
-    if (error) return nil;
+    if (error) {
+        CFRelease(error);
+        return nil;
+    }
 
     return keyData;
 }
@@ -83,7 +87,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 @interface KeyManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, KeyPair *> *keyPairs;
-@property (nonatomic, assign) dispatch_queue_t accessQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 @end
 
 @implementation KeyManager
@@ -186,6 +190,8 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                              publicKey:publicKey
                                                  keyID:keyID
                                               algorithm:algorithm];
+    CFRelease(privateKey);
+    CFRelease(publicKey);
 
     dispatch_sync(self.accessQueue, ^{
         self.keyPairs[keyID] = keyPair;
@@ -240,6 +246,8 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                              publicKey:publicKey
                                                 keyID:keyID
                                              algorithm:@"ES256"];
+    CFRelease(privateKey);
+    CFRelease(publicKey);
 
     dispatch_sync(self.accessQueue, ^{
         self.keyPairs[keyID] = keyPair;
