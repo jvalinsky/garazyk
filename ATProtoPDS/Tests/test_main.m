@@ -104,7 +104,12 @@ int main(int argc, char * argv[]) {
             @"BlobXrpcTests",
             @"CBORSecurityTests",
             @"JWTSecurityTests",
-            @"HandleResolverSecurityTests"
+            @"HandleResolverSecurityTests",
+            @"WebSocketUpgradeHandlerTests",
+            @"HttpRouterTests",
+            @"HttpRequestParsingTests",
+            @"FirehoseTests",
+            @"RelayClientTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

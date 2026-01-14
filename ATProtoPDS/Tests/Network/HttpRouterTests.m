@@ -59,27 +59,27 @@ NS_ASSUME_NONNULL_BEGIN
     } priority:1000];
 
     HttpRequest *readyRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                       methodString:@"GET"
-                                                               path:@"/health"
-                                                        queryString:@""
-                                                        queryParams:@{}
-                                                            version:@"HTTP/1.1"
-                                                            headers:@{}
-                                                               body:[NSData data]
-                                                     remoteAddress:@"127.0.0.1"];
+                                                        methodString:@"GET"
+                                                                path:@"/health"
+                                                         queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"HTTP/1.1"
+                                                              headers:@{}
+                                                                 body:[NSData data]
+                                                         remoteAddress:@"127.0.0.1"];
     XCTAssertTrue([self waitForHandlerInRouter:router request:readyRequest]);
 
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/health"
                                                    queryString:@""
-                                                   queryParams:@{}
-                                                       version:@"HTTP/1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                  remoteAddress:@"127.0.0.1"];
+                                                    queryParams:@{}
+                                                        version:@"HTTP/1.1"
+                                                        headers:@{}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
 
-    XCTAssertTrue([self waitForHandlerInRouter:router request:request]);
+    XCTAssertFalse([self waitForHandlerInRouter:router request:request]);
 
     HttpResponse *response = [[HttpResponse alloc] init];
     [router handleRequest:request response:response];
