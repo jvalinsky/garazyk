@@ -697,7 +697,7 @@
 }
 
 - (NSString *)codecDescriptionForCode:(id)code {
-    uint64_t codecCode = 0;
+    unsigned long long codecCode = 0;
     if ([code isKindOfClass:[NSNumber class]]) {
         codecCode = [code unsignedLongLongValue];
     } else if ([code isKindOfClass:[NSString class]]) {
@@ -719,7 +719,7 @@
 }
 
 - (NSString *)hashDescriptionForCode:(id)code {
-    uint64_t hashCode = 0;
+    unsigned long long hashCode = 0;
     if ([code isKindOfClass:[NSNumber class]]) {
         hashCode = [code unsignedLongLongValue];
     } else if ([code isKindOfClass:[NSString class]]) {
