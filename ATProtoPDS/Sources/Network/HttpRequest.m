@@ -39,6 +39,7 @@
         _headers = [headers copy];
         _body = [body copy];
         _remoteAddress = [remoteAddress copy];
+        _correlationID = [headers[@"x-correlation-id"] ?: headers[@"x-request-id"] ?: [[NSUUID UUID] UUIDString] copy];
         _jsonBody = [self parseJsonBody:body];
         _multipartFormData = [self parseMultipartFormData:body headers:headers];
     }

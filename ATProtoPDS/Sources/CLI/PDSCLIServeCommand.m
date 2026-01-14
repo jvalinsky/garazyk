@@ -46,6 +46,7 @@
            @"  --data-dir <path>     Data directory (default: ./data)\n"
            @"  --config <path>       Config file path (default: ./config.json)\n"
            @"  --log-level <level>   Log level: debug, info, warn, error (default: info)\n"
+           @"  --log-components <c>  Comma-separated list of components to enable\n"
            @"  --foreground          Run in foreground (don't daemonize)\n"
            @"  --help                Show this help";
 }
@@ -58,6 +59,7 @@
     NSInteger port = 2583;
     BOOL foreground = NO;
     NSString *logLevel = @"info";
+    NSString *logComponents = nil;
 
     for (NSUInteger i = 0; i < args.count; i++) {
         NSString *arg = args[i];
@@ -78,6 +80,10 @@
             if (i + 1 < args.count) {
                 logLevel = args[++i];
             }
+        } else if ([arg isEqualToString:@"--log-components"]) {
+            if (i + 1 < args.count) {
+                logComponents = args[++i];
+            }
         } else if ([arg isEqualToString:@"--foreground"] || [arg isEqualToString:@"-f"]) {
             foreground = YES;
         } else if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
@@ -91,6 +97,9 @@
         PDS_LOG_INFO(@"Data directory: %@", context.dataDir);
         PDS_LOG_INFO(@"Config path: %@", context.configPath);
         PDS_LOG_INFO(@"Log level: %@", logLevel);
+        if (logComponents) {
+            PDS_LOG_INFO(@"Enabled components: %@", logComponents);
+        }
     }
 
     printf("Starting PDS server on port %ld...\n", (long)port);
@@ -106,6 +115,24 @@
         printf("Running in background...\n");
     }
 
+    // Apply logging overrides from CLI
+    if (logLevel) {
+        PDSLogLevel level = PDSLogLevelInfo;
+        if ([logLevel isEqualToString:@"debug"]) level = PDSLogLevelDebug;
+        else if ([logLevel isEqualToString:@"warn"]) level = PDSLogLevelWarn;
+        else if ([logLevel isEqualToString:@"error"]) level = PDSLogLevelError;
+        [PDSLogger sharedLogger].logLevel = level;
+    }
+
+    if (logComponents) {
+        NSArray *componentsList = [logComponents componentsSeparatedByString:@","];
+        NSMutableSet *componentSet = [NSMutableSet set];
+        for (NSString *c in componentsList) {
+            [componentSet addObject:[c stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]];
+        }
+        [PDSLogger sharedLogger].enabledComponents = componentSet;
+    }
+
     // Initialize and start HTTP server
     HttpServer *httpServer = [HttpServer serverWithPort:(uint16_t)port];
     if (!httpServer) {
@@ -114,8 +141,8 @@
     }
 
     // Initialize PDS controller with specified data directory
-    NSString *dataDir = [[NSURL fileURLWithPath:context.dataDir] path];
-    NSLog(@"Initializing PDS controller with data directory: %@", dataDir);
+    NSString *dataDir = context.dataDir;
+    PDS_LOG_INFO_C(PDSLogComponentCLI, @"Initializing PDS controller with data directory: %@", dataDir);
     PDSController *controller = [[PDSController alloc] initWithDirectory:dataDir
                                                          serviceMaxSize:100
                                                        userDatabaseSize:30000];
@@ -127,7 +154,7 @@
     // Configure Explore handler
     ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
     [exploreHandler setController:controller];
-    NSLog(@"PDSCLIServeCommand: Set controller on explore handler: %@", controller);
+    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Set controller on explore handler: %@", controller);
 
     // Configure OAuth2 handler
     NSError *dbError = nil;
@@ -138,7 +165,7 @@
     }
     OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:serviceDB];
     [oauthHandler registerRoutesWithServer:httpServer];
-    NSLog(@"PDSCLIServeCommand: Registered OAuth2 routes");
+    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered OAuth2 routes");
 
     // Configure XRPC dispatcher
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
@@ -151,7 +178,7 @@
     [httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
         [dispatcher handleRequest:request response:response];
     }];
-    NSLog(@"PDSCLIServeCommand: Registered XRPC routes");
+    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered XRPC routes");
 
     // Register route handlers (using old routing system temporarily)
     [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {

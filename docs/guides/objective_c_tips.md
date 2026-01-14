@@ -64,11 +64,68 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 ### 5. Grand Central Dispatch (GCD)
 
 *   **Singletons:** Use `dispatch_once`.
-*   **Synchronization:** Use serial queues (`dispatch_queue_create`) and `dispatch_sync` to protect mutable state instead of `@synchronized(self)`.
+*   **Synchronization:** Use serial queues (`dispatch_queue_t`) to protect mutable state.
+*   **ARC Ownership:** Always use `strong` for queue properties. Using `assign` will lead to immediate deallocation and subsequent crashes when the framework attempts to use the queue.
+
+```objective-c
+@property (nonatomic, strong) dispatch_queue_t connectionQueue;
+```
 
 ---
 
-## Part 2: Memory Management & Safety
+## Part 2: Advanced Technical Patterns
+
+These patterns were established during the stabilization of the PDS server to resolve complex deallocation and synchronization issues.
+
+### 1. Synchronized Server Lifecycle
+
+When stopping a server, you must ensure that all asynchronous callbacks have finished and the underlying system handles are truly closed before allowing the controller to be deallocated.
+
+*   **Wait for State Changes**: Use a `dispatch_semaphore_t` to block the `stop` method until the Network listener signals it has reached the `cancelled` state.
+*   **Task Tracking**: Use a `dispatch_group_t` to wrap all active requests or broadcasts. `dispatch_group_enter` when a task starts, `dispatch_group_leave` when it completes. Wait on this group during teardown.
+
+```objective-c
+- (void)stop {
+    [self.listener cancel];
+    // Wait for nw_listener to signal 'cancelled' state
+    dispatch_semaphore_wait(self.stopSemaphore, DISPATCH_TIME_FOREVER);
+    // Wait for all active async tasks to drain
+    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
+}
+```
+
+### 2. SQLite Resource Management
+
+To prevent "Database Busy" errors or integrity warnings during teardown (especially in tests with frequent restarts), you must finalize ALL prepared statements.
+
+*   **Aggressive Finalization**: Use `sqlite3_next_stmt` to find any dangling statements and finalize them before closing the `sqlite3` handle.
+
+```objective-c
+- (void)close {
+    sqlite3_stmt *stmt;
+    while ((stmt = sqlite3_next_stmt(self.db, NULL)) != NULL) {
+        sqlite3_finalize(stmt);
+    }
+    sqlite3_close(self.db);
+    self.db = NULL;
+}
+```
+
+### 3. Incremental Network Parsing
+
+When using `Network.framework`, data may arrive in small fragments. Your server must buffer this data rather than assuming a single `receive` call contains a full request.
+
+*   **Buffer Accumulation**: Store incoming data in an `NSMutableData` property until a complete protocol message (e.g., HTTP headers + body) is recognized.
+
+### 4. Protocol Bridging
+
+When accepting new connections from an `nw_listener_t`, you should bridge the low-level connection to a high-level protocol handler immediately.
+
+*   **Handler Pattern**: The server side accepts the `nw_connection_t`, wraps it in a connection object (like `WebSocketConnection`), and calls `start` to initiate the protocol handshake and read loop.
+
+---
+
+## Part 3: Memory Management & Safety
 
 The project uses Automatic Reference Counting (ARC).
 

@@ -11,6 +11,7 @@
  */
 
 #import "Blob/BlobStorage.h"
+#import "Debug/PDSLogger.h"
 #import "Blob/MimeTypeValidator.h"
 #import "Core/CID.h"
 #import "Database/PDSDatabase.h"
@@ -52,7 +53,7 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
                     withIntermediateDirectories:YES
                                      attributes:nil
                                           error:&createError]) {
-            NSLog(@"Failed to create blob storage directory: %@", createError);
+            PDS_LOG_ERROR_C(PDSLogComponentBlob, @"Failed to create blob storage directory: %@", createError);
         }
     }
     return self;
@@ -254,7 +255,7 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     if (![_fileManager removeItemAtURL:blobURL error:&fileError]) {
         // Log but don't fail if file doesn't exist
         if (fileError.code != NSFileNoSuchFileError) {
-            NSLog(@"Warning: Failed to delete blob file: %@", fileError);
+            PDS_LOG_INFO_C(PDSLogComponentBlob, @"Warning: Failed to delete blob file: %@", fileError);
         }
     }
 

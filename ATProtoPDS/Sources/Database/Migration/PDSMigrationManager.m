@@ -3,6 +3,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Debug/PDSLogger.h"
 #import <sqlite3.h>
 
 NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
@@ -159,7 +160,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         NSError *createError = nil;
         BOOL batchSuccess = [serviceDb createAccounts:batch error:&createError];
         if (!batchSuccess) {
-            NSLog(@"[Migration] Failed to create account batch starting at %@: %@", @(i), createError);
+            PDS_LOG_DB_ERROR(@"Migration failed to create account batch starting at index %lu: %@",
+                             (unsigned long)i, createError);
         }
 
         migratedItems += batch.count;

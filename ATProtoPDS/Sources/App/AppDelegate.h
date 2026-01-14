@@ -37,6 +37,8 @@
 #if TARGET_OS_OSX || defined(__APPLE__)
 /*! macOS menu bar status item for PDS controls. */
 @property (strong, nonatomic) NSStatusItem *statusItem;
+/*! Main application window. */
+@property (strong, nonatomic) NSWindow *window;
 #endif
 
 @end

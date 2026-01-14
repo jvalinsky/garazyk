@@ -1,0 +1,11 @@
+.git
+build
+data
+reference/pds-gatekeeper
+reference/deciduous
+reference/atproto
+reference/pegasus-ocaml
+reference/indigo
+reference/cocoon
+*.cast
+*.log

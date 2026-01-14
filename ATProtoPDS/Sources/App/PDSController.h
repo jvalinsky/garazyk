@@ -100,6 +100,12 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 /*! JWT minting for access tokens. */
 @property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
 
+/*! Port for the HTTP XRPC server (default 2583). */
+@property (nonatomic, assign) NSUInteger httpPort;
+
+/*! Port for the WebSocket subscribeRepos handler (default 8081). */
+@property (nonatomic, assign) NSUInteger wsPort;
+
 /*! Returns a service database connection. */
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
 

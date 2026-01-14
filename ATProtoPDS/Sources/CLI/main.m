@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
+#import "CLI/PDSCLIDispatcher.h" // Added import for PDSCLIDispatcher
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -19,14 +20,14 @@ int main(int argc, const char * argv[]) {
                     if (i + 1 < args.count) {
                         context.dataDir = args[++i];
                     } else {
-                        fprintf(stderr, "Error: --data-dir requires a path\n");
+                        PDS_LOG_ERROR_C(PDSLogComponentCLI, @"Error: --data-dir requires a path");
                         return PDSCLIExitCodeInvalidArguments;
                     }
                 } else if ([arg isEqualToString:@"--config"] || [arg isEqualToString:@"-c"]) {
                     if (i + 1 < args.count) {
                         context.configPath = args[++i];
                     } else {
-                        fprintf(stderr, "Error: --config requires a path\n");
+                        PDS_LOG_ERROR_C(PDSLogComponentCLI, @"Error: --config requires a path");
                         return PDSCLIExitCodeInvalidArguments;
                     }
                 } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
@@ -38,7 +39,7 @@ int main(int argc, const char * argv[]) {
                     [[PDSCLIDispatcher sharedDispatcher] printUsage];
                     return PDSCLIExitCodeSuccess;
                 } else {
-                    fprintf(stderr, "Error: Unknown option %s\n", [arg UTF8String]);
+                    PDS_LOG_ERROR_C(PDSLogComponentCLI, @"Error: Unknown option %@", arg);
                     [[PDSCLIDispatcher sharedDispatcher] printUsage];
                     return PDSCLIExitCodeInvalidArguments;
                 }
