@@ -258,9 +258,14 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     // Create test accounts for each tenant DID
     for (NSString *did in self.testDIDs) {
         PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"%@.example.com", did.lastPathComponent]];
-        if (![self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-            [transactor createAccount:account error:nil];
-        } error:error]) {
+        __block BOOL createSuccess = YES;
+        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+            NSError *createError = nil;
+            if (![transactor createAccount:account error:&createError]) {
+                createSuccess = NO;
+            }
+        } error:error];
+        if (!createSuccess) {
             return NO;
         }
     }
@@ -855,16 +860,17 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 NSError *localError = nil;
                 [self.pool readWithDid:@"did:plc:concurrent-test" block:^(id<PDSActorStoreReader> reader) {
                     // Perform a read operation
-                    PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&localError];
-                    if (localError && localError.code != PDSActorStoreErrorNotFound) {
+                    NSError *readErr = nil;
+                    PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&readErr];
+                    if (readErr && readErr.code != PDSActorStoreErrorNotFound) {
                         @synchronized(self) {
                             if (!readError) {
-                                readError = localError;
+                                readError = readErr;
                             }
                             success = NO;
                         }
                     }
-                } error:&localError];
+                } error:nil];
 
                 @synchronized(self) {
                     completedReads++;
@@ -904,15 +910,16 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"write%lu.example.com", (unsigned long)i]];
 
                 [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-                    if (![transactor createAccount:account error:&localError]) {
+                    NSError *createErr = nil;
+                    if (![transactor createAccount:account error:&createErr]) {
                         @synchronized(self) {
                             if (!writeError) {
-                                writeError = localError;
+                                writeError = createErr;
                             }
                             success = NO;
                         }
                     }
-                } error:&localError];
+                } error:nil];
 
                 @synchronized(self) {
                     completedWrites++;
@@ -1013,11 +1020,12 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
                     // Perform some database operations that might conflict
                     PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:@"deadlock.example.com"];
-                    [transactor createAccount:account error:&localError];
+                    NSError *createErr = nil;
+                    [transactor createAccount:account error:&createErr];
 
                     // Add small delay to increase chance of interleaving
                     usleep(1000);
-                } error:&localError];
+                } error:nil];
 
                 if (localError) {
                     @synchronized(self) {

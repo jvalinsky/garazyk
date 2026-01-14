@@ -92,7 +92,7 @@
     XCTAssertTrue(success, @"Failed to save blob: %@", error);
 
     __autoreleasing NSError *fetchError = nil;
-    PDSDatabaseBlob *fetched = [self.database getBlob:blob.cid error:&fetchError];
+    PDSDatabaseBlob *fetched = [self.database getBlobWithCid:blob.cid error:&fetchError];
     XCTAssertNotNil(fetched, @"Failed to fetch blob: %@", fetchError);
     XCTAssertEqualObjects(fetched.did, blob.did);
 }
@@ -108,7 +108,7 @@
     XCTAssertTrue(success, @"Failed to save block: %@", error);
 
     __autoreleasing NSError *fetchError = nil;
-    PDSDatabaseBlock *fetched = [self.database getBlock:block.cid error:&fetchError];
+    PDSDatabaseBlock *fetched = [self.database getBlockWithCid:block.cid repoDid:@"did:plc:test123" error:&fetchError];
     XCTAssertNotNil(fetched, @"Failed to fetch block: %@", fetchError);
     XCTAssertEqualObjects(fetched.repoDid, block.repoDid);
 }
