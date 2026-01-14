@@ -166,6 +166,7 @@ NS_ASSUME_NONNULL_BEGIN
                                             rkey:@"integration-test-post"
                                            value:recordValue
                                           forDid:did
+                                  validationMode:PDSValidationModeRequired
                                            error:&createError];
     XCTAssertTrue(createResult, @"Create record should succeed: %@", createError);
     
@@ -207,6 +208,7 @@ NS_ASSUME_NONNULL_BEGIN
                                             rkey:@"integration-test-post"
                                            value:updatedValue
                                           forDid:did
+                                  validationMode:PDSValidationModeRequired
                                            error:&updateError];
     XCTAssertTrue(updateResult, @"Update record should succeed: %@", updateError);
     
@@ -263,6 +265,7 @@ NS_ASSUME_NONNULL_BEGIN
                                       rkey:@"cid-test-post"
                                      value:recordValue
                                     forDid:did
+                            validationMode:PDSValidationModeRequired
                                      error:&createError];
     XCTAssertTrue(result, @"Create record should succeed");
     
@@ -294,6 +297,7 @@ NS_ASSUME_NONNULL_BEGIN
                                            rkey:@"cid-test-post-2"
                                           value:recordValue
                                          forDid:did
+                                 validationMode:PDSValidationModeRequired
                                           error:nil];
     XCTAssertTrue(createAgain, @"Create duplicate record should succeed");
     
@@ -424,6 +428,7 @@ NS_ASSUME_NONNULL_BEGIN
                                             rkey:@"value-analysis-post"
                                            value:originalValue
                                           forDid:did
+                                  validationMode:PDSValidationModeRequired
                                            error:&createError];
     XCTAssertTrue(createResult, @"Create should succeed");
     
@@ -493,6 +498,7 @@ NS_ASSUME_NONNULL_BEGIN
                          rkey:@"auth-test-post"
                         value:record
                        forDid:did
+               validationMode:PDSValidationModeRequired
                         error:&createError];
     
     // Note: These tests verify the controller-level authentication

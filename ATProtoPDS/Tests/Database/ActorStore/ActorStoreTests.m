@@ -29,6 +29,7 @@
     self.store = [PDSActorStore storeWithDid:self.testDID dbPath:dbPath error:&error];
     XCTAssertNotNil(self.store, @"Failed to create store: %@", error);
     XCTAssertTrue(self.store.isOpen, @"Store should be open");
+    self.store.useKeychainSigningKey = NO;
 }
 
 - (void)tearDown {

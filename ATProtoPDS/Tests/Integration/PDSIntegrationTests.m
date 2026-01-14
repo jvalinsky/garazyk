@@ -74,7 +74,11 @@
         @"createdAt": @"2024-01-01T00:00:00.000Z"
     };
 
-    self.recordResult = [self.controller createRecordForDid:self.did collection:@"app.bsky.feed.post" record:recordBody error:&error];
+    self.recordResult = [self.controller createRecordForDid:self.did
+                                                  collection:@"app.bsky.feed.post"
+                                                     record:recordBody
+                                             validationMode:PDSValidationModeRequired
+                                                      error:&error];
 
     XCTAssertNotNil(self.recordResult, @"Record should be created");
     XCTAssertNil(error, @"No error should occur");
@@ -192,7 +196,11 @@
                 __block NSDictionary *result = nil;
                 __block NSError *blockError = nil;
                 dispatch_sync(dispatch_get_main_queue(), ^{
-                    result = [self.controller createRecordForDid:self.did collection:@"app.bsky.feed.post" record:concurrentRecord error:&blockError];
+                    result = [self.controller createRecordForDid:self.did
+                                                        collection:@"app.bsky.feed.post"
+                                                           record:concurrentRecord
+                                                   validationMode:PDSValidationModeRequired
+                                                            error:&blockError];
                 });
                 if (!result || blockError) {
                     concurrentTestPassed = NO;

@@ -11,6 +11,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Services/PDSRecordService.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -26,7 +27,6 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlob;
 @class PDSAccountService;
-@class PDSRecordService;
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class JWTMinter;
@@ -175,7 +175,9 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
                rkey:(NSString *)rkey 
               value:(NSDictionary *)value 
              forDid:(NSString *)did
+     validationMode:(PDSValidationMode)mode
               error:(NSError **)error;
+
 - (BOOL)deleteRecord:(NSString *)collection 
                   rkey:(NSString *)rkey 
                 forDid:(NSString *)did
@@ -186,6 +188,7 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 - (nullable NSDictionary *)createRecordForDid:(NSString *)did
                                     collection:(NSString *)collection
                                        record:(NSDictionary *)record
+                               validationMode:(PDSValidationMode)mode
                                         error:(NSError **)error;
 
 - (nullable NSDictionary *)getRecordForDid:(NSString *)did
@@ -210,6 +213,7 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
               collection:(NSString *)collection
                    rkey:(NSString *)rkey
                  record:(NSDictionary *)record
+         validationMode:(PDSValidationMode)mode
                   error:(NSError **)error;
 
 #pragma mark - Blob Operations

@@ -156,6 +156,7 @@
         NSDictionary *result = [controller createRecordForDid:repo
                                                      collection:collection
                                                         record:record
+                                                validationMode:PDSValidationModeRequired
                                                          error:&error];
 
         if (error) {
@@ -327,10 +328,11 @@
 
         NSError *error = nil;
         BOOL success = [controller putRecordForDid:repo
-                                                 collection:collection
-                                                      rkey:rkey
-                                                     record:record
-                                                      error:&error];
+                                          collection:collection
+                                               rkey:rkey
+                                              record:record
+                                       validationMode:PDSValidationModeRequired
+                                               error:&error];
 
         if (!success) {
             response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;

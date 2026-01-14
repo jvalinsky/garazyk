@@ -27,9 +27,11 @@
 #import "Services/PDSRepositoryService.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/PDSLogger.h"
+#import "App/Explore/ExploreHandler.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import "Lexicon/ATProtoLexiconRegistry.h"
 
 NSString *const PDSControllerErrorDomain = @"com.atproto.pds.controller";
 NSString *const kDefaultPlcServerURL = @"https://plc.directory";
@@ -78,6 +80,47 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     NSURL *appSupport = [[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory 
                                                                inDomains:NSUserDomainMask].firstObject;
     return [[appSupport URLByAppendingPathComponent:@"ATProtoPDS"] path];
+}
+
+- (NSArray<NSString *> *)lexiconSearchPathsForDirectory:(NSString *)dataDirectory {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableOrderedSet<NSString *> *paths = [NSMutableOrderedSet orderedSet];
+    NSString *overridePath = [NSProcessInfo processInfo].environment[@"PDS_LEXICON_PATH"];
+    if (overridePath.length > 0) {
+        [paths addObject:overridePath];
+    }
+
+    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"lexicons" ofType:nil];
+    if (bundlePath.length > 0) {
+        [paths addObject:bundlePath];
+    }
+
+    NSString *cwd = fm.currentDirectoryPath ?: @"";
+    NSArray<NSString *> *candidates = @[
+        @"ATProtoPDS/Resources/lexicons",
+        @"Resources/lexicons",
+        @"lexicons",
+        @"../ATProtoPDS/Resources/lexicons",
+        @"../../ATProtoPDS/Resources/lexicons",
+        @"../../../ATProtoPDS/Resources/lexicons"
+    ];
+    for (NSString *candidate in candidates) {
+        NSString *path = [cwd stringByAppendingPathComponent:candidate];
+        BOOL isDir = NO;
+        if ([fm fileExistsAtPath:path isDirectory:&isDir] && isDir) {
+            [paths addObject:path];
+        }
+    }
+
+    if (dataDirectory.length > 0) {
+        NSString *customPath = [dataDirectory stringByAppendingPathComponent:@"lexicons"];
+        BOOL isDir = NO;
+        if ([fm fileExistsAtPath:customPath isDirectory:&isDir] && isDir) {
+            [paths addObject:customPath];
+        }
+    }
+
+    return paths.array;
 }
 
 - (instancetype)initWithDirectory:(NSString *)directory
@@ -145,6 +188,23 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
             [fm createDirectoryAtPath:blobDir withIntermediateDirectories:YES attributes:nil error:nil];
         }
 
+        // Load lexicons from bundle, working directory, or data directory.
+        ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
+        NSArray<NSString *> *lexiconPaths = [self lexiconSearchPathsForDirectory:_dataDirectory];
+        BOOL loadedAny = NO;
+        for (NSString *path in lexiconPaths) {
+            NSError *loadError = nil;
+            if ([registry loadLexiconsFromDirectory:path error:&loadError]) {
+                loadedAny = YES;
+                PDS_LOG_INFO(@"Loaded lexicons from %@", path);
+            } else if (loadError) {
+                PDS_LOG_WARN(@"Failed to load lexicons from %@: %@", path, loadError);
+            }
+        }
+        if (!loadedAny) {
+            PDS_LOG_WARN(@"No lexicons loaded. Set PDS_LEXICON_PATH or install lexicons under ATProtoPDS/Resources/lexicons.");
+        }
+
         _log = os_log_create("com.atproto.pds", "PDSController");
         os_log_info(_log, "PDS Controller initialized with single-tenant architecture");
     }
@@ -175,12 +235,31 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
             [strongSelf->_xrpcDispatcher handleRequest:request response:response];
         }
     }];
-    
+
     [_httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
         PDSController *strongSelf = weakSelf;
         if (strongSelf) {
             [strongSelf->_xrpcDispatcher handleRequest:request response:response];
         }
+    }];
+
+    [_httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
+        PDSController *strongSelf = weakSelf;
+        if (strongSelf) {
+            [strongSelf->_xrpcDispatcher handleRequest:request response:response];
+        }
+    }];
+
+    // Explore UI + API
+    ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
+    [exploreHandler setController:self];
+
+    [_httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
+
+    [_httpServer addRoute:@"GET" path:@"/explore/api/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
     }];
     
     NSError *httpError = nil;
@@ -384,8 +463,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
               rkey:(NSString *)rkey
              value:(NSDictionary *)value
             forDid:(NSString *)did
+    validationMode:(PDSValidationMode)mode
              error:(NSError **)error {
-    if (![_recordService putRecord:collection rkey:rkey value:value forDid:did error:error]) {
+    if (![_recordService putRecord:collection rkey:rkey value:value forDid:did validationMode:mode error:error]) {
         return NO;
     }
     
@@ -422,12 +502,14 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 - (nullable NSDictionary *)createRecordForDid:(NSString *)did
                                     collection:(NSString *)collection
                                        record:(NSDictionary *)record
+                               validationMode:(PDSValidationMode)mode
                                         error:(NSError **)error {
     NSString *rkey = [TID tid].stringValue;
     BOOL success = [self putRecord:collection
                               rkey:rkey
                              value:record
                             forDid:did
+                    validationMode:mode
                              error:error];
     if (!success) return nil;
 
@@ -476,8 +558,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
               collection:(NSString *)collection
                    rkey:(NSString *)rkey
                  record:(NSDictionary *)record
+         validationMode:(PDSValidationMode)mode
                   error:(NSError **)error {
-    return [self putRecord:collection rkey:rkey value:record forDid:did error:error];
+    return [self putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:error];
 }
 
 #pragma mark - Blob Operations
@@ -533,7 +616,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         NSString *rkey = write[@"rkey"];
         
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
-            if (![self putRecord:collection rkey:rkey value:record forDid:repo error:error]) {
+            PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
+            if (![self putRecord:collection rkey:rkey value:record forDid:repo validationMode:mode error:error]) {
                 return nil;
             }
         } else if ([action isEqualToString:@"delete"]) {

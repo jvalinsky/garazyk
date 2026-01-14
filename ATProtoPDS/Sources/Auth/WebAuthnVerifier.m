@@ -234,8 +234,13 @@
     SecKeyRef key = SecKeyCreateWithData((__bridge CFDataRef)publicKey, (__bridge CFDictionaryRef)attrs, &keyError);
     if (!key) {
         // Try parsing COSE if raw import failed (Implementation omitted for brevity, fallback to failure)
+        if (keyError) CFRelease(keyError);
         if (error) *error = [self errorWithCode:2007 message:@"Invalid public key format"];
         return NO;
+    }
+    if (keyError) {
+        CFRelease(keyError);
+        keyError = NULL;
     }
     
     // Verify
@@ -246,6 +251,7 @@
                                           &keyError);
     
     CFRelease(key);
+    if (keyError) CFRelease(keyError);
     
     if (!verified) {
         if (error) *error = [self errorWithCode:2008 message:@"Signature verification failed"];

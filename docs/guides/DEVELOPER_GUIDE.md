@@ -220,6 +220,105 @@ Test the PDS server using the CLI and curl:
 curl -s http://localhost:2583/explore/api/accounts
 ```
 
+## Security Development Guidelines
+
+### Input Validation Requirements
+
+All new endpoints must implement proper input validation:
+
+```objc
+// Example: Parameter validation
+- (void)handleApiEndpoint:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *requiredParam = params[@"required"];
+    if (!requiredParam || requiredParam.length == 0) {
+        [response setJsonBody:@{@"error": @"Missing required parameter"}];
+        response.statusCode = 400;
+        return;
+    }
+    
+    // Validate length limits
+    if (requiredParam.length > 1000) {
+        [response setJsonBody:@{@"error": @"Parameter too long"}];
+        response.statusCode = 400;
+        return;
+    }
+    
+    // Sanitize input if needed
+    NSString *sanitized = [self sanitizeInput:requiredParam];
+}
+```
+
+### Memory Management for Security
+
+Follow these patterns for secure memory management:
+
+**Core Foundation Objects:**
+```objc
+// Always pair CFRetain with CFRelease
+@property (nonatomic, assign) SecKeyRef securityKey;
+
+- (void)setSecurityKey:(SecKeyRef)key {
+    if (_securityKey) CFRelease(_securityKey);
+    _securityKey = key ? CFRetain(key) : NULL;
+}
+
+- (void)dealloc {
+    if (_securityKey) CFRelease(_securityKey);
+}
+```
+
+**Queue Properties:**
+```objc
+// Use strong for dispatch queues
+@property (nonatomic, strong) dispatch_queue_t workQueue;
+
+// Create with proper naming
+self.workQueue = dispatch_queue_create("com.atproto.pds.endpoint", DISPATCH_QUEUE_SERIAL);
+```
+
+### Network Security Limits
+
+Implement size limits for all network-facing code:
+
+```objc
+// WebSocket frame size limit
+static const NSUInteger MAX_FRAME_SIZE = 16 * 1024 * 1024;
+
+// HTTP request size limit  
+static const NSUInteger MAX_REQUEST_SIZE = 10 * 1024 * 1024;
+
+// Validate before processing
+if (requestSize > MAX_REQUEST_SIZE) {
+    response.statusCode = 413; // Payload Too Large
+    return;
+}
+```
+
+### Cryptographic Best Practices
+
+When implementing cryptographic features:
+
+1. **Key Storage**: Use Keychain (`SecKeyRef`) for persistent keys
+2. **Random Generation**: Use `SecRandomCopyBytes`, not `rand()`
+3. **No Custom Crypto**: Use Apple's Security framework
+4. **Constant-Time**: Use timing-safe comparisons for sensitive data
+
+### Error Handling Security
+
+Don't expose internal details in error messages:
+
+```objc
+// Bad - exposes internal state
+*error = [NSError errorWithDomain:@"MyDomain" 
+                             code:1001 
+                         userInfo:@{NSLocalizedDescriptionKey: @"Database connection failed on table users"}];
+
+// Good - generic error message
+*error = [NSError errorWithDomain:@"MyDomain" 
+                             code:1001 
+                         userInfo:@{NSLocalizedDescriptionKey: @"Internal server error"}];
+```
+
 ## Troubleshooting Build Issues
 
 If you encounter build errors:
