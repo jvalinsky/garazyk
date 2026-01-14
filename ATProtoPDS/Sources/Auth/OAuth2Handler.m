@@ -5,6 +5,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
+#import "Auth/OAuthServerMetadata.h"
 
 @interface OAuth2Handler ()
 @property (nonatomic, strong) PDSDatabase *database;
@@ -144,6 +145,65 @@
     [httpServer addRoute:@"POST" path:@"/oauth/revoke" handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleRevokeRequest:request response:response];
     }];
+
+    [httpServer addRoute:@"GET" path:@"/.well-known/oauth-authorization-server" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleAuthorizationServerMetadata:request response:response];
+    }];
+
+    [httpServer addRoute:@"GET" path:@"/.well-known/oauth-protected-resource" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleProtectedResourceMetadata:request response:response];
+    }];
+}
+
+- (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *issuer = self.oauthServer.issuer;
+    if (!issuer) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Server configuration error: issuer not configured"}];
+        return;
+    }
+
+    OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:issuer];
+    if (!metadata) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Server configuration error: failed to generate metadata"}];
+        return;
+    }
+
+    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    [response setJsonBody:metadata.metadata];
+    response.statusCode = 200;
+}
+
+- (void)handleProtectedResourceMetadata:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *issuer = self.oauthServer.issuer;
+    if (!issuer) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Server configuration error: issuer not configured"}];
+        return;
+    }
+
+    NSDictionary *resourceMetadata = @{
+        @"resource": issuer,
+        @"authorization_servers": @[
+            @{
+                @"authorization_server": issuer,
+                @"resource_servers": @[issuer]
+            }
+        ],
+        @"protected_resources": @[
+            @{
+                @"resource": issuer,
+                @"resource_scopes": @[@"atproto"],
+                @"bearer_methods_supported": @[@"header"],
+                @"access_token_types_supported": @[@"Bearer"]
+            }
+        ]
+    };
+
+    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    [response setJsonBody:resourceMetadata];
+    response.statusCode = 200;
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response {
