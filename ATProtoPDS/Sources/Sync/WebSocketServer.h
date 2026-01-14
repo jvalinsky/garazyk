@@ -6,7 +6,7 @@
  @discussion Implements WebSocket protocol (RFC 6455) for bidirectional
  communication. Used by the Firehose and other streaming endpoints.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

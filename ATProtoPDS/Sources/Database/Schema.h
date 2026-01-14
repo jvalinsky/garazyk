@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
  - jwt_signing_keys: JWT signing keys
 
  @see PDSDatabase
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 extern NSInteger const kPDSDatabaseSchemaVersion;

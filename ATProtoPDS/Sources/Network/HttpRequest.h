@@ -7,7 +7,7 @@
  method, path, headers, and body. Supports query parameter extraction, JSON
  body parsing, and multipart form data.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

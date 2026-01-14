@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion This header defines the PDSAdminAuth class for handling
  admin-level authentication for PDS management operations.
  
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 /*!

@@ -6,7 +6,7 @@
  @discussion Provides operations for uploading, retrieving, listing, and
  deleting binary blobs associated with ATProto repositories.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
