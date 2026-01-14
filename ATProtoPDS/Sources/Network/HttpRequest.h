@@ -1,7 +1,33 @@
+/*!
+ @file HttpRequest.h
+
+ @abstract HTTP request parsing and representation.
+
+ @discussion Parses raw HTTP request data into structured components including
+ method, path, headers, and body. Supports query parameter extraction, JSON
+ body parsing, and multipart form data.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
+/*!
+ @enum HttpMethod
+
+ @abstract HTTP method identifiers.
+
+ @constant HttpMethodGET HTTP GET method.
+ @constant HttpMethodPOST HTTP POST method.
+ @constant HttpMethodPUT HTTP PUT method.
+ @constant HttpMethodDELETE HTTP DELETE method.
+ @constant HttpMethodPATCH HTTP PATCH method.
+ @constant HttpMethodOPTIONS HTTP OPTIONS method.
+ @constant HttpMethodHEAD HTTP HEAD method.
+ @constant HttpMethodUnknown Unknown/unsupported method.
+ */
 typedef NS_ENUM(NSInteger, HttpMethod) {
     HttpMethodGET,
     HttpMethodPOST,
@@ -13,21 +39,53 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
     HttpMethodUnknown
 };
 
+/*!
+ @class HttpRequest
+
+ @abstract Represents a parsed HTTP request.
+
+ @discussion Provides access to all request components including method,
+ path, query parameters, headers, and body. Supports JSON and multipart parsing.
+ */
 @interface HttpRequest : NSObject
 
+/*! The parsed HTTP method enum. */
 @property (nonatomic, readonly) HttpMethod method;
+
+/*! The HTTP method as a string. */
 @property (nonatomic, readonly, copy) NSString *methodString;
+
+/*! The request path (without query string). */
 @property (nonatomic, readonly, copy) NSString *path;
+
+/*! The raw query string (after ?). */
 @property (nonatomic, readonly, copy) NSString *queryString;
+
+/*! Parsed query parameters as key-value pairs. */
 @property (nonatomic, readonly, nullable, copy) NSDictionary<NSString *, NSString *> *queryParams;
+
+/*! The HTTP version (e.g., "HTTP/1.1"). */
 @property (nonatomic, readonly, copy) NSString *version;
+
+/*! Request headers as key-value pairs. */
 @property (nonatomic, readonly, copy) NSDictionary<NSString *, NSString *> *headers;
+
+/*! The raw request body. */
 @property (nonatomic, readonly, nullable, copy) NSData *body;
+
+/*! The body parsed as JSON (if Content-Type is application/json). */
 @property (nonatomic, readonly, nullable, copy) NSDictionary *jsonBody;
+
+/*! Parsed multipart form data (if Content-Type is multipart/form-data). */
 @property (nonatomic, readonly, nullable, copy) NSDictionary *multipartFormData;
+
+/*! The client's IP address. */
 @property (nonatomic, readonly, nullable, copy) NSString *remoteAddress;
 
+/*! Creates a request from raw HTTP data. */
 + (instancetype)requestWithData:(NSData *)data;
+
+/*! Creates a request from raw HTTP data with client address. */
 + (instancetype)requestWithData:(NSData *)data remoteAddress:(NSString *)remoteAddress;
 
 - (instancetype)initWithMethod:(HttpMethod)method
@@ -40,7 +98,10 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
                             body:(NSData *)body
                     remoteAddress:(NSString *)remoteAddress;
 
+/*! Returns the value of a header (case-insensitive lookup). */
 - (NSString *)headerForKey:(NSString *)key;
+
+/*! Returns the value of a query parameter. */
 - (NSString *)queryParamForKey:(NSString *)key;
 
 @end
