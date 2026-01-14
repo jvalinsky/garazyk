@@ -13,7 +13,7 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<RequestHandler> *> *routeHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
-@property (nonatomic, assign) dispatch_semaphore_t readySemaphore;
+@property (nonatomic, strong) dispatch_semaphore_t readySemaphore;
 @property (nonatomic, assign) BOOL listenerReady;
 @property (nonatomic, assign) BOOL startupFinished;
 @property (nonatomic, strong) NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
@@ -283,25 +283,35 @@
     NSString *path = request.path;
 
     NSString *routeKey = [NSString stringWithFormat:@"%@ %@", methodString, path];
-    RequestHandler handler = self.pathHandlers[routeKey];
+    
+    // Check path handlers first (registered via addHandlerForPath)
+    // These handle any method for a given path
+    RequestHandler handler = self.pathHandlers[path];
 
+    // Then check route handlers (registered via addRoute)
+    // These are specific to Method + Path
     if (!handler) {
-        handler = self.pathHandlers[path];
-    }
-
-    if (!handler) {
-        NSString *genericPath = [self findMatchingPathForRoute:path handlers:self.routeHandlers];
-        if (genericPath) {
-            handler = self.routeHandlers[genericPath][0];
+        NSMutableArray *handlers = self.routeHandlers[routeKey];
+        if (handlers && handlers.count > 0) {
+            handler = handlers[0];
         }
     }
 
+    // Then check wildcard/pattern matching for path handlers
     if (!handler) {
         for (NSString *registeredPath in self.pathHandlers) {
             if ([self path:path matchesPattern:registeredPath]) {
                 handler = self.pathHandlers[registeredPath];
                 break;
             }
+        }
+    }
+    
+    // Finally check pattern matching for route handlers
+    if (!handler) {
+        NSString *matchingKey = [self findMatchingPathForRoute:path method:methodString handlers:self.routeHandlers];
+        if (matchingKey) {
+            handler = self.routeHandlers[matchingKey][0];
         }
     }
 
@@ -315,10 +325,22 @@
     return response;
 }
 
-- (NSString *)findMatchingPathForRoute:(NSString *)path handlers:(NSDictionary *)handlers {
-    for (NSString *route in handlers) {
-        if ([self path:path matchesPattern:route]) {
-            return route;
+- (NSString *)findMatchingPathForRoute:(NSString *)path method:(NSString *)method handlers:(NSDictionary *)handlers {
+    for (NSString *routeKey in handlers) {
+        // routeKey is "METHOD PATTERN"
+        NSArray *parts = [routeKey componentsSeparatedByString:@" "];
+        if (parts.count < 2) continue;
+        
+        NSString *routeMethod = parts[0];
+        NSString *routePattern = [parts subarrayWithRange:NSMakeRange(1, parts.count - 1)].firstObject; // Simplified join?
+        if (parts.count > 2) {
+            routePattern = [[parts subarrayWithRange:NSMakeRange(1, parts.count - 1)] componentsJoinedByString:@" "];
+        }
+        
+        if (![routeMethod isEqualToString:method]) continue;
+        
+        if ([self path:path matchesPattern:routePattern]) {
+            return routeKey;
         }
     }
     return nil;

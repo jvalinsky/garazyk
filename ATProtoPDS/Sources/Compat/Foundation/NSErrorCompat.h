@@ -1,3 +1,15 @@
+/**
+ * @file NSErrorCompat.h
+ *
+ * @brief NSError compatibility header.
+ *
+ * Imports appropriate NSError support for platform:
+ * - macOS: Standard Foundation NSError
+ * - Linux: GNUstep NSError extensions
+ *
+ * @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
 #ifndef NSErrorCompat_h
 #define NSErrorCompat_h
 
