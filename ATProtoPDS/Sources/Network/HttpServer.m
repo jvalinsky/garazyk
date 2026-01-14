@@ -4,6 +4,7 @@
 #import "Network/RateLimiter.h"
 #import "Network/PDSNetworkTransport.h"
 #import "Network/HttpBufferPool.h"
+#import "Network/HttpChunkedBodyParser.h"
 #import "Debug/PDSLogger.h"
 #import <CoreFoundation/CoreFoundation.h>
 
@@ -44,6 +45,8 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 @property (nonatomic, strong) NSMutableArray<NSData *> *outputQueue;
 @property (nonatomic, assign) BOOL readingPaused;
 @property (nonatomic, assign) NSUInteger outputQueueSize;
+@property (nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
+@property (nonatomic, assign) BOOL isChunkedEncoding;
 
 @end
 
@@ -331,7 +334,14 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
         state.headerEndOffset = headerEndRange.location + headerEndRange.length;
         state.expectedBodyLength = [self contentLengthForMessage:state.message];
 
-        if (state.expectedBodyLength > kHttpMaxBodyBytes) {
+        NSDictionary *headers = [self headersFromMessage:state.message];
+        NSString *transferEncoding = [[headers objectForKey:@"transfer-encoding"] lowercaseString];
+        state.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
+
+        if (state.isChunkedEncoding) {
+            state.chunkedBodyParser = [[HttpChunkedBodyParser alloc] initWithMaxSize:kHttpMaxBodyBytes];
+            state.expectedBodyLength = 0;
+        } else if (state.expectedBodyLength > kHttpMaxBodyBytes) {
             HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusPayloadTooLarge];
             response.keepAlive = NO;
             [response setJsonBody:@{@"error": @"RequestTooLarge", @"message": @"Request body too large"}];
@@ -341,12 +351,55 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
         }
     }
 
-    NSUInteger bodyStart = state.headerEndOffset;
-    if (state.buffer.length < bodyStart + state.expectedBodyLength) {
-        return NO;
-    }
+    NSData *bodyData = nil;
 
-    NSData *bodyData = [state.buffer subdataWithRange:NSMakeRange(bodyStart, state.expectedBodyLength)];
+    if (state.isChunkedEncoding) {
+        NSUInteger bodyStart = state.headerEndOffset;
+        NSUInteger availableBodyLength = state.buffer.length > bodyStart ? state.buffer.length - bodyStart : 0;
+
+        if (availableBodyLength > 0) {
+            NSData *bodyChunk = [state.buffer subdataWithRange:NSMakeRange(bodyStart, availableBodyLength)];
+            NSError *parseError = nil;
+            BOOL shouldContinue = [state.chunkedBodyParser appendData:bodyChunk error:&parseError];
+
+            [state.buffer replaceBytesInRange:NSMakeRange(bodyStart, availableBodyLength) withBytes:NULL length:0];
+
+            if (parseError) {
+                HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
+                response.keepAlive = NO;
+                [response setBodyString:@"Invalid chunked body"];
+                state.requestInFlight = YES;
+                [self sendResponse:response onConnection:connection];
+                return YES;
+            }
+
+            if (!shouldContinue) {
+                return NO;
+            }
+
+            if (!state.chunkedBodyParser.isComplete) {
+                return NO;
+            }
+
+            bodyData = state.chunkedBodyParser.parsedData;
+            [state.buffer setLength:0];
+        } else {
+            return NO;
+        }
+    } else {
+        NSUInteger bodyStart = state.headerEndOffset;
+        if (state.buffer.length < bodyStart + state.expectedBodyLength) {
+            return NO;
+        }
+
+        bodyData = [state.buffer subdataWithRange:NSMakeRange(bodyStart, state.expectedBodyLength)];
+
+        NSUInteger consumedLength = bodyStart + state.expectedBodyLength;
+        NSUInteger remainingLength = state.buffer.length - consumedLength;
+        NSData *remainingData = remainingLength > 0 ? [state.buffer subdataWithRange:NSMakeRange(consumedLength, remainingLength)] : nil;
+
+        [state.buffer setData:remainingData ?: [NSData data]];
+    }
 
     CFHTTPMessageRef message = state.message;
     NSString *method = (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(message);
@@ -376,7 +429,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
                                                     queryParams:queryParams ?: @{}
                                                         version:version ?: @"HTTP/1.1"
                                                         headers:headers ?: @{}
-                                                           body:bodyData
+                                                           body:bodyData ?: [NSData data]
                                                    remoteAddress:connection.remoteAddress ?: @""];
 
     if (!request) {
@@ -388,11 +441,6 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
         return YES;
     }
 
-    NSUInteger consumedLength = bodyStart + state.expectedBodyLength;
-    NSUInteger remainingLength = state.buffer.length - consumedLength;
-    NSData *remainingData = remainingLength > 0 ? [state.buffer subdataWithRange:NSMakeRange(consumedLength, remainingLength)] : nil;
-
-    [state.buffer setData:remainingData ?: [NSData data]];
     [state resetForNextRequest];
 
     state.requestInFlight = YES;
@@ -466,7 +514,13 @@ static const NSTimeInterval kHttpHeaderTimeout = 5.0;
         return YES;
     }
     NSString *lowercased = transferEncoding.lowercaseString;
-    return [lowercased isEqualToString:@"identity"];
+    if ([lowercased isEqualToString:@"identity"]) {
+        return YES;
+    }
+    if ([lowercased isEqualToString:@"chunked"]) {
+        return YES;
+    }
+    return NO;
 }
 
 - (NSDictionary<NSString *, NSString *> *)parseQueryParamsFromString:(NSString *)queryString {
