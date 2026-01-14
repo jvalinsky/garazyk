@@ -1,8 +1,12 @@
 #import <XCTest/XCTest.h>
 #import "Auth/Session.h"
+#import "Auth/JWT.h"
+#import "Auth/Secp256k1.h"
 
 @interface SessionStoreTests : XCTestCase
 @property (nonatomic, strong) SessionStore *store;
+@property (nonatomic, strong) JWTMinter *minter;
+@property (nonatomic, strong) JWTVerifier *verifier;
 @end
 
 @implementation SessionStoreTests
@@ -11,11 +15,45 @@
     [super setUp];
     // Create a fresh store instance for each test
     self.store = [[SessionStore alloc] init];
+    [self configureJWTSigning];
 }
 
 - (void)tearDown {
     self.store = nil;
+    self.minter = nil;
+    self.verifier = nil;
     [super tearDown];
+}
+
+#pragma mark - JWT Fixtures
+
+- (void)configureJWTSigning {
+    self.minter = [[JWTMinter alloc] init];
+    self.minter.issuer = @"test.issuer";
+    self.minter.signingAlgorithm = @"ES256";
+    self.minter.defaultExpiration = 3600;
+
+    NSError *error = nil;
+    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&error];
+    XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", error);
+    self.minter.privateKey = keyPair.privateKey;
+
+    self.verifier = [[JWTVerifier alloc] init];
+    self.verifier.expectedIssuer = @"test.issuer";
+    self.verifier.publicKey = keyPair.publicKey;
+
+    self.store.minter = self.minter;
+}
+
+- (void)assertValidJWTAccessToken:(NSString *)accessToken {
+    NSError *error = nil;
+    JWT *jwt = [JWT jwtWithToken:accessToken error:&error];
+    XCTAssertNotNil(jwt, @"Access token should parse as JWT");
+    XCTAssertNil(error, @"No JWT parsing error expected");
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertTrue(verified, @"JWT access token should verify");
+    XCTAssertNil(error, @"No JWT verification error expected");
 }
 
 #pragma mark - Session Creation Tests
@@ -36,6 +74,7 @@
     XCTAssertNotNil(session.accessToken, @"Access token should be generated");
     XCTAssertNotNil(session.refreshToken, @"Refresh token should be generated");
     XCTAssertNotNil(session.sessionID, @"Session ID should be generated");
+    [self assertValidJWTAccessToken:session.accessToken];
 }
 
 - (void)testDPoPThumbprintAssignment {
