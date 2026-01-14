@@ -8,7 +8,7 @@
  listing, deletion, and validation. Implements magic number verification to prevent
  MIME type spoofing.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

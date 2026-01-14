@@ -6,7 +6,7 @@
  @discussion Provides CRUD operations for ATProto records within repositories.
  Handles record listing with pagination and repository statistics.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>

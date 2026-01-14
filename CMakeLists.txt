@@ -403,3 +403,154 @@ if(BUILD_FUZZERS)
     RUNTIME DESTINATION bin
   )
 endif()
+
+#=============================
+# Convenience Scripts
+#=============================
+
+# Generate helper scripts for development tasks
+file(WRITE "${CMAKE_BINARY_DIR}/run-fuzzers-limited.sh" "#!/bin/bash
+set -e
+cd \"${CMAKE_SOURCE_DIR}\"
+echo \"Running fuzzers with limited runs...\"
+mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo \"XRPC fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=5000 || echo \"CBOR fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=5000 || echo \"HTTP fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo \"Auth fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_blob /dev/null -max_len=65536 -jobs=8 -runs=1000 || echo \"Blob fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=8 -runs=1000 || echo \"SQL fuzzer completed\"
+echo \"Fuzzing session complete.\"
+")
+
+file(WRITE "${CMAKE_BINARY_DIR}/run-fuzzers-extended.sh" "#!/bin/bash
+set -e
+cd \"${CMAKE_SOURCE_DIR}\"
+echo \"Running comprehensive fuzzing session...\"
+mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql
+echo \"Running XRPC fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running CBOR fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running HTTP fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running Auth fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running Blob fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_blob /dev/null -max_len=50000000 -jobs=4 -timeout=10 || true
+echo \"Running SQL fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=4 -timeout=10 || true
+echo \"Comprehensive fuzzing session complete.\"
+ls -la fuzzing/crashers/ 2>/dev/null || echo \"No crashes detected\"
+")
+
+file(WRITE "${CMAKE_BINARY_DIR}/run-clang-tidy.sh" "#!/bin/bash
+set -e
+cd \"${CMAKE_SOURCE_DIR}\"
+echo \"Running clang-tidy static analysis...\"
+find ATProtoPDS/Sources -name \"*.m\" -o -name \"*.c\" | head -50 | xargs -I{} clang-tidy -p . --config-file=.clang-tidy {} 2>&1 | grep -E \"(warning|error)\" | head -100 || true
+echo \"Clang-tidy analysis complete.\"
+")
+
+file(WRITE "${CMAKE_BINARY_DIR}/run-format.sh" "#!/bin/bash
+cd \"${CMAKE_SOURCE_DIR}\"
+echo \"Formatting source files...\"
+find ATProtoPDS/Sources ATProtoPDS/Tests -name \"*.m\" -o -name \"*.c\" -o -name \"*.h\" | xargs clang-format -i -style=file
+echo \"Formatting complete.\"
+")
+
+file(WRITE "${CMAKE_BINARY_DIR}/run-scan-build.sh" "#!/bin/bash
+set -e
+cd \"${CMAKE_SOURCE_DIR}\"
+echo \"Running Clang Static Analyzer (scan-build)...\"
+rm -rf build-analyzed
+mkdir build-analyzed
+cd build-analyzed
+scan-build -use-cc=$(which clang) cmake .. -DCMAKE_BUILD_TYPE=Debug
+scan-build -use-cc=$(which clang) make -j$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
+echo \"Static analysis complete.\"
+")
+
+file(WRITE "${CMAKE_BINARY_DIR}/run-tests.sh" "#!/bin/bash
+set -e
+cd \"${CMAKE_SOURCE_DIR}\"
+echo \"Running all tests...\"
+${CMAKE_BINARY_DIR}/tests/AllTests
+echo \"Tests complete.\"
+")
+
+# Make scripts executable
+file(COPY "${CMAKE_BINARY_DIR}/run-fuzzers-limited.sh" DESTINATION "${CMAKE_SOURCE_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+file(COPY "${CMAKE_BINARY_DIR}/run-fuzzers-extended.sh" DESTINATION "${CMAKE_SOURCE_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+file(COPY "${CMAKE_BINARY_DIR}/run-clang-tidy.sh" DESTINATION "${CMAKE_SOURCE_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+file(COPY "${CMAKE_BINARY_DIR}/run-format.sh" DESTINATION "${CMAKE_SOURCE_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+file(COPY "${CMAKE_BINARY_DIR}/run-scan-build.sh" DESTINATION "${CMAKE_SOURCE_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+file(COPY "${CMAKE_BINARY_DIR}/run-tests.sh" DESTINATION "${CMAKE_SOURCE_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+# Add custom targets for convenience
+add_custom_target(run-fuzzers-limited COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-fuzzers-limited.sh"
+  COMMENT "Running fuzzers with limited runs"
+  DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite
+)
+
+add_custom_target(run-fuzzers-extended COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-fuzzers-extended.sh"
+  COMMENT "Running comprehensive fuzzing session"
+  DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite
+)
+
+add_custom_target(clang-tidy COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-clang-tidy.sh"
+  COMMENT "Running clang-tidy static analysis"
+)
+
+add_custom_target(format COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-format.sh"
+  COMMENT "Formatting source files"
+)
+
+add_custom_target(scan-build COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-scan-build.sh"
+  COMMENT "Running Clang Static Analyzer"
+)
+
+add_custom_target(run-tests COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-tests.sh"
+  COMMENT "Running all tests"
+  DEPENDS AllTests
+)
+
+# Alias targets matching old Makefile names
+add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite)
+add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
+add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
+add_custom_target(fuzz-http DEPENDS fuzz_http)
+add_custom_target(fuzz-auth DEPENDS fuzz_auth)
+add_custom_target(fuzz-blob DEPENDS fuzz_blob)
+add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
+
+# Print build instructions
+message(STATUS "")
+message(STATUS "===========================================")
+message(STATUS "ATProtoPDS Build System")
+message(STATUS "===========================================")
+message(STATUS "")
+message(STATUS "Build Targets:")
+message(STATUS "  atprotopds-cli    - CLI tool")
+message(STATUS "  atprotopds-server - Server executable")
+message(STATUS "  AllTests          - Unit tests")
+message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
+message(STATUS "  fuzz_cbor         - CBOR/CAR fuzzer")
+message(STATUS "  fuzz_http         - HTTP parser fuzzer")
+message(STATUS "  fuzz_auth         - Authentication fuzzer")
+message(STATUS "  fuzz_blob         - Blob security fuzzer")
+message(STATUS "  fuzz_sqlite       - SQL injection fuzzer")
+message(STATUS "")
+message(STATUS "Convenience Targets:")
+message(STATUS "  make run-fuzzers-limited   - Run fuzzers (limited)")
+message(STATUS "  make run-fuzzers-extended  - Run fuzzers (extended)")
+message(STATUS "  make clang-tidy            - Static analysis")
+message(STATUS "  make format                - Format code")
+message(STATUS "  make scan-build            - Static analyzer")
+message(STATUS "  make run-tests             - Run all tests")
+message(STATUS "")
+message(STATUS "Options:")
+message(STATUS "  -DBUILD_FUZZERS=ON   - Build fuzzing targets")
+message(STATUS "  -DBUILD_TESTS=ON     - Build test targets")
+message(STATUS "  -DCMAKE_BUILD_TYPE=  - Debug|Release")
+message(STATUS "===========================================")

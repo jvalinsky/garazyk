@@ -7,7 +7,7 @@
  operations (create, read, update, delete), and admin endpoints. Validates
  ownership, session validity, and administrative privileges.
 
- @copyright Copyright (c) 2024 Jack Valinsky
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
