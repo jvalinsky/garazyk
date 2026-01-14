@@ -1,6 +1,26 @@
 #import <Foundation/Foundation.h>
+#import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
+/*!
+ @file PDSHealthCheck.h
+
+ @abstract Health check and monitoring utilities for PDS database.
+
+ @discussion This module provides PDSHealthCheck for monitoring database
+ health, including:
+ - Database integrity checks
+ - Foreign key verification
+ - Table size reporting
+ - Fragmentation analysis
+ - Pool metrics collection
+
+ Health status is returned as PDSHealthStatus (healthy, warning, critical).
+
+ @see PDSDatabasePool
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
 
 @class PDSDatabasePool;
 @class PDSServiceDatabases;

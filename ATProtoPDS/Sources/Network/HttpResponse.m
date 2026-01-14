@@ -1,4 +1,14 @@
 #import "Network/HttpResponse.h"
+#import <stdint.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+/*! Security header values */
+static NSString *const kXContentTypeOptions = @"nosniff";
+static NSString *const kXFrameOptions = @"DENY";
+static NSString *const kContentSecurityPolicy = @"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
+
+NS_ASSUME_NONNULL_END
 
 @implementation HttpResponse
 
@@ -64,7 +74,7 @@
 
 - (void)setJsonBody:(NSDictionary *)json {
     _jsonBody = [json copy];
-    _body = nil;
+    _body = nil; /*! Clear competing body representations */
     _bodyString = nil;
     self.contentType = @"application/json; charset=utf-8";
 }
@@ -72,41 +82,46 @@
 - (void)setBodyString:(NSString *)body {
     _bodyString = [body copy];
     _body = [body dataUsingEncoding:NSUTF8StringEncoding];
-    _jsonBody = nil;
+    _jsonBody = nil; /*! Clear competing body representations */
 }
 
 - (void)setBodyData:(NSData *)data {
     _body = [data copy];
-    _bodyString = nil;
+    _bodyString = nil; /*! Clear competing body representations */
     _jsonBody = nil;
 }
 
 - (NSData *)serialize {
     NSMutableData *result = [NSMutableData data];
 
+    /*! Build status line: HTTP/1.1 CODE MESSAGE\r\n */
     NSString *statusLine = [NSString stringWithFormat:@"HTTP/1.1 %ld %@\r\n", (long)self.statusCode, self.statusMessage];
     [result appendData:[statusLine dataUsingEncoding:NSUTF8StringEncoding]];
 
+    /*! Handle Connection header based on keepAlive setting */
     if (self.keepAlive) {
         [self setHeader:@"keep-alive" forKey:@"Connection"];
     } else {
         [self setHeader:@"close" forKey:@"Connection"];
     }
 
+    /*! Ensure Content-Type is set for JSON responses */
     if (!self.contentType && self.jsonBody) {
         self.contentType = @"application/json; charset=utf-8";
     }
 
+    /*! Add Content-Type header if present */
     if (self.contentType) {
         [self setHeader:self.contentType forKey:@"Content-Type"];
     }
 
+    /*! Determine body data from highest-priority source */
     NSData *bodyData = nil;
     if (self.jsonBody) {
         NSError *error = nil;
         bodyData = [NSJSONSerialization dataWithJSONObject:self.jsonBody options:0 error:&error];
         if (error) {
-            bodyData = nil;
+            bodyData = nil; /*! Fail-safe: don't send malformed JSON */
         }
     } else if (self.body) {
         bodyData = self.body;
@@ -114,18 +129,22 @@
         bodyData = [self.bodyString dataUsingEncoding:NSUTF8StringEncoding];
     }
 
+    /*! Add Content-Length header if body is present */
     if (bodyData) {
         NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyData.length];
         [self setHeader:contentLength forKey:@"Content-Length"];
     }
 
+    /*! Append all headers in HTTP format */
     for (NSString *key in self.headers) {
         NSString *headerLine = [NSString stringWithFormat:@"%@: %@\r\n", key, self.headers[key]];
         [result appendData:[headerLine dataUsingEncoding:NSUTF8StringEncoding]];
     }
 
+    /*! End headers section with blank line */
     [result appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
 
+    /*! Append body if present */
     if (bodyData) {
         [result appendData:bodyData];
     }
@@ -133,11 +152,9 @@
     return [result copy];
 }
 
-+ (NSString *)xContentTypeOptions { return @"nosniff"; }
-+ (NSString *)xFrameOptions { return @"DENY"; }
-+ (NSString *)contentSecurityPolicy {
-    return @"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
-}
++ (NSString *)xContentTypeOptions { return kXContentTypeOptions; }
++ (NSString *)xFrameOptions { return kXFrameOptions; }
++ (NSString *)contentSecurityPolicy { return kContentSecurityPolicy; }
 
 + (void)applySecurityHeaders:(NSMutableDictionary *)headers {
     headers[@"X-Content-Type-Options"] = self.xContentTypeOptions;

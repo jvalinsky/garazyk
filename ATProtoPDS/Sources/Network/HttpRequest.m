@@ -1,4 +1,5 @@
 #import "Network/HttpRequest.h"
+#import <stdint.h>
 
 @interface HttpRequest ()
 

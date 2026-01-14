@@ -1,3 +1,15 @@
+/*!
+ @file PDSAuthzManager.h
+
+ @abstract Authorization management for ATProto PDS operations.
+
+ @discussion Enforces access control policies for repository access, record
+ operations (create, read, update, delete), and admin endpoints. Validates
+ ownership, session validity, and administrative privileges.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import <Foundation/Foundation.h>
 
 @class PDSDatabase;

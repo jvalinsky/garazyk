@@ -2,6 +2,7 @@
 #import "App/PDSConfiguration.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonCrypto.h>
+#import <stdint.h>
 
 NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
 
