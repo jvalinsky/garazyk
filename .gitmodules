@@ -1,3 +1,12 @@
 [submodule "secp256k1"]
 	path = secp256k1
 	url = https://github.com/bitcoin-core/secp256k1
+[submodule "reference/gnustep-base"]
+	path = reference/gnustep-base
+	url = https://github.com/gnustep/libs-base.git
+[submodule "reference/gnustep-corebase"]
+	path = reference/gnustep-corebase
+	url = https://github.com/gnustep/libs-corebase.git
+[submodule "reference/libobjc2"]
+	path = reference/libobjc2
+	url = https://github.com/gnustep/libobjc2.git
