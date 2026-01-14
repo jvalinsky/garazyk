@@ -1,3 +1,15 @@
+/*!
+ @file CBOR.m
+
+ @abstract CBOR (Concise Binary Object Representation) encoding and decoding.
+
+ @discussion This file implements CBOR serialization for ATProto repository
+ data structures. CBOR is used for Merkle Search Tree node serialization
+ and CAR file content encoding, following RFC 8949.
+
+ @copyright Copyright (c) 2024 Jack Valinsky
+ */
+
 #import "Repository/CBOR.h"
 #import <Security/Security.h>
 
