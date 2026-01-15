@@ -325,15 +325,27 @@
         return;
     }
 
-    // Validate client secret
-    // Note: In a production environment, this should use a constant-time comparison
-    // to prevent timing attacks (e.g., CRYPTO_memcmp or similar).
+    // Validate client secret (optional for DPoP-based clients)
+    // In ATProto, client authentication can use DPoP binding instead of client_secret
     NSString *clientSecret = params[@"client_secret"];
-    if (!clientSecret || ![clientSecret isEqualToString:client[@"client_secret"]]) {
+    NSString *dpopJWK = params[@"dpop_jwk"];
+    NSString *expectedSecret = client[@"client_secret"];
+
+    if (clientSecret && expectedSecret && ![clientSecret isEqualToString:expectedSecret]) {
         response.statusCode = 401;
         [response setJsonBody:@{
             @"error": @"invalid_client",
             @"error_description": @"Invalid client credentials"
+        }];
+        return;
+    }
+
+    // Reject if client_secret is required but not provided and no DPoP binding
+    if (!clientSecret && !dpopJWK && expectedSecret) {
+        response.statusCode = 401;
+        [response setJsonBody:@{
+            @"error": @"invalid_client",
+            @"error_description": @"Client authentication required"
         }];
         return;
     }
