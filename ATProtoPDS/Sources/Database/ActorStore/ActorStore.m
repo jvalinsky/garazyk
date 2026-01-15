@@ -453,11 +453,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     
     int stepResult = sqlite3_step(stmt);
     BOOL success = (stepResult == SQLITE_DONE);
-    NSLog(@"[ActorStore] createAccount: sqlite3_step result=%d, success=%d, did=%@", stepResult, success, account.did);
-    [self finalizeStatement:stmt];
-
     if (!success) {
         int sqliteCode = sqlite3_extended_errcode(self.db);
+        NSString *errorMsg = [NSString stringWithUTF8String:sqlite3_errmsg(self.db)];
+        
+        [self finalizeStatement:stmt];
+        
         if (error) {
             BOOL isConstraintViolation = (sqliteCode == SQLITE_CONSTRAINT_UNIQUE ||
                                           sqliteCode == SQLITE_CONSTRAINT_PRIMARYKEY ||
@@ -469,7 +470,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
                                             code:PDSActorStoreErrorAlreadyExists
                                         userInfo:@{NSLocalizedDescriptionKey: @"Account already exists",
                                                  @"sqlite_code": @(sqliteCode),
-                                                 @"sqlite_message": [NSString stringWithUTF8String:sqlite3_errmsg(self.db)] ?: @""}];
+                                                 @"sqlite_message": errorMsg ?: @""}];
             } else {
                 *error = [self errorWithSQLiteResult:sqliteCode
                                              message:@"Failed to insert account"];
@@ -477,6 +478,8 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
         return NO;
     }
+    
+    [self finalizeStatement:stmt];
     
 #if defined(GNUSTEP)
     // Generate secp256k1 signing key for the new account using the account's DID

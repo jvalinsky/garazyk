@@ -656,7 +656,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
     account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
 
-    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at, tfa_enabled, tfa_secret, recovery_codes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at, tfa_enabled, tfa_secret, recovery_codes, invite_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -682,6 +682,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_int(stmt, 10, account.tfaEnabled ? 1 : 0);
     [self bindData:account.tfaSecret toStatement:stmt index:11];
     [self bindData:account.recoveryCodes toStatement:stmt index:12];
+    sqlite3_bind_int(stmt, 13, account.inviteEnabled ? 1 : 0);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -704,7 +705,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
     account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
 
-    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ?, tfa_enabled = ?, tfa_secret = ?, recovery_codes = ? WHERE did = ?";
+    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ?, tfa_enabled = ?, tfa_secret = ?, recovery_codes = ?, invite_enabled = ? WHERE did = ?";
 
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -720,17 +721,19 @@ static NSDateFormatter * iso8601Formatter(void) {
         sqlite3_bind_null(stmt, 2);
     }
     [self bindData:account.passwordHash toStatement:stmt index:3];
-    [self bindData:account.accessJwt toStatement:stmt index:4];
-    [self bindData:account.refreshJwt toStatement:stmt index:5];
-    sqlite3_bind_text(stmt, 6, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]].UTF8String, -1, SQLITE_STATIC);
+    [self bindData:account.passwordSalt toStatement:stmt index:4];
+    [self bindData:account.accessJwt toStatement:stmt index:5];
+    [self bindData:account.refreshJwt toStatement:stmt index:6];
+    sqlite3_bind_text(stmt, 7, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]].UTF8String, -1, SQLITE_STATIC);
     
     // 2FA
-    sqlite3_bind_int(stmt, 7, account.tfaEnabled ? 1 : 0);
-    [self bindData:account.tfaSecret toStatement:stmt index:8];
-    [self bindData:account.recoveryCodes toStatement:stmt index:9];
+    sqlite3_bind_int(stmt, 8, account.tfaEnabled ? 1 : 0);
+    [self bindData:account.tfaSecret toStatement:stmt index:9];
+    [self bindData:account.recoveryCodes toStatement:stmt index:10];
+    sqlite3_bind_int(stmt, 11, account.inviteEnabled ? 1 : 0);
 
     // WHERE did = ?
-    sqlite3_bind_text(stmt, 10, account.did.UTF8String, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 12, account.did.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -932,6 +935,8 @@ static NSDateFormatter * iso8601Formatter(void) {
     if (blobBytes > 0) {
         account.recoveryCodes = [NSData dataWithBytes:sqlite3_column_blob(stmt, 11) length:blobBytes];
     }
+    
+    account.inviteEnabled = (sqlite3_column_int(stmt, 12) != 0);
     
     return account;
 }

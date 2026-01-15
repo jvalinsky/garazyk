@@ -41,3 +41,8 @@ docs/tutorial-site.tar.gz
 reference/
 .beads/
 ATProtoPDS/Tests/Blob/debug_blob_test.txt
+
+com.apple.DeveloperTools/
+:memory:
+:memory:-shm
+:memory:-wal
