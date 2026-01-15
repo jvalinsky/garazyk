@@ -5,6 +5,7 @@
 #import "App/PDSConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/JWT.h"
+#import "Debug/PDSLogger.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -141,6 +142,11 @@
         account = [_serviceDatabases getAccountByEmail:identifier error:&dbError];
     } else {
         account = [_serviceDatabases getAccountByHandle:identifier error:&dbError];
+    }
+
+    if (dbError) {
+        if (error) *error = dbError;
+        return nil;
     }
 
     if (!account) {

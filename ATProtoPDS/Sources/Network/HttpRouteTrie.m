@@ -122,9 +122,7 @@
         for (NSUInteger i = 0; i < components.count; i++) {
             NSString *component = components[i];
             
-            // Debug path traversal
-            fprintf(stderr, "Trie Traversal: component='%s', current has wildcard=%d\n", [component UTF8String], current.wildcardRoute != nil);
-
+            
             HttpRouteNode *child = current.children[component];
             if (child) {
                 current = child;
@@ -136,7 +134,6 @@
                 current = current.children[@"*"];
             } else if (current.wildcardRoute) {
                 // Wildcard match!
-                fprintf(stderr, "Trie: Wildcard match at '%s'\n", [component UTF8String]);
                 foundHandler = current.wildcardRoute.handler;
                 foundParams = [params copy];
                 return;

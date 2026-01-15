@@ -180,64 +180,20 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
-    __block PDSDatabaseAccount *account = nil;
-
-    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
-        }
-        return nil;
-    }
-
-    NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
-    __autoreleasing NSError *stmtError = nil;
-    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) {
-        if (error) *error = stmtError;
-        return nil;
-    }
-
-    sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_TRANSIENT);
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [store accountFromStatement:stmt];
-    }
-
-    [store finalizeStatement:stmt];
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return nil;
+    
+    PDSDatabaseAccount *account = [db getAccountByHandle:handle error:error];
+    [db close];
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
-    __block PDSDatabaseAccount *account = nil;
-
-    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
-        }
-        return nil;
-    }
-
-    NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
-    __autoreleasing NSError *stmtError = nil;
-    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) {
-        if (error) *error = stmtError;
-        return nil;
-    }
-
-    sqlite3_bind_text(stmt, 1, email.UTF8String, -1, SQLITE_TRANSIENT);
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [store accountFromStatement:stmt];
-    }
-
-    [store finalizeStatement:stmt];
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return nil;
+    
+    PDSDatabaseAccount *account = [db getAccountByEmail:email error:error];
+    [db close];
     return account;
 }
 
