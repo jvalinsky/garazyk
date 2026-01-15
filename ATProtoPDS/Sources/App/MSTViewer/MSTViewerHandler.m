@@ -111,6 +111,7 @@
 - (nullable NSData *)loadAssetData:(NSString *)relativePath {
     NSArray *searchPaths = @[
         @"ATProtoPDS/Sources/App/MSTViewer/Assets",
+        @"../ATProtoPDS/Sources/App/MSTViewer/Assets",
         @"Sources/App/MSTViewer/Assets",
         @"App/MSTViewer/Assets",
         @"Assets"

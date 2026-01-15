@@ -1,12 +1,14 @@
 #import <XCTest/XCTest.h>
 #import "Blob/BlobStorage.h"
+#import "Blob/PDSDiskBlobProvider.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Pool/DatabasePool.h"
 #import "Database/Schema.h"
 #import "Core/CID.h"
 
 @interface BlobStorageTests : XCTestCase
 
-@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) BlobStorage *blobStorage;
 @property (nonatomic, strong) NSURL *testDBURL;
 @property (nonatomic, strong) NSURL *testStorageURL;
@@ -21,17 +23,21 @@
 - (void)setUp {
     [super setUp];
 
-    self.testDBURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"test_blob_storage.db"]];
+    // Use a temp directory for the pool, not a single file
+    self.testDBURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"pds_test_db_pool"]];
     self.testStorageURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"test_blob_storage"]];
 
     [[NSFileManager defaultManager] removeItemAtURL:self.testDBURL error:nil];
     [[NSFileManager defaultManager] removeItemAtURL:self.testStorageURL error:nil];
-
-    NSError *error = nil;
-    self.database = [PDSDatabase databaseAtURL:self.testDBURL];
-    XCTAssertTrue([self.database openWithError:&error], @"Failed to open test database: %@", error);
-
-    self.blobStorage = [[BlobStorage alloc] initWithDatabase:self.database storageDirectory:self.testStorageURL];
+    [[NSFileManager defaultManager] createDirectoryAtURL:self.testDBURL withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    // Create pool
+    self.databasePool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDBURL.path maxSize:5];
+    
+    // Create provider
+    PDSDiskBlobProvider *provider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.testStorageURL];
+    
+    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
 
     NSString *testString = @"Hello, World! This is test blob data.";
     self.testData = [testString dataUsingEncoding:NSUTF8StringEncoding];
@@ -39,7 +45,7 @@
 }
 
 - (void)tearDown {
-    [self.database close];
+    [self.databasePool closeAll];
     [[NSFileManager defaultManager] removeItemAtURL:self.testDBURL error:nil];
     [[NSFileManager defaultManager] removeItemAtURL:self.testStorageURL error:nil];
     [super tearDown];
@@ -47,8 +53,8 @@
 
 - (void)testBlobStorageInitialization {
     XCTAssertNotNil(self.blobStorage, @"BlobStorage should be initialized");
-    XCTAssertEqualObjects(self.blobStorage.storageDirectory, self.testStorageURL, @"Storage directory should match");
-    XCTAssertEqual(self.blobStorage.database, self.database, @"Database should be set");
+    XCTAssertEqual(self.blobStorage.databasePool, self.databasePool, @"Database pool should be set");
+    XCTAssertNotNil(self.blobStorage.provider, @"Provider should be set");
 }
 
 - (void)testDataSetup {
@@ -106,7 +112,7 @@
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
     NSError *error = nil;
-    NSData *retrievedData = [self.blobStorage getBlobWithCID:self.uploadedCID error:&error];
+    NSData *retrievedData = [self.blobStorage getBlobWithCID:self.uploadedCID did:self.testDID error:&error];
 
     XCTAssertNotNil(retrievedData, @"Retrieved data should not be nil");
     XCTAssertEqualObjects(retrievedData, self.testData, @"Retrieved data should match original");
@@ -118,7 +124,7 @@
     XCTAssertNotNil(wrongCID, @"CID creation should succeed");
 
     NSError *error = nil;
-    NSData *wrongData = [self.blobStorage getBlobWithCID:wrongCID error:&error];
+    NSData *wrongData = [self.blobStorage getBlobWithCID:wrongCID did:self.testDID error:&error];
 
     XCTAssertNil(wrongData, @"Non-existent blob should return nil data");
 }
@@ -158,7 +164,7 @@
 
 - (void)testBlobDeletionVerification {
     NSError *error = nil;
-    NSData *deletedData = [self.blobStorage getBlobWithCID:self.uploadedCID error:&error];
+    NSData *deletedData = [self.blobStorage getBlobWithCID:self.uploadedCID did:self.testDID error:&error];
 
     XCTAssertNil(deletedData, @"Deleted blob should return nil");
 }
@@ -240,7 +246,10 @@
     XCTAssertTrue(deleted1);
     
     // Verify DID1 cannot retrieve it
-    NSData *data1 = [self.blobStorage getBlobWithCID:cid1 error:&error]; // This retrieves based on CID only?
+    // Verify DID1 cannot retrieve it?
+    // If we use getBlobWithCID:did: error:, checking for DID1 should fail because metadata is gone.
+    NSData *data1 = [self.blobStorage getBlobWithCID:cid1 did:did1 error:&error];
+    XCTAssertNil(data1, @"DID1 should not be able to retrieve blob after deleting it");
     // Wait, getBlobWithCID:error: in BlobStorage.h doesn't take DID?
     // - (nullable NSData *)getBlobWithCID:(CID *)cid error:(NSError **)error;
     // If it retrieves from global storage, it might still return data if DID2 has it?
@@ -255,7 +264,7 @@
     // The current BlobStorage API `getBlobWithCID:error:` implies global access if you know the CID.
     // So the test should verify the DATA is still there (because DID2 has it).
     
-    NSData *remainingData = [self.blobStorage getBlobWithCID:cid1 error:&error];
+    NSData *remainingData = [self.blobStorage getBlobWithCID:cid1 did:did2 error:&error];
     XCTAssertNotNil(remainingData, @"Data should persist because DID2 still references it");
     
     // Delete for DID2
@@ -263,7 +272,7 @@
     XCTAssertTrue(deleted2);
     
     // Now data should be gone from disk (if ref counting works)
-    NSData *goneData = [self.blobStorage getBlobWithCID:cid1 error:&error];
+    NSData *goneData = [self.blobStorage getBlobWithCID:cid1 did:did2 error:&error];
     XCTAssertNil(goneData, @"Data should be removed after last reference is deleted");
 }
 

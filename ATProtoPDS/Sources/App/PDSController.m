@@ -12,6 +12,7 @@
 #import "Repository/MSTPersistence.h"
 #import "Repository/MSTPersistence.h"
 #import "Blob/BlobStorage.h"
+#import "Blob/PDSDiskBlobProvider.h"
 #import "Core/CID.h"
 #import "Core/TID.h"
 #import "Auth/JWT.h"
@@ -24,6 +25,7 @@
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/RateLimiter.h"
 #import "App/PDSConfiguration.h"
 #import "Services/PDSAccountService.h"
 #import "Services/PDSRecordService.h"
@@ -157,6 +159,17 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
             }
 
             PDS_LOG_INFO_C(PDSLogComponentCore, @"PDSController initializing with data directory: %@", directory);
+            
+            // Configure RateLimiter
+            RateLimiter *limiter = [RateLimiter sharedLimiter];
+            limiter.enabled = config.rateLimitEnabled;
+            // Use granular limits from configuration
+            limiter.didLimit = config.rateLimitDidLimit;
+            limiter.didWindowSeconds = config.rateLimitDidWindowSeconds;
+            limiter.ipLimit = config.rateLimitIpLimit;
+            limiter.ipWindowSeconds = config.rateLimitIpWindowSeconds;
+            limiter.blobLimit = config.rateLimitBlobLimit;
+            limiter.blobWindowSeconds = config.rateLimitBlobWindowSeconds;
         }
 
         _dataDirectory = [directory copy];
@@ -185,7 +198,19 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _accountService.minter = _jwtMinter;
         
         _recordService = [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
-        _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool];
+        
+        // Initialize Blob Storage Abstraction
+        NSString *blobDir = [_dataDirectory stringByAppendingPathComponent:@"blobs"];
+        NSFileManager *fm = [NSFileManager defaultManager];
+        if (![fm fileExistsAtPath:blobDir]) {
+            [fm createDirectoryAtPath:blobDir withIntermediateDirectories:YES attributes:nil error:nil];
+        }
+        
+        NSURL *blobURL = [NSURL fileURLWithPath:blobDir];
+        PDSDiskBlobProvider *blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
+        BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:_userDatabasePool provider:blobProvider];
+        
+        _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
         _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
         _repos = [NSMutableDictionary dictionary];
         _collections = [NSMutableDictionary dictionary];
@@ -194,11 +219,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _plcServerURL = kDefaultPlcServerURL;
         _running = NO;
 
-        NSFileManager *fm = [NSFileManager defaultManager];
-        NSString *blobDir = [_dataDirectory stringByAppendingPathComponent:@"blobs"];
-        if (![fm fileExistsAtPath:blobDir]) {
-            [fm createDirectoryAtPath:blobDir withIntermediateDirectories:YES attributes:nil error:nil];
-        }
+
 
         // Load lexicons from bundle, working directory, or data directory.
         ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];

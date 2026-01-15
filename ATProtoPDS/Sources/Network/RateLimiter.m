@@ -2,6 +2,7 @@
 #import "Compat/PDSTypes.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -174,7 +175,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
     
-    sqlite3_stmt *stmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
     if (result != SQLITE_OK) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
@@ -191,7 +192,6 @@ NS_ASSUME_NONNULL_BEGIN
         requestCount = sqlite3_column_int(stmt, 0);
         existingWindowStart = sqlite3_column_double(stmt, 1);
     }
-    sqlite3_finalize(stmt);
     
     if (requestCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
@@ -203,20 +203,25 @@ NS_ASSUME_NONNULL_BEGIN
                           @"ON CONFLICT(identifier, type) DO UPDATE SET "
                           @"request_count = request_count + 1, window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
     
-    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &stmt, NULL);
+    // We need a new statement variable since the previous one is autoreleased only at scope exit
+    // However, declaring another PDS_SQLITE_AUTORELEASE_STMT in the same scope with same name is tricky.
+    // It's better to wrap this in a block or use a different name.
+    // Let's use a different name "upsertStmt".
+    
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *upsertStmt;
+    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
     if (result != SQLITE_OK) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - requestCount - 1) resetSeconds:0 retryAfter:0];
     }
     
-    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, type);
-    sqlite3_bind_int(stmt, 3, 1);
-    sqlite3_bind_double(stmt, 4, now);
-    sqlite3_bind_double(stmt, 5, windowStart);
-    sqlite3_bind_double(stmt, 6, now);
+    sqlite3_bind_text(upsertStmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(upsertStmt, 2, type);
+    sqlite3_bind_int(upsertStmt, 3, 1);
+    sqlite3_bind_double(upsertStmt, 4, now);
+    sqlite3_bind_double(upsertStmt, 5, windowStart);
+    sqlite3_bind_double(upsertStmt, 6, now);
     
-    result = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    result = sqlite3_step(upsertStmt);
 
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
         PDS_LOG_DB_ERROR(@"Failed to update rate limit: %s (SQLite code: %d)",
@@ -238,7 +243,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
     
-    sqlite3_stmt *stmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
     if (result != SQLITE_OK) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
@@ -254,7 +259,6 @@ NS_ASSUME_NONNULL_BEGIN
         uploadCount = sqlite3_column_int(stmt, 0);
         existingWindowStart = sqlite3_column_double(stmt, 1);
     }
-    sqlite3_finalize(stmt);
     
     if (uploadCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
@@ -266,19 +270,19 @@ NS_ASSUME_NONNULL_BEGIN
                           @"ON CONFLICT(did) DO UPDATE SET "
                           @"upload_count = upload_count + 1, window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
     
-    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &stmt, NULL);
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *upsertStmt;
+    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
     if (result != SQLITE_OK) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - uploadCount - 1) resetSeconds:0 retryAfter:0];
     }
     
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, 1);
-    sqlite3_bind_double(stmt, 3, now);
-    sqlite3_bind_double(stmt, 4, windowStart);
-    sqlite3_bind_double(stmt, 5, now);
+    sqlite3_bind_text(upsertStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(upsertStmt, 2, 1);
+    sqlite3_bind_double(upsertStmt, 3, now);
+    sqlite3_bind_double(upsertStmt, 4, windowStart);
+    sqlite3_bind_double(upsertStmt, 5, now);
 
-    result = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    result = sqlite3_step(upsertStmt);
 
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
         PDS_LOG_DB_ERROR(@"Failed to update blob rate limit: %s (SQLite code: %d)",

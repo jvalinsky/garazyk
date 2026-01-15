@@ -1,20 +1,11 @@
-/*!
- @file BlobStorage.m
-
- @abstract Blob storage implementation with file system persistence.
-
- @discussion Stores blobs in a hierarchical directory structure based on CID prefix,
- validates blobs against ATProto constraints, and maintains metadata in SQLite.
- Computes CIDv1 with raw codec and verifies integrity on retrieval.
-
- @copyright Copyright (c) 2024 Jack Valinsky
- */
-
 #import "Blob/BlobStorage.h"
+#import "Blob/PDSBlobProvider.h"
 #import "Debug/PDSLogger.h"
 #import "Blob/MimeTypeValidator.h"
 #import "Core/CID.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 NSString * const BlobStorageErrorDomain = @"com.atproto.blobstorage";
@@ -23,8 +14,6 @@ static const NSInteger kMaxBlobSize = 5 * 1024 * 1024; // 5MB
 static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec)
 
 @interface BlobStorage ()
-
-@property (nonatomic, strong) NSFileManager *fileManager;
 
 @end
 
@@ -40,21 +29,11 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     return sharedInstance;
 }
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database storageDirectory:(NSURL *)storageDirectory {
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool provider:(id<PDSBlobProvider>)provider {
     self = [super init];
     if (self) {
-        _database = database;
-        _storageDirectory = storageDirectory;
-        _fileManager = [NSFileManager defaultManager];
-
-        // Create storage directory if it doesn't exist
-        NSError *createError = nil;
-        if (![_fileManager createDirectoryAtURL:storageDirectory
-                    withIntermediateDirectories:YES
-                                     attributes:nil
-                                          error:&createError]) {
-            PDS_LOG_ERROR_C(PDSLogComponentBlob, @"Failed to create blob storage directory: %@", createError);
-        }
+        _databasePool = databasePool;
+        _provider = provider;
     }
     return self;
 }
@@ -82,42 +61,38 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
         return nil;
     }
 
-    NSString *cidString = [cid stringValue];
-
-    // Check if blob already exists
-    NSError *dbError = nil;
-    PDSDatabaseBlob *existingBlob = [_database getBlobWithCid:[cid bytes] error:&dbError];
+    // Check if blob already exists in DB (User's DB)
+    __block NSError *dbError = nil;
+    __block PDSDatabaseBlob *existingBlob = nil;
+    
+    // We can't easily check 'all' databases, so we check this user's DB.
+    // If another user uploaded it, we might duplicate data storage call to provider,
+    // but provider 'storeBlobData' should be idempotent/deduplicating.
+    PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
+    if (store) {
+        existingBlob = [store getBlobForCID:[cid bytes] error:&dbError];
+    }
+    
     if (existingBlob) {
-        // Blob already exists, return existing CID
-    return cid;
+        return cid;
     }
 
-    // Store the blob file
-    NSURL *blobURL = [self blobURLForCID:cid];
-    if (![_fileManager createDirectoryAtURL:[blobURL URLByDeletingLastPathComponent]
-                withIntermediateDirectories:YES
-                                 attributes:nil
-                                      error:&dbError]) {
-        if (error) {
-            *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorStorageFailure
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create blob directory",
-                                                NSUnderlyingErrorKey: dbError}];
+    // Check if provider has it (for consistency)
+    if (![_provider hasBlobDataForCID:cid]) {
+        // Store data via provider
+        NSError *providerError = nil;
+        if (![_provider storeBlobData:data forCID:cid error:&providerError]) {
+            if (error) {
+                *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                             code:BlobStorageErrorStorageFailure
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to store blob data",
+                                                    NSUnderlyingErrorKey: providerError}];
+            }
+            return nil;
         }
-        return nil;
     }
 
-    if (![data writeToURL:blobURL options:NSDataWritingAtomic error:&dbError]) {
-        if (error) {
-            *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorStorageFailure
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to write blob data",
-                                                NSUnderlyingErrorKey: dbError}];
-        }
-        return nil;
-    }
-
-    // Store blob metadata in database
+    // Store blob metadata in database using transaction
     PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
     blob.cid = [cid bytes];
     blob.did = did;
@@ -125,14 +100,21 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     blob.size = data.length;
     blob.createdAt = [NSDate date];
 
-    if (![_database saveBlob:blob error:&dbError]) {
-        // Clean up the file if database save failed
-        [_fileManager removeItemAtURL:blobURL error:nil];
+    __block BOOL success = NO;
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store saveBlob:blob error:nil];
+    } error:&dbError];
+
+    if (!success) {
+        // We do NOT delete from provider here typically, as another user might rely on it.
+        // Garbage collection is a separate concern.
+        
         if (error) {
             *error = [NSError errorWithDomain:BlobStorageErrorDomain
                                          code:BlobStorageErrorStorageFailure
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to save blob metadata",
-                                                NSUnderlyingErrorKey: dbError}];
+                                                NSUnderlyingErrorKey: dbError ?: [NSNull null]}];
         }
         return nil;
     }
@@ -140,35 +122,38 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     return cid;
 }
 
-- (nullable NSData *)getBlobWithCID:(CID *)cid error:(NSError **)error {
-    NSURL *blobURL = [self blobURLForCID:cid];
+- (nullable NSData *)getBlobWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error {
+    // If DID is provided, we can optionally check metadata existence
+    if (did) {
+        NSError *dbError = nil;
+        PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
+        if (store) {
+            PDSDatabaseBlob *blobMeta = [store getBlobForCID:[cid bytes] error:&dbError];
+            if (!blobMeta) {
+                 if (error) {
+                    *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                  code:BlobStorageErrorBlobNotFound
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Blob metadata not found for user"}];
+                }
+                return nil;
+            }
+        }
+    }
 
-    if (![_fileManager fileExistsAtPath:blobURL.path]) {
+    // Retrieve data from provider
+    if (![_provider hasBlobDataForCID:cid]) {
         if (error) {
             *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorFileNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob not found"}];
+                                         code:BlobStorageErrorBlobNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob data not found"}];
         }
         return nil;
     }
 
-    NSError *readError = nil;
-#if defined(__APPLE__)
-    NSData *data = [NSData dataWithContentsOfURL:blobURL options:0 error:&readError];
-#else
-    NSData *data = [NSData dataWithContentsOfURL:blobURL];
+    NSError *providerError = nil;
+    NSData *data = [_provider retrieveBlobDataForCID:cid error:&providerError];
     if (!data) {
-        readError = [NSError errorWithDomain:@"BlobStorage" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to read blob data"}];
-    }
-#endif
-
-    if (!data) {
-        if (error) {
-            *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorStorageFailure
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to read blob data",
-                                                NSUnderlyingErrorKey: readError}];
-        }
+        if (error) *error = providerError;
         return nil;
     }
 
@@ -191,96 +176,48 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
                                          cursor:(nullable NSString *)cursor
                                           error:(NSError **)error {
 
-    NSError *dbError = nil;
-    // Convert cursor to offset for database query
-    NSInteger offset = 0;
-    if (cursor) {
-        // For simplicity, assume cursor is an offset number for now
-        offset = [cursor integerValue];
-    }
-
-    NSArray<PDSDatabaseBlob *> *blobs = [_database getBlobsForDid:did
-                                                             limit:limit
-                                                            offset:offset
-                                                             error:&dbError];
-
-    if (dbError) {
-        if (error) *error = dbError;
-        return nil;
-    }
-
-    NSMutableArray<NSDictionary *> *result = [NSMutableArray arrayWithCapacity:blobs.count];
-    for (PDSDatabaseBlob *blob in blobs) {
-        CID *cid = [CID cidFromBytes:blob.cid];
-        if (cid) {
-            [result addObject:@{
-                @"cid": [cid stringValue],
-                @"mimeType": blob.mimeType ?: @"application/octet-stream",
-                @"size": @(blob.size),
-                @"createdAt": [self iso8601StringFromDate:blob.createdAt]
-            }];
-        }
-    }
-
-    return [result copy];
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return @[];
+    
+    return [store listBlobsForDid:did limit:limit cursor:cursor error:error];
 }
 
 - (BOOL)deleteBlobWithCID:(CID *)cid did:(NSString *)did error:(NSError **)error {
-    // Check if blob exists
-    NSError *dbError = nil;
-    PDSDatabaseBlob *blob = [_database getBlobWithCid:[cid bytes] error:&dbError];
+    __block BOOL success = NO;
+    __block NSError *dbError = nil;
+    
+    // Delete metadata first using transaction
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+         PDSActorStore *store = (PDSActorStore *)transactor;
+         success = [store deleteBlobForCID:[cid bytes] forDid:did error:nil];
+    } error:&dbError];
 
-    if (!blob) {
+    if (!success) {
         if (error) {
             *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorFileNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob not found"}];
+                                         code:BlobStorageErrorStorageFailure
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to delete blob metadata",
+                                                NSUnderlyingErrorKey: dbError ?: [NSNull null]}];
         }
         return NO;
     }
 
-    // Verify ownership (optional - for now allow deletion by anyone who knows the CID)
-    if (![blob.did isEqualToString:did]) {
-        if (error) {
-            *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorFileNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob not found"}];
-        }
-        return NO;
-    }
-
-    // Delete from filesystem
-    NSURL *blobURL = [self blobURLForCID:cid];
-    NSError *fileError = nil;
-    if (![_fileManager removeItemAtURL:blobURL error:&fileError]) {
-        // Log but don't fail if file doesn't exist
-        if (fileError.code != NSFileNoSuchFileError) {
-            PDS_LOG_INFO_C(PDSLogComponentBlob, @"Warning: Failed to delete blob file: %@", fileError);
-        }
-    }
-
-    // Delete from database
-    if (![_database deleteBlob:[cid bytes] error:&dbError]) {
-        if (error) *error = dbError;
-        return NO;
-    }
-
+    // Optionally delete from provider if we implement ref-counting or garbage collection later.
+    // For now, consistent with keeping datasafe.
+    
     return YES;
 }
 
-- (nullable PDSDatabaseBlob *)getBlobMetadataWithCID:(NSString *)cidString
-                                                error:(NSError **)error {
+- (nullable PDSDatabaseBlob *)getBlobMetadataWithCID:(NSString *)cidString did:(nullable NSString *)did error:(NSError **)error {
+    if (!did) return nil;
+    
     CID *cid = [CID cidFromString:cidString];
-    if (!cid) {
-        if (error) {
-            *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorFileNotFound
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
-        }
-        return nil;
-    }
-
-    return [_database getBlobWithCid:[cid bytes] error:error];
+    if (!cid) return nil;
+    
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+    
+    return [store getBlobForCID:[cid bytes] error:error];
 }
 
 #pragma mark - Validation
@@ -359,23 +296,6 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     [multihash appendBytes:digest length:CC_SHA256_DIGEST_LENGTH];
 
     return [CID cidWithMultihash:multihash codec:kRawCodec];
-}
-
-#pragma mark - File Management
-
-- (NSURL *)blobURLForCID:(CID *)cid {
-    NSString *cidString = cid.stringValue;
-    // Create a directory structure based on CID to avoid too many files in one directory
-    // Use first 2 chars as directory, rest as filename
-    if (cidString.length < 3) {
-        return [_storageDirectory URLByAppendingPathComponent:cidString];
-    }
-
-    NSString *dirName = [cidString substringToIndex:2];
-    NSString *fileName = [cidString substringFromIndex:2];
-
-    NSURL *dirURL = [_storageDirectory URLByAppendingPathComponent:dirName];
-    return [dirURL URLByAppendingPathComponent:fileName];
 }
 
 #pragma mark - Helpers

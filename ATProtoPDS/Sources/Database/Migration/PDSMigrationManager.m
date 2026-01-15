@@ -4,6 +4,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Debug/PDSLogger.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
 
 NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
@@ -60,30 +61,39 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     
     [self updateProgress:0.05 status:@"Counting records to migrate"];
     
-    sqlite3_stmt *countStmt;
-    sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM accounts", -1, &countStmt, NULL);
-    if (sqlite3_step(countStmt) == SQLITE_ROW) {
-        totalAccounts = sqlite3_column_int64(countStmt, 0);
-    }
-    sqlite3_finalize(countStmt);
+    [self updateProgress:0.05 status:@"Counting records to migrate"];
     
-    sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM repos", -1, &countStmt, NULL);
-    if (sqlite3_step(countStmt) == SQLITE_ROW) {
-        totalRepos = sqlite3_column_int64(countStmt, 0);
+    {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+        sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM accounts", -1, &countStmt, NULL);
+        if (sqlite3_step(countStmt) == SQLITE_ROW) {
+            totalAccounts = sqlite3_column_int64(countStmt, 0);
+        }
     }
-    sqlite3_finalize(countStmt);
     
-    sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM records", -1, &countStmt, NULL);
-    if (sqlite3_step(countStmt) == SQLITE_ROW) {
-        totalRecords = sqlite3_column_int64(countStmt, 0);
+    {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+        sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM repos", -1, &countStmt, NULL);
+        if (sqlite3_step(countStmt) == SQLITE_ROW) {
+            totalRepos = sqlite3_column_int64(countStmt, 0);
+        }
     }
-    sqlite3_finalize(countStmt);
     
-    sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM blocks", -1, &countStmt, NULL);
-    if (sqlite3_step(countStmt) == SQLITE_ROW) {
-        totalBlocks = sqlite3_column_int64(countStmt, 0);
+    {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+        sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM records", -1, &countStmt, NULL);
+        if (sqlite3_step(countStmt) == SQLITE_ROW) {
+            totalRecords = sqlite3_column_int64(countStmt, 0);
+        }
     }
-    sqlite3_finalize(countStmt);
+    
+    {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+        sqlite3_prepare_v2(sourceDb, "SELECT COUNT(*) FROM blocks", -1, &countStmt, NULL);
+        if (sqlite3_step(countStmt) == SQLITE_ROW) {
+            totalBlocks = sqlite3_column_int64(countStmt, 0);
+        }
+    }
     
     NSInteger totalItems = totalAccounts + totalRepos + totalRecords + totalBlocks;
     NSInteger migratedItems = 0;
@@ -92,7 +102,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     
     // Collect all accounts for batch processing
     NSMutableArray<PDSDatabaseAccount *> *allAccounts = [NSMutableArray array];
-    sqlite3_stmt *accountStmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *accountStmt;
     sqlite3_prepare_v2(sourceDb,
         "SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at "
         "FROM accounts", -1, &accountStmt, NULL);
@@ -139,7 +149,6 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         [allAccounts addObject:account];
         [accountDids addObject:account.did];
     }
-    sqlite3_finalize(accountStmt);
 
     // Create accounts in batches for better performance
     const NSUInteger batchSize = 100;
@@ -174,7 +183,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     for (NSInteger i = 0; i < accountDids.count; i++) {
         NSString *did = accountDids[i];
         
-        sqlite3_stmt *repoStmt;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *repoStmt;
         sqlite3_prepare_v2(sourceDb, 
             "SELECT owner_did, root_cid, collection_data, created_at, updated_at FROM repos WHERE owner_did = ?",
             -1, &repoStmt, NULL);
@@ -198,7 +207,6 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
             repo.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(repoStmt, 3)];
             repo.updatedAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(repoStmt, 4)];
         }
-        sqlite3_finalize(repoStmt);
         
         __block NSError *repoError = nil;
         if (repo) {
@@ -208,7 +216,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
             } error:&repoError];
         }
         
-        sqlite3_stmt *recordStmt;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *recordStmt;
         sqlite3_prepare_v2(sourceDb, 
             "SELECT uri, did, collection, rkey, cid, created_at FROM records WHERE did = ?",
             -1, &recordStmt, NULL);
@@ -229,7 +237,6 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 [store putRecord:record forDid:did error:&recordError];
             } error:&recordError];
         }
-        sqlite3_finalize(recordStmt);
         
         migratedItems++;
         double progress = 0.4 + 0.3 * ((double)i / accountDids.count);
@@ -239,7 +246,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     
     [self updateProgress:0.7 status:@"Migrating blocks"];
     
-    sqlite3_stmt *blockStmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *blockStmt;
     sqlite3_prepare_v2(sourceDb, 
         "SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks",
         -1, &blockStmt, NULL);
@@ -247,7 +254,6 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     NSInteger blockIndex = 0;
     while (sqlite3_step(blockStmt) == SQLITE_ROW) {
         if (self.cancelBlock && self.cancelBlock()) {
-            sqlite3_finalize(blockStmt);
             sqlite3_close(sourceDb);
             if (error) {
                 *error = [NSError errorWithDomain:PDSMigrationErrorDomain
@@ -290,7 +296,6 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                           status:[NSString stringWithFormat:@"Migrating blocks (%ld/%ld)", (long)blockIndex, (long)totalBlocks]];
         }
     }
-    sqlite3_finalize(blockStmt);
     
     [self updateProgress:0.95 status:@"Finalizing migration"];
     

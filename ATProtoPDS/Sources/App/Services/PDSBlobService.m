@@ -1,7 +1,9 @@
 #import "PDSBlobService.h"
+#import "Blob/BlobStorage.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
 #import <CommonCrypto/CommonDigest.h>
 
@@ -11,20 +13,20 @@
 
 @implementation PDSBlobService
 
-- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(BlobStorage *)storage {
     if (self = [super init]) {
         _databasePool = databasePool;
+        _blobStorage = storage;
     }
     return self;
 }
 
 #pragma mark - Blob Operations
 
-- (nullable NSData *)getBlob:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
-    if (!store) return nil;
-
-    return [store getBlockForCID:cid forDid:did error:error];
+- (nullable NSData *)getBlob:(NSData *)cidData forDid:(NSString *)did error:(NSError **)error {
+    CID *cid = [CID cidFromBytes:cidData];
+    if (!cid) return nil;
+    return [self.blobStorage getBlobWithCID:cid did:did error:error];
 }
 
 - (nullable NSDictionary *)uploadBlob:(NSData *)blobData
@@ -32,47 +34,20 @@
                              mimeType:(NSString *)mimeType
                                error:(NSError **)error {
 
-    NSError *cidError;
-    NSString *cidString = [self generateCIDForData:blobData error:&cidError];
-    if (!cidString) {
-        if (error) *error = cidError;
+    CID *cid = [self.blobStorage uploadBlob:blobData mimeType:mimeType did:did error:error];
+    if (!cid) {
         return nil;
     }
+    
+    NSString *cidString = cid.stringValue;
 
-    NSData *cidData = [self cidDataFromString:cidString];
-
-    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
-    block.cid = cidData;
-    block.repoDid = did;
-    block.blockData = blobData;
-    block.contentType = mimeType;
-    block.size = blobData.length;
-    block.createdAt = [NSDate date];
-
-    __block BOOL success = NO;
-    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store putBlock:block forDid:did error:nil];
-
-        if (success) {
-            PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
-            blob.cid = cidData;
-            blob.did = did;
-            blob.mimeType = mimeType;
-            blob.size = blobData.length;
-            blob.createdAt = [NSDate date];
-            success = [store saveBlob:blob error:nil];
-        }
-    } error:nil];
-
-    if (!success) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store blob"}];
-        }
-        return nil;
-    }
-
+    // We no longer need to manually put block into ActorStore, BlobStorage handles generic storage.
+    // However, if the old logic put BLOBS as BLOCKS, do we need to emulate that?
+    // The previous implementation put the blob as a block in the ActorStore. 
+    // If the system expects blobs to be readable via `getRecord` or `getBlock`, we might break that.
+    // BUT: Blobs are usually separate from the Repo MST blocks.
+    // `PDSBlobService` was using `putBlock` likely because it lacked a real blob store.
+    
     return @{
         @"blob": @{
             @"$type": @"blob",
@@ -83,28 +58,27 @@
     };
 }
 
-- (nullable NSDictionary *)getBlobWithCID:(NSString *)cid
+- (nullable NSDictionary *)getBlobWithCID:(NSString *)cidString
                                        did:(NSString *)did
-                                    error:(NSError **)error {
+                                     error:(NSError **)error {
 
-    NSData *cidData = [self cidDataFromString:cid];
-    if (!cidData) {
+    CID *cid = [CID cidFromString:cidString];
+    if (!cid) {
         if (error) *error = [NSError errorWithDomain:@"PDSController" code:1003
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
         return nil;
     }
 
-    NSData *blob = [self getBlob:cidData forDid:did error:error];
-    if (!blob) return nil;
+    NSData *blobData = [self.blobStorage getBlobWithCID:cid did:did error:error];
+    if (!blobData) return nil;
 
-    PDSActorStore *store = [_databasePool storeForDid:did error:nil];
-    PDSDatabaseBlob *metadata = [store getBlobForCID:cidData error:nil];
+    PDSDatabaseBlob *metadata = [self.blobStorage getBlobMetadataWithCID:cid.stringValue did:did error:nil];
     NSString *mimeType = metadata.mimeType ?: @"application/octet-stream";
 
     return @{
-        @"blob": blob,
+        @"blob": blobData,
         @"mimeType": mimeType,
-        @"size": @(blob.length)
+        @"size": @(blobData.length)
     };
 }
 
@@ -113,14 +87,14 @@
                                cursor:(nullable NSString *)cursor
                                 error:(NSError **)error {
 
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
-    if (!store) return @[];
-
-    NSArray<PDSDatabaseBlob *> *blobs = [store listBlobsForDid:did limit:limit cursor:cursor error:error];
+    NSArray<PDSDatabaseBlob *> *blobs = [self.blobStorage listBlobsForDID:did limit:limit cursor:cursor error:error];
+    if (!blobs) return @[];
 
     NSMutableArray *result = [NSMutableArray array];
     for (PDSDatabaseBlob *blob in blobs) {
-        NSString *cidStr = [NSString stringWithFormat:@"b%@", [ATProtoBase32 encodeData:blob.cid]];
+        
+        CID *cid = [CID cidFromBytes:blob.cid];
+        NSString *cidStr = cid.stringValue;
         [result addObject:@{
             @"cid": cidStr ?: @"",
             @"mimeType": blob.mimeType ?: @"application/octet-stream",
@@ -130,21 +104,15 @@
     return result;
 }
 
-- (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error {
-    NSData *cidData = [self cidDataFromString:cid];
-    if (!cidData) {
+- (BOOL)deleteBlobWithCID:(NSString *)cidString did:(NSString *)did error:(NSError **)error {
+    CID *cid = [CID cidFromString:cidString];
+    if (!cid) {
         if (error) *error = [NSError errorWithDomain:@"PDSController" code:1003
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
         return NO;
     }
 
-    __block BOOL success = NO;
-    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteBlobForCID:cidData forDid:did error:nil];
-    } error:nil];
-
-    return success;
+    return [self.blobStorage deleteBlobWithCID:cid did:did error:error];
 }
 
 #pragma mark - Private Helpers

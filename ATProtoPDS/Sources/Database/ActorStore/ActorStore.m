@@ -1,4 +1,5 @@
 #import "ActorStore.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 #import <Security/Security.h>
@@ -307,6 +308,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     }
 }
 
+
 #pragma mark - Account Operations (Reader)
 
 - (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError **)error {
@@ -316,7 +318,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -327,8 +329,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             account = [self accountFromStatement:stmt];
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -344,7 +344,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -356,8 +356,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
                 [accounts addObject:account];
             }
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -414,7 +412,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, "
                      @"access_jwt, refresh_jwt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
 
     sqlite3_bind_text(stmt, 1, account.did.UTF8String, -1, SQLITE_TRANSIENT);
@@ -459,8 +457,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         int sqliteCode = sqlite3_extended_errcode(self.db);
         NSString *errorMsg = [NSString stringWithUTF8String:sqlite3_errmsg(self.db)];
         
-        [self finalizeStatement:stmt];
-        
         if (error) {
             BOOL isConstraintViolation = (sqliteCode == SQLITE_CONSTRAINT_UNIQUE ||
                                           sqliteCode == SQLITE_CONSTRAINT_PRIMARYKEY ||
@@ -480,8 +476,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
         return NO;
     }
-    
-    [self finalizeStatement:stmt];
     
 #if defined(GNUSTEP)
     // Generate secp256k1 signing key for the new account using the account's DID
@@ -512,7 +506,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, "
                      @"password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ? WHERE did = ?";
     
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     int idx = 1;
@@ -552,20 +546,18 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_text(stmt, idx, account.did.UTF8String, -1, SQLITE_TRANSIENT);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     
     return success;
 }
 
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM accounts WHERE did = ?";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     
     return success;
 }
@@ -579,7 +571,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT * FROM repo_root LIMIT 1";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -593,8 +585,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             repo.createdAt = [NSDate date];
             repo.updatedAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 1)];
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -610,7 +600,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT cid FROM repo_root LIMIT 1";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -620,8 +610,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             rootCid = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                      length:sqlite3_column_bytes(stmt, 0)];
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -632,7 +620,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error {
     NSString *sql = @"INSERT INTO repo_root (cid, updated_at) VALUES (?, ?)";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     if (repo.rootCid) {
@@ -641,13 +629,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_double(stmt, 2, repo.updatedAt.timeIntervalSince1970);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
 - (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO repo_root (cid, updated_at) VALUES (?, ?)";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     if (rootCid) {
@@ -656,17 +643,15 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM repo_root";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
@@ -679,7 +664,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT * FROM records WHERE uri = ?";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -690,8 +675,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             record = [self recordFromStatement:stmt];
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -748,7 +731,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
         
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -765,7 +748,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             [records addObject:[self recordFromStatement:stmt]];
         }
         
-        [self finalizeStatement:stmt];
         result = records;
     });
 
@@ -778,7 +760,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at) "
                      @"VALUES (?, ?, ?, ?, ?, ?, ?)";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     sqlite3_bind_text(stmt, 1, record.uri.UTF8String, -1, SQLITE_TRANSIENT);
@@ -796,19 +778,17 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_double(stmt, 7, record.createdAt.timeIntervalSince1970);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
 - (BOOL)deleteRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM records WHERE uri = ?";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
@@ -830,7 +810,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT block FROM ipld_blocks WHERE cid = ?";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -842,8 +822,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             blockData = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                        length:sqlite3_column_bytes(stmt, 0)];
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -862,7 +840,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT cid, size FROM ipld_blocks LIMIT ? OFFSET ?";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -879,8 +857,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
             block.repoDid = did;
             [blocks addObject:block];
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -891,7 +867,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size) VALUES (?, ?, ?)";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     if (block.cid) {
@@ -903,28 +879,43 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     sqlite3_bind_int64(stmt, 3, block.size);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
 - (BOOL)putBlocks:(NSArray<PDSDatabaseBlock *> *)blocks forDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size) VALUES (?, ?, ?)";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return NO;
+    
     for (PDSDatabaseBlock *block in blocks) {
-        if (![self putBlock:block forDid:did error:error]) {
+        sqlite3_reset(stmt);
+        sqlite3_clear_bindings(stmt);
+        
+        if (block.cid) {
+            sqlite3_bind_blob(stmt, 1, block.cid.bytes, (int)block.cid.length, SQLITE_TRANSIENT);
+        }
+        if (block.blockData) {
+            sqlite3_bind_blob(stmt, 2, block.blockData.bytes, (int)block.blockData.length, SQLITE_TRANSIENT);
+        }
+        sqlite3_bind_int64(stmt, 3, block.size);
+        
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            // handle error?
             return NO;
         }
     }
+    
     return YES;
 }
 
 - (BOOL)deleteBlock:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM ipld_blocks WHERE cid = ?";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
@@ -943,7 +934,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         }
         
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -956,8 +947,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             count = sqlite3_column_int64(stmt, 0);
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -973,7 +962,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT COUNT(*) FROM ipld_blocks";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -982,8 +971,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             count = sqlite3_column_int64(stmt, 0);
         }
-        
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -1338,7 +1325,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?)";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
 
     if (blob.cid) {
@@ -1356,7 +1343,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     sqlite3_bind_double(stmt, 5, blob.createdAt.timeIntervalSince1970);
 
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
@@ -1367,7 +1353,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     dispatch_sync(self.transactionQueue, ^{
         NSString *sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE cid = ?";
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -1378,8 +1364,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             blob = [self blobFromStatement:stmt];
         }
-
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -1404,7 +1388,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         }
 
         NSError *prepError = nil;
-        sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
             blockError = prepError;
             return;
@@ -1425,8 +1409,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             [blobs addObject:[self blobFromStatement:stmt]];
         }
-
-        [self finalizeStatement:stmt];
     });
 
     if (error && blockError) {
@@ -1437,14 +1419,13 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 
 - (BOOL)deleteBlobForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM blobs WHERE cid = ? AND did = ?";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
 
     sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
 
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    [self finalizeStatement:stmt];
     return success;
 }
 
@@ -1506,7 +1487,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
                     @"(did, encrypted_private_key, public_key_compressed, encryption_salt, created_at, updated_at) "
                     @"VALUES (?, ?, ?, ?, ?, ?)";
     
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     double now = [[NSDate date] timeIntervalSince1970];
@@ -1519,7 +1500,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     sqlite3_bind_double(stmt, 6, now);
     
     int result = sqlite3_step(stmt);
-    [self finalizeStatement:stmt];
     
     if (result != SQLITE_DONE) {
         if (error) {
@@ -1534,14 +1514,13 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 - (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
                                                error:(NSError **)error {
     NSString *sql = @"SELECT encrypted_private_key, encryption_salt FROM rotation_keys WHERE did = ?";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return nil;
     
     sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
     
     int result = sqlite3_step(stmt);
     if (result != SQLITE_ROW) {
-        [self finalizeStatement:stmt];
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                          code:PDSActorStoreErrorNotFound
@@ -1557,8 +1536,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     const void *saltBytes = sqlite3_column_blob(stmt, 1);
     int saltLen = sqlite3_column_bytes(stmt, 1);
     NSData *salt = [NSData dataWithBytes:saltBytes length:saltLen];
-    
-    [self finalizeStatement:stmt];
     
     // Derive decryption key
     NSData *decryptionKey = [self deriveKeyFromPassword:password salt:salt];
@@ -1587,14 +1564,13 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 
 - (nullable NSData *)rotationKeyCompressedPublicKeyWithError:(NSError **)error {
     NSString *sql = @"SELECT public_key_compressed FROM rotation_keys WHERE did = ?";
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return nil;
     
     sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
     
     int result = sqlite3_step(stmt);
     if (result != SQLITE_ROW) {
-        [self finalizeStatement:stmt];
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                          code:PDSActorStoreErrorNotFound
@@ -1607,20 +1583,18 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     int publicKeyLen = sqlite3_column_bytes(stmt, 0);
     NSData *publicKey = [NSData dataWithBytes:publicKeyBytes length:publicKeyLen];
     
-    [self finalizeStatement:stmt];
     return publicKey;
 }
 
 - (BOOL)hasRotationKey {
     NSString *sql = @"SELECT 1 FROM rotation_keys WHERE did = ? LIMIT 1";
     NSError *error;
-    sqlite3_stmt *stmt = [self prepareStatement:sql error:&error];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&error];
     if (!stmt) return NO;
     
     sqlite3_bind_text(stmt, 1, self.did.UTF8String, -1, SQLITE_TRANSIENT);
     
     BOOL hasKey = (sqlite3_step(stmt) == SQLITE_ROW);
-    [self finalizeStatement:stmt];
     return hasKey;
 }
 
