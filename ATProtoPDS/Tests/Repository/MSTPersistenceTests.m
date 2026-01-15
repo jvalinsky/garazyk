@@ -23,21 +23,35 @@
     XCTAssertNotNil(self.database, "Failed to create in-memory database: %@", error);
     XCTAssertTrue(self.database.isOpen, "Database should be open");
 
-    self.persistence = [MSTPersistence shared];
+    // Use a fresh instance, NOT the singleton, to avoid state pollution between tests
+    self.persistence = [[MSTPersistence alloc] init];
     self.persistence.database = self.database;
 }
 
 - (void)tearDown {
     self.persistence.database = nil;
+    self.persistence = nil;
     [self.database close];
     self.database = nil;
     [super tearDown];
 }
 
 - (void)testLoadMSTForDidReconstructsFromCAR {
+    // Use deterministic keys with proper TID-format rkeys
+    // TIDs are base32-sortable timestamp identifiers (13 chars, lowercase alphanumeric)
     MST *seedTree = [[MST alloc] init];
-    for (NSUInteger i = 0; i < 32; i++) {
-        NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", [[NSUUID UUID].UUIDString substringToIndex:8]];
+    NSArray *tidRkeys = @[
+        @"3jzfcijpj2z2a", @"3jzfcijpj2z2b", @"3jzfcijpj2z2c", @"3jzfcijpj2z2d",
+        @"3jzfcijpj2z2e", @"3jzfcijpj2z2f", @"3jzfcijpj2z2g", @"3jzfcijpj2z2h",
+        @"3jzfcijpj2z2i", @"3jzfcijpj2z2j", @"3jzfcijpj2z2k", @"3jzfcijpj2z2l",
+        @"3jzfcijpj2z2m", @"3jzfcijpj2z2n", @"3jzfcijpj2z2o", @"3jzfcijpj2z2p",
+        @"3jzfcijpj2z2q", @"3jzfcijpj2z2r", @"3jzfcijpj2z2s", @"3jzfcijpj2z2t",
+        @"3jzfcijpj2z2u", @"3jzfcijpj2z2v", @"3jzfcijpj2z2w", @"3jzfcijpj2z2x",
+        @"3jzfcijpj2z2y", @"3jzfcijpj2z2z", @"3jzfcijpj2z3a", @"3jzfcijpj2z3b",
+        @"3jzfcijpj2z3c", @"3jzfcijpj2z3d", @"3jzfcijpj2z3e", @"3jzfcijpj2z3f"
+    ];
+    for (NSUInteger i = 0; i < tidRkeys.count; i++) {
+        NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", tidRkeys[i]];
         CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         [seedTree put:key valueCID:cid];
     }
@@ -53,7 +67,8 @@
     XCTAssertGreaterThan(reader.blocks.count, 0, "CAR should contain blocks");
 
     PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
-    repo.ownerDid = @"did:plc:test-mst";
+    // Use a unique DID per test run to avoid conflicts with stale data
+    repo.ownerDid = [NSString stringWithFormat:@"did:plc:msttest-%@", [[NSUUID UUID] UUIDString]];
     repo.rootCid = [rootCID bytes];
     repo.createdAt = [NSDate date];
     repo.updatedAt = repo.createdAt;
