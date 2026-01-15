@@ -1,6 +1,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/RateLimiter.h"
 
 @interface XrpcDispatcher ()
 
@@ -32,6 +33,17 @@
 }
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    // Check Rate Limit
+    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+    if (!rateLimit.allowed) {
+        response.statusCode = HttpStatusTooManyRequests;
+        [response setJsonBody:@{
+            @"error": @"RateLimitExceeded",
+            @"message": @"Too many requests"
+        }];
+        return;
+    }
+
     NSString *path = request.path;
     NSString *methodId = request.pathParameters[@"method"];
 

@@ -21,17 +21,17 @@
 - (void)testResolveAtprotoDataDecodesSigningKey {
     DIDResolver *resolver = [[DIDResolver alloc] init];
     NSDictionary *service = @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"};
-    NSDictionary *verification = @{@"id": @"did:test:multibase#signingKey", @"type": @"Multikey", @"controller": @"did:test:multibase", @"publicKeyMultibase": @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N"};
-    NSDictionary *documentJSON = @{@"id": @"did:test:multibase", @"alsoKnownAs": @[@"at://test/user"], @"verificationMethod": @[verification], @"service": @[service]};
+    NSDictionary *verification = @{@"id": @"did:plc:test#atproto", @"type": @"Multikey", @"controller": @"did:plc:test", @"publicKeyMultibase": @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N"};
+    NSDictionary *documentJSON = @{@"id": @"did:plc:test", @"alsoKnownAs": @[@"at://test/user"], @"verificationMethod": @[verification], @"service": @[service]};
     DIDDocument *document = [DIDDocument documentWithJSON:documentJSON error:nil];
-    [resolver.cache setObject:document forKey:@"did:test:multibase"];
-    resolver.cacheTimestamps[@"did:test:multibase"] = @([[NSDate date] timeIntervalSince1970]);
+    [resolver.cache setObject:document forKey:@"did:plc:test"];
+    resolver.cacheTimestamps[@"did:plc:test"] = @([[NSDate date] timeIntervalSince1970]);
 
     NSError *error = nil;
-    NSDictionary *result = [resolver resolveAtprotoDataForDID:@"did:test:multibase" error:&error];
+    NSDictionary *result = [resolver resolveAtprotoDataForDID:@"did:plc:test" error:&error];
     XCTAssertNotNil(result);
     XCTAssertNil(error);
-    XCTAssertEqualObjects(result[@"did"], @"did:test:multibase");
+    XCTAssertEqualObjects(result[@"did"], @"did:plc:test");
     XCTAssertEqualObjects(result[@"handle"], @"at://test/user");
     XCTAssertEqualObjects(result[@"pds"], @"https://pds.example.com");
     XCTAssertEqualObjects(result[@"signingKey"], @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N");

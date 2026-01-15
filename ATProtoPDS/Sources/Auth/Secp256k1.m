@@ -234,4 +234,30 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
     return YES;
 }
 
+- (nullable NSData *)normalizedPublicKey:(NSData *)publicKey error:(NSError **)error {
+    if (publicKey.length != 33 && publicKey.length != 65) {
+        if (error) {
+            *error = [NSError errorWithDomain:Secp256k1ErrorDomain
+                                         code:Secp256k1ErrorInvalidPublicKey
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Public key must be 33 or 65 bytes"}];
+        }
+        return nil;
+    }
+
+    uint8_t output[65];
+    Secp256k1Error result = secp256k1_wrapper_public_key_normalize(publicKey.bytes,
+                                                                    publicKey.length,
+                                                                    output);
+    if (result != Secp256k1ErrorNone) {
+        if (error) {
+            *error = [NSError errorWithDomain:Secp256k1ErrorDomain
+                                         code:result
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:secp256k1_error_string(result)]}];
+        }
+        return nil;
+    }
+
+    return [NSData dataWithBytes:output length:sizeof(output)];
+}
+
 @end

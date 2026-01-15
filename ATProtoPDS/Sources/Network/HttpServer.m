@@ -43,12 +43,15 @@
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionQueue;
 @property (nonatomic, strong) NSMapTable<id<PDSNetworkConnection>, id> *connectionStates;
 
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t concurrencySemaphore;
+
 @end
 
 static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
 static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
 static const NSUInteger kHttpOutputQueueHighWaterMark = 256 * 1024;
 static const NSTimeInterval kHttpHeaderTimeout = 5.0;
+static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
 
 @interface HttpConnectionState : NSObject
 
@@ -152,6 +155,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         _connectionQueue = dispatch_queue_create("com.atproto.pds.httpserver.connections", DISPATCH_QUEUE_SERIAL);
         _readySemaphore = dispatch_semaphore_create(0);
         _stopSemaphore = dispatch_semaphore_create(0);
+        _concurrencySemaphore = dispatch_semaphore_create(kMaxConcurrentRequests);
         _taskGroup = dispatch_group_create();
         _connectionStates = [NSMapTable strongToStrongObjectsMapTable];
         _listenerReady = NO;
@@ -531,10 +535,15 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     HttpRequest *requestRef = request;
 
     dispatch_group_enter(self.taskGroup);
+    
+    // Wait for semaphore to limit concurrency
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        dispatch_semaphore_wait(weakSelf.concurrencySemaphore, DISPATCH_TIME_FOREVER);
+        
         __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
         if (!strongSelf) {
+            dispatch_semaphore_signal(weakSelf.concurrencySemaphore); // Ensure signal on early exit
             dispatch_group_leave(weakSelf.taskGroup);
             return;
         }
@@ -545,6 +554,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         dispatch_async(strongSelf.serverQueue, ^{
             [strongSelf enqueueResponse:response forConnection:strongConnection];
+            dispatch_semaphore_signal(strongSelf.concurrencySemaphore); // Signal completion
             dispatch_group_leave(strongSelf.taskGroup);
         });
 
