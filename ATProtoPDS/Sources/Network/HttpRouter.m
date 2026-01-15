@@ -190,17 +190,49 @@
 }
 
 - (nullable NSDictionary<NSString *, NSString *> *)extractParametersFromPath:(NSString *)path
-                                                                     pattern:(NSString *)pattern {
+                                                                      pattern:(NSString *)pattern {
     NSMutableDictionary<NSString *, NSString *> *parameters = [NSMutableDictionary dictionary];
 
     NSArray<NSString *> *pathComponents = [path componentsSeparatedByString:@"/"];
     NSArray<NSString *> *patternComponents = [pattern componentsSeparatedByString:@"/"];
 
-    if (pathComponents.count != patternComponents.count) {
+    // Filter out empty components (from leading/trailing slashes)
+    NSMutableArray *filteredPathComponents = [NSMutableArray array];
+    for (NSString *component in pathComponents) {
+        if (component.length > 0) {
+            [filteredPathComponents addObject:component];
+        }
+    }
+    pathComponents = [filteredPathComponents copy];
+
+    NSMutableArray *filteredPatternComponents = [NSMutableArray array];
+    for (NSString *component in patternComponents) {
+        if (component.length > 0) {
+            [filteredPatternComponents addObject:component];
+        }
+    }
+    patternComponents = [filteredPatternComponents copy];
+
+    // Wildcard patterns may have fewer components than paths
+    BOOL hasWildcard = NO;
+    for (NSString *component in patternComponents) {
+        if ([component isEqualToString:@"*"]) {
+            hasWildcard = YES;
+            break;
+        }
+    }
+
+    if (!hasWildcard && pathComponents.count != patternComponents.count) {
         return nil;
     }
 
-    for (NSUInteger i = 0; i < pathComponents.count; i++) {
+    // If path has fewer components than pattern, it can't match
+    if (pathComponents.count < patternComponents.count) {
+        return nil;
+    }
+
+    NSUInteger minCount = MIN(pathComponents.count, patternComponents.count);
+    for (NSUInteger i = 0; i < minCount; i++) {
         NSString *pathComponent = pathComponents[i];
         NSString *patternComponent = patternComponents[i];
 
@@ -209,6 +241,7 @@
             NSString *paramName = [patternComponent substringFromIndex:1];
             parameters[paramName] = pathComponent;
         }
+        // Wildcard (*) matches anything, no extraction needed
     }
 
     return [parameters copy];
