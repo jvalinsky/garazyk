@@ -50,6 +50,8 @@ typedef NS_ENUM(NSInteger, ATProtoLexiconDefType) {
     ATProtoLexiconDefTypeUnion,
     ATProtoLexiconDefTypeRef,
     ATProtoLexiconDefTypeToken,
+    ATProtoLexiconDefTypeCIDLink,
+    ATProtoLexiconDefTypePermissionSet,
     ATProtoLexiconDefTypeUnknown,
     ATProtoLexiconDefTypeParams,
 };
