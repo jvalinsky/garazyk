@@ -170,7 +170,9 @@ file(GLOB_RECURSE ATProtoPDS_OBJC_SOURCES "ATProtoPDS/Sources/**/*.m")
 file(GLOB_RECURSE ATProtoPDS_C_SOURCES "ATProtoPDS/Sources/**/*.c")
 
 # Exclude main entry points and test files
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*main\.m$")
+list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*server_main\.m$")
+list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/App/main\.m$")
+list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/main\.m$")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/tests/.*")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Tests/.*")
 
@@ -232,53 +234,28 @@ set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
 # Main Executables
 #=============================
 
-# CLI Tool
-add_executable(atprotopds-cli
+# CLI Tool (september)
+add_executable(september
   ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/CLI/main.m
 )
 
-target_include_directories(atprotopds-cli PRIVATE
+target_include_directories(september PRIVATE
   ATProtoPDS/Sources
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(atprotopds-cli PRIVATE
+target_link_libraries(september PRIVATE
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
 
-target_compile_definitions(atprotopds-cli PRIVATE
+target_compile_definitions(september PRIVATE
   SQLITE_THREADSAFE=2
 )
 
-set_target_properties(atprotopds-cli PROPERTIES
-  OUTPUT_NAME "atprotopds-cli"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-# Server Executable
-add_executable(atprotopds-server
-  ${ATProtoPDS_SOURCES}
-  ATProtoPDS/Sources/App/server_main.m
-)
-
-target_include_directories(atprotopds-server PRIVATE
-  ATProtoPDS/Sources
-  ${SECP256K1_INCLUDE_DIRS}
-)
-
-target_link_libraries(atprotopds-server PRIVATE
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-)
-
-target_compile_definitions(atprotopds-server PRIVATE
-  SQLITE_THREADSAFE=2
-)
-
-set_target_properties(atprotopds-server PROPERTIES
-  OUTPUT_NAME "atprotopds"
+set_target_properties(september PROPERTIES
+  OUTPUT_NAME "september"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
@@ -417,7 +394,7 @@ endif()
 #=============================
 # Installation
 #=============================
-install(TARGETS atprotopds-cli atprotopds-server
+install(TARGETS september
   RUNTIME DESTINATION bin
 )
 

@@ -2,6 +2,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
 
 @implementation PDSHealthCheck
@@ -75,7 +76,7 @@
         return PDSHealthStatusCritical;
     }
     
-    sqlite3_stmt *stmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(store.db, "PRAGMA integrity_check", -1, &stmt, NULL);
     if (result != SQLITE_OK) {
         if (error) {
@@ -91,7 +92,6 @@
         const char *text = (const char *)sqlite3_column_text(stmt, 0);
         checkResult = [NSString stringWithUTF8String:text];
     }
-    sqlite3_finalize(stmt);
     
     if ([checkResult isEqualToString:@"ok"]) {
         return PDSHealthStatusHealthy;
@@ -120,7 +120,7 @@
         return NO;
     }
     
-    sqlite3_stmt *stmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(store.db, "PRAGMA foreign_key_check", -1, &stmt, NULL);
     if (result != SQLITE_OK) {
         if (error) {
@@ -136,7 +136,6 @@
         hasViolations = YES;
         break;
     }
-    sqlite3_finalize(stmt);
     
     return !hasViolations;
 }
@@ -148,7 +147,7 @@
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (store && store.isOpen) {
-        sqlite3_stmt *stmt;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(store.db, 
             "SELECT name, SUM(pages * page_size) as size FROM sqlite_master "
             "LEFT JOIN sqlite_dbpage USING(sqlite_dbpage.name) GROUP BY name",
@@ -161,7 +160,6 @@
                     sizes[[NSString stringWithUTF8String:name]] = @(size);
                 }
             }
-            sqlite3_finalize(stmt);
         }
     }
     
@@ -176,7 +174,7 @@
         return 0;
     }
     
-    sqlite3_stmt *stmt;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
     if (sqlite3_prepare_v2(store.db, "SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'", -1, &stmt, NULL) != SQLITE_OK) {
         return 0;
     }
@@ -185,7 +183,6 @@
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         fragmentation = sqlite3_column_double(stmt, 0);
     }
-    sqlite3_finalize(stmt);
     
     return (NSUInteger)(fragmentation * 100);
 }
