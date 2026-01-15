@@ -7,6 +7,7 @@
 #endif
 #import <objc/runtime.h>
 #import "Network/RateLimiter.h"
+#import "Network/HttpResponse.h"
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
 @property (nonatomic, assign) int failureCount;
@@ -129,7 +130,8 @@ int main(int argc, char * argv[]) {
             @"WebSocketServerTests",
             @"MSTPersistenceTests",
             @"MSTViewerHandlerTests",
-            @"PDSAccountServiceTests"
+            @"PDSAccountServiceTests",
+            @"HttpResponseTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
