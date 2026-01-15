@@ -258,6 +258,31 @@
     return [request.path hasPrefix:@"/explore"];
 }
 
+- (NSString *)assetsPath {
+    NSString *assetsPath = nil;
+    
+    NSBundle *bundle = [NSBundle mainBundle];
+    assetsPath = [bundle pathForResource:@"Explore/Assets" ofType:@""];
+    
+    if (!assetsPath && self.controller.dataDirectory) {
+        NSString *exploreAssets = [self.controller.dataDirectory stringByAppendingPathComponent:@"../Explore/Assets"];
+        assetsPath = [exploreAssets stringByResolvingSymlinksInPath];
+    }
+    
+    if (!assetsPath) {
+        NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+        assetsPath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets"];
+    }
+    
+    return assetsPath;
+}
+
+- (NSString *)staticFilePath:(NSString *)subpath {
+    NSString *assets = [self assetsPath];
+    if (!assets) return nil;
+    return [assets stringByAppendingPathComponent:subpath];
+}
+
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
     PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"ExploreHandler handleRequest: %@", path);
@@ -284,14 +309,18 @@
 #pragma mark - Static Files
 
 - (void)serveIndex:(HttpResponse *)response {
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *indexPath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/index.html"];
-
+    NSString *indexPath = [self staticFilePath:@"index.html"];
+    
+    if (!indexPath) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        return;
+    }
+    
     NSError *error = nil;
     NSString *html = [NSString stringWithContentsOfFile:indexPath encoding:NSUTF8StringEncoding error:&error];
-
+    
     if (error || !html) {
-        // Fallback to old HTML if file not found
         NSString *fallbackHtml = @"<!DOCTYPE html>"
         "<html lang=\"en\">"
         "<head>"
@@ -306,7 +335,7 @@
         "</html>";
         html = fallbackHtml;
     }
-
+    
     response.statusCode = 200;
     response.contentType = @"text/html; charset=utf-8";
     response.keepAlive = NO;
@@ -314,15 +343,20 @@
 }
 
 - (void)serveCss:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *cssPath = [[cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/css"] stringByAppendingPathComponent:@"style.css"];
+    NSString *cssPath = [self staticFilePath:@"css/style.css"];
+    
+    if (!cssPath) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        return;
+    }
     
     NSError *error = nil;
     NSString *css = [NSString stringWithContentsOfFile:cssPath encoding:NSUTF8StringEncoding error:&error];
     
     if (error || !css) {
         response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"CSS file not found"}];
+        [response setJsonBody:@{@"error": @"CSS file not found", @"path": cssPath ?: @"unknown"}];
         return;
     }
     
@@ -333,12 +367,16 @@
 }
 
 - (void)serveJs:(HttpRequest *)request response:(HttpResponse *)response {
-    // Extract filename from path like /explore/js/ui.js
     NSString *path = request.path;
     NSString *filename = [path lastPathComponent];
     
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *jsPath = [[cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/js"] stringByAppendingPathComponent:filename];
+    NSString *jsPath = [self staticFilePath:[NSString stringWithFormat:@"js/%@", filename]];
+    
+    if (!jsPath) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        return;
+    }
     
     NSError *error = nil;
     NSString *js = [NSString stringWithContentsOfFile:jsPath encoding:NSUTF8StringEncoding error:&error];
@@ -356,10 +394,8 @@
 }
 
 - (void)serveVendor:(HttpRequest *)request response:(HttpResponse *)response {
-    // Handle paths like /vendor/swagger-ui/swagger-ui.css
     NSString *path = request.path;
     
-    // Strip /vendor/ or /explore/vendor/ prefix
     NSString *relativePath;
     if ([path hasPrefix:@"/explore/vendor/"]) {
         relativePath = [path substringFromIndex:[@"/explore/vendor/" length]];
@@ -371,10 +407,14 @@
         return;
     }
     
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *vendorPath = [[cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/vendor"] stringByAppendingPathComponent:relativePath];
+    NSString *vendorPath = [self staticFilePath:[NSString stringWithFormat:@"vendor/%@", relativePath]];
     
-    // Read file as binary data (for both JS and CSS)
+    if (!vendorPath) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        return;
+    }
+    
     NSData *data = [NSData dataWithContentsOfFile:vendorPath];
     
     if (!data) {
@@ -383,7 +423,6 @@
         return;
     }
     
-    // Determine content type based on file extension
     NSString *extension = [path pathExtension].lowercaseString;
     NSString *contentType;
     if ([extension isEqualToString:@"js"]) {
@@ -461,14 +500,19 @@
         [self handleApiCreateRecord:params response:response];
     }
     else if ([endpoint isEqualToString:@"debug-paths"]) {
-        // Debug endpoint to check paths
-        NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-        NSString *dbPath = [cwd stringByAppendingPathComponent:@"data/pds.db"];
+        NSString *dbPath = nil;
+        if (self.controller.dataDirectory) {
+            dbPath = [self.controller.dataDirectory stringByAppendingPathComponent:@"pds.db"];
+        } else {
+            NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+            dbPath = [cwd stringByAppendingPathComponent:@"data/pds.db"];
+        }
         BOOL dbExists = [[NSFileManager defaultManager] fileExistsAtPath:dbPath];
         [response setJsonBody:@{
-            @"cwd": cwd ?: @"",
+            @"dataDirectory": self.controller.dataDirectory ?: @"",
             @"dbPath": dbPath ?: @"",
-            @"dbExists": @(dbExists)
+            @"dbExists": @(dbExists),
+            @"assetsPath": [self assetsPath] ?: @""
         }];
     }
     else if ([endpoint isEqualToString:@"docs"]) {
@@ -2438,17 +2482,21 @@
 }
 
 - (void)handleApiDocs:(NSDictionary *)params response:(HttpResponse *)response {
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *docsPath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets/docs.html"];
-
+    NSString *docsPath = [self staticFilePath:@"docs.html"];
+    
+    if (!docsPath) {
+        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        return;
+    }
+    
     NSError *error = nil;
     NSString *html = [NSString stringWithContentsOfFile:docsPath encoding:NSUTF8StringEncoding error:&error];
-
+    
     if (error || !html) {
         [response setJsonBody:@{@"error": @"Failed to load docs", @"details": error.localizedDescription ?: @"Unknown error"}];
         return;
     }
-
+    
     response.contentType = @"text/html; charset=utf-8";
     [response setBodyData:[html dataUsingEncoding:NSUTF8StringEncoding]];
 }
