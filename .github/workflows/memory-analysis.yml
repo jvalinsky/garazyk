@@ -1,0 +1,142 @@
+name: Memory Analysis
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight
+  push:
+    branches: [main, develop]
+    paths:
+      - '**/*.m'
+      - '**/*.h'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - '**/*.m'
+      - '**/*.h'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODE_VERSION: '16.1'
+
+jobs:
+  memory-analysis:
+    name: Memory & Performance Analysis
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install Build Dependencies
+        run: |
+          brew update
+          brew install ninja cmake
+
+      - name: Configure (CMake)
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_OBJC_COMPILER=clang \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=ON \
+            -DBUILD_FUZZERS=OFF
+
+      - name: Build
+        run: |
+          cmake --build build --parallel 4 --target atprotopds-cli AllTests
+
+      - name: Run Tests
+        run: |
+          ctest --test-dir build --output-on-failure
+
+      - name: Run Memory Leak Detection
+        run: |
+          ./build/tests/AllTests
+          leaks AllTests --atExit -- | tee memory-report.txt || true
+        continue-on-error: true
+
+      - name: Upload Memory Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memory-report
+          path: memory-report.txt
+
+      - name: Static Analysis (Retain Cycles)
+        run: |
+          cd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cd ..
+          # Check for common retain cycle patterns
+          echo "=== Checking for unsafe retain patterns ==="
+          grep -r "__unsafe_unretained" --include="*.m" ATProtoPDS/Sources/ || echo "No __unsafe_unretained found"
+          echo ""
+          echo "=== Checking for blocks capturing self without weak-strong dance ==="
+          # Warning: This is a heuristic - not all matches are actual issues
+          grep -n "addRoute.*handler:.*\^" --include="*.m" -A 2 ATProtoPDS/Sources/ | grep -v "__weak" | grep -v "weakSelf" || echo "All route handlers appear to use weak-strong dance"
+
+  clang-tidy-analysis:
+    name: Clang-Tidy Static Analysis
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install Build Dependencies
+        run: |
+          brew update
+          brew install ninja cmake clang-tools-extra
+
+      - name: Configure (CMake)
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run Clang-Tidy
+        run: |
+          cd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cd ..
+          # Run clang-tidy on key files that were modified
+          if [ -n "${{ github.changes}}" ]; then
+            echo "Changed files detected"
+          fi
+          # Run on all Objective-C sources
+          find ATProtoPDS/Sources -name "*.m" -exec clang-tidy -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
+        continue-on-error: true
+
+      - name: Upload Clang-Tidy Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clang-tidy-report
+          path: clang-tidy-report.txt
