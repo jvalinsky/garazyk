@@ -11,6 +11,7 @@
  */
 
 #import "Core/DID.h"
+#import "Core/CID.h"
 #import <os/log.h>
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
@@ -293,7 +294,32 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     NSArray *verificationMethods = json[@"verificationMethod"];
     if (verificationMethods.count > 0) {
         NSDictionary *method = verificationMethods[0];
-        result[@"signingKey"] = method[@"publicKeyMultibase"];
+        NSString *signingKey = method[@"publicKeyMultibase"];
+        if (signingKey) {
+            result[@"signingKey"] = signingKey;
+
+            if (signingKey.length > 1) {
+                unichar prefix = [signingKey characterAtIndex:0];
+                NSString *payload = [signingKey substringFromIndex:1];
+                NSData *keyBytes = nil;
+                if (prefix == 'z') {
+                    keyBytes = [CID base58btcDecode:payload];
+                } else if (prefix == 'b') {
+                    keyBytes = [CID base32Decode:payload];
+                }
+
+                if (keyBytes.length > 2) {
+                    const uint8_t *bytes = keyBytes.bytes;
+                    if (bytes[0] == 0xE7 && bytes[1] == 0x01) {
+                        keyBytes = [keyBytes subdataWithRange:NSMakeRange(2, keyBytes.length - 2)];
+                    }
+                }
+
+                if (keyBytes) {
+                    result[@"signingKeyBytes"] = keyBytes;
+                }
+            }
+        }
     }
 
     return [result copy];

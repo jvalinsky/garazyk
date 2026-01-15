@@ -2,74 +2,61 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
- @header PDSAdminAuth.h
- 
- @abstract Admin authentication middleware.
- 
- @discussion This header defines the PDSAdminAuth class for handling
- admin-level authentication for PDS management operations.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * @file PDSAdminAuth.h
+ * @brief Admin authentication for the ATProto PDS administrative interface.
+ *
+ * This class provides authentication services for the PDS admin API,
+ * supporting basic password-based authentication with login and logout
+ * functionality for administrative operations.
  */
 
-/*!
- @class PDSAdminAuth
- 
- @abstract Handles admin authentication for PDS management.
- 
- @discussion PDSAdminAuth provides authentication for admin API endpoints
- and management operations. It uses a shared token or password-based
- authentication to verify admin privileges.
- 
- @code
- PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
- 
- if ([auth authenticateWithPassword:@"adminpassword" error:nil]) {
-     // Admin authenticated
- }
- @endcode
- */
 @interface PDSAdminAuth : NSObject
 
-/*!
- @method sharedAuth
- 
- @abstract Returns the shared admin auth instance.
- 
- @return The singleton PDSAdminAuth instance.
+/**
+ * @brief Returns the shared singleton instance for admin authentication.
+ *
+ * @return The shared PDSAdminAuth instance.
  */
 + (instancetype)sharedAuth;
 
-/*!
- @method isAuthenticatedWithRequest:
- 
- @abstract Checks if the request contains valid admin credentials.
- 
- @param request The request object to check.
- @return YES if the request is authenticated as admin.
+/**
+ * @brief Checks if the current request is authenticated for admin operations.
+ *
+ * This method verifies whether the request has a valid admin session token.
+ * Authentication is required for all admin endpoints except /admin/login.
+ *
+ * @param request The request object to check for authentication credentials.
+ * @return YES if the request is authenticated, NO otherwise.
  */
 - (BOOL)isAuthenticatedWithRequest:(NSObject *)request;
 
-/*!
- @method authenticateWithPassword:error:
- 
- @abstract Authenticates with an admin password.
- 
- @param password The admin password to verify.
- @param error On return, contains an error if authentication failed.
- @return YES if authentication succeeded, NO otherwise.
+/**
+ * @brief Authenticates an admin user with a password.
+ *
+ * This method validates the provided password against the configured admin
+ * password and establishes an authenticated session upon success.
+ *
+ * @param password The password to authenticate with.
+ * @param error On return, contains an error if authentication failed.
+ * @return YES if authentication succeeded, NO otherwise.
  */
 - (BOOL)authenticateWithPassword:(NSString *)password error:(NSError **)error;
 
-/*!
- @method logout
- 
- @abstract Clears the current admin session.
+/**
+ * @brief Logs out the current admin session.
+ *
+ * This method clears the current authentication token and ends the
+ * authenticated session.
  */
 - (void)logout;
 
-/*! The current admin token, if authenticated. */
+/**
+ * @brief The current admin authentication token.
+ *
+ * This property stores the active session token after successful authentication.
+ * It is set to nil after logout.
+ */
 @property (nonatomic, copy, nullable) NSString *adminToken;
 
 @end

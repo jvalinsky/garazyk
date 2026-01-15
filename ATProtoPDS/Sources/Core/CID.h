@@ -80,6 +80,22 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)base32Encode:(NSData *)data;
 
 /*!
+ @method base32Decode:
+ @abstract Base32 decode a string.
+ @param string The base32 string to decode.
+ @return Decoded data or nil on failure.
+ */
++ (nullable NSData *)base32Decode:(NSString *)string;
+
+/*!
+ @method base58btcDecode:
+ @abstract Base58btc decode a string.
+ @param string The base58btc string to decode.
+ @return Decoded data or nil on failure.
+ */
++ (nullable NSData *)base58btcDecode:(NSString *)string;
+
+/*!
  @method stringValue
  @abstract Convert CID to base-encoded string.
  @return The CID string representation.
