@@ -14,6 +14,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
+@class BlobStorage;
 
 /*!
  @class PDSBlobService
@@ -23,9 +24,12 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSBlobService : NSObject
 
 /*! Database pool for user stores. */
-@property (nonatomic, assign) PDSDatabasePool *databasePool;
+@property (nonatomic, strong) PDSDatabasePool *databasePool;
 
-- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
+/*! Underlying storage mechanism. */
+@property (nonatomic, strong) BlobStorage *blobStorage;
+
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(BlobStorage *)storage;
 
 #pragma mark - Blob Operations
 
