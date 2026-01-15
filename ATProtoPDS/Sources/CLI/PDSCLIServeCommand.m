@@ -200,6 +200,11 @@
     [httpServer addRoute:@"GET" path:@"/explore/api/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
     }];
+    
+    // Wildcard for static assets (css, js, etc.)
+    [httpServer addRoute:@"GET" path:@"/explore/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
 
     // Register Health Check
     [httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *request, HttpResponse *response) {
