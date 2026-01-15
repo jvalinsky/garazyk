@@ -33,8 +33,8 @@
 + (NSString *)databasePathForContext:(PDSCLICommandContext *)context {
     NSDictionary *config = [context loadConfig];
     NSString *dataDir = context.dataDir;
-    if (config[@"pds"][@"data_dir"]) {
-        dataDir = config[@"pds"][@"data_dir"];
+    if (config[@"server"][@"data_dir"]) {
+        dataDir = config[@"server"][@"data_dir"];
     }
     // New path: data/service/service.db
     return [[dataDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
@@ -115,9 +115,9 @@
 }
 
 + (BOOL)createAccountWithContext:(PDSCLICommandContext *)context
-                           email:(NSString *)email
-                         handle:(NSString *)handle
-                       password:(NSString *)password {
+                            email:(NSString *)email
+                          handle:(NSString *)handle
+                        password:(NSString *)password {
     NSString *dbPath = [self databasePathForContext:context];
 
     NSError *error = nil;
