@@ -39,6 +39,8 @@
     dispatch_queue_t _queue;
     NSMutableData *_inputBuffer;
     NSMutableArray<PDSReadRequest *> *_readRequests;
+    NSMutableData *_writeBuffer;
+    NSUInteger _writeOffset;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -51,6 +53,8 @@
         _remoteAddress = [NSString stringWithFormat:@"%@:%lu", host, (unsigned long)port];
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
+        _writeBuffer = [NSMutableData data];
+        _writeOffset = 0;
     }
     return self;
 }
@@ -62,8 +66,9 @@
         _remoteAddress = address;
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
+        _writeBuffer = [NSMutableData data];
+        _writeOffset = 0;
         
-        // Set non-blocking
         int flags = fcntl(_sockfd, F_GETFL, 0);
         fcntl(_sockfd, F_SETFL, flags | O_NONBLOCK);
     }
@@ -100,6 +105,15 @@
         [weakSelf handleRead];
     });
     dispatch_resume(_readSource);
+    
+    _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+    dispatch_source_set_event_handler(_writeSource, ^{
+        [weakSelf handleWrite];
+    });
+    dispatch_resume(_writeSource);
+    
+    dispatch_source_cancel(_writeSource);
+    _writeSource = nil;
 }
 
 - (void)handleRead {
@@ -110,18 +124,45 @@
         [_inputBuffer appendBytes:buffer length:received];
         [self processReadRequests:NO error:nil];
     } else if (received == 0) {
-        // EOF
         [self processReadRequests:YES error:nil];
         [self cancel];
     } else {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // No data, wait for next event
             return;
         }
-        // Error
         NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
         [self processReadRequests:YES error:error];
         [self cancel];
+    }
+}
+
+- (void)handleWrite {
+    if (_writeBuffer.length == 0) {
+        dispatch_source_cancel(_writeSource);
+        _writeSource = nil;
+        return;
+    }
+    
+    ssize_t sent = send(_sockfd, _writeBuffer.bytes + _writeOffset, _writeBuffer.length - _writeOffset, 0);
+    
+    if (sent == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return;
+        }
+        NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        [_writeBuffer setLength:0];
+        _writeOffset = 0;
+        if (self.stateChangedHandler) {
+            self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
+        }
+    } else {
+        _writeOffset += sent;
+        if (_writeOffset >= _writeBuffer.length) {
+            [_writeBuffer setLength:0];
+            _writeOffset = 0;
+            dispatch_source_cancel(_writeSource);
+            _writeSource = nil;
+        }
     }
 }
 
@@ -184,23 +225,42 @@
 }
 
 - (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
-    // Basic send implementation - strictly blocking/direct for now (assuming small writes/buffers)
-    // A proper implementation should use dispatch_source_set_event_handler(DISPATCH_SOURCE_TYPE_WRITE)
-    // to handle partial writes and buffering.
+    if (_writeBuffer.length > 0 || _writeOffset > 0) {
+        [_writeBuffer appendData:data];
+        return;
+    }
     
     ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
     if (sent == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // Should buffer and retry on write event
-             if (completion) completion([NSError errorWithDomain:@"PDSNetworkTransport" code:EAGAIN userInfo:@{NSLocalizedDescriptionKey: @"Socket buffer full (not implemented)"}]);
-        } else {
-             if (completion) completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+            [_writeBuffer setData:data];
+            _writeOffset = 0;
+            
+            __weak typeof(self) weakSelf = self;
+            _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+            dispatch_source_set_event_handler(_writeSource, ^{
+                [weakSelf handleWrite];
+            });
+            dispatch_resume(_writeSource);
+            return;
+        }
+        if (completion) {
+            completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
         }
     } else if ((NSUInteger)sent < data.length) {
-        // Partial write
-         if (completion) completion([NSError errorWithDomain:@"PDSNetworkTransport" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Partial write (buffering not implemented)"}]);
+        [_writeBuffer setData:data];
+        _writeOffset = sent;
+        
+        __weak typeof(self) weakSelf = self;
+        _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+        dispatch_source_set_event_handler(_writeSource, ^{
+            [weakSelf handleWrite];
+        });
+        dispatch_resume(_writeSource);
     } else {
-        if (completion) completion(nil);
+        if (completion) {
+            completion(nil);
+        }
     }
 }
 
