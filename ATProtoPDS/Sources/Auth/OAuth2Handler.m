@@ -135,24 +135,31 @@
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
+    __weak typeof(self) weakSelf = self;
+
     [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self handleAuthorizeRequest:request response:response];
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handleAuthorizeRequest:request response:response];
     }];
 
     [httpServer addRoute:@"POST" path:@"/oauth/token" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self handleTokenRequest:request response:response];
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handleTokenRequest:request response:response];
     }];
 
     [httpServer addRoute:@"POST" path:@"/oauth/revoke" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self handleRevokeRequest:request response:response];
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handleRevokeRequest:request response:response];
     }];
 
     [httpServer addRoute:@"GET" path:@"/.well-known/oauth-authorization-server" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self handleAuthorizationServerMetadata:request response:response];
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handleAuthorizationServerMetadata:request response:response];
     }];
 
     [httpServer addRoute:@"GET" path:@"/.well-known/oauth-protected-resource" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self handleProtectedResourceMetadata:request response:response];
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handleProtectedResourceMetadata:request response:response];
     }];
 }
 
