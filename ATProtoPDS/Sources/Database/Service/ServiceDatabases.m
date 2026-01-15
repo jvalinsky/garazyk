@@ -1,5 +1,6 @@
 #import "ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
 #ifdef GNUSTEP
 #import "Compat/NSFileManagerCompat.h"
 #endif
@@ -214,7 +215,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
                     @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
                     @"WHERE rt.token = ?";
     __autoreleasing NSError *stmtError = nil;
-    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
     if (!stmt) {
         if (error) *error = stmtError;
         return nil;
@@ -225,8 +226,6 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         account = [store accountFromStatement:stmt];
     }
-
-    [store finalizeStatement:stmt];
     return account;
 }
 
@@ -279,7 +278,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
         if (!stmt) { success = NO; return; }
         
         sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
@@ -288,7 +287,6 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
         sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:30 * 24 * 60 * 60] timeIntervalSince1970]);
 
         success = (sqlite3_step(stmt) == SQLITE_DONE);
-        [store finalizeStatement:stmt];
     } error:&localError];
 
     if (!success && localError) {
@@ -306,12 +304,11 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
         PDSActorStore *store = (PDSActorStore *)transactor;
 
         NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
         if (!stmt) { success = NO; return; }
         
         sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
-        [store finalizeStatement:stmt];
     } error:&localError];
 
     if (!success && localError) {
@@ -334,7 +331,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO invite_codes (id, code, account_did, created_at, max_uses) "
                         @"VALUES (?, ?, ?, ?, ?)";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
         if (!stmt) { success = NO; return; }
         
         NSString *uuid = [[NSUUID UUID] UUIDString];
@@ -345,7 +342,6 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
         sqlite3_bind_int64(stmt, 5, maxUses);
 
         success = (sqlite3_step(stmt) == SQLITE_DONE);
-        [store finalizeStatement:stmt];
     } error:&localError];
 
     if (!success && localError) {

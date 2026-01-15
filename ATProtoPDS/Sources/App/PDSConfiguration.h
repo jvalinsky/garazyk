@@ -99,11 +99,30 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether rate limiting is enabled. */
 @property (nonatomic, readonly) BOOL rateLimitEnabled;
 
+
 /*! Requests per minute limit. */
 @property (nonatomic, readonly) NSUInteger rateLimitRequestsPerMinute;
 
 /*! Burst size for rate limiting. */
 @property (nonatomic, readonly) NSUInteger rateLimitBurstSize;
+
+/*! DID rate limit (requests per window). */
+@property (nonatomic, readonly) NSUInteger rateLimitDidLimit;
+
+/*! DID window size in seconds. */
+@property (nonatomic, readonly) NSTimeInterval rateLimitDidWindowSeconds;
+
+/*! IP rate limit (requests per window). */
+@property (nonatomic, readonly) NSUInteger rateLimitIpLimit;
+
+/*! IP window size in seconds. */
+@property (nonatomic, readonly) NSTimeInterval rateLimitIpWindowSeconds;
+
+/*! Blob upload limit (requests per window). */
+@property (nonatomic, readonly) NSUInteger rateLimitBlobLimit;
+
+/*! Blob upload window size in seconds. */
+@property (nonatomic, readonly) NSTimeInterval rateLimitBlobWindowSeconds;
 
 /*! Whether SSL pinning is enabled. */
 @property (nonatomic, readonly) BOOL sslPinningEnabled;

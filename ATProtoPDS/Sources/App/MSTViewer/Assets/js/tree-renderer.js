@@ -69,8 +69,16 @@ export class TreeRenderer {
 
         this.data = treeData;
 
-        // Convert API data to D3 hierarchy
-        const root = d3.hierarchy(this.data, d => d.children || []);
+        // The API returns a flat list of nodes (to support structural sharing/deduplication).
+        // We need to reconstruct the hierarchical tree structure for D3.
+        const hierarchicalData = this.buildHierarchy(treeData);
+        if (!hierarchicalData) {
+            this.renderError('Failed to reconstruct tree hierarchy');
+            return;
+        }
+
+        // Convert constructed hierarchy to D3 hierarchy
+        const root = d3.hierarchy(hierarchicalData, d => d.children || []);
 
         // Calculate tree layout
         const tree = d3.tree().size([this.width, this.height]);
@@ -324,6 +332,69 @@ export class TreeRenderer {
             this.svg.remove();
         }
         window.removeEventListener('resize', () => this.handleResize());
+    }
+
+    /**
+     * Reconstruct hierarchical tree from flat node list
+     * @param {Object} flatData - Data from API ({ nodes: [], rootCID: '' })
+     * @returns {Object} Root node with nested children
+     */
+    buildHierarchy(flatData) {
+        if (!flatData || !flatData.nodes || !flatData.rootCID) {
+            console.error('Invalid tree data format');
+            return null;
+        }
+
+        // 1. Index nodes by CID for O(1) lookup
+        const nodeMap = new Map();
+        flatData.nodes.forEach(node => {
+            if (node.cid) {
+                nodeMap.set(node.cid, node);
+            }
+        });
+
+        // 2. Recursive function to build tree
+        // We must clone nodes because D3 modifies them, and structural sharing
+        // means a node might appear in multiple places in the tree.
+        const buildNode = (cid) => {
+            const node = nodeMap.get(cid);
+            if (!node) return null;
+
+            // Shallow clone to avoid shared reference issues in D3
+            const nodeClone = { ...node };
+            const children = [];
+
+            // Add left child if present
+            if (node.left) {
+                const leftChild = buildNode(node.left);
+                if (leftChild) {
+                    children.push(leftChild);
+                }
+            }
+
+            // Add children from entries (subtrees)
+            if (node.entries) {
+                node.entries.forEach(entry => {
+                    if (entry.tree) {
+                        const childTree = buildNode(entry.tree);
+                        if (childTree) {
+                            // Annotate for visualization (optional)
+                            childTree._parentKey = entry.fullKey;
+                            children.push(childTree);
+                        }
+                    }
+                });
+            }
+
+            if (children.length > 0) {
+                nodeClone.children = children;
+            }
+
+            return nodeClone;
+        };
+
+        // 3. Start from root
+        return buildNode(flatData.rootCID);
     }
 }
 
