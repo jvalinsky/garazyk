@@ -6,18 +6,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
+/**
  @header XrpcMethodRegistry.h
  
  @abstract XRPC method registration utilities.
  
  @discussion This header defines the XrpcMethodRegistry class for
  registering all standard ATProto XRPC methods with a dispatcher.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-/*!
+/**
  @class XrpcMethodRegistry
  
  @abstract Registers all ATProto XRPC methods with a dispatcher.
@@ -25,30 +23,26 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion XrpcMethodRegistry provides a convenient way to register
  all standard ATProto XRPC method handlers with an XrpcDispatcher.
  It connects each method to the appropriate PDSController handler.
- 
- @code
- XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
- PDSController *controller = [[PDSController alloc] initWithDatabase:db];
- 
- [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
-                                       controller:controller];
- @endcode
  */
 @interface XrpcMethodRegistry : NSObject
 
-/*!
- @method registerMethodsWithDispatcher:controller:
+/**
+ @brief Register the ATProto XRPC method handlers with the dispatcher.
  
- @abstract Registers all standard XRPC methods with the dispatcher.
- 
- @discussion This method registers handlers for all ATProto XRPC methods,
- connecting each to the appropriate method on the PDSController.
- 
- @param dispatcher The XrpcDispatcher to register methods with.
- @param controller The PDSController to handle the methods.
+ @param dispatcher Dispatcher to register methods on.
+ @param controller Backend controller that implements the handlers.
  */
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller;
+
+/**
+ @brief Decode a DID `publicKeyMultibase` string into raw key bytes.
+ 
+ @param multibase `publicKeyMultibase` value from a DID document.
+ @param error Populated when decoding fails.
+ @return Raw public key bytes or nil if the string is malformed.
+ */
++ (nullable NSData *)publicKeyBytesFromMultibase:(NSString *)multibase error:(NSError **)error;
 
 @end
 

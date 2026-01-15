@@ -5,6 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface AdminServiceTests : XCTestCase
+@property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong, nullable) PDSDatabase *database;
 @property (nonatomic, strong, nullable) AdminService *service;
 @end
@@ -13,9 +14,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)setUp {
     [super setUp];
+    self.testDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtPath:self.testDirectory withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    NSString *dbPath = [self.testDirectory stringByAppendingPathComponent:@"admin.sqlite"];
+    self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    
     NSError *error = nil;
-    self.database = [self createInMemoryDatabase:&error];
-    XCTAssertNotNil(self.database, @"Database setup failed: %@", error);
+    XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
+    
     self.service = [[AdminService alloc] initWithDatabase:self.database];
 }
 
@@ -23,16 +30,11 @@ NS_ASSUME_NONNULL_BEGIN
     [self.database close];
     self.database = nil;
     self.service = nil;
+    [[NSFileManager defaultManager] removeItemAtPath:self.testDirectory error:nil];
     [super tearDown];
 }
 
-- (PDSDatabase *)createInMemoryDatabase:(NSError **)error {
-    PDSDatabase *database = [PDSDatabase databaseAtURL:[NSURL URLWithString:@":memory:"]];
-    if (![database openWithError:error]) {
-        return nil;
-    }
-    return database;
-}
+
 
 - (PDSDatabaseAccount *)createAccountWithDid:(NSString *)did handle:(NSString *)handle {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];

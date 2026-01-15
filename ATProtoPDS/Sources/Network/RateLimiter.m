@@ -56,6 +56,7 @@ NS_ASSUME_NONNULL_BEGIN
         _ipWindowSeconds = 60;
         _blobLimit = 50;
         _blobWindowSeconds = 3600;
+        _enabled = YES;
         
         _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
         
@@ -120,6 +121,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
+    }
     if (!did || did.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
     }
@@ -132,6 +136,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (RateLimitResult *)checkRateLimitForIP:(NSString *)ip {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
+    }
     if (!ip || ip.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
     }
@@ -144,6 +151,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+    }
     if (!did || did.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
     }
