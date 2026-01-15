@@ -6,9 +6,9 @@ import { renderPlcOperations } from './plc.js';
 console.log('ui.js loading...');
 
 let currentDid = null;
+let currentHandle = null;
 let currentCollection = null;
 
-// Register global helpers early
 window.viewCollection = (collection) => {
     console.log('window.viewCollection called for collection:', collection);
     currentCollection = collection;
@@ -20,8 +20,47 @@ window.viewRecordDetail = (uri) => {
     showRecordDetail(uri);
 };
 
+window.viewFeedPosts = () => {
+    if (!currentDid) {
+        alert('Please select an account first.');
+        return;
+    }
+    showFeedPosts();
+};
+
+window.viewFeedLikes = () => {
+    if (!currentDid) {
+        alert('Please select an account first.');
+        return;
+    }
+    showFeedLikes();
+};
+
+window.viewFeedReposts = () => {
+    if (!currentDid) {
+        alert('Please select an account first.');
+        return;
+    }
+    showFeedReposts();
+};
+
+window.viewGraphFollows = () => {
+    if (!currentDid) {
+        alert('Please select an account first.');
+        return;
+    }
+    showGraphFollows();
+};
+
+window.viewActorProfile = () => {
+    if (!currentDid) {
+        alert('Please select an account first.');
+        return;
+    }
+    showActorProfile();
+};
+
 function init() {
-    // Search Enter key
     document.getElementById('lookup-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleLookup();
     });
@@ -36,25 +75,90 @@ function init() {
         showSection('records', `Records: ${currentCollection || ''}`);
     });
     
-    // Navigation handling
+    document.getElementById('back-from-posts')?.addEventListener('click', showCollectionsSection);
+    document.getElementById('back-from-likes')?.addEventListener('click', showCollectionsSection);
+    document.getElementById('back-from-reposts')?.addEventListener('click', showCollectionsSection);
+    document.getElementById('back-from-follows')?.addEventListener('click', showCollectionsSection);
+    document.getElementById('back-from-profile')?.addEventListener('click', showCollectionsSection);
+    
     document.querySelectorAll('.nav-row[data-section]').forEach(row => {
         row.addEventListener('click', (e) => {
             const section = row.dataset.section;
             const label = row.querySelector('.nav-label').textContent;
             
-            // Only switch if it's a static section or we have data
             if (section === 'cid-decode') {
                 showSection(section, label);
+            } else if (['feed-posts', 'feed-likes', 'feed-reposts', 'graph-follows', 'actor-profile'].includes(section)) {
+                if (currentDid) {
+                    showSection(section, label);
+                } else {
+                    const firstAccount = document.querySelector('.account-item');
+                    if (firstAccount) {
+                        firstAccount.click();
+                    } else {
+                        alert('Please select an account first.');
+                    }
+                }
             } else if (currentDid) {
                 showSection(section, label);
             } else {
-                // If clicking nav items without a DID selected, try to select first account
                 const firstAccount = document.querySelector('.account-item');
                 if (firstAccount) {
                     firstAccount.click();
                 } else {
                     alert('Please search for a DID or select an account first.');
                 }
+            }
+        });
+    });
+    
+    showSection('did-doc', 'DID Document');
+    loadAccounts();
+}
+
+async function loadAccounts() {
+    const list = document.getElementById('account-list');
+    list.innerHTML = '<li class="loading">Loading...</li>';
+    
+    const result = await API.getAccounts();
+    
+    if (result.accounts && result.accounts.length > 0) {
+        list.innerHTML = '';
+        for (const account of result.accounts) {
+            const li = document.createElement('li');
+            li.className = 'account-item';
+            li.dataset.did = account.did;
+            li.dataset.handle = account.handle || '';
+            li.innerHTML = `
+                <span style="font-size:14px">👤</span>
+                <span class="account-handle">${escapeHtml(account.handle || account.did)}</span>
+            `;
+            li.addEventListener('click', () => selectAccount(account));
+            list.appendChild(li);
+        }
+    } else {
+        list.innerHTML = '<li class="empty" style="padding:5px; border:none; background:none;">No accounts found</li>';
+    }
+}
+
+async function selectAccount(account) {
+    document.querySelectorAll('.account-item').forEach(li => {
+        li.classList.remove('active');
+        if (li.dataset.did === account.did) {
+            li.classList.add('active');
+        }
+    });
+    
+    currentDid = account.did;
+    currentHandle = account.handle || '';
+    
+    document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
+    document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
+    document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
+    
+    showSection('did-doc', 'DID Document');
+    await showDidDocument(account.did);
+}
             }
         });
     });

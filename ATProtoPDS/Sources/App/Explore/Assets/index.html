@@ -65,6 +65,54 @@
                 <li class="nav-item expanded">
                     <div class="nav-row" onclick="toggleNav(this)">
                         <span class="disclosure">▶</span>
+                        <span class="nav-label">Feed</span>
+                    </div>
+                    <ul class="nav-children">
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-feed-posts" data-section="feed-posts">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Posts</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-feed-likes" data-section="feed-likes">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Likes</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-feed-reposts" data-section="feed-reposts">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Reposts</span>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item expanded">
+                    <div class="nav-row" onclick="toggleNav(this)">
+                        <span class="disclosure">▶</span>
+                        <span class="nav-label">Graph</span>
+                    </div>
+                    <ul class="nav-children">
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-graph-follows" data-section="graph-follows">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Follows</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-row" id="nav-actor-profile" data-section="actor-profile">
+                                <span class="disclosure"></span>
+                                <span class="nav-label">Profile</span>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item expanded">
+                    <div class="nav-row" onclick="toggleNav(this)">
+                        <span class="disclosure">▶</span>
                         <span class="nav-label">Utilities</span>
                     </div>
                     <ul class="nav-children">
@@ -162,6 +210,76 @@
                     <span id="record-title" style="font-weight:bold; margin-left:10px;"></span>
                 </div>
                 <pre id="record-content" class="code-block"></pre>
+            </section>
+
+            <!-- Feed Posts Section -->
+            <section id="feed-posts" class="doc-section">
+                <div class="section-header">
+                    <h1>Posts</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-from-posts" class="btn-secondary">Back</button>
+                    <span id="posts-account" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <div id="feed-posts-content">
+                    <p class="placeholder">Select an account to view posts.</p>
+                </div>
+            </section>
+
+            <!-- Feed Likes Section -->
+            <section id="feed-likes" class="doc-section">
+                <div class="section-header">
+                    <h1>Likes</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-from-likes" class="btn-secondary">Back</button>
+                    <span id="likes-account" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <div id="feed-likes-content">
+                    <p class="placeholder">Select an account to view likes.</p>
+                </div>
+            </section>
+
+            <!-- Feed Reposts Section -->
+            <section id="feed-reposts" class="doc-section">
+                <div class="section-header">
+                    <h1>Reposts</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-from-reposts" class="btn-secondary">Back</button>
+                    <span id="reposts-account" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <div id="feed-reposts-content">
+                    <p class="placeholder">Select an account to view reposts.</p>
+                </div>
+            </section>
+
+            <!-- Graph Follows Section -->
+            <section id="graph-follows" class="doc-section">
+                <div class="section-header">
+                    <h1>Follows</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-from-follows" class="btn-secondary">Back</button>
+                    <span id="follows-account" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <div id="graph-follows-content">
+                    <p class="placeholder">Select an account to view follows.</p>
+                </div>
+            </section>
+
+            <!-- Actor Profile Section -->
+            <section id="actor-profile" class="doc-section">
+                <div class="section-header">
+                    <h1>Profile</h1>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button id="back-from-profile" class="btn-secondary">Back</button>
+                    <span id="profile-account" style="font-weight:bold; margin-left:10px;"></span>
+                </div>
+                <div id="actor-profile-content">
+                    <p class="placeholder">Select an account to view profile.</p>
+                </div>
             </section>
 
             <!-- CID Decoder Section -->
