@@ -10,8 +10,7 @@
 - (void)setUp {
     [super setUp];
     self.verifier = [[JWTVerifier alloc] init];
-    // Default allowed algorithms
-    self.verifier.allowedAlgorithms = @[@"ES256", @"RS256"];
+    self.verifier.allowedAlgorithms = @[@"ES256"];
 }
 
 - (void)testAlgNoneRejection {
@@ -35,46 +34,33 @@
 }
 
 - (void)testSignatureStripping {
-    // Take a valid signed token (mocked here as we can't easily sign without key in test without setting up one)
-    // Actually, we can just test that verification fails if we tamper with signature
-    
-    // We'll trust the verifier logic:
-    // If we provide a token, the verifier checks signature IF publicKey/rotationManager is set.
-    // If NO key is set in verifier, does it fail open? It should NOT.
-    
-    // Let's check verifyJWT implementation again from memory/context:
-    // "if (self.keyRotationManager || self.publicKey) { ... verify ... } else { ... }"
-    // Wait, if no key is configured, does it just validate claims?
-    // That would be insecure if the caller expects signature verification but forgets to set key.
-    
-    // Let's test this "Fail Closed" behavior.
-    JWTVerifier *emptyVerifier = [[JWTVerifier alloc] init];
-    // No keys set
-    
+    JWTVerifier *verifierWithKey = [[JWTVerifier alloc] init];
+    NSData *dummyKey = [NSMutableData dataWithLength:65];
+    verifierWithKey.publicKey = dummyKey;
+
     NSString *header = @"{\"alg\":\"ES256\",\"typ\":\"JWT\"}";
     NSString *payload = @"{\"sub\":\"123\",\"iat\":100}";
-    NSString *token = [NSString stringWithFormat:@"%@.%@.signaturesig", [self base64UrlEncode:header], [self base64UrlEncode:payload]];
-    
+    NSString *token = [NSString stringWithFormat:@"%@.%@.invalidsig", [self base64UrlEncode:header], [self base64UrlEncode:payload]];
+
+    JWT *jwt = [JWT jwtWithToken:token error:nil];
+
+    XCTAssertFalse([verifierWithKey verifyJWT:jwt error:nil], @"Invalid signature should be rejected");
+}
+
+- (void)testFailClosedWhenNoKeyConfigured {
+    JWTVerifier *verifierWithoutKey = [[JWTVerifier alloc] init];
+
+    NSString *header = @"{\"alg\":\"ES256\",\"typ\":\"JWT\"}";
+    NSString *payload = @"{\"sub\":\"123\",\"iat\":1516239022}";
+    NSString *token = [NSString stringWithFormat:@"%@.%@.anysignature", [self base64UrlEncode:header], [self base64UrlEncode:payload]];
+
     JWT *jwt = [JWT jwtWithToken:token error:nil];
     NSError *error = nil;
-    BOOL verified = [emptyVerifier verifyJWT:jwt error:&error];
-    
-    // Ideally this should fail because we can't verify signature.
-    // But if the implementation allows "claims-only" verification if no key is provided, that's a policy decision.
-    // However, for SECURITY, we usually want to ensure signature is verified.
-    // Looking at the code:
-    /*
-     if (self.keyRotationManager || self.publicKey) {
-         // verify signature
-     }
-     // proceed to validate claims
-     return YES;
-    */
-    // This implies that if no key is provided, it skips signature verification and returns YES if claims are valid.
-    // This is a potential misconfiguration vulnerability!
-    // We should flag this or write a test that exposes it.
-    
-    // For now, let's write the test assuming we HAVE a key, and we strip the signature.
+    BOOL verified = [verifierWithoutKey verifyJWT:jwt error:&error];
+
+    XCTAssertFalse(verified, @"Should fail verification when no key is configured");
+    XCTAssertNotNil(error, @"Should return error when no key is configured");
+    XCTAssertEqual(error.code, JWTErrorNoPublicKey, @"Error should indicate no public key configured");
 }
 
 - (void)testInvalidSignature {

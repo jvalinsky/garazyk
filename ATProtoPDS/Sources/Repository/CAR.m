@@ -86,8 +86,8 @@ static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
         return nil;
     }
 
-    NSData *bytes = value.tagValue.byteString;
-    if (!bytes || bytes.length <= 1) {
+    NSData *cidBytes = value.tagValue.byteString;
+    if (!cidBytes || cidBytes.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-11
@@ -96,7 +96,6 @@ static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
         return nil;
     }
 
-    NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
     CID *cid = [CID cidFromBytes:cidBytes];
     if (!cid && error) {
         *error = [NSError errorWithDomain:@"com.atproto.car"
@@ -107,39 +106,53 @@ static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
 }
 
 static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
+    if (!bytes || length < 4) {
+        return NO;
+    }
+
+    NSUInteger offset = 0;
+
+    // Read version varint (should be 1 for CIDv1)
     uint64_t version = 0;
-    NSUInteger offset = ReadVarint(bytes, length, &version);
-    if (offset == 0 || version != 1) {
+    NSUInteger versionSize = ReadVarint(bytes, length, &version);
+    if (versionSize == 0 || version != 1) {
         return NO;
     }
+    offset += versionSize;
 
+    // Read codec varint (should be 0x71 for dag-cbor)
     uint64_t codec = 0;
-    NSUInteger codecBytes = ReadVarint(bytes + offset, length - offset, &codec);
-    if (codecBytes == 0) {
+    NSUInteger codecSize = ReadVarint(bytes + offset, length - offset, &codec);
+    if (codecSize == 0 || codec > UINT32_MAX) {
         return NO;
     }
-    offset += codecBytes;
+    offset += codecSize;
 
-    uint64_t hashCode = 0;
-    NSUInteger hashCodeBytes = ReadVarint(bytes + offset, length - offset, &hashCode);
-    if (hashCodeBytes == 0) {
-        return NO;
-    }
-    offset += hashCodeBytes;
-
-    uint64_t hashLength = 0;
-    NSUInteger hashLengthBytes = ReadVarint(bytes + offset, length - offset, &hashLength);
-    if (hashLengthBytes == 0) {
-        return NO;
-    }
-    offset += hashLengthBytes;
-
-    if (hashLength > length - offset) {
+    // Need at least 2 more bytes for hash code (0x12) and hash length (0x20)
+    if (offset + 2 > length) {
         return NO;
     }
 
-    NSUInteger cidLength = offset + (NSUInteger)hashLength;
-    NSData *cidData = [NSData dataWithBytes:bytes length:cidLength];
+    // Validate hash code is sha2-256 (0x12)
+    if (bytes[offset] != 0x12) {
+        return NO;
+    }
+    offset++;
+
+    // Validate hash length is 32
+    if (bytes[offset] != 0x20) {
+        return NO;
+    }
+    offset++;
+
+    // Skip the 32-byte hash digest
+    if (offset + 32 > length) {
+        return NO;
+    }
+    offset += 32;
+
+    // Create CID from the full CID bytes
+    NSData *cidData = [NSData dataWithBytes:bytes length:offset];
     CID *cid = [CID cidFromBytes:cidData];
     if (!cid) {
         return NO;
@@ -149,7 +162,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         *cidOut = cid;
     }
     if (cidLengthOut) {
-        *cidLengthOut = cidLength;
+        *cidLengthOut = offset;
     }
     return YES;
 }
@@ -437,22 +450,43 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     [self.blocks addObject:block];
 }
 
+static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
+    NSUInteger bytesWritten = 0;
+    while (value > 0x7F) {
+        buffer[bytesWritten++] = (uint8_t)((value & 0x7F) | 0x80);
+        value >>= 7;
+    }
+    buffer[bytesWritten++] = (uint8_t)(value & 0x7F);
+    return bytesWritten;
+}
+
 - (NSData *)serialize {
     NSMutableData *data = [NSMutableData data];
 
-    uint32_t version = OSSwapHostToBigInt32(1);
-    [data appendBytes:&version length:4];
+    CBORValue *rootsArray = [CBORValue array:@[
+        [CBORValue tag:42 value:[CBORValue byteString:[self.rootCID bytes]]]
+    ]];
 
-    NSData *rootCIDBytes = [self.rootCID bytes];
-    uint32_t rootLen = OSSwapHostToBigInt32((uint32_t)rootCIDBytes.length);
-    [data appendBytes:&rootLen length:4];
-    [data appendData:rootCIDBytes];
+    CBORValue *headerMap = [CBORValue map:@{
+        [CBORValue textString:@"roots"]: rootsArray,
+        [CBORValue textString:@"version"]: [CBORValue unsignedInteger:1]
+    }];
+
+    NSData *headerCBOR = [headerMap encode];
+    uint8_t headerLenBuffer[16];
+    NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
+    [data appendBytes:headerLenBuffer length:headerLenSize];
+    [data appendData:headerCBOR];
 
     for (CARBlock *block in self.blocks) {
-        NSData *blockData = block.data;
-        uint32_t blockLen = OSSwapHostToBigInt32((uint32_t)blockData.length);
-        [data appendBytes:&blockLen length:4];
-        [data appendData:blockData];
+        NSData *cidBytes = [block.cid bytes];
+        NSUInteger totalLength = cidBytes.length + block.data.length;
+
+        uint8_t blockLenBuffer[16];
+        NSUInteger blockLenSize = WriteVarint(totalLength, blockLenBuffer);
+        [data appendBytes:blockLenBuffer length:blockLenSize];
+        [data appendData:cidBytes];
+        [data appendData:block.data];
     }
 
     return [data copy];

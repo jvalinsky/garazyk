@@ -37,6 +37,8 @@ extern NSString * const JWTErrorDomain;
  @constant JWTErrorDecodingFailed Base64URL decoding failed.
  @constant JWTErrorVerificationFailed Signature verification failed.
  @constant JWTErrorSigningFailed Token signing failed.
+ @constant JWTErrorNoPublicKey No public key configured for verification.
+ @constant JWTErrorInvalidAlgorithm Signing algorithm not allowed.
  */
 typedef NS_ENUM(NSInteger, JWTError) {
     JWTErrorInvalidFormat = 1000,
@@ -53,7 +55,8 @@ typedef NS_ENUM(NSInteger, JWTError) {
     JWTErrorEncodingFailed,
     JWTErrorDecodingFailed,
     JWTErrorVerificationFailed,
-    JWTErrorSigningFailed
+    JWTErrorSigningFailed,
+    JWTErrorNoPublicKey
 };
 
 /*!

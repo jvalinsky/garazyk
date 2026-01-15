@@ -239,7 +239,15 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error {
-    // Check algorithm restriction
+    if (!self.keyRotationManager && !self.publicKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorNoPublicKey
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No public key configured for signature verification"}];
+        }
+        return NO;
+    }
+
     if (self.allowedAlgorithms && ![self.allowedAlgorithms containsObject:jwt.header.alg ?: @""]) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
@@ -249,31 +257,28 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return NO;
     }
 
-    // Verify signature if key rotation manager or public key is available
-    if (self.keyRotationManager || self.publicKey) {
-        NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
-        if (!signatureData) return NO;
-        
-        BOOL verified = NO;
-        if (self.keyRotationManager) {
-            verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
-        } else if (self.publicKey) {
-            Secp256k1 *secp = [Secp256k1 shared];
-            unsigned char hash[32];
-            CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
-            NSData *hashData = [NSData dataWithBytes:hash length:32];
-            verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+    NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
+    if (!signatureData) return NO;
+
+    BOOL verified = NO;
+    if (self.keyRotationManager) {
+        verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
+    } else if (self.publicKey) {
+        Secp256k1 *secp = [Secp256k1 shared];
+        unsigned char hash[32];
+        CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+        NSData *hashData = [NSData dataWithBytes:hash length:32];
+        verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+    }
+
+    if (!verified) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidSignature
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT signature"}];
         }
-        
-        if (!verified) {
-            if (error && !*error) {
-                *error = [NSError errorWithDomain:JWTErrorDomain
-                                             code:JWTErrorInvalidSignature
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT signature"}];
-            }
-            return NO;
-        }
+        return NO;
     }
 
     if (![self validateClaims:jwt.payload ofJWT:jwt error:error]) {

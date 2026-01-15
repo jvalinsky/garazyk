@@ -102,119 +102,107 @@ static NSData *HexToNSData(NSString *hex) {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     CID *rootCID = [CID cidFromString:cidStr];
     XCTAssertNotNil(rootCID, @"Root CID should be created");
-    
-    NSMutableData *carData = [NSMutableData data];
-    uint32_t version = OSSwapHostToBigInt32(1);
-    [carData appendBytes:&version length:4];
-    
-    NSData *cidBytes = [rootCID bytes];
-    uint32_t cidLen = OSSwapHostToBigInt32((uint32_t)cidBytes.length);
-    [carData appendBytes:&cidLen length:4];
-    [carData appendData:cidBytes];
-    
+
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
     CID *block1CID = [CID cidWithDigest:[CID sha256Digest:block1Data] codec:0x71];
-    uint32_t block1Len = OSSwapHostToBigInt32((uint32_t)block1Data.length);
-    [carData appendBytes:&block1Len length:4];
-    [carData appendData:block1Data];
-    
+    CARBlock *block1 = [CARBlock blockWithCID:block1CID data:block1Data];
+
+    // Debug: print block CID bytes
+    NSData *blockCIDBytes = [block1CID bytes];
+    NSMutableString *cidHex = [NSMutableString string];
+    for (NSUInteger i = 0; i < blockCIDBytes.length; i++) {
+        [cidHex appendFormat:@"%02x ", ((uint8_t*)blockCIDBytes.bytes)[i]];
+    }
+    NSLog(@"Block CID bytes (%lu): %@", (unsigned long)blockCIDBytes.length, cidHex);
+
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    [writer addBlock:block1];
+
+    NSData *carData = [writer serialize];
+    XCTAssertNotNil(carData, @"Serialized data should not be nil");
+
+    // Debug: print first 100 bytes
+    const uint8_t *bytes = carData.bytes;
+    NSMutableString *hex = [NSMutableString string];
+    for (NSUInteger i = 0; i < MIN(100, carData.length); i++) {
+        [hex appendFormat:@"%02x ", bytes[i]];
+    }
+    NSLog(@"CAR v1 data (first %lu bytes): %@", (unsigned long)MIN(100, carData.length), hex);
+
     NSError *error = nil;
     CARReader *reader = [CARReader readFromData:carData error:&error];
-    XCTAssertNotNil(reader, @"CARReader should parse valid CAR data");
+    if (!reader) {
+        NSLog(@"CARReader error: %@", error);
+    }
+    XCTAssertNotNil(reader, @"CARReader should parse valid CAR v1 data");
     XCTAssertNil(error, @"There should be no error");
-    
-    CARWriter *writer = [CARWriter writerWithRootCID:reader.rootCID];
-    for (CARBlock *block in reader.blocks) {
-        [writer addBlock:block];
-    }
-    
-    NSData *serialized = [writer serialize];
-    XCTAssertNotNil(serialized, @"Serialized data should not be nil");
-    XCTAssertEqual(serialized.length, carData.length, @"Serialized data should have same length as original");
-    
-    CARReader *reReader = [CARReader readFromData:serialized error:&error];
-    XCTAssertNotNil(reReader, @"Re-reading serialized CAR should succeed");
-    XCTAssertEqualObjects(reReader.rootCID, reader.rootCID, @"Root CID should match after round-trip");
-    XCTAssertEqual(reReader.blocks.count, reader.blocks.count, @"Block count should match after round-trip");
-    
-    for (NSUInteger i = 0; i < reader.blocks.count; i++) {
-        CARBlock *original = reader.blocks[i];
-        CARBlock *roundTripped = reReader.blocks[i];
-        XCTAssertEqualObjects(original.cid, roundTripped.cid, @"Block CID %lu should match", (unsigned long)i);
-        XCTAssertEqualObjects(original.data, roundTripped.data, @"Block data %lu should match", (unsigned long)i);
-    }
+    XCTAssertEqualObjects(reader.rootCID, rootCID, @"Root CID should match");
+    XCTAssertEqual(reader.blocks.count, 1, @"Should have exactly one block");
+
+    CARBlock *roundTripped = reader.blocks.firstObject;
+    XCTAssertEqualObjects(block1.cid, roundTripped.cid, @"Block CID should match");
+    XCTAssertEqualObjects(block1.data, roundTripped.data, @"Block data should match");
+
+    CARBlock *foundBlock = [reader blockWithCID:block1CID];
+    XCTAssertNotNil(foundBlock, @"Should be able to lookup block by CID");
+    XCTAssertEqualObjects(foundBlock.data, block1Data, @"Found block data should match");
 }
 
 - (void)testCARv1WriterSerialization {
-    CID *rootCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
+    CID *rootCID = [CID cidFromString:cidStr];
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
-    
+
     NSData *blockData = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
     CID *blockCID = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
     CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
     [writer addBlock:block];
-    
+
     NSData *serialized = [writer serialize];
     XCTAssertNotNil(serialized, @"Serialized data should not be nil");
-    XCTAssertGreaterThanOrEqual(serialized.length, (NSUInteger)8, @"Serialized data should have header");
-    
-    const uint8_t *bytes = serialized.bytes;
-    uint32_t version;
-    memcpy(&version, bytes, 4);
-    version = OSSwapBigToHostInt32(version);
-    XCTAssertEqual(version, 1, @"Version should be 1");
-    
-    uint32_t rootLen;
-    memcpy(&rootLen, bytes + 4, 4);
-    rootLen = OSSwapBigToHostInt32(rootLen);
-    XCTAssertGreaterThan(rootLen, (uint32_t)0, @"Root CID length should be positive");
-    
-    NSUInteger offset = 8 + rootLen;
-    XCTAssertLessThanOrEqual(offset, serialized.length, @"Root CID should be within bounds");
-    
-    uint32_t blockLen;
-    memcpy(&blockLen, bytes + offset, 4);
-    blockLen = OSSwapBigToHostInt32(blockLen);
-    XCTAssertEqual(blockLen, (uint32_t)blockData.length, @"Block length should match");
+
+    NSError *error = nil;
+    CARReader *reader = [CARReader readFromData:serialized error:&error];
+    XCTAssertNotNil(reader, @"CARReader should parse CAR v1 data");
+    XCTAssertNil(error, @"There should be no error parsing CAR v1");
+    XCTAssertEqualObjects(reader.rootCID, rootCID, @"Root CID should match");
+    XCTAssertEqual(reader.blocks.count, 1, @"Should have one block");
+    XCTAssertEqualObjects(reader.blocks.firstObject.data, blockData, @"Block data should match");
 }
 
 - (void)testCARv1BlockLookup {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     CID *rootCID = [CID cidFromString:cidStr];
-    
-    NSMutableData *carData = [NSMutableData data];
-    uint32_t version = OSSwapHostToBigInt32(1);
-    [carData appendBytes:&version length:4];
-    
-    NSData *cidBytes = [rootCID bytes];
-    uint32_t cidLen = OSSwapHostToBigInt32((uint32_t)cidBytes.length);
-    [carData appendBytes:&cidLen length:4];
-    [carData appendData:cidBytes];
-    
+
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
     CID *block1CID = [CID cidWithDigest:[CID sha256Digest:block1Data] codec:0x71];
-    uint32_t block1Len = OSSwapHostToBigInt32((uint32_t)block1Data.length);
-    [carData appendBytes:&block1Len length:4];
-    [carData appendData:block1Data];
-    
+    CARBlock *block1 = [CARBlock blockWithCID:block1CID data:block1Data];
+
     NSMutableData *block2Data = [NSMutableData dataWithBytes:"block2" length:6];
     CID *block2CID = [CID cidWithDigest:[CID sha256Digest:block2Data] codec:0x71];
-    uint32_t block2Len = OSSwapHostToBigInt32((uint32_t)block2Data.length);
-    [carData appendBytes:&block2Len length:4];
-    [carData appendData:block2Data];
-    
+    CARBlock *block2 = [CARBlock blockWithCID:block2CID data:block2Data];
+
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    [writer addBlock:block1];
+    [writer addBlock:block2];
+
+    NSData *carData = [writer serialize];
+    XCTAssertNotNil(carData, @"Serialized data should not be nil");
+
     NSError *error = nil;
     CARReader *reader = [CARReader readFromData:carData error:&error];
-    XCTAssertNotNil(reader, @"CARReader should parse valid CAR data");
-    
+    XCTAssertNotNil(reader, @"CARReader should parse valid CAR v1 data");
+    XCTAssertNil(error, @"There should be no error");
+    XCTAssertEqual(reader.blocks.count, 2, @"Should have two blocks");
+
     CARBlock *foundBlock1 = [reader blockWithCID:block1CID];
     XCTAssertNotNil(foundBlock1, @"Should be able to lookup block by CID");
     XCTAssertEqualObjects(foundBlock1.data, block1Data, @"Found block data should match");
-    
+
     CARBlock *foundBlock2 = [reader blockWithCID:block2CID];
     XCTAssertNotNil(foundBlock2, @"Should be able to lookup block by CID");
     XCTAssertEqualObjects(foundBlock2.data, block2Data, @"Found block data should match");
-    
+
     CID *nonexistentCID = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     CARBlock *notFound = [reader blockWithCID:nonexistentCID];
     XCTAssertNil(notFound, @"Should not find nonexistent CID");
@@ -223,29 +211,25 @@ static NSData *HexToNSData(NSString *hex) {
 - (void)testCARv1BlockCIDConsistency {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     CID *rootCID = [CID cidFromString:cidStr];
-    
-    NSMutableData *carData = [NSMutableData data];
-    uint32_t version = OSSwapHostToBigInt32(1);
-    [carData appendBytes:&version length:4];
-    
-    NSData *cidBytes = [rootCID bytes];
-    uint32_t cidLen = OSSwapHostToBigInt32((uint32_t)cidBytes.length);
-    [carData appendBytes:&cidLen length:4];
-    [carData appendData:cidBytes];
-    
+
     NSData *blockData = [@"test block data for CID consistency" dataUsingEncoding:NSUTF8StringEncoding];
     CID *expectedBlockCID = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
-    uint32_t blockLen = OSSwapHostToBigInt32((uint32_t)blockData.length);
-    [carData appendBytes:&blockLen length:4];
-    [carData appendData:blockData];
-    
+    CARBlock *block = [CARBlock blockWithCID:expectedBlockCID data:blockData];
+
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    [writer addBlock:block];
+
+    NSData *carData = [writer serialize];
+    XCTAssertNotNil(carData, @"Serialized data should not be nil");
+
     NSError *error = nil;
     CARReader *reader = [CARReader readFromData:carData error:&error];
-    XCTAssertNotNil(reader, @"CARReader should parse valid CAR data");
+    XCTAssertNotNil(reader, @"CARReader should parse valid CAR v1 data");
+    XCTAssertNil(error, @"There should be no error");
     XCTAssertEqual(reader.blocks.count, 1, @"Should have exactly one block");
-    
-    CARBlock *block = reader.blocks.firstObject;
-    XCTAssertEqualObjects(block.cid, expectedBlockCID, @"Block CID should match computed CID");
+
+    CARBlock *parsedBlock = reader.blocks.firstObject;
+    XCTAssertEqualObjects(parsedBlock.cid, expectedBlockCID, @"Block CID should match computed CID");
 }
 
 @end

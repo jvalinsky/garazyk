@@ -84,16 +84,33 @@ static const NSUInteger kMaxVarintSize = 9;
         return nil;
     }
 
-    // Parse CIDv1 binary format
     const uint8_t *bytes = data.bytes;
     NSUInteger offset = 0;
 
-    // Read version multicodec (should be 0x01 for CIDv1)
+    // Read version multicodec
     uint64_t versionMulticodec;
     NSUInteger versionSize = [self readVarint:bytes + offset
                                      maxLength:data.length - offset
                                        value:&versionMulticodec];
-    if (versionSize == 0 || versionMulticodec != kCIDv1Multicodec) {
+    if (versionSize == 0) {
+        return nil;
+    }
+
+    // Handle legacy CID format where version byte is 0x00
+    // In this case, skip the version byte and parse remaining as CIDv1
+    if (versionMulticodec == 0) {
+        offset += versionSize;
+        // Re-parse assuming the remaining bytes are CIDv1
+        if (offset >= data.length) {
+            return nil;
+        }
+        versionSize = [self readVarint:bytes + offset
+                              maxLength:data.length - offset
+                                value:&versionMulticodec];
+        if (versionSize == 0 || versionMulticodec != kCIDv1Multicodec) {
+            return nil;
+        }
+    } else if (versionMulticodec != kCIDv1Multicodec) {
         return nil; // Not a valid CIDv1
     }
     offset += versionSize;
