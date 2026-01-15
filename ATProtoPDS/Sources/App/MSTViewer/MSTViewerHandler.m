@@ -73,8 +73,8 @@
     if (html) {
         response.statusCode = HttpStatusOK;
         [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
         response.contentType = @"text/html; charset=utf-8";
+        [response setHeader:response.contentType forKey:@"Content-Type"];
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[@"index.html not found" dataUsingEncoding:NSUTF8StringEncoding]];

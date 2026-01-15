@@ -2,6 +2,12 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
+#import <CommonCrypto/CommonDigest.h>
+#import <CommonCrypto/CommonKeyDerivation.h>
+
+#ifndef kCCSuccess
+#define kCCSuccess 0
+#endif
 
 @interface PDSAccountManager : NSObject
 
@@ -147,10 +153,16 @@
         PDS_LOG_INFO(@"Generated DID: %@", did);
     }
 
+    // Generate salt and hash password
+    NSData *salt = [self generateSalt];
+    NSData *passwordHash = [self hashPassword:password salt:salt];
+    
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.did = did;
     account.handle = handle;
     account.email = email;
+    account.passwordHash = passwordHash;
+    account.passwordSalt = salt;
     account.createdAt = [[NSDate date] timeIntervalSince1970];
     account.updatedAt = account.createdAt;
 
@@ -163,6 +175,37 @@
 
     [db close];
     return success;
+}
+
++ (NSData *)generateSalt {
+    NSMutableData *salt = [NSMutableData dataWithLength:32];
+    [[NSUUID UUID] getUUIDBytes:salt.mutableBytes]; // Simple salt using UUID bytes
+    return salt;
+}
+
++ (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
+    const uint32_t iterations = 600000;
+    const size_t derivedKeyLength = 32;
+
+    unsigned char derivedKey[derivedKeyLength];
+
+    int result = CCKeyDerivationPBKDF(
+        kCCPBKDF2,
+        password.UTF8String,
+        password.length,
+        salt.bytes,
+        salt.length,
+        kCCPRFHmacAlgSHA256,
+        iterations,
+        derivedKey,
+        derivedKeyLength
+    );
+
+    if (result != kCCSuccess) {
+        return nil;
+    }
+
+    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
 }
 
 + (NSString *)generatePlcDid {
@@ -463,7 +506,7 @@
             if (i + 1 < args.count) password = args[++i];
         }
     }
-
+    
     if (email.length == 0 || handle.length == 0) {
         [context printError:@"Missing required arguments: --email and --handle"];
         printf("Usage: pds account create --email <email> --handle <handle> [--password <pw>]\n");
@@ -479,7 +522,6 @@
                                                          email:email
                                                        handle:handle
                                                      password:password];
-
 
     if (success) {
         [context printInfo:@"Account created successfully"];

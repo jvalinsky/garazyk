@@ -153,6 +153,8 @@
 @property (nonatomic, assign) NSTimeInterval accountTTL;
 @property (nonatomic, strong) ExploreCache *cache;
 @property (nonatomic, assign) PDSController *controller;  // assign instead of weak for Linux (no ARC)
+
+- (NSString *)formatAccountsAsJSON:(NSArray<PDSDatabaseAccount *> *)accounts;
 @end
 
 @implementation ExploreHandler
@@ -376,7 +378,8 @@
     
     if (!cssPath) {
         response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        response.contentType = @"text/css; charset=utf-8";
+        [response setBodyData:[@"/* Assets path not configured */" dataUsingEncoding:NSUTF8StringEncoding]];
         return;
     }
     
@@ -385,7 +388,8 @@
     
     if (error || !css) {
         response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"CSS file not found", @"path": cssPath ?: @"unknown"}];
+        response.contentType = @"text/css; charset=utf-8";
+        [response setBodyData:[[NSString stringWithFormat:@"/* CSS file not found: %@ */", cssPath ?: @"unknown"] dataUsingEncoding:NSUTF8StringEncoding]];
         return;
     }
     
@@ -403,7 +407,8 @@
     
     if (!jsPath) {
         response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"Assets path not configured"}];
+        response.contentType = @"application/javascript; charset=utf-8";
+        [response setBodyData:[@"// Assets path not configured" dataUsingEncoding:NSUTF8StringEncoding]];
         return;
     }
     
@@ -412,7 +417,8 @@
     
     if (error || !js) {
         response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"File not found", @"path": path}];
+        response.contentType = @"application/javascript; charset=utf-8";
+        [response setBodyData:[[NSString stringWithFormat:@"// File not found: %@", path] dataUsingEncoding:NSUTF8StringEncoding]];
         return;
     }
     
@@ -553,6 +559,21 @@
         PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"[ExploreHandler] OpenAPI spec request received");
         response.statusCode = HttpStatusOK;
         [self handleApiOpenapiSpec:params response:response];
+    }
+    else if ([endpoint isEqualToString:@"feed-posts"]) {
+        [self handleApiFeedPosts:params response:response];
+    }
+    else if ([endpoint isEqualToString:@"feed-likes"]) {
+        [self handleApiFeedLikes:params response:response];
+    }
+    else if ([endpoint isEqualToString:@"feed-reposts"]) {
+        [self handleApiFeedReposts:params response:response];
+    }
+    else if ([endpoint isEqualToString:@"graph-follows"]) {
+        [self handleApiFollows:params response:response];
+    }
+    else if ([endpoint isEqualToString:@"actor-profile"]) {
+        [self handleApiActorProfile:params response:response];
     }
     else {
         response.statusCode = HttpStatusNotFound;
@@ -1055,6 +1076,330 @@
     [response setJsonBody:decoded];
 }
 
+#pragma mark - Feed View Endpoints
+
+- (void)handleApiFeedPosts:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *did = params[@"did"];
+    NSString *limitStr = params[@"limit"] ?: @"20";
+    NSString *cursor = params[@"cursor"];
+    NSString *filter = params[@"filter"] ?: @"author";
+
+    if (!did) {
+        [response setJsonBody:@{@"error": @"Missing did parameter"}];
+        return;
+    }
+
+    NSUInteger limit = [limitStr integerValue];
+    if (limit > 100) limit = 100;
+
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:@"app.bsky.feed.post" forDid:did limit:limit cursor:cursor error:&error];
+
+    if (!records) {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to fetch posts", @"posts": @[]}];
+        return;
+    }
+
+    NSMutableArray *posts = [NSMutableArray array];
+    for (NSDictionary *record in records) {
+        NSDictionary *postRecord = record[@"value"];
+        if (!postRecord) continue;
+
+        NSString *authorHandle = [self resolveDidToHandle:did];
+
+        NSDictionary *post = @{
+            @"uri": record[@"uri"] ?: @"",
+            @"cid": record[@"cid"] ?: @"",
+            @"author": @{
+                @"did": did,
+                @"handle": authorHandle ?: did,
+                @"displayName": [self getDisplayNameForDid:did] ?: @"",
+                @"avatar": [self getAvatarForDid:did] ?: @""
+            },
+            @"record": @{
+                @"text": postRecord[@"text"] ?: @"",
+                @"createdAt": postRecord[@"createdAt"] ?: @"",
+                @"langs": postRecord[@"langs"] ?: @[],
+                @"reply": postRecord[@"reply"] ?: [NSNull null],
+                @"embed": postRecord[@"embed"] ?: [NSNull null]
+            },
+            @"replyCount": @0,
+            @"repostCount": @0,
+            @"likeCount": @0,
+            @"quoteCount": @0,
+            @"indexedAt": record[@"createdAt"] ?: @""
+        };
+        [posts addObject:post];
+    }
+
+    [response setJsonBody:@{
+        @"posts": posts,
+        @"cursor": records.lastObject[@"uri"] ?: [NSNull null],
+        @"count": @(posts.count)
+    }];
+}
+
+- (void)handleApiFeedLikes:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *did = params[@"did"];
+    NSString *limitStr = params[@"limit"] ?: @"20";
+    NSString *cursor = params[@"cursor"];
+
+    if (!did) {
+        [response setJsonBody:@{@"error": @"Missing did parameter"}];
+        return;
+    }
+
+    NSUInteger limit = [limitStr integerValue];
+    if (limit > 100) limit = 100;
+
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:@"app.bsky.feed.like" forDid:did limit:limit cursor:cursor error:&error];
+
+    if (!records) {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to fetch likes", @"likes": @[]}];
+        return;
+    }
+
+    NSMutableArray *likes = [NSMutableArray array];
+    for (NSDictionary *record in records) {
+        NSDictionary *likeRecord = record[@"value"];
+        if (!likeRecord) continue;
+
+        NSDictionary *subject = likeRecord[@"subject"];
+        if (!subject) continue;
+
+        NSString *subjectUri = subject[@"uri"] ?: @"";
+        NSString *subjectCid = subject[@"cid"] ?: @"";
+
+        NSArray *subjectParts = [subjectUri componentsSeparatedByString:@"/"];
+        NSString *subjectDid = subjectParts.count >= 3 ? subjectParts[2] : @"";
+        NSString *subjectHandle = [self resolveDidToHandle:subjectDid];
+
+        NSDictionary *like = @{
+            @"uri": record[@"uri"] ?: @"",
+            @"cid": record[@"cid"] ?: @"",
+            @"actor": @{
+                @"did": did,
+                @"handle": [self resolveDidToHandle:did] ?: did,
+                @"displayName": [self getDisplayNameForDid:did] ?: @"",
+                @"avatar": [self getAvatarForDid:did] ?: @""
+            },
+            @"subject": @{
+                @"uri": subjectUri,
+                @"cid": subjectCid,
+                @"author": @{
+                    @"did": subjectDid,
+                    @"handle": subjectHandle ?: subjectDid,
+                    @"displayName": [self getDisplayNameForDid:subjectDid] ?: @"",
+                    @"avatar": [self getAvatarForDid:subjectDid] ?: @""
+                }
+            },
+            @"createdAt": likeRecord[@"createdAt"] ?: record[@"createdAt"] ?: @""
+        };
+        [likes addObject:like];
+    }
+
+    [response setJsonBody:@{
+        @"likes": likes,
+        @"cursor": records.lastObject[@"uri"] ?: [NSNull null],
+        @"count": @(likes.count)
+    }];
+}
+
+- (void)handleApiFeedReposts:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *did = params[@"did"];
+    NSString *limitStr = params[@"limit"] ?: @"20";
+    NSString *cursor = params[@"cursor"];
+
+    if (!did) {
+        [response setJsonBody:@{@"error": @"Missing did parameter"}];
+        return;
+    }
+
+    NSUInteger limit = [limitStr integerValue];
+    if (limit > 100) limit = 100;
+
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:@"app.bsky.feed.repost" forDid:did limit:limit cursor:cursor error:&error];
+
+    if (!records) {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to fetch reposts", @"reposts": @[]}];
+        return;
+    }
+
+    NSMutableArray *reposts = [NSMutableArray array];
+    for (NSDictionary *record in records) {
+        NSDictionary *repostRecord = record[@"value"];
+        if (!repostRecord) continue;
+
+        NSDictionary *subject = repostRecord[@"subject"];
+        if (!subject) continue;
+
+        NSString *subjectUri = subject[@"uri"] ?: @"";
+        NSString *subjectCid = subject[@"cid"] ?: @"";
+
+        NSArray *subjectParts = [subjectUri componentsSeparatedByString:@"/"];
+        NSString *subjectDid = subjectParts.count >= 3 ? subjectParts[2] : @"";
+        NSString *subjectHandle = [self resolveDidToHandle:subjectDid];
+
+        NSDictionary *repost = @{
+            @"uri": record[@"uri"] ?: @"",
+            @"cid": record[@"cid"] ?: @"",
+            @"author": @{
+                @"did": did,
+                @"handle": [self resolveDidToHandle:did] ?: did,
+                @"displayName": [self getDisplayNameForDid:did] ?: @"",
+                @"avatar": [self getAvatarForDid:did] ?: @""
+            },
+            @"subject": @{
+                @"uri": subjectUri,
+                @"cid": subjectCid,
+                @"author": @{
+                    @"did": subjectDid,
+                    @"handle": subjectHandle ?: subjectDid,
+                    @"displayName": [self getDisplayNameForDid:subjectDid] ?: @"",
+                    @"avatar": [self getAvatarForDid:subjectDid] ?: @""
+                }
+            },
+            @"createdAt": repostRecord[@"createdAt"] ?: record[@"createdAt"] ?: @""
+        };
+        [reposts addObject:repost];
+    }
+
+    [response setJsonBody:@{
+        @"reposts": reposts,
+        @"cursor": records.lastObject[@"uri"] ?: [NSNull null],
+        @"count": @(reposts.count)
+    }];
+}
+
+- (void)handleApiFollows:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *did = params[@"did"];
+    NSString *direction = params[@"direction"] ?: @"following";
+    NSString *limitStr = params[@"limit"] ?: @"50";
+
+    if (!did) {
+        [response setJsonBody:@{@"error": @"Missing did parameter"}];
+        return;
+    }
+
+    NSUInteger limit = [limitStr integerValue];
+    if (limit > 200) limit = 200;
+
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:@"app.bsky.graph.follow" forDid:did limit:limit cursor:nil error:&error];
+
+    if (!records) {
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to fetch follows", @"actors": @[]}];
+        return;
+    }
+
+    NSMutableArray *actors = [NSMutableArray array];
+    for (NSDictionary *record in records) {
+        NSDictionary *followRecord = record[@"value"];
+        if (!followRecord) continue;
+
+        NSString *subjectDid = followRecord[@"subject"] ?: @"";
+        NSString *subjectHandle = [self resolveDidToHandle:subjectDid];
+
+        NSDictionary *actor = @{
+            @"did": subjectDid,
+            @"handle": subjectHandle ?: subjectDid,
+            @"displayName": [self getDisplayNameForDid:subjectDid] ?: @"",
+            @"avatar": [self getAvatarForDid:subjectDid] ?: @"",
+            @"createdAt": followRecord[@"createdAt"] ?: record[@"createdAt"] ?: @""
+        };
+        [actors addObject:actor];
+    }
+
+    [response setJsonBody:@{
+        @"actors": actors,
+        @"direction": direction,
+        @"count": @(actors.count)
+    }];
+}
+
+- (void)handleApiActorProfile:(NSDictionary *)params response:(HttpResponse *)response {
+    NSString *did = params[@"did"];
+    if (!did) {
+        [response setJsonBody:@{@"error": @"Missing did parameter"}];
+        return;
+    }
+
+    NSError *error = nil;
+    NSArray *profileRecords = [self.controller listRecords:@"app.bsky.actor.profile" forDid:did limit:1 cursor:nil error:&error];
+
+    NSString *handle = [self resolveDidToHandle:did];
+    NSString *displayName = @"";
+    NSString *avatar = @"";
+    NSString *banner = @"";
+    NSString *bio = @"";
+    NSNumber *followersCount = @0;
+    NSNumber *followsCount = @0;
+    NSNumber *postsCount = @0;
+
+    if (profileRecords.count > 0) {
+        NSDictionary *profileRecord = profileRecords.firstObject[@"value"];
+        if (profileRecord) {
+            displayName = profileRecord[@"displayName"] ?: @"";
+            bio = profileRecord[@"description"] ?: @"";
+            avatar = profileRecord[@"avatar"] ?: @"";
+            banner = profileRecord[@"banner"] ?: @"";
+        }
+    }
+
+    NSArray *followingRecords = [self.controller listRecords:@"app.bsky.graph.follow" forDid:did limit:1000 cursor:nil error:nil];
+    followsCount = @(followingRecords.count);
+
+    NSArray *postRecords = [self.controller listRecords:@"app.bsky.feed.post" forDid:did limit:1000 cursor:nil error:nil];
+    postsCount = @(postRecords.count);
+
+    [response setJsonBody:@{
+        @"did": did,
+        @"handle": handle ?: did,
+        @"displayName": displayName,
+        @"avatar": avatar,
+        @"banner": banner,
+        @"description": bio,
+        @"followersCount": followersCount,
+        @"followsCount": followsCount,
+        @"postsCount": postsCount,
+        @"createdAt": [self getAccountCreatedAt:did]
+    }];
+}
+
+- (NSString *)resolveDidToHandle:(NSString *)did {
+    return did;
+}
+
+- (NSString *)getDisplayNameForDid:(NSString *)did {
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:@"app.bsky.actor.profile" forDid:did limit:1 cursor:nil error:&error];
+    if (records.count > 0) {
+        NSDictionary *profile = records.firstObject[@"value"];
+        return profile[@"displayName"];
+    }
+    return nil;
+}
+
+- (NSString *)getAvatarForDid:(NSString *)did {
+    NSError *error = nil;
+    NSArray *records = [self.controller listRecords:@"app.bsky.actor.profile" forDid:did limit:1 cursor:nil error:&error];
+    if (records.count > 0) {
+        NSDictionary *profile = records.firstObject[@"value"];
+        return profile[@"avatar"];
+    }
+    return nil;
+}
+
+- (NSString *)getAccountCreatedAt:(NSString *)did {
+    PDSDatabaseAccount *account = [self.controller getAccountForDid:did error:nil];
+    if (account) {
+        return [[NSDate dateWithTimeIntervalSince1970:account.createdAt] description];
+    }
+    return @"";
+}
+
 #pragma mark - Data Fetching
 
 - (NSString *)fetchDidDocument:(NSString *)did {
@@ -1389,11 +1734,33 @@
         return @"{\"accounts\":[],\"error\":\"PDS controller not configured\"}";
     }
 
-    // Try multiple possible database locations
+    // Try to get accounts using PDSController first (preferred method)
+    NSError *error = nil;
+    NSArray<PDSDatabaseAccount *> *accounts = nil;
+    
+    @try {
+        accounts = [self.controller getAllAccountsWithError:&error];
+    } @catch (NSException *exception) {
+        PDS_LOG_ERROR_C(PDSLogComponentExplore, @"Exception getting accounts from controller: %@", exception);
+        error = [NSError errorWithDomain:@"ExploreHandler" 
+                                   code:500 
+                               userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
+    }
+    
+    // If controller succeeded, verify we have accounts or at least a valid empty result
+    if (accounts && !error) {
+        return [self formatAccountsAsJSON:accounts];
+    }
+
+    // If controller failed, try multiple possible database locations as fallback
+    PDS_LOG_WARN_C(PDSLogComponentExplore, @"Controller method failed, falling back to direct database access: %@", error.localizedDescription);
+
     NSString *dataDir = self.controller.dataDirectory;
     NSArray *possiblePaths = @[
+        [dataDir stringByAppendingPathComponent:@"service/service.db"], // Correct path for new structure
         [dataDir stringByAppendingPathComponent:@"pds.db"],
         [dataDir stringByAppendingPathComponent:@"service.sqlite"],
+        [@"./data/service/service.db" stringByExpandingTildeInPath],
         [@"./data/pds.db" stringByExpandingTildeInPath],
         [@"./data/service.sqlite" stringByExpandingTildeInPath],
         [dataDir stringByAppendingPathComponent:@"data/pds.db"],
@@ -1414,35 +1781,23 @@
         return @"{\"accounts\":[],\"error\":\"Database not found\"}";
     }
 
-    // Try to get accounts using PDSController first (preferred method)
-    NSError *error = nil;
-    NSArray<PDSDatabaseAccount *> *accounts = nil;
-    
-    @try {
-        accounts = [self.controller getAllAccountsWithError:&error];
-    } @catch (NSException *exception) {
-        PDS_LOG_ERROR_C(PDSLogComponentExplore, @"Exception getting accounts from controller: %@", exception);
-        error = [NSError errorWithDomain:@"ExploreHandler" 
-                                   code:500 
-                               userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
+    PDS_LOG_INFO_C(PDSLogComponentExplore, @"Attempting manual database open at: %@", dbPath);
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"Failed to open database: %@\"}", error.localizedDescription];
     }
     
-    // Fallback to direct database access if controller method fails
-    if (!accounts || error) {
-        PDS_LOG_ERROR_C(PDSLogComponentExplore, @"Controller method failed, falling back to direct database access: %@", error.localizedDescription);
-        
-        PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
-        if (![db openWithError:&error]) {
-            return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"Failed to open database: %@\"}", error.localizedDescription];
-        }
-        
-        accounts = [db getAllAccountsWithError:&error];
-        [db close];
-        
-        if (error) {
-            return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"%@\"}", error.localizedDescription];
-        }
+    accounts = [db getAllAccountsWithError:&error];
+    [db close];
+    
+    if (error) {
+        return [NSString stringWithFormat:@"{\"accounts\":[],\"error\":\"%@\"}", error.localizedDescription];
     }
+    
+    return [self formatAccountsAsJSON:accounts];
+}
+
+- (NSString *)formatAccountsAsJSON:(NSArray<PDSDatabaseAccount *> *)accounts {
 
     // Debug: log the number of accounts found    
     PDS_LOG_INFO_C(PDSLogComponentExplore, @"fetchAccountList: Found %lu accounts", (unsigned long)accounts.count);

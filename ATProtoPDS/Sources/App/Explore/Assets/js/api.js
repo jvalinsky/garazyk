@@ -156,5 +156,93 @@ export const API = {
         } catch (e) {
             return { error: e.message };
         }
+    },
+
+    async getFeedPosts(did, options = {}) {
+        const cacheKey = `feed-posts:${did}:${options.limit || 20}:${options.cursor || ''}`;
+        return getCachedOrFetch(cacheKey, CACHE_TTL.records || 120000, async () => {
+            try {
+                const params = new URLSearchParams({ did });
+                if (options.limit) params.set('limit', String(options.limit));
+                if (options.cursor) params.set('cursor', options.cursor);
+                const response = await fetch(`${API_BASE}/feed-posts?${params}`);
+                if (!response.ok) {
+                    return { posts: [], cursor: null };
+                }
+                return await response.json();
+            } catch (e) {
+                return { posts: [], cursor: null };
+            }
+        });
+    },
+
+    async getFeedLikes(did, options = {}) {
+        const cacheKey = `feed-likes:${did}:${options.limit || 20}:${options.cursor || ''}`;
+        return getCachedOrFetch(cacheKey, CACHE_TTL.records || 120000, async () => {
+            try {
+                const params = new URLSearchParams({ did });
+                if (options.limit) params.set('limit', String(options.limit));
+                if (options.cursor) params.set('cursor', options.cursor);
+                const response = await fetch(`${API_BASE}/feed-likes?${params}`);
+                if (!response.ok) {
+                    return { likes: [], cursor: null };
+                }
+                return await response.json();
+            } catch (e) {
+                return { likes: [], cursor: null };
+            }
+        });
+    },
+
+    async getFeedReposts(did, options = {}) {
+        const cacheKey = `feed-reposts:${did}:${options.limit || 20}:${options.cursor || ''}`;
+        return getCachedOrFetch(cacheKey, CACHE_TTL.records || 120000, async () => {
+            try {
+                const params = new URLSearchParams({ did });
+                if (options.limit) params.set('limit', String(options.limit));
+                if (options.cursor) params.set('cursor', options.cursor);
+                const response = await fetch(`${API_BASE}/feed-reposts?${params}`);
+                if (!response.ok) {
+                    return { reposts: [], cursor: null };
+                }
+                return await response.json();
+            } catch (e) {
+                return { reposts: [], cursor: null };
+            }
+        });
+    },
+
+    async getFollows(did, options = {}) {
+        const cacheKey = `graph-follows:${did}:${options.limit || 50}`;
+        return getCachedOrFetch(cacheKey, CACHE_TTL.records || 120000, async () => {
+            try {
+                const params = new URLSearchParams({ did });
+                if (options.limit) params.set('limit', String(options.limit));
+                if (options.direction) params.set('direction', options.direction);
+                const response = await fetch(`${API_BASE}/graph-follows?${params}`);
+                if (!response.ok) {
+                    return { actors: [] };
+                }
+                return await response.json();
+            } catch (e) {
+                return { actors: [] };
+            }
+        });
+    },
+
+    async getActorProfile(did) {
+        const cacheKey = `actor-profile:${did}`;
+        return getCachedOrFetch(cacheKey, CACHE_TTL.describe || 120000, async () => {
+            try {
+                const params = new URLSearchParams({ did });
+                const response = await fetch(`${API_BASE}/actor-profile?${params}`);
+                if (!response.ok) {
+                    return { error: `HTTP ${response.status}` };
+                }
+                return await response.json();
+            } catch (e) {
+                return { error: e.message };
+            }
+        });
     }
 };
