@@ -51,7 +51,7 @@ def main():
                 "text": f"Mushroom hunting log #{i+1}: Found some fascinating fungi today!",
                 "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             })
-            time.sleep(0.2) # Avoid rate limits
+            time.sleep(1.0) # Avoid rate limits
             if i % 10 == 0:
                 print(f"  Created {i+1} posts...")
     
@@ -67,7 +67,7 @@ def main():
                 "text": f"Builder's log entry #{i+1}: Progress is steady.",
                 "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             })
-            time.sleep(0.2) # Avoid rate limits
+            time.sleep(1.0) # Avoid rate limits
             if i % 10 == 0:
                 print(f"  Created {i+1} posts...")
 
