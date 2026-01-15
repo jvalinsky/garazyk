@@ -349,11 +349,24 @@
 }
 
 - (NSInteger)getReplyCountForURI:(NSString *)uri {
-    // TODO: Implement proper reply counting (requires index)
-    // For now, just check if the post exists (returns 1 or 0)
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE uri = ?";
-    NSArray *rows = [self.database executeParameterizedQuery:query params:@[uri] error:nil];
-
+    NSString *collection = @"app.bsky.feed.post";
+    NSString *repo = nil;
+    NSString *rkey = nil;
+    
+    NSArray<NSString *> *parts = [uri componentsSeparatedByString:@"/"];
+    if (parts.count >= 4) {
+        repo = [parts[2] stringByReplacingOccurrencesOfString:@"at://" withString:@""];
+        rkey = parts[3];
+    }
+    
+    if (!repo || !rkey) {
+        return 0;
+    }
+    
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ? AND value LIKE ?";
+    NSString *likePattern = [NSString stringWithFormat:@"%%\"reply\"%%\"uri\"%%\"at://%@/%@\"%%", repo, rkey];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[collection, likePattern] error:nil];
+    
     if (rows && rows.count > 0) {
         return [rows.firstObject[@"count"] integerValue];
     }
@@ -361,12 +374,24 @@
 }
 
 - (NSInteger)getRepostCountForURI:(NSString *)uri {
-    // Stubbed due to lack of index
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.repost' AND value LIKE ?";
+    NSString *likePattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", uri];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[likePattern] error:nil];
+    
+    if (rows && rows.count > 0) {
+        return [rows.firstObject[@"count"] integerValue];
+    }
     return 0;
 }
 
 - (NSInteger)getLikeCountForURI:(NSString *)uri {
-    // Stubbed due to lack of index
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.like' AND value LIKE ?";
+    NSString *likePattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", uri];
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[likePattern] error:nil];
+    
+    if (rows && rows.count > 0) {
+        return [rows.firstObject[@"count"] integerValue];
+    }
     return 0;
 }
 
