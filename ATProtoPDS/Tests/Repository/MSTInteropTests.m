@@ -207,4 +207,102 @@
     // Further CAR validation would require a full CAR parser test util
 }
 
+- (void)testDiffFrom {
+    CID *cid1 = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    CID *cid2 = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    
+    // Create old tree with 2 records
+    MST *oldTree = [[MST alloc] init];
+    [oldTree put:@"com.example/key1" valueCID:cid1];
+    [oldTree put:@"com.example/key2" valueCID:cid1];
+    
+    // Create new tree with:
+    // - key1 updated (cid1 -> cid2)
+    // - key2 deleted
+    // - key3 added
+    MST *newTree = [[MST alloc] init];
+    [newTree put:@"com.example/key1" valueCID:cid2]; // Update
+    [newTree put:@"com.example/key3" valueCID:cid1]; // Add
+    
+    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    XCTAssertEqual(diff.count, 3, "Should have 3 operations: add, update, delete");
+    
+    // Operations are sorted by key
+    MSTDiffOperation *op1 = diff[0];
+    XCTAssertEqualObjects(op1.key, @"com.example/key1");
+    XCTAssertEqual(op1.type, MSTDiffOperationTypeUpdate);
+    XCTAssertEqualObjects(op1.previousCID.stringValue, cid1.stringValue);
+    XCTAssertEqualObjects(op1.currentCID.stringValue, cid2.stringValue);
+    
+    MSTDiffOperation *op2 = diff[1];
+    XCTAssertEqualObjects(op2.key, @"com.example/key2");
+    XCTAssertEqual(op2.type, MSTDiffOperationTypeDelete);
+    XCTAssertEqualObjects(op2.previousCID.stringValue, cid1.stringValue);
+    XCTAssertNil(op2.currentCID);
+    
+    MSTDiffOperation *op3 = diff[2];
+    XCTAssertEqualObjects(op3.key, @"com.example/key3");
+    XCTAssertEqual(op3.type, MSTDiffOperationTypeAdd);
+    XCTAssertNil(op3.previousCID);
+    XCTAssertEqualObjects(op3.currentCID.stringValue, cid1.stringValue);
+}
+
+- (void)testDiffFromEmptyTree {
+    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    
+    MST *newTree = [[MST alloc] init];
+    [newTree put:@"key1" valueCID:cid];
+    [newTree put:@"key2" valueCID:cid];
+    
+    // Diff from nil (empty) tree - all should be additions
+    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:nil];
+    XCTAssertEqual(diff.count, 2);
+    XCTAssertEqual(diff[0].type, MSTDiffOperationTypeAdd);
+    XCTAssertEqual(diff[1].type, MSTDiffOperationTypeAdd);
+}
+
+- (void)testGetProofNodesForKey {
+    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    
+    MST *mst = [[MST alloc] init];
+    [mst put:@"a" valueCID:cid];
+    [mst put:@"b" valueCID:cid];
+    [mst put:@"c" valueCID:cid];
+    
+    NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:@"b"];
+    XCTAssertNotNil(proofNodes, "Should return proof nodes for existing key");
+    XCTAssertGreaterThan(proofNodes.count, 0, "Should have at least one node in proof path");
+    
+    // Verify that the proof path starts from root
+    MSTNode *rootProof = proofNodes[0];
+    XCTAssertNotNil(rootProof, "First node should be root");
+}
+
+- (void)testGetProofNodesForMissingKey {
+    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    
+    MST *mst = [[MST alloc] init];
+    [mst put:@"a" valueCID:cid];
+    
+    NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:@"nonexistent"];
+    XCTAssertNil(proofNodes, "Should return nil for non-existent key");
+}
+
+- (void)testFullEntries {
+    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    
+    MST *mst = [[MST alloc] init];
+    [mst put:@"a" valueCID:cid];
+    [mst put:@"b" valueCID:cid];
+    
+    // Get proof nodes to access internal nodes
+    NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:@"a"];
+    XCTAssertNotNil(proofNodes);
+    
+    // Test fullEntries on root node
+    MSTNode *root = proofNodes[0];
+    NSArray<MSTEntry *> *entries = [root fullEntries];
+    XCTAssertGreaterThan(entries.count, 0, "Root should have entries");
+}
+
 @end
