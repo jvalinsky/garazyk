@@ -11,7 +11,7 @@
 #pragma mark - MSTViewerHandler
 
 @interface MSTViewerHandler ()
-@property (nonatomic, assign) PDSController *controller;  // assign for Linux compatibility
+@property (nonatomic, weak) PDSController *controller;
 @property (nonatomic, strong) NSCache *cache;
 @end
 
@@ -73,7 +73,8 @@
     if (html) {
         response.statusCode = HttpStatusOK;
         [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
+        [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
+        response.contentType = @"text/html; charset=utf-8";
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[@"index.html not found" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -86,7 +87,8 @@
     if (content) {
         response.statusCode = HttpStatusOK;
         [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"text/css; charset=utf-8" forKey:@"Content-Type"];
+        [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
+        response.contentType = @"text/css; charset=utf-8";
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[[NSString stringWithFormat:@"CSS file not found: %@", filename] dataUsingEncoding:NSUTF8StringEncoding]];
@@ -95,37 +97,58 @@
 
 - (void)serveJs:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *filename = [request.path lastPathComponent];
-    NSString *content = [self loadAsset:[NSString stringWithFormat:@"js/%@", filename]];
+    NSData *content = [self loadAssetData:[NSString stringWithFormat:@"js/%@", filename]];
     if (content) {
         response.statusCode = HttpStatusOK;
-        [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"application/javascript; charset=utf-8" forKey:@"Content-Type"];
+        [response setBody:content];
+        response.contentType = @"application/javascript; charset=utf-8";
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[[NSString stringWithFormat:@"JS file not found: %@", filename] dataUsingEncoding:NSUTF8StringEncoding]];
     }
 }
 
-- (nullable NSString *)loadAsset:(NSString *)relativePath {
-    // Search multiple paths like ExploreHandler does
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+- (nullable NSData *)loadAssetData:(NSString *)relativePath {
     NSArray *searchPaths = @[
-        [cwd stringByAppendingPathComponent:[NSString stringWithFormat:@"ATProtoPDS/Sources/App/MSTViewer/Assets/%@", relativePath]],
-        [cwd stringByAppendingPathComponent:[NSString stringWithFormat:@"Sources/App/MSTViewer/Assets/%@", relativePath]],
-        [[cwd stringByDeletingLastPathComponent] stringByAppendingPathComponent:[NSString stringWithFormat:@"ATProtoPDS/Sources/App/MSTViewer/Assets/%@", relativePath]],
-        [NSString stringWithFormat:@"/usr/local/share/atprotopds/mst-viewer/%@", relativePath]
+        @"ATProtoPDS/Sources/App/MSTViewer/Assets",
+        @"Sources/App/MSTViewer/Assets",
+        @"App/MSTViewer/Assets",
+        @"Assets"
     ];
-
-    for (NSString *path in searchPaths) {
-        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+    
+    NSFileManager *fm = [NSFileManager defaultManager];
+    
+    for (NSString *base in searchPaths) {
+        NSString *path = [base stringByAppendingPathComponent:relativePath];
+        if (![path hasPrefix:@"/"]) {
+            path = [[[NSFileManager defaultManager] currentDirectoryPath] stringByAppendingPathComponent:path];
+        }
+        
+        if ([fm fileExistsAtPath:path]) {
             NSError *error = nil;
-            NSString *content = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
-            if (!error && content) {
-                return content;
+            NSData *data = [NSData dataWithContentsOfFile:path options:0 error:&error];
+            if (!error && data) {
+                return data;
             }
         }
     }
+    
+    // Also try bundle resources if running from bundle
+    NSString *resourcePath = [[NSBundle mainBundle] pathForResource:[relativePath stringByDeletingPathExtension]
+                                                             ofType:[relativePath pathExtension]
+                                                        inDirectory:@"Assets"];
+    if (resourcePath) {
+        return [NSData dataWithContentsOfFile:resourcePath];
+    }
+    
+    return nil;
+}
 
+- (nullable NSString *)loadAsset:(NSString *)relativePath {
+    NSData *data = [self loadAssetData:relativePath];
+    if (data) {
+        return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
     return nil;
 }
 
@@ -138,16 +161,16 @@
         [self handleAccountsRequest:response];
     }
     else if ([endpoint hasPrefix:@"tree/"]) {
-        NSString *did = [endpoint substringFromIndex:5];  // Skip "tree/"
+        NSString *did = [[endpoint substringFromIndex:5] stringByRemovingPercentEncoding];  // Skip "tree/"
         [self handleTreeRequest:did response:response];
     }
     else if ([endpoint hasPrefix:@"stats/"]) {
-        NSString *did = [endpoint substringFromIndex:6];  // Skip "stats/"
+        NSString *did = [[endpoint substringFromIndex:6] stringByRemovingPercentEncoding];  // Skip "stats/"
         [self handleStatsRequest:did response:response];
     }
     else if ([endpoint hasPrefix:@"export/"]) {
         NSString *remainder = [endpoint substringFromIndex:7];  // Skip "export/"
-        NSString *did = remainder;
+        NSString *did = [remainder stringByRemovingPercentEncoding];
         NSString *format = [request.queryParams objectForKey:@"format"] ?: @"json";
         [self handleExportRequest:did format:format response:response];
     }
@@ -168,7 +191,10 @@
         return;
     }
 
-    if (!self.controller || !self.controller.database) {
+    NSError *dbError = nil;
+    PDSDatabase *db = [self.controller serviceDatabaseWithError:&dbError];
+    
+    if (!self.controller || !db) {
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": @"Database not available"}];
         return;
@@ -179,7 +205,7 @@
     __block NSMutableArray *accounts = [NSMutableArray array];
 
     NSString *sql = @"SELECT did, handle FROM accounts ORDER BY created_at DESC LIMIT 1000";
-    NSArray<NSDictionary *> *rows = [self.controller.database executeQuery:sql error:&error];
+    NSArray<NSDictionary *> *rows = [db executeQuery:sql error:&error];
     if (!rows) {
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to query accounts"}];
@@ -302,7 +328,8 @@
 
         response.statusCode = HttpStatusOK;
         [response setBody:[dotString dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"text/plain; charset=utf-8" forKey:@"Content-Type"];
+        [response setBody:[dotString dataUsingEncoding:NSUTF8StringEncoding]];
+        response.contentType = @"text/plain; charset=utf-8";
         [response setHeader:[NSString stringWithFormat:@"attachment; filename=\"mst-%@.dot\"",
                              [did substringToIndex:MIN(16, did.length)]]
                      forKey:@"Content-Disposition"];
@@ -333,7 +360,7 @@
 #pragma mark - Helper Methods
 
 - (nullable MST *)loadMSTForDid:(NSString *)did {
-    if (!self.controller || !self.controller.database) {
+    if (!self.controller) {
         return nil;
     }
 
@@ -342,8 +369,21 @@
         return nil;
     }
 
-    NSError *error = nil;
-    MST *mst = [repoService loadMSTForDid:did error:&error];
+    __block MST *mst = nil;
+    __block NSError *error = nil;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        mst = [repoService loadMSTForDid:did error:&error];
+        dispatch_semaphore_signal(semaphore);
+    });
+
+    // Wait for 5 seconds max
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
+    if (dispatch_semaphore_wait(semaphore, timeout) != 0) {
+        PDS_LOG_ERROR(@"Timeout loading MST for %@", did);
+        return nil;
+    }
 
     if (error) {
         PDS_LOG_ERROR(@"Failed to load MST for %@: %@", did, error.localizedDescription);
