@@ -152,8 +152,10 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Gets the signing key from Keychain. Caller must CFRelease the returned key. */
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error;
 
-/*! Stores a signing key in Keychain. */
-- (BOOL)storeSigningKey:(SecKeyRef)key error:(NSError **)error;
+/*! Returns raw signing key private bytes from Keychain. */
+- (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error;
+
+
 
 /*! Generates a new signing key. */
 - (BOOL)generateSigningKeyWithError:(NSError **)error;

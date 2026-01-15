@@ -73,6 +73,9 @@ extern NSString * const Secp256k1ErrorDomain;
 /*! Verifies a signature with a public key. */
 - (BOOL)verifySignature:(NSData *)signature forHash:(NSData *)hash withPublicKey:(NSData *)publicKey error:(NSError **)error;
 
+/*! Normalizes a public key to 65-byte uncompressed form. */
+- (nullable NSData *)normalizedPublicKey:(NSData *)publicKey error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

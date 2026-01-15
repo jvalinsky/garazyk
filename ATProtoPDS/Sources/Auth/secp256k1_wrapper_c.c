@@ -135,6 +135,31 @@ bool secp256k1_wrapper_public_key_is_valid(const Secp256k1PublicKey *public_key)
     return secp256k1_ec_pubkey_parse(get_context(), &pubkey, public_key->data, 65);
 }
 
+Secp256k1Error secp256k1_wrapper_public_key_normalize(const uint8_t *input,
+                                                      size_t input_len,
+                                                      uint8_t *out_uncompressed65) {
+    if (input_len != 33 && input_len != 65) {
+        return Secp256k1ErrorInvalidPublicKey;
+    }
+
+    secp256k1_pubkey pubkey;
+    if (!secp256k1_ec_pubkey_parse(get_context(), &pubkey, input, input_len)) {
+        return Secp256k1ErrorInvalidPublicKey;
+    }
+
+    size_t output_len = 65;
+    secp256k1_ec_pubkey_serialize(get_context(),
+                                  out_uncompressed65,
+                                  &output_len,
+                                  &pubkey,
+                                  SECP256K1_EC_UNCOMPRESSED);
+    if (output_len != 65) {
+        return Secp256k1ErrorInvalidPublicKey;
+    }
+
+    return Secp256k1ErrorNone;
+}
+
 bool secp256k1_wrapper_signature_is_valid(const Secp256k1Signature *signature) {
     secp256k1_ecdsa_signature sig;
     if (!secp256k1_ecdsa_signature_parse_compact(get_context(), &sig, signature->data)) {
