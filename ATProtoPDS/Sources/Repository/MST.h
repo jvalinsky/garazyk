@@ -1,327 +1,278 @@
-/**
- * @file MST.h
- * @brief Merkle Search Tree (MST) data structure implementation for the ATProto PDS.
- *
- * This header defines the core classes for implementing a Merkle Search Tree, which is
- * used by the AT Protocol (bluesky social) for repository storage. The MST is a
- * content-addressable, sorted-key-value store that provides:
- *
- * - Efficient key-value storage with O(log n) lookups
- * - Content addressing for integrity verification
- * - Sorted key ordering for prefix-based queries
- * - Atomic updates through content-addressable nodes
- *
- * The MST structure is self-certifying: each node's CID contains a hash of its contents,
- * enabling verification of the entire tree's integrity. The tree supports operations
- * including get, put, delete, and prefix-based enumeration.
- *
- * @see https://atproto.com/specs/repository
- */
-
 #import <Foundation/Foundation.h>
+#import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class CID;
 @class MSTNode;
 @class MSTEntry;
+@class MSTNodeEntry;
 
+/*!
+ @header MST.h
+ 
+ @abstract Merkle Search Tree implementation for ATProto repositories.
+ 
+ @discussion This header defines the Merkle Search Tree (MST) data structure
+ used by ATProto for content-addressable record storage. The MST provides
+ efficient key-value storage with cryptographic integrity guarantees through
+ content addressing.
+ 
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
+/*!
+ @enum MSTNodeKind
+ 
+ @abstract Specifies the type of an MST node.
+ 
+ @constant MSTNodeKindLeaf A leaf node containing key-value entries.
+ @constant MSTNodeKindNonLeaf An internal node containing subtree pointers.
+ */
 typedef NS_ENUM(NSUInteger, MSTNodeKind) {
     MSTNodeKindLeaf,
     MSTNodeKindNonLeaf
 };
 
-/**
- * @class MSTEntry
- * @brief Represents a single key-value entry in the Merkle Search Tree.
- *
- * MSTEntry stores a key-value pair where the key is a string and the value is
- * referenced by its CID (Content Identifier). Entries can optionally have a
- * subKey for hierarchical storage patterns.
- *
- * The key is stored as a UTF-8 encoded string, and entries are sorted
- * lexicographically by key in the tree structure.
+/*!
+ @enum MSTDiffOperationType
+ 
+ @abstract Specifies the type of change in an MST diff operation.
+ 
+ @constant MSTDiffOperationTypeAdd A new key-value pair was added.
+ @constant MSTDiffOperationTypeUpdate An existing key's value was changed.
+ @constant MSTDiffOperationTypeDelete A key-value pair was removed.
+ */
+typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
+    MSTDiffOperationTypeAdd,
+    MSTDiffOperationTypeUpdate,
+    MSTDiffOperationTypeDelete
+};
+
+@class MSTDiffOperation;
+
+/*!
+ @class MSTDiffOperation
+ 
+ @abstract Represents a single change between two MST versions.
+ 
+ @discussion Used for sync operations to describe what changed between commits.
+ For adds, oldCID is nil. For deletes, newCID is nil. For updates, both are set.
+ */
+@interface MSTDiffOperation : NSObject
+
+@property (nonatomic, copy) NSString *key;
+@property (nonatomic, assign) MSTDiffOperationType type;
+@property (nonatomic, strong, nullable) CID *previousCID;
+@property (nonatomic, strong, nullable) CID *currentCID;
+
++ (instancetype)addOperationWithKey:(NSString *)key currentCID:(CID *)currentCID;
++ (instancetype)updateOperationWithKey:(NSString *)key previousCID:(CID *)previousCID currentCID:(CID *)currentCID;
++ (instancetype)deleteOperationWithKey:(NSString *)key previousCID:(CID *)previousCID;
+
+@end
+
+/*!
+ @class MSTEntry
+ 
+ @abstract Represents a key-value entry in the MST.
  */
 @interface MSTEntry : NSObject <NSCopying>
 
-/** The primary key for this entry, encoded as a UTF-8 string. */
 @property (nonatomic, copy, readonly) NSString *key;
-
-/** The CID referencing the value data stored elsewhere. */
 @property (nonatomic, strong, readonly) CID *valueCID;
-
-/** Optional subKey for supporting hierarchical key patterns (e.g., "collection/recordKey"). */
 @property (nonatomic, copy, readonly, nullable) NSString *subKey;
 
-/**
- * @brief Creates an entry with just a key and value CID.
- * @param key The primary key string.
- * @param valueCID The CID referencing the value.
- * @return A new MSTEntry instance.
- */
 + (instancetype)entryWithKey:(NSString *)key valueCID:(CID *)valueCID;
-
-/**
- * @brief Creates an entry with a key, value CID, and optional subKey.
- * @param key The primary key string.
- * @param valueCID The CID referencing the value.
- * @param subKey Optional secondary key for hierarchical storage.
- * @return A new MSTEntry instance.
- */
 + (instancetype)entryWithKey:(NSString *)key valueCID:(CID *)valueCID subKey:(nullable NSString *)subKey;
-
-/**
- * @brief Initializes a new entry with the specified components.
- * @param key The primary key string.
- * @param valueCID The CID referencing the value.
- * @param subKey Optional secondary key for hierarchical storage.
- * @return A new MSTEntry instance.
- */
 - (instancetype)initWithKey:(NSString *)key valueCID:(CID *)valueCID subKey:(nullable NSString *)subKey;
 
-/**
- * @brief Returns the raw key bytes encoded as UTF-8.
- * @return NSData containing the UTF-8 encoded key.
- */
 - (NSData *)keyBytes;
-
-/**
- * @brief Returns the length of the key in bytes.
- * @return The byte length of the key.
- */
 - (NSUInteger)keyLength;
-
-/**
- * @brief Serializes this entry to CBOR format.
- * @return NSData containing the CBOR-encoded entry.
- */
 - (NSData *)serialize;
 
 @end
 
-/**
- * @class MSTNodeEntry
- * @brief Represents an entry within an MST node, used for internal tree structure.
- *
- * MSTNodeEntry contains the information needed to locate either a subtree or a
- * value within the MST. It includes a prefix length for efficient key comparison,
- * a key suffix for partial key storage, and references to child nodes or values.
- *
- * This is an internal structure used during tree operations.
+/*!
+ @class MSTNodeEntry
+ 
+ @abstract An entry within an MST node.
  */
 @interface MSTNodeEntry : NSObject
 
-/** Length of the shared prefix with parent key, used for tree navigation. */
 @property (nonatomic, assign) NSUInteger prefixLen;
-
-/** The remaining portion of the key after the prefix, used for child node differentiation. */
 @property (nonatomic, copy) NSData *keySuffix;
-
-/** CID reference to a value (leaf nodes only). */
 @property (nonatomic, strong) CID *value;
-
-/** CID reference to a child subtree node (non-leaf nodes only). */
 @property (nonatomic, strong, nullable) CID *tree;
 
-/**
- * @brief Creates a new node entry with the specified components.
- * @param prefixLen Length of the shared key prefix.
- * @param keySuffix The remaining key bytes after the prefix.
- * @param value CID reference to the value (for leaf entries).
- * @param tree CID reference to a child subtree (for non-leaf entries).
- * @return A new MSTNodeEntry instance.
- */
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
                              value:(CID *)value
                              tree:(nullable CID *)tree;
 
-/**
- * @brief Serializes this node entry to CBOR format.
- * @return NSData containing the CBOR-encoded entry.
- */
 - (NSData *)serialize;
 
 @end
 
-/**
- * @class MSTNode
- * @brief Represents a node in the Merkle Search Tree structure.
- *
- * MSTNode is the fundamental building block of the tree. Nodes are either
- * leaf nodes (containing value entries) or non-leaf nodes (containing child
- * node references). Each node has a content identifier that cryptographically
- * identifies its contents.
- *
- * Nodes maintain sorted entries for efficient traversal and content-addressable
- * storage for integrity verification.
+/*!
+ @class MSTNode
+ 
+ @abstract A node in the Merkle Search Tree.
  */
 @interface MSTNode : NSObject
 
-/** The type of this node - either leaf or non-leaf. */
 @property (nonatomic, assign, readonly) MSTNodeKind kind;
-
-/** The content identifier (CID) hash of this node's serialized contents. */
 @property (nonatomic, strong, readonly, nullable) CID *nodeHash;
-
-/** Array of entries contained in this node, sorted by key. */
 @property (nonatomic, copy, readonly) NSArray<MSTNodeEntry *> *entries;
-
-/** Reference to the left child subtree (non-leaf nodes only). */
 @property (nonatomic, strong, readonly, nullable) CID *left;
 
-/**
- * @brief Creates a leaf node with the specified entries.
- * @param entries Array of entries for this leaf node.
- * @return A new leaf MSTNode instance.
- */
 + (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries;
-
-/**
- * @brief Creates a non-leaf node with entries and left child reference.
- * @param entries Array of entries for this non-leaf node.
- * @param left CID reference to the left child subtree.
- * @return A new non-leaf MSTNode instance.
- */
 + (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left;
 
-/**
- * @brief Initializes a new node with the specified type and components.
- * @param kind The node type (leaf or non-leaf).
- * @param entries Array of entries for this node.
- * @param left CID reference to the left child subtree (nil for leaf nodes).
- * @return A new MSTNode instance.
- */
 - (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left;
 
-/**
- * @brief Serializes this node to CBOR format.
- * @return NSData containing the CBOR-encoded node.
- */
 - (NSData *)serialize;
-
-/**
- * @brief Computes the CID hash for this node's contents.
- * @return NSData containing the SHA-256 hash of the serialized node.
- */
 - (NSData *)computeHash;
-
-/**
- * @brief Sets the node's cached CID hash after computation.
- * @param hash The CID to assign to this node.
- */
 - (void)setNodeHash:(CID *)hash;
-
-/**
- * @brief Returns all full MSTEntry objects contained in this node's subtree.
- * @return Array of MSTEntry objects representing all values in this subtree.
- */
 - (NSArray<MSTEntry *> *)fullEntries;
 
 @end
 
-/**
- * @class MST
- * @brief The main Merkle Search Tree class providing the complete tree interface.
- *
- * MST provides a complete implementation of a Merkle Search Tree, supporting
- * standard operations including get, put, delete, and enumeration. The tree
- * maintains a root CID that serves as a content address for the entire tree
- * state.
- *
- * Tree operations are atomic: each modification produces a new root CID
- * while preserving previous states for content addressing. This enables
- * efficient snapshot and rollback capabilities.
+/*!
+ @class MST
+ 
+ @abstract The Merkle Search Tree data structure.
  */
 @interface MST : NSObject
 
-/** The CID of the current tree root, or nil for an empty tree. */
 @property (nonatomic, strong, readonly, nullable) CID *rootCID;
-
-/** The CID hash of an empty tree (singleton value for consistency). */
 @property (nonatomic, strong, readonly) NSData *emptyTreeHash;
 
-/**
- * @brief Initializes a new MST with the specified root CID.
- * @param rootCID The CID of the existing tree root, or nil for an empty tree.
- * @return A new MST instance.
- */
 - (instancetype)initWithRootCID:(nullable CID *)rootCID;
-
-/**
- * @brief Retrieves the CID for a given key.
- * @param key The key to look up.
- * @return The CID referencing the value, or nil if not found.
- */
+- (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
 - (nullable CID *)get:(NSString *)key;
-
-/**
- * @brief Retrieves the CID for a key with an optional subKey.
- * @param key The primary key to look up.
- * @param subKey Optional secondary key for hierarchical lookups.
- * @return The CID referencing the value, or nil if not found.
- */
 - (nullable CID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
-
-/**
- * @brief Inserts or updates a value for the given key.
- * @param key The key to insert or update.
- * @param valueCID The CID referencing the value data.
- */
 - (void)put:(NSString *)key valueCID:(CID *)valueCID;
-
-/**
- * @brief Inserts or updates a value for a key with optional subKey.
- * @param key The primary key to insert or update.
- * @param valueCID The CID referencing the value data.
- * @param subKey Optional secondary key for hierarchical storage.
- */
 - (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(nullable NSString *)subKey;
-
-/**
- * @brief Deletes the value for the given key.
- * @param key The key to delete.
- */
 - (void)delete:(NSString *)key;
-
-/**
- * @brief Deletes the value for a key with optional subKey.
- * @param key The primary key to delete.
- * @param subKey Optional secondary key for hierarchical deletion.
- */
 - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
-
-/**
- * @brief Returns all entries in the tree.
- * @return Array of MSTEntry objects representing all values in the tree.
- */
 - (NSArray<MSTEntry *> *)allEntries;
-
-/**
- * @brief Returns all entries with keys starting with the specified prefix.
- * @param prefix The key prefix to match.
- * @return Array of MSTEntry objects with matching prefix.
- */
 - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
-
-/**
- * @brief Exports the entire tree as a CAR (Content Addressable Records) file.
- * @return NSData containing the CAR-encoded tree including all nodes and values.
- */
 - (NSData *)exportCAR;
-
-/**
- * @brief Serializes the tree to CBOR format.
- * @return NSData containing the CBOR-encoded tree.
- */
 - (NSData *)serializeToCBOR;
-
-/**
- * @brief Deserializes a tree from CBOR format.
- * @param data The CBOR-encoded tree data.
- * @return A new MST instance, or nil if deserialization fails.
- */
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
+
+/*!
+ @method diffFrom:
+ 
+ @abstract Computes the differences between this tree and an older version.
+ 
+ @discussion Compares this MST with an older version and returns all changes
+ (additions, updates, deletions). Used for sync operations to generate
+ repository diffs for the firehose.
+ 
+ @param oldTree The older MST to compare against (may be nil for initial state).
+ @return Array of MSTDiffOperation objects describing all changes.
+ */
+- (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
+
+/*!
+ @method keyDepthString:
+ 
+ @abstract Computes the depth of a key based on its SHA-256 hash.
+ 
+ @param key The key string.
+ @return The computed depth (number of leading zero bits).
+ */
++ (NSUInteger)keyDepthString:(NSString *)key;
+
+/*!
+ @method keyDepthBytes:
+ 
+ @abstract Computes the depth of a key based on its SHA-256 hash.
+ 
+ @param keyBytes The key as raw bytes.
+ @return The computed depth (number of leading zero bits).
+ */
++ (NSUInteger)keyDepthBytes:(NSData *)keyBytes;
+
+/*!
+ @method keyDepth:
+ 
+ @abstract Computes the depth of a key based on its SHA-256 hash.
+ 
+ @param key The key string.
+ @return The computed depth (number of leading zero bits divided by 2).
+ */
++ (uint32_t)keyDepth:(NSString *)key;
+
+/*!
+ @method getProofNodesForKey:
+ 
+ @abstract Gets the proof nodes from root to the given key.
+ 
+ @param key The key to get proof nodes for.
+ @return Array of MSTNode objects forming the proof path.
+ */
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+
+/*!
+ @method serializeNode:
+
+ @abstract Serializes an MST node to CBOR data.
+
+ @param node The node to serialize.
+ @return CBOR-encoded data for the node.
+ */
+- (nullable NSData *)serializeNode:(MSTNode *)node;
+
+/*!
+ @method toJSON
+
+ @abstract Exports the complete tree structure as a JSON dictionary.
+
+ @discussion Returns a dictionary containing the tree's structure with:
+ - rootCID: The root CID as a string
+ - nodeCount: Total number of nodes
+ - entryCount: Total number of entries
+ - maxDepth: Maximum tree depth (level)
+ - nodes: Array of node dictionaries with cid, level, kind, entries, left
+
+ @return Dictionary suitable for JSON serialization, or nil if tree is empty.
+ */
+- (nullable NSDictionary *)toJSON;
+
+/*!
+ @method getStatistics
+
+ @abstract Computes tree statistics for debugging and monitoring.
+
+ @discussion Returns a dictionary with metrics including:
+ - nodeCount: Total number of nodes
+ - entryCount: Total number of key-value entries
+ - leafNodeCount: Number of leaf nodes
+ - internalNodeCount: Number of internal nodes
+ - maxDepth: Maximum tree depth
+ - avgDepth: Average depth across all nodes
+ - rootCID: Root CID as a string
+ - balanceFactor: Tree balance metric (0.0-1.0)
+
+ @return Dictionary with tree statistics.
+ */
+- (NSDictionary *)getStatistics;
+
+/*!
+ @method toDOT
+
+ @abstract Exports the tree structure in Graphviz DOT format.
+
+ @discussion Generates a DOT language representation suitable for
+ visualization with Graphviz tools. Nodes are color-coded by level
+ and edges show parent-child relationships.
+
+ @return DOT format string, or nil if tree is empty.
+ */
+- (nullable NSString *)toDOT;
 
 @end
 
