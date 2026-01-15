@@ -488,12 +488,15 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         NSLog(@"[ActorStore] Generated secp256k1 signing key for %@", account.did);
     }
 #else
-    // Generate signing key using macOS Security framework
-    NSError *keyError = nil;
-    if (![self generateSigningKeyWithError:&keyError]) {
-        NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
-    } else {
-        NSLog(@"[ActorStore] Generated signing key for %@", account.did);
+    // Only generate signing key if we're using the keychain for storage
+    // In-memory stores (useKeychainSigningKey = NO) don't need persistent signing keys
+    if (self.useKeychainSigningKey) {
+        NSError *keyError = nil;
+        if (![self generateSigningKeyWithError:&keyError]) {
+            NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
+        } else {
+            NSLog(@"[ActorStore] Generated signing key for %@", account.did);
+        }
     }
 #endif
 
@@ -1148,7 +1151,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     }
     
     self.signingKey = privateKey;
-    CFRelease(privateKey);
+    // Note: NOT calling CFRelease(privateKey) - the assign property takes ownership
     return YES;
 }
 #endif

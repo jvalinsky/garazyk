@@ -12,7 +12,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 @implementation PDSDatabaseIntegrationTestUtilities
 
 + (nullable PDSDatabase *)createInMemoryDatabaseWithError:(NSError **)error {
-    PDSDatabase *database = [PDSDatabase databaseAtURL:[NSURL URLWithString:@":memory:"]];
+    PDSDatabase *database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:@":memory:"]];
     if (![database openWithError:error]) {
         return nil;
     }

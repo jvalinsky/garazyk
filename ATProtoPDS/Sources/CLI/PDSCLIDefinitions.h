@@ -255,6 +255,14 @@ typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
                          context:(PDSCLICommandContext *)context;
 
 /**
+ * @brief Returns the command instance for the given name or alias.
+ *
+ * @param name The command name or alias.
+ * @return The command instance, or nil if not found.
+ */
+- (nullable id<PDSCLICommand>)commandForName:(NSString *)name;
+
+/**
  * @brief Prints usage information for all registered commands.
  */
 - (void)printUsage;

@@ -109,25 +109,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     return self.isOpen;
 }
 
-- (BOOL)openWithPath:(NSString *)path error:(NSError **)error {
-    if (sqlite3_open([path UTF8String], &_db) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"PDSDatabaseError"
-                                         code:sqlite3_errcode(_db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
-        }
-        return NO;
-    }
-    
-    // Enable WAL mode
-    char *errorMessage;
-    if (sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, &errorMessage) != SQLITE_OK) {
-        NSLog(@"Failed to enable WAL mode: %s", errorMessage);
-        sqlite3_free(errorMessage);
-    }
-    
-    return YES;
-}
+
 
 - (void)close {
     if (!self.isOpen) return;
