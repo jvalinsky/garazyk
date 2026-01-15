@@ -18,6 +18,29 @@
     [super tearDown];
 }
 
+- (void)testResolveAtprotoDataDecodesSigningKey {
+    DIDResolver *resolver = [[DIDResolver alloc] init];
+    NSDictionary *service = @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"};
+    NSDictionary *verification = @{@"id": @"did:test:multibase#signingKey", @"type": @"Multikey", @"controller": @"did:test:multibase", @"publicKeyMultibase": @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N"};
+    NSDictionary *documentJSON = @{@"id": @"did:test:multibase", @"alsoKnownAs": @[@"at://test/user"], @"verificationMethod": @[verification], @"service": @[service]};
+    DIDDocument *document = [DIDDocument documentWithJSON:documentJSON error:nil];
+    [resolver.cache setObject:document forKey:@"did:test:multibase"];
+    resolver.cacheTimestamps[@"did:test:multibase"] = @([[NSDate date] timeIntervalSince1970]);
+
+    NSError *error = nil;
+    NSDictionary *result = [resolver resolveAtprotoDataForDID:@"did:test:multibase" error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(result[@"did"], @"did:test:multibase");
+    XCTAssertEqualObjects(result[@"handle"], @"at://test/user");
+    XCTAssertEqualObjects(result[@"pds"], @"https://pds.example.com");
+    XCTAssertEqualObjects(result[@"signingKey"], @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N");
+
+    NSData *keyBytes = result[@"signingKeyBytes"];
+    XCTAssertTrue([keyBytes isKindOfClass:[NSData class]]);
+    XCTAssertGreaterThan(keyBytes.length, 0);
+}
+
 - (void)testDIDResolutionCaching {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 

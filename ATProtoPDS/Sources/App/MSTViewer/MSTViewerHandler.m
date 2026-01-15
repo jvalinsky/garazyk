@@ -5,8 +5,7 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
-#import "Repository/PDSRepositoryService.h"
-#import "App/Services/PDSAccountService.h"
+#import "App/Services/PDSRepositoryService.h"
 #import <Foundation/Foundation.h>
 
 #pragma mark - MSTViewerHandler
@@ -74,7 +73,7 @@
     if (html) {
         response.statusCode = HttpStatusOK;
         [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"Content-Type" value:@"text/html; charset=utf-8"];
+        [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[@"index.html not found" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -87,7 +86,7 @@
     if (content) {
         response.statusCode = HttpStatusOK;
         [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"Content-Type" value:@"text/css; charset=utf-8"];
+        [response setHeader:@"text/css; charset=utf-8" forKey:@"Content-Type"];
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[[NSString stringWithFormat:@"CSS file not found: %@", filename] dataUsingEncoding:NSUTF8StringEncoding]];
@@ -100,7 +99,7 @@
     if (content) {
         response.statusCode = HttpStatusOK;
         [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"Content-Type" value:@"application/javascript; charset=utf-8"];
+        [response setHeader:@"application/javascript; charset=utf-8" forKey:@"Content-Type"];
     } else {
         response.statusCode = HttpStatusNotFound;
         [response setBody:[[NSString stringWithFormat:@"JS file not found: %@", filename] dataUsingEncoding:NSUTF8StringEncoding]];
@@ -179,30 +178,22 @@
     NSError *error = nil;
     __block NSMutableArray *accounts = [NSMutableArray array];
 
-    [self.controller.database executeInTransaction:^(sqlite3 *db, NSError **txError) {
-        const char *sql = "SELECT did, handle FROM accounts ORDER BY created_at DESC LIMIT 1000";
-        sqlite3_stmt *stmt = NULL;
+    NSString *sql = @"SELECT did, handle FROM accounts ORDER BY created_at DESC LIMIT 1000";
+    NSArray<NSDictionary *> *rows = [self.controller.database executeQuery:sql error:&error];
+    if (!rows) {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to query accounts"}];
+        return;
+    }
 
-        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
-            while (sqlite3_step(stmt) == SQLITE_ROW) {
-                const char *didBytes = (const char *)sqlite3_column_text(stmt, 0);
-                const char *handleBytes = (const char *)sqlite3_column_text(stmt, 1);
-
-                NSString *did = didBytes ? [NSString stringWithUTF8String:didBytes] : @"";
-                NSString *handle = handleBytes ? [NSString stringWithUTF8String:handleBytes] : @"";
-
-                [accounts addObject:@{
-                    @"did": did,
-                    @"handle": handle.length > 0 ? handle : did
-                }];
-            }
-            sqlite3_finalize(stmt);
-        } else {
-            *txError = [NSError errorWithDomain:@"MSTViewerHandler"
-                                           code:1
-                                       userInfo:@{NSLocalizedDescriptionKey: @"Failed to query accounts"}];
-        }
-    } error:&error];
+    for (NSDictionary *row in rows) {
+        NSString *did = row[@"did"] ?: @"";
+        NSString *handle = row[@"handle"] ?: @"";
+        [accounts addObject:@{
+            @"did": did,
+            @"handle": handle.length > 0 ? handle : did
+        }];
+    }
 
     if (error) {
         response.statusCode = HttpStatusInternalServerError;
@@ -297,9 +288,9 @@
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:treeJSON];
-        [response setHeader:@"Content-Disposition"
-                      value:[NSString stringWithFormat:@"attachment; filename=\"mst-%@.json\"",
-                            [did substringToIndex:MIN(16, did.length)]]];
+        [response setHeader:[NSString stringWithFormat:@"attachment; filename=\"mst-%@.json\"",
+                             [did substringToIndex:MIN(16, did.length)]]
+                     forKey:@"Content-Disposition"];
     }
     else if ([format isEqualToString:@"dot"]) {
         NSString *dotString = [mst toDOT];
@@ -311,10 +302,10 @@
 
         response.statusCode = HttpStatusOK;
         [response setBody:[dotString dataUsingEncoding:NSUTF8StringEncoding]];
-        [response setHeader:@"Content-Type" value:@"text/plain; charset=utf-8"];
-        [response setHeader:@"Content-Disposition"
-                      value:[NSString stringWithFormat:@"attachment; filename=\"mst-%@.dot\"",
-                            [did substringToIndex:MIN(16, did.length)]]];
+        [response setHeader:@"text/plain; charset=utf-8" forKey:@"Content-Type"];
+        [response setHeader:[NSString stringWithFormat:@"attachment; filename=\"mst-%@.dot\"",
+                             [did substringToIndex:MIN(16, did.length)]]
+                     forKey:@"Content-Disposition"];
     }
     else if ([format isEqualToString:@"svg"]) {
         // For SVG, return DOT format and let client convert
@@ -346,7 +337,7 @@
         return nil;
     }
 
-    PDSRepositoryService *repoService = [[PDSRepositoryService alloc] initWithDatabase:self.controller.database];
+    PDSRepositoryService *repoService = self.controller.repositoryService;
     if (!repoService) {
         return nil;
     }

@@ -115,6 +115,10 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
  */
 - (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error;
 
+- (void)resolveDID:(NSString *)did
+      forceRefresh:(BOOL)forceRefresh
+        completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion;
+
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error;
 
 @end
