@@ -53,7 +53,12 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 
         _rateLimitEnabled = YES;
         _rateLimitRequestsPerMinute = 1000;
-        _rateLimitBurstSize = 100;
+        _rateLimitDidLimit = 5000;
+        _rateLimitDidWindowSeconds = 3600;
+        _rateLimitIpLimit = 1000; // Increased default as 100/min is low for tests
+        _rateLimitIpWindowSeconds = 60;
+        _rateLimitBlobLimit = 50;
+        _rateLimitBlobWindowSeconds = 3600;
 
         _sslPinningEnabled = YES;
 
@@ -65,6 +70,9 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _maxLogFiles = 5;
         _asyncLogging = YES;
         _enabledComponents = nil; // All components enabled
+        
+        // Apply environment overrides and empty config defaults
+        [self applyConfig:_config];
     }
     return self;
 }
@@ -155,7 +163,35 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (rateLimit[@"enabled"]) _rateLimitEnabled = [rateLimit[@"enabled"] boolValue];
         if (rateLimit[@"requests_per_minute"]) _rateLimitRequestsPerMinute = [rateLimit[@"requests_per_minute"] unsignedIntegerValue];
         if (rateLimit[@"burst_size"]) _rateLimitBurstSize = [rateLimit[@"burst_size"] unsignedIntegerValue];
+        // Load granular limits from config map if present, else fallback check
+        if (rateLimit[@"did_limit"]) _rateLimitDidLimit = [rateLimit[@"did_limit"] unsignedIntegerValue];
+        if (rateLimit[@"did_window"]) _rateLimitDidWindowSeconds = [rateLimit[@"did_window"] doubleValue];
+        if (rateLimit[@"ip_limit"]) _rateLimitIpLimit = [rateLimit[@"ip_limit"] unsignedIntegerValue];
+        if (rateLimit[@"ip_window"]) _rateLimitIpWindowSeconds = [rateLimit[@"ip_window"] doubleValue];
+        if (rateLimit[@"blob_limit"]) _rateLimitBlobLimit = [rateLimit[@"blob_limit"] unsignedIntegerValue];
+        if (rateLimit[@"blob_window"]) _rateLimitBlobWindowSeconds = [rateLimit[@"blob_window"] doubleValue];
     }
+    
+    // Environment variables override everything
+    if ([self envVarExists:@"PDS_RATELIMIT_ENABLED"]) _rateLimitEnabled = [self boolFromEnv:@"PDS_RATELIMIT_ENABLED" default:_rateLimitEnabled];
+    
+    NSString *envDidLimit = [self resolveEnvOverrideForKey:@"PDS_RATELIMIT_DID_LIMIT" default:nil];
+    if (envDidLimit) _rateLimitDidLimit = [envDidLimit integerValue];
+    
+    NSString *envDidWindow = [self resolveEnvOverrideForKey:@"PDS_RATELIMIT_DID_WINDOW" default:nil];
+    if (envDidWindow) _rateLimitDidWindowSeconds = [envDidWindow doubleValue];
+
+    NSString *envIpLimit = [self resolveEnvOverrideForKey:@"PDS_RATELIMIT_IP_LIMIT" default:nil];
+    if (envIpLimit) _rateLimitIpLimit = [envIpLimit integerValue];
+
+    NSString *envIpWindow = [self resolveEnvOverrideForKey:@"PDS_RATELIMIT_IP_WINDOW" default:nil];
+    if (envIpWindow) _rateLimitIpWindowSeconds = [envIpWindow doubleValue];
+
+    NSString *envBlobLimit = [self resolveEnvOverrideForKey:@"PDS_RATELIMIT_BLOB_LIMIT" default:nil];
+    if (envBlobLimit) _rateLimitBlobLimit = [envBlobLimit integerValue];
+
+    NSString *envBlobWindow = [self resolveEnvOverrideForKey:@"PDS_RATELIMIT_BLOB_WINDOW" default:nil];
+    if (envBlobWindow) _rateLimitBlobWindowSeconds = [envBlobWindow doubleValue];
 
     NSDictionary *sslPinning = config[@"ssl_pinning"];
     if (sslPinning) {
@@ -237,6 +273,10 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
             else _logFormat = PDSLogFormatText;
         }
     }
+}
+
+- (BOOL)envVarExists:(NSString *)envKey {
+    return [self resolveEnvOverrideForKey:envKey default:nil] != nil;
 }
 
 - (NSString *)resolveEnvOverrideForKey:(NSString *)envKey default:(NSString *)defaultValue {

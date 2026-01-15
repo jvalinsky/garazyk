@@ -16,7 +16,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
+@class PDSDatabasePool;
+@class PDSDatabaseBlob;
 @class CID;
+@protocol PDSBlobProvider;
 
 extern NSString * const BlobStorageErrorDomain;
 
@@ -26,26 +29,27 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
     BlobStorageErrorFileNotFound = 2002,
     BlobStorageErrorCIDMismatch = 2003,
     BlobStorageErrorStorageFailure = 2004,
+    BlobStorageErrorBlobNotFound = 2005,
 };
 
 @interface BlobStorage : NSObject
 
-@property (nonatomic, readonly) NSURL *storageDirectory;
-@property (nonatomic, readonly) PDSDatabase *database;
+@property (nonatomic, strong, readonly) PDSDatabasePool *databasePool;
+@property (nonatomic, strong, readonly) id<PDSBlobProvider> provider;
 
 /*!
- @method initWithDatabase:storageDirectory:
+ @method initWithDatabasePool:provider:
 
  @abstract Designated initializer for blob storage.
 
- @discussion Creates blob storage with the specified database for metadata
- and directory for blob files. Creates the storage directory if needed.
+ @discussion Creates blob storage with the specified database pool for metadata
+ and provider for blob files.
 
- @param database The SQLite database for blob metadata.
- @param storageDirectory The filesystem directory for blob files.
+ @param databasePool The SQLite database pool for blob metadata.
+ @param provider The blob provider for filesystem operations.
  @return An initialized blob storage instance.
  */
-- (instancetype)initWithDatabase:(PDSDatabase *)database storageDirectory:(NSURL *)storageDirectory;
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool provider:(id<PDSBlobProvider>)provider;
 
 /// Upload a blob and return its CID
 /// @param data The blob data to store
@@ -60,20 +64,28 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 
 /// Retrieve a blob by its CID
 /// @param cid The CID of the blob to retrieve
+/// @param did The DID that owns the blob (optional, for verification/access control)
 /// @param error Error pointer for failure details
 /// @return The blob data, or nil if not found
-- (nullable NSData *)getBlobWithCID:(CID *)cid error:(NSError **)error;
+- (nullable NSData *)getBlobWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error;
+
+/// Retrieve blob metadata by its CID string
+/// @param cidString The CID string of the blob to retrieve metadata for
+/// @param did The DID that owns the blob (optional, for verification/access control)
+/// @param error Error pointer for failure details
+/// @return The blob metadata object, or nil if not found
+- (nullable PDSDatabaseBlob *)getBlobMetadataWithCID:(NSString *)cidString did:(nullable NSString *)did error:(NSError **)error;
 
 /// List blobs for a specific DID
 /// @param did The DID to list blobs for
 /// @param limit Maximum number of blobs to return
 /// @param cursor Cursor for pagination
 /// @param error Error pointer for failure details
-/// @return Array of blob metadata dictionaries, or nil on failure
-- (nullable NSArray<NSDictionary *> *)listBlobsForDID:(NSString *)did
-                                                 limit:(NSInteger)limit
-                                                cursor:(nullable NSString *)cursor
-                                                 error:(NSError **)error;
+/// @return Array of blob metadata objects, or nil on failure
+- (nullable NSArray<PDSDatabaseBlob *> *)listBlobsForDID:(NSString *)did
+                                                  limit:(NSInteger)limit
+                                                 cursor:(nullable NSString *)cursor
+                                                  error:(NSError **)error;
 
 /// Delete a blob by CID for a specific DID
 /// @param cid The CID of the blob to delete

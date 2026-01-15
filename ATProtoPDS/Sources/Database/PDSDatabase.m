@@ -1,4 +1,5 @@
 #import "Database/PDSDatabase.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
 #import "Compat/PDSTypes.h"
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -478,7 +479,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         return @[];
     }
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
 
     if (rc != SQLITE_OK) {
@@ -503,7 +504,6 @@ static NSDateFormatter * iso8601Formatter(void) {
         [results addObject:row];
     }
 
-    sqlite3_finalize(stmt);
     return results;
 }
 
@@ -548,7 +548,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         return @[];
     }
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
 
     if (rc != SQLITE_OK) {
@@ -592,7 +592,6 @@ static NSDateFormatter * iso8601Formatter(void) {
         [results addObject:row];
     }
 
-    sqlite3_finalize(stmt);
     return results;
 }
 
@@ -606,7 +605,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
 
     if (rc != SQLITE_OK) {
@@ -638,7 +637,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
 
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    sqlite3_finalize(stmt);
 
     if (!success && error) {
         *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -658,7 +656,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
     NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at, tfa_enabled, tfa_secret, recovery_codes, invite_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -685,7 +683,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_int(stmt, 13, account.inviteEnabled ? 1 : 0);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) {
@@ -707,7 +704,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
     NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ?, tfa_enabled = ?, tfa_secret = ?, recovery_codes = ?, invite_enabled = ? WHERE did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -736,7 +733,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 12, account.did.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) {
@@ -752,7 +748,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -766,14 +762,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         account = [self accountFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
     NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -788,14 +783,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         account = [self accountFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
     NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -809,14 +803,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         account = [self accountFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     NSString *sql = @"SELECT * FROM accounts WHERE refresh_jwt = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -832,7 +825,6 @@ static NSDateFormatter * iso8601Formatter(void) {
         account = [self accountFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return account;
 }
 
@@ -841,7 +833,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
     NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -856,14 +848,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         }
     }
 
-    sqlite3_finalize(stmt);
     return accounts;
 }
 
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM accounts WHERE did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -873,7 +864,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -962,7 +952,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error {
     NSString *sql = @"INSERT INTO repos (owner_did, root_cid, collection_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -976,7 +966,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 5, [self iso8601StringFromDate:repo.updatedAt].UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) {
@@ -992,7 +981,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (BOOL)updateRepoRoot:(NSString *)ownerDid rootCid:(NSData *)rootCid error:(NSError **)error {
     NSString *sql = @"UPDATE repos SET root_cid = ?, updated_at = ? WHERE owner_did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1004,7 +993,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 3, ownerDid.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) {
@@ -1019,7 +1007,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (nullable PDSDatabaseRepo *)getRepoForDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"SELECT * FROM repos WHERE owner_did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1033,14 +1021,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         repo = [self repoFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return repo;
 }
 
 - (NSArray<PDSDatabaseRepo *> *)getAllReposWithError:(NSError **)error {
     NSString *sql = @"SELECT * FROM repos ORDER BY updated_at DESC";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1055,14 +1042,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         }
     }
 
-    sqlite3_finalize(stmt);
     return repos;
 }
 
 - (BOOL)deleteRepo:(NSString *)ownerDid error:(NSError **)error {
     NSString *sql = @"DELETE FROM repos WHERE owner_did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1072,7 +1058,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 1, ownerDid.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1107,7 +1092,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (BOOL)saveBlock:(PDSDatabaseBlock *)block error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1126,7 +1111,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 6, [self iso8601StringFromDate:block.createdAt].UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) {
@@ -1146,7 +1130,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1167,7 +1151,6 @@ static NSDateFormatter * iso8601Formatter(void) {
 
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE) {
-            sqlite3_finalize(stmt);
             if (error) {
                 NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
                 *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
@@ -1178,14 +1161,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         sqlite3_reset(stmt);
     }
 
-    sqlite3_finalize(stmt);
     return YES;
 }
 
 - (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error {
     NSString *sql = @"SELECT * FROM blocks WHERE cid = ? AND repo_did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1200,14 +1182,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         block = [self blockFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return block;
 }
 
 - (NSArray<PDSDatabaseBlock *> *)getBlocksForRepo:(NSString *)repoDid limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error {
     NSString *sql = @"SELECT * FROM blocks WHERE repo_did = ? ORDER BY created_at ASC LIMIT ? OFFSET ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1226,14 +1207,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         }
     }
 
-    sqlite3_finalize(stmt);
     return blocks;
 }
 
 - (NSInteger)getBlockCountForRepo:(NSString *)repoDid error:(NSError **)error {
     NSString *sql = @"SELECT COUNT(*) FROM blocks WHERE repo_did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1247,14 +1227,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         count = sqlite3_column_int64(stmt, 0);
     }
 
-    sqlite3_finalize(stmt);
     return count;
 }
 
 - (BOOL)deleteBlock:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error {
     NSString *sql = @"DELETE FROM blocks WHERE cid = ? AND repo_did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1265,7 +1244,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 2, repoDid.UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1306,7 +1284,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mime_type, size, created_at) VALUES (?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1324,7 +1302,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 5, [self iso8601StringFromDate:blob.createdAt].UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) {
@@ -1340,7 +1317,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (nullable PDSDatabaseBlob *)getBlobWithCid:(NSData *)cid error:(NSError **)error {
     NSString *sql = @"SELECT * FROM blobs WHERE cid = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1354,14 +1331,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         blob = [self blobFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return blob;
 }
 
 - (NSArray<PDSDatabaseBlob *> *)getBlobsForDid:(NSString *)did limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error {
     NSString *sql = @"SELECT * FROM blobs WHERE did = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1380,14 +1356,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         }
     }
 
-    sqlite3_finalize(stmt);
     return blobs;
 }
 
 - (NSInteger)getBlobCountForDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"SELECT COUNT(*) FROM blobs WHERE did = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1401,14 +1376,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         count = sqlite3_column_int64(stmt, 0);
     }
 
-    sqlite3_finalize(stmt);
     return count;
 }
 
 - (BOOL)deleteBlob:(NSData *)cid error:(NSError **)error {
     NSString *sql = @"DELETE FROM blobs WHERE cid = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1418,7 +1392,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     [self bindData:cid toStatement:stmt index:1];
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1509,7 +1482,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (NSDictionary *)getClientWithID:(NSString *)clientID error:(NSError **)error {
     NSString *sql = @"SELECT * FROM oauth_clients WHERE client_id = ?";
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1545,13 +1518,12 @@ static NSDateFormatter * iso8601Formatter(void) {
         client = dict;
     }
 
-    sqlite3_finalize(stmt);
     return client;
 }
 
 - (BOOL)createClient:(NSDictionary *)client error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO oauth_clients (client_id, client_secret, redirect_uris, grant_types, scope, created_at) VALUES (?, ?, ?, ?, ?, ?)";
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1584,7 +1556,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 6, [self iso8601StringFromDate:[NSDate date]].UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1622,7 +1593,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri error:(NSError **)error {
     NSString *sql = @"SELECT * FROM records WHERE uri = ?";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1636,14 +1607,13 @@ static NSDateFormatter * iso8601Formatter(void) {
         record = [self recordFromStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     return record;
 }
 
 - (BOOL)saveRecord:(PDSDatabaseRecord *)record error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1658,7 +1628,6 @@ static NSDateFormatter * iso8601Formatter(void) {
     sqlite3_bind_text(stmt, 6, [self iso8601StringFromDate:record.createdAt].UTF8String, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
         PDS_LOG_DB_ERROR(@"Failed to save record: %s (SQLite code: %d, URI: %@)",
@@ -1684,7 +1653,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
     [sql appendString:@" ORDER BY created_at DESC"];
 
-    sqlite3_stmt *stmt = NULL;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
@@ -1704,7 +1673,6 @@ static NSDateFormatter * iso8601Formatter(void) {
         }
     }
 
-    sqlite3_finalize(stmt);
     return records;
 }
 
