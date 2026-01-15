@@ -68,8 +68,8 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 /*! Alternative identifiers (handles) for this DID. */
 @property (readonly, nonatomic, strong, nullable) NSArray<NSString *> *alsoKnownAs;
 
-/*! Service endpoints dictionary. */
-@property (readonly, nonatomic, strong, nullable) NSDictionary *service;
+/*! Service endpoints array. */
+@property (readonly, nonatomic, strong, nullable) NSArray<NSDictionary *> *service;
 
 + (nullable instancetype)documentWithJSON:(NSDictionary *)json error:(NSError **)error;
 

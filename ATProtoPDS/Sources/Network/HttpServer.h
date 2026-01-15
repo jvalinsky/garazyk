@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -6,74 +7,105 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpResponse;
 @class HttpServer;
 
-/// A block type for handling HTTP requests.
-///
-/// @param request The incoming HTTP request containing headers, body, and path.
-/// @param response The response object used to send the HTTP response back to the client.
+/*!
+ @header HttpServer.h
+ 
+ @abstract HTTP server implementation for the PDS.
+ 
+ @discussion This header defines the HTTP server interface for handling
+ incoming requests. The server supports route registration, request/response
+ handling, and lifecycle management.
+ 
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
+/*!
+ @typedef RequestHandler
+ 
+ @abstract Block type for handling HTTP requests.
+ 
+ @param request The incoming HTTP request.
+ @param response The response object to populate.
+ */
 typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
 
-/// HttpServer provides a lightweight HTTP server implementation for handling
-/// incoming HTTP requests, routing them to appropriate handlers, and managing
-/// server lifecycle.
-///
-/// The server supports route-based request handling where handlers are registered
-/// for specific HTTP methods and paths. Each incoming request triggers the
-/// registered handler if a matching route is found.
-///
-/// Example:
-/// @code
-/// HttpServer *server = [HttpServer serverWithPort:8080];
-/// [server addRoute:@"GET" path:@"/api/users" handler:^(HttpRequest *req, HttpResponse *res) {
-///     // Handle request
-/// }];
-/// [server startWithError:nil];
-/// @endcode
+/*!
+ @class HttpServer
+ 
+ @abstract HTTP server for handling PDS requests.
+ 
+ @discussion HttpServer provides a simple HTTP server implementation
+ for the PDS. It supports route registration for different HTTP methods
+ and paths, with handlers invoked for matching requests.
+ 
+ @code
+ HttpServer *server = [HttpServer serverWithPort:8080];
+ 
+ [server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *resp) {
+     resp.statusCode = 200;
+     [resp setBody:@"OK"];
+ }];
+ 
+ [server startWithError:nil];
+ @endcode
+ */
 @interface HttpServer : NSObject
 
-/// The port number the server is listening on. This value is set when the server
-/// is initialized and cannot be changed while the server is running.
-@property (nonatomic, readonly) uint16_t port;
+/*! The port the server is listening on. */
+@property (nonatomic, readonly) NSUInteger port;
 
-/// A boolean indicating whether the server is currently running and accepting
-/// connections.
+/*! YES if the server is currently running. */
 @property (nonatomic, readonly, getter=isRunning) BOOL running;
 
-/// An optional callback block invoked whenever the server receives a new request.
-/// This provides a hook for logging, monitoring, or global request preprocessing.
-///
-/// @note This block is called before any route-specific handlers.
+/*! Optional callback invoked for every request received. */
 @property (nonatomic, copy, nullable) void (^didReceiveRequest)(HttpRequest *request, HttpResponse *response);
 
-/// Creates and configures a new HTTP server instance bound to the specified port.
-///
-/// @param port The port number to listen on (0-65535).
-/// @return A newly initialized HttpServer instance.
-+ (instancetype)serverWithPort:(uint16_t)port;
+/*!
+ @method serverWithPort:
+ 
+ @abstract Creates a server instance for the specified port.
+ 
+ @param port The port to listen on.
+ @return A new HttpServer instance.
+ */
++ (instancetype)serverWithPort:(NSUInteger)port;
 
-/// Starts the HTTP server and begins accepting incoming connections.
-///
-/// @param error On return, contains an error if the server failed to start.
-/// @return YES if the server started successfully, NO otherwise.
+/*!
+ @method startWithError:
+ 
+ @abstract Starts the server and begins listening for connections.
+ 
+ @param error On return, contains an error if the server failed to start.
+ @return YES if the server started successfully, NO otherwise.
+ */
 - (BOOL)startWithError:(NSError * _Nullable *)error;
 
-/// Stops the HTTP server and closes all active connections.
-/// Any pending requests will be aborted.
+/*!
+ @method stop
+ 
+ @abstract Stops the server and closes all connections.
+ */
 - (void)stop;
 
-/// Registers a handler for a specific HTTP method and path combination.
-///
-/// @param method The HTTP method to match (e.g., @"GET", @"POST").
-/// @param path The URL path to match (e.g., @"/api/users").
-/// @param handler The block to invoke when a matching request is received.
+/*!
+ @method addRoute:path:handler:
+ 
+ @abstract Registers a route handler for a specific method and path.
+ 
+ @param method The HTTP method (GET, POST, etc.).
+ @param path The URL path pattern.
+ @param handler The handler block to invoke for matching requests.
+ */
 - (void)addRoute:(NSString *)method path:(NSString *)path handler:(RequestHandler)handler;
 
-/// Registers a handler for any HTTP method at the specified path.
-///
-/// This is a convenience method that registers handlers for GET, POST, PUT,
-/// DELETE, and PATCH methods at the given path.
-///
-/// @param path The URL path to match.
-/// @param handler The block to invoke when a matching request is received.
+/*!
+ @method addHandlerForPath:handler:
+ 
+ @abstract Registers a handler for all methods on a path.
+ 
+ @param path The URL path pattern.
+ @param handler The handler block to invoke for matching requests.
+ */
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler;
 
 @end
