@@ -361,36 +361,23 @@
 
 - (nullable MST *)loadMSTForDid:(NSString *)did {
     if (!self.controller) {
-        return nil;
+        return [[MST alloc] init];
     }
 
     PDSRepositoryService *repoService = self.controller.repositoryService;
     if (!repoService) {
-        return nil;
+        return [[MST alloc] init];
     }
 
-    __block MST *mst = nil;
-    __block NSError *error = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        mst = [repoService loadMSTForDid:did error:&error];
-        dispatch_semaphore_signal(semaphore);
-    });
-
-    // Wait for 5 seconds max
-    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
-    if (dispatch_semaphore_wait(semaphore, timeout) != 0) {
-        PDS_LOG_ERROR(@"Timeout loading MST for %@", did);
-        return nil;
-    }
+    NSError *error = nil;
+    MST *mst = [repoService loadMSTForDid:did error:&error];
 
     if (error) {
         PDS_LOG_ERROR(@"Failed to load MST for %@: %@", did, error.localizedDescription);
-        return nil;
+        return [[MST alloc] init];
     }
 
-    return mst;
+    return mst ?: [[MST alloc] init];
 }
 
 @end
