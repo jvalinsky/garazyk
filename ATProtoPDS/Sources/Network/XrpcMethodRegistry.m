@@ -10,6 +10,8 @@
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
 

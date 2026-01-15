@@ -16,8 +16,9 @@
 #define SECP256K1_WRAPPER_H
 
 #include <stddef.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -161,6 +162,21 @@ void secp256k1_wrapper_public_key_serialize_compressed(const Secp256k1PublicKey 
  * @return true if valid, false otherwise.
  */
 bool secp256k1_wrapper_public_key_is_valid(const Secp256k1PublicKey *public_key);
+
+/**
+ * @brief Normalize a public key into 65-byte uncompressed form.
+ *
+ * Accepts either 33-byte compressed or 65-byte uncompressed input, validates
+ * it on-curve, and serializes to uncompressed output.
+ *
+ * @param input Public key bytes (33 or 65 bytes).
+ * @param input_len Length of input.
+ * @param out_uncompressed65 Pointer to receive 65-byte uncompressed key.
+ * @return Secp256k1ErrorNone on success, Secp256k1ErrorInvalidPublicKey on failure.
+ */
+Secp256k1Error secp256k1_wrapper_public_key_normalize(const uint8_t *input,
+                                                      size_t input_len,
+                                                      uint8_t *out_uncompressed65);
 
 /**
  * @brief Check if signature format is valid.

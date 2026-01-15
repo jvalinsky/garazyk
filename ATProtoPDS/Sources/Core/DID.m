@@ -28,8 +28,8 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         return nil;
     }
     
-    NSString *id = json[@"id"];
-    if (!id || ![id isKindOfClass:[NSString class]]) {
+    NSString *documentId = json[@"id"];
+    if (!documentId || ![documentId isKindOfClass:[NSString class]]) {
         if (error) {
             *error = [NSError errorWithDomain:DIDErrorDomain
                                       code:DIDErrorInvalidDocument
@@ -38,12 +38,26 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         return nil;
     }
     
+    NSArray<NSString *> *alsoKnownAs = nil;
+    id alsoKnownAsValue = json[@"alsoKnownAs"];
+    if ([alsoKnownAsValue isKindOfClass:[NSArray class]]) {
+        alsoKnownAs = alsoKnownAsValue;
+    }
+
+    NSArray<NSDictionary *> *service = nil;
+    id serviceValue = json[@"service"];
+    if ([serviceValue isKindOfClass:[NSArray class]]) {
+        service = serviceValue;
+    } else if ([serviceValue isKindOfClass:[NSDictionary class]]) {
+        service = @[serviceValue];
+    }
+
     DIDDocument *document = [[DIDDocument alloc] init];
     if (document) {
         document->_jsonDictionary = [json copy];
-        document->_id = [id copy];
-        document->_alsoKnownAs = json[@"alsoKnownAs"];
-        document->_service = json[@"service"];
+        document->_id = [documentId copy];
+        document->_alsoKnownAs = [alsoKnownAs copy];
+        document->_service = [service copy];
     }
     return document;
 }
@@ -273,14 +287,34 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"did"] = doc.id;
 
-    // Extract handle from alsoKnownAs (first one, or atproto handle)
+    // Extract handle from alsoKnownAs (prefer at:// entry)
     if (doc.alsoKnownAs.count > 0) {
-        result[@"handle"] = doc.alsoKnownAs[0];
+        NSString *handle = nil;
+        for (id entry in doc.alsoKnownAs) {
+            if ([entry isKindOfClass:[NSString class]] && [entry hasPrefix:@"at://"]) {
+                handle = entry;
+                break;
+            }
+        }
+        if (!handle) {
+            for (id entry in doc.alsoKnownAs) {
+                if ([entry isKindOfClass:[NSString class]]) {
+                    handle = entry;
+                    break;
+                }
+            }
+        }
+        if (handle) {
+            result[@"handle"] = handle;
+        }
     }
 
     // Extract PDS from service
     if (doc.service) {
-        for (NSDictionary *service in doc.service) {
+        for (id service in doc.service) {
+            if (![service isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
             NSString *type = service[@"type"];
             if ([type isEqualToString:@"AtprotoPersonalDataServer"]) {
                 result[@"pds"] = service[@"serviceEndpoint"];
@@ -292,10 +326,31 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     // Extract signing key (first verification method)
     NSDictionary *json = doc.jsonDictionary;
     NSArray *verificationMethods = json[@"verificationMethod"];
-    if (verificationMethods.count > 0) {
-        NSDictionary *method = verificationMethods[0];
-        NSString *signingKey = method[@"publicKeyMultibase"];
-        if (signingKey) {
+    if ([verificationMethods isKindOfClass:[NSArray class]] && verificationMethods.count > 0) {
+        NSDictionary *selectedMethod = nil;
+        for (id entry in verificationMethods) {
+            if (![entry isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
+            NSString *candidateKey = entry[@"publicKeyMultibase"];
+            if (!candidateKey) {
+                continue;
+            }
+            NSString *methodId = entry[@"id"];
+            NSString *methodType = entry[@"type"];
+            if ([methodId isKindOfClass:[NSString class]] && [methodId containsString:@"#atproto"]) {
+                selectedMethod = entry;
+                break;
+            }
+            if (!selectedMethod && [methodType isKindOfClass:[NSString class]] && [methodType isEqualToString:@"Multikey"]) {
+                selectedMethod = entry;
+            } else if (!selectedMethod) {
+                selectedMethod = entry;
+            }
+        }
+
+        NSString *signingKey = selectedMethod[@"publicKeyMultibase"];
+        if ([signingKey isKindOfClass:[NSString class]]) {
             result[@"signingKey"] = signingKey;
 
             if (signingKey.length > 1) {

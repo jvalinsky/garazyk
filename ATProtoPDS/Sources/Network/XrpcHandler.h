@@ -5,145 +5,224 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 
-/// A block type for handling XRPC method invocations.
-///
-/// @param request The incoming HTTP request containing the XRPC method call.
-/// @param response The response object used to send the XRPC response back.
+/*!
+ @header XrpcHandler.h
+ 
+ @abstract XRPC dispatcher for ATProto RPC methods.
+ 
+ @discussion This header defines the XrpcDispatcher class for handling
+ ATProto XRPC method calls. XRPC is the remote procedure call protocol
+ used by ATProto for API requests.
+ 
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
+/*!
+ @typedef XrpcMethodHandler
+ 
+ @abstract Block type for handling XRPC method calls.
+ 
+ @param request The incoming HTTP request containing the XRPC call.
+ @param response The response object to populate with results.
+ */
 typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
-/// XrpcDispatcher handles XRPC method invocation, routing incoming XRPC requests
-/// to registered method handlers and formatting responses according to the XRPC protocol.
-///
-/// The XRPC protocol (extended RPC) is used by AT Protocol for remote procedure calls.
-/// This dispatcher manages method registration, lookup, and invocation lifecycle.
-///
-/// @note This class serves as both the XRPC handler and registry for the PDS.
+/*!
+ @class XrpcDispatcher
+ 
+ @abstract Dispatches XRPC method calls to handlers.
+ 
+ @discussion XrpcDispatcher routes incoming XRPC requests to registered
+ handlers based on the method NSID. It provides convenience methods for
+ registering all standard ATProto XRPC methods.
+ 
+ @code
+ XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
+ 
+ [dispatcher registerComAtprotoServerCreateSession:^(HttpRequest *req, HttpResponse *resp) {
+     // Handle createSession call
+ }];
+ 
+ [dispatcher handleRequest:request response:response];
+ @endcode
+ */
 @interface XrpcDispatcher : NSObject
 
-/// A fallback handler invoked when no registered method matches the incoming request.
-/// This can be used to provide default behavior or custom error responses.
+/*! Default handler for unrecognized methods. */
 @property (nonatomic, copy) void (^defaultHandler)(HttpRequest *, HttpResponse *);
 
-/// Returns the shared singleton XrpcDispatcher instance.
+/*!
+ @method sharedDispatcher
+ 
+ @abstract Returns the shared dispatcher instance.
+ 
+ @return The singleton XrpcDispatcher.
+ */
 + (instancetype)sharedDispatcher;
 
-/// Registers an XRPC method handler with the dispatcher.
-///
-/// @param methodId The fully-qualified method identifier (e.g., @"com.atproto.server.createSession").
-/// @param handler The block to invoke when the method is called.
+/*!
+ @method registerMethod:handler:
+ 
+ @abstract Registers a handler for an XRPC method.
+ 
+ @param methodId The method NSID (e.g., com.atproto.server.createSession).
+ @param handler The handler to invoke for this method.
+ */
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler;
 
-/// Processes an incoming HTTP request as an XRPC method call.
-///
-/// @param request The HTTP request containing the XRPC method invocation.
-/// @param response The response object to populate with the method result or error.
+/*!
+ @method handleRequest:response:
+ 
+ @abstract Dispatches an XRPC request to the appropriate handler.
+ 
+ @param request The incoming request.
+ @param response The response object to populate.
+ */
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
-// MARK: - ComAtproto Server Methods
+// MARK: - Server Methods
 
-/// Registers a handler for com.atproto.server.createSession.
-/// Creates a new session for an authenticated user.
+/*! Registers handler for com.atproto.server.describeServer. */
+- (void)registerComAtprotoServerDescribeServer:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.createSession. */
 - (void)registerComAtprotoServerCreateSession:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.server.createAccount.
-/// Creates a new account on the PDS.
+/*! Registers handler for com.atproto.server.createAccount. */
 - (void)registerComAtprotoServerCreateAccount:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.server.refreshSession.
-/// Refreshes an existing session using a refresh token.
+/*! Registers handler for com.atproto.server.refreshSession. */
 - (void)registerComAtprotoServerRefreshSession:(XrpcMethodHandler)handler;
 
-// MARK: - ComAtproto Repo Methods
+/*! Registers handler for com.atproto.server.getServiceAuth. */
+- (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.createRecord.
-/// Creates a new record in the user's repository.
+// MARK: - Repository Methods
+
+/*! Registers handler for com.atproto.repo.createRecord. */
 - (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.getRecord.
-/// Retrieves a specific record from the repository.
+/*! Registers handler for com.atproto.repo.getRecord. */
 - (void)registerComAtprotoRepoGetRecord:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.listRecords.
-/// Lists records in the repository with optional filtering.
+/*! Registers handler for com.atproto.repo.listRecords. */
 - (void)registerComAtprotoRepoListRecords:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.deleteRecord.
-/// Deletes a record from the repository.
+/*! Registers handler for com.atproto.repo.deleteRecord. */
 - (void)registerComAtprotoRepoDeleteRecord:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.applyWrites.
-/// Applies multiple write operations in a single transaction.
+/*! Registers handler for com.atproto.repo.deleteBlob. */
+- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.repo.applyWrites. */
 - (void)registerComAtprotoRepoApplyWrites:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.describeRepo.
-/// Returns metadata about the user's repository.
+/*! Registers handler for com.atproto.repo.describeRepo. */
 - (void)registerComAtprotoRepoDescribeRepo:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.putRecord.
-/// Creates or updates a record in the repository.
+/*! Registers handler for com.atproto.repo.putRecord. */
 - (void)registerComAtprotoRepoPutRecord:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.repo.uploadBlob.
-/// Uploads binary blob data to the repository.
+/*! Registers handler for com.atproto.repo.uploadBlob. */
 - (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler;
 
-// MARK: - ComAtproto Sync Methods
+// MARK: - Sync Methods
 
-/// Registers a handler for com.atproto.sync.getRepo.
-/// Retrieves the complete repository data for an identity.
+/*! Registers handler for com.atproto.sync.getRepo. */
 - (void)registerComAtprotoSyncGetRepo:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.sync.getHead.
-/// Returns the current commit HEAD for an identity.
+/*! Registers handler for com.atproto.sync.getHead. */
 - (void)registerComAtprotoSyncGetHead:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.sync.getBlob.
-/// Retrieves a specific blob from the repository.
+/*! Registers handler for com.atproto.sync.getBlob. */
 - (void)registerComAtprotoSyncGetBlob:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.sync.listBlobs.
-/// Lists blob CID references in the repository.
+/*! Registers handler for com.atproto.sync.listBlobs. */
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
 
-// MARK: - ComAtproto Identity Methods
+/*! Registers handler for com.atproto.repo.deleteBlob. */
+- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.identity.resolveDID.
-/// Resolves a DID identifier to its document.
+// MARK: - Identity Methods
+
+/*! Registers handler for com.atproto.identity.resolveDid. */
 - (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.identity.resolveIdentity.
-/// Resolves an identity (DID or handle) to its details.
+/*! Registers handler for com.atproto.identity.resolveIdentity. */
 - (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.identity.resolveHandle.
-/// Resolves a handle to its associated DID.
+/*! Registers handler for com.atproto.identity.resolveHandle. */
 - (void)registerComAtprotoIdentityResolveHandle:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.identity.getRecommendedDidCredentials.
-/// Returns recommended DID document fields for the authenticated identity.
+/*! Registers handler for com.atproto.identity.getRecommendedDidCredentials. */
 - (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler;
 
-// MARK: - ComAtproto Moderation Methods
+// MARK: - Moderation Methods
 
-/// Registers a handler for com.atproto.moderation.createReport.
-/// Creates a moderation report for content.
+/*! Registers handler for com.atproto.moderation.createReport. */
 - (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler;
 
-// MARK: - ComAtproto Admin Methods
-
-/// Registers a handler for com.atproto.admin.updateSubjectStatus.
-/// Updates the moderation status of a subject.
+/*! Registers handler for com.atproto.admin.updateSubjectStatus. */
 - (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.admin.getSubjectStatus.
-/// Retrieves the moderation status of a subject.
+/*! Registers handler for com.atproto.admin.getSubjectStatus. */
 - (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler;
 
-// MARK: - ComAtproto Label Methods
+/*! Registers handler for com.atproto.admin.moderateAccount. */
+- (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler;
 
-/// Registers a handler for com.atproto.label.queryLabels.
-/// Queries labels from the label service.
+/*! Registers handler for com.atproto.admin.moderateRecord. */
+- (void)registerComAtprotoAdminModerateRecord:(XrpcMethodHandler)handler;
+
+// MARK: - Label Methods
+
+/*! Registers handler for com.atproto.label.queryLabels. */
 - (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.label.createLabel. */
+- (void)registerComAtprotoLabelCreateLabel:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.label.getLabels. */
+- (void)registerComAtprotoLabelGetLabels:(XrpcMethodHandler)handler;
+
+// MARK: - App Bsky Actor Methods
+
+/*! Registers handler for app.bsky.actor.getProfile. */
+- (void)registerAppBskyActorGetProfile:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.actor.getProfiles. */
+- (void)registerAppBskyActorGetProfiles:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.actor.getPreferences. */
+- (void)registerAppBskyActorGetPreferences:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.actor.putPreferences. */
+- (void)registerAppBskyActorPutPreferences:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.user.getUserStats. */
+- (void)registerAppBskyUserGetUserStats:(XrpcMethodHandler)handler;
+
+// MARK: - App Bsky Feed Methods
+
+/*! Registers handler for app.bsky.feed.getTimeline. */
+- (void)registerAppBskyFeedGetTimeline:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.feed.getAuthorFeed. */
+- (void)registerAppBskyFeedGetAuthorFeed:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.feed.getPostThread. */
+- (void)registerAppBskyFeedGetPostThread:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.feed.getFeed. */
+- (void)registerAppBskyFeedGetFeed:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.feed.getActorLikes. */
+- (void)registerAppBskyFeedGetActorLikes:(XrpcMethodHandler)handler;
+
+// MARK: - App Bsky Notification Methods
+
+/*! Registers handler for app.bsky.notification.registerPush. */
+- (void)registerAppBskyNotificationRegisterPush:(XrpcMethodHandler)handler;
 
 @end
 
