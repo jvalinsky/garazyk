@@ -2,6 +2,7 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
+#import "Identity/ATProtoHandleValidator.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 
@@ -12,25 +13,26 @@
 @interface PDSAccountManager : NSObject
 
 + (NSArray<PDSDatabaseAccount *> *)listAccountsWithContext:(PDSCLICommandContext *)context
-                                                   filter:(NSString *)filter
-                                                   limit:(NSInteger)limit;
+                                                    filter:(NSString *)filter
+                                                    limit:(NSInteger)limit;
 + (nullable PDSDatabaseAccount *)getAccountWithContext:(PDSCLICommandContext *)context
-                                             identifier:(NSString *)identifier;
+                                              identifier:(NSString *)identifier;
 + (BOOL)createAccountWithContext:(PDSCLICommandContext *)context
-                           email:(NSString *)email
-                         handle:(NSString *)handle
-                       password:(NSString *)password;
+                            email:(NSString *)email
+                          handle:(NSString *)handle
+                        password:(NSString *)password;
 + (BOOL)deactivateAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did;
 + (BOOL)reactivateAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did;
 + (BOOL)deleteAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did;
 + (BOOL)updateEmailWithContext:(PDSCLICommandContext *)context
-                            did:(NSString *)did
-                          email:(NSString *)email;
+                           did:(NSString *)did
+                         email:(NSString *)email;
 + (BOOL)updateHandleWithContext:(PDSCLICommandContext *)context
-                             did:(NSString *)did
-                          handle:(NSString *)handle;
+                            did:(NSString *)did
+                         handle:(NSString *)handle;
 
 + (NSString *)databasePathForContext:(PDSCLICommandContext *)context;
++ (NSString *)pdsHostnameForContext:(PDSCLICommandContext *)context;
 
 @end
 
@@ -42,8 +44,19 @@
     if (config[@"server"][@"data_dir"]) {
         dataDir = config[@"server"][@"data_dir"];
     }
-    // New path: data/service/service.db
     return [[dataDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
+}
+
++ (NSString *)pdsHostnameForContext:(PDSCLICommandContext *)context {
+    NSDictionary *config = [context loadConfig];
+    NSString *host = config[@"server"][@"host"];
+    if (!host || host.length == 0) {
+        host = @"localhost";
+    }
+    if ([host isEqualToString:@"0.0.0.0"]) {
+        host = @"localhost";
+    }
+    return host;
 }
 
 + (NSArray<PDSDatabaseAccount *> *)listAccountsWithContext:(PDSCLICommandContext *)context
@@ -431,7 +444,13 @@
         [context printJSON:output];
     } else {
         if (accounts.count == 0) {
-            printf("No accounts found.\n");
+            NSString *hostname = [PDSAccountManager pdsHostnameForContext:context];
+            PDS_LOG_INFO(@"No accounts found in database");
+            [context printInfo:@"No accounts found."];
+            [context printInfo:@"\nTo create your first account, run:"];
+            [context printInfo:[NSString stringWithFormat:@"  pds account create --email you@example.com --handle yourhandle.%@", hostname]];
+            [context printInfo:@"\nFor testing, you can use the .test TLD:"];
+            [context printInfo:@"  pds account create -e test@test.com -h testuser.test"];
             return;
         }
         printf("%-44s %-30s %-30s %s\n", "DID", "Handle", "Email", "Created");
@@ -456,7 +475,11 @@
 - (void)executeInfoWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printError:@"Missing account identifier"];
-        printf("Usage: pds account info <did|handle>\n");
+        [context printInfo:@"\nUsage: pds account info <did|handle>"];
+        NSString *hostname = [PDSAccountManager pdsHostnameForContext:context];
+        [context printInfo:@"\nExamples:"];
+        [context printInfo:@"  pds account info did:plc:abc123"];
+        [context printInfo:[NSString stringWithFormat:@"  pds account info username.%@", hostname]];
         return;
     }
 
@@ -464,7 +487,10 @@
     PDSDatabaseAccount *account = [PDSAccountManager getAccountWithContext:context identifier:identifier];
 
     if (!account) {
+        PDS_LOG_WARN(@"Account not found: %@", identifier);
         [context printError:[NSString stringWithFormat:@"Account not found: %@", identifier]];
+        [context printInfo:@"\nTo find accounts, run:"];
+        [context printInfo:@"  pds account list"];
         return;
     }
 
@@ -509,24 +535,62 @@
     
     if (email.length == 0 || handle.length == 0) {
         [context printError:@"Missing required arguments: --email and --handle"];
-        printf("Usage: pds account create --email <email> --handle <handle> [--password <pw>]\n");
+        NSString *hostname = [PDSAccountManager pdsHostnameForContext:context];
+        [context printInfo:@"\nUsage: pds account create --email <email> --handle <handle> [--password <pw>]"];
+        [context printInfo:[NSString stringWithFormat:@"\nExamples:"]];
+        [context printInfo:[NSString stringWithFormat:@"  pds account create --email alice@example.com --handle alice.%@", hostname]];
+        [context printInfo:@"  pds account create -e bob@test.com -h bob.test -p secret123"];
         return;
     }
 
-    if ([handle rangeOfString:@"."].location == NSNotFound) {
-        [context printError:@"Invalid handle: Handle must be a domain (e.g., alice.test)"];
+    NSError *emailError = nil;
+    if (![ATProtoHandleValidator validateEmail:email error:&emailError]) {
+        [context printError:[NSString stringWithFormat:@"Invalid email: %@", emailError.localizedDescription]];
+        if (emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
+            [context printInfo:emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
+        }
+        return;
+    }
+
+    NSError *handleError = nil;
+    NSString *normalizedHandle = [ATProtoHandleValidator validateAndNormalizeHandle:handle error:&handleError];
+    if (!normalizedHandle) {
+        [context printError:[NSString stringWithFormat:@"Invalid handle '%@': %@", handle, handleError.localizedDescription]];
+        if (handleError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
+            [context printInfo:handleError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
+        }
+        NSString *hostname = [PDSAccountManager pdsHostnameForContext:context];
+        [context printInfo:[NSString stringWithFormat:@"\nValid handle formats:"]];
+        [context printInfo:[NSString stringWithFormat:@"  username.%@       (uses this PDS)", hostname]];
+        [context printInfo:@"  bob.test              (test TLD for development)"];
+        [context printInfo:@"  carol.com             (any valid domain)"];
         return;
     }
 
     BOOL success = [PDSAccountManager createAccountWithContext:context
                                                          email:email
-                                                       handle:handle
+                                                       handle:normalizedHandle
                                                      password:password];
 
     if (success) {
+        PDS_LOG_INFO(@"Account created successfully: %@", normalizedHandle);
         [context printInfo:@"Account created successfully"];
+        [context printInfo:[NSString stringWithFormat:@"Handle: %@", normalizedHandle]];
+        [context printInfo:[NSString stringWithFormat:@"Email: %@", email]];
     } else {
-        [context printError:@"Failed to create account"];
+        NSString *dbPath = [PDSAccountManager databasePathForContext:context];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+            PDS_LOG_ERROR(@"Database not found at %@", dbPath);
+            [context printError:@"Database not found. Make sure the PDS data directory exists."];
+            [context printInfo:[NSString stringWithFormat:@"Expected database at: %@", dbPath]];
+        } else {
+            PDS_LOG_ERROR(@"Failed to create account for handle: %@", normalizedHandle);
+            [context printError:@"Failed to create account"];
+            [context printInfo:@"Possible causes:"];
+            [context printInfo:@"  - Handle already in use"];
+            [context printInfo:@"  - Email already registered"];
+            [context printInfo:@"  - Database error"];
+        }
     }
 }
 
@@ -581,34 +645,74 @@
 - (void)executeUpdateEmailWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count < 2) {
         [context printError:@"Missing arguments: --update-email <did> <email>"];
+        [context printInfo:@"\nUsage: pds account update-email <did> <new-email>"];
+        [context printInfo:@"\nExample:"];
+        [context printInfo:@"  pds account update-email did:plc:abc123 newemail@example.com"];
         return;
     }
 
     NSString *did = args[0];
     NSString *email = args[1];
+
+    NSError *emailError = nil;
+    if (![ATProtoHandleValidator validateEmail:email error:&emailError]) {
+        [context printError:[NSString stringWithFormat:@"Invalid email: %@", emailError.localizedDescription]];
+        if (emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
+            [context printInfo:emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
+        }
+        return;
+    }
+
     BOOL success = [PDSAccountManager updateEmailWithContext:context did:did email:email];
 
     if (success) {
-        [context printInfo:@"Email updated"];
+        PDS_LOG_INFO(@"Email updated for account %@: %@", did, email);
+        [context printInfo:@"Email updated successfully"];
+        [context printInfo:[NSString stringWithFormat:@"New email: %@", email]];
     } else {
+        PDS_LOG_ERROR(@"Failed to update email for account %@", did);
         [context printError:@"Failed to update email"];
+        [context printInfo:@"Possible causes:"];
+        [context printInfo:@"  - Account not found"];
+        [context printInfo:@"  - Database error"];
     }
 }
 
 - (void)executeUpdateHandleWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count < 2) {
         [context printError:@"Missing arguments: --update-handle <did> <handle>"];
+        [context printInfo:@"\nUsage: pds account update-handle <did> <new-handle>"];
+        [context printInfo:@"\nExample:"];
+        [context printInfo:@"  pds account update-handle did:plc:abc123 newhandle.bsky.social"];
         return;
     }
 
     NSString *did = args[0];
     NSString *handle = args[1];
-    BOOL success = [PDSAccountManager updateHandleWithContext:context did:did handle:handle];
+
+    NSError *handleError = nil;
+    NSString *normalizedHandle = [ATProtoHandleValidator validateAndNormalizeHandle:handle error:&handleError];
+    if (!normalizedHandle) {
+        [context printError:[NSString stringWithFormat:@"Invalid handle '%@': %@", handle, handleError.localizedDescription]];
+        if (handleError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
+            [context printInfo:handleError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
+        }
+        return;
+    }
+
+    BOOL success = [PDSAccountManager updateHandleWithContext:context did:did handle:normalizedHandle];
 
     if (success) {
-        [context printInfo:@"Handle updated"];
+        PDS_LOG_INFO(@"Handle updated for account %@: %@", did, normalizedHandle);
+        [context printInfo:@"Handle updated successfully"];
+        [context printInfo:[NSString stringWithFormat:@"New handle: %@", normalizedHandle]];
     } else {
+        PDS_LOG_ERROR(@"Failed to update handle for account %@", did);
         [context printError:@"Failed to update handle"];
+        [context printInfo:@"Possible causes:"];
+        [context printInfo:@"  - Account not found"];
+        [context printInfo:@"  - Handle already in use by another account"];
+        [context printInfo:@"  - Database error"];
     }
 }
 
