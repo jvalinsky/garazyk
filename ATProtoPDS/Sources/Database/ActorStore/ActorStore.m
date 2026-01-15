@@ -279,7 +279,6 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #pragma mark - Statement Management
 
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error {
-    // Defensive check: ensure database is open before use
     if (!self.open || !self.db) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
@@ -289,20 +288,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         return NULL;
     }
 
-    // Check cache first
-    NSValue *stmtValue = [self.stmtCache objectForKey:sql];
     sqlite3_stmt *stmt = NULL;
-    if (stmtValue) {
-        [stmtValue getValue:&stmt];
-        if (stmt) {
-            // Reset the cached statement for reuse
-            sqlite3_reset(stmt);
-            sqlite3_clear_bindings(stmt);
-            return stmt;
-        }
-    }
-
-    // Prepare new statement
     int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
 
     if (result != SQLITE_OK) {
@@ -312,18 +298,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         return NULL;
     }
 
-    // Cache the prepared statement
-    [self.stmtCache setObject:[NSValue valueWithPointer:stmt] forKey:sql];
-
     return stmt;
 }
 
 - (void)finalizeStatement:(sqlite3_stmt *)stmt {
     if (stmt) {
-        // Reset the statement but keep it in cache for reuse
-        sqlite3_reset(stmt);
-        sqlite3_clear_bindings(stmt);
-        // Statement remains in cache for future reuse
+        sqlite3_finalize(stmt);
     }
 }
 

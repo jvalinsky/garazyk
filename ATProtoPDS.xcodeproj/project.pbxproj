@@ -170,7 +170,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) atprotopds-cli\n";
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) september\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -341,7 +341,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/atprotopds-cli";
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/september";
 				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -349,7 +349,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.ATProtoPDS-CLI";
-				PRODUCT_NAME = "atprotopds-cli";
+				PRODUCT_NAME = september;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -403,7 +403,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/atprotopds-cli";
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/september";
 				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -411,7 +411,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.ATProtoPDS-CLI";
-				PRODUCT_NAME = "atprotopds-cli";
+				PRODUCT_NAME = september;
 				SDKROOT = macosx;
 			};
 			name = Debug;
