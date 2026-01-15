@@ -143,6 +143,17 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
 
 /*!
+ @method getAccountByEmail:error:
+
+ @abstract Retrieve account by email address.
+
+ @param email User email address.
+ @param error Error pointer for retrieval failures.
+ @return Account object or nil if not found.
+ */
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error;
+
+/*!
  @method getAccountByRefreshToken:error:
 
  @abstract Retrieve account associated with a refresh token.

@@ -19,6 +19,7 @@
 
 /// Base32 alphabet (RFC 4648) - Lowercase for Multibase 'b'
 static const char kBase32Alphabet[] = "abcdefghijklmnopqrstuvwxyz234567";
+static const char kBase58Alphabet[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 /// CIDv1 multicodec code (0x01)
 static const uint64_t kCIDv1Multicodec = 0x01;
@@ -330,6 +331,51 @@ static const NSUInteger kMaxVarintSize = 9;
     }
 
     return [result copy];
+}
+
++ (nullable NSData *)base58btcDecode:(NSString *)string {
+    if (!string || string.length == 0) {
+        return [NSData data];
+    }
+
+    NSUInteger leadingZeros = 0;
+    while (leadingZeros < string.length && [string characterAtIndex:leadingZeros] == '1') {
+        leadingZeros++;
+    }
+
+    NSMutableData *littleEndian = [NSMutableData data];
+    for (NSUInteger i = 0; i < string.length; i++) {
+        unichar c = [string characterAtIndex:i];
+        const char *ptr = strchr(kBase58Alphabet, (char)c);
+        if (!ptr) {
+            return nil;
+        }
+
+        int carry = (int)(ptr - kBase58Alphabet);
+        uint8_t *bytes = littleEndian.mutableBytes;
+        for (NSUInteger j = 0; j < littleEndian.length; j++) {
+            int value = bytes[j] * 58 + carry;
+            bytes[j] = (uint8_t)(value & 0xFF);
+            carry = value >> 8;
+        }
+        while (carry > 0) {
+            uint8_t byte = (uint8_t)(carry & 0xFF);
+            [littleEndian appendBytes:&byte length:1];
+            carry >>= 8;
+        }
+    }
+
+    NSUInteger valueLength = littleEndian.length;
+    NSMutableData *result = [NSMutableData dataWithLength:leadingZeros + valueLength];
+    if (valueLength > 0) {
+        uint8_t *outBytes = result.mutableBytes;
+        const uint8_t *srcBytes = littleEndian.bytes;
+        for (NSUInteger i = 0; i < valueLength; i++) {
+            outBytes[leadingZeros + i] = srcBytes[valueLength - 1 - i];
+        }
+    }
+
+    return result;
 }
 
 #pragma mark - Hashing

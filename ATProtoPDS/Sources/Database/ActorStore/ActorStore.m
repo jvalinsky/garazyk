@@ -1160,14 +1160,55 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 }
 #else
 - (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
-    // On macOS, we don't have the raw key data directly accessible
-    // Return nil for now - this method is primarily for Linux
-    if (error) {
-        *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                     code:-1
-                                 userInfo:@{NSLocalizedDescriptionKey: @"Raw signing key bytes not available on macOS"}];
+    if (!self.useKeychainSigningKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key not available in memory-only store"}];
+        }
+        return nil;
     }
-    return nil;
+
+    NSString *account = [self keychainAccountForDid:self.did];
+    NSDictionary *query = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: kSigningKeyService,
+        (__bridge id)kSecAttrAccount: account,
+        (__bridge id)kSecReturnData: @YES,
+        (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
+    };
+
+    CFDataRef keyData = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyData);
+    if (status == errSecItemNotFound) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key not found in Keychain"}];
+        }
+        return nil;
+    }
+
+    if (status != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyInvalid
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve signing key from Keychain"}];
+        }
+        return nil;
+    }
+
+    NSData *data = (__bridge_transfer NSData *)keyData;
+    if (data.length != 32) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyInvalid
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid key format - expected 32-byte secp256k1 key"}];
+        }
+        return nil;
+    }
+
+    return data;
 }
 #endif
 
