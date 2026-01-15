@@ -517,7 +517,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         return;
     }
     
-    // Issue new access token
+    // Issue new access token and rotate refresh token
     NSString *newAccessToken = [foundSession refreshAccessToken];
     
     if (completion) {
