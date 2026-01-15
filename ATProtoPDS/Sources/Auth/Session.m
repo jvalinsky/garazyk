@@ -222,6 +222,10 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
                                           isRefreshToken:NO];
     self.accessToken = self.accessTokenData.value;
     self.accessTokenExpiresAt = self.accessTokenData.expiresAt;
+
+    self.refreshToken = [[NSUUID UUID] UUIDString];
+    self.refreshTokenData = nil;
+
     return self.accessToken;
 }
 
