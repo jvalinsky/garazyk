@@ -265,13 +265,24 @@
     assetsPath = [bundle pathForResource:@"Explore/Assets" ofType:@""];
     
     if (!assetsPath && self.controller.dataDirectory) {
-        NSString *exploreAssets = [self.controller.dataDirectory stringByAppendingPathComponent:@"../Explore/Assets"];
-        assetsPath = [exploreAssets stringByResolvingSymlinksInPath];
+        assetsPath = [self.controller.dataDirectory stringByAppendingPathComponent:@"Explore/Assets"];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:assetsPath]) {
+            assetsPath = [[self.controller.dataDirectory stringByAppendingPathComponent:@".."] stringByAppendingPathComponent:@"Explore/Assets"];
+            assetsPath = [assetsPath stringByResolvingSymlinksInPath];
+        }
     }
     
     if (!assetsPath) {
         NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-        assetsPath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets"];
+        NSString *projectAssets = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets"];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:projectAssets]) {
+            assetsPath = projectAssets;
+        } else {
+            NSString *dataAssets = [cwd stringByAppendingPathComponent:@"data/Explore/Assets"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:dataAssets]) {
+                assetsPath = dataAssets;
+            }
+        }
     }
     
     return assetsPath;
