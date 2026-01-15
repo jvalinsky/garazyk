@@ -1,275 +1,453 @@
-/*!
- @file PDSController.h
-
- @abstract Main application controller for the ATProto PDS.
-
- @discussion PDSController is the central coordinator for all PDS operations.
- It manages database connections, service instances, and provides high-level
- APIs for account, repository, record, and blob operations.
-
- @copyright Copyright (c) 2025-2026 Jack Valinsky
- */
-
 #import <Foundation/Foundation.h>
-#import "Services/PDSRecordService.h"
+
+@class PDSDatabase;
+@class MST;
+@class Session;
+@class BlobStorage;
+@class CID;
+@class SubscribeReposHandler;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class PDSServiceDatabases;
-@class PDSDatabase;
-@class PDSDatabasePool;
-@class PDSActorStore;
-@class MST;
-@class BlobStorage;
-@class SubscribeReposHandler;
-@class PDSDatabaseAccount;
-@class PDSDatabaseRepo;
-@class PDSDatabaseRecord;
-@class PDSDatabaseBlob;
-@class PDSAccountService;
-@class PDSBlobService;
-@class PDSRepositoryService;
-@class JWTMinter;
+/**
+ @file PDSController.h
 
-/*! Error domain for PDSController operations. */
-extern NSString * const PDSControllerErrorDomain;
-
-/*!
- @enum PDSControllerError
-
- @abstract Error codes for controller operations.
-
- @constant PDSControllerErrorAccountNotFound Account does not exist.
- @constant PDSControllerErrorAccountAlreadyExists Handle/email already taken.
- @constant PDSControllerErrorInvalidToken Token is invalid or expired.
- @constant PDSControllerErrorInvalidHandle Handle format is invalid.
- @constant PDSControllerErrorRepoNotFound Repository does not exist.
- @constant PDSControllerErrorRecordNotFound Record does not exist.
- @constant PDSControllerErrorBlobNotFound Blob does not exist.
- @constant PDSControllerErrorUnauthorized Operation not authorized.
+ @brief The PDSController class serves as the primary coordinator for the AT Protocol Personal Data Server (PDS).
+        It manages all high-level operations including account creation, session management, record storage,
+        repository operations, and blob storage. This class acts as the central interface between the PDS
+        infrastructure and the various subsystem components.
  */
-typedef NS_ENUM(NSInteger, PDSControllerError) {
-    PDSControllerErrorAccountNotFound = 1000,
-    PDSControllerErrorAccountAlreadyExists,
-    PDSControllerErrorInvalidToken,
-    PDSControllerErrorInvalidHandle,
-    PDSControllerErrorRepoNotFound,
-    PDSControllerErrorRecordNotFound,
-    PDSControllerErrorBlobNotFound,
-    PDSControllerErrorUnauthorized,
-};
 
-/*!
- @class PDSController
-
- @abstract Central controller for PDS operations.
-
- @discussion Provides high-level APIs for managing accounts, repositories,
- records, and blobs. Coordinates between database pools, service layers,
- and JWT minting.
- */
 @interface PDSController : NSObject
 
-/*! Path to the data directory. */
-@property (nonatomic, copy, readonly) NSString *dataDirectory;
+#pragma mark - Initialization and Server Lifecycle
 
-/*! URL of the PLC directory server. */
-@property (nonatomic, copy) NSString *plcServerURL;
+/**
+ @brief Initializes a new PDSController instance with the specified database.
 
-/*! Whether the HTTP server is running. */
-@property (nonatomic, assign, readonly, getter=isRunning) BOOL running;
+ @param database The PDSDatabase instance to use for data persistence. Must not be nil.
 
-/*! Service-level database connections. */
-@property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
+ @return A newly initialized PDSController instance, or nil if initialization failed.
 
-/*! Pool for user-specific databases. */
-@property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
+ @discussion This initializer establishes the connection between the controller and the underlying
+             database layer. The controller will use this database for all persistence operations.
+             After initialization, call \c startServer to begin accepting requests.
+ */
+- (instancetype)initWithDatabase:(PDSDatabase *)database;
 
-/*! Account management service. */
-@property (nonatomic, strong, readonly) PDSAccountService *accountService;
+/**
+ @brief Starts the PDS server, enabling it to accept and process incoming requests.
 
-/*! Record management service. */
-@property (nonatomic, strong, readonly) PDSRecordService *recordService;
+ @discussion This method initializes all necessary server components and begins listening for
+             incoming connections. The server will remain running until \c stopServer is called.
+             Ensure that the controller has been properly initialized with a valid database
+             before calling this method.
+ */
+- (void)startServer;
 
-/*! Blob management service. */
-@property (nonatomic, strong, readonly) PDSBlobService *blobService;
+/**
+ @brief Stops the PDS server, gracefully shutting down all active connections and resources.
 
-/*! Repository management service. */
-@property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
-
-/*! JWT minting for access tokens. */
-@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
-
-/*! Port for the HTTP XRPC server (default 2583). */
-@property (nonatomic, assign) NSUInteger httpPort;
-
-/*! Port for the WebSocket subscribeRepos handler (default 8081). */
-@property (nonatomic, assign) NSUInteger wsPort;
-
-/*! Returns a service database connection. */
-- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
-
-/*! Deprecated - use serviceDatabases and userDatabasePool. */
-@property (nonatomic, strong, readonly, nullable) id database;
-
-+ (instancetype)sharedController;
-
-- (instancetype)initWithDirectory:(NSString *)directory 
-                   serviceMaxSize:(NSUInteger)serviceMaxSize 
-                 userDatabaseSize:(NSUInteger)userDatabaseSize;
-
-- (BOOL)startServerWithError:(NSError **)error;
+ @discussion This method performs a graceful shutdown of the server, ensuring that all pending
+             operations are completed or properly handled. After calling this method, the server
+             will no longer accept new requests. Call \c startServer to restart the server.
+ */
 - (void)stopServer;
 
-#pragma mark - Account Operations
+#pragma mark - Properties
 
-- (nullable NSDictionary *)createAccountForEmail:(NSString *)email
-                                        password:(NSString *)password
-                                         handle:(NSString *)handle
-                                             did:(nullable NSString *)did
-                                            error:(NSError **)error;
+/**
+ @brief The PDSDatabase instance used for all data persistence operations.
 
-- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
+ @discussion This read-only property provides access to the underlying database layer that handles
+             all persistent storage for the PDS. The database is set during initialization and
+             cannot be changed during the lifetime of the controller.
+ */
+@property (nonatomic, readonly) PDSDatabase *database;
 
-- (nullable NSDictionary *)loginWithHandle:(NSString *)handle
-                                   password:(NSString *)password
-                                    error:(NSError **)error;
+/**
+ @brief The BlobStorage instance used for binary large object storage and retrieval.
 
-- (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
-                                       error:(NSError **)error;
+ @discussion This read-only property provides access to the blob storage subsystem that handles
+             all binary data such as images, videos, and other large files. Blobs are referenced
+             by CID (Content Identifier) and can be associated with any record.
+ */
+@property (nonatomic, readonly) BlobStorage *blobStorage;
 
-- (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error;
+/**
+ @brief The optional SubscribeReposHandler for handling real-time repository updates via WebSocket.
 
-#pragma mark - Legacy Account Operations (for backward compatibility)
+ @discussion This property is nullable and contains the handler responsible for streaming
+             repository changes to subscribed clients. It is lazily initialized when the first
+             subscription request is received. When nil, repository subscription functionality
+             is unavailable.
+ */
+@property (nonatomic, readonly, nullable) SubscribeReposHandler *subscribeReposHandler;
 
+#pragma mark - Session Management
+
+/**
+ @brief Creates a new session for an existing user.
+
+ @param identifier The user's account identifier (email, handle, or DID).
+ @param password The user's password for authentication.
+ @param handle The user's handle (e.g., "user.bsky.social").
+ @param did The user's decentralized identifier (DID).
+ @param error On return, contains an error if the session creation failed.
+
+ @return A dictionary containing session details including access and refresh tokens, or nil if failed.
+
+ @discussion This method authenticates an existing user and creates a new session. On success,
+             the returned dictionary contains the OAuth tokens required for subsequent authenticated
+             requests. The session tokens have a limited lifetime and should be refreshed using
+             \c refreshSessionWithRefreshToken:error: before expiration.
+ */
 - (nullable NSDictionary *)createSessionForIdentifier:(NSString *)identifier
-                                             password:(NSString *)password
-                                              handle:(NSString *)handle
-                                                  did:(NSString *)did
-                                                 error:(NSError **)error;
+                                              password:(NSString *)password
+                                               handle:(NSString *)handle
+                                                 did:(NSString *)did
+                                                error:(NSError **)error;
 
+/**
+ @brief Refreshes an existing session using a refresh token.
+
+ @param refreshToken The refresh token from a previous session.
+ @param error On return, contains an error if the refresh failed.
+
+ @return A dictionary containing new session tokens, or nil if the refresh failed.
+
+ @discussion This method takes a valid refresh token and issues a new set of access and refresh
+             tokens. The old refresh token becomes invalid after this operation. This allows
+             long-lived sessions without requiring the user to re-authenticate.
+ */
 - (nullable NSDictionary *)refreshSessionWithRefreshToken:(NSString *)refreshToken
-                                                    error:(NSError **)error;
+                                                      error:(NSError **)error;
 
-#pragma mark - Repo Operations
+#pragma mark - Account Management
 
-- (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
-- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSData *)sinceCid error:(NSError **)error;
-- (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error;
+/**
+ @brief Creates a new account on the PDS.
 
-#pragma mark - Legacy Repo Operations (for backward compatibility)
+ @param email The email address for the new account.
+ @param password The initial password for the account.
+ @param handle The desired handle for the account.
+ @param did An optional pre-specified DID. If nil, one will be generated.
+ @param error On return, contains an error if account creation failed.
 
-- (nullable NSDictionary *)describeRepo:(NSString *)repo error:(NSError **)error;
-- (nullable NSData *)getRepoDataForDid:(NSString *)did error:(NSError **)error;
-- (nullable NSString *)getRepoHeadForDid:(NSString *)did error:(NSError **)error;
+ @return A dictionary containing the created account details and initial session tokens, or nil if failed.
 
-#pragma mark - Record Operations
+ @discussion This method registers a new user on the PDS. If the \c did parameter is provided,
+             it must be a valid DID format; otherwise, a new DID will be automatically generated.
+             On success, the returned dictionary includes both account information and initial
+             session tokens for immediate use.
+ */
+- (nullable NSDictionary *)createAccountForEmail:(NSString *)email
+                                          password:(NSString *)password
+                                           handle:(NSString *)handle
+                                              did:(nullable NSString *)did
+                                             error:(NSError **)error;
 
-- (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
-- (nullable NSArray *)listRecords:(NSString *)collection 
-                          forDid:(NSString *)did
-                            limit:(NSUInteger)limit
-                           cursor:(nullable NSString *)cursor
-                           error:(NSError **)error;
-- (BOOL)putRecord:(NSString *)collection 
-               rkey:(NSString *)rkey 
-              value:(NSDictionary *)value 
-             forDid:(NSString *)did
-     validationMode:(PDSValidationMode)mode
-              error:(NSError **)error;
+#pragma mark - Record Creation
 
-- (BOOL)deleteRecord:(NSString *)collection 
-                  rkey:(NSString *)rkey 
-                forDid:(NSString *)did
-                 error:(NSError **)error;
+/**
+ @brief Creates a new record in the specified collection.
 
-#pragma mark - Legacy Record Operations (for backward compatibility)
+ @param did The DID of the repository (user) owning this record.
+ @param collection The collection identifier (e.g., "app.bsky.feed.post").
+ @param record The record data as a dictionary.
+ @param error On return, contains an error if the operation failed.
 
+ @return A dictionary containing the created record's URI and CID, or nil if failed.
+
+ @discussion This method creates a new record with an auto-generated record key (rkey).
+             The record is validated against the collection schema before insertion.
+             Returns the AT-URI (e.g., "at://did:plc:z72.../app.bsky.feed.post/3k5... ")
+             and the content hash (CID) of the created record.
+ */
 - (nullable NSDictionary *)createRecordForDid:(NSString *)did
                                     collection:(NSString *)collection
-                                       record:(NSDictionary *)record
-                               validationMode:(PDSValidationMode)mode
-                                        error:(NSError **)error;
+                                         record:(NSDictionary *)record
+                                          error:(NSError **)error;
 
+/**
+ @brief Creates a new record with an optional specified record key.
+
+ @param did The DID of the repository (user) owning this record.
+ @param collection The collection identifier.
+ @param record The record data as a dictionary.
+ @param rkey An optional custom record key. If nil, one is auto-generated.
+ @param error On return, contains an error if the operation failed.
+
+ @return A dictionary containing the created record's URI and CID, or nil if failed.
+
+ @discussion This variant allows specification of a custom record key (rkey) for the new record.
+             If \c rkey is provided, it must be unique within the collection for this repository.
+             Custom rkeys are useful for creating records with human-readable or meaningful identifiers.
+ */
+- (nullable NSDictionary *)createRecordForDid:(NSString *)did
+                                    collection:(NSString *)collection
+                                         record:(NSDictionary *)record
+                                           rkey:(nullable NSString *)rkey
+                                         error:(NSError **)error;
+
+/**
+ @brief Validates a record against the schema for the specified collection.
+
+ @param record The record data to validate.
+ @param collection The collection identifier whose schema should be used.
+ @param error On return, contains a validation error if validation failed.
+
+ @return YES if the record is valid, NO if validation failed.
+
+ @discussion This method performs schema validation without creating the record. It checks
+             that all required fields are present and that field types match the schema definition.
+             Use this method before attempting to create a record to provide better error feedback.
+ */
+- (BOOL)validateRecord:(NSDictionary *)record
+         forCollection:(NSString *)collection
+                error:(NSError **)error;
+
+/**
+ @brief Creates a new record with an optional specified record key (variant 2).
+
+ @param did The DID of the repository (user) owning this record.
+ @param collection The collection identifier.
+ @param record The record data as a dictionary.
+ @param rkey An optional custom record key.
+ @param error On return, contains an error if the operation failed.
+
+ @return A dictionary containing the created record's URI and CID, or nil if failed.
+
+ @discussion Alternative signature for record creation with custom rkey support.
+             This method is functionally identical to the previous overload.
+ */
+- (nullable NSDictionary *)createRecordForDid:(NSString *)did
+                                    collection:(NSString *)collection
+                                         record:(NSDictionary *)record
+                                          rkey:(nullable NSString *)rkey
+                                          error:(NSError **)error;
+
+#pragma mark - Record Update and Retrieval
+
+/**
+ @brief Updates or creates a record with a specific record key.
+
+ @param did The DID of the repository (user) owning the record.
+ @param collection The collection identifier.
+ @param rkey The record key identifying the specific record.
+ @param record The record data to store.
+ @param error On return, contains an error if the operation failed.
+
+ @return A dictionary containing the record's URI and CID after the operation, or nil if failed.
+
+ @discussion This method performs a "put" operation, which creates a new record if it doesn't
+             exist or updates an existing record if it does. The record is fully replaced with
+             the provided data. This operation affects the repository's commit history.
+ */
+- (nullable NSDictionary *)putRecordForDid:(NSString *)did
+                                 collection:(NSString *)collection
+                                      rkey:(NSString *)rkey
+                                     record:(NSDictionary *)record
+                                      error:(NSError **)error;
+
+/**
+ @brief Retrieves a specific record from the repository.
+
+ @param did The DID of the repository (user) owning the record.
+ @param collection The collection identifier.
+ @param rkey The record key identifying the specific record.
+ @param error On return, contains an error if the operation failed.
+
+ @return A dictionary containing the record data, or nil if not found or error occurred.
+
+ @discussion This method retrieves a single record by its full AT-URI components.
+             The returned dictionary contains the record's key, collection, value, and CID.
+             Returns nil if the record does not exist.
+ */
 - (nullable NSDictionary *)getRecordForDid:(NSString *)did
                                  collection:(NSString *)collection
                                       rkey:(NSString *)rkey
                                      error:(NSError **)error;
 
-- (nullable NSArray *)listRecordsForDid:(NSString *)did
-                              collection:(NSString *)collection
-                                   limit:(NSUInteger)limit
-                                  cursor:(nullable NSString *)cursor
-                                   error:(NSError **)error;
+/**
+ @brief Lists records in a collection with pagination support.
 
+ @param did The DID of the repository (user) whose records are being listed.
+ @param collection The collection identifier.
+ @param limit The maximum number of records to return (1-100).
+ @param cursor A pagination cursor from a previous request.
+ @param error On return, contains an error if the operation failed.
+
+ @return An array of record dictionaries, or nil if an error occurred.
+
+ @discussion This method returns a paginated list of records in the specified collection.
+             The \c limit parameter controls the maximum results per page (1-100).
+             For subsequent pages, use the \c cursor value returned with the results.
+             Each item in the returned array is a record with its URI, CID, and value.
+ */
+- (NSArray<NSDictionary *> *)listRecordsForDid:(NSString *)did
+                                     collection:(NSString *)collection
+                                         limit:(NSInteger)limit
+                                        cursor:(nullable NSString *)cursor
+                                         error:(NSError **)error;
+
+/**
+ @brief Deletes a record from the repository.
+
+ @param did The DID of the repository (user) owning the record.
+ @param collection The collection identifier.
+ @param rkey The record key identifying the record to delete.
+ @param error On return, contains an error if the deletion failed.
+
+ @return YES if the record was deleted, NO if the operation failed.
+
+ @discussion This method permanently removes a record from the repository.
+             Once deleted, the record cannot be recovered. This operation creates
+             a new commit in the repository history. Returns NO if the record
+             doesn't exist (except in cases of concurrent deletion).
+ */
 - (BOOL)deleteRecordForDid:(NSString *)did
                  collection:(NSString *)collection
                       rkey:(NSString *)rkey
                      error:(NSError **)error;
 
-- (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error;
+#pragma mark - Repository Operations
 
-- (BOOL)putRecordForDid:(NSString *)did
-              collection:(NSString *)collection
-                   rkey:(NSString *)rkey
-                 record:(NSDictionary *)record
-         validationMode:(PDSValidationMode)mode
-                  error:(NSError **)error;
+/**
+ @brief Applies a batch of write operations to a repository atomically.
 
-#pragma mark - Blob Operations
+ @param writes An array of write operation dictionaries.
+ @param repo The DID of the repository to modify.
+ @param validate If YES, validates records against schemas before applying.
+ @param swapCommit Optional commit CID for conditional updates (optimistic locking).
+ @param error On return, contains an error if the operation failed.
 
-- (nullable NSData *)getBlob:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
-- (nullable NSDictionary *)uploadBlob:(NSData *)blobData 
-                               forDid:(NSString *)did 
-                               mimeType:(NSString *)mimeType
-                                  error:(NSError **)error;
+ @return A dictionary containing the resulting commit information, or nil if failed.
 
-#pragma mark - Legacy Blob Operations (for backward compatibility)
-
-- (nullable NSDictionary *)uploadBlob:(NSData *)blobData 
-                             mimeType:(NSString *)mimeType 
-                                  did:(NSString *)did
-                                error:(NSError **)error;
-
-- (nullable NSDictionary *)getBlobWithCID:(NSString *)cid 
-                                      did:(NSString *)did
-                                    error:(NSError **)error;
-
-- (nullable NSArray *)listBlobsForDID:(NSString *)did
-                                limit:(NSUInteger)limit
-                               cursor:(nullable NSString *)cursor
-                                error:(NSError **)error;
-
-- (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error;
-
-#pragma mark - Write Operations (for backward compatibility)
-
-- (nullable NSDictionary *)applyWrites:(NSArray *)writes 
-                                 repo:(NSString *)repo 
-                             validate:(BOOL)validate 
+ @discussion This method applies multiple write operations (creates, updates, deletes)
+             as a single atomic transaction. All operations succeed or fail together.
+             If \c swapCommit is provided, the update only proceeds if the repository's
+             current head matches the specified CID, enabling optimistic locking.
+ */
+- (nullable NSDictionary *)applyWrites:(NSArray *)writes
+                                 repo:(NSString *)repo
+                             validate:(BOOL)validate
                            swapCommit:(nullable NSString *)swapCommit
                                 error:(NSError **)error;
 
-#pragma mark - Admin Operations
+/**
+ @brief Describes the contents and metadata of a repository.
 
-- (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
-- (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
-- (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error;
+ @param repo The DID of the repository to describe.
+ @param error On return, contains an error if the operation failed.
 
-#pragma mark - Moderation Operations
+ @return A dictionary containing repository details including collections and head CID, or nil if failed.
 
-- (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error;
-- (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error;
+ @discussion This method returns metadata about a repository including the list of collections
+             it contains, the current head commit CID, and other administrative information.
+             It provides a high-level overview of the repository's contents.
+ */
+- (nullable NSDictionary *)describeRepo:(NSString *)repo error:(NSError **)error;
 
-#pragma mark - Labeling Operations
+/**
+ @brief Retrieves the MST (Merkle Search Tree) structure for a repository.
 
-- (NSDictionary *)createLabel:(NSDictionary *)params error:(NSError **)error;
-- (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error;
+ @param did The DID of the repository.
 
-#pragma mark - Health & Metrics
+ @return The MST object representing the repository's data structure, or nil if not found.
 
-- (NSDictionary<NSString *, id> *)getHealthCheck;
-- (NSDictionary<NSString *, id> *)getMetrics;
+ @discussion This method provides low-level access to the repository's Merkle Search Tree,
+             which is the data structure used to organize and verify repository contents.
+             The returned MST object can be used for advanced operations and verifications.
+ */
+- (nullable MST *)getRepoForDid:(NSString *)did;
+
+/**
+ @brief Retrieves the serialized data of a repository as NSData.
+
+ @param did The DID of the repository.
+ @param error On return, contains an error if the operation failed.
+
+ @return NSData containing the serialized repository, or nil if not found or error occurred.
+
+ @discussion This method returns the complete serialized form of a repository,
+             useful for backup, export, or synchronization purposes.
+             The data is in a format suitable for storage or transmission.
+ */
+- (nullable NSData *)getRepoDataForDid:(NSString *)did
+                                error:(NSError **)error;
+
+/**
+ @brief Retrieves the current head CID of a repository.
+
+ @param did The DID of the repository.
+ @param error On return, contains an error if the operation failed.
+
+ @return A string containing the head CID, or nil if not found or error occurred.
+
+ @discussion This method returns the current HEAD commit CID of the repository,
+             which represents the latest state of all records in the repository.
+             This CID can be used to detect changes or verify synchronization.
+ */
+- (nullable NSString *)getRepoHeadForDid:(NSString *)did
+                                    error:(NSError **)error;
+
+#pragma mark - Blob Storage
+
+/**
+ @brief Uploads binary data as a blob.
+
+ @param data The binary data to upload.
+ @param mimeType The MIME type of the data (e.g., "image/png").
+ @param did The DID of the repository uploading the blob.
+ @param error On return, contains an error if the upload failed.
+
+ @return A dictionary containing the blob's CID and metadata, or nil if failed.
+
+ @discussion This method stores arbitrary binary data and returns a CID that can be
+             used to reference the blob in records. The blob is associated with
+             the specified repository for access control purposes.
+ */
+- (nullable NSDictionary *)uploadBlob:(NSData *)data
+                             mimeType:(NSString *)mimeType
+                                  did:(NSString *)did
+                               error:(NSError **)error;
+
+/**
+ @brief Retrieves a blob by its CID.
+
+ @param cidString The CID string identifying the blob.
+ @param did The DID of the repository that owns the blob.
+ @param error On return, contains an error if the retrieval failed.
+
+ @return A dictionary containing the blob data and metadata, or nil if not found or error occurred.
+
+ @discussion This method retrieves a blob that has been previously uploaded.
+             The blob must exist and be accessible by the requesting repository.
+             The returned dictionary includes the blob data, MIME type, and size.
+ */
+- (nullable NSDictionary *)getBlobWithCID:(NSString *)cidString
+                                     did:(NSString *)did
+                                  error:(NSError **)error;
+
+/**
+ @brief Lists all blobs in a repository with pagination.
+
+ @param did The DID of the repository to list blobs from.
+ @param limit The maximum number of blob references to return (1-100).
+ @param cursor A pagination cursor from a previous request.
+ @param error On return, contains an error if the operation failed.
+
+ @return An array of blob reference dictionaries, or nil if an error occurred.
+
+ @discussion This method returns a paginated list of blob references (CIDs) stored
+             in the specified repository. The \c limit parameter controls results per page.
+             Use the \c cursor for pagination through large numbers of blobs.
+ */
+- (nullable NSArray<NSDictionary *> *)listBlobsForDID:(NSString *)did
+                                                limit:(NSInteger)limit
+                                               cursor:(nullable NSString *)cursor
+                                                error:(NSError **)error;
 
 @end
 

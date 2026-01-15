@@ -19,12 +19,19 @@
         }
         return YES;
     } else if ([did hasPrefix:@"did:web:"]) {
-        // did:web:<hostname>
-        // Hostname validation is complex, simplified check for now
+        // did:web:<hostname> or did:web:<hostname>:<path>
         NSString *identifier = [did substringFromIndex:8];
-        if (identifier.length == 0 || [identifier containsString:@"/"] || [identifier containsString:@":"]) {
-             if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:3 userInfo:@{NSLocalizedDescriptionKey: @"Invalid did:web format."}];
+        if (identifier.length == 0 || [identifier containsString:@"/"]) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:3 userInfo:@{NSLocalizedDescriptionKey: @"Invalid did:web format."}];
             return NO;
+        }
+
+        NSArray<NSString *> *components = [identifier componentsSeparatedByString:@":"];
+        for (NSString *component in components) {
+            if (component.length == 0) {
+                if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:3 userInfo:@{NSLocalizedDescriptionKey: @"Invalid did:web format."}];
+                return NO;
+            }
         }
         return YES;
     }

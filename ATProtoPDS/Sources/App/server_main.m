@@ -43,6 +43,29 @@ int main(int argc, const char * argv[]) {
             [xrpcDispatcher handleRequest:request response:response];
         }];
 
+        [server addHandlerForPath:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"status": @"ok"}];
+        }];
+
+        [server addHandlerForPath:@"/xrpc/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"status": @"ok"}];
+        }];
+
+        [server addHandlerForPath:@"/robots.txt" handler:^(HttpRequest *request, HttpResponse *response) {
+            response.statusCode = HttpStatusOK;
+            response.contentType = @"text/plain";
+            [response setBodyString:@"User-agent: *\nDisallow: /"];
+        }];
+
+        [server addHandlerForPath:@"/account/" handler:^(HttpRequest *request, HttpResponse *response) {
+            response.statusCode = HttpStatusOK;
+            response.contentType = @"text/html";
+            NSString *html = @"<!DOCTYPE html><html><head><title>ATProto Account</title></head><body><h1>Account Management</h1><p>Account web UI coming soon.</p></body></html>";
+            [response setBodyString:html];
+        }];
+
         if (![server startWithError:&error]) {
             PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
             return 1;

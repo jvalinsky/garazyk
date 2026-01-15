@@ -156,6 +156,10 @@
     [self registerMethod:@"com.atproto.identity.resolveHandle" handler:handler];
 }
 
+- (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.getRecommendedDidCredentials" handler:handler];
+}
+
 - (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.moderation.createReport" handler:handler];
 }

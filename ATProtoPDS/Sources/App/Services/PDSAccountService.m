@@ -121,9 +121,27 @@
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
                                  password:(NSString *)password
                                     error:(NSError **)error {
+    return [self loginWithIdentifier:handle password:password error:error];
+}
+
+- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
+                                      password:(NSString *)password
+                                         error:(NSError **)error {
+    if (!identifier) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSController" code:1000
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing identifier"}];
+        }
+        return nil;
+    }
 
     NSError *dbError = nil;
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByHandle:handle error:&dbError];
+    PDSDatabaseAccount *account = nil;
+    if ([identifier containsString:@"@"]) {
+        account = [_serviceDatabases getAccountByEmail:identifier error:&dbError];
+    } else {
+        account = [_serviceDatabases getAccountByHandle:identifier error:&dbError];
+    }
 
     if (!account) {
         if (error) {
@@ -133,6 +151,12 @@
         return nil;
     }
 
+    return [self loginWithAccount:account password:password error:error];
+}
+
+- (nullable NSDictionary *)loginWithAccount:(PDSDatabaseAccount *)account
+                                   password:(NSString *)password
+                                      error:(NSError **)error {
     // Verify password - try PBKDF2 first (new method)
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
     BOOL isPasswordCorrect = [passwordHash isEqualToData:account.passwordHash];

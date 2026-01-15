@@ -1,13 +1,101 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Blob/BlobStorage.h"
+#import "Core/CID.h"
 #import "Core/DID.h"
+#import "Core/ATProtoValidator.h"
 #import "Identity/HandleResolver.h"
 #import "AppView/ActorService.h"
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
 #import "Auth/JWT.h"
+#import "Auth/Secp256k1.h"
+#import "Database/ActorStore/ActorStore.h"
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
+
+static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
+
+@interface JWT (Base64URL)
++ (nullable NSData *)base64URLDecode:(NSString *)string error:(NSError **)error;
+@end
+
+static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
+    NSData *payloadData = [JWT base64URLDecode:jwt.rawPayload error:error];
+    if (!payloadData) return nil;
+    NSDictionary *payload = [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:error];
+    if (![payload isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"JWT"
+                                         code:JWTErrorDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT payload JSON"}];
+        }
+        return nil;
+    }
+    return payload;
+}
+
+static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *config) {
+    NSString *hostInput = config.serverHost ?: @"localhost";
+    if ([hostInput isEqualToString:@"0.0.0.0"]) {
+        hostInput = @"localhost";
+    }
+    NSURLComponents *components = [NSURLComponents componentsWithString:[@"https://" stringByAppendingString:hostInput]];
+    NSString *host = components.host ?: hostInput;
+    NSNumber *port = components.port;
+    if (!port && config.serverPort != 0) {
+        port = @(config.serverPort);
+    }
+
+    NSMutableArray<NSString *> *audiences = [NSMutableArray array];
+    if (host.length > 0) {
+        [audiences addObject:[NSString stringWithFormat:@"did:web:%@", host]];
+    }
+    if (port && port.unsignedIntegerValue != 80 && port.unsignedIntegerValue != 443) {
+        NSString *encodedHost = [NSString stringWithFormat:@"%@%%3A%@", host, port];
+        [audiences addObject:[NSString stringWithFormat:@"did:web:%@", encodedHost]];
+    }
+    return audiences;
+}
+
+static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error) {
+    if (multibase.length < 2) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                         code:DIDErrorInvalidDocument
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid publicKeyMultibase value"}];
+        }
+        return nil;
+    }
+
+    unichar prefix = [multibase characterAtIndex:0];
+    NSString *payload = [multibase substringFromIndex:1];
+    NSData *data = nil;
+    if (prefix == 'z') {
+        data = [CID base58btcDecode:payload];
+    } else if (prefix == 'b') {
+        data = [CID base32Decode:payload];
+    } else if (prefix == 'u') {
+        data = [JWT base64URLDecode:payload error:error];
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                         code:DIDErrorInvalidDocument
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported multibase encoding for signing key"}];
+        }
+        return nil;
+    }
+
+    if (!data) {
+        return nil;
+    }
+
+    const uint8_t *bytes = data.bytes;
+    if (data.length > 2 && bytes[0] == 0xE7 && bytes[1] == 0x01) {
+        return [data subdataWithRange:NSMakeRange(2, data.length - 2)];
+    }
+
+    return data;
+}
 
 @implementation XrpcMethodRegistry
 
@@ -48,6 +136,99 @@
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing email, handle, or password"}];
             return;
+        }
+
+        if (did && [did hasPrefix:@"did:web:"]) {
+            NSString *authHeader = [request headerForKey:@"Authorization"];
+            if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Missing service auth token"}];
+                return;
+            }
+
+            NSString *token = [authHeader substringFromIndex:7];
+            NSError *parseError = nil;
+            JWT *jwt = [JWT jwtWithToken:token error:&parseError];
+            if (!jwt || parseError) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to parse service auth token"}];
+                return;
+            }
+
+            NSError *payloadError = nil;
+            NSDictionary *payloadDict = payloadDictionaryFromJWT(jwt, &payloadError);
+            if (!payloadDict) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to decode service auth payload"}];
+                return;
+            }
+
+            NSString *lxm = payloadDict[@"lxm"];
+            if (!lxm || ![lxm isEqualToString:kServiceAuthLxmCreateAccount]) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Service auth token has invalid lxm"}];
+                return;
+            }
+
+            NSError *resolveError = nil;
+            DIDResolver *resolver = [[DIDResolver alloc] init];
+            NSDictionary *atprotoData = [resolver resolveAtprotoDataForDID:did error:&resolveError];
+            NSString *signingKey = atprotoData[@"signingKey"];
+            if (!signingKey) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"DID document missing signing key"}];
+                return;
+            }
+
+            NSError *decodeError = nil;
+            NSData *signingKeyBytes = publicKeyBytesFromMultibase(signingKey, &decodeError);
+            if (!signingKeyBytes) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to decode signing key"}];
+                return;
+            }
+
+            NSError *keyError = nil;
+            NSData *publicKey = [[Secp256k1 shared] normalizedPublicKey:signingKeyBytes error:&keyError];
+            if (!publicKey) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to normalize signing key"}];
+                return;
+            }
+
+            JWTVerifier *verifier = [[JWTVerifier alloc] init];
+            verifier.publicKey = publicKey;
+            verifier.allowedAlgorithms = @[@"ES256K"];
+            verifier.expectedIssuer = did;
+            verifier.allowMissingSubject = YES;
+
+            NSError *verifyError = nil;
+            BOOL verified = [verifier verifyJWT:jwt error:&verifyError];
+            if (!verified) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Service auth verification failed"}];
+                return;
+            }
+
+            NSString *iss = jwt.payload.iss;
+            if (!iss || ![iss isEqualToString:did]) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Service auth token has invalid issuer"}];
+                return;
+            }
+
+            NSString *aud = jwt.payload.aud;
+            NSArray<NSString *> *expectedAudiences = serviceAuthExpectedAudiences([PDSConfiguration sharedConfiguration]);
+            NSString *audBase = aud;
+            NSRange audHash = [aud rangeOfString:@"#"];
+            if (audHash.location != NSNotFound) {
+                audBase = [aud substringToIndex:audHash.location];
+            }
+            if (!aud || ![expectedAudiences containsObject:audBase]) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Service auth token has invalid audience"}];
+                return;
+            }
         }
 
         NSError *error = nil;
@@ -128,11 +309,78 @@
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing aud parameter"}];
             return;
         }
-        
-        // Simulate service auth token generation
-        // In a full implementation, this would use the PDS private key
-        NSString *token = [[NSUUID UUID] UUIDString];
-        
+
+        NSString *audDid = aud;
+        NSRange hashRange = [aud rangeOfString:@"#"];
+        if (hashRange.location != NSNotFound) {
+            audDid = [aud substringToIndex:hashRange.location];
+        }
+
+        NSError *audError = nil;
+        if (![ATProtoValidator validateDID:audDid error:&audError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": audError.localizedDescription ?: @"Invalid aud DID"}];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Missing or invalid authorization token"}];
+            return;
+        }
+
+        NSError *accountError = nil;
+        if (![controller.serviceDatabases getAccountByDid:did error:&accountError]) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": @"Account not found for token"}];
+            return;
+        }
+
+        NSError *storeError = nil;
+        PDSActorStore *store = [controller.userDatabasePool storeForDid:did error:&storeError];
+        if (!store) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"StoreUnavailable", @"message": storeError.localizedDescription ?: @"Failed to load signing key"}];
+            return;
+        }
+
+        NSError *keyError = nil;
+        NSData *privateKey = [store signingKeyPrivateBytesWithError:&keyError];
+        if (!privateKey) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"SigningKeyUnavailable", @"message": keyError.localizedDescription ?: @"Signing key bytes unavailable"}];
+            return;
+        }
+
+        NSString *lxm = [request queryParamForKey:@"lxm"];
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+        payload[@"iss"] = did;
+        payload[@"sub"] = did;
+        payload[@"did"] = did;
+        payload[@"aud"] = aud;
+        payload[@"iat"] = @((long long)now);
+        payload[@"exp"] = @((long long)(now + 60));
+        payload[@"jti"] = [[NSUUID UUID] UUIDString];
+        if (lxm.length > 0) {
+            payload[@"lxm"] = lxm;
+        }
+
+        JWTMinter *minter = [[JWTMinter alloc] init];
+        minter.issuer = did;
+        minter.signingAlgorithm = @"ES256K";
+        minter.privateKey = privateKey;
+
+        NSError *mintError = nil;
+        NSString *token = [minter signPayload:payload error:&mintError];
+        if (!token) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"TokenMintFailed", @"message": mintError.localizedDescription ?: @"Failed to mint service auth token"}];
+            return;
+        }
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"token": token}];
     }];
@@ -675,6 +923,45 @@
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"did": did}];
+    }];
+
+    [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        DIDResolver *resolver = [[DIDResolver alloc] init];
+        NSError *resolveError = nil;
+        NSDictionary *atprotoData = [resolver resolveAtprotoDataForDID:did error:&resolveError];
+        if (!atprotoData) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": resolveError.localizedDescription ?: @"DID resolution failed"}];
+            return;
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        NSString *handle = atprotoData[@"handle"];
+        if (handle) {
+            result[@"alsoKnownAs"] = @[handle];
+        }
+
+        NSString *signingKey = atprotoData[@"signingKey"];
+        if (signingKey) {
+            result[@"verificationMethods"] = @{@"atproto": [NSString stringWithFormat:@"did:key:%@", signingKey]};
+        }
+
+        NSString *pds = atprotoData[@"pds"];
+        if (pds) {
+            result[@"services"] = @{@"atproto_pds": pds};
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
     }];
 
     // Moderation endpoints
