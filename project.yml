@@ -21,10 +21,10 @@ targets:
     sources: [] 
     settings:
       base:
-        PRODUCT_NAME: atprotopds-cli
+        PRODUCT_NAME: september
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/atprotopds-cli"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/september"
     prebuildScripts:
       - name: "Build with CMake"
         script: |
@@ -39,7 +39,7 @@ targets:
             -DBUILD_SECP256K1=ON \
             -DBUILD_TESTS=OFF \
             -DBUILD_FUZZERS=OFF
-          make -j$(sysctl -n hw.ncpu) atprotopds-cli
+          make -j$(sysctl -n hw.ncpu) september
 
   # Test Runner - wrapper around CMake build
   AllTests:
