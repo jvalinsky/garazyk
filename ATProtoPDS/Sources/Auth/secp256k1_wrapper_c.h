@@ -15,6 +15,7 @@
 #ifndef SECP256K1_WRAPPER_H
 #define SECP256K1_WRAPPER_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
