@@ -118,6 +118,7 @@ int main(int argc, char * argv[]) {
             @"HandleResolverSecurityTests",
             @"WebSocketUpgradeHandlerTests",
             @"HttpRouterTests",
+            @"HttpRouteTrieTests",
             @"HttpRequestParsingTests",
             @"HttpBufferPoolTests",
             @"HttpChunkedBodyParserTests",

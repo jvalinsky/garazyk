@@ -59,6 +59,10 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 #pragma mark - Store Management
 
 - (NSString *)dbPathForDid:(NSString *)did {
+    if ([did isEqualToString:@"__service__"]) {
+        return [self.dbDirectory stringByAppendingPathComponent:@"service.db"];
+    }
+
     NSString *didPrefix = [did substringToIndex:MIN(2, did.length)];
     NSString *prefixDir = [self.dbDirectory stringByAppendingPathComponent:didPrefix];
     

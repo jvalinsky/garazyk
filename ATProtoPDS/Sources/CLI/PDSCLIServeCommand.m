@@ -11,6 +11,7 @@
 #import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuth2Handler.h"
+#import "App/MSTViewer/MSTViewerHandler.h"
 
 // Forward declaration for PDSAccountManager
 @interface PDSAccountManager : NSObject
@@ -205,6 +206,19 @@
     [httpServer addRoute:@"GET" path:@"/explore/*" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
     }];
+
+    // Register MST Viewer routes
+    MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
+    [mstViewerHandler setController:controller];
+    
+    [httpServer addHandlerForPath:@"/mst-viewer" handler:^(HttpRequest *request, HttpResponse *response) {
+        [mstViewerHandler handleRequest:request response:response];
+    }];
+    
+    [httpServer addHandlerForPath:@"/api/mst" handler:^(HttpRequest *request, HttpResponse *response) {
+        [mstViewerHandler handleRequest:request response:response];
+    }];
+    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered MST Viewer routes");
 
     // Register Health Check
     [httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *request, HttpResponse *response) {

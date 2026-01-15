@@ -422,6 +422,17 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
 
 /*!
+ @method getAccountByEmail:error:
+ 
+ @abstract Retrieves an account by its email address.
+ 
+ @param email The email address to search for.
+ @param error On return, contains an error if the operation failed.
+ @return The account object, or nil if not found.
+ */
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error;
+
+/*!
  @method getAccountByRefreshToken:error:
  
  @abstract Retrieves an account by its refresh token.

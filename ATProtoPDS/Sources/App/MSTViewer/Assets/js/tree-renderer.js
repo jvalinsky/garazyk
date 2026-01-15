@@ -3,7 +3,7 @@
  * Uses D3.js to visualize MST as a hierarchical tree diagram
  */
 
-import * as d3 from "https://d3js.org/d3.v7.min.js";
+const d3 = window.d3;
 
 export class TreeRenderer {
     constructor(container) {
