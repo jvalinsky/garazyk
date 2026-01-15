@@ -1,4 +1,4 @@
-#import "PDSCLIDefinitions.h"
+#import "CLI/PDSCLIDispatcher.h"
 #import "Debug/PDSLogger.h"
 
 @implementation PDSCLICommandContext
@@ -293,6 +293,54 @@
         printf("\n");
     }
     printf("Aliases: %s\n", [[[command aliases] componentsJoinedByString:@", "] UTF8String]);
+}
+
+@end
+
+@implementation PDSCLIDispatcher (Testing)
+
+- (void)resetCommandsToDefaults {
+    [self.commands removeAllObjects];
+    [self registerDefaultCommands];
+}
+
+@end
+
+@implementation PDSCLIServiceStub
+
++ (instancetype)sharedStub {
+    static PDSCLIServiceStub *shared = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        shared = [[self alloc] init];
+    });
+    return shared;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _serviceDid = @"did:plc:service-stub";
+        _serviceHost = @"localhost";
+    }
+    return self;
+}
+
+- (NSDictionary *)payloadForAudience:(NSString *)audience method:(NSString *)method expiry:(NSTimeInterval)expiry {
+    if (self.payloadProvider) {
+        NSDictionary *custom = self.payloadProvider(audience, method, expiry);
+        if (custom) return custom;
+    }
+
+    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"iss"] = self.serviceDid;
+    payload[@"aud"] = audience;
+    payload[@"exp"] = @((long long)expiry);
+    if (method.length > 0) {
+        payload[@"lxm"] = method;
+    }
+    payload[@"serviceHost"] = self.serviceHost;
+    return payload;
 }
 
 @end

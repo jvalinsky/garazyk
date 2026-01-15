@@ -114,15 +114,18 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
     __block BOOL success = NO;
-    __block NSError *localError = nil;
+    __block NSError *blockError = nil;
+    NSError *txnError = nil;
 
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store createAccount:account error:&localError];
-    } error:&localError];
+        success = [store createAccount:account error:&blockError];
+    } error:&txnError];
 
-    if (!success && localError) {
-        if (error) *error = localError;
+    NSError *finalError = blockError ?: txnError;
+
+    if (!success && finalError) {
+        if (error) *error = finalError;
     }
 
     return success;

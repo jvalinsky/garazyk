@@ -125,6 +125,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 /*! Time window for blob upload limiting in seconds (default: 60) */
 @property (nonatomic, assign) NSTimeInterval blobWindowSeconds;
 
+/*! Whether rate limiting is enabled (default: YES) */
+@property (nonatomic, assign, getter=isEnabled) BOOL enabled;
+
 /**
  * @brief Get the singleton rate limiter instance
  *

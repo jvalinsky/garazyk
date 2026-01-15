@@ -91,6 +91,8 @@
         case ATProtoLexiconDefTypeQuery:
         case ATProtoLexiconDefTypeProcedure:
         case ATProtoLexiconDefTypeSubscription:
+        case ATProtoLexiconDefTypeCIDLink:
+        case ATProtoLexiconDefTypePermissionSet:
             // These types don't have additional constraints
             return nil;
     }
@@ -245,6 +247,8 @@
             @"token": @(ATProtoLexiconDefTypeToken),
             @"unknown": @(ATProtoLexiconDefTypeUnknown),
             @"params": @(ATProtoLexiconDefTypeParams),
+            @"cid-link": @(ATProtoLexiconDefTypeCIDLink),
+            @"permission-set": @(ATProtoLexiconDefTypePermissionSet),
         };
     });
 
@@ -273,6 +277,8 @@
             @(ATProtoLexiconDefTypeToken): @"token",
             @(ATProtoLexiconDefTypeUnknown): @"unknown",
             @(ATProtoLexiconDefTypeParams): @"params",
+            @(ATProtoLexiconDefTypeCIDLink): @"cid-link",
+            @(ATProtoLexiconDefTypePermissionSet): @"permission-set",
         };
     });
 

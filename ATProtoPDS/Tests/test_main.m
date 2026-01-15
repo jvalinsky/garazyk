@@ -6,6 +6,7 @@
 #import "Compat/XCTest/XCTest.h"
 #endif
 #import <objc/runtime.h>
+#import "Network/RateLimiter.h"
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
 @property (nonatomic, assign) int failureCount;
@@ -71,7 +72,12 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
 int main(int argc, char * argv[]) {
     fprintf(stderr, "test_main started\n");
     @autoreleasepool {
+        // Disable rate limiting for tests
+        [RateLimiter sharedLimiter].enabled = NO;
+
         NSArray *testClasses = @[
+            @"MSTViewerHandlerTests",
+            @"PDSAccountServiceTests",
             @"MSTInteropTests",
             @"CARInteropTests",
             @"RepoCommitTests",
@@ -83,11 +89,15 @@ int main(int argc, char * argv[]) {
             @"SubscribeReposHandlerTests",
             @"GetServiceAuthMethodTests",
             @"XrpcHandlerTests",
+            @"XrpcMethodRegistryTests",
             @"PDSCLITests",
+            @"PDSCLIServiceStubTests",
             @"ActorStoreTests",
             @"DatabasePoolTests",
             @"PDSControllerTests",
             @"PDSIntegrationTests",
+            @"AdminServiceTests",
+            @"AdminMiddlewareTests",
             @"ServiceDatabasesTests",
             @"RateLimiterTests",
             @"DIDResolverTests",
@@ -116,11 +126,10 @@ int main(int argc, char * argv[]) {
             @"ExploreCacheTests",
             @"ExploreHandlerTests",
             @"HttpServerTests",
-            @"ActorServiceTests",
-            @"FeedServiceTests",
-            @"NotificationServiceTests",
             @"WebSocketServerTests",
-            @"MSTPersistenceTests"
+            @"MSTPersistenceTests",
+            @"MSTViewerHandlerTests",
+            @"PDSAccountServiceTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

@@ -59,7 +59,12 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     return audiences;
 }
 
-static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error) {
+@implementation XrpcMethodRegistry
+
+/**
+ @brief Decode a DID publicKeyMultibase value into raw key bytes.
+ */
++ (nullable NSData *)publicKeyBytesFromMultibase:(NSString *)multibase error:(NSError **)error {
     if (multibase.length < 2) {
         if (error) {
             *error = [NSError errorWithDomain:DIDErrorDomain
@@ -72,19 +77,24 @@ static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error)
     unichar prefix = [multibase characterAtIndex:0];
     NSString *payload = [multibase substringFromIndex:1];
     NSData *data = nil;
-    if (prefix == 'z') {
-        data = [CID base58btcDecode:payload];
-    } else if (prefix == 'b') {
-        data = [CID base32Decode:payload];
-    } else if (prefix == 'u') {
-        data = [JWT base64URLDecode:payload error:error];
-    } else {
-        if (error) {
-            *error = [NSError errorWithDomain:DIDErrorDomain
-                                         code:DIDErrorInvalidDocument
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported multibase encoding for signing key"}];
-        }
-        return nil;
+    switch (prefix) {
+        case 'z':
+        case 'Z':
+            data = [CID base58btcDecode:payload];
+            break;
+        case 'b':
+            data = [CID base32Decode:payload];
+            break;
+        case 'u':
+            data = [JWT base64URLDecode:payload error:error];
+            break;
+        default:
+            if (error) {
+                *error = [NSError errorWithDomain:DIDErrorDomain
+                                             code:DIDErrorInvalidDocument
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Unsupported multibase encoding for signing key"}];
+            }
+            return nil;
     }
 
     if (!data) {
@@ -95,11 +105,8 @@ static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error)
     if (data.length > 2 && bytes[0] == 0xE7 && bytes[1] == 0x01) {
         return [data subdataWithRange:NSMakeRange(2, data.length - 2)];
     }
-
     return data;
 }
-
-@implementation XrpcMethodRegistry
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller {
@@ -183,7 +190,7 @@ static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error)
             }
 
             NSError *decodeError = nil;
-            NSData *signingKeyBytes = publicKeyBytesFromMultibase(signingKey, &decodeError);
+            NSData *signingKeyBytes = [XrpcMethodRegistry publicKeyBytesFromMultibase:signingKey error:&decodeError];
             if (!signingKeyBytes) {
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to decode signing key"}];
@@ -312,6 +319,28 @@ static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error)
             return;
         }
 
+        NSString *lxm = [request queryParamForKey:@"lxm"];
+        if (lxm.length > 0) {
+            NSError *lxmError = nil;
+            if (![ATProtoValidator validateNSID:lxm error:&lxmError]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": lxmError.localizedDescription ?: @"Invalid lxm parameter"}];
+                return;
+            }
+        }
+
+        NSString *expParam = [request queryParamForKey:@"exp"];
+        long long requestedExp = 0;
+        BOOL hasRequestedExp = expParam.length > 0;
+        if (hasRequestedExp) {
+            NSScanner *scanner = [NSScanner scannerWithString:expParam];
+            if (![scanner scanLongLong:&requestedExp] || !scanner.isAtEnd) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"Invalid exp parameter"}];
+                return;
+            }
+        }
+
         NSString *audDid = aud;
         NSRange hashRange = [aud rangeOfString:@"#"];
         if (hashRange.location != NSNotFound) {
@@ -356,15 +385,34 @@ static NSData *publicKeyBytesFromMultibase(NSString *multibase, NSError **error)
             return;
         }
 
-        NSString *lxm = [request queryParamForKey:@"lxm"];
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        long long nowSeconds = (long long)floor(now);
+        if (hasRequestedExp) {
+            long long delta = requestedExp - nowSeconds;
+            if (delta <= 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"expiration is in past"}];
+                return;
+            }
+            if (delta > 3600) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"expiration too far in future"}];
+                return;
+            }
+            if (lxm.length == 0 && delta > 60) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"method-less tokens must expire within 60 seconds"}];
+                return;
+            }
+        }
+
         NSMutableDictionary *payload = [NSMutableDictionary dictionary];
         payload[@"iss"] = did;
         payload[@"sub"] = did;
         payload[@"did"] = did;
         payload[@"aud"] = aud;
-        payload[@"iat"] = @((long long)now);
-        payload[@"exp"] = @((long long)(now + 60));
+        payload[@"iat"] = @((long long)nowSeconds);
+        payload[@"exp"] = @(hasRequestedExp ? requestedExp : (long long)(nowSeconds + 60));
         payload[@"jti"] = [[NSUUID UUID] UUIDString];
         if (lxm.length > 0) {
             payload[@"lxm"] = lxm;
