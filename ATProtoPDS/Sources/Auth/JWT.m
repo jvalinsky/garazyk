@@ -228,6 +228,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @synthesize clockOffset = _clockOffset;
 @synthesize publicKey = _publicKey;
 @synthesize keyRotationManager = _keyRotationManager;
+@synthesize allowMissingSubject = _allowMissingSubject;
 
 - (instancetype)init {
     self = [super init];
@@ -323,7 +324,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return NO;
     }
 
-    if (!payload.sub && !payload.did) {
+    if (!payload.sub && !payload.did && !self.allowMissingSubject) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
                                          code:JWTErrorMissingRequiredClaim
@@ -427,6 +428,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
     JWTHeader *header = [[JWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
+    header.typ = @"at+jwt";
 
     NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
     NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
@@ -450,6 +452,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
     JWTHeader *header = [[JWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
+    header.typ = @"refresh+jwt";
 
     NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
     NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
