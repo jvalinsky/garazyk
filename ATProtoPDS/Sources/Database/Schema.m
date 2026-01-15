@@ -26,7 +26,8 @@ NSString * const kPDSAccountTableCreateSQL =
     @"updated_at TEXT NOT NULL,"
     @"tfa_enabled INTEGER DEFAULT 0,"
     @"tfa_secret BLOB,"
-    @"recovery_codes BLOB"
+    @"recovery_codes BLOB,"
+    @"invite_enabled INTEGER DEFAULT 0"
     @")";
 
 NSString * const kPDSRepoTableCreateSQL =

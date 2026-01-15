@@ -12,6 +12,7 @@
 
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
+#import "Repository/CBOR.h"
 #import <Security/Security.h>
 
 #pragma mark - CARBlock Implementation
@@ -41,9 +42,117 @@
 @property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
 
+- (BOOL)parseCarV1Data:(NSData *)data error:(NSError **)error;
+- (BOOL)parseLegacyData:(NSData *)data error:(NSError **)error;
+
 @end
 
 @implementation CARReader
+
+static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+    if (maxLength == 0) {
+        return 0;
+    }
+
+    uint64_t result = 0;
+    NSUInteger shift = 0;
+    NSUInteger offset = 0;
+
+    while (offset < maxLength) {
+        uint8_t byte = bytes[offset++];
+        result |= ((uint64_t)(byte & 0x7F)) << shift;
+        shift += 7;
+
+        if ((byte & 0x80) == 0) {
+            *value = result;
+            return offset;
+        }
+
+        if (shift >= 64) {
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
+    if (!value || value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-10
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header roots entry is not a CID tag"}];
+        }
+        return nil;
+    }
+
+    NSData *bytes = value.tagValue.byteString;
+    if (!bytes || bytes.length <= 1) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-11
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header CID bytes are empty"}];
+        }
+        return nil;
+    }
+
+    NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
+    CID *cid = [CID cidFromBytes:cidBytes];
+    if (!cid && error) {
+        *error = [NSError errorWithDomain:@"com.atproto.car"
+                                     code:-12
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse root CID"}];
+    }
+    return cid;
+}
+
+static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
+    uint64_t version = 0;
+    NSUInteger offset = ReadVarint(bytes, length, &version);
+    if (offset == 0 || version != 1) {
+        return NO;
+    }
+
+    uint64_t codec = 0;
+    NSUInteger codecBytes = ReadVarint(bytes + offset, length - offset, &codec);
+    if (codecBytes == 0) {
+        return NO;
+    }
+    offset += codecBytes;
+
+    uint64_t hashCode = 0;
+    NSUInteger hashCodeBytes = ReadVarint(bytes + offset, length - offset, &hashCode);
+    if (hashCodeBytes == 0) {
+        return NO;
+    }
+    offset += hashCodeBytes;
+
+    uint64_t hashLength = 0;
+    NSUInteger hashLengthBytes = ReadVarint(bytes + offset, length - offset, &hashLength);
+    if (hashLengthBytes == 0) {
+        return NO;
+    }
+    offset += hashLengthBytes;
+
+    if (hashLength > length - offset) {
+        return NO;
+    }
+
+    NSUInteger cidLength = offset + (NSUInteger)hashLength;
+    NSData *cidData = [NSData dataWithBytes:bytes length:cidLength];
+    CID *cid = [CID cidFromBytes:cidData];
+    if (!cid) {
+        return NO;
+    }
+
+    if (cidOut) {
+        *cidOut = cid;
+    }
+    if (cidLengthOut) {
+        *cidLengthOut = cidLength;
+    }
+    return YES;
+}
 
 + (instancetype)readFromData:(NSData *)data error:(NSError **)error {
     CARReader *reader = [[CARReader alloc] init];
@@ -69,6 +178,133 @@
 }
 
 - (BOOL)parseData:(NSData *)data error:(NSError **)error {
+    NSError *v1Error = nil;
+    if ([self parseCarV1Data:data error:&v1Error]) {
+        return YES;
+    }
+
+    if ([self parseLegacyData:data error:error]) {
+        return YES;
+    }
+
+    if (error && v1Error) {
+        *error = v1Error;
+    }
+    return NO;
+}
+
+- (BOOL)parseCarV1Data:(NSData *)data error:(NSError **)error {
+    if (data.length < 2) {
+        return NO;
+    }
+
+    const uint8_t *bytes = data.bytes;
+    NSUInteger offset = 0;
+    uint64_t headerLength = 0;
+    NSUInteger headerSize = ReadVarint(bytes + offset, data.length - offset, &headerLength);
+    if (headerSize == 0 || headerLength == 0) {
+        return NO;
+    }
+    offset += headerSize;
+
+    if (offset + headerLength > data.length) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header extends beyond data"}];
+        }
+        return NO;
+    }
+
+    NSData *headerData = [data subdataWithRange:NSMakeRange(offset, headerLength)];
+    offset += headerLength;
+
+    CBORValue *header = [CBORValue decode:headerData];
+    if (!header || header.type != CBORTypeMap) {
+        return NO;
+    }
+
+    CBORValue *rootsValue = header.map[[CBORValue textString:@"roots"]];
+    if (!rootsValue || rootsValue.type != CBORTypeArray || rootsValue.array.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header missing roots"}];
+        }
+        return NO;
+    }
+
+    NSError *rootError = nil;
+    CID *rootCID = CIDFromTaggedCBOR(rootsValue.array.firstObject, &rootError);
+    if (!rootCID) {
+        if (error) {
+            *error = rootError;
+        }
+        return NO;
+    }
+
+    CBORValue *versionValue = header.map[[CBORValue textString:@"version"]];
+    if (!versionValue || versionValue.type != CBORTypeUnsignedInteger || versionValue.unsignedInteger.unsignedIntegerValue != 1) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported CAR version"}];
+        }
+        return NO;
+    }
+
+    NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
+    NSMutableDictionary<NSString *, CARBlock *> *index = [NSMutableDictionary dictionary];
+
+    while (offset < data.length) {
+        uint64_t blockLen = 0;
+        NSUInteger blockSize = ReadVarint(bytes + offset, data.length - offset, &blockLen);
+        if (blockSize == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-4
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR block length"}];
+            }
+            return NO;
+        }
+        offset += blockSize;
+
+        if (offset + blockLen > data.length) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-5
+                                         userInfo:@{NSLocalizedDescriptionKey: @"CAR block extends beyond data"}];
+            }
+            return NO;
+        }
+
+        NSData *blockBytes = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)blockLen)];
+        offset += (NSUInteger)blockLen;
+
+        CID *blockCID = nil;
+        NSUInteger cidLength = 0;
+        if (!DecodeCIDFromBlock(blockBytes.bytes, blockBytes.length, &blockCID, &cidLength)) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-6
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse CID from CAR block"}];
+            }
+            return NO;
+        }
+
+        NSData *blockData = [blockBytes subdataWithRange:NSMakeRange(cidLength, blockBytes.length - cidLength)];
+        CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+        [blocks addObject:block];
+        index[blockCID.stringValue] = block;
+    }
+
+    _rootCID = rootCID;
+    _blocks = [blocks copy];
+    _blockIndex = [index copy];
+    return YES;
+}
+
+- (BOOL)parseLegacyData:(NSData *)data error:(NSError **)error {
     if (data.length < 8) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
