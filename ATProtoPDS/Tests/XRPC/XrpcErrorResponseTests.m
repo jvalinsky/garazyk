@@ -192,7 +192,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testRecordNotFoundError {
     __block BOOL handlerCalled = NO;
     [self.dispatcher registerMethod:@"com.atproto.repo.getRecord" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = HttpStatusBadRequest;
+        response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
         handlerCalled = YES;
     }];
@@ -210,14 +210,14 @@ NS_ASSUME_NONNULL_BEGIN
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
-    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"RecordNotFound");
 }
 
 - (void)testRepoNotFoundError {
     __block BOOL handlerCalled = NO;
     [self.dispatcher registerMethod:@"com.atproto.repo.describeRepo" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = HttpStatusBadRequest;
+        response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
         handlerCalled = YES;
     }];
@@ -235,7 +235,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
-    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"RepoNotFound");
 }
 
