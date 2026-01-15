@@ -240,7 +240,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     [XrpcMethodRegistry registerMethodsWithDispatcher:_xrpcDispatcher controller:self];
     
-    __unsafe_unretained typeof(self) weakSelf = self;
+    __weak typeof(self) weakSelf = self;
     [_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         PDSController *strongSelf = weakSelf;
         if (strongSelf) {
