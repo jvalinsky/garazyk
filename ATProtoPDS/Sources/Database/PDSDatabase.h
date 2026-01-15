@@ -3,769 +3,550 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
- @header PDSDatabase.h
- 
- @abstract Database layer for ATProto PDS persistence.
- 
- @discussion This header defines the core database interface for persisting
- ATProto data including accounts, repositories, records, blocks, and blobs.
- Uses SQLite for local storage with transactions and migrations.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * Error domain for PDSDatabase errors.
  */
-
 extern NSString * const PDSDatabaseErrorDomain;
 
-/*!
- @enum PDSDatabaseError
- 
- @abstract Error codes for database operations.
- 
- @constant PDSDatabaseErrorNotOpen The database connection is not open.
- @constant PDSDatabaseErrorQueryFailed A SQL query execution failed.
- @constant PDSDatabaseErrorMigrationFailed Database schema migration failed.
- @constant PDSDatabaseErrorConstraintViolation A database constraint was violated.
- @constant PDSDatabaseErrorNotFound The requested record was not found.
+/**
+ * Error codes for PDSDatabase operations.
+ *
+ * @note All errors in the range 1000-1999 are reserved for database errors.
  */
 typedef NS_ENUM(NSInteger, PDSDatabaseError) {
+    /** The database connection is not open. */
     PDSDatabaseErrorNotOpen = 1000,
+    /** A SQL query failed to execute. */
     PDSDatabaseErrorQueryFailed = 1001,
+    /** Database schema migration failed. */
     PDSDatabaseErrorMigrationFailed = 1002,
+    /** A database constraint was violated. */
     PDSDatabaseErrorConstraintViolation = 1003,
+    /** The requested resource was not found in the database. */
     PDSDatabaseErrorNotFound = 1004,
 };
 
-/*!
- @class PDSDatabase
- 
- @abstract Main database controller for PDS data persistence.
- 
- @discussion PDSDatabase provides the primary interface for all database operations
- in the PDS. It manages SQLite connections, executes queries, and handles
- transactions. The class provides both low-level SQL execution and high-level
- methods for common operations like account and repository management.
- 
- @code
- // Create and open database
- PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:@"/path/to/pds.db"]];
- [db openWithError:nil];
- 
- // Query accounts
- NSArray *accounts = [db getAllAccountsWithError:nil];
- 
- // Close when done
- [db close];
- @endcode
- */
+/// @file PDSDatabase.h
+/// @brief Core database interface for the ATProto Personal Data Server.
+///
+/// The PDSDatabase class provides a SQLite-based storage interface for managing
+/// ATProto data including accounts, repositories, records, blocks, and blobs.
+/// This class handles database connection management, raw SQL execution, and
+/// transaction support.
+
 @interface PDSDatabase : NSObject
 
-/*! The URL path to the SQLite database file. */
+/// The file URL pointing to the SQLite database file.
 @property (nonatomic, readonly) NSURL *databaseURL;
 
-/*! YES if the database connection is currently open. */
+/// A boolean indicating whether the database connection is currently open.
 @property (nonatomic, readonly) BOOL isOpen;
 
-/*!
- @method databaseAtURL:
- 
- @abstract Creates a database instance at the specified file path.
- 
- @param url The file URL where the SQLite database should be located or created.
- @return An initialized PDSDatabase instance.
+/**
+ * Creates and returns a new database instance at the specified file URL.
+ *
+ * @param url The file URL where the SQLite database is or should be located.
+ * @return A newly initialized PDSDatabase instance.
  */
 + (instancetype)databaseAtURL:(NSURL *)url;
 
-/*!
- @method openWithError:
- 
- @abstract Opens the database connection and runs any pending migrations.
- 
- @param error On return, contains an error if the operation failed.
- @return YES if the database opened successfully, NO otherwise.
+/**
+ * Opens the database connection.
+ *
+ * @param error On return, contains an error object if the database failed to open.
+ * @return YES if the database opened successfully, otherwise NO.
  */
 - (BOOL)openWithError:(NSError **)error;
 
-/*!
- @method close
- 
- @abstract Closes the database connection.
- */
+/// Closes the database connection.
 - (void)close;
 
-/*!
- @method executeRawSQL:error:
- 
- @abstract Executes a raw SQL statement.
- 
- @discussion Use this method for custom SQL operations that don't have
- dedicated methods. The statement should be a single command (not a query)
- if expecting no results.
- 
- @param sql The SQL statement to execute.
- @param error On return, contains an error if the operation failed.
- @return YES if the statement executed successfully, NO otherwise.
+/**
+ * Executes a raw SQL statement that does not return results.
+ *
+ * @param sql The SQL statement to execute.
+ * @param error On return, contains an error object if the query failed.
+ * @return YES if the SQL executed successfully, otherwise NO.
  */
 - (BOOL)executeRawSQL:(NSString *)sql error:(NSError **)error;
 
-/*!
- @method executeQuery:error:
- 
- @abstract Executes a SQL query and returns results.
- 
- @param sql The SQL query to execute.
- @param error On return, contains an error if the query failed.
- @return An array of dictionaries representing query results, or nil on failure.
+/**
+ * Executes a SQL query that returns results.
+ *
+ * @param sql The SQL query to execute.
+ * @param error On return, contains an error object if the query failed.
+ * @return An array of dictionaries representing the query results, or nil on failure.
  */
 - (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error;
 
-/*!
- @method executeParameterizedQuery:params:error:
- 
- @abstract Executes a SQL query with parameterized values.
- 
- @discussion This is the RECOMMENDED method for executing queries with user-provided
- values. It uses SQLite parameter binding to prevent SQL injection attacks.
- 
- @param sql The SQL query with ? placeholders for parameters.
- @param params An array of parameter values to bind to the query.
- @param error On return, contains an error if the query failed.
- @return An array of dictionaries representing query results, or nil on failure.
- */
-- (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
-                                                params:(NSArray *)params
-                                                 error:(NSError **)error;
-
-/*!
- @method executeParameterizedUpdate:params:error:
- 
- @abstract Executes a parameterized SQL statement (INSERT, UPDATE, DELETE).
- 
- @param sql The SQL statement with ? placeholders for parameters.
- @param params An array of parameter values to bind to the statement.
- @param error On return, contains an error if the statement failed.
- @return YES if the statement executed successfully, NO otherwise.
- */
-- (BOOL)executeParameterizedUpdate:(NSString *)sql
-                            params:(NSArray *)params
-                             error:(NSError **)error;
-
-/*!
- @method getClientWithID:error:
- 
- @abstract Retrieves an OAuth client by ID.
- 
- @param clientID The client ID to search for.
- @param error On return, contains an error if the operation failed.
- @return The client dictionary, or nil if not found.
- */
-- (NSDictionary *)getClientWithID:(NSString *)clientID error:(NSError **)error;
-
-/*!
- @method createClient:error:
- 
- @abstract Creates or updates an OAuth client.
- 
- @param client The client details dictionary.
- @param error On return, contains an error if the operation failed.
- @return YES if the client was created successfully, NO otherwise.
- */
-- (BOOL)createClient:(NSDictionary *)client error:(NSError **)error;
-
-/*!
- @method seedTestClient:
- 
- @abstract Creates a test client for development/testing.
- 
- @param error On return, contains an error if the operation failed.
- @return YES if the test client was created successfully, NO otherwise.
- */
-- (BOOL)seedTestClient:(NSError **)error;
-
 @end
 
-/*!
- @class PDSDatabaseAccount
- 
- @abstract Represents a PDS account record in the database.
- 
- @discussion This class models account data stored in the database, including
- identity information (DID, handle, email), credentials (password hash, JWT tokens),
- and metadata (creation time, invite status).
- 
- @see PDSDatabase (Accounts)
- */
+/// @brief Represents an ATProto account stored in the database.
+///
+/// The PDSDatabaseAccount class models user account information including
+/// authentication credentials and metadata.
+
 @interface PDSDatabaseAccount : NSObject
 
-/*! The decentralized identifier (DID) for this account. */
+/// The decentralized identifier (DID) for the account.
 @property (nonatomic, copy) NSString *did;
 
-/*! The handle (username) for this account. */
+/// The handle associated with the account.
 @property (nonatomic, copy) NSString *handle;
 
-/*! Optional email address for password recovery and notifications. */
+/// The email address associated with the account, if available.
 @property (nonatomic, copy, nullable) NSString *email;
 
-/*! Bcrypt hash of the account password. */
+/// The hashed password, if password authentication is enabled.
 @property (nonatomic, copy, nullable) NSData *passwordHash;
 
-/*! Salt used for password hashing. */
+/// The salt used for password hashing, if applicable.
 @property (nonatomic, copy, nullable) NSData *passwordSalt;
 
-/*! JWT access token for API authentication. */
+/// The access JWT token for session authentication.
 @property (nonatomic, copy, nullable) NSData *accessJwt;
 
-/*! JWT refresh token for obtaining new access tokens. */
+/// The refresh JWT token for session renewal.
 @property (nonatomic, copy, nullable) NSData *refreshJwt;
 
-/*! Unix timestamp when the account was created. */
+/// The timestamp when the account was created.
 @property (nonatomic, assign) NSTimeInterval createdAt;
 
-/*! Unix timestamp when the account was last updated. */
+/// The timestamp when the account was last updated.
 @property (nonatomic, assign) NSTimeInterval updatedAt;
-
-/*! Whether invite codes are enabled for this account. */
-@property (nonatomic, assign) BOOL inviteEnabled;
-
-/*! Whether 2FA (TOTP/Passkey) is enabled. */
-@property (nonatomic, assign) BOOL tfaEnabled;
-
-/*! Encrypted TOTP secret or other 2FA secret data. */
-@property (nonatomic, copy, nullable) NSData *tfaSecret;
-
-/*! JSON array of hashed recovery codes. */
-@property (nonatomic, copy, nullable) NSData *recoveryCodes;
 
 @end
 
-/*!
- @class PDSDatabaseRepo
- 
- @abstract Represents a repository in the database.
- 
- @discussion A repository contains a user's collection of records and blocks.
- Each repository is identified by its owner's DID and has a current root CID
- representing the state of the Merkle Search Tree.
- 
- @see PDSDatabase (Repos)
- */
+/// @brief Represents an ATProto repository stored in the database.
+///
+/// The PDSDatabaseRepo class models repository information including the root
+/// CID and collection metadata.
+
 @interface PDSDatabaseRepo : NSObject
 
-/*! The DID of the repository owner. */
+/// The DID of the repository owner.
 @property (nonatomic, copy) NSString *ownerDid;
 
-/*! The current root CID of the repository's Merkle Search Tree. */
+/// The CID of the repository root block.
 @property (nonatomic, copy) NSData *rootCid;
 
-/*! Optional serialized collection index data. */
+/// The serialized collection data, if available.
 @property (nonatomic, copy, nullable) NSData *collectionData;
 
-/*! Date when the repository was created. */
+/// The date when the repository was created.
 @property (nonatomic, strong) NSDate *createdAt;
 
-/*! Date when the repository was last updated. */
+/// The date when the repository was last updated.
 @property (nonatomic, strong) NSDate *updatedAt;
 
 @end
 
-/*!
- @class PDSDatabaseRecord
- 
- @abstract Represents a single record in a repository.
- 
- @discussion Records are the fundamental data units in ATProto repositories.
- Each record is identified by a URI (repo DID + collection + rkey) and has
- an associated CID for content-addressable retrieval.
- 
- @see PDSDatabase (Records)
- */
+/// @brief Represents an ATProto record stored in the database.
+///
+/// The PDSDatabaseRecord class models individual records within repositories.
+
 @interface PDSDatabaseRecord : NSObject
 
-/*! The AT-URI identifying this record (e.g., at://did:plc:z.../app.bsky.actor.profile/self). */
+/// The URI identifying the record.
 @property (nonatomic, copy) NSString *uri;
 
-/*! The DID of the repository that contains this record. */
+/// The DID of the record owner.
 @property (nonatomic, copy) NSString *did;
 
-/*! The collection namespace for this record (e.g., app.bsky.actor.profile). */
+/// The collection namespace for the record.
 @property (nonatomic, copy) NSString *collection;
 
-/*! The record key within the collection. */
+/// The record key within the collection.
 @property (nonatomic, copy) NSString *rkey;
 
-/*! The CID of the record content. */
+/// The CID of the record content.
 @property (nonatomic, copy) NSString *cid;
 
-/*! Date when the record was created. */
+/// The date when the record was created.
 @property (nonatomic, strong) NSDate *createdAt;
-
-/*! The raw value of the record (JSON string). */
-@property (nonatomic, copy, nullable) NSString *value;
 
 @end
 
-/*!
- @class PDSDatabaseBlock
- 
- @abstract Represents a content block stored in the database.
- 
- @discussion Blocks are content-addressed data units stored in CAR format.
- Each block is identified by its CID and belongs to a specific repository.
- 
- @see PDSDatabase (Blocks)
- */
+/// @brief Represents a data block stored in the database.
+///
+/// The PDSDatabaseBlock class models IPFS blocks stored locally for repository
+/// operations and content-addressed storage.
+
 @interface PDSDatabaseBlock : NSObject
 
-/*! The CID of this block. */
+/// The content identifier (CID) of the block.
 @property (nonatomic, copy) NSData *cid;
 
-/*! The DID of the repository that owns this block. */
+/// The DID of the repository owning this block.
 @property (nonatomic, copy) NSString *repoDid;
 
-/*! The serialized block data in CAR format. */
+/// The actual block data content.
 @property (nonatomic, copy, nullable) NSData *blockData;
 
-/*! The content type of the block (e.g., application/json). */
+/// The content type of the block data.
 @property (nonatomic, copy, nullable) NSString *contentType;
 
-/*! The size of the block data in bytes. */
+/// The size of the block in bytes.
 @property (nonatomic, assign) NSInteger size;
 
-/*! Date when the block was stored. */
+/// The date when the block was created.
 @property (nonatomic, strong) NSDate *createdAt;
 
 @end
 
-/*!
- @class PDSDatabaseBlob
- 
- @abstract Represents a blob reference stored in the database.
- 
- @discussion Blobs are large binary data attachments stored separately from
- repository blocks. This class tracks blob metadata for retrieval and quota
- management.
- 
- @see PDSDatabase (Blobs)
- */
+/// @brief Represents a blob stored in the database.
+///
+/// The PDSDatabaseBlob class models blob metadata for user-uploaded content
+/// such as images and other binary files.
+
 @interface PDSDatabaseBlob : NSObject
 
-/*! The CID of the blob. */
+/// The content identifier (CID) of the blob.
 @property (nonatomic, copy) NSData *cid;
 
-/*! The DID of the account that uploaded this blob. */
+/// The DID of the blob owner.
 @property (nonatomic, copy) NSString *did;
 
-/*! The MIME type of the blob content. */
+/// The MIME type of the blob content.
 @property (nonatomic, copy, nullable) NSString *mimeType;
 
-/*! The size of the blob in bytes. */
+/// The size of the blob in bytes.
 @property (nonatomic, assign) NSInteger size;
 
-/*! Date when the blob was uploaded. */
+/// The date when the blob was created.
 @property (nonatomic, strong) NSDate *createdAt;
 
 @end
 
-/*!
- @category PDSDatabase (Accounts)
- 
- @abstract Account management methods for PDSDatabase.
- 
- @discussion These methods provide CRUD operations for PDS accounts.
- Accounts represent user identities on the PDS and contain authentication
- credentials and metadata.
- */
+/// @brief Account management category for PDSDatabase.
+///
+/// Provides methods for creating, retrieving, updating, and deleting accounts
+/// in the database.
+
 @interface PDSDatabase (Accounts)
 
-/*!
- @method createAccount:error:
- 
- @abstract Creates a new account in the database.
- 
- @param account The account object containing account details.
- @param error On return, contains an error if the operation failed.
- @return YES if the account was created successfully, NO otherwise.
+/**
+ * Creates a new account in the database.
+ *
+ * @param account The account object to create.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the account was created successfully, otherwise NO.
  */
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 
-/*!
- @method updateAccount:error:
- 
- @abstract Updates an existing account in the database.
- 
- @param account The account object with updated values.
- @param error On return, contains an error if the operation failed.
- @return YES if the account was updated successfully, NO otherwise.
+/**
+ * Updates an existing account in the database.
+ *
+ * @param account The account object with updated values.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the account was updated successfully, otherwise NO.
  */
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 
-/*!
- @method getAccountByDid:error:
- 
- @abstract Retrieves an account by its DID.
- 
- @param did The DID to search for.
- @param error On return, contains an error if the operation failed.
- @return The account object, or nil if not found.
+/**
+ * Retrieves an account by its DID.
+ *
+ * @param did The DID to search for.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching account, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error;
 
-/*!
- @method getAccountByHandle:error:
- 
- @abstract Retrieves an account by its handle.
- 
- @param handle The handle to search for (e.g., "user.bsky.social").
- @param error On return, contains an error if the operation failed.
- @return The account object, or nil if not found.
+/**
+ * Retrieves an account by its handle.
+ *
+ * @param handle The handle to search for.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching account, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
 
-/*!
- @method getAccountByRefreshToken:error:
- 
- @abstract Retrieves an account by its refresh token.
- 
- @param refreshToken The refresh token string to search for.
- @param error On return, contains an error if the operation failed.
- @return The account object, or nil if not found.
+/**
+ * Retrieves an account by its email address.
+ *
+ * @param email The email address to search for.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching account, or nil if not found or an error occurred.
+ */
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error;
+
+/**
+ * Retrieves an account by its refresh token.
+ *
+ * @param refreshToken The refresh token string to search for.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching account, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 
-/*!
- @method getAllAccountsWithError:
- 
- @abstract Retrieves all accounts in the database.
- 
- @param error On return, contains an error if the operation failed.
- @return An array of all account objects.
+/**
+ * Updates an existing account in the database.
+ *
+ * @param account The account object with updated values.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the account was updated successfully, otherwise NO.
+ * @deprecated Use updateAccount:error: instead.
+ */
+- (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
+
+/**
+ * Retrieves all accounts from the database.
+ *
+ * @param error On return, contains an error object if the operation failed.
+ * @return An array of all accounts, or nil on failure.
  */
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
 
-/*!
- @method deleteAccount:error:
- 
- @abstract Deletes an account and all associated data.
- 
- @param did The DID of the account to delete.
- @param error On return, contains an error if the operation failed.
- @return YES if the account was deleted successfully, NO otherwise.
+/**
+ * Deletes an account by its DID.
+ *
+ * @param did The DID of the account to delete.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the account was deleted successfully, otherwise NO.
  */
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
 
 @end
 
-/*!
- @category PDSDatabase (Repos)
- 
- @abstract Repository management methods for PDSDatabase.
- 
- @discussion These methods provide CRUD operations for user repositories.
- Repositories contain collections of records organized in a Merkle Search Tree.
- */
+/// @brief Repository management category for PDSDatabase.
+///
+/// Provides methods for creating, retrieving, updating, and deleting repositories
+/// in the database.
+
 @interface PDSDatabase (Repos)
 
-/*!
- @method createRepo:error:
- 
- @abstract Creates a new repository.
- 
- @param repo The repository object containing owner and initial state.
- @param error On return, contains an error if the operation failed.
- @return YES if the repository was created successfully, NO otherwise.
+/**
+ * Creates a new repository in the database.
+ *
+ * @param repo The repository object to create.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the repository was created successfully, otherwise NO.
  */
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error;
 
-/*!
- @method updateRepoRoot:rootCid:error:
- 
- @abstract Updates the root CID of a repository.
- 
- @discussion This method updates the repository's Merkle Search Tree root
- after a commit operation.
- 
- @param ownerDid The DID of the repository owner.
- @param rootCid The new root CID.
- @param error On return, contains an error if the operation failed.
- @return YES if the root was updated successfully, NO otherwise.
+/**
+ * Updates the root CID of an existing repository.
+ *
+ * @param ownerDid The DID of the repository owner.
+ * @param rootCid The new root CID.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the root was updated successfully, otherwise NO.
  */
 - (BOOL)updateRepoRoot:(NSString *)ownerDid rootCid:(NSData *)rootCid error:(NSError **)error;
 
-/*!
- @method getRepoForDid:error:
- 
- @abstract Retrieves a repository by owner DID.
- 
- @param did The DID of the repository owner.
- @param error On return, contains an error if the operation failed.
- @return The repository object, or nil if not found.
+/**
+ * Retrieves a repository by owner DID.
+ *
+ * @param did The DID of the repository owner.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching repository, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseRepo *)getRepoForDid:(NSString *)did error:(NSError **)error;
 
-/*!
- @method getAllReposWithError:
- 
- @abstract Retrieves all repositories.
- 
- @param error On return, contains an error if the operation failed.
- @return An array of all repository objects.
+/**
+ * Retrieves all repositories from the database.
+ *
+ * @param error On return, contains an error object if the operation failed.
+ * @return An array of all repositories, or nil on failure.
  */
 - (NSArray<PDSDatabaseRepo *> *)getAllReposWithError:(NSError **)error;
 
-/*!
- @method deleteRepo:error:
- 
- @abstract Deletes a repository and all its records and blocks.
- 
- @param ownerDid The DID of the repository owner.
- @param error On return, contains an error if the operation failed.
- @return YES if the repository was deleted successfully, NO otherwise.
+/**
+ * Deletes a repository by owner DID.
+ *
+ * @param ownerDid The DID of the repository owner.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the repository was deleted successfully, otherwise NO.
  */
 - (BOOL)deleteRepo:(NSString *)ownerDid error:(NSError **)error;
 
 @end
 
-/*!
- @category PDSDatabase (Records)
- 
- @abstract Record CRUD methods for PDSDatabase.
- 
- @discussion These methods provide operations for managing individual records
- within repositories. Records are identified by AT-URIs and contain typed content.
- */
+/// @brief Record management category for PDSDatabase.
+///
+/// Provides methods for saving and retrieving records from repositories.
+
 @interface PDSDatabase (Records)
 
-/*!
- @method saveRecord:error:
- 
- @abstract Saves or updates a record in the database.
- 
- @param record The record object to save.
- @param error On return, contains an error if the operation failed.
- @return YES if the record was saved successfully, NO otherwise.
+/**
+ * Saves a record to the database.
+ *
+ * @param record The record object to save.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the record was saved successfully, otherwise NO.
  */
 - (BOOL)saveRecord:(PDSDatabaseRecord *)record error:(NSError **)error;
 
-/*!
- @method getRecord:error:
- 
- @abstract Retrieves a record by its URI.
- 
- @param uri The AT-URI of the record.
- @param error On return, contains an error if the operation failed.
- @return The record object, or nil if not found.
+/**
+ * Retrieves a record by its URI.
+ *
+ * @param uri The URI of the record to retrieve.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching record, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri error:(NSError **)error;
 
-/*!
- @method getRecordsForDid:collection:error:
- 
- @abstract Retrieves records from a repository.
- 
- @param did The DID of the repository owner.
- @param collection Optional collection filter (e.g., app.bsky.actor.profile).
- @param error On return, contains an error if the operation failed.
- @return An array of matching record objects.
+/**
+ * Retrieves all records for a given DID and optional collection.
+ *
+ * @param did The DID of the record owner.
+ * @param collection The optional collection filter. Pass nil for all collections.
+ * @param error On return, contains an error object if the operation failed.
+ * @return An array of matching records, or nil on failure.
  */
 - (NSArray<PDSDatabaseRecord *> *)getRecordsForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error;
 
 @end
 
-/*!
- @category PDSDatabase (Blocks)
- 
- @abstract Block storage methods for PDSDatabase.
- 
- @discussion These methods manage CAR blocks stored in the repository.
- Blocks contain serialized content indexed by their CID.
- */
+/// @brief Block storage category for PDSDatabase.
+///
+/// Provides methods for saving and retrieving content blocks including
+/// batch operations and counting.
+
 @interface PDSDatabase (Blocks)
 
-/*!
- @method saveBlock:error:
- 
- @abstract Saves a single block to the database.
- 
- @param block The block object to save.
- @param error On return, contains an error if the operation failed.
- @return YES if the block was saved successfully, NO otherwise.
+/**
+ * Saves a single block to the database.
+ *
+ * @param block The block object to save.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the block was saved successfully, otherwise NO.
  */
 - (BOOL)saveBlock:(PDSDatabaseBlock *)block error:(NSError **)error;
 
-/*!
- @method saveBlocks:error:
- 
- @abstract Saves multiple blocks in a batch operation.
- 
- @param blocks An array of blocks to save.
- @param error On return, contains an error if the operation failed.
- @return YES if all blocks were saved successfully, NO otherwise.
+/**
+ * Saves multiple blocks to the database in a single operation.
+ *
+ * @param blocks An array of block objects to save.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if all blocks were saved successfully, otherwise NO.
  */
 - (BOOL)saveBlocks:(NSArray<PDSDatabaseBlock *> *)blocks error:(NSError **)error;
 
-/*!
- @method getBlockWithCid:repoDid:error:
- 
- @abstract Retrieves a block by CID.
- 
- @param cid The CID of the block.
- @param repoDid The DID of the repository that owns the block.
- @param error On return, contains an error if the operation failed.
- @return The block object, or nil if not found.
+/**
+ * Retrieves a block by its CID and repository DID.
+ *
+ * @param cid The CID of the block to retrieve.
+ * @param repoDid The DID of the repository owning the block.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching block, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error;
 
-/*!
- @method getBlocksForRepo:limit:offset:error:
- 
- @abstract Retrieves blocks from a repository with pagination.
- 
- @param repoDid The DID of the repository.
- @param limit Maximum number of blocks to return.
- @param offset Number of blocks to skip.
- @param error On return, contains an error if the operation failed.
- @return An array of block objects.
+/**
+ * Retrieves blocks for a repository with pagination.
+ *
+ * @param repoDid The DID of the repository.
+ * @param limit The maximum number of blocks to return.
+ * @param offset The number of blocks to skip.
+ * @param error On return, contains an error object if the operation failed.
+ * @return An array of matching blocks, or nil on failure.
  */
 - (NSArray<PDSDatabaseBlock *> *)getBlocksForRepo:(NSString *)repoDid limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error;
 
-/*!
- @method getBlockCountForRepo:error:
- 
- @abstract Counts the total blocks in a repository.
- 
- @param repoDid The DID of the repository.
- @param error On return, contains an error if the operation failed.
- @return The number of blocks in the repository.
+/**
+ * Counts the total number of blocks in a repository.
+ *
+ * @param repoDid The DID of the repository.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The block count, or -1 on failure.
  */
 - (NSInteger)getBlockCountForRepo:(NSString *)repoDid error:(NSError **)error;
 
-/*!
- @method deleteBlock:repoDid:error:
- 
- @abstract Deletes a block from the database.
- 
- @param cid The CID of the block to delete.
- @param repoDid The DID of the repository that owns the block.
- @param error On return, contains an error if the operation failed.
- @return YES if the block was deleted successfully, NO otherwise.
+/**
+ * Deletes a block by its CID and repository DID.
+ *
+ * @param cid The CID of the block to delete.
+ * @param repoDid The DID of the repository owning the block.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the block was deleted successfully, otherwise NO.
  */
 - (BOOL)deleteBlock:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error;
 
 @end
 
-/*!
- @category PDSDatabase (Blobs)
- 
- @abstract Blob metadata methods for PDSDatabase.
- 
- @discussion These methods manage blob references and metadata. Blobs are
- large binary attachments stored separately from the repository data.
- */
+/// @brief Blob storage category for PDSDatabase.
+///
+/// Provides methods for managing blob metadata and content references.
+
 @interface PDSDatabase (Blobs)
 
-/*!
- @method saveBlob:error:
- 
- @abstract Saves blob metadata to the database.
- 
- @param blob The blob object to save.
- @param error On return, contains an error if the operation failed.
- @return YES if the blob was saved successfully, NO otherwise.
+/**
+ * Saves a blob to the database.
+ *
+ * @param blob The blob object to save.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the blob was saved successfully, otherwise NO.
  */
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error;
 
-/*!
- @method getBlobWithCid:error:
- 
- @abstract Retrieves blob metadata by CID.
- 
- @param cid The CID of the blob.
- @param error On return, contains an error if the operation failed.
- @return The blob object, or nil if not found.
+/**
+ * Retrieves a blob by its CID.
+ *
+ * @param cid The CID of the blob to retrieve.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The matching blob, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseBlob *)getBlobWithCid:(NSData *)cid error:(NSError **)error;
 
-/*!
- @method getBlobsForDid:limit:offset:error:
- 
- @abstract Retrieves blobs uploaded by an account.
- 
- @param did The DID of the account.
- @param limit Maximum number of blobs to return.
- @param offset Number of blobs to skip.
- @param error On return, contains an error if the operation failed.
- @return An array of blob objects.
+/**
+ * Retrieves blobs for a given DID with pagination.
+ *
+ * @param did The DID of the blob owner.
+ * @param limit The maximum number of blobs to return.
+ * @param offset The number of blobs to skip.
+ * @param error On return, contains an error object if the operation failed.
+ * @return An array of matching blobs, or nil on failure.
  */
 - (NSArray<PDSDatabaseBlob *> *)getBlobsForDid:(NSString *)did limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error;
 
-/*!
- @method getBlobCountForDid:error:
- 
- @abstract Counts blobs uploaded by an account.
- 
- @param did The DID of the account.
- @param error On return, contains an error if the operation failed.
- @return The number of blobs uploaded by the account.
+/**
+ * Counts the total number of blobs for a given DID.
+ *
+ * @param did The DID of the blob owner.
+ * @param error On return, contains an error object if the operation failed.
+ * @return The blob count, or -1 on failure.
  */
 - (NSInteger)getBlobCountForDid:(NSString *)did error:(NSError **)error;
 
-/*!
- @method deleteBlob:error:
- 
- @abstract Deletes a blob from the database.
- 
- @param cid The CID of the blob to delete.
- @param error On return, contains an error if the operation failed.
- @return YES if the blob was deleted successfully, NO otherwise.
+/**
+ * Deletes a blob by its CID.
+ *
+ * @param cid The CID of the blob to delete.
+ * @param error On return, contains an error object if the operation failed.
+ * @return YES if the blob was deleted successfully, otherwise NO.
  */
 - (BOOL)deleteBlob:(NSData *)cid error:(NSError **)error;
 
 @end
 
-/*!
- @category PDSDatabase (Transactions)
- 
- @abstract Transaction methods for PDSDatabase.
- 
- @discussion These methods support SQLite transactions for atomic operations.
- Use transactions to group multiple operations into a single atomic unit.
- */
+/// @brief Transaction management category for PDSDatabase.
+///
+/// Provides methods for managing database transactions for atomic operations.
+
 @interface PDSDatabase (Transactions)
 
-/*!
- @method beginTransactionWithError:
- 
- @abstract Begins a database transaction.
- 
- @discussion All subsequent operations will be part of this transaction
- until commit or rollback is called.
- 
- @param error On return, contains an error if the operation failed.
- @return YES if the transaction began successfully, NO otherwise.
+/**
+ * Begins a database transaction.
+ *
+ * @param error On return, contains an error object if the transaction could not begin.
+ * @return YES if the transaction began successfully, otherwise NO.
  */
 - (BOOL)beginTransactionWithError:(NSError **)error;
 
-/*!
- @method commitTransactionWithError:
- 
- @abstract Commits the current transaction.
- 
- @discussion All operations since the last beginTransaction are made permanent.
- 
- @param error On return, contains an error if the operation failed.
- @return YES if the transaction committed successfully, NO otherwise.
+/**
+ * Commits the current transaction.
+ *
+ * @param error On return, contains an error object if the transaction could not commit.
+ * @return YES if the transaction committed successfully, otherwise NO.
  */
 - (BOOL)commitTransactionWithError:(NSError **)error;
 
-/*!
- @method rollbackTransactionWithError:
- 
- @abstract Rolls back the current transaction.
- 
- @discussion All operations since the last beginTransaction are discarded.
- 
- @param error On return, contains an error if the operation failed.
- @return YES if the transaction rolled back successfully, NO otherwise.
+/**
+ * Rolls back the current transaction.
+ *
+ * @param error On return, contains an error object if the transaction could not roll back.
+ * @return YES if the transaction rolled back successfully, otherwise NO.
  */
 - (BOOL)rollbackTransactionWithError:(NSError **)error;
 

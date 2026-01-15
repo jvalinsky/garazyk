@@ -1,415 +1,292 @@
+/**
+ * @file Session.h
+ * @brief Defines the session management layer for ATProto PDS authentication.
+ *
+ * This header provides classes for managing user sessions, including session tokens,
+ * session objects, and persistent session storage. It handles token lifecycle management,
+ * expiration, refresh operations, and session revocation.
+ *
+ * @note This module integrates with the OAuth2 authentication flow and JWT token handling.
+ * @see OAuth2.h
+ * @see JWT.h
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class SessionToken;
-@class Session;
-@class SessionStore;
-@class JWTMinter;
-
-/*!
- @header Session.h
- 
- @abstract Session management for ATProto authentication.
- 
- @discussion This header defines the session management classes used by the
- PDS for OAuth 2.0 authentication. It includes SessionToken, Session, and
- SessionStore for managing user authentication state.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * @brief Error domain for session-related errors.
  */
-
 extern NSString * const SessionErrorDomain;
 
-/*!
- @enum SessionError
- 
- @abstract Error codes for session operations.
- 
- @constant SessionErrorInvalidToken The token format is invalid.
- @constant SessionErrorTokenExpired The token has expired.
- @constant SessionErrorInvalidSession The session is malformed.
- @constant SessionErrorSessionNotFound The session was not found.
- @constant SessionErrorInvalidScope The requested scope is invalid.
- @constant SessionErrorRevoked The session has been revoked.
- @constant SessionErrorConcurrencyConflict A concurrent modification occurred.
+/**
+ * @brief Error codes for session operations.
  */
 typedef NS_ENUM(NSInteger, SessionError) {
+    /** The provided token is invalid or malformed. */
     SessionErrorInvalidToken = 1000,
+    /** The token has expired and is no longer valid. */
     SessionErrorTokenExpired,
+    /** The session object is invalid or corrupted. */
     SessionErrorInvalidSession,
+    /** The requested session was not found. */
     SessionErrorSessionNotFound,
+    /** The requested scope is invalid or not permitted. */
     SessionErrorInvalidScope,
+    /** The session has been revoked. */
     SessionErrorRevoked,
+    /** A concurrent modification conflict occurred. */
     SessionErrorConcurrencyConflict
 };
 
-/*!
- @class SessionToken
- 
- @abstract Represents an OAuth 2.0 token.
- 
- @discussion SessionToken encapsulates both access tokens and refresh tokens
- with their associated metadata including expiration and scope.
+/**
+ * @brief Represents an OAuth 2.0 token with associated metadata.
+ *
+ * SessionToken encapsulates a token's value, issuance time, expiration, and scope.
+ * It supports both access tokens and refresh tokens, providing validation methods
+ * for token lifecycle management.
  */
 @interface SessionToken : NSObject
 
-/*! The token value (JWT for access tokens, opaque string for refresh tokens). */
+/** The actual token string value. */
 @property (nonatomic, copy) NSString *value;
 
-/*! The date and time when the token was issued. */
+/** The date and time when the token was issued. */
 @property (nonatomic, strong) NSDate *issuedAt;
 
-/*! The date and time when the token expires. */
+/** The date and time when the token expires. */
 @property (nonatomic, strong) NSDate *expiresAt;
 
-/*! The OAuth 2.0 scope associated with this token. */
+/** The OAuth 2.0 scope associated with this token, or nil if no scope. */
 @property (nonatomic, copy, nullable) NSString *scope;
 
-/*! YES if this is a refresh token, NO for an access token. */
+/** YES if this token is a refresh token, NO for an access token. */
 @property (nonatomic, assign) BOOL isRefreshToken;
 
-/*!
- @method tokenWithValue:expiresIn:scope:isRefreshToken:
- 
- @abstract Creates a token with specified parameters.
- 
- @param value The token value string.
- @param expiresIn Time in seconds until the token expires.
- @param scope The OAuth scope for this token.
- @param isRefreshToken YES if this is a refresh token.
- @return A new SessionToken instance.
+/**
+ * @brief Creates a new session token with the specified parameters.
+ *
+ * @param value The token string value.
+ * @param expiresIn The number of seconds until the token expires from the issuance time.
+ * @param scope The OAuth 2.0 scope string, or nil.
+ * @param isRefreshToken YES if creating a refresh token, NO for access token.
+ * @return A new SessionToken instance, or nil if parameters are invalid.
  */
 + (nullable instancetype)tokenWithValue:(NSString *)value
-                               expiresIn:(NSTimeInterval)expiresIn
-                                   scope:(nullable NSString *)scope
-                           isRefreshToken:(BOOL)isRefreshToken;
+                              expiresIn:(NSTimeInterval)expiresIn
+                                  scope:(nullable NSString *)scope
+                          isRefreshToken:(BOOL)isRefreshToken;
 
-/*!
- @method isExpired
- 
- @abstract Checks if the token has expired.
- 
- @discussion This method compares the current date against the expiration date.
- A small clock skew tolerance may be applied.
- 
- @return YES if the token has expired, NO otherwise.
+/**
+ * @brief Determines whether the token has expired.
+ *
+ * @return YES if the current date is after the expiration date, NO otherwise.
  */
 - (BOOL)isExpired;
 
-/*!
- @method isValid
- 
- @abstract Checks if the token is currently valid.
- 
- @discussion A token is valid if it has not expired and has a valid format.
- 
- @return YES if the token is valid, NO otherwise.
+/**
+ * @brief Validates the token for general usage.
+ *
+ * A token is valid if it has not expired and has a non-nil value.
+ *
+ * @return YES if the token is valid, NO otherwise.
  */
 - (BOOL)isValid;
 
 @end
 
-/*!
- @class Session
- 
- @abstract Represents an authenticated user session.
- 
- @discussion Session contains all information about an authenticated session
- including tokens, user identity, and metadata. It provides methods for
- serializing to OAuth 2.0 token responses.
- 
- @code
- // Create a new session
- Session *session = [Session sessionWithDID:@"did:plc:..."
-                                    handle:@"user.bsky.social"
-                                     scope:@"atproto"];
- 
- // Get token response for API
- NSDictionary *response = [session toTokenResponse];
- @endcode
+/**
+ * @brief Represents a complete user session with tokens and identity information.
+ *
+ * Session encapsulates a user's authenticated session, including their DID (Decentralized
+ * Identifier), handle, access token, refresh token, and associated metadata. It provides
+ * methods to serialize session data for OAuth 2.0 token responses.
  */
 @interface Session : NSObject
 
-/*! Unique identifier for this session. */
+/** Unique identifier for this session. */
 @property (nonatomic, copy, readonly) NSString *sessionID;
 
-/*! The user's decentralized identifier. */
+/** The user's Decentralized Identifier (DID). */
 @property (nonatomic, copy, readonly) NSString *did;
 
-/*! The user's handle. */
+/** The user's handle (e.g., @username.example.com). */
 @property (nonatomic, copy, readonly) NSString *handle;
 
-/*! The current access token value. */
+/** The OAuth 2.0 access token for API access. */
 @property (nonatomic, copy, readonly) NSString *accessToken;
 
-/*! The refresh token for obtaining new access tokens. */
+/** The OAuth 2.0 refresh token for obtaining new access tokens, or nil. */
 @property (nonatomic, copy, readonly, nullable) NSString *refreshToken;
 
-/*! The token type (typically "DPoP" for ATProto). */
+/** The token type (typically "Bearer" or "DPoP"). */
 @property (nonatomic, copy, readonly) NSString *tokenType;
 
-/*! The OAuth scope for this session. */
+/** The OAuth 2.0 scope granted to this session. */
 @property (nonatomic, copy, readonly) NSString *scope;
 
-/*! The date when the session was created. */
+/** The date and time when the session was created. */
 @property (nonatomic, strong, readonly) NSDate *createdAt;
 
-/*! The date when the access token expires. */
+/** The date and time when the access token expires. */
 @property (nonatomic, strong, readonly) NSDate *accessTokenExpiresAt;
 
-/*! The date when the refresh token expires, if applicable. */
+/** The date and time when the refresh token expires, or nil if no expiration. */
 @property (nonatomic, strong, readonly, nullable) NSDate *refreshTokenExpiresAt;
 
-/*! Thumbprint of the DPoP key used for this session. */
-@property (nonatomic, copy, readwrite, nullable) NSString *dpopKeyThumbprint;
+/** The DPoP key thumbprint for DPoP-bound tokens, or nil. */
+@property (nonatomic, copy, readonly, nullable) NSString *dpopKeyThumbprint;
 
-/*! Minter used for creating access tokens. */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
-
-/*!
- @method sessionWithDID:handle:scope:
-  
- @abstract Creates a new session with the specified identity.
-  
- @param did The user's DID.
- @param handle The user's handle.
- @param scope The OAuth scope for the session.
- @return A new Session instance.
+/**
+ * @brief Creates a new session with the specified identity parameters.
+ *
+ * @param did The user's Decentralized Identifier.
+ * @param handle The user's handle.
+ * @param scope The OAuth 2.0 scope to grant.
+ * @return A new Session instance, or nil if parameters are invalid.
  */
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope;
 
-/*!
- @method sessionWithDID:handle:scope:minter:
- 
- @abstract Creates a new session with the specified identity and minter.
- 
- @param did The user's DID.
- @param handle The user's handle.
- @param scope The OAuth scope for the session.
- @param minter The JWT minter to use for access tokens.
- @return A new Session instance.
- */
-+ (nullable instancetype)sessionWithDID:(NSString *)did
-                                 handle:(NSString *)handle
-                                  scope:(NSString *)scope
-                                 minter:(nullable JWTMinter *)minter;
-
-/*!
- @method initWithDID:handle:scope:
-  
- @abstract Initializes a session with identity information.
-  
- @param did The user's DID.
- @param handle The user's handle.
- @param scope The OAuth scope for the session.
- @return An initialized Session instance.
+/**
+ * @brief Initializes a new session with the specified identity parameters.
+ *
+ * @param did The user's Decentralized Identifier.
+ * @param handle The user's handle.
+ * @param scope The OAuth 2.0 scope to grant.
+ * @return The initialized session instance.
  */
 - (instancetype)initWithDID:(NSString *)did
                     handle:(NSString *)handle
                      scope:(NSString *)scope;
 
-/*!
- @method initWithDID:handle:scope:minter:
- 
- @abstract Initializes a session with identity information and a minter.
- 
- @param did The user's DID.
- @param handle The user's handle.
- @param scope The OAuth scope for the session.
- @param minter The JWT minter to use for access tokens.
- @return An initialized Session instance.
- */
-- (instancetype)initWithDID:(NSString *)did
-                    handle:(NSString *)handle
-                     scope:(NSString *)scope
-                    minter:(nullable JWTMinter *)minter;
-
-/*!
- @method toTokenResponse
- 
- @abstract Converts the session to an OAuth token response dictionary.
- 
- @return A dictionary suitable for the token endpoint response.
+/**
+ * @brief Converts the session to an OAuth 2.0 token response dictionary.
+ *
+ * @return A dictionary suitable for JSON encoding in a token response.
  */
 - (NSDictionary *)toTokenResponse;
 
-/*!
- @method toBearerTokenResponse
- 
- @abstract Converts the session to a bearer token response.
- 
- @discussion This method returns a response formatted for legacy clients
- that don't support DPoP.
- 
- @return A dictionary for bearer token response.
+/**
+ * @brief Converts the session to a Bearer token response format.
+ *
+ * @return A dictionary suitable for a standard Bearer token response.
  */
 - (NSDictionary *)toBearerTokenResponse;
 
-/*!
- @method refreshAccessToken
- 
- @abstract Generates a new access token for the session.
- 
- @return The new access token value.
- */
-- (NSString *)refreshAccessToken;
-
 @end
 
-/*!
- @class SessionStore
- 
- @abstract Manages storage and lifecycle of sessions.
- 
- @discussion SessionStore provides persistent storage for sessions and
- handles creation, retrieval, refresh, and revocation of sessions.
- It implements token minting and validation logic.
- 
- @code
- // Create a session for a user
- SessionStore *store = [SessionStore sharedStore];
- Session *session = [store createSessionForDID:@"did:plc:..."
-                                       handle:@"user.bsky.social"
-                                        scope:@"atproto"
-                                      dpopJWK:jwkDict];
- 
- // Look up by access token
- Session *found = [store getSessionByAccessToken:token error:nil];
- @endcode
+/**
+ * @brief Persistent storage for session management and token lifecycle.
+ *
+ * SessionStore provides a thread-safe interface for creating, retrieving, refreshing,
+ * and revoking user sessions. It manages token lifetimes and enforces security policies
+ * such as clock skew tolerance for time-sensitive validation.
  */
 @interface SessionStore : NSObject
 
-/*! Lifetime of access tokens in seconds (default: 3600). */
+/** The lifetime in seconds for access tokens issued by this store. */
 @property (nonatomic, assign) NSTimeInterval accessTokenLifetime;
 
-/*! Lifetime of refresh tokens in seconds (default: 2592000). */
+/** The lifetime in seconds for refresh tokens issued by this store. */
 @property (nonatomic, assign) NSTimeInterval refreshTokenLifetime;
 
-/*! Clock skew tolerance in seconds for token validation. */
-@property (nonatomic, assign, readonly) NSTimeInterval clockSkew;
-
-/*! Minter used for creating access tokens. */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
-
-/*!
- @method sharedStore
- 
- @abstract Returns the shared session store instance.
- 
- @return The singleton SessionStore instance.
- */
-+ (instancetype)sharedStore;
-
-/*!
- @method createSessionForDID:handle:scope:dpopJWK:
- 
- @abstract Creates a new authenticated session.
- 
- @param did The user's DID.
- @param handle The user's handle.
- @param scope The OAuth scope for the session.
- @param dpopJWK Optional DPoP key for proof-of-possession.
- @param error On return, contains an error if session creation failed.
- @return The new Session, or nil on failure.
+/**
+ * @brief Creates a new session for the specified user.
+ *
+ * @param did The user's Decentralized Identifier.
+ * @param handle The user's handle.
+ * @param scope The OAuth 2.0 scope to grant.
+ * @param dpopJWK Optional DPoP JWK for DPoP-bound tokens.
+ * @return The newly created session, or nil if creation failed.
  */
 - (nullable Session *)createSessionForDID:(NSString *)did
                                    handle:(NSString *)handle
                                     scope:(NSString *)scope
-                                  dpopJWK:(nullable NSDictionary *)dpopJWK
-                                    error:(NSError **)error;
+                                  dpopJWK:(nullable NSDictionary *)dpopJWK;
 
-/*!
- @method getSessionByAccessToken:error:
- 
- @abstract Retrieves a session by its access token.
- 
- @param accessToken The access token to look up.
- @param error On return, contains an error if the lookup failed.
- @return The Session, or nil if not found.
+/**
+ * @brief Retrieves a session by its access token.
+ *
+ * @param accessToken The access token to look up.
+ * @param error On return, contains an error if the operation fails.
+ * @return The session associated with the token, or nil if not found.
  */
 - (nullable Session *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error;
 
-/*!
- @method getSessionByRefreshToken:error:
- 
- @abstract Retrieves a session by its refresh token.
- 
- @param refreshToken The refresh token to look up.
- @param error On return, contains an error if the lookup failed.
- @return The Session, or nil if not found.
+/**
+ * @brief Retrieves a session by its refresh token.
+ *
+ * @param refreshToken The refresh token to look up.
+ * @param error On return, contains an error if the operation fails.
+ * @return The session associated with the token, or nil if not found.
  */
 - (nullable Session *)getSessionByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 
-/*!
- @method getSessionByID:error:
- 
- @abstract Retrieves a session by its ID.
- 
- @param sessionID The session ID to look up.
- @param error On return, contains an error if the lookup failed.
- @return The Session, or nil if not found.
+/**
+ * @brief Retrieves a session by its unique identifier.
+ *
+ * @param sessionID The session identifier to look up.
+ * @param error On return, contains an error if the operation fails.
+ * @return The session with the given ID, or nil if not found.
  */
 - (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
 
-/*!
- @method revokeSession:error:
- 
- @abstract Revokes a session and invalidates its tokens.
- 
- @param sessionID The ID of the session to revoke.
- @param error On return, contains an error if revocation failed.
- @return YES if the session was revoked, NO otherwise.
+/**
+ * @brief Revokes a session by its identifier.
+ *
+ * @param sessionID The session to revoke.
+ * @param error On return, contains an error if the operation fails.
+ * @return YES if the session was successfully revoked, NO otherwise.
  */
 - (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error;
 
-/*!
- @method refreshSession:scope:dpopJWK:newSession:error:
- 
- @abstract Refreshes a session with new tokens.
- 
- @param sessionID The ID of the session to refresh.
- @param newScope Optional new scope for the session.
- @param dpopJWK Optional new DPoP key.
- @param newSession On return, contains the new session if successful.
- @param error On return, contains an error if refresh failed.
- @return YES if the session was refreshed, NO otherwise.
+/**
+ * @brief Refreshes an existing session with new tokens.
+ *
+ * @param sessionID The session to refresh.
+ * @param newScope Optional new scope to request.
+ * @param dpopJWK Optional new DPoP key for the refreshed session.
+ * @param newSession On return, contains the new session if successful.
+ * @param error On return, contains an error if the operation fails.
+ * @return YES if the session was successfully refreshed, NO otherwise.
  */
 - (BOOL)refreshSession:(NSString *)sessionID
                   scope:(nullable NSString *)newScope
                 dpopJWK:(nullable NSDictionary *)dpopJWK
-            newSession:(Session * _Nullable * _Nullable)newSession
-                  error:(NSError ** _Nullable)error;
+            newSession:(Session **)newSession
+                  error:(NSError **)error;
 
-/*!
- @method getSessionsForDID:error:
- 
- @abstract Retrieves all active sessions for a user.
- 
- @param did The user's DID.
- @param error On return, contains an error if retrieval failed.
- @return An array of the user's active sessions.
+/**
+ * @brief Retrieves all sessions for a specific user.
+ *
+ * @param did The user's Decentralized Identifier.
+ * @param error On return, contains an error if the operation fails.
+ * @return An array of all active sessions for the user, or nil on error.
  */
 - (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
 
-/*!
- @method allActiveSessions:
- 
- @abstract Retrieves all active sessions in the system.
- 
- @param error On return, contains an error if retrieval failed.
- @return An array of all active sessions.
+/**
+ * @brief Retrieves all active sessions in the store.
+ *
+ * @param error On return, contains an error if the operation fails.
+ * @return An array of all active sessions, or nil on error.
  */
 - (NSArray<Session *> *)allActiveSessions:(NSError **)error;
 
-/*!
- @method setClockSkew:
- 
- @abstract Sets the clock skew tolerance for token validation.
- 
- @param clockSkew Maximum acceptable clock difference in seconds.
+/**
+ * @brief The allowed clock skew in seconds for time-sensitive validations.
+ *
+ * @return The current clock skew tolerance.
+ */
+- (NSTimeInterval)clockSkew;
+
+/**
+ * @brief Sets the allowed clock skew for time-sensitive validations.
+ *
+ * @param clockSkew The clock skew tolerance in seconds.
  */
 - (void)setClockSkew:(NSTimeInterval)clockSkew;
 

@@ -51,6 +51,11 @@ NS_ASSUME_NONNULL_BEGIN
                                  password:(NSString *)password
                                     error:(NSError **)error;
 
+/*! Authenticates a user by handle or email and password. */
+- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
+                                     password:(NSString *)password
+                                        error:(NSError **)error;
+
 /*! Gets account info by DID. */
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
 

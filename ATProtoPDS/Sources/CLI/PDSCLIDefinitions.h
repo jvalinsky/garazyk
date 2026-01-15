@@ -2,286 +2,267 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
- @header PDSCLIDefinitions.h
- 
- @abstract Command-line interface definitions for the PDS.
- 
- @discussion This header defines the CLI framework including command
- protocols, context, and dispatcher for the pds command-line tool.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * @file PDSCLIDefinitions.h
+ * @brief Core definitions for the ATProto PDS command-line interface.
+ *
+ * This file defines the protocols, classes, and constants used to implement
+ * the PDS CLI system. It provides a framework for registering commands,
+ * dispatching them with arguments, and managing command execution context.
  */
 
-/*!
- @enum PDSCLIExitCode
- 
- @abstract Exit codes for the CLI tool.
- 
- @constant PDSCLIExitCodeSuccess Command succeeded.
- @constant PDSCLIExitCodeGeneralError A general error occurred.
- @constant PDSCLIExitCodeInvalidArguments Invalid command arguments.
- @constant PDSCLIExitCodeNotFound The requested resource was not found.
- @constant PDSCLIExitCodeUnauthorized Authentication failed.
- @constant PDSCLIExitCodeDatabaseError A database error occurred.
- @constant PDSCLIExitCodeNetworkError A network error occurred.
- */
 typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
     PDSCLIExitCodeSuccess = 0,
-    PDSCLIExitCodeDatabaseError = 5,
     PDSCLIExitCodeGeneralError = 1,
     PDSCLIExitCodeInvalidArguments = 2,
-    PDSCLIExitCodeNetworkError = 6,
     PDSCLIExitCodeNotFound = 3,
-    PDSCLIExitCodeUnauthorized = 4
+    PDSCLIExitCodeUnauthorized = 4,
+    PDSCLIExitCodeDatabaseError = 5,
+    PDSCLIExitCodeNetworkError = 6
 };
 
 @class PDSCLICommandContext;
 
-/*!
- @protocol PDSCLICommand
- 
- @abstract Protocol for CLI commands.
- 
- @discussion Commands implement this protocol to provide their name,
- usage, and execution logic. Commands can have optional subcommands
- for nested functionality.
+/**
+ * @protocol PDSCLICommand
+ * @brief Protocol defining the interface for all PDS CLI commands.
+ *
+ * Any command that can be executed through the PDS CLI must conform to this
+ * protocol. The protocol defines the metadata properties needed for command
+ * registration and help output, as well as the execution method.
  */
 @protocol PDSCLICommand <NSObject>
 
-/*! The command name. */
+/**
+ * @brief The primary name of the command.
+ *
+ * This is the canonical identifier used to invoke the command.
+ */
 @property (nonatomic, copy, readonly) NSString *name;
 
-/*! A brief summary of what the command does. */
+/**
+ * @brief A brief one-line summary of the command's purpose.
+ */
 @property (nonatomic, copy, readonly) NSString *summary;
 
-/*! Usage string showing command syntax. */
+/**
+ * @brief A usage string showing how to invoke the command.
+ *
+ * Should follow the pattern: "command [options] <args>"
+ */
 @property (nonatomic, copy, readonly) NSString *usage;
 
-/*! Detailed help text (optional). */
+/**
+ * @brief Detailed help text for the command.
+ *
+ * May be nil if no additional help is provided.
+ */
 @property (nonatomic, copy, readonly, nullable) NSString *helpText;
 
-/*!
- @method aliases
- 
- @abstract Returns command aliases.
- 
- @return An array of alternative names for this command.
+/**
+ * @brief Returns the list of aliases for this command.
+ *
+ * Aliases are alternative names that can be used to invoke the command.
+ *
+ * @return An array of alias strings, or an empty array if none exist.
  */
 - (NSArray<NSString *> *)aliases;
 
-/*!
- @method executeWithArguments:context:
- 
- @abstract Executes the command.
- 
- @param args The command-line arguments.
- @param context The execution context with configuration.
+/**
+ * @brief Executes the command with the given arguments.
+ *
+ * @param args    The command-line arguments passed to this command.
+ * @param context The execution context containing configuration and services.
  */
 - (void)executeWithArguments:(NSArray<NSString *> *)args
-                     context:(PDSCLICommandContext *)context;
+                    context:(PDSCLICommandContext *)context;
 
 @optional
-
-/*! List of subcommand names (if this command supports subcommands). */
+/**
+ * @brief Returns the list of subcommand names supported by this command.
+ *
+ * @return An array of subcommand names, or nil if no subcommands exist.
+ */
 - (NSArray<NSString *> *)subcommands;
 
-/*!
- @method subcommandForName:
- 
- @abstract Returns a subcommand by name.
- 
- @param name The subcommand name.
- @return The subcommand, or nil if not found.
+/**
+ * @brief Returns the subcommand with the specified name.
+ *
+ * @param name The name of the subcommand to retrieve.
+ * @return The subcommand instance, or nil if not found.
  */
 - (id<PDSCLICommand>)subcommandForName:(NSString *)name;
 
 @end
 
-/*!
- @class PDSBaseCommand
- 
- @abstract Base class for CLI commands.
- 
- @discussion PDSBaseCommand provides default implementations for
- command metadata. Subclasses should override the execute method.
+/**
+ * @class PDSBaseCommand
+ * @brief A base class providing common functionality for CLI commands.
+ *
+ * PDSBaseCommand implements default behaviors for command metadata and
+ * alias management. Subclasses should override the required properties
+ * and the executeWithArguments:context: method.
  */
 @interface PDSBaseCommand : NSObject <PDSCLICommand>
 
-/*!
- @method command
- 
- @abstract Creates a new command instance.
- 
- @return A new command instance.
+/**
+ * @brief Creates and returns a new command instance.
+ *
+ * @return A new PDSBaseCommand instance.
  */
 + (instancetype)command;
 
-/*!
- @method aliases
- 
- @abstract Returns empty array of aliases.
- 
- @return Empty array.
+/**
+ * @brief Returns the list of aliases for this command.
+ *
+ * The default implementation returns an empty array.
+ *
+ * @return An array of alias strings.
  */
 - (NSArray<NSString *> *)aliases;
 
 @end
 
-/*!
- @class PDSCLICommandContext
- 
- @abstract Context for CLI command execution.
- 
- @discussion PDSCLICommandContext provides access to configuration,
- database connections, and output methods for commands.
+/**
+ * @class PDSCLICommandContext
+ * @brief Encapsulates the execution context for CLI commands.
+ *
+ * This class provides access to configuration, services, and output utilities
+ * for commands during execution. It manages the data directory, configuration
+ * path, verbosity settings, and output formatting.
  */
 @interface PDSCLICommandContext : NSObject
 
-/*! Path to the PDS data directory. */
+/**
+ * @brief The directory containing PDS data files.
+ *
+ * Defaults to a platform-appropriate location if not explicitly set.
+ */
 @property (nonatomic, copy) NSString *dataDir;
 
-/*! Path to the configuration file. */
+/**
+ * @brief Path to the configuration file.
+ *
+ * If nil, default configuration locations are searched.
+ */
 @property (nonatomic, copy) NSString *configPath;
 
-/*! If YES, enable verbose output. */
+/**
+ * @brief Whether verbose output is enabled.
+ *
+ * When YES, commands should produce additional diagnostic information.
+ */
 @property (nonatomic, assign) BOOL verbose;
 
-/*! If YES, output in JSON format. */
+/**
+ * @brief Whether to output in JSON format.
+ *
+ * When YES, informational output should be formatted as JSON.
+ */
 @property (nonatomic, assign) BOOL jsonOutput;
 
-/*! Admin password for authenticated operations. */
+/**
+ * @brief The admin password for authenticated operations.
+ *
+ * May be nil if not provided via command-line arguments.
+ */
 @property (nonatomic, copy, nullable) NSString *adminPassword;
 
-/*!
- @method init
- 
- @abstract Initializes with default values.
- 
- @return An initialized context.
+/**
+ * @brief Initializes a new command context with default values.
+ *
+ * @return A newly initialized PDSCLICommandContext.
  */
 - (instancetype)init;
 
-/*!
- @method loadConfig
- 
- @abstract Loads configuration from the config file.
- 
- @return The configuration dictionary.
+/**
+ * @brief Loads and returns the configuration from the config file.
+ *
+ * @return A dictionary containing configuration key-value pairs.
  */
 - (NSDictionary *)loadConfig;
 
-/*!
- @method databaseConnection
- 
- @abstract Returns a database connection.
- 
- @return A database connection object.
+/**
+ * @brief Returns a database connection object for data operations.
+ *
+ * @return An object representing the database connection.
  */
 - (id)databaseConnection;
 
-/*!
- @method printError:
- 
- @abstract Prints an error message.
- 
- @param error The error message to print.
+/**
+ * @brief Prints an error message to the appropriate output stream.
+ *
+ * @param error The error message to display.
  */
 - (void)printError:(NSString *)error;
 
-/*!
- @method printInfo:
- 
- @abstract Prints an info message.
- 
- @param info The info message to print.
+/**
+ * @brief Prints informational output.
+ *
+ * @param info The information message to display.
  */
 - (void)printInfo:(NSString *)info;
 
-/*!
- @method printJSON:
- 
- @abstract Prints an object as JSON.
- 
- @param object The object to serialize and print.
+/**
+ * @brief Prints an object as JSON output.
+ *
+ * @param The object to serialize and print as JSON.
  */
 - (void)printJSON:(id)object;
 
 @end
 
-/*!
- @class PDSCLIDispatcher
- 
- @abstract Routes CLI commands to handlers.
- 
- @discussion PDSCLIDispatcher manages registered commands and routes
- incoming command invocations to the appropriate handler.
+/**
+ * @class PDSCLIDispatcher
+ * @brief Manages command registration and execution dispatching.
+ *
+ * The dispatcher maintains a registry of available commands and routes
+ * incoming command invocations to the appropriate handler. It also
+ * provides functionality for displaying usage information and help.
  */
 @interface PDSCLIDispatcher : NSObject
 
-/*!
- @method sharedDispatcher
- 
- @abstract Returns the shared dispatcher.
- 
- @return The singleton dispatcher.
+/**
+ * @brief Returns the shared singleton dispatcher instance.
+ *
+ * @return The shared PDSCLIDispatcher instance.
  */
 + (instancetype)sharedDispatcher;
 
-/*!
- @method addCommand:
- 
- @abstract Registers a command with the dispatcher.
- 
- @param command The command to register.
+/**
+ * @brief Registers a command with the dispatcher.
+ *
+ * @param command The command to register.
  */
 - (void)addCommand:(id<PDSCLICommand>)command;
 
-/*!
- @method commandForName:
- 
- @abstract Returns a registered command by name.
- 
- @param name The name of the command to find.
- @return The command, or nil if not found.
- */
-- (nullable id<PDSCLICommand>)commandForName:(NSString *)name;
-
-/*!
- @method removeCommandWithName:
- 
- @abstract Removes a registered command.
- 
- @param name The name of the command to remove.
+/**
+ * @brief Removes a command from the dispatcher by name.
+ *
+ * @param name The name of the command to remove.
  */
 - (void)removeCommandWithName:(NSString *)name;
 
-/*!
- @method dispatchWithCommandName:arguments:context:
- 
- @abstract Dispatches a command invocation.
- 
- @param commandName The name of the command to execute.
- @param args The command arguments.
- @param context The execution context.
+/**
+ * @brief Dispatches a command with the given name and arguments.
+ *
+ * @param commandName The name of the command to execute.
+ * @param args        The arguments to pass to the command.
+ * @param context     The execution context.
  */
 - (void)dispatchWithCommandName:(NSString *)commandName
-                       arguments:(NSArray<NSString *> *)args
-                        context:(PDSCLICommandContext *)context;
+                        arguments:(NSArray<NSString *> *)args
+                         context:(PDSCLICommandContext *)context;
 
-/*!
- @method printUsage
- 
- @abstract Prints usage information for all commands.
+/**
+ * @brief Prints usage information for all registered commands.
  */
 - (void)printUsage;
 
-/*!
- @method printUsageForCommand:
- 
- @abstract Prints usage for a specific command.
- 
- @param command The command to show usage for.
+/**
+ * @brief Prints detailed usage information for a specific command.
+ *
+ * @param command The command for which to display usage.
  */
 - (void)printUsageForCommand:(id<PDSCLICommand>)command;
 
