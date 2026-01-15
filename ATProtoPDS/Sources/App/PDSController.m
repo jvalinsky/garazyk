@@ -274,6 +274,18 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         [exploreHandler handleRequest:request response:response];
     }];
 
+    // Wildcard for static assets (css, js, etc.)
+    fprintf(stderr, "Registering wildcard route for /explore/*\n");
+    [_httpServer addRoute:@"GET" path:@"/explore/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
+    // Fallback exact route for debugging
+    [_httpServer addRoute:@"GET" path:@"/explore/css/style.css" handler:^(HttpRequest *request, HttpResponse *response) {
+        fprintf(stderr, "Hit exact route for style.css\n");
+        [exploreHandler handleRequest:request response:response];
+    }];
+
     // MST Viewer (development/debugging tool)
     MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
     [mstViewerHandler setController:self];
