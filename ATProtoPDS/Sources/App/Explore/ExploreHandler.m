@@ -260,31 +260,44 @@
 
 - (NSString *)assetsPath {
     NSString *assetsPath = nil;
+    NSFileManager *fm = [NSFileManager defaultManager];
     
     NSBundle *bundle = [NSBundle mainBundle];
     assetsPath = [bundle pathForResource:@"Explore/Assets" ofType:@""];
     
     if (!assetsPath && self.controller.dataDirectory) {
-        assetsPath = [self.controller.dataDirectory stringByAppendingPathComponent:@"Explore/Assets"];
-        if (![[NSFileManager defaultManager] fileExistsAtPath:assetsPath]) {
-            assetsPath = [[self.controller.dataDirectory stringByAppendingPathComponent:@".."] stringByAppendingPathComponent:@"Explore/Assets"];
-            assetsPath = [assetsPath stringByResolvingSymlinksInPath];
+        NSString *dataDir = self.controller.dataDirectory;
+        if (![dataDir isAbsolutePath]) {
+            dataDir = [[fm currentDirectoryPath] stringByAppendingPathComponent:dataDir];
+        }
+        dataDir = [dataDir stringByResolvingSymlinksInPath];
+        
+        NSString *exploreInData = [dataDir stringByAppendingPathComponent:@"Explore/Assets"];
+        if ([fm fileExistsAtPath:exploreInData]) {
+            assetsPath = exploreInData;
+        } else {
+            NSString *siblingAssets = [[dataDir stringByAppendingPathComponent:@".."] stringByAppendingPathComponent:@"Explore/Assets"];
+            siblingAssets = [siblingAssets stringByResolvingSymlinksInPath];
+            if ([fm fileExistsAtPath:siblingAssets]) {
+                assetsPath = siblingAssets;
+            }
         }
     }
     
     if (!assetsPath) {
-        NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+        NSString *cwd = [fm currentDirectoryPath];
         NSString *projectAssets = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/Explore/Assets"];
-        if ([[NSFileManager defaultManager] fileExistsAtPath:projectAssets]) {
+        if ([fm fileExistsAtPath:projectAssets]) {
             assetsPath = projectAssets;
         } else {
             NSString *dataAssets = [cwd stringByAppendingPathComponent:@"data/Explore/Assets"];
-            if ([[NSFileManager defaultManager] fileExistsAtPath:dataAssets]) {
+            if ([fm fileExistsAtPath:dataAssets]) {
                 assetsPath = dataAssets;
             }
         }
     }
     
+    fprintf(stderr, "ExploreHandler assetsPath: %s\n", [assetsPath UTF8String] ?: "NULL");
     return assetsPath;
 }
 
@@ -297,6 +310,8 @@
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
     PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"ExploreHandler handleRequest: %@", path);
+    fprintf(stderr, "ExploreHandler handleRequest: %s\n", [path UTF8String]);
+
     
     if ([path isEqualToString:@"/explore/"] || [path isEqualToString:@"/explore"]) {
         [self serveIndex:response];
@@ -354,7 +369,10 @@
 }
 
 - (void)serveCss:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *cssPath = [self staticFilePath:@"css/style.css"];
+    NSString *path = request.path;
+    NSString *filename = [path lastPathComponent];
+
+    NSString *cssPath = [self staticFilePath:[NSString stringWithFormat:@"css/%@", filename]];
     
     if (!cssPath) {
         response.statusCode = HttpStatusNotFound;
@@ -523,7 +541,9 @@
             @"dataDirectory": self.controller.dataDirectory ?: @"",
             @"dbPath": dbPath ?: @"",
             @"dbExists": @(dbExists),
-            @"assetsPath": [self assetsPath] ?: @""
+            @"assetsPath": [self assetsPath] ?: @"",
+            @"cssPath": [self staticFilePath:@"css/style.css"] ?: @"",
+            @"jsPath": [self staticFilePath:@"js/ui.js"] ?: @""
         }];
     }
     else if ([endpoint isEqualToString:@"docs"]) {
