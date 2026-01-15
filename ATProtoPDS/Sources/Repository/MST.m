@@ -75,6 +75,39 @@
 
 @end
 
+#pragma mark - MSTDiffOperation
+
+@implementation MSTDiffOperation
+
++ (instancetype)addOperationWithKey:(NSString *)key currentCID:(CID *)currentCID {
+    MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
+    op.key = key;
+    op.type = MSTDiffOperationTypeAdd;
+    op.previousCID = nil;
+    op.currentCID = currentCID;
+    return op;
+}
+
++ (instancetype)updateOperationWithKey:(NSString *)key previousCID:(CID *)previousCID currentCID:(CID *)currentCID {
+    MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
+    op.key = key;
+    op.type = MSTDiffOperationTypeUpdate;
+    op.previousCID = previousCID;
+    op.currentCID = currentCID;
+    return op;
+}
+
++ (instancetype)deleteOperationWithKey:(NSString *)key previousCID:(CID *)previousCID {
+    MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
+    op.key = key;
+    op.type = MSTDiffOperationTypeDelete;
+    op.previousCID = previousCID;
+    op.currentCID = nil;
+    return op;
+}
+
+@end
+
 #pragma mark - MSTNodeEntry
 
 @implementation MSTNodeEntry
@@ -269,15 +302,53 @@
     return self;
 }
 
-#pragma mark - Stubs & Compatibility
-- (NSData *)serialize { return [NSData data]; }
-- (NSData *)computeHash { return [NSData data]; }
-- (void)setNodeHash:(CID *)hash {}
-- (NSArray<MSTEntry *> *)fullEntries { return @[]; }
-- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left { return [self init]; }
-+ (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries { return [[self alloc] initWithLevel:0 left:nil entries:entries]; }
+#pragma mark - Public Interface Methods
+
+- (NSData *)serialize {
+    // Use CBOR serialization for the canonical format
+    return [self serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
+}
+
+- (NSData *)computeHash {
+    // Compute SHA-256 of the CBOR-serialized node
+    NSData *cbor = [self serialize];
+    if (!cbor || cbor.length == 0) return [NSData data];
+    
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(cbor.bytes, (CC_LONG)cbor.length, hash);
+    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+}
+
+- (void)setNodeHash:(CID *)hash {
+    // Store the computed hash (used for caching)
+    // Note: In our implementation, hashes are computed on-demand via getCID:
+    // This method exists for compatibility but is not actively used
+}
+
+- (NSArray<MSTEntry *> *)fullEntries {
+    // Return all key-value entries in this node as MSTEntry objects
+    NSMutableArray<MSTEntry *> *entries = [NSMutableArray array];
+    for (MSTNodeEntry *nodeEntry in self.internalEntries) {
+        MSTEntry *entry = [MSTEntry entryWithKey:nodeEntry.fullKey valueCID:nodeEntry.value];
+        [entries addObject:entry];
+    }
+    return [entries copy];
+}
+
+- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left {
+    // Legacy init - convert CID left to node (not fully supported, use initWithLevel:left:entries: instead)
+    uint32_t level = (kind == MSTNodeKindLeaf) ? 0 : 1;
+    return [self initWithLevel:level left:nil entries:entries];
+}
+
++ (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries {
+    return [[self alloc] initWithLevel:0 left:nil entries:entries];
+}
+
 + (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left {
-    return [[self alloc] initWithLevel:1];
+    // Note: left is a CID, but our internal representation uses MSTNode
+    // This factory method creates a non-leaf without resolving the CID
+    return [[self alloc] initWithLevel:1 left:nil entries:entries];
 }
 
 @end
@@ -656,7 +727,7 @@
     return [node serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];
 }
 
-- (nullable instancetype)deserializeFromCBOR:(NSData *)data {
++ (nullable instancetype)deserializeFromCBOR:(NSData *)data {
     if (!data) return nil;
 
     CBORValue *rootValue = [CBORValue decode:data];
@@ -961,6 +1032,91 @@
     [dot appendString:@"}\n"];
 
     return [dot copy];
+}
+
+#pragma mark - Diff Operations
+
+- (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
+    NSMutableArray<MSTDiffOperation *> *operations = [NSMutableArray array];
+    
+    // Get all entries from both trees
+    NSArray<MSTEntry *> *oldEntries = oldTree ? [oldTree allEntries] : @[];
+    NSArray<MSTEntry *> *newEntries = [self allEntries];
+    
+    // Build dictionaries for O(1) lookup
+    NSMutableDictionary<NSString *, CID *> *oldMap = [NSMutableDictionary dictionary];
+    for (MSTEntry *entry in oldEntries) {
+        oldMap[entry.key] = entry.valueCID;
+    }
+    
+    NSMutableDictionary<NSString *, CID *> *newMap = [NSMutableDictionary dictionary];
+    for (MSTEntry *entry in newEntries) {
+        newMap[entry.key] = entry.valueCID;
+    }
+    
+    // Find additions and updates (keys in new tree)
+    for (MSTEntry *entry in newEntries) {
+        CID *prevCID = oldMap[entry.key];
+        if (!prevCID) {
+            // Key not in old tree -> addition
+            [operations addObject:[MSTDiffOperation addOperationWithKey:entry.key currentCID:entry.valueCID]];
+        } else if (![prevCID.stringValue isEqualToString:entry.valueCID.stringValue]) {
+            // Key exists but CID changed -> update
+            [operations addObject:[MSTDiffOperation updateOperationWithKey:entry.key previousCID:prevCID currentCID:entry.valueCID]];
+        }
+    }
+    
+    // Find deletions (keys in old tree but not in new)
+    for (MSTEntry *entry in oldEntries) {
+        if (!newMap[entry.key]) {
+            [operations addObject:[MSTDiffOperation deleteOperationWithKey:entry.key previousCID:entry.valueCID]];
+        }
+    }
+    
+    // Sort by key for deterministic output
+    [operations sortUsingComparator:^NSComparisonResult(MSTDiffOperation *a, MSTDiffOperation *b) {
+        return [a.key compare:b.key];
+    }];
+    
+    return [operations copy];
+}
+
+#pragma mark - Proof Operations
+
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key {
+    if (!self.root) return nil;
+    
+    NSMutableArray<MSTNode *> *proofPath = [NSMutableArray array];
+    [self collectProofNodes:self.root forKey:key into:proofPath];
+    
+    return proofPath.count > 0 ? [proofPath copy] : nil;
+}
+
+- (BOOL)collectProofNodes:(MSTNode *)node forKey:(NSString *)key into:(NSMutableArray<MSTNode *> *)path {
+    if (!node) return NO;
+    
+    [path addObject:node];
+    
+    // Binary search for key position
+    NSInteger idx = 0;
+    while (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
+        idx++;
+    }
+    
+    // Check if we found the key at this level
+    if (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+        return YES; // Found the key
+    }
+    
+    // Recurse into appropriate subtree
+    MSTNode *subtree = (idx == 0) ? node.internalLeft : node.internalEntries[idx-1].internalTree;
+    if (subtree) {
+        return [self collectProofNodes:subtree forKey:key into:path];
+    }
+    
+    // Key not found - remove this node from path
+    [path removeLastObject];
+    return NO;
 }
 
 @end
