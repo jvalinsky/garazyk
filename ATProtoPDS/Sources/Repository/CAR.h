@@ -1,195 +1,159 @@
+/**
+ * @file CAR.h
+ * @brief Content Addressable Records (CAR) format reader and writer for ATProto PDS.
+ *
+ * This header defines the classes for reading and writing Content Addressable Records,
+ * which is a format used by the AT Protocol (bluesky social) for storing repository data.
+ * The CAR format is a simple container that stores blocks of data indexed by their CIDs
+ * (Content Identifiers).
+ *
+ * The CAR format consists of:
+ * - A header containing the root CID of the data structure
+ * - An index section mapping CIDs to block positions
+ * - A data section containing the actual binary blocks
+ *
+ * This implementation provides streaming read/write capabilities for efficient
+ * handling of large repositories.
+ *
+ * @see https://ipld.io/specs/codecs/dag-cbor/
+ * @see https://atproto.com/specs/repository
+ */
+
 #import <Foundation/Foundation.h>
-#import "Core/CID.h"
-#import "Repository/CBOR.h"
+#import "../CID.h"
+#import "CBOR.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
- @header CAR.h
- 
- @abstract Content Addressable Records (CAR) format utilities.
- 
- @discussion This header defines classes for reading and writing Content
- Addressable Records (CAR) format, used by ATProto for serializing
- repository data. CAR files contain blocks indexed by their CIDs.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
- */
-
-/*!
- @class CARBlock
- 
- @abstract A single block in a CAR archive.
- 
- @discussion CARBlock represents a content-addressable block with its
- CID and data. Blocks are the fundamental units of storage in CAR format.
- 
- @code
- CARBlock *block = [CARBlock blockWithCID:cid data:blockData];
- @endcode
+/**
+ * @class CARBlock
+ * @brief Represents a single block of data with its content identifier.
+ *
+ * CARBlock is a container that associates binary data with its CID (Content Identifier).
+ * Blocks are the fundamental unit of storage in the CAR format and are used to store
+ * serialized objects such as MST nodes, records, and other data structures.
+ *
+ * Each block maintains its CID, which is computed from the data itself, enabling
+ * content-addressable storage and verification.
  */
 @interface CARBlock : NSObject
 
-/*! The content identifier for this block. */
+/** The content identifier for this block, computed from the data. */
 @property (nonatomic, strong, readonly) CID *cid;
 
-/*! The block data content. */
+/** The raw binary data stored in this block. */
 @property (nonatomic, strong, readonly) NSData *data;
 
-/*!
- @method blockWithCID:data:
- 
- @abstract Creates a CAR block with CID and data.
- 
- @param cid The CID identifying this block.
- @param data The block content data.
- @return A new CARBlock instance.
+/**
+ * @brief Creates a new CAR block with the specified CID and data.
+ * @param cid The content identifier for this block.
+ * @param data The binary data to store.
+ * @return A new CARBlock instance.
  */
 + (instancetype)blockWithCID:(CID *)cid data:(NSData *)data;
 
-/*!
- @method initWithCID:data:
- 
- @abstract Initializes a CAR block.
- 
- @param cid The CID identifying this block.
- @param data The block content data.
- @return An initialized CARBlock instance.
+/**
+ * @brief Initializes a new CAR block with the specified CID and data.
+ * @param cid The content identifier for this block.
+ * @param data The binary data to store.
+ * @return A new CARBlock instance.
  */
 - (instancetype)initWithCID:(CID *)cid data:(NSData *)data;
 
 @end
 
-/*!
- @class CARReader
- 
- @abstract Reads and parses CAR archives.
- 
- @discussion CARReader provides functionality for reading existing CAR
- archives, either from in-memory data or from a file path. It supports
- looking up blocks by CID.
- 
- @code
- // Read CAR from file
- CARReader *reader = [CARReader readFromPath:@"/path/to/repo.car" error:nil];
- 
- // Look up a block
- CARBlock *block = [reader blockWithCID:cid];
- 
- // Get all blocks
- NSArray *blocks = reader.blocks;
- @endcode
+/**
+ * @class CARReader
+ * @brief Reads and parses Content Addressable Records (CAR) files.
+ *
+ * CARReader provides deserialization of CAR-formatted data, enabling extraction
+ * of blocks and navigation of content-addressable structures. It supports both
+ * in-memory data and file-based reading.
+ *
+ * The reader maintains an index of all blocks for efficient lookup by CID,
+ * and provides access to the root CID that identifies the primary data structure.
  */
 @interface CARReader : NSObject
 
-/*! The root CID of the CAR archive (the first block). */
+/** The root CID of the data structure stored in this CAR file. */
 @property (nonatomic, strong, readonly, nullable) CID *rootCID;
 
-/*! All blocks contained in the archive. */
+/** Array of all blocks contained in this CAR file, in order. */
 @property (nonatomic, strong, readonly) NSArray<CARBlock *> *blocks;
 
-/*!
- @method readFromData:error:
- 
- @abstract Creates a reader from CAR data in memory.
- 
- @param data The CAR-encoded data.
- @param error On return, contains an error if parsing failed.
- @return A new CARReader instance, or nil on failure.
+/**
+ * @brief Reads and parses a CAR file from in-memory data.
+ * @param data The CAR-encoded binary data.
+ * @param error On return, contains an error if parsing failed.
+ * @return A new CARReader instance, or nil if an error occurred.
  */
 + (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error;
 
-/*!
- @method readFromPath:error:
- 
- @abstract Creates a reader from a CAR file.
- 
- @param path The file path to the CAR archive.
- @param error On return, contains an error if reading failed.
- @return A new CARReader instance, or nil on failure.
+/**
+ * @brief Reads and parses a CAR file from disk.
+ * @param path The file path to read from.
+ * @param error On return, contains an error if reading failed.
+ * @return A new CARReader instance, or nil if an error occurred.
  */
 + (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error;
 
-/*!
- @method blockWithCID:
- 
- @abstract Retrieves a block by its CID.
- 
- @param cid The CID to look up.
- @return The block with the given CID, or nil if not found.
+/**
+ * @brief Retrieves a specific block by its CID.
+ * @param cid The content identifier to look up.
+ * @return The CARBlock with the specified CID, or nil if not found.
  */
 - (nullable CARBlock *)blockWithCID:(CID *)cid;
 
 @end
 
-/*!
- @class CARWriter
- 
- @abstract Creates and writes CAR archives.
- 
- @discussion CARWriter provides functionality for building CAR archives
- by adding blocks. The writer maintains a root CID and collection of
- blocks, supporting serialization to data or file output.
- 
- @code
- // Create a new CAR archive
- CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
- 
- // Add blocks
- [writer addBlock:block1];
- [writer addBlock:block2];
- 
- // Get serialized data
- NSData *carData = [writer serialize];
- 
- // Or write to file
- [writer writeToPath:@"/path/to/output.car" error:nil];
- @endcode
+/**
+ * @class CARWriter
+ * @brief Creates and writes Content Addressable Records (CAR) files.
+ *
+ * CARWriter provides serialization of blocks into the CAR format. It maintains
+ * an in-memory collection of blocks and produces a complete CAR file when serialized.
+ *
+ * The writer handles:
+ * - Block collection and indexing
+ * - Header generation with root CID
+ * - Efficient binary serialization
+ * - File output with error handling
+ *
+ * Typical usage involves creating blocks, adding them to the writer, and then
+ * serializing to memory or writing to disk.
  */
 @interface CARWriter : NSObject
 
-/*! The root CID of this CAR archive. */
+/** The root CID of the data structure being written. */
 @property (nonatomic, strong, readonly) CID *rootCID;
 
-/*! The collection of blocks that have been added. */
+/** Mutable array of blocks that will be written to the CAR file. */
 @property (nonatomic, strong, readonly) NSMutableArray<CARBlock *> *blocks;
 
-/*!
- @method writerWithRootCID:
- 
- @abstract Creates a new CAR writer with a root CID.
- 
- @param rootCID The CID that will serve as the archive root.
- @return A new CARWriter instance.
+/**
+ * @brief Creates a new CAR writer for the specified root CID.
+ * @param rootCID The CID of the primary data structure (e.g., MST root).
+ * @return A new CARWriter instance.
  */
 + (instancetype)writerWithRootCID:(CID *)rootCID;
 
-/*!
- @method addBlock:
- 
- @abstract Adds a block to the archive.
- 
- @param block The block to add.
+/**
+ * @brief Adds a block to the CAR file.
+ * @param block The CARBlock to add.
  */
 - (void)addBlock:(CARBlock *)block;
 
-/*!
- @method serialize
- 
- @abstract Serializes the archive to CAR format.
- 
- @return CAR-encoded data suitable for storage or transmission.
+/**
+ * @brief Serializes the CAR file to binary data.
+ * @return NSData containing the complete CAR-encoded file.
  */
 - (NSData *)serialize;
 
-/*!
- @method writeToPath:error:
- 
- @abstract Writes the archive to a file.
- 
- @param path The destination file path.
- @param error On return, contains an error if writing failed.
- @return YES if the file was written successfully, NO otherwise.
+/**
+ * @brief Writes the CAR file to disk.
+ * @param path The file path to write to.
+ * @param error On return, contains an error if writing failed.
+ * @return YES if successful, NO otherwise.
  */
 - (BOOL)writeToPath:(NSString *)path error:(NSError **)error;
 

@@ -807,6 +807,27 @@ static NSDateFormatter * iso8601Formatter(void) {
     return account;
 }
 
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
+    NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, email.UTF8String, -1, SQLITE_STATIC);
+
+    PDSDatabaseAccount *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [self accountFromStatement:stmt];
+    }
+
+    sqlite3_finalize(stmt);
+    return account;
+}
+
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     NSString *sql = @"SELECT * FROM accounts WHERE refresh_jwt = ?";
 

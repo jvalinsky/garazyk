@@ -7,6 +7,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSController.h"
+#import "Core/CID.h"
 #import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuth2Handler.h"
@@ -206,29 +207,74 @@
         [response setJsonBody:@{@"status": @"ok", @"version": @"0.1.0"}];
     }];
 
+    [httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 200;
+        [response setJsonBody:@{@"status": @"ok"}];
+    }];
+
+    [httpServer addRoute:@"GET" path:@"/robots.txt" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 200;
+        response.contentType = @"text/plain";
+        [response setBodyString:@"User-agent: *\nDisallow: /"];
+    }];
+
+    [httpServer addRoute:@"GET" path:@"/account/" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 200;
+        response.contentType = @"text/html";
+        NSString *html = @"<!DOCTYPE html><html><head><title>ATProto Account</title></head><body><h1>Account Management</h1><p>Account web UI coming soon.</p></body></html>";
+        [response setBodyString:html];
+    }];
+
     // Register Server DID Document (did:web support)
     [httpServer addRoute:@"GET" path:@"/.well-known/did.json" handler:^(HttpRequest *request, HttpResponse *response) {
-        // Construct a did:web DID document for this server
-        // TODO: Get actual hostname from config
-        NSString *hostname = @"localhost";
-        if (port != 80 && port != 443) {
-            hostname = [NSString stringWithFormat:@"localhost:%ld", (long)port];
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *host = config.serverHost ?: @"localhost";
+        if ([host isEqualToString:@"0.0.0.0"]) {
+            host = @"localhost";
         }
-        
-        NSString *did = [NSString stringWithFormat:@"did:web:%@", hostname];
-        NSString *serviceEndpoint = [NSString stringWithFormat:@"http://%@", hostname];
-        
-        NSDictionary *doc = @{
-            @"@context": @[@"https://www.w3.org/ns/did/v1"],
-            @"id": did,
-            @"service": @[@{
-                @"id": @"#atproto_pds",
-                @"type": @"AtprotoPersonalDataServer",
-                @"serviceEndpoint": serviceEndpoint
-            }],
-            @"verificationMethod": @[],
-            @"authentication": @[]
-        };
+
+        NSUInteger didPort = port;
+        NSString *didHost = host;
+        if (didPort != 80 && didPort != 443) {
+            didHost = [NSString stringWithFormat:@"%@%%3A%lu", host, (unsigned long)didPort];
+        }
+
+        NSString *did = [NSString stringWithFormat:@"did:web:%@", didHost];
+        NSString *scheme = (didPort == 443) ? @"https" : @"http";
+        NSString *serviceEndpoint = nil;
+        if (didPort == 80 || didPort == 443) {
+            serviceEndpoint = [NSString stringWithFormat:@"%@://%@", scheme, host];
+        } else {
+            serviceEndpoint = [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)didPort];
+        }
+
+        NSString *publicKeyMultibase = nil;
+        NSData *publicKey = controller.jwtMinter.publicKey;
+        if (publicKey.length > 0) {
+            publicKeyMultibase = [NSString stringWithFormat:@"b%@", [CID base32Encode:publicKey]];
+        }
+
+        NSMutableDictionary *doc = [NSMutableDictionary dictionary];
+        doc[@"@context"] = @[@"https://www.w3.org/ns/did/v1"];
+        doc[@"id"] = did;
+        doc[@"service"] = @[@{
+            @"id": @"#atproto_pds",
+            @"type": @"AtprotoPersonalDataServer",
+            @"serviceEndpoint": serviceEndpoint
+        }];
+        if (publicKeyMultibase) {
+            NSDictionary *verificationMethod = @{
+                @"id": [NSString stringWithFormat:@"%@#atproto", did],
+                @"type": @"Multikey",
+                @"controller": did,
+                @"publicKeyMultibase": publicKeyMultibase
+            };
+            doc[@"verificationMethod"] = @[verificationMethod];
+            doc[@"authentication"] = @[verificationMethod[@"id"]];
+        } else {
+            doc[@"verificationMethod"] = @[];
+            doc[@"authentication"] = @[];
+        }
         
         response.statusCode = 200;
         [response setJsonBody:doc];
