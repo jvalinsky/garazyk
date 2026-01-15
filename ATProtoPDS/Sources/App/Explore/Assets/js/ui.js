@@ -159,59 +159,6 @@ async function selectAccount(account) {
     showSection('did-doc', 'DID Document');
     await showDidDocument(account.did);
 }
-            }
-        });
-    });
-    
-    // Initial state
-    showSection('did-doc', 'DID Document');
-    loadAccounts();
-}
-
-async function loadAccounts() {
-    const list = document.getElementById('account-list');
-    list.innerHTML = '<li class="loading">Loading...</li>';
-    
-    const result = await API.getAccounts();
-    
-    if (result.accounts && result.accounts.length > 0) {
-        list.innerHTML = '';
-        for (const account of result.accounts) {
-            const li = document.createElement('li');
-            li.className = 'account-item';
-            li.dataset.did = account.did;
-            li.dataset.handle = account.handle || '';
-            li.innerHTML = `
-                <span style="font-size:14px">👤</span>
-                <span class="account-handle">${escapeHtml(account.handle || account.did)}</span>
-            `;
-            li.addEventListener('click', () => selectAccount(account));
-            list.appendChild(li);
-        }
-    } else {
-        list.innerHTML = '<li class="empty" style="padding:5px; border:none; background:none;">No accounts found</li>';
-    }
-}
-
-async function selectAccount(account) {
-    // Highlight account
-    document.querySelectorAll('.account-item').forEach(li => {
-        li.classList.remove('active');
-        if (li.dataset.did === account.did) {
-            li.classList.add('active');
-        }
-    });
-    
-    currentDid = account.did;
-    
-    // Update loading states
-    document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
-    document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
-    document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
-    
-    showSection('did-doc', 'DID Document');
-    await showDidDocument(account.did);
-}
 
 async function handleLookup() {
     const input = document.getElementById('lookup-input').value.trim();
