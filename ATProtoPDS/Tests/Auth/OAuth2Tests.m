@@ -63,4 +63,34 @@
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
 
+- (void)testRefreshTokenRotation {
+    Session *session = [[Session alloc] initWithDID:@"did:plc:test"
+                                             handle:@"test.bsky.social"
+                                              scope:@"atproto"];
+    NSString *originalRefreshToken = session.refreshToken;
+    XCTAssertNotNil(originalRefreshToken, @"Should have initial refresh token");
+    
+    self.server.activeSessions[session.sessionID] = session;
+    
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Refresh token rotation"];
+    
+    [self.server refreshAccessToken:originalRefreshToken
+                              scope:nil
+                            dpopJWK:nil
+                         completion:^(NSString * _Nullable accessToken, NSError * _Nullable error) {
+        XCTAssertNotNil(accessToken, @"Should return new access token");
+        XCTAssertNil(error, @"Should not have error");
+        
+        NSString *newRefreshToken = session.refreshToken;
+        XCTAssertNotNil(newRefreshToken, @"Should have new refresh token after rotation");
+        
+        BOOL rotated = ![originalRefreshToken isEqualToString:newRefreshToken];
+        XCTAssertTrue(rotated, @"Refresh token should be rotated (new token different from old)");
+        
+        [expectation fulfill];
+    }];
+    
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+}
+
 @end
