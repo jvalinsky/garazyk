@@ -21,7 +21,7 @@
 }
 
 - (void)testTokenRequestRejectsInvalidClientSecret {
-    // Setup request with valid client_id but wrong client_secret
+    // Setup request with valid client_id but wrong client_secret (when secret is configured)
     NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client&client_secret=wrong";
 
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
@@ -38,7 +38,7 @@
     // Execute handler
     [self.handler handleTokenRequest:request response:response];
 
-    // Assert 401 Unauthorized
+    // Assert 401 Unauthorized for invalid client secret
     XCTAssertEqual(response.statusCode, 401, @"Should return 401 for invalid client secret");
 }
 
