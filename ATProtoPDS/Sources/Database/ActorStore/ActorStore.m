@@ -667,10 +667,17 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 - (PDSDatabaseRecord *)recordFromStatement:(sqlite3_stmt *)stmt {
     PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
-    record.uri = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
-    record.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
-    record.collection = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
-    record.rkey = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 3)];
+    const char *uri = (const char *)sqlite3_column_text(stmt, 0);
+    record.uri = uri ? [NSString stringWithUTF8String:uri] : @"";
+    
+    const char *did = (const char *)sqlite3_column_text(stmt, 1);
+    record.did = did ? [NSString stringWithUTF8String:did] : @"";
+    
+    const char *collection = (const char *)sqlite3_column_text(stmt, 2);
+    record.collection = collection ? [NSString stringWithUTF8String:collection] : @"";
+    
+    const char *rkey = (const char *)sqlite3_column_text(stmt, 3);
+    record.rkey = rkey ? [NSString stringWithUTF8String:rkey] : @"";
     
     const char *cidText = (const char *)sqlite3_column_text(stmt, 4);
     if (cidText) {

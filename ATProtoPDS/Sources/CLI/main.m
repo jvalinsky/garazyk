@@ -101,14 +101,20 @@ int main(int argc, const char * argv[]) {
         PDSCLICommandContext *context = [[PDSCLICommandContext alloc] init];
         NSUInteger firstCommandArg = parse_global_options(argc, argv, args, context);
 
-        if (firstCommandArg >= args.count) {
+        // Fix index mismatch between argv (1-based for args) and args array (0-based)
+        // firstCommandArg is an index into argv.
+        // If it's 0, it means no options were parsed, so command starts at argv[1] (args[0]).
+        // If it's > 0, it points to argv[firstCommandArg], which corresponds to args[firstCommandArg - 1].
+        NSUInteger commandIndex = (firstCommandArg == 0) ? 0 : firstCommandArg - 1;
+
+        if (commandIndex >= args.count) {
             print_usage();
             return PDSCLIExitCodeSuccess;
         }
 
-        NSString *commandName = args[firstCommandArg];
+        NSString *commandName = args[commandIndex];
         NSMutableArray *commandArgs = [NSMutableArray array];
-        for (NSUInteger i = firstCommandArg + 1; i < args.count; i++) {
+        for (NSUInteger i = commandIndex + 1; i < args.count; i++) {
             [commandArgs addObject:args[i]];
         }
 

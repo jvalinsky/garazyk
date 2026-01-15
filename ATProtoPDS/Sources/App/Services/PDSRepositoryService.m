@@ -23,10 +23,19 @@
     // Load all records to rebuild MST
     // Assuming 10000 limit for now (should be paginated in real implementation)
     NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:did collection:nil limit:10000 offset:0 error:error];
-    if (!records) return nil;
     
+    // Always return an empty MST instead of nil if no records found or error occurs during listing,
+    // so we don't crash the viewer for empty repos.
     MST *mst = [[MST alloc] init];
+    if (!records) {
+        return mst;
+    }
+    
     for (PDSDatabaseRecord *record in records) {
+        if (!record.cid || !record.collection || !record.rkey) {
+            continue;
+        }
+        
         // Parse CID from string
         CID *cid = [CID cidFromString:record.cid];
         if (cid) {

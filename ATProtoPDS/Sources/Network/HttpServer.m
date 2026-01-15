@@ -49,7 +49,7 @@
 
 static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
 static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
-static const NSUInteger kHttpOutputQueueHighWaterMark = 256 * 1024;
+static const NSUInteger kHttpOutputQueueHighWaterMark = 10 * 1024 * 1024; // 10MB
 static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
 
@@ -323,7 +323,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         }
 
         if (content && content.length > 0) {
-            [strongSelf appendData:content toConnection:connection];
+            if (strongSelf) {
+                [strongSelf handleReceivedData:content onConnection:connection];
+            }
         } else if (isComplete) {
             [connection cancel];
         }
@@ -331,7 +333,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     }];
 }
 
-- (void)appendData:(NSData *)data toConnection:(id<PDSNetworkConnection>)connection {
+- (void)handleReceivedData:(NSData *)data onConnection:(id<PDSNetworkConnection>)connection {
     HttpConnectionState *state = [self connectionStateForConnection:connection];
     [state.buffer appendData:data];
 
@@ -598,6 +600,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         [state.outputQueue removeObjectAtIndex:0];
         state.outputQueueSize -= responseData.length;
+        
+        // Process next item in queue
+        [strongSelf sendNextQueuedResponseForState:state connection:connection];
 
         state.pendingDispatchCount--;
 
@@ -740,8 +745,22 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
     NSDictionary<NSString *, NSString *> *pathParameters = nil;
 
+    // First try exact path match
     RequestHandler handler = self.pathHandlers[path];
 
+    // Then try prefix matching for pathHandlers (e.g., /explore matches /explore/css/style.css)
+    if (!handler) {
+        for (NSString *registeredPath in self.pathHandlers) {
+            if ([path hasPrefix:registeredPath] && 
+                (path.length == registeredPath.length || 
+                 [path characterAtIndex:registeredPath.length] == '/')) {
+                handler = self.pathHandlers[registeredPath];
+                break;
+            }
+        }
+    }
+
+    // Finally try route trie
     if (!handler) {
         handler = [self handlerForRoute:path method:methodString parameters:&pathParameters];
     }
