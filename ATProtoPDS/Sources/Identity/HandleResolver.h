@@ -60,6 +60,9 @@ typedef NS_ENUM(NSInteger, HandleError) {
 /*! Cache of resolved handle -> DID mappings. */
 @property (nonatomic, strong) NSCache<NSString *, NSString *> *resolutionCache;
 
+/*! Cache of failed resolutions for backoff. */
+@property (nonatomic, strong) NSCache<NSString *, id> *failureCache;
+
 /*! TTL for cached resolutions in seconds. */
 @property (nonatomic, assign) NSTimeInterval cacheExpirationInterval;
 

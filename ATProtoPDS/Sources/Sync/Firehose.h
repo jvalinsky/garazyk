@@ -80,7 +80,52 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! The DID whose identity was updated. */
 @property (nonatomic, copy) NSString *did;
 
+/*! The new handle (may be nil if not changed). */
+@property (nonatomic, copy, nullable) NSString *handle;
+
 + (instancetype)eventWithDid:(NSString *)did;
+
+@end
+
+/*!
+ @class FirehoseAccountEvent
+
+ @abstract Represents an account status event (takedown, suspension, etc).
+ */
+@interface FirehoseAccountEvent : NSObject
+
+/*! The DID of the affected account. */
+@property (nonatomic, copy) NSString *did;
+
+/*! Whether the account is currently active. */
+@property (nonatomic, assign) BOOL active;
+
+/*! The account status (e.g., "takendown", "suspended", "deactivated"). */
+@property (nonatomic, copy, nullable) NSString *status;
+
+/*! Timestamp of the event in ISO 8601 format. */
+@property (nonatomic, copy) NSString *time;
+
++ (instancetype)eventWithDid:(NSString *)did
+                      active:(BOOL)active
+                      status:(nullable NSString *)status;
+
+@end
+
+/*!
+ @class FirehoseInfoEvent
+
+ @abstract Represents an informational message on the stream.
+ */
+@interface FirehoseInfoEvent : NSObject
+
+/*! The kind of info message (e.g., "OutdatedCursor", "HandshakeComplete"). */
+@property (nonatomic, copy) NSString *kind;
+
+/*! The message content. */
+@property (nonatomic, copy) NSString *message;
+
++ (instancetype)eventWithKind:(NSString *)kind message:(NSString *)message;
 
 @end
 

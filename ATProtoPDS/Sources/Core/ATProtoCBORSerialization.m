@@ -58,18 +58,14 @@
     } else if ([obj isKindOfClass:[NSString class]]) {
         return [CBORValue textString:obj];
     } else if ([obj isKindOfClass:[NSNumber class]]) {
+        // Handle boolean using robust CFTypeID check
+        // This avoids issues with @encode(BOOL) varying across platforms (signed char vs bool)
+        if (CFGetTypeID((__bridge CFTypeRef)obj) == CFBooleanGetTypeID()) {
+            return [obj boolValue] ? [CBORValue simple:21] : [CBORValue simple:20];
+        }
+
         // Handle integer vs float
         const char *objCType = [obj objCType];
-
-        // Handle boolean
-        if (strcmp(objCType, @encode(BOOL)) == 0 || strcmp(objCType, @encode(char)) == 0) {
-            NSNumber *num = (NSNumber *)obj;
-            if ([num boolValue]) {
-                return [CBORValue simple:21];
-            } else {
-                return [CBORValue simple:20];
-            }
-        }
         if (strcmp(objCType, @encode(float)) == 0 || strcmp(objCType, @encode(double)) == 0) {
             // It's float
             // But CBORValue only has simple/float?

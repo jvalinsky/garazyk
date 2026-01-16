@@ -8,6 +8,7 @@
 #import "Repository/RepoCommit.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Service/ServiceDatabases.h"
 #import <os/log.h>
 
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
@@ -44,6 +45,13 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
     os_log_info(self.log, "Starting subscribeRepos WebSocket handler on port %d", port);
+
+    NSError *dbError = nil;
+    self.sequenceNumber = (NSUInteger)[self.controller.serviceDatabases getMaxEventSequence:&dbError];
+    if (dbError) {
+        os_log_error(self.log, "Failed to get max event sequence: %@", dbError);
+    }
+    os_log_info(self.log, "Initialized sequence number to %lu", (unsigned long)self.sequenceNumber);
 
     self.webSocketServer = [[WebSocketServer alloc] initWithHost:@"localhost" port:port];
     self.webSocketServer.delegate = self;
@@ -84,7 +92,6 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
     }
 
-    // Send initial state for all existing repositories
     [self sendInitialRepositoryStateToConnection:connection];
 }
 
@@ -106,43 +113,31 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 #pragma mark - Event Broadcasting
 
-- (void)broadcastRepositoryCommit:(RepoCommit *)commit 
-                          forRepo:(NSString *)repoDid 
-                              ops:(NSArray<NSDictionary *> *)ops 
+- (void)broadcastRepositoryCommit:(RepoCommit *)commit
+                          forRepo:(NSString *)repoDid
+                              ops:(NSArray<NSDictionary *> *)ops
                             blobs:(NSArray<CID *> *)blobs {
     dispatch_async(self.eventQueue, ^{
         self.sequenceNumber++;
 
-        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-        payload[@"kind"] = @"commit";
-        payload[@"seq"] = @(self.sequenceNumber);
-        payload[@"time"] = [[NSDate date] description];
-        payload[@"repo"] = repoDid;
-        payload[@"commit"] = [commit.computeCID stringValue];
-        if (commit.prevCID) {
-            payload[@"previous"] = [commit.prevCID stringValue];
-        }
-        
-        // Convert ops to suitable format
-        NSMutableArray *opsArray = [NSMutableArray array];
-        for (NSDictionary *op in ops) {
-            [opsArray addObject:op];
-        }
-        payload[@"ops"] = opsArray;
-        
-        // Convert blobs to string CIDs
-        NSMutableArray *blobsArray = [NSMutableArray array];
-        for (CID *blobCID in blobs) {
-            [blobsArray addObject:[blobCID stringValue]];
-        }
-        payload[@"blobs"] = blobsArray;
+        FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+        event.repo = repoDid;
+        event.commit = [commit.computeCID stringValue];
+        event.previous = [commit.prevCID stringValue];
+        event.ops = ops;
+        event.blobs = [blobs valueForKey:@"stringValue"];
 
         NSError *error = nil;
-        NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+        NSData *eventData = [self.eventFormatter encodeCommitEvent:event error:&error];
 
         if (!eventData) {
             os_log_error(self.log, "Failed to encode commit event: %@", error);
             return;
+        }
+
+        NSError *persistError = nil;
+        if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"commit" data:eventData error:&persistError]) {
+            os_log_error(self.log, "Failed to persist commit event: %@", persistError);
         }
 
         [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
@@ -154,21 +149,21 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     dispatch_async(self.eventQueue, ^{
         self.sequenceNumber++;
 
-        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-        payload[@"kind"] = @"identity";
-        payload[@"seq"] = @(self.sequenceNumber);
-        payload[@"time"] = [[NSDate date] description];
-        payload[@"did"] = did;
-        if (handle) {
-            payload[@"handle"] = handle;
-        }
+        FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+        event.did = did;
+        event.handle = handle;
 
         NSError *error = nil;
-        NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+        NSData *eventData = [self.eventFormatter encodeIdentityEvent:event error:&error];
 
         if (!eventData) {
             os_log_error(self.log, "Failed to encode identity event: %@", error);
             return;
+        }
+
+        NSError *persistError = nil;
+        if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"identity" data:eventData error:&persistError]) {
+            os_log_error(self.log, "Failed to persist identity event: %@", persistError);
         }
 
         [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
@@ -180,19 +175,23 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     dispatch_async(self.eventQueue, ^{
         self.sequenceNumber++;
 
-        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-        payload[@"kind"] = @"account";
-        payload[@"seq"] = @(self.sequenceNumber);
-        payload[@"time"] = [[NSDate date] description];
-        payload[@"did"] = did;
-        payload[@"status"] = @"takenDown";
+        FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+        event.did = did;
+        event.active = NO;
+        event.status = @"takendown";
+        event.time = [[NSDate date] description];
 
         NSError *error = nil;
-        NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+        NSData *eventData = [self.eventFormatter encodeAccountEvent:event error:&error];
 
         if (!eventData) {
             os_log_error(self.log, "Failed to encode account event: %@", error);
             return;
+        }
+
+        NSError *persistError = nil;
+        if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"account" data:eventData error:&persistError]) {
+            os_log_error(self.log, "Failed to persist account event: %@", persistError);
         }
 
         [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
@@ -204,19 +203,21 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     dispatch_async(self.eventQueue, ^{
         self.sequenceNumber++;
 
-        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-        payload[@"kind"] = @"info";
-        payload[@"seq"] = @(self.sequenceNumber);
-        payload[@"time"] = [[NSDate date] description];
-        payload[@"message"] = message;
-        payload[@"info"] = kind;
+        FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+        event.kind = kind;
+        event.message = message;
 
         NSError *error = nil;
-        NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+        NSData *eventData = [self.eventFormatter encodeInfoEvent:event error:&error];
 
         if (!eventData) {
             os_log_error(self.log, "Failed to encode info event: %@", error);
             return;
+        }
+
+        NSError *persistError = nil;
+        if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"info" data:eventData error:&persistError]) {
+            os_log_error(self.log, "Failed to persist info event: %@", persistError);
         }
 
         [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
@@ -237,60 +238,91 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     }
 
     dispatch_async(self.eventQueue, ^{
-        NSError *error = nil;
-        NSArray<PDSDatabaseRepo *> *repos = [self.controller.userDatabasePool getAllReposWithError:&error];
+        if (cursorSeq == 0) {
+            NSError *error = nil;
+            NSArray<PDSDatabaseRepo *> *repos = [self.controller.userDatabasePool getAllReposWithError:&error];
 
-        if (error) {
-            os_log_error(self.log, "Failed to get all repos: %@", error);
-            [self sendInfoEvent:@"OutdatedCursor" message:@"Unable to retrieve repository state" toConnection:connection];
-            return;
-        }
+            if (error) {
+                os_log_error(self.log, "Failed to get all repos: %@", error);
+                [self sendInfoEvent:@"OutdatedCursor" message:@"Unable to retrieve repository state" toConnection:connection];
+                return;
+            }
 
-        for (PDSDatabaseRepo *repo in repos) {
-            if (repo.rootCid.length > 0) {
-                NSData *rootCidData = repo.rootCid;
-                CID *cid = [CID cidFromBytes:rootCidData];
-                NSString *cidString = cid ? [cid stringValue] : [rootCidData base64EncodedStringWithOptions:0];
+            for (PDSDatabaseRepo *repo in repos) {
+                if (repo.rootCid.length > 0) {
+                    NSData *rootCidData = repo.rootCid;
+                    CID *cid = [CID cidFromBytes:rootCidData];
+                    NSString *cidString = cid ? [cid stringValue] : [rootCidData base64EncodedStringWithOptions:0];
 
-                NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-                payload[@"kind"] = @"identity";
-                payload[@"did"] = repo.ownerDid;
-                payload[@"root"] = cidString;
+                    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+                    event.did = repo.ownerDid;
 
-                NSError *encodeError = nil;
-                NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&encodeError];
+                    NSError *encodeError = nil;
+                    NSData *eventData = [self.eventFormatter encodeIdentityEvent:event error:&encodeError];
 
-                if (eventData) {
-                    [connection sendMessage:eventData];
-                    os_log_debug(self.log, "Sent identity event for repo %@ (root: %@)", repo.ownerDid, cidString);
-                } else {
-                    os_log_error(self.log, "Failed to encode identity event for repo %@: %@", repo.ownerDid, encodeError);
+                    if (eventData) {
+                        [connection sendMessage:eventData];
+                        os_log_debug(self.log, "Sent identity event for repo %@ (root: %@)", repo.ownerDid, cidString);
+                    } else {
+                        os_log_error(self.log, "Failed to encode identity event for repo %@: %@", repo.ownerDid, encodeError);
+                    }
                 }
             }
+            os_log_info(self.log, "Completed sending initial state for %lu repos to new connection", (unsigned long)repos.count);
         }
 
-        if (cursorSeq > 0 && cursorSeq < self.sequenceNumber) {
+        if (cursorSeq > 0) {
             [self replayEventsAfterCursor:cursorSeq toConnection:connection];
         }
-
-        os_log_info(self.log, "Completed sending initial state for %lu repos to new connection", (unsigned long)repos.count);
     });
 }
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor toConnection:(WebSocketConnection *)connection {
     os_log_info(self.log, "Replaying events after cursor %lu", (unsigned long)cursor);
+    
+    NSUInteger fetchCursor = cursor;
+    BOOL hasMore = YES;
+    
+    while (hasMore) {
+        NSError *error = nil;
+        NSArray *events = [self.controller.serviceDatabases getEventsSince:fetchCursor limit:100 error:&error];
+        if (error || !events) {
+            os_log_error(self.log, "Failed to fetch events for replay: %@", error);
+            break;
+        }
+        
+        if (events.count == 0) {
+            hasMore = NO;
+            break;
+        }
+        
+        for (NSDictionary *event in events) {
+            NSNumber *seq = event[@"seq"];
+            NSData *data = event[@"data"];
+            
+            [connection sendMessage:data];
+            fetchCursor = [seq unsignedIntegerValue];
+        }
+        
+        if (events.count < 100) {
+            hasMore = NO;
+        }
+        
+        if (fetchCursor >= self.sequenceNumber) {
+            hasMore = NO;
+        }
+    }
+    
+    os_log_info(self.log, "Replay completed. Last cursor: %lu", (unsigned long)fetchCursor);
 }
 
 - (void)sendInfoEvent:(NSString *)kind message:(NSString *)message toConnection:(WebSocketConnection *)connection {
-    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-    payload[@"kind"] = @"info";
-    payload[@"seq"] = @(self.sequenceNumber);
-    payload[@"time"] = [[NSDate date] description];
-    payload[@"message"] = message;
-    payload[@"info"] = kind;
+    FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+    event.kind = kind;
+    event.message = message;
 
     NSError *error = nil;
-    NSData *eventData = [self.eventFormatter encodeCBORObject:payload error:&error];
+    NSData *eventData = [self.eventFormatter encodeInfoEvent:event error:&error];
 
     if (eventData) {
         [connection sendMessage:eventData];

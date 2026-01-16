@@ -289,6 +289,48 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (nullable NSDictionary *)resolveDID:(NSString *)did;
 
+#pragma mark - Event Persistence
+
+/*!
+ @method persistEvent:seq:type:data:error:
+
+ @abstract Store a firehose event.
+
+ @param seq Global sequence number.
+ @param type Event type (e.g. #commit, #identity).
+ @param data CBOR encoded event data.
+ @param error Error pointer.
+ @return YES if stored successfully.
+ */
+- (BOOL)persistEvent:(int64_t)seq
+                type:(NSString *)type
+                data:(NSData *)data
+               error:(NSError **)error;
+
+/*!
+ @method getEventsSince:limit:error:
+
+ @abstract Retrieve events for playback.
+
+ @param seq Cursor (exclusive).
+ @param limit Maximum number of events to return.
+ @param error Error pointer.
+ @return Array of dictionaries containing event data (keys: seq, type, data, created_at).
+ */
+- (nullable NSArray<NSDictionary *> *)getEventsSince:(int64_t)seq
+                                              limit:(NSInteger)limit
+                                              error:(NSError **)error;
+
+/*!
+ @method getMaxEventSequence:
+
+ @abstract Get the highest sequence number in the events table.
+
+ @param error Error pointer.
+ @return Max sequence number, or 0 if empty/error.
+ */
+- (int64_t)getMaxEventSequence:(NSError **)error;
+
 #pragma mark - Lifecycle
 
 /*!
