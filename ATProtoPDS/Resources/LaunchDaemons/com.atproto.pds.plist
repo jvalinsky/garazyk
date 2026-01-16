@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.atproto.pds</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/september</string>
+		<string>serve</string>
+		<string>--config</string>
+		<string>/usr/local/etc/september/config.yaml</string>
+		<key>RunAtLoad</key>
+		<true/>
+		<key>KeepAlive</key>
+		<dict>
+			<key>SuccessfulExit</key>
+			<false/>
+		</dict>
+	<key>UserName</key>
+	<string>_pds</string>
+	<key>GroupName</key>
+	<string>_pds</string>
+	<key>WorkingDirectory</key>
+		<string>/var/db/september</string>
+	<key>StandardOutPath</key>
+		<string>/var/db/september/log/daemon.log</string>
+	<key>StandardErrorPath</key>
+		<string>/var/db/september/log/daemon.log</string>
+	<key>SoftResourceLimits</key>
+	<dict>
+			<key>NumberOfFiles</key>
+			<integer>1024</integer>
+		</dict>
+	<key>HardResourceLimits</key>
+	<dict>
+			<key>NumberOfFiles</key>
+			<integer>2048</integer>
+		</dict>
+</dict>
+</plist>
