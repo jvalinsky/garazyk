@@ -70,6 +70,14 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _maxLogFiles = 5;
         _asyncLogging = YES;
         _enabledComponents = nil; // All components enabled
+
+        // NodeInfo defaults
+        _nodeinfoEnabled = YES;
+        _nodeinfoSoftwareName = @"atprotopds";
+        _nodeinfoSoftwareVersion = @"1.0.0";
+        _nodeinfoRepositoryURL = @"https://github.com/jvalinsky/NSPds";
+        _nodeinfoHomepageURL = @"https://github.com/jvalinsky/NSPds";
+        _nodeinfoOpenRegistrations = YES;
         
         // Apply environment overrides and empty config defaults
         [self applyConfig:_config];
@@ -251,6 +259,16 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
                 _enabledComponents = logging[@"components"];
             }
         }
+    }
+
+    NSDictionary *nodeinfo = config[@"nodeinfo"];
+    if (nodeinfo) {
+        if (nodeinfo[@"enabled"]) _nodeinfoEnabled = [self boolFromEnv:@"PDS_NODEINFO_ENABLED" default:[nodeinfo[@"enabled"] boolValue]];
+        if (nodeinfo[@"software_name"]) _nodeinfoSoftwareName = [self resolveEnvOverrideForKey:@"PDS_NODEINFO_SOFTWARE_NAME" default:nodeinfo[@"software_name"]];
+        if (nodeinfo[@"software_version"]) _nodeinfoSoftwareVersion = [self resolveEnvOverrideForKey:@"PDS_NODEINFO_SOFTWARE_VERSION" default:nodeinfo[@"software_version"]];
+        if (nodeinfo[@"repository_url"]) _nodeinfoRepositoryURL = [self resolveEnvOverrideForKey:@"PDS_NODEINFO_REPOSITORY_URL" default:nodeinfo[@"repository_url"]];
+        if (nodeinfo[@"homepage_url"]) _nodeinfoHomepageURL = [self resolveEnvOverrideForKey:@"PDS_NODEINFO_HOMEPAGE_URL" default:nodeinfo[@"homepage_url"]];
+        if (nodeinfo[@"open_registrations"]) _nodeinfoOpenRegistrations = [self boolFromEnv:@"PDS_NODEINFO_OPEN_REGISTRATIONS" default:[nodeinfo[@"open_registrations"] boolValue]];
     }
 
     // Also check environment variables if no config file logging section
