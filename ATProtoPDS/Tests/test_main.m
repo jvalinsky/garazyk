@@ -141,7 +141,10 @@ int main(int argc, char * argv[]) {
             @"PDSRecordServiceTests",
             @"ActorServiceTests",
             @"FeedServiceTests",
-            @"NotificationServiceTests"
+            @"NotificationServiceTests",
+            @"PDSCLIAccountCommandTests",
+            @"PDSCLIInviteCommandTests",
+            @"PDSHealthCheckTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
