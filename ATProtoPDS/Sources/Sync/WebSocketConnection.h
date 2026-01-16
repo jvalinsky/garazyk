@@ -81,8 +81,8 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! Query string from the URL. */
 @property (nonatomic, readonly, copy) NSString *queryString;
 
-/*! Parsed query parameters. */
-@property (nonatomic, readonly, copy, nullable) NSDictionary<NSString *, NSString *> *queryParams;
+/*! Parsed query parameters. Single values are NSString, repeated values are NSArray<NSString *>. */
+@property (nonatomic, readonly, copy, nullable) NSDictionary<NSString *, id> *queryParams;
 
 /*! Current connection state. */
 @property (nonatomic, readonly) WebSocketConnectionState state;
