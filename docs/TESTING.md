@@ -166,6 +166,82 @@ These tests cover the management of binary large objects (images, videos).
         *   **Magic Bytes**: Detects file type by reading header bytes (e.g., `0xFFD8` for JPEG), ignoring the provided content-type header if it conflicts.
         *   **Size Limits**: Enforces different max sizes for images (5MB) vs video (50MB).
 
+### Blob Performance Tests
+
+The `BlobPerformanceTests` suite provides benchmarks for blob storage throughput and latency, enabling performance regression testing and capacity planning.
+
+**Location:** `ATProtoPDS/Tests/Blob/BlobPerformanceTests.m`
+
+#### Test Categories
+
+| Category | Tests | Purpose |
+|----------|-------|---------|
+| **Single Operations** | Small/Medium/Large blob upload & retrieve | Baseline latency measurements |
+| **Batch Operations** | 10/100 small, 10/50 medium blob batches | Throughput at scale |
+| **Throughput** | 10MB total (20 x 500KB blobs) | Sustained throughput benchmark |
+| **Concurrent** | 20 concurrent uploads/retrieves | Thread safety and parallelism |
+| **Stress** | 500 blob upload/retrieve/mixed | High-load stability |
+
+#### Performance Results (Rate Limiter Disabled)
+
+| Test | Avg Time | Throughput | Notes |
+|------|----------|------------|-------|
+| **Single small blob (1KB) upload** | ~1ms | ~1,000 blobs/sec | Cold start: ~11ms |
+| **Single medium blob (100KB) upload** | ~1ms | ~1,000 blobs/sec | Includes SHA-256 |
+| **Single large blob (1MB) upload** | ~3ms | ~333 blobs/sec | I/O bound |
+| **Batch 100 small blobs** | ~10ms | 10,000 blobs/sec | Good batching efficiency |
+| **Batch 50 medium blobs** | ~10ms | 5,000 blobs/sec | Parallelizable |
+| **500 blob upload (stress)** | ~240ms | **~2,100 blobs/sec** | Sustained throughput |
+| **500 blob retrieve (stress)** | ~70ms | **~7,100 blobs/sec** | 3.4x faster than upload |
+| **Mixed: 200 gets + 100 uploads** | ~130ms | ~2,300 ops/sec | Concurrent workloads |
+
+#### Key Findings
+
+1. **Retrieval is ~3.4x faster than upload**
+   - Upload includes SHA-256 CID computation and magic byte validation
+   - Retrieval is pure file I/O
+
+2. **Cold start penalty**
+   - First blob operation: ~10-15ms (initialization, disk spin-up)
+   - Subsequent operations: ~0.1-0.2ms (cached file handles)
+
+3. **Batch efficiency**
+   - 100 small blobs complete in ~10ms, indicating excellent batching
+   - No significant per-blob overhead
+
+4. **Rate limiter impact**
+   - Tests use `RateLimiterSetDisabledGlobally(YES)` for accurate benchmarks
+   - Production with rate limiting: ~50 blobs/hr per DID
+
+#### Running Performance Tests
+
+```bash
+# Build tests
+cmake .. -DBUILD_TESTS=ON
+make AllTests
+
+# Run full suite
+./tests/AllTests
+
+# Run only blob performance tests
+./tests/AllTests 2>&1 | grep -A20 "Test Suite 'BlobPerformanceTests'"
+
+# Check specific throughput
+./tests/AllTests 2>&1 | grep "BlobPerformance]"
+```
+
+#### Interpreting Results
+
+The tests use XCTest's `measureBlock:` for consistent benchmarking. Results include:
+- **Average**: Mean execution time across 10 iterations
+- **RSD**: Relative Standard Deviation (lower = more consistent)
+- **Baseline**: No baseline set; results are relative to current hardware
+
+**Regression Detection:**
+- XCTest flags tests with >10% regression from the baseline
+- For reliable comparisons, run on consistent hardware
+- Monitor trends across commits rather than absolute values
+
 ## Network & Synchronization
 
 The networking layer is the backbone of the PDS, handling HTTP/1.1 requests, XRPC commands, and WebSocket-based synchronization (Firehose).

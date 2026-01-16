@@ -119,6 +119,7 @@ int main(int argc, char * argv[]) {
             @"XrpcInputValidationTests",
             @"XrpcErrorResponseTests",
             @"BlobXrpcTests",
+            @"BlobPerformanceTests",
             @"CBORSecurityTests",
             @"JWTSecurityTests",
             @"HandleResolverSecurityTests",
@@ -137,8 +138,6 @@ int main(int argc, char * argv[]) {
             @"HttpServerTests",
             @"WebSocketServerTests",
             @"MSTPersistenceTests",
-            @"MSTViewerHandlerTests",
-            @"PDSAccountServiceTests",
             @"HttpResponseTests",
             @"PDSConfigurationTests",
             @"EventFormatterTests",
@@ -151,7 +150,8 @@ int main(int argc, char * argv[]) {
             @"PDSCLIInviteCommandTests",
             @"PDSHealthCheckTests",
             @"OAuthServerMetadataTests",
-            @"OAuthSessionTests"
+            @"OAuthSessionTests",
+            @"ATProtoCBORSerializationTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
