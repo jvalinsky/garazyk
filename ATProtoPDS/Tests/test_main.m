@@ -117,6 +117,7 @@ int main(int argc, char * argv[]) {
             @"CBORSecurityTests",
             @"JWTSecurityTests",
             @"HandleResolverSecurityTests",
+            @"HandleResolverSSRFTests",
             @"WebSocketUpgradeHandlerTests",
             @"HttpRouterTests",
             @"HttpRouteTrieTests",
