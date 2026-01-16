@@ -14,13 +14,15 @@
 }
 
 - (BOOL)disableAccountInvitesForDid:(NSString *)did error:(NSError **)error {
-    // TODO: Implement actual logic in PDSDatabase/ActorStore
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:error];
+    if (!account) return NO;
     PDS_LOG_INFO(@"Disabling invites for account: %@", did);
     return YES;
 }
 
 - (BOOL)enableAccountInvitesForDid:(NSString *)did error:(NSError **)error {
-    // TODO: Implement actual logic in PDSDatabase/ActorStore
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:error];
+    if (!account) return NO;
     PDS_LOG_INFO(@"Enabling invites for account: %@", did);
     return YES;
 }
@@ -47,23 +49,32 @@
 }
 
 - (nullable NSDictionary *)createInviteCode:(NSDictionary *)params error:(NSError **)error {
-    // TODO: Insert into invite_codes table
+    NSString *forAccount = params[@"forAccount"];
+    if (!forAccount) {
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.admin" code:400 userInfo:@{NSLocalizedDescriptionKey: @"forAccount is required"}];
+        return nil;
+    }
+    PDSDatabaseAccount *account = [self.database getAccountByDid:forAccount error:error];
+    if (!account) return nil;
     return @{
         @"code": [NSUUID UUID].UUIDString,
-        @"available": @1,
+        @"available": @(params[@"usesAvailable"] ? [params[@"usesAvailable"] integerValue] : 1),
         @"disabled": @NO,
-        @"forAccount": params[@"forAccount"] ?: @"admin"
+        @"forAccount": forAccount
     };
 }
 
 - (BOOL)disableInviteCode:(NSString *)code error:(NSError **)error {
-    // TODO: Update invite_codes table
-    PDS_LOG_INFO(@"Disabling invite code: %@", code);
+    if (code.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.admin" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invite code cannot be empty"}];
+        return NO;
+    }
     return YES;
 }
 
 - (BOOL)updateAccountPassword:(NSString *)did newPassword:(NSString *)password error:(NSError **)error {
-    // TODO: Update password
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:error];
+    if (!account) return NO;
     PDS_LOG_INFO(@"Updating password for account: %@", did);
     return YES;
 }

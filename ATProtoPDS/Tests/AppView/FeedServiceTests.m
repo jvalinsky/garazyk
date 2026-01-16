@@ -6,6 +6,7 @@
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) FeedService *service;
+@property (nonatomic, strong) NSISO8601DateFormatter *isoFormatter;
 @end
 
 @implementation FeedServiceTests
@@ -24,6 +25,8 @@
     
     [self setupSchema];
     self.service = [[FeedService alloc] initWithDatabase:self.database];
+    
+    self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
 }
 
 - (void)setupSchema {
@@ -265,7 +268,7 @@
 - (void)insertPost:(NSString *)did rkey:(NSString *)rkey text:(NSString *)text {
     NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", did, rkey];
     NSString *cid = [NSString stringWithFormat:@"bafyre%@", [[NSUUID UUID] UUIDString]];
-    NSDictionary *record = @{@"text": text, @"createdAt": [[NSDate date] description]};
+    NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": text, @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]};
     NSData *recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
     
     NSError *error = nil;
@@ -276,7 +279,7 @@
 - (void)insertReply:(NSString *)did rkey:(NSString *)rkey parentURI:(NSString *)parentURI text:(NSString *)text {
     NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", did, rkey];
     NSString *cid = [NSString stringWithFormat:@"bafyre%@", [[NSUUID UUID] UUIDString]];
-    NSDictionary *record = @{@"text": text, @"createdAt": [[NSDate date] description], @"reply": @{@"root": @{@"uri": parentURI}, @"parent": @{@"uri": parentURI}}};
+    NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": text, @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]], @"reply": @{@"root": @{@"uri": parentURI}, @"parent": @{@"uri": parentURI}}};
     NSData *recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
     
     NSError *error = nil;
