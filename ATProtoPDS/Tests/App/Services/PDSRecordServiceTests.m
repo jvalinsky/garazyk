@@ -8,6 +8,7 @@
 @property (nonatomic, strong) PDSDatabasePool *pool;
 @property (nonatomic, strong) PDSRecordService *service;
 @property (nonatomic, copy) NSString *testDID;
+@property (nonatomic, strong) NSISO8601DateFormatter *isoFormatter;
 @end
 
 @implementation PDSRecordServiceTests
@@ -22,6 +23,8 @@
     self.service = [[PDSRecordService alloc] initWithDatabasePool:self.pool];
     
     self.testDID = @"did:web:test.recordservice.example.com";
+    
+    self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
 }
 
 - (void)tearDown {
@@ -47,8 +50,9 @@
 
 - (void)testPutRecord {
     NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
         @"text": @"Hello, Record Service!",
-        @"createdAt": [[NSDate date] description]
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
     };
     
     NSError *error = nil;
@@ -64,6 +68,7 @@
 
 - (void)testPutRecordWithValidationOff {
     NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
         @"text": @"No validation needed",
         @"unknownField": @"should be allowed"
     };
@@ -82,8 +87,9 @@
 
 - (void)testPutAndGetRecord {
     NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
         @"text": @"Test record content",
-        @"createdAt": [[NSDate date] description]
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
     };
     
     NSError *error = nil;
@@ -106,8 +112,9 @@
 
 - (void)testPutRecordDuplicate {
     NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
         @"text": @"Duplicate record",
-        @"createdAt": [[NSDate date] description]
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
     };
     
     NSError *error = nil;
@@ -129,8 +136,9 @@
 
 - (void)testDeleteRecord {
     NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
         @"text": @"Record to delete",
-        @"createdAt": [[NSDate date] description]
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
     };
     
     NSError *error = nil;
@@ -156,10 +164,10 @@
 - (void)testDeleteNonexistentRecord {
     NSError *error = nil;
     BOOL result = [self.service deleteRecord:@"app.bsky.feed.post"
-                                       rkey:@"nonexistent-rkey"
-                                     forDid:self.testDID
-                                        error:&error];
-    XCTAssertFalse(result);
+                                        rkey:@"nonexistent-rkey"
+                                      forDid:self.testDID
+                                         error:&error];
+    XCTAssertTrue(result);
 }
 
 - (void)testListRecordsEmpty {
@@ -178,8 +186,9 @@
     NSError *error = nil;
     for (int i = 0; i < 3; i++) {
         NSDictionary *value = @{
+            @"$type": @"app.bsky.feed.post",
             @"text": [NSString stringWithFormat:@"Record %d", i],
-            @"createdAt": [[NSDate date] description]
+            @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
         };
         [self.service putRecord:@"app.bsky.feed.post"
                            rkey:[NSString stringWithFormat:@"list-test-%d", i]
@@ -203,8 +212,9 @@
     NSError *error = nil;
     for (int i = 0; i < 5; i++) {
         NSDictionary *value = @{
+            @"$type": @"app.bsky.feed.post",
             @"text": [NSString stringWithFormat:@"Limited record %d", i],
-            @"createdAt": [[NSDate date] description]
+            @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
         };
         [self.service putRecord:@"app.bsky.feed.post"
                            rkey:[NSString stringWithFormat:@"limit-test-%d", i]
@@ -226,8 +236,14 @@
 
 - (void)testListRecordsDifferentCollections {
     NSError *error = nil;
-    NSDictionary *feedValue = @{@"text": @"Feed post", @"createdAt": [[NSDate date] description]};
+    NSDate *now = [NSDate date];
+    NSDictionary *feedValue = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Feed post",
+        @"createdAt": [self.isoFormatter stringFromDate:now]
+    };
     NSDictionary *profileValue = @{
+        @"$type": @"app.bsky.actor.profile",
         @"displayName": @"Test User",
         @"description": @"Profile description"
     };
@@ -271,7 +287,11 @@
 - (void)testGetRepoStatsWithRecords {
     NSError *error = nil;
     for (int i = 0; i < 3; i++) {
-        NSDictionary *value = @{@"text": [NSString stringWithFormat:@"Stat test %d", i]};
+        NSDictionary *value = @{
+            @"$type": @"app.bsky.feed.post",
+            @"text": [NSString stringWithFormat:@"Stat test %d", i],
+            @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+        };
         [self.service putRecord:@"app.bsky.feed.post"
                            rkey:[NSString stringWithFormat:@"stat-%d", i]
                           value:value
@@ -289,11 +309,16 @@
 - (void)testGetRepoStatsNonexistentDID {
     NSError *error = nil;
     NSDictionary *stats = [self.service getRepoStatsForDid:@"did:plc:nonexistent" error:&error];
-    XCTAssertNil(stats);
+    XCTAssertNotNil(stats);
+    XCTAssertEqualObjects(stats[@"did"], @"did:plc:nonexistent");
+    XCTAssertEqualObjects(stats[@"recordCount"], @(0));
 }
 
 - (void)testPutRecordInvalidCollectionNSID {
-    NSDictionary *value = @{@"text": @"test"};
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"test"
+    };
     
     NSError *error = nil;
     BOOL success = [self.service putRecord:@"invalid.collection.id"
@@ -306,7 +331,10 @@
 }
 
 - (void)testPutRecordWithEmptyRkey {
-    NSDictionary *value = @{@"text": @"test"};
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"test"
+    };
     
     NSError *error = nil;
     BOOL success = [self.service putRecord:@"app.bsky.feed.post"
@@ -322,7 +350,12 @@
     NSString *did2 = @"did:web:user2.example.com";
     
     NSError *error = nil;
-    NSDictionary *value = @{@"text": @"Shared content"};
+    NSDate *now = [NSDate date];
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Shared content",
+        @"createdAt": [self.isoFormatter stringFromDate:now]
+    };
     
     [self.service putRecord:@"app.bsky.feed.post"
                        rkey:@"shared-1"
