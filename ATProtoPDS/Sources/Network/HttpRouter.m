@@ -135,7 +135,12 @@
         requestPath = [self normalizePath:requestPath];
     }
 
-    return [self.routeTrie handlerForMethod:requestMethod path:requestPath outParameters:NULL];
+    NSDictionary *params = nil;
+    HttpRouteHandler handler = [self.routeTrie handlerForMethod:requestMethod path:requestPath outParameters:&params];
+    if (handler && params) {
+        request.pathParameters = params;
+    }
+    return handler;
 }
 
 - (BOOL)route:(HttpRoute *)route matchesMethod:(NSString *)method path:(NSString *)path {

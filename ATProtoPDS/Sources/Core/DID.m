@@ -111,6 +111,7 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
         _cacheTimestamps = [[NSMutableDictionary alloc] init];
         _staleTTL = 3600.0; // 1 hour
         _maxTTL = 86400.0; // 1 day
+        _plcURL = @"https://plc.directory";
     }
     return self;
 }
@@ -505,7 +506,7 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 
 - (void)resolveDIDPLC:(NSString *)did completion:(void (^)(DIDDocument * _Nullable, NSError * _Nullable))completion {
     // did:plc:<id> -> https://plc.directory/<did>
-    NSString *urlString = [NSString stringWithFormat:@"https://plc.directory/%@", did];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@", self.plcURL, did];
     NSURL *url = [NSURL URLWithString:urlString];
 
     if (!url) {

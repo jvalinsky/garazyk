@@ -26,8 +26,21 @@
 
 + (CBORValue *)cborValueFromObject:(id)obj {
     if ([obj isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *json = (NSDictionary *)obj;
+        NSArray *sortedKeys = [[json allKeys] sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
+            NSString *s1 = (NSString *)obj1;
+            NSString *s2 = (NSString *)obj2;
+            
+            // DAG-CBOR sorting rules for keys (text strings):
+            // 1. Shorter length first
+            // 2. Lexicographic byte order for same length
+            if (s1.length < s2.length) return NSOrderedAscending;
+            if (s1.length > s2.length) return NSOrderedDescending;
+            return [s1 compare:s2];
+        }];
+        
         NSMutableDictionary *map = [NSMutableDictionary dictionary];
-        for (id key in obj) {
+        for (id key in sortedKeys) {
             CBORValue *keyVal = [self cborValueFromObject:key];
             CBORValue *valVal = [self cborValueFromObject:[obj objectForKey:key]];
             if (keyVal && valVal) {

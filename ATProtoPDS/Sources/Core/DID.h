@@ -89,6 +89,7 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 @property (nonatomic, strong) NSMutableDictionary *cacheTimestamps; /*! Exposed for testing. */
 @property (nonatomic, assign) NSTimeInterval staleTTL; /*! Exposed for testing. */
 @property (nonatomic, assign) NSTimeInterval maxTTL; /*! Exposed for testing. */
+@property (nonatomic, copy) NSString *plcURL;
 
 /*!
  @method resolveDID:completion:
