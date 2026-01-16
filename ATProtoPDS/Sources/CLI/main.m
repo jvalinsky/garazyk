@@ -118,9 +118,20 @@ int main(int argc, const char * argv[]) {
             [commandArgs addObject:args[i]];
         }
 
-        [[PDSCLIDispatcher sharedDispatcher] dispatchWithCommandName:commandName
-                                                            arguments:commandArgs
-                                                             context:context];
+        @try {
+            [[PDSCLIDispatcher sharedDispatcher] dispatchWithCommandName:commandName
+                                                                arguments:commandArgs
+                                                                 context:context];
+        } @catch (NSException *exception) {
+            if ([exception.name isEqualToString:@"PDSCLIUnknownCommandException"]) {
+                return PDSCLIExitCodeNotFound;
+            } else if ([exception.name isEqualToString:@"PDSCLICommandFailedException"]) {
+                return PDSCLIExitCodeGeneralError;
+            } else {
+                [context printError:[NSString stringWithFormat:@"Unexpected error: %@", exception.reason]];
+                return PDSCLIExitCodeGeneralError;
+            }
+        }
     }
     return PDSCLIExitCodeSuccess;
 }
