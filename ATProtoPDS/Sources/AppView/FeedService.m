@@ -281,7 +281,7 @@
         [args addObject:cursor];
     }
     [args addObject:@(limit)];
-
+    
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
         NSString *repo = row[@"did"];
