@@ -86,6 +86,7 @@ int main(int argc, char * argv[]) {
             @"PDSNetworkTransportTests",
             @"PLCOperationTests",
             @"PLCStoreTests",
+            @"PLCAuditorTests",
             @"OAuthPKCETests",
             @"OAuthDPoPTests",
             @"JWTTests",
