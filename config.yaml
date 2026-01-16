@@ -69,3 +69,12 @@ explore:
   did_ttl_seconds: 3600
   plc_log_ttl_seconds: 86400
   account_list_ttl_seconds: 300
+
+# NodeInfo Settings
+nodeinfo:
+  enabled: true
+  software_name: "atprotopds"
+  software_version: "1.0.0"
+  repository_url: "https://github.com/jvalinsky/NSPds"
+  homepage_url: "https://github.com/jvalinsky/NSPds"
+  open_registrations: true
