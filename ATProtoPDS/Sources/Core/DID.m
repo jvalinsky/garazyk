@@ -15,6 +15,7 @@
 #import <os/log.h>
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
+static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
 @implementation DIDDocument
 
@@ -447,8 +448,11 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     
     os_log_info(_log, "Resolving did:web at URL: %@", urlString);
     
-    NSURLSessionDataTask *task = [_session dataTaskWithURL:url
-                                         completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
+    
+    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
+                                          completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
             NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
@@ -518,8 +522,11 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
     }
 
     os_log_info(_log, "Resolving did:plc at URL: %@", urlString);
-
-    NSURLSessionDataTask *task = [_session dataTaskWithURL:url
+    
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
+    
+    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
                                           completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (error) {

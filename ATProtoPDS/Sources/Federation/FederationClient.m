@@ -4,6 +4,8 @@
 
 NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 
+static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
+
 @implementation FederationClient {
     os_log_t _log;
 }
@@ -81,6 +83,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
     request.HTTPMethod = [self isGetMethod:method] ? @"GET" : @"POST";
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+    [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
 
     // Add JSON body for POST requests
     if (parameters && ![self isGetMethod:method]) {
@@ -229,6 +232,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
     [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
+    [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
 
     // Execute the request
     NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
