@@ -17,10 +17,7 @@
     NSArray *parts = [token.jwt componentsSeparatedByString:@"."];
     XCTAssertEqual(parts.count, 3, @"JWT should have 3 parts");
     
-    // Check Header
     NSString *headerB64 = parts[0];
-    // Simple manual decode to check typ/alg
-    // Padding logic:
     NSMutableString *padded = [headerB64 mutableCopy];
     if (padded.length % 4 > 0) [padded appendString:[@"====" substringToIndex:(4 - (padded.length % 4))]];
     NSString *safeB64 = [[padded stringByReplacingOccurrencesOfString:@"-" withString:@"+"] stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
@@ -37,16 +34,15 @@
     DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://resource.example.org/protected" nonce:nil error:&error];
     XCTAssertNotNil(token);
     
-    // Pass - verification should succeed
     BOOL valid = [DPoPUtil verifyDPoP:token.jwt
-                        withPublicKey:NULL // Keys are ignored in current mock impl
+                        withPublicKey:NULL
                                method:@"GET"
                                   uri:@"https://resource.example.org/protected"
                                 nonce:nil
                                 error:&error];
     XCTAssertTrue(valid, @"Matching method should pass");
     
-    // Fail - wrong method
+    error = nil;
     valid = [DPoPUtil verifyDPoP:token.jwt
                    withPublicKey:NULL
                           method:@"POST"
@@ -62,11 +58,10 @@
     NSError *error = nil;
     DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/a" nonce:nil error:&error];
     
-    // Fail - wrong URI
     BOOL valid = [DPoPUtil verifyDPoP:token.jwt
                         withPublicKey:NULL
                                method:@"POST"
-                                  uri:@"https://server.example.com/b" // Diff URI
+                                  uri:@"https://server.example.com/b"
                                 nonce:nil
                                 error:&error];
     XCTAssertFalse(valid, @"Mismatching URI should fail");
@@ -79,7 +74,6 @@
     
     XCTAssertNotNil(token);
     
-    // Pass - correct nonce
     BOOL valid = [DPoPUtil verifyDPoP:token.jwt
                         withPublicKey:NULL
                                method:@"POST"
@@ -88,7 +82,7 @@
                                 error:&error];
     XCTAssertTrue(valid, @"Correct nonce should pass");
     
-    // Fail - incorrect nonce in verification
+    error = nil;
     valid = [DPoPUtil verifyDPoP:token.jwt
                    withPublicKey:NULL
                           method:@"POST"
@@ -98,28 +92,78 @@
     XCTAssertFalse(valid, @"Incorrect nonce should fail");
 }
 
-- (void)testDPoPMissingJTI {
-    // Manually create payload without jti to test verification logic
-    // Since createDPoPForMethod always adds JTI, we construct manually logic if possible, 
-    // or just assume JTI is always there via helper. 
-    // Testing verification logic strictly:
+- (void)testDPoPInvalidFormat {
+    NSError *error = nil;
+    BOOL valid = [DPoPUtil verifyDPoP:@"not-a-jwt" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    XCTAssertFalse(valid);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, -2);
     
-    // Construct a JWT with missing JTI
-    NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256"};
-    NSDictionary *payload = @{
-        @"htm": @"GET",
-        @"htu": @"https://example.com",
-        @"iat": @([[NSDate date] timeIntervalSince1970])
-        // Missing jti
-    };
+    valid = [DPoPUtil verifyDPoP:@"a.b" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    XCTAssertFalse(valid);
+}
+
+- (void)testDPoPTokenProperties {
+    NSError *error = nil;
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"PUT" uri:@"https://api.example.com/resource/123" nonce:@"test-nonce" error:&error];
     
-    // Helper to stringify - reusing internal logic would be hard as it's private or we rely on partials.
-    // We can use base64 utils from DPoPUtil if they were exposed, but 'signDPoPToken' is public? 
-    // No, 'createDPoPForMethod' returns token. 'signDPoPToken' is exposed in .m but maybe not header?
-    // DPoPUtil.h does NOT expose signDPoPToken.
-    // So we can't easily construct a malformed token using DPoPUtil.
-    // We'll skip strict "Missing JTI" construction test unless we extend the class or subclass.
-    // However, we verified verifyDPoP checks for it.
+    XCTAssertNotNil(token);
+    XCTAssertEqualObjects(token.htm, @"PUT");
+    XCTAssertEqualObjects(token.htu, @"https://api.example.com/resource/123");
+    XCTAssertEqualObjects(token.nonce, @"test-nonce");
+    XCTAssertNotNil(token.jti);
+    XCTAssertNotNil(token.iat);
+    XCTAssertNotNil(token.exp);
+}
+
+- (void)testDPoPPayloadClaims {
+    NSError *error = nil;
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"DELETE" uri:@"https://server.com/item/1" nonce:nil error:&error];
+    
+    NSDictionary *payload = [token payload];
+    XCTAssertEqualObjects(payload[@"htm"], @"DELETE");
+    XCTAssertEqualObjects(payload[@"htu"], @"https://server.com/item/1");
+    XCTAssertNotNil(payload[@"iat"]);
+    XCTAssertNotNil(payload[@"jti"]);
+    XCTAssertNotNil(payload[@"exp"]);
+}
+
+- (void)testDPoPHeaderClaims {
+    DPoPToken *token = [[DPoPToken alloc] init];
+    NSDictionary *header = [token header];
+    
+    XCTAssertEqualObjects(header[@"typ"], @"dpop+jwt");
+    XCTAssertEqualObjects(header[@"alg"], @"ES256");
+    XCTAssertNotNil(header[@"jwk"]);
+    XCTAssertEqualObjects(header[@"jwk"][@"kty"], @"EC");
+    XCTAssertEqualObjects(header[@"jwk"][@"crv"], @"P-256");
+}
+
+- (void)testDPoPWithAthClaim {
+    NSError *error = nil;
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    token.ath = @"access-token-hash";
+    
+    NSDictionary *payload = [token payload];
+    XCTAssertEqualObjects(payload[@"ath"], @"access-token-hash");
+}
+
+- (void)testDPoPNoNonce {
+    NSError *error = nil;
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    
+    XCTAssertNotNil(token);
+    XCTAssertNil(token.nonce);
+    
+    NSDictionary *payload = [token payload];
+    XCTAssertNil(payload[@"nonce"]);
+}
+
+- (void)testDPoPEmptyJWTParts {
+    NSError *error = nil;
+    BOOL valid = [DPoPUtil verifyDPoP:@"a..c" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    XCTAssertFalse(valid);
+    XCTAssertNotNil(error);
 }
 
 @end
