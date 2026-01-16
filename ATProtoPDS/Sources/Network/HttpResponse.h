@@ -63,8 +63,8 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 /*! The raw response body. */
 @property (nonatomic, copy, nullable) NSData *body;
 
-/*! The body as a JSON dictionary (sets Content-Type to application/json). */
-@property (nonatomic, copy, nullable) NSDictionary *jsonBody;
+/*! The body as a JSON object (sets Content-Type to application/json). */
+@property (nonatomic, copy, nullable) id jsonBody;
 
 /*! The body as a string. */
 @property (nonatomic, copy, nullable) NSString *bodyString;
@@ -89,7 +89,7 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 + (instancetype)responseWithStatusCode:(HttpStatusCode)statusCode;
 
 /*! Creates a JSON response. */
-+ (instancetype)jsonResponse:(NSDictionary *)json statusCode:(HttpStatusCode)statusCode;
++ (instancetype)jsonResponse:(id)json statusCode:(HttpStatusCode)statusCode;
 
 /*! Creates a text response. */
 + (instancetype)textResponse:(NSString *)text statusCode:(HttpStatusCode)statusCode;
@@ -98,7 +98,7 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 - (void)setHeader:(NSString *)value forKey:(NSString *)key;
 
 /*! Sets the body as JSON. */
-- (void)setJsonBody:(NSDictionary *)json;
+- (void)setJsonBody:(id)json;
 
 /*! Sets the body as a string. */
 - (void)setBodyString:(NSString *)body;

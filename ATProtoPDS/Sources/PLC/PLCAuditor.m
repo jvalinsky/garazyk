@@ -87,6 +87,68 @@
     return YES;
 }
 
+- (BOOL)verifyOperation:(PLCOperation *)op error:(NSError **)error {
+    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:op.did error:error];
+    NSString *lastHash = nil;
+    NSArray<NSString *> *authorizedKeys = nil;
+
+    if (history && history.count > 0) {
+        for (PLCOperation *prevOp in history) {
+            authorizedKeys = prevOp.data[@"rotationKeys"];
+            lastHash = [CryptoUtils hexStringFromData:[self hashForOperationData:prevOp.data]];
+        }
+    }
+
+    // 1. Verify prev hash
+    if (!op.prev && lastHash) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unexpected genesis operation in middle of history"}];
+        }
+        return NO;
+    }
+    if (op.prev && ![op.prev isEqualToString:lastHash]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                         code:3
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev hash mismatch. Expected %@, got %@", lastHash, op.prev]}];
+        }
+        return NO;
+    }
+
+    // 2. Determine authorized keys
+    if (!authorizedKeys) {
+        // Genesis operation: authorized keys are the ones in the operation itself
+        authorizedKeys = op.data[@"rotationKeys"];
+    }
+
+    // 3. Verify signature
+    BOOL sigOk = NO;
+    NSData *opDataHash = [self hashForOperationData:op.data];
+    NSData *sigData = [self dataFromHexString:op.sig];
+
+    for (NSString *keyHex in authorizedKeys) {
+        NSData *pubKey = [self dataFromHexString:keyHex];
+        NSData *normalizedKey = [[Secp256k1 shared] normalizedPublicKey:pubKey error:nil];
+        if (normalizedKey && [[Secp256k1 shared] verifySignature:sigData forHash:opDataHash withPublicKey:normalizedKey error:nil]) {
+            sigOk = YES;
+            break;
+        }
+    }
+
+    if (!sigOk) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                         code:4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signature verification failed"}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
 - (NSData *)hashForOperationData:(NSDictionary *)data {
     NSError *error = nil;
     NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];

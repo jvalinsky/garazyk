@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_END
     return response;
 }
 
-+ (instancetype)jsonResponse:(NSDictionary *)json statusCode:(HttpStatusCode)statusCode {
++ (instancetype)jsonResponse:(id)json statusCode:(HttpStatusCode)statusCode {
     HttpResponse *response = [self responseWithStatusCode:statusCode];
     [response setJsonBody:json];
     return response;
@@ -72,7 +72,7 @@ NS_ASSUME_NONNULL_END
     self.headers[key] = value;
 }
 
-- (void)setJsonBody:(NSDictionary *)json {
+- (void)setJsonBody:(id)json {
     _jsonBody = [json copy];
     NSError *error = nil;
     _body = [NSJSONSerialization dataWithJSONObject:json options:0 error:&error];
