@@ -133,7 +133,13 @@ int main(int argc, char * argv[]) {
             @"MSTViewerHandlerTests",
             @"PDSAccountServiceTests",
             @"HttpResponseTests",
-            @"PDSConfigurationTests"
+            @"PDSConfigurationTests",
+            @"EventFormatterTests",
+            @"PDSBlobServiceTests",
+            @"PDSRecordServiceTests",
+            @"ActorServiceTests",
+            @"FeedServiceTests",
+            @"NotificationServiceTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

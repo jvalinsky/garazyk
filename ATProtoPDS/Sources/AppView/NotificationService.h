@@ -28,6 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
+/*! Database connection (exposed for testing). */
+@property (nonatomic, strong, readonly) PDSDatabase *database;
+
 /*! Register device for push notifications. */
 - (BOOL)registerPushForActor:(NSString *)actorDID
                  deviceToken:(NSString *)deviceToken
