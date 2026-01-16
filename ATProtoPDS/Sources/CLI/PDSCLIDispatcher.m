@@ -244,14 +244,15 @@
 }
 
 - (void)dispatchWithCommandName:(NSString *)commandName
-                       arguments:(NSArray<NSString *> *)args
-                        context:(PDSCLICommandContext *)context {
+                        arguments:(NSArray<NSString *> *)args
+                         context:(PDSCLICommandContext *)context {
     id<PDSCLICommand> command = self.commands[commandName];
 
     if (!command) {
         [context printError:[NSString stringWithFormat:@"Unknown command: %@", commandName]];
         [self printUsage];
-        exit(PDSCLIExitCodeInvalidArguments);
+        [NSException raise:@"PDSCLIUnknownCommandException" format:@"Unknown command: %@", commandName];
+        return;
     }
 
     if (context.verbose) {
@@ -262,7 +263,7 @@
         [command executeWithArguments:args context:context];
     } @catch (NSException *exception) {
         [context printError:[NSString stringWithFormat:@"Command failed: %@", exception.reason]];
-        exit(PDSCLIExitCodeGeneralError);
+        [NSException raise:@"PDSCLICommandFailedException" format:@"Command failed: %@", exception.reason];
     }
 }
 
