@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-cd "/Users/jack/Software/objpds/.worktrees/macos-xnu-integration"
+cd "/Users/jack/Software/objpds"
 echo "Running Clang Static Analyzer (scan-build)..."
 rm -rf build-analyzed
 mkdir build-analyzed
