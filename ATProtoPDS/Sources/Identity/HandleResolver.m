@@ -23,6 +23,7 @@
 #import <arpa/inet.h>
 
 NSString * const HandleErrorDomain = @"com.atproto.handle";
+static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
 @interface HandleResolutionFailure : NSObject
 @property (nonatomic, assign) NSInteger failureCount;
@@ -179,7 +180,10 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     }
     
 #if defined(__APPLE__)
-    NSURLSessionDataTask *task = [self.session dataTaskWithURL:url
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
+    
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
                                               completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
