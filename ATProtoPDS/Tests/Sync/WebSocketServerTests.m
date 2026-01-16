@@ -72,9 +72,9 @@
 }
 
 - (void)testErrorCodes {
-    XCTAssertEqual(WebSocketServerErrorCodeListenerFailed, 100);
-    XCTAssertEqual(WebSocketServerErrorCodeInvalidHandshake, 101);
-    XCTAssertEqual(WebSocketServerErrorCodeConnectionFailed, 102);
+    XCTAssertEqual(WebSocketServerErrorCodeListenerFailed, 1000);
+    XCTAssertEqual(WebSocketServerErrorCodeInvalidHandshake, 1001);
+    XCTAssertEqual(WebSocketServerErrorCodeConnectionFailed, 1002);
 }
 
 - (void)testBroadcastWithNoConnections {
