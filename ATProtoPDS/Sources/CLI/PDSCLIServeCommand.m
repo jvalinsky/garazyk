@@ -306,8 +306,14 @@
         return;
     }
 
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *displayHost = config.serverHost ?: @"localhost";
+    if ([displayHost isEqualToString:@"0.0.0.0"]) {
+        displayHost = @"localhost";
+    }
+
     printf("HTTP server started successfully on port %ld\n", (long)port);
-    printf("Web interface available at: http://localhost:%ld/explore\n", (long)port);
+    printf("Web interface available at: http://%s:%ld/explore\n", [displayHost UTF8String], (long)port);
 
     if (!foreground) {
         printf("Running in background...\n");
