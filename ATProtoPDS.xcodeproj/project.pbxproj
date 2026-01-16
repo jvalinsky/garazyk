@@ -10,6 +10,7 @@
 		13D39D462940FBEA3280A732 /* Fuzzers */ = {isa = PBXFileReference; includeInIndex = 0; path = Fuzzers; sourceTree = BUILT_PRODUCTS_DIR; };
 		8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */ = {isa = PBXFileReference; includeInIndex = 0; path = "ATProtoPDS-CLI"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9116AA617AA1E2F99D962951 /* AllTests */ = {isa = PBXFileReference; includeInIndex = 0; path = AllTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		F44451F9E3F516C90AEACFBF /* atproto-plc */ = {isa = PBXFileReference; includeInIndex = 0; path = "atproto-plc"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -24,6 +25,7 @@
 			isa = PBXGroup;
 			children = (
 				9116AA617AA1E2F99D962951 /* AllTests */,
+				F44451F9E3F516C90AEACFBF /* atproto-plc */,
 				8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */,
 				13D39D462940FBEA3280A732 /* Fuzzers */,
 			);
@@ -33,6 +35,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		11FDDCBFDD2329C0C70E06A9 /* atproto-plc */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E411162D3D5DBA74AD041980 /* Build configuration list for PBXNativeTarget "atproto-plc" */;
+			buildPhases = (
+				6515BC5414536A367A6BB6DC /* Build PLC with CMake */,
+				28D2C2BB37F1F99BDF6D3BAF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "atproto-plc";
+			packageProductDependencies = (
+			);
+			productName = "atproto-plc";
+			productReference = F44451F9E3F516C90AEACFBF /* atproto-plc */;
+			productType = "com.apple.product-type.tool";
+		};
 		19A684A76685AAE3123D56F9 /* Fuzzers */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E6771ACB5E8BAD3FA7731B9F /* Build configuration list for PBXNativeTarget "Fuzzers" */;
@@ -113,6 +133,7 @@
 				ADD1CF61F0CF3AC1CD09BC17 /* ATProtoPDS-CLI */,
 				9F7F3F370E6ABECF7565CA85 /* AllTests */,
 				19A684A76685AAE3123D56F9 /* Fuzzers */,
+				11FDDCBFDD2329C0C70E06A9 /* atproto-plc */,
 			);
 		};
 /* End PBXProject section */
@@ -154,6 +175,24 @@
 			shellPath = /bin/sh;
 			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\n# Configure and build tests\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=ON \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) AllTests\n";
 		};
+		6515BC5414536A367A6BB6DC /* Build PLC with CMake */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build PLC with CMake";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) atproto-plc\n";
+		};
 		EABC4FE21AF478FF825078E3 /* Build with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -175,6 +214,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		28D2C2BB37F1F99BDF6D3BAF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7CAF326E9B4FFDCCD3C57B18 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -253,6 +299,23 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		459F249193D40C6AF9F87016 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/atproto-plc";
+				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.atproto-plc";
+				PRODUCT_NAME = "atproto-plc";
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
@@ -416,6 +479,23 @@
 			};
 			name = Debug;
 		};
+		EA9CE69F9D62947585BE6B5B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/atproto-plc";
+				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.atproto-plc";
+				PRODUCT_NAME = "atproto-plc";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -442,6 +522,15 @@
 			buildConfigurations = (
 				DDB8E21E25A2E79E9DF0D1DA /* Debug */,
 				83CC1A7CFFD5B68480315FB5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E411162D3D5DBA74AD041980 /* Build configuration list for PBXNativeTarget "atproto-plc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EA9CE69F9D62947585BE6B5B /* Debug */,
+				459F249193D40C6AF9F87016 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
