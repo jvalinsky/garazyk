@@ -7,6 +7,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+static BOOL _rateLimiterDisabledGlobally = NO;
+
+void RateLimiterSetDisabledGlobally(BOOL disabled) {
+    _rateLimiterDisabledGlobally = disabled;
+}
+
+BOOL RateLimiterIsDisabledGlobally(void) {
+    return _rateLimiterDisabledGlobally;
+}
+
 @implementation RateLimitResult
 
 + (instancetype)resultAllowed:(BOOL)allowed
@@ -40,6 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[RateLimiter alloc] initWithDatabasePath:nil];
+        NSLog(@"[RATE LIMITER] Singleton created, enabled=%d", sharedInstance.isEnabled);
     });
     return sharedInstance;
 }
@@ -57,7 +68,8 @@ NS_ASSUME_NONNULL_BEGIN
         _ipWindowSeconds = 60;
         _blobLimit = 50;
         _blobWindowSeconds = 3600;
-        _enabled = YES;
+        _enabled = !_rateLimiterDisabledGlobally;
+        NSLog(@"[RATE LIMITER] Init called, enabled=%d (global=%d)", _enabled, _rateLimiterDisabledGlobally);
         
         _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
         
@@ -137,7 +149,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (RateLimitResult *)checkRateLimitForIP:(NSString *)ip {
-    if (!self.isEnabled) {
+    if (!self.isEnabled || _rateLimiterDisabledGlobally) {
         return [RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
     }
     if (!ip || ip.length == 0) {
