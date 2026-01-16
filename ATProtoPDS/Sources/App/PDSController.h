@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSAccountService;
 @class PDSBlobService;
 @class PDSRepositoryService;
+@class PDSSyncService;
 @class JWTMinter;
 
 /*! Error domain for PDSController operations. */
@@ -96,6 +97,9 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 
 /*! Repository management service. */
 @property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
+
+/*! Repository synchronization service. */
+@property (nonatomic, strong, readonly) PDSSyncService *syncService;
 
 /*! JWT minting for access tokens. */
 @property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
