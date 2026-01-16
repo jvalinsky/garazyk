@@ -115,6 +115,16 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
  */
 - (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method resolveDIDSync:forceRefresh:error:
+ @abstract Synchronous resolution with cache control.
+ @param did The DID to resolve.
+ @param forceRefresh If YES, bypass cache and fetch fresh data.
+ @param error On return, contains an error if resolution failed.
+ @return The resolved DID document.
+ */
+- (nullable DIDDocument *)resolveDIDSync:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error;
+
 - (void)resolveDID:(NSString *)did
       forceRefresh:(BOOL)forceRefresh
         completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion;
