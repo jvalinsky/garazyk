@@ -2,6 +2,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
+#import "Identity/ATProtoHandleValidator.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -34,8 +35,6 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
         op.prev = prev;
     }
     
-    // The rest is data
-
     NSMutableDictionary *data = [dict mutableCopy];
     [data removeObjectForKey:@"sig"];
     op.data = [data copy];
@@ -45,6 +44,24 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
             *error = [NSError errorWithDomain:PLCErrorDomain code:1 userInfo:@{NSLocalizedDescriptionKey: @"Invalid operation dictionary: missing sig"}];
         }
         return nil;
+    }
+    
+    NSString *type = op.data[@"type"];
+    if ([type isEqualToString:@"update_handle"]) {
+        NSString *handle = op.data[@"handle"];
+        if (!handle || ![handle isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:PLCErrorDomain code:2 userInfo:@{NSLocalizedDescriptionKey: @"update_handle operation requires 'handle' field"}];
+            }
+            return nil;
+        }
+        NSError *validationError = nil;
+        if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
+            if (error) {
+                *error = [NSError errorWithDomain:PLCErrorDomain code:3 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid handle: %@", validationError.localizedDescription]}];
+            }
+            return nil;
+        }
     }
     
     return op;
@@ -107,6 +124,7 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
     
     PLCDIDState *state = [[PLCDIDState alloc] init];
     state.did = history[0].did;
+    state.alsoKnownAs = @[];
     
     for (PLCOperation *op in history) {
         NSString *type = op.data[@"type"];
@@ -121,11 +139,23 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
         } else if ([type isEqualToString:@"plc_tombstone"]) {
             state.tombstoned = YES;
         } else if ([type isEqualToString:@"create"]) {
-            // Legacy create op
             state.rotationKeys = @[op.data[@"recoveryKey"]];
             state.verificationMethods = @{@"atproto": op.data[@"signingKey"]};
             state.alsoKnownAs = @[op.data[@"handle"]];
             state.services = @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer", @"endpoint": op.data[@"service"]}};
+            state.tombstoned = NO;
+        } else if ([type isEqualToString:@"update_handle"]) {
+            NSString *newHandle = op.data[@"handle"];
+            if (newHandle && [newHandle isKindOfClass:[NSString class]]) {
+                NSMutableArray *handles = [state.alsoKnownAs mutableCopy] ?: [NSMutableArray array];
+                NSString *existingHandle = handles.firstObject;
+                if (existingHandle) {
+                    [handles replaceObjectAtIndex:0 withObject:newHandle];
+                } else {
+                    [handles addObject:newHandle];
+                }
+                state.alsoKnownAs = [handles copy];
+            }
             state.tombstoned = NO;
         }
     }
