@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
+/*! Database connection (exposed for testing). */
+@property (nonatomic, strong, readonly) PDSDatabase *database;
+
 /*! Get profile for actor DID. */
 - (nullable NSDictionary *)getProfileForActor:(NSString *)actorDID error:(NSError **)error;
 
