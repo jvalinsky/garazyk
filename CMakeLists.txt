@@ -259,6 +259,27 @@ set_target_properties(september PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+# PLC Server (atproto-plc)
+add_executable(atproto-plc
+  ${ATProtoPDS_SOURCES}
+  ATProtoPDS/Sources/PLC/main.m
+)
+
+target_include_directories(atproto-plc PRIVATE
+  ATProtoPDS/Sources
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(atproto-plc PRIVATE
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+)
+
+set_target_properties(atproto-plc PROPERTIES
+  OUTPUT_NAME "atproto-plc"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
 #=============================
 # Fuzzer Targets
 #=============================
@@ -533,8 +554,8 @@ message(STATUS "ATProtoPDS Build System")
 message(STATUS "===========================================")
 message(STATUS "")
 message(STATUS "Build Targets:")
-message(STATUS "  atprotopds-cli    - CLI tool")
-message(STATUS "  atprotopds-server - Server executable")
+message(STATUS "  september         - PDS CLI tool")
+message(STATUS "  atproto-plc       - Standalone PLC server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
 message(STATUS "  fuzz_cbor         - CBOR/CAR fuzzer")
