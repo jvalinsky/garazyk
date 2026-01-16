@@ -382,14 +382,9 @@
     NSArray *sortedKeys = [keys sortedArrayUsingComparator:^NSComparisonResult(CBORValue *key1, CBORValue *key2) {
         NSData *d1 = [key1 encode];
         NSData *d2 = [key2 encode];
-        NSUInteger len1 = d1.length;
-        NSUInteger len2 = d2.length;
-        NSUInteger len = MIN(len1, len2);
-        int cmp = memcmp(d1.bytes, d2.bytes, len);
-        if (cmp != 0) return cmp < 0 ? NSOrderedAscending : NSOrderedDescending;
-        if (len1 < len2) return NSOrderedAscending;
-        if (len1 > len2) return NSOrderedDescending;
-        return NSOrderedSame;
+        if (d1.length < d2.length) return NSOrderedAscending;
+        if (d1.length > d2.length) return NSOrderedDescending;
+        return memcmp(d1.bytes, d2.bytes, d1.length) < 0 ? NSOrderedAscending : NSOrderedDescending;
     }];
     
     for (CBORValue *key in sortedKeys) {

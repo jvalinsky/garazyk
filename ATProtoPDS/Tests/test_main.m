@@ -102,6 +102,7 @@ int main(int argc, char * argv[]) {
             @"DatabasePoolTests",
             @"PDSControllerTests",
             @"PDSIntegrationTests",
+            @"PDSPLCIntegrationTests",
             @"AdminServiceTests",
             @"AdminMiddlewareTests",
             @"ServiceDatabasesTests",

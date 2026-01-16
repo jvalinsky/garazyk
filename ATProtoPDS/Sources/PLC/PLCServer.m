@@ -25,8 +25,21 @@
 - (void)setupRoutes {
     __weak typeof(self) weakSelf = self;
     
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
+        resp.statusCode = HttpStatusOK;
+        [resp setJsonBody:@{@"status": @"ok"}];
+    }];
+    
     [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf handleGetDID:req response:resp];
+    }];
+    
+    [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf handleGetLog:req response:resp];
+    }];
+    
+    [self.httpServer addRoute:@"GET" path:@"/:did/log/audit" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf handleGetLog:req response:resp];
     }];
     
     [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -47,6 +60,45 @@
     if (error) {
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": error.localizedDescription}];
+        return;
+    }
+    
+    if (!history || history.count == 0) {
+        resp.statusCode = HttpStatusNotFound;
+        [resp setJsonBody:@{@"error": @"DID not found"}];
+        return;
+    }
+    
+    PLCDIDState *state = [PLCStateReplayer replayHistory:history error:&error];
+    if (!state) {
+        resp.statusCode = HttpStatusInternalServerError;
+        [resp setJsonBody:@{@"error": @"Failed to replay history"}];
+        return;
+    }
+    
+    if (state.tombstoned) {
+        resp.statusCode = 410; // Gone
+        [resp setJsonBody:@{@"message": [NSString stringWithFormat:@"DID not available: %@", did]}];
+        return;
+    }
+    
+    resp.statusCode = HttpStatusOK;
+    [resp setJsonBody:[state toDIDDocument]];
+}
+
+- (void)handleGetLog:(HttpRequest *)req response:(HttpResponse *)resp {
+    NSString *did = req.pathParameters[@"did"];
+    if (!did) {
+        resp.statusCode = HttpStatusBadRequest;
+        [resp setJsonBody:@{@"error": @"Missing DID"}];
+        return;
+    }
+    
+    NSError *error = nil;
+    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:did error:&error];
+    if (error) {
+        resp.statusCode = HttpStatusInternalServerError;
+        [resp setJsonBody:@{@"error": @"Internal server error"}];
         return;
     }
     
@@ -88,11 +140,7 @@
         return;
     }
     
-    if (![op.did isEqualToString:did]) {
-        resp.statusCode = HttpStatusBadRequest;
-        [resp setJsonBody:@{@"error": @"DID mismatch"}];
-        return;
-    }
+    op.did = did;
     
     // Validate using auditor
     if (![self.auditor verifyOperation:op error:&error]) {

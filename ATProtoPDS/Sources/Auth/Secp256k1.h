@@ -35,6 +35,9 @@ extern NSString * const Secp256k1ErrorDomain;
 /*! The 33-byte compressed public key. */
 @property (nonatomic, strong, readonly) NSData *compressedPublicKey;
 
+/*! Returns the DID key string (did:key:z...). */
+- (NSString *)didKeyString;
+
 /*! Generates a new random key pair. */
 + (nullable instancetype)generateKeyPair:(NSError **)error;
 
