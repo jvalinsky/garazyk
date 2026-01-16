@@ -1,4 +1,6 @@
 #import "CLI/PDSCLIDispatcher.h"
+#import "CLI/PDSCLIDefinitions.h"
+#import "Admin/PDSInstallerCommand.h"
 #import "Debug/PDSLogger.h"
 
 @implementation PDSCLICommandContext
@@ -226,6 +228,7 @@
 - (void)registerDefaultCommands {
     [self addCommand:[PDSCLIHelpCommand command]];
     [self addCommand:[PDSCLIVersionCommand command]];
+    [self addCommand:[PDSInstallerCommand command]];
 }
 
 - (void)addCommand:(id<PDSCLICommand>)command {
