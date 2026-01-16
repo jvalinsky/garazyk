@@ -181,6 +181,7 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 
             NSError *resolveError = nil;
             DIDResolver *resolver = [[DIDResolver alloc] init];
+            resolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
             NSDictionary *atprotoData = [resolver resolveAtprotoDataForDID:did error:&resolveError];
             NSString *signingKey = atprotoData[@"signingKey"];
             if (!signingKey) {
@@ -863,6 +864,7 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         BOOL forceRefresh = [forceRefreshStr isEqualToString:@"true"] || [forceRefreshStr isEqualToString:@"1"];
 
         DIDResolver *resolver = [[DIDResolver alloc] init];
+        resolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
         NSError *error = nil;
         DIDDocument *doc = [resolver resolveDIDSync:did forceRefresh:forceRefresh error:&error];
 
@@ -886,6 +888,7 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         }
 
         DIDResolver *didResolver = [[DIDResolver alloc] init];
+        didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
         HandleResolver *handleResolver = [[HandleResolver alloc] init];
 
         if ([identifier hasPrefix:@"did:"]) {
@@ -987,6 +990,7 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         }
 
         DIDResolver *resolver = [[DIDResolver alloc] init];
+        resolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
         NSError *resolveError = nil;
         NSDictionary *atprotoData = [resolver resolveAtprotoDataForDID:did error:&resolveError];
         if (!atprotoData) {

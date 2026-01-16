@@ -1,4 +1,5 @@
 #import "Auth/Secp256k1.h"
+#import "Core/CID.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
@@ -90,6 +91,17 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
     }
 
     return [NSData dataWithBytes:sig.data length:64];
+}
+
+- (NSString *)didKeyString {
+    NSMutableData *data = [NSMutableData data];
+    // Multicodec for secp256k1-pub: 0xe7 0x01
+    uint8_t codec[] = {0xe7, 0x01};
+    [data appendBytes:codec length:2];
+    [data appendData:self.compressedPublicKey];
+    
+    NSString *base58 = [CID base58btcEncode:data];
+    return [NSString stringWithFormat:@"did:key:z%@", base58];
 }
 
 - (BOOL)verifySignature:(NSData *)signature forHash:(NSData *)hash error:(NSError **)error {

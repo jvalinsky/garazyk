@@ -55,16 +55,16 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @property (nonatomic, readonly) NSString *dataDirectory;
 
 /*! PLC directory server URL. */
-@property (nonatomic, readonly) NSString *plcURL;
+@property (nonatomic, copy) NSString *plcURL;
 
 /*! Number of PLC operation retries. */
-@property (nonatomic, readonly) NSUInteger plcRetryCount;
+@property (nonatomic, assign) NSUInteger plcRetryCount;
 
 /*! Delay between PLC retries in milliseconds. */
-@property (nonatomic, readonly) NSUInteger plcRetryDelayMs;
+@property (nonatomic, assign) NSUInteger plcRetryDelayMs;
 
 /*! Skip PLC operations (debug mode). */
-@property (nonatomic, readonly) BOOL debugSkipPlcOperations;
+@property (nonatomic, assign) BOOL debugSkipPlcOperations;
 
 /*! Enable verbose logging. */
 @property (nonatomic, readonly) BOOL debugVerboseLogging;

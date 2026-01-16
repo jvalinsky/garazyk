@@ -73,6 +73,9 @@ Secp256k1Error secp256k1_wrapper_sign(const Secp256k1PrivateKey *private_key,
         return Secp256k1ErrorSigningFailed;
     }
 
+    // ATProto requires low-S signatures
+    secp256k1_ecdsa_signature_normalize(get_context(), &signature, &signature);
+
     unsigned char sig_bytes[64];
     secp256k1_ecdsa_signature_serialize_compact(get_context(), sig_bytes, &signature);
     memcpy(out_signature->data, sig_bytes, 64);

@@ -16,7 +16,7 @@
         @"did": @"did:plc:123",
         @"prev": @"cid:456",
         @"sig": @"sig789",
-        @"data": @{@"type": @"plc_operation"}
+        @"type": @"plc_operation"
     };
     
     NSError *error = nil;
@@ -34,7 +34,7 @@
     NSDictionary *json = @{
         @"did": @"did:plc:123",
         @"sig": @"sig789",
-        @"data": @{@"type": @"plc_operation"}
+        @"type": @"plc_operation"
     };
     
     NSError *error = nil;
@@ -45,13 +45,13 @@
     XCTAssertEqualObjects(op.did, @"did:plc:123");
     XCTAssertNil(op.prev);
     XCTAssertEqualObjects(op.sig, @"sig789");
+    XCTAssertEqualObjects(op.data[@"type"], @"plc_operation");
 }
 
 - (void)testParseFromDictionaryMissingRequiredField {
     NSDictionary *json = @{
-        @"did": @"did:plc:123",
-        @"sig": @"sig789"
-        // missing data
+        @"did": @"did:plc:123"
+        // missing sig
     };
     
     NSError *error = nil;
