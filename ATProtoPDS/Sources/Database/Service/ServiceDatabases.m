@@ -466,6 +466,101 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     return document;
 }
 
+#pragma mark - Event Persistence
+
+- (BOOL)persistEvent:(int64_t)seq
+                type:(NSString *)type
+                data:(NSData *)data
+               error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+    
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (?, ?, ?, ?)";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        if (!stmt) { success = NO; return; }
+        
+        sqlite3_bind_int64(stmt, 1, seq);
+        sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 3, data.bytes, (int)data.length, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 4, [[NSDate date] timeIntervalSince1970]);
+        
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+    } error:&localError];
+    
+    if (!success && localError) {
+        if (error) *error = localError;
+    }
+    
+    return success;
+}
+
+- (nullable NSArray<NSDictionary *> *)getEventsSince:(int64_t)seq
+                                              limit:(NSInteger)limit
+                                              error:(NSError **)error {
+    __block NSMutableArray *events = [NSMutableArray array];
+    __block NSError *localError = nil;
+    
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT seq, event_type, event_data, created_at FROM events WHERE seq > ? ORDER BY seq ASC LIMIT ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        if (!stmt) return;
+        
+        sqlite3_bind_int64(stmt, 1, seq);
+        sqlite3_bind_int64(stmt, 2, limit);
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            int64_t seqVal = sqlite3_column_int64(stmt, 0);
+            NSString *type = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
+            const void *dataBlob = sqlite3_column_blob(stmt, 2);
+            int dataLen = sqlite3_column_bytes(stmt, 2);
+            NSData *data = [NSData dataWithBytes:dataBlob length:dataLen];
+            NSTimeInterval created = sqlite3_column_double(stmt, 3);
+            
+            [events addObject:@{
+                @"seq": @(seqVal),
+                @"type": type,
+                @"data": data,
+                @"created_at": [NSDate dateWithTimeIntervalSince1970:created]
+            }];
+        }
+    } error:&localError];
+    
+    if (localError) {
+        if (error) *error = localError;
+        return nil;
+    }
+    
+    return events;
+}
+
+- (int64_t)getMaxEventSequence:(NSError **)error {
+    __block int64_t maxSeq = 0;
+    __block NSError *localError = nil;
+    
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT MAX(seq) FROM events";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        if (!stmt) return;
+        
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            if (sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
+                maxSeq = sqlite3_column_int64(stmt, 0);
+            }
+        }
+    } error:&localError];
+    
+    if (localError) {
+        if (error) *error = localError;
+        return 0;
+    }
+    
+    return maxSeq;
+}
+
 #pragma mark - Cleanup
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {

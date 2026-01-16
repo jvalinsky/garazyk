@@ -41,6 +41,14 @@
             @"error": @"RateLimitExceeded",
             @"message": @"Too many requests"
         }];
+        
+        // Add rate limit headers for client backoff (per reference implementation)
+        // Reference: reference/indigo/xrpc/xrpc.go (errorFromHTTPResponse function)
+        [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.limit] forKey:@"X-RateLimit-Limit"];
+        [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+        [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+        [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.retryAfter] forKey:@"Retry-After"];
+        
         return;
     }
 

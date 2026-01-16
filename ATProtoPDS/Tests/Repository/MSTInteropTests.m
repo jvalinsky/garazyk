@@ -9,7 +9,7 @@
 
 - (void)testLeadingZeros {
     // MST 'depth' computation (SHA-256 leading zeros)
-    // Reference values from indigo/mst/mst_interop_test.go
+    // Reference values from indigo/mst/mst_interop_test.go and custom gen_mst_vectors.go
     
     XCTAssertEqual([MST keyDepthBytes:[@"" dataUsingEncoding:NSUTF8StringEncoding]], 0);
     XCTAssertEqual([MST keyDepthBytes:[@"asdf" dataUsingEncoding:NSUTF8StringEncoding]], 0);
@@ -20,6 +20,20 @@
     XCTAssertEqual([MST keyDepthBytes:[@"884976f5" dataUsingEncoding:NSUTF8StringEncoding]], 6);
     XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/454397e440ec" dataUsingEncoding:NSUTF8StringEncoding]], 4);
     XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/9adeb165882c" dataUsingEncoding:NSUTF8StringEncoding]], 8);
+
+    // Verified against Go reference implementation (gen_mst_vectors.go)
+    XCTAssertEqual([MST keyDepthBytes:[@"com.example.test" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([MST keyDepthBytes:[@"bsky/posts/abcdefg" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([MST keyDepthBytes:[@"bsky/posts/abcdehi" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([MST keyDepthBytes:[@"a" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([MST keyDepthBytes:[@"b" dataUsingEncoding:NSUTF8StringEncoding]], 1);
+    XCTAssertEqual([MST keyDepthBytes:[@"c" dataUsingEncoding:NSUTF8StringEncoding]], 1);
+    XCTAssertEqual([MST keyDepthBytes:[@"very_deep_nesting_check_string_12345" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    
+    // High-depth vectors found via brute-force
+    XCTAssertEqual([MST keyDepthBytes:[@"test_key_750" dataUsingEncoding:NSUTF8StringEncoding]], 5);
+    XCTAssertEqual([MST keyDepthBytes:[@"test_key_756" dataUsingEncoding:NSUTF8StringEncoding]], 5);
+    XCTAssertEqual([MST keyDepthBytes:[@"test_key_3299" dataUsingEncoding:NSUTF8StringEncoding]], 5);
 }
 
 - (void)testInteropKnownMaps {

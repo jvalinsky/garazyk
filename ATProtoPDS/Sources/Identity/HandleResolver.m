@@ -24,6 +24,14 @@
 
 NSString * const HandleErrorDomain = @"com.atproto.handle";
 
+@interface HandleResolutionFailure : NSObject
+@property (nonatomic, assign) NSInteger failureCount;
+@property (nonatomic, strong) NSDate *expiresAt;
+@end
+
+@implementation HandleResolutionFailure
+@end
+
 @implementation HandleResolver
 
 - (instancetype)init {
@@ -38,6 +46,7 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         _session = nil;
 #endif
         _resolutionCache = [[NSCache alloc] init];
+        _failureCache = [[NSCache alloc] init];
         _cacheExpirationInterval = 300.0;
         _rateLimitPerMinute = 100;
         _requestTimestamps = [NSMutableArray array];
@@ -51,9 +60,19 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
     /*! Check rate limit before attempting resolution. */
     if (![self checkRateLimit]) {
         NSError *rateLimitError = [NSError errorWithDomain:HandleErrorDomain
-                                                   code:HandleErrorNetworkError
+                                                   code:HandleErrorRateLimitExceeded
                                                userInfo:@{NSLocalizedDescriptionKey: @"Rate limit exceeded"}];
         completion(nil, rateLimitError);
+        return;
+    }
+    
+    /*! Check failure cache for backoff. */
+    HandleResolutionFailure *failure = [self.failureCache objectForKey:handle];
+    if (failure && [failure.expiresAt timeIntervalSinceNow] > 0) {
+        NSError *backoffError = [NSError errorWithDomain:HandleErrorDomain
+                                                    code:HandleErrorRateLimitExceeded
+                                                userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Resolution backed off until %@", failure.expiresAt]}];
+        completion(nil, backoffError);
         return;
     }
 
@@ -100,13 +119,26 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
         if (did) {
             /*! Cache successful resolution for future requests. */
             [self.resolutionCache setObject:did forKey:handle];
+            [self.failureCache removeObjectForKey:handle]; // Clear failure count on success
             completion(did, nil);
         } else if (error && [error.domain isEqualToString:HandleErrorDomain] &&
                    error.code == HandleErrorNotFound) {
             /*! Fallback to DNS TXT record lookup on 404 response. */
-            [self resolveHandleViaDNS:handle completion:completion];
+            [self resolveHandleViaDNS:handle completion:^(NSString * _Nullable dnsDid, NSError * _Nullable dnsError) {
+                if (dnsDid) {
+                    [self.resolutionCache setObject:dnsDid forKey:handle];
+                    [self.failureCache removeObjectForKey:handle];
+                    completion(dnsDid, nil);
+                } else {
+                    // Record failure
+                    [self recordFailureForHandle:handle];
+                    completion(nil, dnsError ?: error);
+                }
+            }];
         } else {
             /*! Wrap network errors in HandleErrorDomain for consistent error handling. */
+            [self recordFailureForHandle:handle];
+            
             NSError *finalError = error;
             if (error && [error.domain isEqualToString:NSURLErrorDomain]) {
                 finalError = [NSError errorWithDomain:HandleErrorDomain
@@ -117,6 +149,19 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
             completion(nil, finalError);
         }
     }];
+}
+
+- (void)recordFailureForHandle:(NSString *)handle {
+    HandleResolutionFailure *failure = [self.failureCache objectForKey:handle];
+    if (!failure) {
+        failure = [[HandleResolutionFailure alloc] init];
+        failure.failureCount = 0;
+    }
+    failure.failureCount++;
+    // 2^count seconds backoff (2, 4, 8, 16...), max 1 hour
+    NSTimeInterval backoff = MIN(pow(2.0, (double)failure.failureCount), 3600.0);
+    failure.expiresAt = [NSDate dateWithTimeIntervalSinceNow:backoff];
+    [self.failureCache setObject:failure forKey:handle];
 }
 
 - (void)resolveHandleViaHTTPS:(NSString *)handle
