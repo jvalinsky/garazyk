@@ -18,28 +18,42 @@
     [[NSFileManager defaultManager] createDirectoryAtPath:self.testDirectory withIntermediateDirectories:YES attributes:nil error:nil];
     
     NSString *dbPath = [self.testDirectory stringByAppendingPathComponent:@"feed_service_test.db"];
+    
+    // Delete any existing database file
+    [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
+    
     self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
-    [self setupSchema];
+    [self setupSchema:dbPath];
     self.service = [[FeedService alloc] initWithDatabase:self.database];
     
     self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
 }
 
-- (void)setupSchema {
+- (void)setupSchema:(NSString *)dbPath {
     NSError *error = nil;
+    
+    // Drop all existing tables created by createSchema, since we need our own schema
+    NSString *dropRecords = @"DROP TABLE IF EXISTS records";
+    [self.database executeParameterizedUpdate:dropRecords params:@[] error:nil];
+    
+    NSString *dropBlocks = @"DROP TABLE IF EXISTS blocks";
+    [self.database executeParameterizedUpdate:dropBlocks params:@[] error:nil];
+    
     NSString *createAccounts = @"CREATE TABLE IF NOT EXISTS accounts ("
         @"id INTEGER PRIMARY KEY, did TEXT UNIQUE, handle TEXT UNIQUE, email TEXT, "
         @"password_hash TEXT, created_at REAL, updated_at REAL, invite_enabled INTEGER DEFAULT 0)";
-    XCTAssertTrue([self.database executeParameterizedUpdate:createAccounts params:@[] error:&error], @"Accounts table: %@", error);
+    BOOL accountsResult = [self.database executeParameterizedUpdate:createAccounts params:@[] error:&error];
+    XCTAssertTrue(accountsResult, @"Accounts table: %@", error);
     
     NSString *createRecords = @"CREATE TABLE IF NOT EXISTS records ("
         @"id INTEGER PRIMARY KEY, uri TEXT UNIQUE, did TEXT, collection TEXT, rkey TEXT, "
         @"cid TEXT, value TEXT, created_at REAL, indexed_at REAL)";
-    XCTAssertTrue([self.database executeParameterizedUpdate:createRecords params:@[] error:&error], @"Records table: %@", error);
+    BOOL recordsResult = [self.database executeParameterizedUpdate:createRecords params:@[] error:&error];
+    XCTAssertTrue(recordsResult, @"Records table: %@", error);
     
     NSString *createBlocks = @"CREATE TABLE IF NOT EXISTS blocks ("
         @"id INTEGER PRIMARY KEY, cid BLOB UNIQUE, repo_did TEXT, block_data BLOB, size INTEGER)";
@@ -273,7 +287,8 @@
     
     NSError *error = nil;
     NSString *insert = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))";
-    [self.database executeParameterizedUpdate:insert params:@[uri, did, @"app.bsky.feed.post", rkey, cid, [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding]] error:&error];
+    BOOL success = [self.database executeParameterizedUpdate:insert params:@[uri, did, @"app.bsky.feed.post", rkey, cid, [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding]] error:&error];
+    XCTAssertTrue(success, @"Failed to insert post: %@", error);
 }
 
 - (void)insertReply:(NSString *)did rkey:(NSString *)rkey parentURI:(NSString *)parentURI text:(NSString *)text {

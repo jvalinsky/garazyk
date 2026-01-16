@@ -74,6 +74,7 @@ int main(int argc, char * argv[]) {
     fprintf(stderr, "test_main started\n");
     @autoreleasepool {
         // Disable rate limiting for tests
+        RateLimiterSetDisabledGlobally(YES);
         [RateLimiter sharedLimiter].enabled = NO;
 
         NSArray *testClasses = @[
