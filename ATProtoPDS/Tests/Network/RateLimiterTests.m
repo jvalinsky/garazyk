@@ -12,6 +12,7 @@
 
 - (void)setUp {
     [super setUp];
+    RateLimiterSetDisabledGlobally(NO);
     self.testDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"ratelimit_test.db"];
     [[NSFileManager defaultManager] removeItemAtPath:self.testDbPath error:nil];
     self.limiter = [[RateLimiter alloc] initWithDatabasePath:self.testDbPath];
@@ -19,6 +20,7 @@
 
 - (void)tearDown {
     [[NSFileManager defaultManager] removeItemAtPath:self.testDbPath error:nil];
+    RateLimiterSetDisabledGlobally(YES);
     [super tearDown];
 }
 
