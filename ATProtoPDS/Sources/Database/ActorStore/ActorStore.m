@@ -1,6 +1,7 @@
 #import "ActorStore.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Compat/PDSTypes.h"
+#import "Security/PDSBiometricKeychain.h"
 #import <sqlite3.h>
 #import <Security/Security.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -18,12 +19,14 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
+@property (nonatomic, assign, readwrite) BOOL keychainNeedsUpgrade;
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t transactionQueue;
 @property (nonatomic, strong) NSData *signingKeyData;
 #else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
 @property (nonatomic, assign) SecKeyRef signingKey;
+@property (nonatomic, strong) PDSBiometricKeychain *biometricKeychain;
 #endif
 
 @end
@@ -57,6 +60,10 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         _blobCache = [NSMutableDictionary dictionary];
         _signingKey = NULL;
         _useKeychainSigningKey = YES;
+        _useBiometricProtection = YES;
+        _useSecureEnclave = NO;
+        _keychainNeedsUpgrade = NO;
+        _biometricKeychain = [PDSBiometricKeychain sharedInstance];
 #endif
     }
     return self;
@@ -1115,24 +1122,26 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     if (keyData.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:-1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Signing key must be 32 bytes (secp256k1)"}];
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key must be 32 bytes (secp256k1)"}];
         }
         return NO;
     }
-    
+
     NSString *account = [self keychainAccountForDid:targetDid];
-    
-    // Delete any existing key
+
+    if (self.useBiometricProtection && self.biometricKeychain) {
+        return [self.biometricKeychain storeKey:keyData forAccount:account error:error];
+    }
+
     NSDictionary *query = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account
     };
-    
+
     SecItemDelete((__bridge CFDictionaryRef)query);
-    
-    // Store the raw key data
+
     NSDictionary *attributes = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
@@ -1140,20 +1149,19 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         (__bridge id)kSecValueData: keyData,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
-    
+
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
-    
+
     if (status != errSecSuccess) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:-1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to store signing key in Keychain"}];
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store signing key in Keychain"}];
         }
         return NO;
     }
-    
+
 #if defined(GNUSTEP)
-    // Only cache if this is for our own DID
     if ([targetDid isEqualToString:self.did]) {
         self.signingKeyData = keyData;
     }
@@ -1263,6 +1271,23 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     }
 
     NSString *account = [self keychainAccountForDid:self.did];
+
+    if (self.useBiometricProtection && self.biometricKeychain) {
+        NSData *keyData = [self.biometricKeychain retrieveKeyForAccount:account error:error];
+        if (keyData) {
+            if (keyData.length != 32) {
+                if (error) {
+                    *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                                 code:PDSActorStoreErrorSigningKeyInvalid
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid key format - expected 32-byte secp256k1 key"}];
+                }
+                return nil;
+            }
+            return keyData;
+        }
+        return nil;
+    }
+
     NSDictionary *query = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
@@ -1303,7 +1328,61 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 
     return data;
 }
+
 #endif
+
+- (BOOL)upgradeKeychainToBiometricWithError:(NSError **)error {
+#if defined(GNUSTEP)
+    if (error) {
+        *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                     code:PDSActorStoreErrorBiometryNotAvailable
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Biometric protection not available on Linux"}];
+    }
+    return NO;
+#else
+    if (!self.useBiometricProtection || !self.biometricKeychain) {
+        return YES;
+    }
+
+    NSString *account = [self keychainAccountForDid:self.did];
+
+    NSDictionary *query = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: kSigningKeyService,
+        (__bridge id)kSecAttrAccount: account,
+        (__bridge id)kSecReturnData: @YES,
+        (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
+    };
+
+    CFDataRef keyData = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyData);
+
+    if (status == errSecItemNotFound) {
+        self.keychainNeedsUpgrade = NO;
+        return YES;
+    }
+
+    if (status != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve existing key for upgrade"}];
+        }
+        return NO;
+    }
+
+    NSData *data = (__bridge_transfer NSData *)keyData;
+
+    SecItemDelete((__bridge CFDictionaryRef)query);
+
+    BOOL success = [self.biometricKeychain storeKey:data forAccount:account error:error];
+    if (success) {
+        self.keychainNeedsUpgrade = NO;
+    }
+
+    return success;
+#endif
+}
 
 #pragma mark - Blob Operations
 
