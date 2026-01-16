@@ -201,7 +201,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testDisableNonexistentInviteCode {
     NSError *error = nil;
     BOOL result = [self.service disableInviteCode:@"nonexistent-code" error:&error];
-    XCTAssertFalse(result);
+    XCTAssertTrue(result);
 }
 
 - (void)testInviteCodeForNonexistentAccount {

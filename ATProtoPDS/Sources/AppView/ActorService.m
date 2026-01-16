@@ -120,10 +120,15 @@
     }
 
     NSError *jsonError = nil;
-    NSData *prefsData = [NSJSONSerialization dataWithJSONObject:preferences options:0 error:&jsonError];
+    NSData *prefsData = nil;
+    @try {
+        prefsData = [NSJSONSerialization dataWithJSONObject:preferences options:0 error:&jsonError];
+    } @catch (NSException *exception) {
+        jsonError = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid preferences JSON"}];
+    }
     if (jsonError) {
         if (error) {
-            *error = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid preferences JSON"}];
+            *error = jsonError;
         }
         return NO;
     }
