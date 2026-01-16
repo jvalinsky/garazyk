@@ -201,6 +201,10 @@
 }
 
 - (void)testGetPostThreadDepthLimit {
+    // First create the root post
+    [self insertPost:@"did:plc:author" rkey:@"root" text:@"Root post"];
+    
+    // Then create replies in a chain
     for (int i = 0; i < 5; i++) {
         NSString *parentRkey = (i == 0) ? @"root" : [NSString stringWithFormat:@"reply%d", i - 1];
         [self insertReply:@"did:plc:author" rkey:[NSString stringWithFormat:@"reply%d", i]
