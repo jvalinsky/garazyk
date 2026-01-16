@@ -29,6 +29,7 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
     HttpStatusForbidden = 403,
     HttpStatusNotFound = 404,
     HttpStatusMethodNotAllowed = 405,
+    HttpStatusLengthRequired = 411,
     HttpStatusConflict = 409,
     HttpStatusPayloadTooLarge = 413,
     HttpStatusUnsupportedMediaType = 415,

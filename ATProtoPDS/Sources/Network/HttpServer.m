@@ -407,6 +407,18 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
             [self queueResponse:response forState:state connection:connection];
             return YES;
         }
+        
+        NSString *method = (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(state.message);
+        HttpMethod methodEnum = [self httpMethodFromString:method ?: @""];
+        BOOL expectsBody = (methodEnum == HttpMethodPOST || methodEnum == HttpMethodPUT || methodEnum == HttpMethodPATCH);
+        
+        if (expectsBody && !state.isChunkedEncoding && state.expectedBodyLength == 0) {
+            HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusLengthRequired];
+            response.keepAlive = NO;
+            [response setJsonBody:@{@"error": @"LengthRequired", @"message": @"Content-Length or Transfer-Encoding: chunked required"}];
+            [self queueResponse:response forState:state connection:connection];
+            return YES;
+        }
     }
 
     NSData *bodyData = nil;
