@@ -859,11 +859,12 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
             return;
         }
 
+        NSString *forceRefreshStr = [request queryParamForKey:@"forceRefresh"];
+        BOOL forceRefresh = [forceRefreshStr isEqualToString:@"true"] || [forceRefreshStr isEqualToString:@"1"];
+
         DIDResolver *resolver = [[DIDResolver alloc] init];
         NSError *error = nil;
-        DIDDocument *doc = [resolver resolveDIDSync:did error:&error];
-
-        // TODO: Support forceRefresh query parameter
+        DIDDocument *doc = [resolver resolveDIDSync:did forceRefresh:forceRefresh error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;

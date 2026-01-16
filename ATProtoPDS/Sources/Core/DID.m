@@ -223,11 +223,15 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 }
 
 - (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error {
+    return [self resolveDIDSync:did forceRefresh:NO error:error];
+}
+
+- (nullable DIDDocument *)resolveDIDSync:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error {
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     __block DIDDocument *result = nil;
     __block NSError *resultError = nil;
     
-    [self resolveDID:did forceRefresh:NO completion:^(DIDDocument * _Nullable document, NSError * _Nullable resolveError) {
+    [self resolveDID:did forceRefresh:forceRefresh completion:^(DIDDocument * _Nullable document, NSError * _Nullable resolveError) {
         result = document;
         resultError = resolveError;
         dispatch_semaphore_signal(semaphore);
