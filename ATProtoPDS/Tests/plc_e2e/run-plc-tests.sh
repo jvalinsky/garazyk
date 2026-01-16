@@ -35,7 +35,7 @@ wait_for_plc() {
     local attempt=0
     
     while [ $attempt -lt $max_attempts ]; do
-        if curl -s "${PLC_URL}/xrpc/_health" | grep -q '"status":"ok"'; then
+        if curl -s "${PLC_URL}/_health" | grep -q '"status":"ok"'; then
             log_success "PLC server is ready"
             return 0
         fi
@@ -50,7 +50,7 @@ wait_for_plc() {
 test_health_check() {
     log_info "Testing health check endpoint..."
     
-    local response=$(curl -s "${PLC_URL}/xrpc/_health")
+    local response=$(curl -s "${PLC_URL}/_health")
     
     if echo "$response" | grep -q '"status":"ok"'; then
         log_success "Health check passed"

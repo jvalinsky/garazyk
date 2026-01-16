@@ -171,8 +171,9 @@ file(GLOB_RECURSE ATProtoPDS_C_SOURCES "ATProtoPDS/Sources/**/*.c")
 
 # Exclude main entry points and test files
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*server_main\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/App/main\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/main\.m$")
+list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/App/main\\.m$")
+list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/main\\.m$")
+list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/PLC/main\\.m$")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/tests/.*")
 list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Tests/.*")
 
@@ -341,8 +342,9 @@ if(BUILD_TESTS)
   
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
-  # Exclude top-level Integration tests only
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/.*")
+  # Exclude top-level Integration tests only, except our new PLC integration test
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/PDSIntegrationTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/comprehensive_tests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests
