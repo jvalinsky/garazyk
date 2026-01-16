@@ -27,7 +27,11 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
     op.did = did;
     op.sig = sig;
     op.data = data;
-    op.prev = prev;
+    if (prev && ![prev isEqual:[NSNull null]]) {
+        op.prev = prev;
+    } else {
+        op.prev = nil;
+    }
 
     return op;
 }
