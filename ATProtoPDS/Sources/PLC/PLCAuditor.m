@@ -4,6 +4,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
+#import "PLC/PLCMetrics.h"
 
 @interface PLCAuditor ()
 @property (nonatomic, strong) id<PLCStore> store;
@@ -20,6 +21,8 @@
 }
 
 - (BOOL)verifyDID:(NSString *)did error:(NSError **)error {
+    NSDate *startTime = [NSDate date];
+    
     NSArray<PLCOperation *> *history = [self.store getHistoryForDID:did error:error];
     if (!history || history.count == 0) {
         if (error && !*error) {
@@ -27,21 +30,30 @@
                                          code:1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Empty history"}];
         }
+        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
+        [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
         return NO;
     }
 
     NSString *lastHash = nil;
     NSArray<NSString *> *authorizedKeys = nil;
+    BOOL success = YES;
 
     for (PLCOperation *op in history) {
-        // 1. Verify prev hash
+        NSString *opType = op.data[@"type"];
+        if (opType) {
+            [[PLCMetrics sharedMetrics] recordOperation:opType];
+        }
+        
         if (!op.prev && lastHash) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                              code:2
                                          userInfo:@{NSLocalizedDescriptionKey: @"Unexpected genesis operation in middle of history"}];
             }
-            return NO;
+            success = NO;
+            break;
         }
         if (op.prev && [op.prev isKindOfClass:[NSString class]]) {
             NSLog(@"[PLC AUDITOR] Loop Checking prev hash: %@ vs last: %@", op.prev, lastHash);
@@ -51,17 +63,15 @@
                                                  code:3
                                              userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev hash mismatch. Expected %@, got %@", lastHash, op.prev]}];
                 }
-                return NO;
+                success = NO;
+                break;
             }
         }
 
-        // 2. Determine authorized keys
         if (!authorizedKeys) {
-            // Genesis operation: authorized keys are the ones in the operation itself
             authorizedKeys = op.data[@"rotationKeys"];
         }
 
-        // 3. Verify signature
         BOOL sigOk = NO;
         NSData *opDataHash = [self hashForOperationData:op.data];
         NSData *sigData = [self dataFromSignatureString:op.sig];
@@ -81,18 +91,34 @@
                                              code:4
                                          userInfo:@{NSLocalizedDescriptionKey: @"Signature verification failed"}];
             }
-            return NO;
+            success = NO;
+            break;
         }
 
-        // 4. Update state
         authorizedKeys = op.data[@"rotationKeys"];
         lastHash = [CryptoUtils hexStringFromData:opDataHash];
     }
 
-    return YES;
+    if (success) {
+        [[PLCMetrics sharedMetrics] recordVerificationSuccess];
+    } else {
+        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+    }
+    
+    NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
+    [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+    
+    return success;
 }
 
 - (BOOL)verifyOperation:(PLCOperation *)op error:(NSError **)error {
+    NSDate *startTime = [NSDate date];
+    
+    NSString *opType = op.data[@"type"];
+    if (opType) {
+        [[PLCMetrics sharedMetrics] recordOperation:opType];
+    }
+    
     NSArray<PLCOperation *> *history = [self.store getHistoryForDID:op.did error:error];
     NSString *lastHash = nil;
     NSArray<NSString *> *authorizedKeys = nil;
@@ -104,13 +130,13 @@
         }
     }
 
-    // 1. Verify prev hash
     if (!op.prev && lastHash) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:2
                                      userInfo:@{NSLocalizedDescriptionKey: @"Unexpected genesis operation in middle of history"}];
         }
+        [[PLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
     if (op.prev && [op.prev isKindOfClass:[NSString class]]) {
@@ -121,17 +147,15 @@
                                              code:3
                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev hash mismatch. Expected %@, got %@", lastHash, op.prev]}];
             }
+            [[PLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
     }
 
-    // 2. Determine authorized keys
     if (!authorizedKeys) {
-        // Genesis operation: authorized keys are the ones in the operation itself
         authorizedKeys = op.data[@"rotationKeys"];
     }
 
-    // 3. Verify signature
     BOOL sigOk = NO;
     NSData *opDataHash = [self hashForOperationData:op.data];
     NSData *sigData = [self dataFromSignatureString:op.sig];
@@ -156,9 +180,14 @@
                                          code:4
                                      userInfo:@{NSLocalizedDescriptionKey: @"Signature verification failed"}];
         }
+        [[PLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
+    [[PLCMetrics sharedMetrics] recordVerificationSuccess];
+    NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
+    [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+    
     return YES;
 }
 
