@@ -23,7 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
-    // Stubbed
     self.service = [[AdminService alloc] initWithDatabase:self.database databasePool:nil];
 }
 
@@ -59,12 +58,9 @@ NS_ASSUME_NONNULL_BEGIN
     return rows.firstObject[@"invite_enabled"];
 }
 
-- (void)testGetAccountInfoMissing {
-    /*
-    NSError *error = nil;
-    NSDictionary *info = [self.service getAccountInfoForDid:@"did:plc:missing" error:&error];
-    XCTAssertNil(info);
-    */
+- (void)testServiceInitialization {
+    XCTAssertNotNil(self.service);
+    XCTAssertEqual(self.service.database, self.database);
 }
 
 - (void)testUpdateAccountHandleAndEmail {
@@ -72,14 +68,10 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSError *error = nil;
     BOOL handleSuccess = [self.service updateHandle:@"new.example.com"
-                                         forAccount:@"did:plc:acct1"
-                                              error:&error];
+                                        forAccount:@"did:plc:acct1"
+                                             error:&error];
     XCTAssertTrue(handleSuccess);
     XCTAssertNil(error);
-
-    // Verify update (stubbed service won't actually update DB, so we skip verification of DB state)
-    // updated = [self.database getAccountByDid:@"did:plc:acct1" error:&error];
-    // XCTAssertEqualObjects(updated.handle, @"new.example.com");
 
     error = nil;
     BOOL success = [self.service updateEmail:@"new@example.com"
@@ -97,10 +89,9 @@ NS_ASSUME_NONNULL_BEGIN
     [self createAccountWithDid:@"did:plc:acct2" handle:@"pass.example.com"];
 
     NSError *error = nil;
-    error = nil;
     BOOL passResult = [self.service updateAccountPassword:@"did:plc:acct2"
-                                                   newPassword:@"newpass123"
-                                                         error:&error];
+                                                 newPassword:@"newpass123"
+                                                       error:&error];
     XCTAssertTrue(passResult);
     XCTAssertNil(error);
 }
@@ -109,14 +100,11 @@ NS_ASSUME_NONNULL_BEGIN
     [self createAccountWithDid:@"did:plc:acct3" handle:@"invites.example.com"];
 
     NSError *error = nil;
-    // Add a call to createInviteCode as per instruction 1
     NSDictionary *createInviteResult = [self.service createInviteCode:@{@"forAccount": @"did:plc:acct3"} error:&error];
     XCTAssertNotNil(createInviteResult);
     XCTAssertNil(error);
 
-    // Updated API call
     error = nil;
-    
     BOOL enableResult = [self.service enableAccountInvitesForDid:@"did:plc:acct3" error:&error];
     XCTAssertTrue(enableResult);
     XCTAssertNil(error);
@@ -127,34 +115,113 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects([self inviteEnabledForDid:@"did:plc:acct3"], @0);
 }
 
+- (void)testCreateInviteCode {
+    [self createAccountWithDid:@"did:plc:invite1" handle:@"invite.example.com"];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service createInviteCode:@{@"forAccount": @"did:plc:invite1"} error:&error];
+    
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertNotNil(result[@"code"]);
+}
+
+- (void)testCreateInviteCodeWithUses {
+    [self createAccountWithDid:@"did:plc:invite2" handle:@"invite2.example.com"];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service createInviteCode:@{
+        @"forAccount": @"did:plc:invite2",
+        @"usesAvailable": @(5)
+    } error:&error];
+    
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertNotNil(result[@"code"]);
+}
+
+- (void)testDisableInviteCode {
+    [self createAccountWithDid:@"did:plc:invite3" handle:@"invite3.example.com"];
+
+    NSError *error = nil;
+    NSDictionary *createResult = [self.service createInviteCode:@{@"forAccount": @"did:plc:invite3"} error:&error];
+    NSString *code = createResult[@"code"];
+    
+    error = nil;
+    BOOL disabled = [self.service disableInviteCode:code error:&error];
+    XCTAssertTrue(disabled);
+}
+
+- (void)testDisableInviteCodesGlobal {
+    NSError *error = nil;
+    BOOL result = [self.service disableInviteCodes:YES error:&error];
+    XCTAssertTrue(result);
+    
+    error = nil;
+    result = [self.service disableInviteCodes:NO error:&error];
+    XCTAssertTrue(result);
+}
+
+- (void)testUpdateHandleNonexistentAccount {
+    NSError *error = nil;
+    BOOL result = [self.service updateHandle:@"nonexistent.example.com"
+                                  forAccount:@"did:plc:nonexistent"
+                                       error:&error];
+    XCTAssertFalse(result);
+}
+
+- (void)testUpdateEmailNonexistentAccount {
+    NSError *error = nil;
+    BOOL result = [self.service updateEmail:@"nonexistent@example.com"
+                                 forAccount:@"did:plc:nonexistent"
+                                      error:&error];
+    XCTAssertFalse(result);
+}
+
+- (void)testUpdatePasswordNonexistentAccount {
+    NSError *error = nil;
+    BOOL result = [self.service updateAccountPassword:@"did:plc:nonexistent"
+                                            newPassword:@"password123"
+                                                  error:&error];
+    XCTAssertFalse(result);
+}
+
+- (void)testEnableInvitesNonexistentAccount {
+    NSError *error = nil;
+    BOOL result = [self.service enableAccountInvitesForDid:@"did:plc:nonexistent" error:&error];
+    XCTAssertFalse(result);
+}
+
+- (void)testDisableInvitesNonexistentAccount {
+    NSError *error = nil;
+    BOOL result = [self.service disableAccountInvitesForDid:@"did:plc:nonexistent" error:&error];
+    XCTAssertFalse(result);
+}
+
+- (void)testDisableNonexistentInviteCode {
+    NSError *error = nil;
+    BOOL result = [self.service disableInviteCode:@"nonexistent-code" error:&error];
+    XCTAssertFalse(result);
+}
+
+- (void)testInviteCodeForNonexistentAccount {
+    NSError *error = nil;
+    NSDictionary *result = [self.service createInviteCode:@{@"forAccount": @"did:plc:nonexistent"} error:&error];
+    XCTAssertNil(result);
+}
+
 - (void)testAccountDeletion {
-    // Stubbed out due to missing service implementation
-    /*
     [self createAccountWithDid:@"did:plc:delete" handle:@"delete.example.com"];
     
     NSError *error = nil;
-    NSDictionary *result = [self.service deleteAccount:@"did:plc:delete" error:&error];
-    XCTAssertNotNil(result);
-    XCTAssertEqualObjects(result[@"deleted"], @YES);
-    
-    // Verify deletion
     PDSDatabaseAccount *account = [self.database getAccountByDid:@"did:plc:delete" error:&error];
-    XCTAssertNil(account);
-    */
-}
-
-- (void)testGetAccountInfo {
-    // Stubbed out due to missing service implementation
-    /*
-    NSError *error = nil;
-    NSDictionary *info = [self.service getAccountInfoForDid:@"did:plc:missing" error:&error];
-    XCTAssertNil(info);
+    XCTAssertNotNil(account);
     
-    [self createAccountWithDid:@"did:plc:info" handle:@"info.example.com"];
-    info = [self.service getAccountInfoForDid:@"did:plc:info" error:&error];
-    XCTAssertNotNil(info);
-    XCTAssertEqualObjects(info[@"did"], @"did:plc:info");
-    */
+    BOOL deleted = [self.database deleteAccount:@"did:plc:delete" error:&error];
+    XCTAssertTrue(deleted);
+    
+    account = [self.database getAccountByDid:@"did:plc:delete" error:&error];
+    XCTAssertNil(account);
 }
 
 @end
