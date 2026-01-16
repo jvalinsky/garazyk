@@ -90,14 +90,16 @@ if(APPLE)
     find_library(APPKIT AppKit REQUIRED)
     find_library(IMAGEIO ImageIO REQUIRED)
     find_library(COREGRAPHICS CoreGraphics REQUIRED)
-    
+    find_library(LOCALAUTH LocalAuthentication REQUIRED)
+
     # Find SQLite3
     find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
-    
+
     set(PLATFORM_LIBRARIES 
         ${FOUNDATION} 
         ${NETWORK} 
         ${SECURITY} 
+        ${LOCALAUTH}
         ${COREIMAGE} 
         ${APPKIT} 
         ${IMAGEIO} 
