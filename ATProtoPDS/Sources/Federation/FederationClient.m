@@ -6,8 +6,6 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 
 @implementation FederationClient {
     os_log_t _log;
-    NSURLSession *_session;
-    DIDResolver *_didResolver;
 }
 
 - (instancetype)init {
@@ -33,7 +31,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
     if (!completion) return;
 
     // Resolve the DID to find the PDS endpoint
-    NSDictionary *atprotoData = [_didResolver resolveAtprotoDataForDID:did error:nil];
+    NSDictionary *atprotoData = [(DIDResolver *)self.didResolver resolveAtprotoDataForDID:did error:nil];
     if (!atprotoData || !atprotoData[@"pds"]) {
         NSError *error = [NSError errorWithDomain:FederationErrorDomain
                                          code:FederationErrorDIDResolutionFailed
@@ -100,7 +98,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
     }
 
     // Execute the request
-    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
                                              completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (error) {
@@ -166,7 +164,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 
     request.HTTPBody = body;
 
-    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
                                              completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         completion(data, (NSHTTPURLResponse *)response, error);
     }];
@@ -182,7 +180,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
     if (!completion) return;
 
     // Resolve the DID to find the PDS endpoint
-    NSDictionary *atprotoData = [_didResolver resolveAtprotoDataForDID:did error:nil];
+    NSDictionary *atprotoData = [(DIDResolver *)self.didResolver resolveAtprotoDataForDID:did error:nil];
     if (!atprotoData || !atprotoData[@"pds"]) {
         NSError *error = [NSError errorWithDomain:FederationErrorDomain
                                          code:FederationErrorDIDResolutionFailed
@@ -233,7 +231,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
     [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
 
     // Execute the request
-    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
                                              completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (error) {
