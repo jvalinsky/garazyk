@@ -117,6 +117,7 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         @"application/json",
         @"application/xml",
         @"application/ld+json",
+        @"application/octet-stream",
         @"text/plain",
         @"text/html",
         @"text/css",

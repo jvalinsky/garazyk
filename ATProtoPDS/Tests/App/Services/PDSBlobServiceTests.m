@@ -250,8 +250,11 @@
     NSString *did1 = @"did:web:user1.example.com";
     NSString *did2 = @"did:web:user2.example.com";
     
-    [self.blobService uploadBlob:self.testData forDid:did1 mimeType:@"text/plain" error:&error];
-    [self.blobService uploadBlob:self.testData forDid:did2 mimeType:@"image/png" error:&error];
+    NSData *data1 = [@"data for user 1" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *data2 = [@"data for user 2" dataUsingEncoding:NSUTF8StringEncoding];
+    
+    [self.blobService uploadBlob:data1 forDid:did1 mimeType:@"text/plain" error:&error];
+    [self.blobService uploadBlob:data2 forDid:did2 mimeType:@"text/plain" error:&error];
     
     NSArray *did1Blobs = [self.blobService listBlobsForDID:did1 limit:10 cursor:nil error:&error];
     NSArray *did2Blobs = [self.blobService listBlobsForDID:did2 limit:10 cursor:nil error:&error];
