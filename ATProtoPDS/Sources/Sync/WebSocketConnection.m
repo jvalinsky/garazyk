@@ -22,7 +22,7 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 
 @property (nonatomic, assign, readwrite) WebSocketConnectionState state;
 @property (nonatomic, copy, readwrite) NSString *queryString;
-@property (nonatomic, copy, readwrite, nullable) NSDictionary<NSString *, NSString *> *queryParams;
+@property (nonatomic, copy, readwrite, nullable) NSDictionary<NSString *, id> *queryParams;
 
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionQueue;
@@ -99,12 +99,12 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     return [self initWithHost:@"localhost" port:0 path:@"/"];
 }
 
-- (NSDictionary<NSString *, NSString *> *)parseQueryParams:(NSString *)queryString {
+- (NSDictionary<NSString *, id> *)parseQueryParams:(NSString *)queryString {
     if (queryString.length == 0) {
         return nil;
     }
 
-    NSMutableDictionary<NSString *, NSString *> *params = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, NSMutableArray<NSString *> *> *params = [NSMutableDictionary dictionary];
     NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
 
     for (NSString *pair in pairs) {
@@ -113,12 +113,23 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
             NSString *key = [keyValue[0] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
             NSString *value = [keyValue[1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
             if (key && value) {
-                params[key] = value;
+                NSMutableArray<NSString *> *existing = params[key];
+                if (existing) {
+                    [existing addObject:value];
+                } else {
+                    params[key] = [NSMutableArray arrayWithObject:value];
+                }
             }
         }
     }
 
-    return params.count > 0 ? [params copy] : nil;
+    NSMutableDictionary<NSString *, id> *result = [NSMutableDictionary dictionary];
+    for (NSString *key in params) {
+        NSArray<NSString *> *values = params[key];
+        result[key] = values.count == 1 ? values.firstObject : values;
+    }
+
+    return [result copy];
 }
 
 - (void)dealloc {
