@@ -51,4 +51,25 @@
     XCTAssertEqualObjects(connection.queryParams[@"name"], @"hello world");
 }
 
+- (void)testInitWithRepeatedQueryParams {
+    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+                                                                           port:8081
+                                                                           path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=100&collections=app.bsky.feed.post&collections=app.bsky.feed.deviate&collections=app.bsky.graph.listitem"];
+    
+    XCTAssertNotNil(connection.queryParams);
+    XCTAssertEqualObjects(connection.queryParams[@"cursor"], @"100");
+    NSArray<NSString *> *expectedCollections = @[@"app.bsky.feed.post", @"app.bsky.feed.deviate", @"app.bsky.graph.listitem"];
+    XCTAssertEqualObjects(connection.queryParams[@"collections"], expectedCollections);
+}
+
+- (void)testInitWithSingleRepeatedQueryParam {
+    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+                                                                           port:8081
+                                                                           path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=200&collections=app.bsky.feed.post"];
+    
+    XCTAssertNotNil(connection.queryParams);
+    XCTAssertEqualObjects(connection.queryParams[@"cursor"], @"200");
+    XCTAssertEqualObjects(connection.queryParams[@"collections"], @"app.bsky.feed.post");
+}
+
 @end

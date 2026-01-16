@@ -166,9 +166,10 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
             [queryParams addObject:[NSString stringWithFormat:@"cursor=%@", escapedCursor]];
         }
         if (subscription.collections.count > 0) {
-            NSString *collectionsStr = [subscription.collections componentsJoinedByString:@","];
-            NSString *escapedCollections = [collectionsStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-            [queryParams addObject:[NSString stringWithFormat:@"collections=%@", escapedCollections]];
+            for (NSString *collection in subscription.collections) {
+                NSString *escapedCollection = [collection stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+                [queryParams addObject:[NSString stringWithFormat:@"collections=%@", escapedCollection]];
+            }
         }
         break;
     }
