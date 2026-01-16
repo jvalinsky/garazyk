@@ -150,28 +150,51 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
 }
 
 - (void)encodeNumber:(NSNumber *)number toData:(NSMutableData *)data {
-    if (number.boolValue == YES || number.boolValue == NO) {
+    CFNumberType type = CFNumberGetType((CFNumberRef)number);
+    if (CFGetTypeID((CFNumberRef)number) == CFBooleanGetTypeID()) {
         uint8_t byte = number.boolValue ? 0xF5 : 0xF4;
         [data appendBytes:&byte length:1];
         return;
     }
 
-    NSInteger intValue = number.integerValue;
-    if (intValue >= 0 && intValue <= 23) {
-        uint8_t byte = (uint8_t)intValue;
-        [data appendBytes:&byte length:1];
-    } else if (intValue >= 24 && intValue < 256) {
-        uint8_t bytes[2] = { 0x18, (uint8_t)intValue };
-        [data appendBytes:bytes length:2];
-    } else if (intValue >= 256 && intValue < 65536) {
-        uint8_t bytes[3] = { 0x19, (intValue >> 8) & 0xFF, intValue & 0xFF };
-        [data appendBytes:bytes length:3];
-    } else if (intValue >= 65536 && intValue < 4294967296) {
-        uint8_t bytes[5] = { 0x1A, (intValue >> 24) & 0xFF, (intValue >> 16) & 0xFF, (intValue >> 8) & 0xFF, intValue & 0xFF };
-        [data appendBytes:bytes length:5];
-    } else {
-        uint8_t bytes[9] = { 0x1B };
-        int64_t val = intValue;
+    if (type == kCFNumberCharType || type == kCFNumberSInt8Type || type == kCFNumberSInt16Type || type == kCFNumberSInt32Type || type == kCFNumberSInt64Type || type == kCFNumberShortType || type == kCFNumberIntType || type == kCFNumberLongType || type == kCFNumberLongLongType || type == kCFNumberNSIntegerType) {
+        NSInteger intValue = number.integerValue;
+        if (intValue < 0) {
+            uint8_t bytes[9] = { 0x3B };
+            int64_t val = -intValue - 1;
+            for (int i = 7; i >= 0; i--) {
+                bytes[i + 1] = val & 0xFF;
+                val >>= 8;
+            }
+            [data appendBytes:bytes length:9];
+            return;
+        }
+        uint64_t uvalue = (uint64_t)intValue;
+        if (uvalue < 24) {
+            uint8_t byte = (uint8_t)uvalue;
+            [data appendBytes:&byte length:1];
+        } else if (uvalue < 256) {
+            uint8_t bytes[2] = { 0x18, (uint8_t)uvalue };
+            [data appendBytes:bytes length:2];
+        } else if (uvalue < 65536) {
+            uint8_t bytes[3] = { 0x19, (uvalue >> 8) & 0xFF, uvalue & 0xFF };
+            [data appendBytes:bytes length:3];
+        } else if (uvalue < 4294967296ULL) {
+            uint8_t bytes[5] = { 0x1A, (uvalue >> 24) & 0xFF, (uvalue >> 16) & 0xFF, (uvalue >> 8) & 0xFF, uvalue & 0xFF };
+            [data appendBytes:bytes length:5];
+        } else {
+            uint8_t bytes[9] = { 0x1B };
+            for (int i = 7; i >= 0; i--) {
+                bytes[i + 1] = uvalue & 0xFF;
+                uvalue >>= 8;
+            }
+            [data appendBytes:bytes length:9];
+        }
+    } else if (type == kCFNumberFloat32Type || type == kCFNumberFloat64Type || type == kCFNumberFloatType || kCFNumberDoubleType) {
+        double doubleValue = number.doubleValue;
+        uint8_t bytes[9] = { 0xFB };
+        uint64_t val;
+        memcpy(&val, &doubleValue, sizeof(double));
         for (int i = 7; i >= 0; i--) {
             bytes[i + 1] = val & 0xFF;
             val >>= 8;
