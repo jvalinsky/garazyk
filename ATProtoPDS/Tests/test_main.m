@@ -151,6 +151,7 @@ int main(int argc, char * argv[]) {
             @"PDSHealthCheckTests",
             @"OAuthServerMetadataTests",
             @"OAuthSessionTests",
+            @"NodeInfoTests",
             @"ATProtoCBORSerializationTests"
         ];
 

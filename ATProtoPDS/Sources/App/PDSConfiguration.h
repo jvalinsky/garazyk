@@ -148,6 +148,24 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Array of enabled component tags, or nil for all components. */
 @property (nonatomic, readonly, nullable) NSArray<NSString *> *enabledComponents;
 
+/*! Whether NodeInfo endpoint is enabled. */
+@property (nonatomic, readonly) BOOL nodeinfoEnabled;
+
+/*! NodeInfo software name. */
+@property (nonatomic, readonly, nullable) NSString *nodeinfoSoftwareName;
+
+/*! NodeInfo software version. */
+@property (nonatomic, readonly, nullable) NSString *nodeinfoSoftwareVersion;
+
+/*! NodeInfo software repository URL. */
+@property (nonatomic, readonly, nullable) NSString *nodeinfoRepositoryURL;
+
+/*! NodeInfo software homepage URL. */
+@property (nonatomic, readonly, nullable) NSString *nodeinfoHomepageURL;
+
+/*! Whether NodeInfo open registrations field is enabled. */
+@property (nonatomic, readonly) BOOL nodeinfoOpenRegistrations;
+
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;
 

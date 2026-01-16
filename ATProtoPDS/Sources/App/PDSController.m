@@ -35,6 +35,7 @@
 #import "Debug/PDSLogger.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/MSTViewer/MSTViewerHandler.h"
+#import "App/NodeInfo/NodeInfoHandler.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -318,7 +319,14 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     [_httpServer addHandlerForPath:@"/api/mst" handler:^(HttpRequest *request, HttpResponse *response) {
         [mstViewerHandler handleRequest:request response:response];
     }];
-    
+
+    // NodeInfo endpoints
+    NodeInfoHandler *nodeInfoHandler = [NodeInfoHandler sharedHandler];
+    NSString *issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
+    [nodeInfoHandler setIssuer:issuer];
+    [nodeInfoHandler setController:self];
+    [nodeInfoHandler registerRoutesWithServer:_httpServer];
+
     NSError *httpError = nil;
     if (![_httpServer startWithError:&httpError]) {
         os_log_error(_log, "Failed to start HTTP server: %@", httpError);
