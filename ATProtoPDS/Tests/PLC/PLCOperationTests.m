@@ -229,4 +229,99 @@
     return [CryptoUtils sha256:cbor];
 }
 
+#pragma mark - Test Vectors (Reference: reference/indigo/plc/client_test.go)
+
+- (void)testCBOREncodingTestVector {
+    NSDictionary *opData = @{
+        @"type": @"create",
+        @"signingKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
+        @"recoveryKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
+        @"handle": @"why.bsky.social",
+        @"service": @"bsky.social",
+        @"prev": [NSNull null]
+    };
+    
+    NSError *error = nil;
+    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(cbor);
+    
+    NSData *expectedCBOR = [[NSData alloc] initWithBase64EncodedString:@"pmRwcmVvd2h5LmJza3kuc29jaWFsZ3NlcnZpY2VrYnNreS5zb2NpYWxqc2lnbmluZ0tleXg5ZGlkOmtleTp6RG5hZVJTWXM3YzJOcGNOQTVOUkFVcVM4RENrTFdEeU5MbkFUaMjhENnc3bm83aFhirelZlcnlSZXlLZXl4OWRpZDprZXk6ekRuYWVSU1lzN2MyTnBjTkE1TlJBVXFThDcGwpX3NpZy5iMzV3aS1IUWdOV1dGbV9HMHJ1WFVLNlhDSDV5MmxHUXRYc2pYRGZycUZRPT0" options:0];
+    
+    XCTAssertEqualObjects(cbor, expectedCBOR, @"CBOR encoding should match reference test vector");
+}
+
+- (void)testDIDCalculationTestVector {
+    NSDictionary *opData = @{
+        @"type": @"create",
+        @"signingKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
+        @"recoveryKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
+        @"handle": @"why.bsky.social",
+        @"service": @"bsky.social",
+        @"prev": [NSNull null]
+    };
+    
+    NSString *calculatedDID = [PLCOperation calculateDIDForData:opData];
+    
+    XCTAssertEqualObjects(calculatedDID, @"did:plc:3c5huvwmxxgrmkq2w2lk7pgq");
+}
+
+- (void)testDIDCalculationWithPLCOperation {
+    NSDictionary *opData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[@"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX"],
+        @"verificationMethods": @{@"atproto": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX"},
+        @"alsoKnownAs": @[@"test.bsky.social"],
+        @"services": @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer", @"endpoint": @"https://pds.example.com"}},
+        @"prev": [NSNull null]
+    };
+    
+    NSString *calculatedDID = [PLCOperation calculateDIDForData:opData];
+    
+    XCTAssertTrue([calculatedDID hasPrefix:@"did:plc:"], @"DID should have did:plc: prefix");
+    XCTAssertEqual(calculatedDID.length, 31, @"DID should be 31 characters (did:plc: + 24 char hash)");
+}
+
+- (void)testSignatureVerificationTestVector {
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    XCTAssertNotNil(keyPair, @"Key pair should be generated");
+    
+    NSData *message = [@"test message" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signature = [keyPair signHash:message error:nil];
+    XCTAssertNotNil(signature, @"Signature should be created");
+    XCTAssertEqual(signature.length, 64, @"Signature should be 64 bytes (R || S)");
+    
+    BOOL verified = [[Secp256k1 shared] verifySignature:signature forHash:message withPublicKey:keyPair.publicKey error:nil];
+    XCTAssertTrue(verified, @"Signature should verify");
+    
+    NSData *wrongMessage = [@"wrong message" dataUsingEncoding:NSUTF8StringEncoding];
+    BOOL wrongVerified = [[Secp256k1 shared] verifySignature:signature forHash:wrongMessage withPublicKey:keyPair.publicKey error:nil];
+    XCTAssertFalse(wrongVerified, @"Wrong message should not verify");
+}
+
+- (void)testOperationSignatureRoundTrip {
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    XCTAssertNotNil(keyPair);
+    
+    NSDictionary *opData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[[CryptoUtils hexStringFromData:keyPair.compressedPublicKey]],
+        @"verificationMethods": @{@"atproto": [CryptoUtils hexStringFromData:keyPair.compressedPublicKey]},
+        @"alsoKnownAs": @[@"test.bsky.social"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+    
+    NSError *error = nil;
+    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&error];
+    XCTAssertNil(error);
+    
+    NSData *hash = [CryptoUtils sha256:cbor];
+    NSData *signature = [keyPair signHash:hash error:&error];
+    XCTAssertNil(error);
+    
+    BOOL verified = [[Secp256k1 shared] verifySignature:signature forHash:hash withPublicKey:keyPair.publicKey error:&error];
+    XCTAssertTrue(verified, @"Operation signature should verify");
+}
+
 @end
