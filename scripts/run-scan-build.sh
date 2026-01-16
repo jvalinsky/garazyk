@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-cd "/Users/jack/Software/objpds"
+cd "/Users/jack/Software/objpds/.worktrees/macos-security-phase2"
 echo "Running Clang Static Analyzer (scan-build)..."
 rm -rf build-analyzed
 mkdir build-analyzed

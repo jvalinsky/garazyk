@@ -37,6 +37,11 @@ extern NSString * const PDSActorStoreErrorDomain;
  @constant PDSActorStoreErrorDatabaseClosed Database is closed.
  @constant PDSActorStoreErrorSigningKeyNotFound Signing key not found.
  @constant PDSActorStoreErrorSigningKeyInvalid Signing key is invalid.
+ @constant PDSActorStoreErrorBiometricAuthFailed Biometric authentication failed.
+ @constant PDSActorStoreErrorBiometryNotAvailable Biometric hardware not available.
+ @constant PDSActorStoreErrorBiometryNotEnrolled No biometric enrolled.
+ @constant PDSActorStoreErrorAccessControlCreationFailed Failed to create access control.
+ @constant PDSActorStoreErrorKeychainUpgradeRequired Keychain upgrade required.
  */
 typedef NS_ENUM(NSInteger, PDSActorStoreError) {
     PDSActorStoreErrorNotFound = 1000,
@@ -45,6 +50,11 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
     PDSActorStoreErrorDatabaseClosed,
     PDSActorStoreErrorSigningKeyNotFound,
     PDSActorStoreErrorSigningKeyInvalid,
+    PDSActorStoreErrorBiometricAuthFailed,
+    PDSActorStoreErrorBiometryNotAvailable,
+    PDSActorStoreErrorBiometryNotEnrolled,
+    PDSActorStoreErrorAccessControlCreationFailed,
+    PDSActorStoreErrorKeychainUpgradeRequired,
 };
 
 /*!
@@ -163,9 +173,19 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Whether signing keys should be persisted via the Keychain. Defaults to YES. */
 @property (nonatomic, assign) BOOL useKeychainSigningKey;
 
-/*! When YES (default), signing keys are persisted to the Keychain. When NO, keys stay in memory (useful for tests). */
-- (void)setUseKeychainSigningKey:(BOOL)useKeychain; // to maintain compatibility for non-ARC bridging
-- (BOOL)useKeychainSigningKey;
+/*! When YES (default), signing keys are protected with biometric authentication. */
+@property (nonatomic, assign) BOOL useBiometricProtection;
+
+/*! When YES, use Secure Enclave for key generation (macOS with T2/Apple Silicon). */
+@property (nonatomic, assign) BOOL useSecureEnclave;
+
+/*! Whether the Keychain needs upgrade to biometric protection. */
+@property (nonatomic, assign, readonly) BOOL keychainNeedsUpgrade;
+
+/*! Upgrades existing keys to use biometric protection. */
+- (BOOL)upgradeKeychainToBiometricWithError:(NSError **)error;
+
+- (void)setUseKeychainSigningKey:(BOOL)useKeychain;
 
 // Internal methods for ServiceDatabases
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
