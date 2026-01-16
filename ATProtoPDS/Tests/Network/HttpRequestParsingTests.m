@@ -68,6 +68,34 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(blob, expected);
 }
 
+- (void)testParseChunkedTransferEncodingHeader {
+    NSString *raw = @"POST /upload HTTP/1.1\r\n"
+                    "Host: example.com\r\n"
+                    "Transfer-Encoding: chunked\r\n"
+                    "\r\n"
+                    "5\r\nHello\r\n"
+                    "0\r\n\r\n";
+    NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
+    HttpRequest *request = [HttpRequest requestWithData:data];
+
+    XCTAssertNotNil(request);
+    XCTAssertEqual(request.method, HttpMethodPOST);
+    XCTAssertEqualObjects([request headerForKey:@"Transfer-Encoding"], @"chunked");
+}
+
+- (void)testParseChunkedTransferEncodingCaseInsensitive {
+    NSString *raw = @"POST /upload HTTP/1.1\r\n"
+                    "Transfer-Encoding: CHUNKED\r\n"
+                    "\r\n"
+                    "3\r\nBye\r\n"
+                    "0\r\n\r\n";
+    NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
+    HttpRequest *request = [HttpRequest requestWithData:data];
+
+    XCTAssertNotNil(request);
+    XCTAssertEqualObjects([request headerForKey:@"Transfer-Encoding"], @"CHUNKED");
+}
+
 @end
 
 NS_ASSUME_NONNULL_END
