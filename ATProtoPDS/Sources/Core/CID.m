@@ -395,6 +395,49 @@ static const NSUInteger kMaxVarintSize = 9;
     return result;
 }
 
++ (NSString *)base58btcEncode:(NSData *)data {
+    if (!data || data.length == 0) {
+        return @"";
+    }
+
+    const uint8_t *bytes = data.bytes;
+    NSUInteger length = data.length;
+
+    NSUInteger leadingZeros = 0;
+    while (leadingZeros < length && bytes[leadingZeros] == 0) {
+        leadingZeros++;
+    }
+
+    // Rough estimate of size: log2(256) / log2(58) ≈ 1.38
+    NSUInteger capacity = (length * 138 / 100) + 1;
+    uint8_t *encoded = calloc(capacity, sizeof(uint8_t));
+    NSUInteger encodedLength = 0;
+
+    for (NSUInteger i = leadingZeros; i < length; i++) {
+        uint32_t carry = bytes[i];
+        for (NSUInteger j = 0; j < encodedLength; j++) {
+            carry += (uint32_t)encoded[j] << 8;
+            encoded[j] = carry % 58;
+            carry /= 58;
+        }
+        while (carry > 0) {
+            encoded[encodedLength++] = carry % 58;
+            carry /= 58;
+        }
+    }
+
+    NSMutableString *result = [NSMutableString stringWithCapacity:leadingZeros + encodedLength];
+    for (NSUInteger i = 0; i < leadingZeros; i++) {
+        [result appendFormat:@"%c", kBase58Alphabet[0]];
+    }
+    for (NSInteger i = (NSInteger)encodedLength - 1; i >= 0; i--) {
+        [result appendFormat:@"%c", kBase58Alphabet[encoded[i]]];
+    }
+
+    free(encoded);
+    return [result copy];
+}
+
 #pragma mark - Hashing
 
 + (CID *)sha256:(NSData *)data {

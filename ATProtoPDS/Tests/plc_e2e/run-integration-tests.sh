@@ -49,7 +49,7 @@ test_pds_account_creation_with_plc() {
         log_info "Verifying DID can be resolved via PLC..."
         sleep 2
         
-        local plc_response=$(curl -s "${PLC_URL}/xrpc/com.atproto.identity.resolveDid?did=${did}")
+        local plc_response=$(curl -s "${PLC_URL}/${did}")
         
         if echo "$plc_response" | grep -q '"@context"'; then
             log_success "DID resolved successfully via PLC"

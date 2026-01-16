@@ -6,6 +6,11 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
+#import "PLC/PLCOperation.h"
+#import "Auth/Secp256k1.h"
+#import "Auth/CryptoUtils.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -57,12 +62,22 @@
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
     NSString *resolvedDid;
+    Secp256k1KeyPair *userKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+    if (!userKeyPair) return nil;
+    
+    Secp256k1KeyPair *rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+    if (!rotationKeyPair) return nil;
+
     if (did) {
         resolvedDid = did;
     } else if (debugMode) {
         resolvedDid = [self generatePlcIdentifier];
     } else {
-        resolvedDid = [NSString stringWithFormat:@"did:web:%@", handle];
+        resolvedDid = [self _registerDIDWithPLCWithHandle:handle
+                                               signingKey:userKeyPair
+                                              rotationKey:rotationKeyPair
+                                                    error:error];
+        if (!resolvedDid) return nil;
     }
 
     NSError *dbError = nil;
@@ -364,6 +379,103 @@
         os_log_info(self.log, "Upgraded password hash for account: %@", account.did);
     }
     return success;
+}
+
+#pragma mark - PLC Registration
+
+- (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
+                                          signingKey:(Secp256k1KeyPair *)signingKey
+                                         rotationKey:(Secp256k1KeyPair *)rotationKey
+                                               error:(NSError **)error {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *plcURLString = config.plcURL;
+    
+    // Fallback to default if not configured or "mock"
+    if ([plcURLString isEqualToString:@"mock"] || plcURLString.length == 0) {
+        plcURLString = @"http://localhost:2582";
+    }
+    
+    NSString *pdsURL = [NSString stringWithFormat:@"http://%@:%lu", config.serverHost, (unsigned long)config.serverPort];
+    
+    // Format keys as did:key multibase
+    NSString *signingKeyMultibase = [signingKey didKeyString];
+    NSString *rotationKeyMultibase = [rotationKey didKeyString];
+    
+    NSDictionary *plcData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[rotationKeyMultibase],
+        @"verificationMethods": @{
+            @"atproto": signingKeyMultibase
+        },
+        @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
+        @"services": @{
+            @"atproto_pds": @{
+                @"type": @"AtprotoPersonalDataServer",
+                @"endpoint": pdsURL
+            }
+        },
+        @"prev": [NSNull null]
+    };
+    
+    NSString *did = [PLCOperation calculateDIDForData:plcData];
+    
+    // Sign the operation data (CBOR encoded)
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:plcData error:error];
+    if (!cborData) return nil;
+    
+    NSLog(@"[PDS ACCOUNT] CBOR Data (%lu bytes): %@", (unsigned long)cborData.length, [CryptoUtils hexStringFromData:cborData]);
+    NSData *hash = [CID rawSha256:cborData];
+    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:rotationKey.privateKey error:error];
+    if (!sig) return nil;
+    
+    PLCOperation *op = [[PLCOperation alloc] init];
+    op.did = did;
+    op.data = plcData;
+    op.sig = [sig base64EncodedStringWithOptions:0];
+    op.prev = nil;
+    
+    NSDictionary *opDict = [op toDictionary];
+    NSLog(@"[PDS ACCOUNT] Registering DID %@ with PLC at %@. Payload: %@", did, plcURLString, opDict);
+    NSData *postData = [NSJSONSerialization dataWithJSONObject:opDict options:0 error:error];
+    if (!postData) return nil;
+    
+    NSURL *plcURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", plcURLString, did]];
+    NSMutableURLRequest *request = [NSURLRequest requestWithURL:plcURL].mutableCopy;
+    request.HTTPMethod = @"POST";
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    request.HTTPBody = postData;
+    
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block NSString *resultDid = nil;
+    __block NSError *innerError = nil;
+    
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        if (error) {
+            innerError = error;
+        } else if (httpResponse && (httpResponse.statusCode != 200 && httpResponse.statusCode != 202)) {
+            NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"";
+            innerError = [NSError errorWithDomain:@"PLCRegistration" 
+                                             code:httpResponse.statusCode 
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"PLC registration failed with status %ld: %@", (long)httpResponse.statusCode, body]}];
+        } else if (!httpResponse) {
+            innerError = [NSError errorWithDomain:@"PLCRegistration" 
+                                             code:-1 
+                                         userInfo:@{NSLocalizedDescriptionKey: @"PLC registration failed: No response from server"}];
+        } else {
+            resultDid = did;
+        }
+        dispatch_semaphore_signal(sema);
+    }] resume];
+    
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)));
+    
+    if (innerError) {
+        if (error) *error = innerError;
+        return nil;
+    }
+    
+    return resultDid;
 }
 
 @end

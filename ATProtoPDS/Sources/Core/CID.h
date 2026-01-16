@@ -88,12 +88,21 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSData *)base32Decode:(NSString *)string;
 
 /*!
- @method base58btcDecode:
- @abstract Base58btc decode a string.
- @param string The base58btc string to decode.
- @return Decoded data or nil on failure.
- */
+|  @method base58btcDecode:
+|  @abstract Base58btc decode a string.
+|  @param string The base58btc string to decode.
+|  @return Decoded data or nil on failure.
+|  */
 + (nullable NSData *)base58btcDecode:(NSString *)string;
+
+/*!
+|  @method base58btcEncode:
+|  @abstract Base58btc encode data.
+|  @param data The data to encode.
+|  @return Base58btc encoded string.
+|  */
++ (NSString *)base58btcEncode:(NSData *)data;
+
 
 /*!
  @method stringValue
