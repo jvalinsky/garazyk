@@ -287,7 +287,14 @@
         NSString *repo = row[@"did"];
         NSString *rkey = row[@"rkey"];
         NSString *cid = row[@"cid"];
+        NSString *value = row[@"value"];
+        
+        // Try to get record from blocks table first
         NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
+        if (!record && value && value.length > 0) {
+            // Fall back to value column
+            record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        }
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", repo, rkey];
 
@@ -312,11 +319,24 @@
     NSString *repo = components[2];
     NSString *rkey = components[4];
 
-    NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+    NSString *query = @"SELECT cid, value FROM records WHERE did = ? AND collection = ? AND rkey = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:error];
 
     if (rows && rows.count > 0) {
-        return [self getRecordBodyFromCID:rows.firstObject[@"cid"] did:repo error:error];
+        NSDictionary *row = rows.firstObject;
+        NSString *cid = row[@"cid"];
+        
+        // Try to get record from blocks table first
+        NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
+        if (record) {
+            return record;
+        }
+        
+        // Fall back to value column if block not found
+        NSString *value = row[@"value"];
+        if (value && value.length > 0) {
+            return [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:error];
+        }
     }
 
     return nil;
@@ -325,18 +345,22 @@
 - (NSArray<NSString *> *)getReplyURIsForParentURI:(NSString *)parentURI error:(NSError **)error {
     NSMutableArray *replyURIs = [NSMutableArray array];
 
-    NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ?";
+    NSString *query = @"SELECT did, rkey, cid, value FROM records WHERE collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.post"] error:error];
     for (NSDictionary *row in rows) {
         NSString *cid = row[@"cid"];
         NSString *repo = row[@"did"];
+        NSString *value = row[@"value"];
+        
+        // Try to get record from blocks table first
         NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
+        if (!record && value && value.length > 0) {
+            // Fall back to value column
+            record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        }
+        
         if (record) {
-            // Need to convert to JSON string to check containment or check known fields?
-            // "reply": { "root": { "uri": ... }, "parent": { "uri": ... } }
-            // Checking if parentURI is in record.
-            // Converting dict to string is expensive but simple port of `containsString`.
-            // Better: Check `record[@"reply"][@"parent"][@"uri"]`.
+            // Check if this record is a reply to the parent URI
             NSString *parent = record[@"reply"][@"parent"][@"uri"];
             if (parent && [parent isEqualToString:parentURI]) {
                 NSString *rkey = row[@"rkey"];
