@@ -41,6 +41,33 @@ targets:
             -DBUILD_FUZZERS=OFF
           make -j$(sysctl -n hw.ncpu) september
 
+  # Standalone PLC Server
+  atproto-plc:
+    type: tool
+    platform: macOS
+    sources: []
+    settings:
+      base:
+        PRODUCT_NAME: atproto-plc
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/atproto-plc"
+    prebuildScripts:
+      - name: "Build PLC with CMake"
+        script: |
+          #!/bin/bash
+          set -e
+          mkdir -p "${PROJECT_DIR}/build"
+          cd "${PROJECT_DIR}/build"
+          # Configure and build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_FUZZERS=OFF
+          make -j$(sysctl -n hw.ncpu) atproto-plc
+
   # Test Runner - wrapper around CMake build
   AllTests:
     type: tool
