@@ -31,6 +31,7 @@
 #import "Services/PDSRecordService.h"
 #import "Services/PDSBlobService.h"
 #import "Services/PDSRepositoryService.h"
+#import "Services/PDSSyncService.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/PDSLogger.h"
 #import "App/Explore/ExploreHandler.h"
@@ -53,6 +54,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     PDSBlobService *_blobService;
     PDSRecordService *_serviceRecordService;
     PDSRepositoryService *_repositoryService;
+    PDSSyncService *_syncService;
     JWTMinter *_jwtMinter;
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
@@ -213,6 +215,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         
         _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
         _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
+        _syncService = [[PDSSyncService alloc] initWithDatabasePool:_userDatabasePool repositoryService:_repositoryService];
+        _syncService.serviceDatabases = _serviceDatabases;
         _repos = [NSMutableDictionary dictionary];
         _collections = [NSMutableDictionary dictionary];
         _repoQueue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
