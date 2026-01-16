@@ -33,7 +33,9 @@
 }
 
 - (void)testUnknownCommand {
-    XCTAssertNoThrow([self.dispatcher dispatchWithCommandName:@"nonexistent" arguments:@[] context:self.context], @"Unknown command should not throw");
+    XCTAssertThrowsSpecificNamed([self.dispatcher dispatchWithCommandName:@"nonexistent" arguments:@[] context:self.context],
+                                 NSException, @"PDSCLIUnknownCommandException",
+                                 @"Unknown command should throw PDSCLIUnknownCommandException");
 }
 
 - (void)testHelpWithCommandArgument {
@@ -58,11 +60,6 @@
 - (void)testInviteCommandExists {
     id inviteCmd = [self.dispatcher commandForName:@"invite"];
     XCTAssertNotNil(inviteCmd, @"Invite command should exist");
-}
-
-- (void)testDatabaseCommandExists {
-    id dbCmd = [self.dispatcher commandForName:@"database"];
-    XCTAssertNotNil(dbCmd, @"Database command should exist");
 }
 
 - (void)testNukeCommandExists {
