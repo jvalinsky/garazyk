@@ -6,12 +6,13 @@ NSString * const EventFormatterErrorDomain = @"com.atproto.pds.eventformatter";
 NSInteger const EventFormatterErrorCodeEncodingFailed = 5000;
 NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
 
+static const uint8_t kXRPCStreamOpMessage = 1;
+static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
+
 @implementation EventFormatter
 
 - (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-
-    payload[@"kind"] = @"commit";
     payload[@"repo"] = event.repo;
     payload[@"commit"] = event.commit;
 
@@ -25,73 +26,144 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
         payload[@"blobs"] = event.blobs;
     }
 
-    return [self encodeEventWithKind:@"commit" payload:payload error:error];
+    return [self encodeStreamEventWithType:@"#commit" payload:payload error:error];
 }
 
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-    payload[@"kind"] = @"identity";
     payload[@"did"] = event.did;
 
-    return [self encodeEventWithKind:@"identity" payload:payload error:error];
+    if (event.handle) {
+        payload[@"handle"] = event.handle;
+    }
+
+    return [self encodeStreamEventWithType:@"#identity" payload:payload error:error];
+}
+
+- (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event error:(NSError **)error {
+    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"did"] = event.did;
+    payload[@"active"] = @(event.active);
+
+    if (event.status) {
+        payload[@"status"] = event.status;
+    }
+
+    if (event.time) {
+        payload[@"time"] = event.time;
+    }
+
+    return [self encodeStreamEventWithType:@"#account" payload:payload error:error];
+}
+
+- (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event error:(NSError **)error {
+    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"message"] = event.message;
+    payload[@"info"] = event.kind;
+
+    return [self encodeStreamEventWithType:@"#info" payload:payload error:error];
 }
 
 - (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event error:(NSError **)error {
-    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-    payload[@"kind"] = @"error";
-    payload[@"message"] = event.message;
+    NSMutableDictionary *errorFrame = [NSMutableDictionary dictionary];
+    errorFrame[@"error"] = event.message;
 
-    return [self encodeEventWithKind:@"error" payload:payload error:error];
-}
+    NSMutableData *result = [NSMutableData data];
 
-- (NSData *)encodeEventWithKind:(NSString *)kind payload:(NSDictionary *)payload error:(NSError **)error {
-    NSData *cborData = [self encodeCBORObject:payload error:error];
+    uint8_t header[] = { kXRPCStreamOpErrorFrame };
+    [result appendBytes:header length:1];
+
+    NSData *cborData = [self encodeCBORObject:errorFrame error:error];
     if (!cborData) {
         return nil;
     }
+    [result appendData:cborData];
 
-    return cborData;
+    return result;
 }
 
-- (id)decodeEventFromData:(NSData *)data error:(NSError **)error {
-    id cborObject = [self decodeCBORData:data error:error];
-    if (!cborObject) {
+- (NSData *)encodeStreamEventWithType:(NSString *)msgType payload:(NSDictionary *)payload error:(NSError **)error {
+    NSMutableData *result = [NSMutableData data];
+
+    NSMutableDictionary *header = [NSMutableDictionary dictionary];
+    header[@"op"] = @(kXRPCStreamOpMessage);
+    header[@"t"] = msgType;
+
+    NSData *headerData = [self encodeCBORObject:header error:error];
+    if (!headerData) {
         return nil;
     }
+    [result appendData:headerData];
 
-    if (![cborObject isKindOfClass:[NSDictionary class]]) {
+    NSData *payloadData = [self encodeCBORObject:payload error:error];
+    if (!payloadData) {
+        return nil;
+    }
+    [result appendData:payloadData];
+
+    return result;
+}
+
+- (NSDictionary *)decodeEventFromData:(NSData *)data op:(NSInteger *)op msgType:(NSString **)msgType error:(NSError **)error {
+    if (data.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:EventFormatterErrorDomain
                                          code:EventFormatterErrorCodeDecodingFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Expected dictionary in CBOR payload"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty event data"}];
         }
         return nil;
     }
 
-    NSDictionary *dict = (NSDictionary *)cborObject;
-    NSString *kind = dict[@"kind"];
+    const uint8_t *bytes = data.bytes;
+    NSUInteger index = 0;
 
-    if ([kind isEqualToString:@"commit"]) {
-        FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-        event.repo = dict[@"repo"];
-        event.commit = dict[@"commit"];
-        event.previous = dict[@"previous"];
-        event.ops = dict[@"ops"] ?: @[];
-        event.blobs = dict[@"blobs"];
-        return event;
+    uint8_t firstByte = bytes[0];
+    if (op) {
+        *op = (firstByte & 0xE0) == 0xE0 ? -1 : 1;
+    }
+    index++;
 
-    } else if ([kind isEqualToString:@"identity"]) {
-        FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
-        event.did = dict[@"did"];
-        return event;
+    NSMutableDictionary *header = [NSMutableDictionary dictionary];
+    if (firstByte == kXRPCStreamOpErrorFrame) {
+        if (msgType) {
+            *msgType = @"#error";
+        }
+    } else {
+        if (index >= data.length) {
+            if (error) {
+                *error = [NSError errorWithDomain:EventFormatterErrorDomain
+                                             code:EventFormatterErrorCodeDecodingFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Incomplete event header"}];
+            }
+            return nil;
+        }
 
-    } else if ([kind isEqualToString:@"error"]) {
-        FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
-        event.message = dict[@"message"];
-        return event;
+        NSData *headerData = [data subdataWithRange:NSMakeRange(0, index)];
+        NSUInteger headerIndex = 0;
+        NSDictionary *decodedHeader = [self decodeCBORFromBytes:headerData.bytes
+                                                         length:headerData.length
+                                                          index:&headerIndex
+                                                           error:error];
+        if (!decodedHeader) {
+            return nil;
+        }
+
+        if (msgType) {
+            *msgType = decodedHeader[@"t"];
+        }
     }
 
-    return dict;
+    NSData *bodyData = [data subdataWithRange:NSMakeRange(index, data.length - index)];
+    id body = [self decodeCBORData:bodyData error:error];
+    if (!body) {
+        return nil;
+    }
+
+    if ([body isKindOfClass:[NSDictionary class]]) {
+        return (NSDictionary *)body;
+    }
+
+    return @{@"body": body};
 }
 
 - (NSData *)encodeCBORObject:(id)object error:(NSError **)error {

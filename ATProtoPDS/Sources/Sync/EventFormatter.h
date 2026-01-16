@@ -5,6 +5,7 @@
 
  @discussion Encodes and decodes Firehose events (commits, identity, error)
  using CBOR format for transmission over WebSocket connections.
+ Supports the XRPC streaming event protocol with EventHeader + message body format.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -13,6 +14,8 @@
 
 @class FirehoseCommitEvent;
 @class FirehoseIdentityEvent;
+@class FirehoseAccountEvent;
+@class FirehoseInfoEvent;
 @class FirehoseErrorEvent;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -26,27 +29,54 @@ extern NSInteger const EventFormatterErrorCodeEncodingFailed;
 /*! Error code when decoding fails. */
 extern NSInteger const EventFormatterErrorCodeDecodingFailed;
 
+/*! XRPC stream operation kinds. */
+typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
+    XRPCStreamOpKindErrorFrame = -1,
+    XRPCStreamOpKindMessage = 1
+};
+
 /*!
  @class EventFormatter
 
- @abstract Encodes and decodes Firehose events.
+ @abstract Encodes and decodes Firehose events using XRPC streaming protocol.
+
+ @discussion Events are encoded with an EventHeader followed by the message body:
+ 1. EventHeader (CBOR): { "op": <int>, "t": <string> }
+ 2. Message body (CBOR): Event-specific data
+
+ Supported message types:
+ - "#commit": Repository commit event
+ - "#identity": Identity update event
+ - "#account": Account status event
+ - "#info": Informational message
  */
 @interface EventFormatter : NSObject
 
-/*! Encodes a commit event to CBOR data. */
-- (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error;
+/*! Encodes a commit event with proper XRPC streaming header. */
+- (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event
+                                 error:(NSError **)error;
 
-/*! Encodes an identity event to CBOR data. */
-- (nullable NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event error:(NSError **)error;
+/*! Encodes an identity event with proper XRPC streaming header. */
+- (nullable NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event
+                                    error:(NSError **)error;
 
-/*! Encodes an error event to CBOR data. */
-- (nullable NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event error:(NSError **)error;
+/*! Encodes an account event with proper XRPC streaming header. */
+- (nullable NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event
+                                   error:(NSError **)error;
 
-/*! Encodes a generic event with kind and payload. */
-- (nullable NSData *)encodeEventWithKind:(NSString *)kind payload:(NSDictionary *)payload error:(NSError **)error;
+/*! Encodes an info event with proper XRPC streaming header. */
+- (nullable NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event
+                               error:(NSError **)error;
 
-/*! Decodes an event from CBOR data. */
-- (nullable id)decodeEventFromData:(NSData *)data error:(NSError **)error;
+/*! Encodes an error frame with proper XRPC streaming header. */
+- (nullable NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event
+                                error:(NSError **)error;
+
+/*! Decodes an event from CBOR data, returning header and body separately. */
+- (nullable NSDictionary *)decodeEventFromData:(NSData *)data
+                                           op:(NSInteger *)op
+                                      msgType:(NSString **)msgType
+                                         error:(NSError **)error;
 
 /*! Encodes any object to CBOR. */
 - (nullable NSData *)encodeCBORObject:(id)object error:(NSError **)error;
