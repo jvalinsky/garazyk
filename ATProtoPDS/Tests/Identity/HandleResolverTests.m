@@ -475,4 +475,35 @@
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
 
+- (void)testFailureCachingAndBackoff {
+    MockURLSession *errorSession = [[MockURLSession alloc] initWithResponse:nil
+                                                                     error:[NSError errorWithDomain:NSURLErrorDomain
+                                                                                               code:NSURLErrorTimedOut
+                                                                                           userInfo:nil]
+                                                                     delay:0.0];
+    HandleResolver *resolver = [[HandleResolver alloc] init];
+    resolver.skipSSRFCheck = YES;
+    [resolver setValue:errorSession forKey:@"session"];
+    
+    NSString *handle = @"backoff.test.example.com";
+    
+    // First attempt: Fails with Network Error, count -> 1
+    XCTestExpectation *exp1 = [self expectationWithDescription:@"First failure"];
+    [resolver resolveHandle:handle completion:^(NSString *did, NSError *error) {
+        XCTAssertEqual(error.code, HandleErrorNetworkError);
+        [exp1 fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    // Second attempt: Should fail immediately due to backoff
+    // Backoff for count 1 is 2^1 = 2 seconds.
+    XCTestExpectation *exp2 = [self expectationWithDescription:@"Backoff trigger"];
+    [resolver resolveHandle:handle completion:^(NSString *did, NSError *error) {
+        XCTAssertEqual(error.code, HandleErrorRateLimitExceeded); // Using RateLimit error for backoff
+        XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"Resolution backed off"]);
+        [exp2 fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+}
+
 @end

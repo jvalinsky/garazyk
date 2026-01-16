@@ -211,76 +211,111 @@
 
 - (void)testDecodeCommitEvent {
     NSError *error = nil;
-    NSDictionary *payload = @{
-        @"kind": @"commit",
-        @"repo": @"did:plc:abc123",
-        @"commit": @"bafyre...",
-        @"ops": @[@{@"action": @"create"}]
-    };
-    
-    NSData *encoded = [self.formatter encodeCBORObject:payload error:&error];
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:abc123";
+    event.commit = @"bafyre...";
+    event.ops = @[@{@"action": @"create"}];
+
+    NSData *encoded = [self.formatter encodeCommitEvent:event error:&error];
     XCTAssertNotNil(encoded);
-    
-    FirehoseCommitEvent *decoded = [self.formatter decodeEventFromData:encoded error:&error];
-    
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+
     XCTAssertNil(error);
     XCTAssertNotNil(decoded);
-    XCTAssertTrue([decoded isKindOfClass:[FirehoseCommitEvent class]]);
-    XCTAssertEqualObjects(decoded.repo, @"did:plc:abc123");
-    XCTAssertEqualObjects(decoded.commit, @"bafyre...");
+    XCTAssertEqual(op, 1);
+    XCTAssertEqualObjects(msgType, @"#commit");
+    XCTAssertEqualObjects(decoded[@"repo"], @"did:plc:abc123");
+    XCTAssertEqualObjects(decoded[@"commit"], @"bafyre...");
 }
 
 - (void)testDecodeIdentityEvent {
     NSError *error = nil;
-    NSDictionary *payload = @{
-        @"kind": @"identity",
-        @"did": @"did:plc:abc123"
-    };
-    
-    NSData *encoded = [self.formatter encodeCBORObject:payload error:&error];
+    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    event.did = @"did:plc:abc123";
+    event.handle = @"handle.bsky.social";
+
+    NSData *encoded = [self.formatter encodeIdentityEvent:event error:&error];
     XCTAssertNotNil(encoded);
-    
-    FirehoseIdentityEvent *decoded = [self.formatter decodeEventFromData:encoded error:&error];
-    
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+
     XCTAssertNil(error);
     XCTAssertNotNil(decoded);
-    XCTAssertTrue([decoded isKindOfClass:[FirehoseIdentityEvent class]]);
-    XCTAssertEqualObjects(decoded.did, @"did:plc:abc123");
+    XCTAssertEqual(op, 1);
+    XCTAssertEqualObjects(msgType, @"#identity");
+    XCTAssertEqualObjects(decoded[@"did"], @"did:plc:abc123");
+    XCTAssertEqualObjects(decoded[@"handle"], @"handle.bsky.social");
 }
 
 - (void)testDecodeErrorEvent {
     NSError *error = nil;
-    NSDictionary *payload = @{
-        @"kind": @"error",
-        @"message": @"Test error message"
-    };
-    
-    NSData *encoded = [self.formatter encodeCBORObject:payload error:&error];
+    FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+    event.message = @"Test error message";
+
+    NSData *encoded = [self.formatter encodeErrorEvent:event error:&error];
     XCTAssertNotNil(encoded);
-    
-    FirehoseErrorEvent *decoded = [self.formatter decodeEventFromData:encoded error:&error];
-    
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+
     XCTAssertNil(error);
     XCTAssertNotNil(decoded);
-    XCTAssertTrue([decoded isKindOfClass:[FirehoseErrorEvent class]]);
-    XCTAssertEqualObjects(decoded.message, @"Test error message");
+    XCTAssertEqual(op, -1);
+    XCTAssertEqualObjects(msgType, @"#error");
 }
 
-- (void)testDecodeUnknownEventKind {
+- (void)testDecodeAccountEvent {
     NSError *error = nil;
-    NSDictionary *payload = @{
-        @"kind": @"unknown",
-        @"data": @"value"
-    };
-    
-    NSData *encoded = [self.formatter encodeCBORObject:payload error:&error];
+    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    event.did = @"did:plc:abc123";
+    event.active = NO;
+    event.status = @"takendown";
+
+    NSData *encoded = [self.formatter encodeAccountEvent:event error:&error];
     XCTAssertNotNil(encoded);
-    
-    id decoded = [self.formatter decodeEventFromData:encoded error:&error];
-    
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+
     XCTAssertNil(error);
     XCTAssertNotNil(decoded);
-    XCTAssertTrue([decoded isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(op, 1);
+    XCTAssertEqualObjects(msgType, @"#account");
+    XCTAssertEqualObjects(decoded[@"did"], @"did:plc:abc123");
+    XCTAssertEqualObjects(decoded[@"status"], @"takendown");
+}
+
+- (void)testDecodeInfoEvent {
+    NSError *error = nil;
+    FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+    event.kind = @"OutdatedCursor";
+    event.message = @"Unable to retrieve repository state";
+
+    NSData *encoded = [self.formatter encodeInfoEvent:event error:&error];
+    XCTAssertNotNil(encoded);
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+
+    XCTAssertNil(error);
+    XCTAssertNotNil(decoded);
+    XCTAssertEqual(op, 1);
+    XCTAssertEqualObjects(msgType, @"#info");
+    XCTAssertEqualObjects(decoded[@"info"], @"OutdatedCursor");
+    XCTAssertEqualObjects(decoded[@"message"], @"Unable to retrieve repository state");
 }
 
 - (void)testDecodeInvalidCBOR {

@@ -78,6 +78,16 @@
            @")";
 }
 
+- (NSString *)serviceEventsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS events ("
+           @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           @"    seq INTEGER NOT NULL UNIQUE,"
+           @"    event_type TEXT NOT NULL,"
+           @"    event_data BLOB NOT NULL,"
+           @"    created_at REAL NOT NULL"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -88,11 +98,15 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceJWTSigningKeysTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceEventsTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_seq ON events(seq);"];
     return sql;
 }
 
