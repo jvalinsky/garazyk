@@ -2,6 +2,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "PLC/PLCOperation.h"
+#import "PLC/PLCMetrics.h"
 
 @interface PLCServer ()
 @property (nonatomic, strong) id<PLCStore> store;
@@ -28,6 +29,13 @@
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
         resp.statusCode = HttpStatusOK;
         [resp setJsonBody:@{@"status": @"ok"}];
+    }];
+    
+    [self.httpServer addRoute:@"GET" path:@"/_metrics" handler:^(HttpRequest *req, HttpResponse *resp) {
+        NSString *metrics = [[PLCMetrics sharedMetrics] renderMetrics];
+        resp.statusCode = HttpStatusOK;
+        [resp setHeader:@"text/plain; charset=utf-8" forKey:@"Content-Type"];
+        [resp setBodyString:metrics];
     }];
     
     [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {

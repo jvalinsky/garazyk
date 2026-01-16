@@ -1,0 +1,174 @@
+#import "PLC/PLCMetrics.h"
+#import <os/log.h>
+#import <libkern/OSAtomic.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface PLCMetrics ()
+@property (nonatomic, strong) os_log_t log;
+@property (nonatomic, assign) int64_t cacheHits;
+@property (nonatomic, assign) int64_t cacheMisses;
+@property (nonatomic, assign) int64_t memcacheHits;
+@property (nonatomic, assign) int64_t memcacheMisses;
+@property (nonatomic, assign) int64_t verificationSuccesses;
+@property (nonatomic, assign) int64_t verificationFailures;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *operationCounts;
+@property (nonatomic, strong) NSMutableArray<NSNumber *> *latencySamples;
+@end
+
+@implementation PLCMetrics
+
++ (instancetype)sharedMetrics {
+    static PLCMetrics *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[self alloc] init];
+    });
+    return sharedInstance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _log = os_log_create("com.atproto.plc", "metrics");
+        _cacheHits = 0;
+        _cacheMisses = 0;
+        _memcacheHits = 0;
+        _memcacheMisses = 0;
+        _verificationSuccesses = 0;
+        _verificationFailures = 0;
+        _operationCounts = [NSMutableDictionary dictionary];
+        _latencySamples = [NSMutableArray array];
+    }
+    return self;
+}
+
+- (void)recordCacheHit {
+    OSAtomicIncrement64(&_cacheHits);
+    os_log_debug(_log, "PLC cache hit");
+}
+
+- (void)recordCacheMiss {
+    OSAtomicIncrement64(&_cacheMisses);
+    os_log_debug(_log, "PLC cache miss");
+}
+
+- (void)recordMemcacheHit {
+    OSAtomicIncrement64(&_memcacheHits);
+    os_log_debug(_log, "PLC memcache hit");
+}
+
+- (void)recordMemcacheMiss {
+    OSAtomicIncrement64(&_memcacheMisses);
+    os_log_debug(_log, "PLC memcache miss");
+}
+
+- (void)recordOperation:(NSString *)operationType {
+    @synchronized(self.operationCounts) {
+        NSNumber *current = self.operationCounts[operationType] ?: @0;
+        int64_t newValue = current.longLongValue + 1;
+        self.operationCounts[operationType] = @(newValue);
+    }
+    os_log_debug(_log, "PLC operation: %{public}@", operationType);
+}
+
+- (void)recordVerificationSuccess {
+    OSAtomicIncrement64(&_verificationSuccesses);
+    os_log_debug(_log, "PLC verification success");
+}
+
+- (void)recordVerificationFailure {
+    OSAtomicIncrement64(&_verificationFailures);
+    os_log_debug(_log, "PLC verification failure");
+}
+
+- (void)recordResolutionLatency:(NSTimeInterval)latencyMs {
+    @synchronized(self.latencySamples) {
+        [self.latencySamples addObject:@(latencyMs)];
+        if (self.latencySamples.count > 1000) {
+            [self.latencySamples removeObjectAtIndex:0];
+        }
+    }
+    os_log_debug(_log, "PLC resolution latency: %.2fms", latencyMs);
+}
+
+- (int64_t)cacheHits {
+    return _cacheHits;
+}
+
+- (int64_t)cacheMisses {
+    return _cacheMisses;
+}
+
+- (int64_t)memcacheHits {
+    return _memcacheHits;
+}
+
+- (int64_t)memcacheMisses {
+    return _memcacheMisses;
+}
+
+- (int64_t)verificationSuccesses {
+    return _verificationSuccesses;
+}
+
+- (int64_t)verificationFailures {
+    return _verificationFailures;
+}
+
+- (NSString *)renderMetrics {
+    NSMutableString *output = [NSMutableString string];
+    
+    [output appendString:@"# HELP plc_cache_hits_total Total number of cache hits\n"];
+    [output appendString:@"# TYPE plc_cache_hits_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_cache_hits_total %lld\n\n", (long long)self.cacheHits]];
+    
+    [output appendString:@"# HELP plc_cache_misses_total Total number of cache misses\n"];
+    [output appendString:@"# TYPE plc_cache_misses_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_cache_misses_total %lld\n\n", (long long)self.cacheMisses]];
+    
+    [output appendString:@"# HELP plc_memcache_hits_total Total number of memory cache hits\n"];
+    [output appendString:@"# TYPE plc_memcache_hits_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_memcache_hits_total %lld\n\n", (long long)self.memcacheHits]];
+    
+    [output appendString:@"# HELP plc_memcache_misses_total Total number of memory cache misses\n"];
+    [output appendString:@"# TYPE plc_memcache_misses_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_memcache_misses_total %lld\n\n", (long long)self.memcacheMisses]];
+    
+    [output appendString:@"# HELP plc_verification_successes_total Total number of successful verifications\n"];
+    [output appendString:@"# TYPE plc_verification_successes_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_verification_successes_total %lld\n\n", (long long)self.verificationSuccesses]];
+    
+    [output appendString:@"# HELP plc_verification_failures_total Total number of failed verifications\n"];
+    [output appendString:@"# TYPE plc_verification_failures_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_verification_failures_total %lld\n\n", (long long)self.verificationFailures]];
+    
+    @synchronized(self.operationCounts) {
+        [self.operationCounts enumerateKeysAndObjectsUsingBlock:^(NSString *opType, NSNumber *count, BOOL *stop) {
+            NSString *sanitizedType = [opType stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+            [output appendString:[NSString stringWithFormat:@"# HELP plc_operations_%@_total Total number of %@ operations\n", sanitizedType, opType]];
+            [output appendString:[NSString stringWithFormat:@"# TYPE plc_operations_%@_total counter\n", sanitizedType]];
+            [output appendString:[NSString stringWithFormat:@"plc_operations_%@_total %llu\n\n", sanitizedType, (unsigned long long)count.unsignedLongLongValue]];
+        }];
+    }
+    
+    double avgLatency = 0;
+    @synchronized(self.latencySamples) {
+        if (self.latencySamples.count > 0) {
+            double sum = 0;
+            for (NSNumber *latency in self.latencySamples) {
+                sum += latency.doubleValue;
+            }
+            avgLatency = sum / self.latencySamples.count;
+        }
+    }
+    [output appendString:@"# HELP plc_resolution_latency_milliseconds Average resolution latency in milliseconds\n"];
+    [output appendString:@"# TYPE plc_resolution_latency_milliseconds gauge\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_resolution_latency_milliseconds %.2f\n", avgLatency]];
+    
+    return [output copy];
+}
+
+@end
+
+NS_ASSUME_NONNULL_END
