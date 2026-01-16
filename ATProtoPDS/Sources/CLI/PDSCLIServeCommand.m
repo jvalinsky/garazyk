@@ -55,7 +55,7 @@
 }
 
 - (NSArray<NSString *> *)aliases {
-    return @[@"start", @"run"];
+    return @[@"start", @"run", @"server"];
 }
 
 - (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
