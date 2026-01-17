@@ -258,8 +258,7 @@
 }
 
 - (BOOL)canHandleRequest:(HttpRequest *)request {
-    if (!self.enabled) return NO;
-    return [request.path hasPrefix:@"/explore"];
+    return self.enabled;
 }
 
 - (NSString *)assetsPath {
@@ -317,18 +316,21 @@
     fprintf(stderr, "ExploreHandler handleRequest: %s\n", [path UTF8String]);
 
     
-    if ([path isEqualToString:@"/explore/"] || [path isEqualToString:@"/explore"]) {
+    if ([path isEqualToString:@"/"] || [path isEqualToString:@""]) {
         [self serveIndex:response];
     }
-    else if ([path hasPrefix:@"/explore/css/"]) {
+    else if ([path hasPrefix:@"/css/"]) {
         [self serveCss:request response:response];
     }
-    else if ([path hasPrefix:@"/explore/js/"]) {
+    else if ([path hasPrefix:@"/js/"]) {
         [self serveJs:request response:response];
     }
-    else if ([path hasPrefix:@"/explore/api/"]) {
+    else if ([path hasPrefix:@"/api/pds/"]) {
         NSString *endpoint = request.pathParameters[@"endpoint"] ?: [self apiEndpointForPath:request.path];
         [self handleApiRequest:request response:response endpoint:endpoint];
+    }
+    else if ([path hasPrefix:@"/vendor/"]) {
+        [self serveVendor:request response:response];
     }
     else {
         response.statusCode = HttpStatusNotFound;
@@ -434,9 +436,7 @@
     NSString *path = request.path;
     
     NSString *relativePath;
-    if ([path hasPrefix:@"/explore/vendor/"]) {
-        relativePath = [path substringFromIndex:[@"/explore/vendor/" length]];
-    } else if ([path hasPrefix:@"/vendor/"]) {
+    if ([path hasPrefix:@"/vendor/"]) {
         relativePath = [path substringFromIndex:[@"/vendor/" length]];
     } else {
         response.statusCode = HttpStatusNotFound;
@@ -584,7 +584,7 @@
 }
 
 - (NSString *)apiEndpointForPath:(NSString *)path {
-    NSArray *parts = [[path substringFromIndex:[@"/explore/api/" length]] componentsSeparatedByString:@"/"];
+    NSArray *parts = [[path substringFromIndex:[@"/api/pds/" length]] componentsSeparatedByString:@"/"];
     return parts.firstObject ?: @"";
 }
 
@@ -2465,7 +2465,7 @@
     errorResponse.responseDescription = @"Internal server error";
     errorResponse.schemaRef = @"#/components/schemas/Error";
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/accounts"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/accounts"
                                                               method:@"get"
                                                              summary:@"List all accounts"
                                                         endpointName:@"accounts"
@@ -2474,7 +2474,7 @@
                                                           parameters:@[]
                                                           responses:@[accountsArrayResponse, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/repositories"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/repositories"
                                                               method:@"get"
                                                              summary:@"List all repositories (PDS instances)"
                                                         endpointName:@"repositories"
@@ -2483,7 +2483,7 @@
                                                           parameters:@[]
                                                           responses:@[reposArrayResponse, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/collections"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/collections"
                                                               method:@"get"
                                                              summary:@"List collections for a repository"
                                                         endpointName:@"collections"
@@ -2492,7 +2492,7 @@
                                                           parameters:@[didParam]
                                                           responses:@[collectionsArrayResponse, error400, error404, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/describe"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/describe"
                                                               method:@"get"
                                                              summary:@"Describe a repository"
                                                         endpointName:@"describe"
@@ -2504,7 +2504,7 @@
                                                               error400, error404, errorResponse
                                                           ]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/account-records"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/account-records"
                                                               method:@"get"
                                                              summary:@"List records for an account"
                                                         endpointName:@"account-records"
@@ -2513,7 +2513,7 @@
                                                           parameters:@[didParam, collectionParam, limitParam]
                                                           responses:@[recordsArrayResponse, error400, error404, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/record"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/record"
                                                               method:@"get"
                                                              summary:@"Get a single record by URI"
                                                         endpointName:@"record"
@@ -2522,7 +2522,7 @@
                                                           parameters:@[uriParam]
                                                           responses:@[recordResponse, error400, error404, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/record-details"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/record-details"
                                                               method:@"get"
                                                              summary:@"Get detailed record information"
                                                         endpointName:@"record-details"
@@ -2531,7 +2531,7 @@
                                                           parameters:@[uriParam]
                                                           responses:@[recordResponse, error400, error404, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/account-details"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/account-details"
                                                               method:@"get"
                                                              summary:@"Get account details"
                                                         endpointName:@"account-details"
@@ -2587,7 +2587,7 @@
     APIParameterDescriptor *blobDidParam = [self paramWithName:@"did" in:@"query" type:@"string" description:@"Repository DID" required:YES];
     APIParameterDescriptor *blobCidParam = [self paramWithName:@"cid" in:@"query" type:@"string" description:@"Blob CID" required:YES];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/create-record"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/create-record"
                                                               method:@"post"
                                                              summary:@"Create a new record"
                                                         endpointName:@"create-record"
@@ -2596,7 +2596,7 @@
                                                           parameters:@[createDidParam, createCollectionParam, createRkeyParam, valueParam]
                                                           responses:@[createResponse, error400, errorResponse]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/lookup"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/lookup"
                                                               method:@"get"
                                                              summary:@"Resolve handle to DID or DID to handle"
                                                         endpointName:@"lookup"
@@ -2608,7 +2608,7 @@
                                                               error400, error404
                                                           ]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/did"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/did"
                                                               method:@"get"
                                                              summary:@"Fetch DID document"
                                                         endpointName:@"did"
@@ -2620,7 +2620,7 @@
                                                               error400, error404
                                                           ]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/plc-log"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/plc-log"
                                                               method:@"get"
                                                              summary:@"Get PLC operation log"
                                                         endpointName:@"plc-log"
@@ -2632,7 +2632,7 @@
                                                               error400, error404
                                                           ]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/cid-decode"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/cid-decode"
                                                               method:@"get"
                                                              summary:@"Decode and describe a CID"
                                                         endpointName:@"cid-decode"
@@ -2644,7 +2644,7 @@
                                                               error400
                                                           ]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/cid-info"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/cid-info"
                                                               method:@"get"
                                                              summary:@"Get information about a CID"
                                                         endpointName:@"cid-info"
@@ -2656,7 +2656,7 @@
                                                               error400, error404
                                                           ]]];
 
-    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/explore/api/blob"
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/blob"
                                                               method:@"get"
                                                              summary:@"Get blob data"
                                                         endpointName:@"blob"
@@ -2715,7 +2715,7 @@
     spec[@"externalDocs"] = externalDocs;
 
     NSMutableArray *servers = [NSMutableArray array];
-    [servers addObject:@{@"url": @"/explore/api", @"description": @"Local development server"}];
+    [servers addObject:@{@"url": @"/api/pds", @"description": @"Local development server"}];
     spec[@"servers"] = servers;
 
     NSMutableDictionary *paths = [NSMutableDictionary dictionary];

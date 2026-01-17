@@ -100,6 +100,10 @@
     [self registerMethod:@"com.atproto.server.createSession" handler:handler];
 }
 
+- (void)registerComAtprotoServerGetSession:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.getSession" handler:handler];
+}
+
 - (void)registerComAtprotoServerCreateAccount:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.createAccount" handler:handler];
 }

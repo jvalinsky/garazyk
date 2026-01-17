@@ -37,7 +37,7 @@
     return @[@"reset", @"nuke"];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     BOOL confirmed = NO;
     BOOL keepConfig = NO;
 
@@ -59,7 +59,7 @@
         printf("To proceed, run:\n");
         printf("  atprotopds-cli nuke-data --confirm\n\n");
         printf("Data directory: %s\n", [context.dataDir UTF8String]);
-        return;
+        return 0;
     }
 
     printf("\n");
@@ -141,6 +141,7 @@
     } else {
         printf("⚠️  Some items could not be deleted. Check permissions.\n");
     }
+    return 0;
 }
 
 @end

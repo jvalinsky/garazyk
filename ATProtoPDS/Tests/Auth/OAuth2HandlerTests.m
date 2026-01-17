@@ -22,7 +22,7 @@
 
 - (void)testTokenRequestRejectsInvalidClientSecret {
     // Setup request with valid client_id but wrong client_secret (when secret is configured)
-    NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client&client_secret=wrong";
+    NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client-confidential&client_secret=wrong";
 
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"

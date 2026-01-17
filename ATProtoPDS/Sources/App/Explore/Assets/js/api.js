@@ -1,4 +1,4 @@
-const API_BASE = '/explore/api';
+const API_BASE = '/api/pds';
 
 // Client-side cache with TTL
 const clientCache = new Map();
@@ -38,7 +38,7 @@ export const API = {
             return { error: e.message };
         }
     },
-    
+
     async getDidDocument(did) {
         return getCachedOrFetch(`did:${did}`, CACHE_TTL.did, async () => {
             try {
@@ -53,7 +53,7 @@ export const API = {
             }
         });
     },
-    
+
     async getPlcLog(did) {
         return getCachedOrFetch(`plc:${did}`, CACHE_TTL.plc, async () => {
             try {
@@ -68,7 +68,7 @@ export const API = {
             }
         });
     },
-    
+
     async getAccounts() {
         try {
             const response = await fetch(`${API_BASE}/accounts`);
@@ -80,7 +80,7 @@ export const API = {
             return { accounts: [] };
         }
     },
-    
+
     async getRepoDescribe(did) {
         return getCachedOrFetch(`describe:${did}`, CACHE_TTL.describe, async () => {
             try {
@@ -96,7 +96,7 @@ export const API = {
             }
         });
     },
-    
+
     async listRecords(did, collection, options = {}) {
         const cacheKey = `records:${did}:${collection}:${options.limit || 20}:${options.cursor || ''}`;
         return getCachedOrFetch(cacheKey, CACHE_TTL.records, async () => {
@@ -114,7 +114,7 @@ export const API = {
             }
         });
     },
-    
+
     async getRecord(uri) {
         return getCachedOrFetch(`record:${uri}`, CACHE_TTL.record, async () => {
             try {
@@ -129,7 +129,7 @@ export const API = {
             }
         });
     },
-    
+
     async getBlob(cid) {
         try {
             const params = new URLSearchParams({ cid });
@@ -144,7 +144,7 @@ export const API = {
             return null;
         }
     },
-    
+
     async decodeCid(cid) {
         try {
             const params = new URLSearchParams({ cid });

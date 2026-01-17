@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATProto PDS Documentation</title>
-    <link rel="stylesheet" href="/explore/css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
@@ -131,14 +131,13 @@
                         <span class="nav-label">Reference</span>
                     </div>
                     <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row" onclick="window.location.href='/explore/api/docs'">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">API Reference</span>
-                            </div>
-                        </li>
-                    </ul>
+                        <div class="nav-row" onclick="window.location.href='/api/pds/docs'">
+                            <span class="disclosure"></span>
+                            <span class="nav-label">API Reference</span>
+                        </div>
                 </li>
+            </ul>
+            </li>
             </ul>
 
             <div class="account-section">
@@ -303,7 +302,7 @@
             el.parentElement.classList.toggle('expanded');
         }
     </script>
-    <script type="module" src="/explore/js/ui.js"></script>
+    <script type="module" src="/js/ui.js"></script>
 </body>
 
 </html>

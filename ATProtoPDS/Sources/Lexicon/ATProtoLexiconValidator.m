@@ -931,9 +931,21 @@ static const NSInteger kMaxRecursionDepth = 32;
         NSString *defName = [ref substringFromIndex:1];
         return [schema definitionForName:defName];
     } else {
-        // Global reference (NSID) - would need to lookup in registry
-        // For now, just return nil (not fully implemented)
-        return nil;
+        // Global reference (NSID)
+        NSString *nsid = ref;
+        NSString *defName = @"main";
+        NSRange hashRange = [ref rangeOfString:@"#"];
+        if (hashRange.location != NSNotFound) {
+            nsid = [ref substringToIndex:hashRange.location];
+            defName = [ref substringFromIndex:hashRange.location + 1];
+        }
+
+        ATProtoLexiconSchema *targetSchema = [self.registry schemaForNSID:nsid];
+        if (!targetSchema) {
+            return nil;
+        }
+
+        return [targetSchema definitionForName:defName];
     }
 }
 
