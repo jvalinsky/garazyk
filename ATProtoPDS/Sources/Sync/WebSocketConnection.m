@@ -232,18 +232,19 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
         uint8_t opcode = firstByte & 0x0F;
         BOOL masked = (secondByte & WS_MASK) != 0;
         uint64_t payloadLength = secondByte & 0x7F;
+        NSUInteger extendedLengthOffset = 0;
 
         if (payloadLength == 126) {
             if (self.readBuffer.length < 4) return;
             payloadLength = (uint64_t)bytes[2] << 8 | bytes[3];
-            offset += 2;
+            extendedLengthOffset = 2;
         } else if (payloadLength == 127) {
             if (self.readBuffer.length < 10) return;
             payloadLength = 0;
             for (int i = 0; i < 8; i++) {
                 payloadLength = (payloadLength << 8) | bytes[2 + i];
             }
-            offset += 8;
+            extendedLengthOffset = 8;
         }
 
         if (payloadLength > WS_MAX_FRAME_SIZE) {
@@ -251,19 +252,17 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
             return;
         }
 
-        NSUInteger headerLength = 2;
-        if (masked) {
-            headerLength += 4;
-        }
+        NSUInteger headerLength = 2 + extendedLengthOffset + (masked ? 4 : 0);
+        NSUInteger maskOffset = 2 + extendedLengthOffset;
+        NSUInteger dataOffset = headerLength;
 
         if (self.readBuffer.length < headerLength + payloadLength) {
             return;
         }
 
         NSMutableData *payload = [NSMutableData dataWithCapacity:payloadLength];
-        NSUInteger dataOffset = headerLength;
         if (masked) {
-            const uint8_t *maskBytes = bytes + 2;
+            const uint8_t *maskBytes = bytes + maskOffset;
             for (NSUInteger i = 0; i < payloadLength; i++) {
                 uint8_t maskedByte = bytes[dataOffset + i];
                 uint8_t unmaskedByte = maskedByte ^ maskBytes[i % 4];
