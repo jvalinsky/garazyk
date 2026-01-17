@@ -230,6 +230,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error;
+- (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error;
 
 #pragma mark - Moderation Operations
 

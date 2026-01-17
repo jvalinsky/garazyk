@@ -937,12 +937,23 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     if (request.codeChallengeMethod) codeData[@"code_challenge_method"] = request.codeChallengeMethod;
     if (request.nonce) codeData[@"nonce"] = request.nonce;
     if (request.dpopJWK) codeData[@"dpop_jwk"] = request.dpopJWK;
-    if (request.loginHint) codeData[@"login_hint"] = request.loginHint; // Ensure we store this
+    if (request.loginHint) {
+        codeData[@"login_hint"] = request.loginHint;
+        NSError *resolveError = nil;
+        NSString *did = [self resolveIdentity:request.loginHint error:&resolveError];
+        if (did) {
+            codeData[@"login_hint_did"] = did;
+        } else {
+            fprintf(stderr, "[OAuth2Server] Warning: Failed to resolve login_hint: %s, error: %s\n", 
+                    request.loginHint.UTF8String, resolveError.localizedDescription.UTF8String ?: "unknown");
+        }
+    }
     codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
     
-    fprintf(stderr, "[OAuth2Server] Storing code: %s, challenge: %s, method: %s\n",
+    fprintf(stderr, "[OAuth2Server] Storing code: %s, challenge: %s, method: %s, did: %s\n",
             code.UTF8String, request.codeChallenge.UTF8String ?: "(nil)", 
-            request.codeChallengeMethod.UTF8String ?: "(nil)");
+            request.codeChallengeMethod.UTF8String ?: "(nil)",
+            [codeData[@"login_hint_did"] UTF8String] ?: "(nil)");
     
     self.authorizationCodes[code] = codeData;
 
