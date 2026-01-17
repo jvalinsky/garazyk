@@ -12,6 +12,7 @@
 - **Key Rotation**: Integrated `KeyRotationManager` for secure token signing and verification.
 - **Token Refresh**: Implemented proper token refresh logic in `OAuth2.m`.
 - **Service Auth**: Added `com.atproto.server.getServiceAuth` endpoint.
+- **DPoP Signing**: Implemented `OAuth2 DPoP` signature generation and verification using `SecKeyCreateSignature` (ECDSA P-256).
 
 ### Phase 3: The Firehose & Sync - COMPLETED
 - **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction in `SubscribeReposHandler.m`.
@@ -35,8 +36,6 @@
 - **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
 - **Explore**: COMPLETED. Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
 
-### Review Findings (Open Gaps)
-- **OAuth2 DPoP**: `OAuth2DPoPProof` returns a `.stub` signature; DPoP proofs are not signed yet (ATProtoPDS/Sources/Auth/OAuth2.m:191-226).
 - **Linux Client Connections**: `PDSNetworkTransportLinux` always fails client connections with "Client connection not implemented" (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-88).
 - **Handle Verification**: `resolveIdentity` skips verifying `alsoKnownAs` against the resolved handle (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:914).
 - **Follower Counts**: `ActorService` returns `0` for followers as a stub (ATProtoPDS/Sources/AppView/ActorService.m:183-186).
