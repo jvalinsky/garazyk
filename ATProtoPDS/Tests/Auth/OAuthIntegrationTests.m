@@ -1,0 +1,238 @@
+#import <XCTest/XCTest.h>
+#import "Network/HttpServer.h"
+#import "Auth/OAuth2Handler.h"
+#import "Auth/OAuth2.h"
+#import "Auth/PKCEUtil.h"
+#import "Auth/DPoPUtil.h"
+#import "Database/PDSDatabase.h"
+#import "Auth/Secp256k1.h"
+#import "Auth/Session.h"
+#import "Auth/JWT.h"
+#import "Network/HttpResponse.h"
+
+@interface OAuthRedirectDelegate : NSObject <NSURLSessionDataDelegate>
+@property (nonatomic, copy) void (^onRedirect)(NSURLRequest *request);
+@property (nonatomic, copy) void (^onResponse)(NSHTTPURLResponse *response);
+@property (nonatomic, copy) void (^onError)(NSError *error);
+@end
+
+@implementation OAuthRedirectDelegate
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
+    NSLog(@"[TEST DEL] Redirecting to: %@", request.URL);
+    if (self.onRedirect) {
+        self.onRedirect(request);
+    }
+    completionHandler(nil); // Stop redirection
+}
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler {
+    NSLog(@"[TEST DEL] Received response: %ld", (long)((NSHTTPURLResponse *)response).statusCode);
+    if (self.onResponse) {
+        self.onResponse((NSHTTPURLResponse *)response);
+    }
+    completionHandler(NSURLSessionResponseAllow);
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
+    if (error) {
+        NSLog(@"[TEST DEL] Completed with error: %@", error);
+        if (self.onError) {
+            self.onError(error);
+        }
+    } else {
+        NSLog(@"[TEST DEL] Completed successfully");
+    }
+}
+@end
+
+@interface OAuthIntegrationTests : XCTestCase
+@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) OAuth2Server *oauthServer;
+@property (nonatomic, strong) OAuth2Handler *oauthHandler;
+@property (nonatomic, strong) PDSDatabase *db;
+@property (nonatomic, strong) OAuthRedirectDelegate *redirectDelegate;
+@property (nonatomic, strong) NSURLSession *session;
+@end
+
+@implementation OAuthIntegrationTests
+
+- (void)setUp {
+    [super setUp];
+    
+    // Setup Database in-memory or in a temp file
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    self.db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
+    [self.db openWithError:nil];
+    
+    // Setup OAuth Server first (so it doesn't overwrite our manual seeding later)
+    self.oauthServer = [[OAuth2Server alloc] initWithDatabase:self.db];
+    self.oauthServer.issuer = @"http://127.0.0.1:8443";
+    
+    // Setup HTTP Server
+    self.server = [HttpServer serverWithPort:0];
+    self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.db];
+    self.oauthHandler.oauthServer = self.oauthServer;
+    [self.oauthHandler registerRoutesWithServer:self.server];
+    
+    // Manually seed test client (overwriting any seeded by OAuth2Handler)
+    NSDictionary *testClient = @{
+        @"client_id": @"test-client",
+        @"client_secret": @"test-secret",
+        @"redirect_uris": @[@"http://127.0.0.1:3000/callback"],
+        @"grant_types": @"authorization_code,refresh_token",
+        @"scope": @"atproto"
+    };
+    [self.db createClient:testClient error:nil];
+    
+    // Create a test user
+    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+    account.did = @"did:plc:test-user-did";
+    account.handle = @"test-user.test";
+    account.email = @"test@test.com";
+    [self.db createAccount:account error:nil];
+    
+    // Setup Session
+    self.redirectDelegate = [[OAuthRedirectDelegate alloc] init];
+    self.session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] 
+                                                 delegate:self.redirectDelegate 
+                                            delegateQueue:nil];
+    
+    // Add a simple health handler
+    [self.server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *res) {
+        res.statusCode = 200;
+        [res setBodyString:@"OK"];
+    }];
+    
+    [self.server startWithError:nil];
+}
+
+- (void)tearDown {
+    [self.server stop];
+    [self.db close];
+    self.server = nil;
+    self.oauthServer = nil;
+    self.db = nil;
+    [super tearDown];
+}
+
+- (void)testConnectivity {
+    NSUInteger port = self.server.port;
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%lu/health", (unsigned long)port]];
+    
+    __block BOOL finished = NO;
+    __block NSInteger status = 0;
+    
+    NSURLSession *session = [NSURLSession sharedSession];
+    [[session dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            NSLog(@"[TEST CONN] Error: %@", error);
+        } else {
+            status = [(NSHTTPURLResponse *)response statusCode];
+            NSLog(@"[TEST CONN] Status: %ld", (long)status);
+        }
+        finished = YES;
+    }] resume];
+    
+    NSDate *timeoutDate = [NSDate dateWithTimeIntervalSinceNow:5.0];
+    while (!finished && [timeoutDate timeIntervalSinceNow] > 0) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+    
+    XCTAssertEqual(status, 200, @"Health check should return 200");
+}
+
+- (void)testFullOAuthFlow {
+    // Phase 1: Client generates PKCE parameters
+    NSString *verifier = [PKCEUtil generateCodeVerifier];
+    NSString *challenge = [PKCEUtil generateCodeChallengeWithVerifier:verifier];
+    
+    // Phase 2: Authorization request
+    NSUInteger port = self.server.port;
+    NSString *authUrlString = [NSString stringWithFormat:@"http://127.0.0.1:%lu/oauth/authorize?client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&response_type=code&scope=atproto:identify&state=test123&code_challenge=%@&code_challenge_method=S256&login_hint=test-user.test", (unsigned long)port, challenge];
+    
+    NSTask *task = [[NSTask alloc] init];
+    [task setLaunchPath:@"/usr/bin/curl"];
+    [task setArguments:@[@"-v", @"-H", @"Connection: close", @"-s", @"-o", @"/dev/null", @"-w", @"%{redirect_url}", authUrlString]];
+    
+    NSPipe *pipe = [NSPipe pipe];
+    [task setStandardOutput:pipe];
+    
+    [task launch];
+    NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
+    [task waitUntilExit];
+    
+    NSString *redirectURL = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    NSLog(@"[TEST] Redirect URL from curl: %@", redirectURL);
+    
+    __block NSString *authCode = nil;
+    NSURLComponents *components = [NSURLComponents componentsWithString:redirectURL];
+    for (NSURLQueryItem *item in components.queryItems) {
+        if ([item.name isEqualToString:@"code"]) {
+            authCode = item.value;
+        }
+    }
+    
+    XCTAssertNotNil(authCode, @"Should have received authorization code via curl");
+    
+    // Phase 3: Token Exchange with DPoP
+    SecKeyRef privateKey;
+    NSDictionary* attributes = @{
+        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
+        (id)kSecAttrKeySizeInBits: @256,
+        (id)kSecAttrIsPermanent: @NO
+    };
+    CFErrorRef keyError = NULL;
+    privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &keyError);
+    XCTAssertNotNil((__bridge id)privateKey, @"Failed to generate DPoP key: %@", keyError);
+    
+    NSString *tokenUri = [NSString stringWithFormat:@"http://127.0.0.1:%lu/oauth/token", (unsigned long)port];
+    DPoPToken *dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
+    XCTAssertNotNil(dpopToken, @"Failed to create DPoP token");
+    
+    NSMutableURLRequest *tokenRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:tokenUri]];
+    tokenRequest.HTTPMethod = @"POST";
+    [tokenRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    [tokenRequest setValue:dpopToken.jwt forHTTPHeaderField:@"DPoP"];
+    
+    NSString *body = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode, verifier];
+    tokenRequest.HTTPBody = [body dataUsingEncoding:NSUTF8StringEncoding];
+    
+    __block BOOL tokenFinished = NO;
+    __block NSString *accessToken = nil;
+    
+    [[self.session dataTaskWithRequest:tokenRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        XCTAssertEqual(httpResponse.statusCode, 200, @"Should return 200 OK for token exchange");
+        
+        if (data) {
+            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            XCTAssertEqualObjects(json[@"token_type"], @"DPoP", @"Token type should be DPoP");
+            accessToken = json[@"access_token"];
+            XCTAssertNotNil(accessToken, @"Should have received access token");
+        }
+        tokenFinished = YES;
+    }] resume];
+    
+    NSDate *timeoutDate = [NSDate dateWithTimeIntervalSinceNow:10.0];
+    while (!tokenFinished && [timeoutDate timeIntervalSinceNow] > 0) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+    
+    // Phase 4: Verify Token with DPoP binding
+    // We can directly check if the session exists and has the correct thumbprint
+    XCTAssertNotNil(accessToken);
+    BOOL found = NO;
+    for (Session *s in self.oauthServer.activeSessions.allValues) {
+        if ([s.accessToken isEqualToString:accessToken]) {
+            XCTAssertNotNil(s.dpopKeyThumbprint, @"Session should be bound to DPoP key");
+            found = YES;
+            break;
+        }
+    }
+    XCTAssertTrue(found, @"Should have an active session for the issued token");
+    
+    if (privateKey) CFRelease(privateKey);
+}
+
+@end
