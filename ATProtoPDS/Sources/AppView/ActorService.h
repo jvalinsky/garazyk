@@ -44,6 +44,17 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Update preferences for actor. */
 - (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSDictionary *)preferences error:(NSError **)error;
 
+/*! Search actors by term with pagination. */
+- (nullable NSDictionary *)searchActors:(NSString *)term
+                                   limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                   error:(NSError **)error;
+
+/*! Typeahead search for actors with limit. */
+- (nullable NSArray<NSDictionary *> *)searchActorsTypeahead:(NSString *)term
+                                                       limit:(NSInteger)limit
+                                                       error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

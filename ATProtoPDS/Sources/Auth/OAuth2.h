@@ -421,12 +421,22 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 
 /*!
  @method init
- 
+
  @abstract Initializes a new authorization server.
- 
+
  @return An initialized OAuth2Server instance.
  */
 - (instancetype)init;
+
+/*!
+ @method initWithDatabase:
+
+ @abstract Initializes a new authorization server with a shared database.
+
+ @param database The database to use for OAuth client storage.
+ @return An initialized OAuth2Server instance.
+ */
+- (instancetype)initWithDatabase:(PDSDatabase *)database;
 
 /*!
  @method handleAuthorizationRequest:completion:

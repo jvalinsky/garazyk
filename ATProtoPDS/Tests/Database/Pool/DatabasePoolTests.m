@@ -158,7 +158,7 @@
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     
     __autoreleasing NSError *txError = nil;
-    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         __autoreleasing NSError *createError = nil;
         XCTAssertTrue([transactor createAccount:account error:&createError], @"Create failed: %@", createError);
     } error:&txError];

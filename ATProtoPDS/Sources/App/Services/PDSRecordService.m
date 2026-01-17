@@ -169,15 +169,10 @@
     }
 
     __block BOOL success = NO;
-    __block NSError *blockError = nil;
-    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store putRecord:record forDid:did error:&blockError];
-    } error:nil];
-
-    if (error && blockError) {
-        *error = blockError;
-    }
+        success = [store putRecord:record forDid:did error:blockError];
+    } error:error];
 
     return success;
 }
@@ -204,15 +199,10 @@
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
 
     __block BOOL success = NO;
-    __block NSError *blockError = nil;
-    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteRecord:uri forDid:did error:&blockError];
-    } error:nil];
-
-    if (error && blockError) {
-        *error = blockError;
-    }
+        success = [store deleteRecord:uri forDid:did error:blockError];
+    } error:error];
 
     return success;
 }
@@ -227,12 +217,11 @@
     
     __block NSMutableArray *results = [NSMutableArray array];
     __block NSInteger totalCount = 0;
-    __block NSError *blockError = nil;
     
-    [store readWithBlock:^(id<PDSActorStoreReader> reader) {
+    [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *actorStore = (PDSActorStore *)reader;
         NSString *sql = @"SELECT collection, COUNT(*) as count FROM records GROUP BY collection ORDER BY collection";
-        sqlite3_stmt *stmt = [actorStore prepareStatement:sql error:&blockError];
+        sqlite3_stmt *stmt = [actorStore prepareStatement:sql error:blockError];
         
         if (stmt) {
             while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -248,15 +237,14 @@
                 }
             }
             [actorStore finalizeStatement:stmt];
-            if (blockError) {
-                PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to prepare stats statement: %@", blockError);
-            }
+        } else {
+             if (blockError && *blockError) {
+                PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to prepare stats statement: %@", *blockError);
+             }
         }
-    } error:&blockError];
+    } error:error];
     
-    if (blockError) {
-        PDS_LOG_DB_ERROR(@"[PDSRecordService] Error during stats read: %@", blockError);
-        if (error) *error = blockError;
+    if (error && *error) {
         return nil;
     }
     

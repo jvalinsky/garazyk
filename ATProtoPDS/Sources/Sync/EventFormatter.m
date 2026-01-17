@@ -114,43 +114,40 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         return nil;
     }
 
-    const uint8_t *bytes = data.bytes;
     NSUInteger index = 0;
-
+    const uint8_t *bytes = data.bytes;
     uint8_t firstByte = bytes[0];
-    if (op) {
-        *op = (firstByte & 0xE0) == 0xE0 ? -1 : 1;
-    }
-    index++;
 
-    NSMutableDictionary *header = [NSMutableDictionary dictionary];
+    // Handle error frames which are just a single byte header followed by a map
     if (firstByte == kXRPCStreamOpErrorFrame) {
-        if (msgType) {
-            *msgType = @"#error";
-        }
+        index = 1;
+        if (op) *op = -1;
+        if (msgType) *msgType = @"#error";
     } else {
-        if (index >= data.length) {
-            if (error) {
-                *error = [NSError errorWithDomain:EventFormatterErrorDomain
-                                             code:EventFormatterErrorCodeDecodingFailed
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Incomplete event header"}];
-            }
-            return nil;
-        }
-
-        NSData *headerData = [data subdataWithRange:NSMakeRange(0, index)];
-        NSUInteger headerIndex = 0;
-        NSDictionary *decodedHeader = [self decodeCBORFromBytes:headerData.bytes
-                                                         length:headerData.length
-                                                          index:&headerIndex
+        // Handle normal message frames which are two concatenated CBOR objects
+        NSDictionary *decodedHeader = [self decodeCBORFromBytes:data.bytes
+                                                         length:data.length
+                                                          index:&index
                                                            error:error];
         if (!decodedHeader) {
             return nil;
         }
 
+        if (op) {
+            *op = [decodedHeader[@"op"] integerValue];
+        }
         if (msgType) {
             *msgType = decodedHeader[@"t"];
         }
+    }
+
+    if (index >= data.length) {
+        if (error) {
+            *error = [NSError errorWithDomain:EventFormatterErrorDomain
+                                         code:EventFormatterErrorCodeDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing event body"}];
+        }
+        return nil;
     }
 
     NSData *bodyData = [data subdataWithRange:NSMakeRange(index, data.length - index)];

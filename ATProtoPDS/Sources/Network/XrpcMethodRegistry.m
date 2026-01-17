@@ -1361,6 +1361,55 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         response.statusCode = HttpStatusOK;
         [response setJsonBody:stats];
     }];
+
+    // app.bsky.actor.searchActors
+    [dispatcher registerAppBskyActorSearchActors:^(HttpRequest *request, HttpResponse *response) {
+        NSString *term = [request queryParamForKey:@"term"] ?: [request queryParamForKey:@"q"];
+        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 25;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        if (!term || term.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing search term"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *result = [actorService searchActors:term limit:limit cursor:cursor error:&error];
+
+        if (error) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"SearchFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.actor.searchActorsTypeahead
+    [dispatcher registerAppBskyActorSearchActorsTypeahead:^(HttpRequest *request, HttpResponse *response) {
+        NSString *term = [request queryParamForKey:@"term"] ?: [request queryParamForKey:@"q"];
+        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 10;
+
+        if (!term || term.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing search term"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSArray *results = [actorService searchActorsTypeahead:term limit:limit error:&error];
+
+        if (error) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"SearchFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"actors": results}];
+    }];
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request {

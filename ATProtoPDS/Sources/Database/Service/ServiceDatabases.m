@@ -118,9 +118,9 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block NSError *blockError = nil;
     NSError *txnError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store createAccount:account error:&blockError];
+        success = [store createAccount:account error:innerError];
     } error:&txnError];
 
     NSError *finalError = blockError ?: txnError;
@@ -136,11 +136,11 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = YES;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
 
         for (PDSDatabaseAccount *account in accounts) {
-            BOOL accountSuccess = [store createAccount:account error:&localError];
+            BOOL accountSuccess = [store createAccount:account error:innerError];
             if (!accountSuccess) {
                 success = NO;
                 break;
@@ -233,9 +233,9 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store updateAccount:account error:&localError];
+        success = [store updateAccount:account error:innerError];
     } error:&localError];
 
     if (!success && localError) {
@@ -249,9 +249,9 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteAccount:did error:&localError];
+        success = [store deleteAccount:did error:innerError];
     } error:&localError];
 
     if (!success && localError) {
@@ -275,10 +275,10 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) { success = NO; return; }
         
         sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
@@ -300,11 +300,11 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
 
         NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) { success = NO; return; }
         
         sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
@@ -327,11 +327,11 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO invite_codes (id, code, account_did, created_at, max_uses) "
                         @"VALUES (?, ?, ?, ?, ?)";
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) { success = NO; return; }
         
         NSString *uuid = [[NSUUID UUID] UUIDString];
@@ -386,10 +386,10 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
 
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"UPDATE invite_codes SET uses = uses + 1 WHERE code = ? AND disabled = 0";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) { success = NO; return; }
         
         sqlite3_bind_text(stmt, 1, code.UTF8String, -1, SQLITE_TRANSIENT);
@@ -419,7 +419,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 - (void)cacheDID:(NSString *)did 
         document:(NSDictionary *)document 
       expiresAt:(NSDate *)expiresAt {
-    [self.didCachePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.didCachePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         
         NSString *sql = @"INSERT OR REPLACE INTO did_cache (did, document, expires_at) VALUES (?, ?, ?)";
@@ -443,7 +443,7 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
 - (nullable NSDictionary *)resolveDID:(NSString *)did {
     __block NSDictionary *document = nil;
     
-    [self.didCachePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+    [self.didCachePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
         
         NSString *sql = @"SELECT document FROM did_cache WHERE did = ? AND expires_at > ?";
@@ -475,10 +475,10 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block BOOL success = NO;
     __block NSError *localError = nil;
     
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (?, ?, ?, ?)";
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) { success = NO; return; }
         
         sqlite3_bind_int64(stmt, 1, seq);
@@ -502,10 +502,10 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block NSMutableArray *events = [NSMutableArray array];
     __block NSError *localError = nil;
     
-    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
         NSString *sql = @"SELECT seq, event_type, event_data, created_at FROM events WHERE seq > ? ORDER BY seq ASC LIMIT ?";
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
         
         sqlite3_bind_int64(stmt, 1, seq);
@@ -540,10 +540,10 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     __block int64_t maxSeq = 0;
     __block NSError *localError = nil;
     
-    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader) {
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
         NSString *sql = @"SELECT MAX(seq) FROM events";
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&localError];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
         
         if (sqlite3_step(stmt) == SQLITE_ROW) {

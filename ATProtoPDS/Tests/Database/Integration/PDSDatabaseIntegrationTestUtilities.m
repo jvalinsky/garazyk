@@ -259,7 +259,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     for (NSString *did in self.testDIDs) {
         PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"%@.example.com", did.lastPathComponent]];
         __block BOOL createSuccess = YES;
-        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
             NSError *createError = nil;
             if (![transactor createAccount:account error:&createError]) {
                 createSuccess = NO;
@@ -287,8 +287,8 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     __block BOOL success = YES;
     __block NSError *isolationError = nil;
 
-    [self.pool transactWithDid:did1 block:^(id<PDSActorStoreTransactor> transactor) {
-        if (![transactor putRecord:record1 forDid:did1 error:&isolationError]) {
+    [self.pool transactWithDid:did1 block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        if (![transactor putRecord:record1 forDid:did1 error:innerError]) {
             success = NO;
         }
     } error:&isolationError];
@@ -299,12 +299,11 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     }
 
     // Try to access the record from tenant 2 - should not be visible
-    [self.pool readWithDid:did2 block:^(id<PDSActorStoreReader> reader) {
-        PDSDatabaseRecord *fetched = [reader getRecord:record1.uri forDid:did1 error:&isolationError];
+    [self.pool readWithDid:did2 block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSDatabaseRecord *fetched = [reader getRecord:record1.uri forDid:did1 error:innerError];
         if (fetched) {
-            // Record should not be accessible from different tenant
             success = NO;
-            isolationError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+            *innerError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
                                               code:PDSDatabaseIntegrationTestErrorConcurrentAccessFailed
                                           userInfo:@{NSLocalizedDescriptionKey: @"Tenant isolation breached - record accessible from wrong tenant"}];
         }
@@ -321,17 +320,17 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     __block BOOL success = YES;
     __block NSError *dataError = nil;
 
-    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         // Create a test repo
         PDSDatabaseRepo *repo = [PDSDatabaseIntegrationTestUtilities createTestRepoWithOwnerDID:did];
-        if (![transactor createRepo:repo error:&dataError]) {
+        if (![transactor createRepo:repo error:innerError]) {
             success = NO;
             return;
         }
 
         // Create a test record
         PDSDatabaseRecord *record = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:did collection:@"app.bsky.feed.post" rkey:@"tenant-test"];
-        if (![transactor putRecord:record forDid:did error:&dataError]) {
+        if (![transactor putRecord:record forDid:did error:innerError]) {
             success = NO;
             return;
         }
@@ -858,8 +857,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             @autoreleasepool {
                 NSError *localError = nil;
-                [self.pool readWithDid:@"did:plc:concurrent-test" block:^(id<PDSActorStoreReader> reader) {
-                    // Perform a read operation
+                [self.pool readWithDid:@"did:plc:concurrent-test" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
                     NSError *readErr = nil;
                     PDSDatabaseAccount *account = [reader getAccountForDid:@"did:plc:concurrent-test" error:&readErr];
                     if (readErr && readErr.code != PDSActorStoreErrorNotFound) {
@@ -909,7 +907,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 NSString *did = [NSString stringWithFormat:@"did:plc:write-test-%lu", (unsigned long)i];
                 PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:[NSString stringWithFormat:@"write%lu.example.com", (unsigned long)i]];
 
-                [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+                [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
                     NSError *createErr = nil;
                     if (![transactor createAccount:account error:&createErr]) {
                         @synchronized(self) {
@@ -953,7 +951,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
     // Create account first
     PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:@"isolation.example.com"];
-    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         [transactor createAccount:account error:nil];
     } error:nil];
 
@@ -963,9 +961,9 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
     dispatch_group_enter(group);
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
             PDSDatabaseRecord *record = [PDSDatabaseIntegrationTestUtilities createTestRecordWithDID:did collection:@"app.bsky.feed.post" rkey:@"isolation-test"];
-            if ([transactor putRecord:record forDid:did error:&isolationError]) {
+            if ([transactor putRecord:record forDid:did error:innerError]) {
                 createdRecord = record;
             } else {
                 success = NO;
@@ -978,11 +976,11 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
     // Verify the record is now visible after transaction commit
     if (success && createdRecord) {
-        [self.pool readWithDid:did block:^(id<PDSActorStoreReader> reader) {
-            PDSDatabaseRecord *fetched = [reader getRecord:createdRecord.uri forDid:did error:&isolationError];
+        [self.pool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+            PDSDatabaseRecord *fetched = [reader getRecord:createdRecord.uri forDid:did error:innerError];
             if (!fetched) {
                 success = NO;
-                isolationError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
+                *innerError = [NSError errorWithDomain:PDSDatabaseIntegrationTestErrorDomain
                                                   code:PDSDatabaseIntegrationTestErrorConcurrentAccessFailed
                                               userInfo:@{NSLocalizedDescriptionKey: @"Transaction isolation failed - record not visible after commit"}];
             }
@@ -1017,7 +1015,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
                 NSError *localError = nil;
                 NSString *did = @"did:plc:deadlock-test";
 
-                [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+                [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
                     // Perform some database operations that might conflict
                     PDSDatabaseAccount *account = [PDSDatabaseIntegrationTestUtilities createTestAccountWithDID:did handle:@"deadlock.example.com"];
                     NSError *createErr = nil;

@@ -2,6 +2,7 @@
 #import "PLCMockStore.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
+#import "PLC/PLCMetrics.h"
 
 NSString * const PLCPersistentStoreErrorDomain = @"com.atproto.pds.plc.persistentstore";
 
@@ -289,6 +290,13 @@ static NSString * const kDeleteOperationsSQL =
     
     if (blockError && error) {
         *error = blockError;
+    }
+    
+    // Instrument metrics
+    if (operations.count > 0) {
+        [[PLCMetrics sharedMetrics] recordCacheHit];
+    } else {
+        [[PLCMetrics sharedMetrics] recordCacheMiss];
     }
     
     return operations;
