@@ -53,11 +53,11 @@
     op1.prev = nil;
     op1.data = @{@"foo": @"bar"};
     
-    BOOL success = [store appendOperation:op1 error:&error];
+    BOOL success = [store appendOperation:op1 nullifyCIDs:@[] error:&error];
     XCTAssertTrue(success);
     XCTAssertNil(error);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did error:&error];
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 1);
     XCTAssertEqualObjects(history[0].sig, @"sig1");
@@ -92,11 +92,11 @@
     op3.prev = [NSString stringWithFormat:@"prev_%@", op2.sig];
     op3.data = @{@"step": @"3"};
     
-    XCTAssertTrue([store appendOperation:op1 error:&error]);
-    XCTAssertTrue([store appendOperation:op2 error:&error]);
-    XCTAssertTrue([store appendOperation:op3 error:&error]);
+    XCTAssertTrue([store appendOperation:op1 nullifyCIDs:@[] error:&error]);
+    XCTAssertTrue([store appendOperation:op2 nullifyCIDs:@[] error:&error]);
+    XCTAssertTrue([store appendOperation:op3 nullifyCIDs:@[] error:&error]);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did error:&error];
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertEqual(history.count, 3);
     XCTAssertEqualObjects(history[0].sig, @"sig1");
     XCTAssertEqualObjects(history[1].sig, @"sig2");
@@ -123,11 +123,11 @@
     op2.sig = @"sig_b";
     op2.data = @{};
     
-    [store appendOperation:op1 error:nil];
-    [store appendOperation:op2 error:nil];
+    [store appendOperation:op1 nullifyCIDs:@[] error:nil];
+    [store appendOperation:op2 nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [store getHistoryForDID:did1 error:nil];
-    NSArray<PLCOperation *> *history2 = [store getHistoryForDID:did2 error:nil];
+    NSArray<PLCOperation *> *history1 = [store getHistoryForDID:did1 includeNullified:NO error:nil];
+    NSArray<PLCOperation *> *history2 = [store getHistoryForDID:did2 includeNullified:NO error:nil];
     
     XCTAssertEqual(history1.count, 1);
     XCTAssertEqualObjects(history1[0].sig, @"sig_a");
@@ -143,7 +143,7 @@
     PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" error:&error];
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:&error];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 0);
     
@@ -169,10 +169,10 @@
     
     XCTAssertEqual([store operationCountForDid:did error:&error], 0);
     
-    [store appendOperation:op1 error:nil];
+    [store appendOperation:op1 nullifyCIDs:@[] error:nil];
     XCTAssertEqual([store operationCountForDid:did error:&error], 1);
     
-    [store appendOperation:op2 error:nil];
+    [store appendOperation:op2 nullifyCIDs:@[] error:nil];
     XCTAssertEqual([store operationCountForDid:did error:&error], 2);
     
     [store close];
@@ -190,14 +190,14 @@
     op.sig = @"sig_to_delete";
     op.data = @{};
     
-    [store appendOperation:op error:nil];
+    [store appendOperation:op nullifyCIDs:@[] error:nil];
     XCTAssertEqual([store operationCountForDid:did error:&error], 1);
     
     BOOL deleted = [store deleteOperationsForDid:did error:&error];
     XCTAssertTrue(deleted);
     XCTAssertEqual([store operationCountForDid:did error:&error], 0);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did error:&error];
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertEqual(history.count, 0);
     
     [store close];
@@ -213,11 +213,11 @@
     op1.data = @{@"foo": @"bar"};
     
     NSError *error = nil;
-    BOOL success = [store appendOperation:op1 error:&error];
+    BOOL success = [store appendOperation:op1 nullifyCIDs:@[] error:&error];
     XCTAssertTrue(success);
     XCTAssertNil(error);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did error:&error];
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 1);
     XCTAssertEqualObjects(history[0].sig, @"sig1");
@@ -238,11 +238,11 @@
     op2.sig = @"sig2";
     op2.data = @{};
     
-    [store appendOperation:op1 error:nil];
-    [store appendOperation:op2 error:nil];
+    [store appendOperation:op1 nullifyCIDs:@[] error:nil];
+    [store appendOperation:op2 nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [store getHistoryForDID:did1 error:nil];
-    NSArray<PLCOperation *> *history2 = [store getHistoryForDID:did2 error:nil];
+    NSArray<PLCOperation *> *history1 = [store getHistoryForDID:did1 includeNullified:NO error:nil];
+    NSArray<PLCOperation *> *history2 = [store getHistoryForDID:did2 includeNullified:NO error:nil];
     
     XCTAssertEqual(history1.count, 1);
     XCTAssertEqualObjects(history1[0].sig, @"sig1");
@@ -253,7 +253,7 @@
 
 - (void)testMockStoreEmptyHistory {
     PLCMockStore *store = [[PLCMockStore alloc] init];
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" error:nil];
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:nil];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 0);
 }

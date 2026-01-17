@@ -8,8 +8,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *prev;
 @property (nonatomic, copy) NSString *sig;
 @property (nonatomic, copy) NSDictionary *data;
+@property (nonatomic, copy, nullable) NSString *cid;
+@property (nonatomic, strong, nullable) NSDate *createdAt;
+@property (nonatomic, assign) BOOL nullified;
 
 + (NSString *)calculateDIDForData:(NSDictionary *)data;
++ (nullable NSString *)calculateCIDForOperation:(NSDictionary *)operation error:(NSError **)error;
 + (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error;
 - (NSDictionary *)toDictionary;
 

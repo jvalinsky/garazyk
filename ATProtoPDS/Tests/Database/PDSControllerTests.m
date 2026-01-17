@@ -309,7 +309,8 @@
     NSDictionary *result = [self.controller moderateAccount:params error:&error];
 
     XCTAssertNotNil(result);
-    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+    XCTAssertEqualObjects(result[@"status"], @"success");
+    XCTAssertNil(error);
 }
 
 - (void)testModerateRecordEndpoint {
@@ -319,35 +320,52 @@
     NSDictionary *result = [self.controller moderateRecord:params error:&error];
 
     XCTAssertNotNil(result);
-    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+    XCTAssertEqualObjects(result[@"status"], @"success");
+    XCTAssertNil(error);
 }
 
 - (void)testCreateLabelEndpoint {
     NSDictionary *params = @{
+        @"src": @"did:plc:admin",
         @"uri": @"at://did:plc:test/app.bsky.feed.post/123",
         @"val": @"spam",
-        @"neg": @NO
+        @"neg": @NO,
+        @"cts": @"2026-01-01T00:00:00Z"
     };
 
     NSError *error = nil;
     NSDictionary *result = [self.controller createLabel:params error:&error];
 
-    XCTAssertNotNil(result);
-    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+    XCTAssertNotNil(result, @"Should return created label: %@", error);
+    XCTAssertEqualObjects(result[@"val"], @"spam");
+    XCTAssertEqualObjects(result[@"uri"], @"at://did:plc:test/app.bsky.feed.post/123");
 }
 
 - (void)testGetLabelsEndpoint {
+    // Determine existing labels or create one first
+    NSDictionary *label = @{
+        @"src": @"did:plc:admin",
+        @"uri": @"at://did:plc:test/app.bsky.feed.post/123",
+        @"val": @"spam",
+        @"neg": @NO,
+        @"cts": @"2026-01-01T00:00:00Z"
+    };
+    [self.controller createLabel:label error:nil];
+
     NSDictionary *params = @{
         @"uriPatterns": @[@"at://did:plc:test/app.bsky.feed.post/*"],
-        @"sources": @[],
+        @"sources": @[@"did:plc:admin"],
         @"limit": @50
     };
 
     NSError *error = nil;
     NSDictionary *result = [self.controller getLabels:params error:&error];
 
-    XCTAssertNotNil(result);
-    XCTAssertEqualObjects(result[@"status"], @"not_implemented");
+    XCTAssertNotNil(result, @"Should return labels result: %@", error);
+    NSArray *labels = result[@"labels"];
+    XCTAssertNotNil(labels);
+    XCTAssertTrue(labels.count > 0, @"Should find at least one label");
+    XCTAssertEqualObjects(labels[0][@"val"], @"spam");
 }
 
 #if 0

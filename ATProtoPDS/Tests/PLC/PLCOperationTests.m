@@ -64,64 +64,15 @@
     XCTAssertNil(op);
 }
 
-- (void)testUpdateHandleOperationValidation {
-    NSDictionary *json = @{
-        @"did": @"did:plc:123",
-        @"prev": @"cid:456",
-        @"sig": @"sig789",
-        @"type": @"update_handle",
-        @"handle": @"newhandle.bsky.social"
-    };
-    
-    NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
-    
-    XCTAssertNil(error);
-    XCTAssertNotNil(op);
-    XCTAssertEqualObjects(op.data[@"type"], @"update_handle");
-    XCTAssertEqualObjects(op.data[@"handle"], @"newhandle.bsky.social");
-}
-
-- (void)testUpdateHandleOperationMissingHandle {
-    NSDictionary *json = @{
-        @"did": @"did:plc:123",
-        @"prev": @"cid:456",
-        @"sig": @"sig789",
-        @"type": @"update_handle"
-    };
-    
-    NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
-    
-    XCTAssertNotNil(error);
-    XCTAssertNil(op);
-}
-
-- (void)testUpdateHandleOperationInvalidHandle {
-    NSDictionary *json = @{
-        @"did": @"did:plc:123",
-        @"prev": @"cid:456",
-        @"sig": @"sig789",
-        @"type": @"update_handle",
-        @"handle": @"not a valid handle"
-    };
-    
-    NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
-    
-    XCTAssertNotNil(error);
-    XCTAssertNil(op);
-}
-
 - (void)testStateReplayerUpdateHandle {
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
-    NSString *pubKeyHex = [[CryptoUtils hexStringFromData:keyPair.compressedPublicKey] lowercaseString];
+    NSString *didKey = [keyPair didKeyString];
     
     NSDictionary *createData = @{
         @"type": @"plc_operation",
-        @"rotationKeys": @[pubKeyHex],
-        @"verificationMethods": @{@"atproto": pubKeyHex},
-        @"alsoKnownAs": @[@"oldhandle.bsky.social"],
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://oldhandle.bsky.social"],
         @"services": @{},
         @"prev": [NSNull null]
     };
@@ -134,19 +85,22 @@
     createOp.sig = @"test_sig";
     createOp.data = createData;
     
-    NSData *createHash = [self hashForData:createData];
-    
-    NSString *prevHash = [CryptoUtils hexStringFromData:createHash];
+    NSError *cidError = nil;
+    NSString *prevCid = [PLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
+    XCTAssertNotNil(prevCid);
     
     NSDictionary *updateHandleData = @{
-        @"type": @"update_handle",
-        @"handle": @"newhandle.bsky.social",
-        @"prev": prevHash
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://newhandle.bsky.social"],
+        @"services": @{},
+        @"prev": prevCid
     };
     
     PLCOperation *updateOp = [[PLCOperation alloc] init];
     updateOp.did = did;
-    updateOp.prev = prevHash;
+    updateOp.prev = prevCid;
     updateOp.sig = @"test_sig";
     updateOp.data = updateHandleData;
     
@@ -158,18 +112,18 @@
     XCTAssertEqualObjects(state.did, did);
     XCTAssertNotNil(state.alsoKnownAs);
     XCTAssertEqual(state.alsoKnownAs.count, 1);
-    XCTAssertEqualObjects(state.alsoKnownAs.firstObject, @"newhandle.bsky.social");
+    XCTAssertEqualObjects(state.alsoKnownAs.firstObject, @"at://newhandle.bsky.social");
 }
 
 - (void)testStateReplayerMultipleHandleUpdates {
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
-    NSString *pubKeyHex = [[CryptoUtils hexStringFromData:keyPair.compressedPublicKey] lowercaseString];
+    NSString *didKey = [keyPair didKeyString];
     
     NSDictionary *createData = @{
         @"type": @"plc_operation",
-        @"rotationKeys": @[pubKeyHex],
-        @"verificationMethods": @{@"atproto": pubKeyHex},
-        @"alsoKnownAs": @[@"handle1.bsky.social"],
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://handle1.bsky.social"],
         @"services": @{},
         @"prev": [NSNull null]
     };
@@ -182,33 +136,40 @@
     createOp.sig = @"test_sig";
     createOp.data = createData;
     
-    NSData *createHash = [self hashForData:createData];
-    NSString *prevHash1 = [CryptoUtils hexStringFromData:createHash];
+    NSError *cidError = nil;
+    NSString *prevCid1 = [PLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
+    XCTAssertNotNil(prevCid1);
     
     NSDictionary *updateHandleData1 = @{
-        @"type": @"update_handle",
-        @"handle": @"handle2.bsky.social",
-        @"prev": prevHash1
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://handle2.bsky.social"],
+        @"services": @{},
+        @"prev": prevCid1
     };
     
     PLCOperation *updateOp1 = [[PLCOperation alloc] init];
     updateOp1.did = did;
-    updateOp1.prev = prevHash1;
+    updateOp1.prev = prevCid1;
     updateOp1.sig = @"test_sig";
     updateOp1.data = updateHandleData1;
     
-    NSData *updateHash1 = [self hashForData:updateHandleData1];
-    NSString *prevHash2 = [CryptoUtils hexStringFromData:updateHash1];
+    NSString *prevCid2 = [PLCOperation calculateCIDForOperation:[updateOp1 toDictionary] error:&cidError];
+    XCTAssertNotNil(prevCid2);
     
     NSDictionary *updateHandleData2 = @{
-        @"type": @"update_handle",
-        @"handle": @"handle3.bsky.social",
-        @"prev": prevHash2
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://handle3.bsky.social"],
+        @"services": @{},
+        @"prev": prevCid2
     };
     
     PLCOperation *updateOp2 = [[PLCOperation alloc] init];
     updateOp2.did = did;
-    updateOp2.prev = prevHash2;
+    updateOp2.prev = prevCid2;
     updateOp2.sig = @"test_sig";
     updateOp2.data = updateHandleData2;
     
@@ -219,7 +180,7 @@
     XCTAssertNotNil(state);
     XCTAssertNotNil(state.alsoKnownAs);
     XCTAssertEqual(state.alsoKnownAs.count, 1);
-    XCTAssertEqualObjects(state.alsoKnownAs.firstObject, @"handle3.bsky.social");
+    XCTAssertEqualObjects(state.alsoKnownAs.firstObject, @"at://handle3.bsky.social");
 }
 
 - (NSData *)hashForData:(NSDictionary *)data {
@@ -272,7 +233,7 @@
         @"type": @"plc_operation",
         @"rotationKeys": @[@"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX"],
         @"verificationMethods": @{@"atproto": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX"},
-        @"alsoKnownAs": @[@"test.bsky.social"],
+        @"alsoKnownAs": @[@"at://test.bsky.social"],
         @"services": @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer", @"endpoint": @"https://pds.example.com"}},
         @"prev": [NSNull null]
     };
@@ -306,11 +267,12 @@
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     XCTAssertNotNil(keyPair);
     
+    NSString *didKey = [keyPair didKeyString];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
-        @"rotationKeys": @[[CryptoUtils hexStringFromData:keyPair.compressedPublicKey]],
-        @"verificationMethods": @{@"atproto": [CryptoUtils hexStringFromData:keyPair.compressedPublicKey]},
-        @"alsoKnownAs": @[@"test.bsky.social"],
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://test.bsky.social"],
         @"services": @{},
         @"prev": [NSNull null]
     };

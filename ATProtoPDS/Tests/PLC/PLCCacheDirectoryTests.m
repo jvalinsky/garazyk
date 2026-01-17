@@ -38,17 +38,17 @@
     op1.sig = @"sig1";
     op1.data = @{@"test": @"value1"};
     
-    [self.mockStore appendOperation:op1 error:nil];
+    [self.mockStore appendOperation:op1 nullifyCIDs:@[] error:nil];
     
     NSError *error = nil;
-    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did error:&error];
+    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:&error];
     
     XCTAssertNotNil(history1);
     XCTAssertEqual(history1.count, 1);
     XCTAssertEqualObjects(history1[0].sig, @"sig1");
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 1);
     
-    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did error:&error];
+    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertEqual(self.cacheDirectory.cacheHitCount, 1);
     XCTAssertEqualObjects(history2[0].sig, @"sig1");
 }
@@ -61,9 +61,9 @@
     op1.sig = @"sig1";
     op1.data = @{};
     
-    [self.mockStore appendOperation:op1 error:nil];
+    [self.mockStore appendOperation:op1 nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did error:nil];
+    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(history1.count, 1);
     
     PLCOperation *op2 = [[PLCOperation alloc] init];
@@ -72,10 +72,10 @@
     op2.prev = @"sig1";
     op2.data = @{};
     
-    BOOL success = [self.cacheDirectory appendOperation:op2 error:nil];
+    BOOL success = [self.cacheDirectory appendOperation:op2 nullifyCIDs:@[] error:nil];
     XCTAssertTrue(success);
     
-    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did error:nil];
+    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(history2.count, 1);
     XCTAssertEqualObjects(history2[0].sig, @"sig2");
 }
@@ -94,19 +94,19 @@
     op2.sig = @"sig2";
     op2.data = @{};
     
-    [self.mockStore appendOperation:op1 error:nil];
-    [self.mockStore appendOperation:op2 error:nil];
+    [self.mockStore appendOperation:op1 nullifyCIDs:@[] error:nil];
+    [self.mockStore appendOperation:op2 nullifyCIDs:@[] error:nil];
     
-    [self.cacheDirectory getHistoryForDID:did1 error:nil];
-    [self.cacheDirectory getHistoryForDID:did2 error:nil];
+    [self.cacheDirectory getHistoryForDID:did1 includeNullified:NO error:nil];
+    [self.cacheDirectory getHistoryForDID:did2 includeNullified:NO error:nil];
     
     XCTAssertEqual(self.cacheDirectory.cacheHitCount, 0);
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 2);
     
     [self.cacheDirectory flushCacheForDID:did1];
     
-    [self.cacheDirectory getHistoryForDID:did1 error:nil];
-    [self.cacheDirectory getHistoryForDID:did2 error:nil];
+    [self.cacheDirectory getHistoryForDID:did1 includeNullified:NO error:nil];
+    [self.cacheDirectory getHistoryForDID:did2 includeNullified:NO error:nil];
     
     XCTAssertEqual(self.cacheDirectory.cacheHitCount, 1);
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 3);
@@ -120,14 +120,14 @@
     op.sig = @"sig";
     op.data = @{};
     
-    [self.mockStore appendOperation:op error:nil];
+    [self.mockStore appendOperation:op nullifyCIDs:@[] error:nil];
     
-    [self.cacheDirectory getHistoryForDID:did error:nil];
+    [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 1);
     
     [self.cacheDirectory flushAllCaches];
     
-    [self.cacheDirectory getHistoryForDID:did error:nil];
+    [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 2);
 }
 
@@ -141,14 +141,14 @@
     op.sig = @"sig";
     op.data = @{};
     
-    [self.mockStore appendOperation:op error:nil];
+    [self.mockStore appendOperation:op nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did error:nil];
+    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 1);
     
     [NSThread sleepForTimeInterval:0.2];
     
-    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did error:nil];
+    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 2);
 }
 
@@ -161,9 +161,9 @@
         op.did = did;
         op.sig = [NSString stringWithFormat:@"sig%d", i];
         op.data = @{};
-        [self.mockStore appendOperation:op error:nil];
+        [self.mockStore appendOperation:op nullifyCIDs:@[] error:nil];
         
-        [self.cacheDirectory getHistoryForDID:did error:nil];
+        [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     }
     
     XCTAssertLessThanOrEqual(self.cacheDirectory.cacheMissCount, (NSUInteger)5);
