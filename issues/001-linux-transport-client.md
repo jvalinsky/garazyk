@@ -11,3 +11,14 @@
 - Implement the client connect loop, including DNS/socket creation, async read/write handling, and readiness notifications.
 - Ensure the state machine transitions to `PDSNetworkConnectionStateReady` once the socket is connected and sources are set up.
 - Consider reusing the existing `setupSources` logic to attach dispatch sources even for client sockets.
+
+## Status: RESOLVED ✅
+
+Implemented in `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-168`:
+1. **Socket creation**: Creates TCP socket with `socket(AF_INET, SOCK_STREAM, 0)`
+2. **Non-blocking mode**: Sets `O_NONBLOCK` via `fcntl()` 
+3. **Async connect**: Uses `connect()` with `EINPROGRESS` handling
+4. **Dispatch source**: Registers `DISPATCH_SOURCE_TYPE_WRITE` to wait for connection completion
+5. **Connection completion**: Checks `SO_ERROR` via `getsockopt()` to verify success
+6. **State transitions**: Properly notifies `Ready` or `Failed` states
+7. **Tests added**: `testOutboundConnectionWithSocketPair`, `testOutboundConnectionToLocalhost`, `testOutboundConnectionToInvalidHost`, `testSendDataOnConnectedSocket`
