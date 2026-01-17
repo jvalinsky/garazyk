@@ -7,7 +7,7 @@ PDS_URL="http://localhost:2583"
 DB_PATH="/tmp/atproto_pds.db"
 
 # Cleanup any existing server
-pkill -f "atprotopds.*2583" 2>/dev/null || true
+pkill -f "september.*2583" 2>/dev/null || true
 sleep 1
 rm -f "$DB_PATH" 2>/dev/null || true
 
