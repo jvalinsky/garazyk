@@ -139,10 +139,12 @@ NS_ASSUME_NONNULL_END
         bodyData = [self.bodyString dataUsingEncoding:NSUTF8StringEncoding];
     }
 
-    /*! Add Content-Length header if body is present */
+    /*! Add Content-Length header (0 when body is empty) */
     if (bodyData) {
         NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyData.length];
         [self setHeader:contentLength forKey:@"Content-Length"];
+    } else {
+        [self setHeader:@"0" forKey:@"Content-Length"];
     }
 
     /*! Add Date header */
