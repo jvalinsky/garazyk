@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,12 +12,12 @@
             margin: 0;
             padding: 0;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background-color: #f5f5f5;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
@@ -24,39 +25,39 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .header h1 {
             font-size: 1.5rem;
             font-weight: 600;
         }
-        
+
         .header-links {
             display: flex;
             gap: 15px;
             align-items: center;
         }
-        
+
         .header-links a {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             font-size: 0.9rem;
             padding: 8px 16px;
             border-radius: 6px;
             transition: all 0.2s;
         }
-        
+
         .header-links a:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
         }
-        
+
         .header-links a.active {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
         }
-        
+
         .download-btn {
             display: inline-flex;
             align-items: center;
@@ -70,58 +71,60 @@
             font-size: 0.9rem;
             transition: all 0.2s;
         }
-        
+
         .download-btn:hover {
             background: #00e6b8;
             transform: translateY(-1px);
         }
-        
+
         .download-btn svg {
             width: 18px;
             height: 18px;
         }
-        
+
         #swagger-ui {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .info-wrapper {
             margin-bottom: 20px;
         }
-        
+
         .topbar-wrapper {
             display: none;
         }
-        
+
         .swagger-ui .info .title {
             font-size: 1.8rem;
         }
     </style>
 </head>
+
 <body>
     <header class="header">
         <h1>ATProto PDS API Documentation</h1>
         <div class="header-links">
-            <a href="/explore/">Explorer</a>
-            <a href="/explore/api/openapi.yaml" class="download-btn" download>
+            <a href="/">Explorer</a>
+            <a href="/api/pds/openapi.yaml" class="download-btn" download>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Download YAML
             </a>
         </div>
     </header>
-    
+
     <div id="swagger-ui"></div>
-    
+
     <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
     <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
     <script>
-        window.onload = function() {
+        window.onload = function () {
             const ui = SwaggerUIBundle({
-                url: '/explore/api/openapi.yaml?format=json',
+                url: '/api/pds/openapi.yaml?format=json',
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [
@@ -142,4 +145,5 @@
         };
     </script>
 </body>
+
 </html>

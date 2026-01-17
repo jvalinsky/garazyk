@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "/Users/jack/Software/objpds"
 echo "Running all tests..."
-"$SCRIPT_DIR/../build/tests/AllTests"
+/Users/jack/Software/objpds/build/tests/AllTests
 echo "Tests complete."

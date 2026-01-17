@@ -159,7 +159,7 @@
     return @[];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     BOOL verbose = NO;
 
     for (NSUInteger i = 0; i < args.count; i++) {
@@ -199,6 +199,7 @@
             }
         }
     }
+    return 0;
 }
 
 @end

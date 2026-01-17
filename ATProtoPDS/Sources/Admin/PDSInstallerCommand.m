@@ -58,7 +58,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     return nil;
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     BOOL installDaemon = NO;
     BOOL installAgent = NO;
     BOOL force = NO;
@@ -69,7 +69,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 
         if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
             [context printInfo:[self helpText]];
-            return;
+            return 0;
         } else if ([arg isEqualToString:@"--force"]) {
             force = YES;
         } else if ([arg isEqualToString:@"daemon"]) {
@@ -83,7 +83,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
             installAgent = YES;
         } else if ([arg hasPrefix:@"-"]) {
             [context printError:[NSString stringWithFormat:@"Unknown option: %@", arg]];
-            return;
+            return 0;
         } else if (!subcommand) {
             subcommand = arg;
         }
@@ -99,17 +99,18 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 
     if (installDaemon) {
         if (![self installDaemonWithResourcePath:resourcePath force:force context:context]) {
-            return;
+            return 0;
         }
     }
 
     if (installAgent) {
         if (![self installAgentWithResourcePath:resourcePath force:force context:context]) {
-            return;
+            return 0;
         }
     }
 
     [context printInfo:@"Installation complete. Use 'pds service status' to check service state."];
+    return 0;
 }
 
 - (BOOL)installDaemonWithResourcePath:(NSString *)resourcePath force:(BOOL)force context:(PDSCLICommandContext *)context {
@@ -280,7 +281,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
            @"Warning: --purge will delete all PDS data!";
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     BOOL uninstallDaemon = NO;
     BOOL uninstallAgent = NO;
     BOOL purge = NO;
@@ -290,7 +291,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 
         if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
             [context printInfo:[self helpText]];
-            return;
+            return 0;
         } else if ([arg isEqualToString:@"--purge"]) {
             purge = YES;
         } else if ([arg isEqualToString:@"daemon"]) {
@@ -377,6 +378,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     }
 
     [context printInfo:@"Uninstallation complete."];
+    return 0;
 }
 
 @end
@@ -413,7 +415,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     return @[@"svc"];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     NSString *action = nil;
     BOOL follow = NO;
 
@@ -422,7 +424,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 
         if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
             [context printInfo:[self helpText]];
-            return;
+            return 0;
         } else if ([arg isEqualToString:@"--follow"] || [arg isEqualToString:@"-f"]) {
             follow = YES;
         } else if (!action) {
@@ -432,7 +434,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 
     if (!action) {
         [context printError:@"Missing service action (start|stop|restart|logs)"];
-        return;
+        return 0;
     }
 
     NSString *serviceLabel = @"com.atproto.pds.user";
@@ -457,7 +459,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         } else {
             [context printInfo:@"No log file found"];
         }
-        return;
+        return 0;
     }
 
     NSString *labelToUse = [self getLoadedServiceLabel:context];
@@ -474,7 +476,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         launchctlCmd = [NSString stringWithFormat:@"launchctl stop %@; launchctl start %@", labelToUse, labelToUse];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown action: %@", action]];
-        return;
+        return 0;
     }
 
     NSTask *task = [[NSTask alloc] init];
@@ -493,6 +495,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     } @catch (NSException *e) {
         [context printError:[NSString stringWithFormat:@"Failed to %@ service: %@", action, e.reason]];
     }
+    return 0;
 }
 
 - (NSString *)getLoadedServiceLabel:(PDSCLICommandContext *)context {
@@ -549,7 +552,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     return @[@"ss", @"instatus"];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     NSMutableDictionary *status = [NSMutableDictionary dictionary];
     NSFileManager *fm = [NSFileManager defaultManager];
 
@@ -589,6 +592,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         printf("Config file:    %s\n", [[status[@"configPath"] stringByExpandingTildeInPath] UTF8String]);
         printf("Data present:   %s\n", [status[@"dataExists"] boolValue] ? "Yes" : "No");
     }
+    return 0;
 }
 
 - (BOOL)isServiceLoaded:(NSString *)label {

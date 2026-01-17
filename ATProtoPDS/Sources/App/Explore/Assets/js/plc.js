@@ -1,5 +1,5 @@
 export async function fetchPlcLog(did) {
-    const response = await fetch(`/explore/api/plc-log?did=${encodeURIComponent(did)}`);
+    const response = await fetch(`/api/pds/plc-log?did=${encodeURIComponent(did)}`);
     if (!response.ok) {
         return { error: `HTTP ${response.status}` };
     }

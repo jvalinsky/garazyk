@@ -135,10 +135,10 @@
     return @[@"list", @"create", @"revoke"];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printInfo:[self helpText]];
-        return;
+        return 0;
     }
 
     NSString *subcommand = args[0];
@@ -152,7 +152,9 @@
         [self executeRevokeWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
+        return 1;
     }
+    return 0;
 }
 
 - (void)executeListWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
