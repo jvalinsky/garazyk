@@ -539,7 +539,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             [resp setJsonBody:@{@"error": @"Genesis operation must have null prev"}];
             return;
         }
-        NSString *expectedDid = [PLCOperation calculateDIDForData:[op toDictionary]];
+        NSString *expectedDid = [PLCOperation calculateDIDForData:op.data];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
             [[PLCMetrics sharedMetrics] recordError];
             resp.statusCode = HttpStatusBadRequest;

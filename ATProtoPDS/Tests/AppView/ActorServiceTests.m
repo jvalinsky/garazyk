@@ -240,6 +240,102 @@
     XCTAssertEqualObjects(profile[@"followersCount"], @(0));
 }
 
+- (void)testGetFollowersCountWithFollowers {
+    NSError *error = nil;
+
+    NSString *subjectDID = @"did:plc:targetuser";
+
+    NSString *insertFollows = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, subject_did) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)";
+
+    for (int i = 0; i < 5; i++) {
+        NSString *subjectJSON = [NSString stringWithFormat:@"{\"subject\":{\"did\":\"%@\"},\"createdAt\":\"2024-01-01T00:00:00Z\"}", subjectDID];
+        BOOL success = [self.database executeParameterizedUpdate:insertFollows
+                                           params:@[[NSString stringWithFormat:@"at://did:plc:follower%d/app.bsky.graph.follow/target", i],
+                                                    [NSString stringWithFormat:@"did:plc:follower%d", i],
+                                                    @"app.bsky.graph.follow",
+                                                    [NSString stringWithFormat:@"target-%d", i],
+                                                    @"bafyreifollow",
+                                                    subjectJSON,
+                                                    subjectDID]
+                                            error:&error];
+        XCTAssertTrue(success, @"Insert failed: %@", error);
+    }
+
+    error = nil;
+    NSInteger count = [self.service getFollowersCountForDID:subjectDID error:&error];
+    
+    // Debug output if fails
+    if (count != 5) {
+        NSArray *debugRows = [self.database executeQuery:@"SELECT * FROM records" error:nil];
+        XCTAssertEqual(debugRows.count, 5, @"DB Records Count mismatch. Rows: %@", debugRows);
+    }
+
+    XCTAssertEqual(count, 5);
+    XCTAssertNil(error);
+}
+
+- (void)testGetFollowersCountDifferentSubjects {
+    NSError *error = nil;
+
+    NSString *subject1 = @"did:plc:target1";
+    NSString *subject2 = @"did:plc:target2";
+
+    NSString *insertFollows = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, subject_did) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)";
+
+    for (int i = 0; i < 3; i++) {
+        NSString *subjectJSON = [NSString stringWithFormat:@"{\"subject\":{\"did\":\"%@\"},\"createdAt\":\"2024-01-01T00:00:00Z\"}", subject1];
+        [self.database executeParameterizedUpdate:insertFollows
+                                           params:@[[NSString stringWithFormat:@"at://did:plc:f1-%d/app.bsky.graph.follow/t1", i],
+                                                    [NSString stringWithFormat:@"did:plc:f1-%d", i],
+                                                    @"app.bsky.graph.follow",
+                                                    [NSString stringWithFormat:@"t1-%d", i],
+                                                    @"bafyreif1",
+                                                    subjectJSON,
+                                                    subject1]
+                                            error:&error];
+    }
+
+    for (int i = 0; i < 7; i++) {
+        NSString *subjectJSON = [NSString stringWithFormat:@"{\"subject\":{\"did\":\"%@\"},\"createdAt\":\"2024-01-01T00:00:00Z\"}", subject2];
+        [self.database executeParameterizedUpdate:insertFollows
+                                           params:@[[NSString stringWithFormat:@"at://did:plc:f2-%d/app.bsky.graph.follow/t2", i],
+                                                    [NSString stringWithFormat:@"did:plc:f2-%d", i],
+                                                    @"app.bsky.graph.follow",
+                                                    [NSString stringWithFormat:@"t2-%d", i],
+                                                    @"bafyreif2",
+                                                    subjectJSON,
+                                                    subject2]
+                                            error:&error];
+    }
+
+    error = nil;
+    NSInteger count1 = [self.service getFollowersCountForDID:subject1 error:&error];
+    XCTAssertEqual(count1, 3);
+
+    error = nil;
+    NSInteger count2 = [self.service getFollowersCountForDID:subject2 error:&error];
+    XCTAssertEqual(count2, 7);
+}
+
+- (void)testGetFollowersCountNoFollows {
+    NSError *error = nil;
+    NSInteger count = [self.service getFollowersCountForDID:@"did:plc:nofollowers" error:&error];
+    XCTAssertEqual(count, 0);
+    XCTAssertNil(error);
+}
+
+- (void)testGetFollowersCountEmptyDID {
+    NSError *error = nil;
+    NSInteger count = [self.service getFollowersCountForDID:@"" error:&error];
+    XCTAssertEqual(count, 0);
+}
+
+- (void)testGetFollowersCountNilDID {
+    NSError *error = nil;
+    NSInteger count = [self.service getFollowersCountForDID:nil error:&error];
+    XCTAssertEqual(count, 0);
+}
+
 - (void)testGetFollowsCountEmpty {
     NSError *error = nil;
     NSDictionary *profile = [self.service getProfileForActor:@"did:plc:empty" error:&error];

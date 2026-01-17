@@ -47,10 +47,9 @@
         @"prev": [NSNull null]
     };
 
-    // Correct signature would be over opData (canonicalized)
     // For this test, we just provide a dummy signature
     PLCOperation *op = [[PLCOperation alloc] init];
-    op.did = @"did:plc:test";
+    op.did = [PLCOperation calculateDIDForData:opData];
     op.sig = @"invalid_signature";
     op.data = opData;
     op.prev = nil;
@@ -81,7 +80,7 @@
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
     PLCOperation *op1 = [[PLCOperation alloc] init];
-    op1.did = @"did:plc:test";
+    op1.did = [PLCOperation calculateDIDForData:op1Data];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
@@ -100,7 +99,7 @@
     NSData *op2Sig = [keyPair signHash:op2Hash error:nil];
 
     PLCOperation *op2 = [[PLCOperation alloc] init];
-    op2.did = @"did:plc:test";
+    op2.did = op1.did;
     op2.sig = [self base64URLEncode:op2Sig];
     op2.data = op2Data;
     op2.prev = @"bafkqabaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -132,7 +131,7 @@
     NSData *op1Sig = [key1 signHash:op1Hash error:nil];
 
     PLCOperation *op1 = [[PLCOperation alloc] init];
-    op1.did = @"did:plc:test";
+    op1.did = [PLCOperation calculateDIDForData:op1Data];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
@@ -152,7 +151,7 @@
     NSData *op2Sig = [key1 signHash:op2Hash error:nil]; // Signed by key1 (authorized by op1)
 
     PLCOperation *op2 = [[PLCOperation alloc] init];
-    op2.did = @"did:plc:test";
+    op2.did = op1.did;
     op2.sig = [self base64URLEncode:op2Sig];
     op2.data = op2Data;
     op2.prev = prevCid1;
@@ -172,7 +171,7 @@
     NSData *op3Sig = [key2 signHash:op3Hash error:nil]; // Signed by key2 (authorized by op2)
 
     PLCOperation *op3 = [[PLCOperation alloc] init];
-    op3.did = @"did:plc:test";
+    op3.did = op1.did;
     op3.sig = [self base64URLEncode:op3Sig];
     op3.data = op3Data;
     op3.prev = prevCid2;
@@ -199,7 +198,7 @@
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
     PLCOperation *op1 = [[PLCOperation alloc] init];
-    op1.did = @"did:plc:test";
+    op1.did = [PLCOperation calculateDIDForData:op1Data];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
@@ -218,7 +217,7 @@
     NSData *op2Sig = [keyPair signHash:op2Hash error:nil];
 
     PLCOperation *op2 = [[PLCOperation alloc] init];
-    op2.did = @"did:plc:test";
+    op2.did = op1.did;
     op2.sig = [self base64URLEncode:op2Sig];
     op2.data = op2Data;
     op2.prev = prevCid;
