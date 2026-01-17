@@ -15,6 +15,15 @@
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
+#if !defined(GNUSTEP)
+static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
+    SecKeyRef oldKey = *ptr;
+    if (oldKey == newKey) return;
+    if (oldKey) CFRelease(oldKey);
+    *ptr = newKey;
+}
+#endif
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincomplete-implementation"
 #pragma clang diagnostic ignored "-Wprotocol"
@@ -183,10 +192,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #if defined(GNUSTEP)
     self.signingKeyData = nil;
 #else
-    if (self.signingKey) {
-        CFRelease(self.signingKey);
-        self.signingKey = NULL;
-    }
+    _setSigningKeyUnsafe(&_signingKey, NULL);
 #endif
     
     sqlite3_close(self.db);
@@ -455,6 +461,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     }
     
     record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 6)];
+    
+    const char *subjectDid = (const char *)sqlite3_column_text(stmt, 7);
+    if (subjectDid) {
+        record.subjectDid = [NSString stringWithUTF8String:subjectDid];
+    }
+    
     return record;
 }
 
@@ -504,8 +516,8 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 }
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at) "
-                     @"VALUES (?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at, subject_did) "
+                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
@@ -522,6 +534,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     }
     
     sqlite3_bind_double(stmt, 7, record.createdAt.timeIntervalSince1970);
+    
+    if (record.subjectDid) {
+        sqlite3_bind_text(stmt, 8, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 8);
+    }
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
     return success;
@@ -800,6 +818,18 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     return data;
 }
 #else
+- (void)setSigningKey:(SecKeyRef)signingKey {
+    if (_signingKey != signingKey) {
+        if (_signingKey) {
+            CFRelease(_signingKey);
+        }
+        _signingKey = signingKey;
+        if (_signingKey) {
+            CFRetain(_signingKey);
+        }
+    }
+}
+
 - (nullable SecKeyRef)signingKeyWithError:(NSError **)error {
     if (self.signingKey) {
         CFRetain(self.signingKey);
@@ -846,8 +876,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NULL;
     }
     
-    self.signingKey = (SecKeyRef)keyRef;
-    CFRetain(self.signingKey);
+    _setSigningKeyUnsafe(&_signingKey, (SecKeyRef)keyRef);
     CFRelease(keyRef);
     return self.signingKey;
 }
@@ -987,8 +1016,7 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NO;
     }
     
-    self.signingKey = privateKey;
-    // Note: NOT calling CFRelease(privateKey) - the assign property takes ownership
+    _setSigningKeyUnsafe(&_signingKey, privateKey);
     return YES;
 }
 #endif

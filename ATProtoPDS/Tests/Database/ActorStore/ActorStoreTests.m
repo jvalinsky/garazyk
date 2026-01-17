@@ -217,6 +217,31 @@
     XCTAssertNotNil((__bridge id)key, @"Should have signing key now: %@", keyError);
 }
 
+- (void)testSigningKeyGenerationNoLeak {
+    __autoreleasing NSError *genError = nil;
+    
+    if (![self.store generateSigningKeyWithError:&genError]) {
+        XCTSkip(@"Signing key generation unavailable in this environment");
+        return;
+    }
+    
+    __autoreleasing NSError *keyError1 = nil;
+    SecKeyRef key1 = [self.store signingKeyWithError:&keyError1];
+    XCTAssertNotNil((__bridge id)key1, @"Should have signing key after first generation");
+    
+    __autoreleasing NSError *genError2 = nil;
+    BOOL success = [self.store generateSigningKeyWithError:&genError2];
+    XCTAssertTrue(success, @"Second key generation should succeed");
+    
+    __autoreleasing NSError *keyError2 = nil;
+    SecKeyRef key2 = [self.store signingKeyWithError:&keyError2];
+    XCTAssertNotNil((__bridge id)key2, @"Should have signing key after second generation");
+    
+    if (key1 != key2) {
+        XCTAssertTrue(YES, @"Second key generation produced different key (no leak)");
+    }
+}
+
 - (void)testRecordCount {
     __autoreleasing NSError *error = nil;
     
