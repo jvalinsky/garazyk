@@ -5,7 +5,7 @@
 #import "Debug/PDSLogger.h"
 
 @interface OAuthDemoHandler ()
-@property (nonatomic, assign) PDSController *controller;
+@property (nonatomic, weak) PDSController *controller;
 @end
 
 @implementation OAuthDemoHandler

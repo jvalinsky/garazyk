@@ -23,6 +23,7 @@
 #import "Debug/PDSLogger.h"
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <Security/Security.h>
 
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
 NSString * const OAuth2ScopeSignIn = @"atproto:signin";
@@ -188,17 +189,460 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 
 @implementation OAuth2DPoPProof
 
++ (nullable NSData *)decodeBase64URL:(NSString *)value error:(NSError **)error {
+    return [JWT base64URLDecode:value error:error];
+}
+
++ (nullable NSData *)decodeJWKComponent:(NSString *)value expectedLength:(NSUInteger)expectedLength error:(NSError **)error {
+    NSData *decoded = [self decodeBase64URL:value error:error];
+    if (!decoded) {
+        return nil;
+    }
+    if (decoded.length != expectedLength) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWK component length"}];
+        }
+        return nil;
+    }
+    return decoded;
+}
+
++ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+    NSString *kty = jwk[@"kty"];
+    if (!kty) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing JWK key type"}];
+        }
+        return nil;
+    }
+
+    if ([kty isEqualToString:@"EC"]) {
+        NSString *crv = jwk[@"crv"];
+        if (crv && ![crv isEqualToString:@"P-256"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Unsupported EC curve"}];
+            }
+            return nil;
+        }
+
+        NSString *xValue = jwk[@"x"];
+        NSString *yValue = jwk[@"y"];
+        NSString *dValue = jwk[@"d"];
+        if (!xValue || !yValue || !dValue) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing EC key material"}];
+            }
+            return nil;
+        }
+
+        NSError *decodeError = nil;
+        NSData *xData = [self decodeJWKComponent:xValue expectedLength:32 error:&decodeError];
+        NSData *yData = [self decodeJWKComponent:yValue expectedLength:32 error:&decodeError];
+        NSData *dData = [self decodeJWKComponent:dValue expectedLength:32 error:&decodeError];
+        if (!xData || !yData || !dData) {
+            if (error) *error = decodeError;
+            return nil;
+        }
+
+        NSMutableData *privateKeyData = [NSMutableData dataWithCapacity:97];
+        uint8_t prefix = 0x04;
+        [privateKeyData appendBytes:&prefix length:1];
+        [privateKeyData appendData:xData];
+        [privateKeyData appendData:yData];
+        [privateKeyData appendData:dData];
+
+        NSDictionary *attrs = @{
+            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+            (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+            (__bridge id)kSecAttrKeySizeInBits: @256
+        };
+
+        CFErrorRef keyError = NULL;
+        SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+                                                    (__bridge CFDictionaryRef)attrs,
+                                                    &keyError);
+        if (!privateKey) {
+            if (error) {
+                if (keyError) {
+                    *error = CFBridgingRelease(keyError);
+                } else {
+                    *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                 code:OAuth2ErrorServerError
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to create EC private key"}];
+                }
+            } else if (keyError) {
+                CFRelease(keyError);
+            }
+            return nil;
+        }
+        if (keyError) CFRelease(keyError);
+        return privateKey;
+    }
+
+    if (error) {
+        *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                     code:OAuth2ErrorInvalidRequest
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Unsupported JWK key type"}];
+    }
+    return nil;
+}
+
++ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+    NSString *kty = jwk[@"kty"];
+    if (![kty isEqualToString:@"EC"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported JWK key type"}];
+        }
+        return nil;
+    }
+
+    NSString *xValue = jwk[@"x"];
+    NSString *yValue = jwk[@"y"];
+    if (!xValue || !yValue) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing EC public key material"}];
+        }
+        return nil;
+    }
+
+    NSError *decodeError = nil;
+    NSData *xData = [self decodeJWKComponent:xValue expectedLength:32 error:&decodeError];
+    NSData *yData = [self decodeJWKComponent:yValue expectedLength:32 error:&decodeError];
+    if (!xData || !yData) {
+        if (error) *error = decodeError;
+        return nil;
+    }
+
+    NSMutableData *publicKeyData = [NSMutableData dataWithCapacity:65];
+    uint8_t prefix = 0x04;
+    [publicKeyData appendBytes:&prefix length:1];
+    [publicKeyData appendData:xData];
+    [publicKeyData appendData:yData];
+
+    NSDictionary *attrs = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic,
+        (__bridge id)kSecAttrKeySizeInBits: @256
+    };
+
+    CFErrorRef keyError = NULL;
+    SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+                                               (__bridge CFDictionaryRef)attrs,
+                                               &keyError);
+    if (!publicKey) {
+        if (error) {
+            if (keyError) {
+                *error = CFBridgingRelease(keyError);
+            } else {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorServerError
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to create EC public key"}];
+            }
+        } else if (keyError) {
+            CFRelease(keyError);
+        }
+        return nil;
+    }
+    if (keyError) CFRelease(keyError);
+    return publicKey;
+}
+
++ (NSDictionary *)publicJWKFromJWK:(NSDictionary *)jwk {
+    NSMutableDictionary *publicJWK = [jwk mutableCopy];
+    [publicJWK removeObjectForKey:@"d"];
+    [publicJWK removeObjectForKey:@"p"];
+    [publicJWK removeObjectForKey:@"q"];
+    [publicJWK removeObjectForKey:@"dp"];
+    [publicJWK removeObjectForKey:@"dq"];
+    [publicJWK removeObjectForKey:@"qi"];
+    return publicJWK;
+}
+
++ (nullable NSString *)jsonStringForValue:(NSString *)value {
+    NSData *data = [NSJSONSerialization dataWithJSONObject:@[value] options:0 error:nil];
+    if (!data) return nil;
+    NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    if (json.length < 2) return nil;
+    return [json substringWithRange:NSMakeRange(1, json.length - 2)];
+}
+
++ (nullable NSString *)jwkThumbprint:(NSDictionary *)jwk error:(NSError **)error {
+    NSString *kty = jwk[@"kty"];
+    NSDictionary *thumbprintJWK = nil;
+    if ([kty isEqualToString:@"EC"]) {
+        NSString *crv = jwk[@"crv"];
+        NSString *x = jwk[@"x"];
+        NSString *y = jwk[@"y"];
+        if (!crv || !x || !y) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing EC JWK members for thumbprint"}];
+            }
+            return nil;
+        }
+        thumbprintJWK = @{@"crv": crv, @"kty": @"EC", @"x": x, @"y": y};
+    } else if ([kty isEqualToString:@"RSA"]) {
+        NSString *n = jwk[@"n"];
+        NSString *e = jwk[@"e"];
+        if (!n || !e) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing RSA JWK members for thumbprint"}];
+            }
+            return nil;
+        }
+        thumbprintJWK = @{@"e": e, @"kty": @"RSA", @"n": n};
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported JWK key type"}];
+        }
+        return nil;
+    }
+
+    NSArray<NSString *> *keys = [[thumbprintJWK allKeys] sortedArrayUsingSelector:@selector(compare:)];
+    NSMutableArray<NSString *> *components = [NSMutableArray arrayWithCapacity:keys.count];
+    for (NSString *key in keys) {
+        NSString *keyJSON = [self jsonStringForValue:key];
+        NSString *valueJSON = [self jsonStringForValue:thumbprintJWK[key]];
+        if (!keyJSON || !valueJSON) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorServerError
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to encode JWK thumbprint"}];
+            }
+            return nil;
+        }
+        [components addObject:[NSString stringWithFormat:@"%@:%@", keyJSON, valueJSON]];
+    }
+
+    NSString *canonicalJSON = [NSString stringWithFormat:@"{%@}", [components componentsJoinedByString:@","]];
+    NSData *data = [canonicalJSON dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+    NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+    return [JWT base64URLEncodeData:hashData error:error];
+}
+
++ (BOOL)readASN1Length:(const uint8_t *)bytes
+                length:(size_t)length
+                offset:(size_t *)offset
+             outLength:(size_t *)outLength
+                 error:(NSError **)error {
+    if (*offset >= length) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ASN.1 length"}];
+        }
+        return NO;
+    }
+    uint8_t first = bytes[(*offset)++];
+    if ((first & 0x80) == 0) {
+        *outLength = first;
+        return YES;
+    }
+    size_t byteCount = first & 0x7F;
+    if (byteCount == 0 || byteCount > sizeof(size_t) || *offset + byteCount > length) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ASN.1 length"}];
+        }
+        return NO;
+    }
+    size_t value = 0;
+    for (size_t i = 0; i < byteCount; i++) {
+        value = (value << 8) | bytes[(*offset)++];
+    }
+    *outLength = value;
+    return YES;
+}
+
++ (nullable NSData *)ecdsaRawSignatureFromDER:(NSData *)der
+                                expectedSize:(size_t)expectedSize
+                                       error:(NSError **)error {
+    const uint8_t *bytes = der.bytes;
+    size_t length = der.length;
+    size_t offset = 0;
+    if (length < 8 || bytes[offset++] != 0x30) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature"}];
+        }
+        return nil;
+    }
+    size_t seqLen = 0;
+    if (![self readASN1Length:bytes length:length offset:&offset outLength:&seqLen error:error]) {
+        return nil;
+    }
+    if (offset + seqLen > length) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature length"}];
+        }
+        return nil;
+    }
+    if (bytes[offset++] != 0x02) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature"}];
+        }
+        return nil;
+    }
+    size_t rLen = 0;
+    if (![self readASN1Length:bytes length:length offset:&offset outLength:&rLen error:error]) {
+        return nil;
+    }
+    if (offset + rLen > length) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature"}];
+        }
+        return nil;
+    }
+    const uint8_t *rBytes = bytes + offset;
+    offset += rLen;
+    if (bytes[offset++] != 0x02) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature"}];
+        }
+        return nil;
+    }
+    size_t sLen = 0;
+    if (![self readASN1Length:bytes length:length offset:&offset outLength:&sLen error:error]) {
+        return nil;
+    }
+    if (offset + sLen > length) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature"}];
+        }
+        return nil;
+    }
+    const uint8_t *sBytes = bytes + offset;
+
+    while (rLen > 0 && rBytes[0] == 0x00) {
+        rBytes++;
+        rLen--;
+    }
+    while (sLen > 0 && sBytes[0] == 0x00) {
+        sBytes++;
+        sLen--;
+    }
+    if (rLen > expectedSize || sLen > expectedSize) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA signature size"}];
+        }
+        return nil;
+    }
+
+    NSMutableData *raw = [NSMutableData dataWithLength:expectedSize * 2];
+    uint8_t *rawBytes = raw.mutableBytes;
+    memcpy(rawBytes + (expectedSize - rLen), rBytes, rLen);
+    memcpy(rawBytes + expectedSize + (expectedSize - sLen), sBytes, sLen);
+    return raw;
+}
+
++ (nullable NSData *)ecdsaDERSignatureFromRaw:(NSData *)raw error:(NSError **)error {
+    if (raw.length % 2 != 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid ECDSA raw signature"}];
+        }
+        return nil;
+    }
+
+    NSUInteger half = raw.length / 2;
+    NSData *rData = [raw subdataWithRange:NSMakeRange(0, half)];
+    NSData *sData = [raw subdataWithRange:NSMakeRange(half, half)];
+
+    NSMutableData *r = [rData mutableCopy];
+    while (r.length > 0 && ((const uint8_t *)r.bytes)[0] == 0x00) {
+        [r replaceBytesInRange:NSMakeRange(0, 1) withBytes:NULL length:0];
+    }
+    if (r.length == 0 || (((const uint8_t *)r.bytes)[0] & 0x80)) {
+        uint8_t zero = 0x00;
+        [r replaceBytesInRange:NSMakeRange(0, 0) withBytes:&zero length:1];
+    }
+
+    NSMutableData *s = [sData mutableCopy];
+    while (s.length > 0 && ((const uint8_t *)s.bytes)[0] == 0x00) {
+        [s replaceBytesInRange:NSMakeRange(0, 1) withBytes:NULL length:0];
+    }
+    if (s.length == 0 || (((const uint8_t *)s.bytes)[0] & 0x80)) {
+        uint8_t zero = 0x00;
+        [s replaceBytesInRange:NSMakeRange(0, 0) withBytes:&zero length:1];
+    }
+
+    NSMutableData *sequence = [NSMutableData data];
+    uint8_t seqTag = 0x30;
+    [sequence appendBytes:&seqTag length:1];
+
+    NSMutableData *content = [NSMutableData data];
+    uint8_t intTag = 0x02;
+    [content appendBytes:&intTag length:1];
+    uint8_t rLen = (uint8_t)r.length;
+    [content appendBytes:&rLen length:1];
+    [content appendData:r];
+    [content appendBytes:&intTag length:1];
+    uint8_t sLen = (uint8_t)s.length;
+    [content appendBytes:&sLen length:1];
+    [content appendData:s];
+
+    uint8_t seqLen = (uint8_t)content.length;
+    [sequence appendBytes:&seqLen length:1];
+    [sequence appendData:content];
+    return sequence;
+}
+
 + (nullable NSString *)createProofForURL:(NSURL *)url
                                 method:(NSString *)method
                                   key:(NSDictionary *)jwk
                                  error:(NSError **)error {
-    NSMutableDictionary *proof = [NSMutableDictionary dictionary];
-    proof[@"typ"] = @"dpop+jwt";
-    proof[@"alg"] = @"RS256";
+    NSString *kty = jwk[@"kty"];
+    NSString *alg = jwk[@"alg"];
+    if (!alg && [kty isEqualToString:@"EC"]) {
+        alg = @"ES256";
+    }
+    if (![kty isEqualToString:@"EC"] || ![alg isEqualToString:@"ES256"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported DPoP key type"}];
+        }
+        return nil;
+    }
 
     NSMutableDictionary *header = [NSMutableDictionary dictionary];
     header[@"typ"] = @"dpop+jwt";
-    header[@"alg"] = @"RS256";
+    header[@"alg"] = alg;
+    header[@"jwk"] = [self publicJWKFromJWK:jwk];
     if (jwk[@"kid"]) header[@"kid"] = jwk[@"kid"];
 
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
@@ -207,14 +651,15 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
     if (!headerEncoded) return nil;
 
-    NSDateFormatter *isoFormatter = [[NSDateFormatter alloc] init];
-    isoFormatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    isoFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    components.fragment = nil;
+    NSString *normalizedHTU = components.URL.absoluteString ?: url.absoluteString;
+    NSString *normalizedMethod = [method uppercaseString];
 
     NSMutableDictionary *claims = [NSMutableDictionary dictionary];
     claims[@"jti"] = [[NSUUID UUID] UUIDString];
-    claims[@"htm"] = method;
-    claims[@"htu"] = url.absoluteString;
+    claims[@"htm"] = normalizedMethod;
+    claims[@"htu"] = normalizedHTU;
     claims[@"iat"] = @([[NSDate date] timeIntervalSince1970]);
 
     NSData *claimsData = [NSJSONSerialization dataWithJSONObject:claims options:0 error:error];
@@ -223,7 +668,195 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     NSString *claimsEncoded = [JWT base64URLEncodeData:claimsData error:error];
     if (!claimsEncoded) return nil;
 
-    return [NSString stringWithFormat:@"%@.%@.stub", headerEncoded, claimsEncoded];
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, claimsEncoded];
+    NSError *keyError = nil;
+    SecKeyRef privateKey = [self createPrivateKeyFromJWK:jwk error:&keyError];
+    if (!privateKey) {
+        if (error) *error = keyError;
+        return nil;
+    }
+
+    CFErrorRef signError = NULL;
+    NSData *signatureData = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+                                                                    kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                                                    (__bridge CFDataRef)[signingInput dataUsingEncoding:NSUTF8StringEncoding],
+                                                                    &signError));
+    CFRelease(privateKey);
+
+    if (signError || !signatureData) {
+        if (error) {
+            if (signError) {
+                *error = CFBridgingRelease(signError);
+            } else {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorServerError
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to sign DPoP proof"}];
+            }
+        } else if (signError) {
+            CFRelease(signError);
+        }
+        return nil;
+    }
+
+    NSData *rawSignature = [self ecdsaRawSignatureFromDER:signatureData expectedSize:32 error:error];
+    if (!rawSignature) return nil;
+
+    NSString *signatureEncoded = [JWT base64URLEncodeData:rawSignature error:error];
+    if (!signatureEncoded) return nil;
+
+    return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, claimsEncoded, signatureEncoded];
+}
+
++ (BOOL)verifyProof:(NSString *)dpopJwt
+             method:(NSString *)method
+                url:(NSURL *)url
+              nonce:(nullable NSString *)nonce
+      outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+              error:(NSError **)error {
+    NSArray<NSString *> *parts = [dpopJwt componentsSeparatedByString:@"."];
+    if (parts.count != 3) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP format"}];
+        }
+        return NO;
+    }
+
+    NSError *decodeError = nil;
+    NSData *headerData = [self decodeBase64URL:parts[0] error:&decodeError];
+    NSData *payloadData = [self decodeBase64URL:parts[1] error:&decodeError];
+    NSData *signatureData = [self decodeBase64URL:parts[2] error:&decodeError];
+    if (!headerData || !payloadData || !signatureData) {
+        if (error) *error = decodeError;
+        return NO;
+    }
+
+    NSDictionary *header = [NSJSONSerialization JSONObjectWithData:headerData options:0 error:&decodeError];
+    NSDictionary *payload = [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:&decodeError];
+    if (!header || !payload) {
+        if (error) *error = decodeError;
+        return NO;
+    }
+
+    NSString *typ = header[@"typ"];
+    NSString *alg = header[@"alg"];
+    NSDictionary *jwk = header[@"jwk"];
+    if (![typ isEqualToString:@"dpop+jwt"] || ![alg isEqualToString:@"ES256"] || ![jwk isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP header"}];
+        }
+        return NO;
+    }
+
+    NSString *htm = payload[@"htm"];
+    NSString *htu = payload[@"htu"];
+    NSString *jti = payload[@"jti"];
+    NSNumber *iat = payload[@"iat"];
+    if (!htm || !htu || !jti || !iat) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP claims"}];
+        }
+        return NO;
+    }
+
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    components.fragment = nil;
+    NSString *expectedHTU = components.URL.absoluteString ?: url.absoluteString;
+
+    NSString *normalizedMethod = [method uppercaseString];
+    if (![htm isEqualToString:normalizedMethod]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP htm mismatch"}];
+        }
+        return NO;
+    }
+
+    if (![htu isEqualToString:expectedHTU]) {
+        NSURLComponents *payloadComponents = [NSURLComponents componentsWithString:htu];
+        if (!payloadComponents ||
+            ![payloadComponents.scheme.lowercaseString isEqualToString:components.scheme.lowercaseString] ||
+            ![payloadComponents.host.lowercaseString isEqualToString:components.host.lowercaseString] ||
+            ![payloadComponents.path isEqualToString:components.path] ||
+            ![(payloadComponents.query ?: @"") isEqualToString:(components.query ?: @"")]) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidDPoPProof
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP htu mismatch"}];
+            }
+            return NO;
+        }
+    }
+
+    if (nonce && ![nonce isEqualToString:payload[@"nonce"]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP nonce mismatch"}];
+        }
+        return NO;
+    }
+
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    if (iat.doubleValue > now + 60) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP iat in future"}];
+        }
+        return NO;
+    }
+
+    NSNumber *exp = payload[@"exp"];
+    if (exp && exp.doubleValue < now) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof expired"}];
+        }
+        return NO;
+    }
+
+    SecKeyRef publicKey = [self createPublicKeyFromJWK:jwk error:error];
+    if (!publicKey) return NO;
+
+    NSData *derSignature = [self ecdsaDERSignatureFromRaw:signatureData error:error];
+    if (!derSignature) {
+        CFRelease(publicKey);
+        return NO;
+    }
+
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", parts[0], parts[1]];
+    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    BOOL verified = SecKeyVerifySignature(publicKey,
+                                          kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                          (__bridge CFDataRef)signingData,
+                                          (__bridge CFDataRef)derSignature,
+                                          NULL);
+    CFRelease(publicKey);
+    if (!verified) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP signature verification failed"}];
+        }
+        return NO;
+    }
+
+    if (thumbprint) {
+        *thumbprint = [self jwkThumbprint:jwk error:error];
+        if (!*thumbprint) {
+            return NO;
+        }
+    }
+
+    return YES;
 }
 
 @end
@@ -434,7 +1067,18 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     NSString *handle = account.handle ?: @"handle.placeholder";
     NSString *scope = codeData[@"scope"] ?: OAuth2ScopeIdentify;
 
-    Session *session = [self createSessionForDID:did handle:handle scope:scope dpopJWK:codeData[@"dpop_jwk"]];
+    if (!request.dpopKeyThumbprint || request.dpopKeyThumbprint.length == 0) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidDPoPProof
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP key thumbprint"}];
+        completion(nil, error);
+        return;
+    }
+
+    Session *session = [self createSessionForDID:did
+                                          handle:handle
+                                           scope:scope
+                               dpopKeyThumbprint:request.dpopKeyThumbprint];
 
     completion(session, nil);
 }
@@ -470,7 +1114,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     Session *newSession = [self createSessionForDID:existingSession.did
                                              handle:existingSession.handle
                                               scope:newScope
-                                            dpopJWK:nil];
+                                  dpopKeyThumbprint:nil];
 
     [self.activeSessions removeObjectForKey:existingSession.sessionID];
 
@@ -489,8 +1133,8 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     }
 
     NSString *newAccessToken = [existingSession refreshAccessToken];
-    if (request.dpopProof) {
-        existingSession.dpopKeyThumbprint = request.dpopProof;
+    if (request.dpopKeyThumbprint) {
+        existingSession.dpopKeyThumbprint = request.dpopKeyThumbprint;
     }
 
     completion(existingSession, nil);
@@ -508,14 +1152,14 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 - (Session *)createSessionForDID:(NSString *)did
                           handle:(NSString *)handle
                            scope:(NSString *)scope
-                         dpopJWK:(nullable NSString *)dpopJWK {
+               dpopKeyThumbprint:(nullable NSString *)dpopKeyThumbprint {
     Session *session = [[Session alloc] initWithDID:did
                                              handle:handle
                                               scope:scope
                                              minter:self.jwtMinter];
 
-    if (dpopJWK) {
-        session.dpopKeyThumbprint = dpopJWK;
+    if (dpopKeyThumbprint) {
+        session.dpopKeyThumbprint = dpopKeyThumbprint;
     }
 
     self.activeSessions[session.sessionID] = session;

@@ -12,6 +12,7 @@
  */
 
 #import "Core/CID.h"
+#import "Core/Base58.h"
 #import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonCrypto.h>
 
@@ -351,91 +352,11 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable NSData *)base58btcDecode:(NSString *)string {
-    if (!string || string.length == 0) {
-        return [NSData data];
-    }
-
-    NSUInteger leadingZeros = 0;
-    while (leadingZeros < string.length && [string characterAtIndex:leadingZeros] == '1') {
-        leadingZeros++;
-    }
-
-    NSMutableData *littleEndian = [NSMutableData data];
-    for (NSUInteger i = 0; i < string.length; i++) {
-        unichar c = [string characterAtIndex:i];
-        const char *ptr = strchr(kBase58Alphabet, (char)c);
-        if (!ptr) {
-            return nil;
-        }
-
-        int carry = (int)(ptr - kBase58Alphabet);
-        uint8_t *bytes = littleEndian.mutableBytes;
-        for (NSUInteger j = 0; j < littleEndian.length; j++) {
-            int value = bytes[j] * 58 + carry;
-            bytes[j] = (uint8_t)(value & 0xFF);
-            carry = value >> 8;
-        }
-        while (carry > 0) {
-            uint8_t byte = (uint8_t)(carry & 0xFF);
-            [littleEndian appendBytes:&byte length:1];
-            carry >>= 8;
-        }
-    }
-
-    NSUInteger valueLength = littleEndian.length;
-    NSMutableData *result = [NSMutableData dataWithLength:leadingZeros + valueLength];
-    if (valueLength > 0) {
-        uint8_t *outBytes = result.mutableBytes;
-        const uint8_t *srcBytes = littleEndian.bytes;
-        for (NSUInteger i = 0; i < valueLength; i++) {
-            outBytes[leadingZeros + i] = srcBytes[valueLength - 1 - i];
-        }
-    }
-
-    return result;
+    return [Base58 decode:string];
 }
 
 + (NSString *)base58btcEncode:(NSData *)data {
-    if (!data || data.length == 0) {
-        return @"";
-    }
-
-    const uint8_t *bytes = data.bytes;
-    NSUInteger length = data.length;
-
-    NSUInteger leadingZeros = 0;
-    while (leadingZeros < length && bytes[leadingZeros] == 0) {
-        leadingZeros++;
-    }
-
-    // Rough estimate of size: log2(256) / log2(58) ≈ 1.38
-    NSUInteger capacity = (length * 138 / 100) + 1;
-    uint8_t *encoded = calloc(capacity, sizeof(uint8_t));
-    NSUInteger encodedLength = 0;
-
-    for (NSUInteger i = leadingZeros; i < length; i++) {
-        uint32_t carry = bytes[i];
-        for (NSUInteger j = 0; j < encodedLength; j++) {
-            carry += (uint32_t)encoded[j] << 8;
-            encoded[j] = carry % 58;
-            carry /= 58;
-        }
-        while (carry > 0) {
-            encoded[encodedLength++] = carry % 58;
-            carry /= 58;
-        }
-    }
-
-    NSMutableString *result = [NSMutableString stringWithCapacity:leadingZeros + encodedLength];
-    for (NSUInteger i = 0; i < leadingZeros; i++) {
-        [result appendFormat:@"%c", kBase58Alphabet[0]];
-    }
-    for (NSInteger i = (NSInteger)encodedLength - 1; i >= 0; i--) {
-        [result appendFormat:@"%c", kBase58Alphabet[encoded[i]]];
-    }
-
-    free(encoded);
-    return [result copy];
+    return [Base58 encode:data];
 }
 
 #pragma mark - Hashing

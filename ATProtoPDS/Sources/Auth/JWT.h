@@ -245,6 +245,17 @@ typedef NS_ENUM(NSInteger, JWTError) {
 + (NSString *)base64URLEncodeData:(NSData *)data error:(NSError **)error;
 
 /*!
+ @method base64URLDecode:error:
+ 
+ @abstract Base64URL-decodes a string.
+ 
+ @param string The Base64URL string to decode.
+ @param error On return, contains an error if decoding failed.
+ @return The decoded data.
+ */
++ (nullable NSData *)base64URLDecode:(NSString *)string error:(NSError **)error;
+
+/*!
  @method encodedToken
  
  @abstract Returns the complete encoded token.

@@ -126,7 +126,7 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
  *
  * @note Thread-safe for concurrent read operations. Write operations are serialized.
  */
-@interface KeyManager : NSObject
+@interface KeyManager : NSObject <NSSecureCoding>
 
 /*! Service identifier for keychain access (e.g., bundle ID) */
 @property (nonatomic, copy) NSString *serviceIdentifier;
