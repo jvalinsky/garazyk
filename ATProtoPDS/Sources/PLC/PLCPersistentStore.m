@@ -6,13 +6,15 @@
 
 NSString * const PLCPersistentStoreErrorDomain = @"com.atproto.pds.plc.persistentstore";
 
-static NSString * const kCreateOperationsTableSQL = 
+static NSString * const kCreateOperationsTableSQL =
     @"CREATE TABLE IF NOT EXISTS plc_operations ("
     @"  id INTEGER PRIMARY KEY AUTOINCREMENT,"
     @"  did TEXT NOT NULL,"
     @"  prev TEXT,"
     @"  sig TEXT NOT NULL,"
     @"  data BLOB NOT NULL,"
+    @"  cid TEXT,"
+    @"  nullified INTEGER DEFAULT 0,"
     @"  created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
     @");";
 
@@ -22,14 +24,20 @@ static NSString * const kCreateDidIndexSQL =
 static NSString * const kCreatePrevIndexSQL = 
     @"CREATE INDEX IF NOT EXISTS idx_plc_operations_prev ON plc_operations(prev);";
 
-static NSString * const kInsertOperationSQL = 
-    @"INSERT INTO plc_operations (did, prev, sig, data) VALUES (?, ?, ?, ?);";
+static NSString * const kInsertOperationSQL =
+    @"INSERT INTO plc_operations (did, prev, sig, data, cid, nullified) VALUES (?, ?, ?, ?, ?, ?);";
 
-static NSString * const kSelectHistorySQL = 
-    @"SELECT id, did, prev, sig, data FROM plc_operations WHERE did = ? ORDER BY id ASC;";
+static NSString * const kSelectHistorySQL =
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"WHERE did = ? AND nullified = 0 ORDER BY id ASC;";
 
-static NSString * const kSelectHistorySinceSQL = 
-    @"SELECT id, did, prev, sig, data FROM plc_operations WHERE did = ? AND id > ? ORDER BY id ASC;";
+static NSString * const kSelectHistoryIncludingNullifiedSQL =
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"WHERE did = ? ORDER BY id ASC;";
+
+static NSString * const kSelectHistorySinceSQL =
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"WHERE did = ? AND id > ? AND nullified = 0 ORDER BY id ASC;";
 
 static NSString * const kCountOperationsSQL = 
     @"SELECT COUNT(*) FROM plc_operations WHERE did = ?;";
@@ -163,6 +171,10 @@ static NSString * const kDeleteOperationsSQL =
         if (errMsg) sqlite3_free(errMsg);
         return NO;
     }
+
+    if (![self ensureSchemaUpgrades:error]) {
+        return NO;
+    }
     
     result = sqlite3_exec(self.db, kCreateDidIndexSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
@@ -186,6 +198,58 @@ static NSString * const kDeleteOperationsSQL =
         return NO;
     }
     
+    return YES;
+}
+
+- (BOOL)ensureSchemaUpgrades:(NSError **)error {
+    NSMutableSet<NSString *> *columns = [NSMutableSet set];
+    sqlite3_stmt *stmt = NULL;
+    int prepareResult = sqlite3_prepare_v2(self.db, "PRAGMA table_info(plc_operations);", -1, &stmt, NULL);
+    if (prepareResult != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:prepareResult
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to inspect plc_operations schema"}];
+        }
+        return NO;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *nameText = sqlite3_column_text(stmt, 1);
+        if (nameText) {
+            [columns addObject:[NSString stringWithUTF8String:(const char *)nameText]];
+        }
+    }
+    sqlite3_finalize(stmt);
+
+    if (![columns containsObject:@"cid"]) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN cid TEXT;", NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                            code:result
+                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Failed to add cid column"]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+
+    if (![columns containsObject:@"nullified"]) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN nullified INTEGER DEFAULT 0;", NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                            code:result
+                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Failed to add nullified column"]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+
     return YES;
 }
 
@@ -257,7 +321,9 @@ static NSString * const kDeleteOperationsSQL =
 
 #pragma mark - PLCStore Protocol
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did error:(NSError **)error {
+- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+                                      includeNullified:(BOOL)includeNullified
+                                                 error:(NSError **)error {
     if (!self.open) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -271,7 +337,8 @@ static NSString * const kDeleteOperationsSQL =
     __block NSError *blockError = nil;
     
     dispatch_sync(self.transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kSelectHistorySQL error:&blockError];
+        NSString *query = includeNullified ? kSelectHistoryIncludingNullifiedSQL : kSelectHistorySQL;
+        sqlite3_stmt *stmt = [self prepareStatement:query error:&blockError];
         if (!stmt) {
             return;
         }
@@ -302,7 +369,9 @@ static NSString * const kDeleteOperationsSQL =
     return operations;
 }
 
-- (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error {
+- (BOOL)appendOperation:(PLCOperation *)op
+           nullifyCIDs:(NSArray<NSString *> *)nullified
+                 error:(NSError **)error {
     if (!self.open) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -351,6 +420,26 @@ static NSString * const kDeleteOperationsSQL =
         }
         
         sqlite3_bind_blob(stmt, 4, cborData.bytes, (int)cborData.length, SQLITE_TRANSIENT);
+
+        NSError *cidError = nil;
+        NSString *cidString = op.cid;
+        if (!cidString) {
+            cidString = [PLCOperation calculateCIDForOperation:[op toDictionary] error:&cidError];
+            op.cid = cidString;
+        }
+        if (!cidString) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                            code:PLCPersistentStoreErrorInvalidOperation
+                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to calculate CID for operation",
+                                                 NSUnderlyingErrorKey: cidError ?: [NSNull null]}];
+            return;
+        }
+
+        sqlite3_bind_text(stmt, 5, cidString.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 6, 0);
+        if (!op.createdAt) {
+            op.createdAt = [NSDate date];
+        }
         
         int result = sqlite3_step(stmt);
         if (result != SQLITE_DONE) {
@@ -363,6 +452,34 @@ static NSString * const kDeleteOperationsSQL =
         
         sqlite3_reset(stmt);
         success = YES;
+
+        if (success && nullified.count > 0) {
+            NSMutableString *sql = [NSMutableString stringWithString:@"UPDATE plc_operations SET nullified = 1 WHERE did = ? AND cid IN ("];
+            for (NSUInteger i = 0; i < nullified.count; i++) {
+                [sql appendString:(i == 0 ? @"?" : @",?")];
+            }
+            [sql appendString:@");"];
+            sqlite3_stmt *updateStmt = NULL;
+            int updateResult = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &updateStmt, NULL);
+            if (updateResult != SQLITE_OK) {
+                blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                                code:updateResult
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare nullify statement"}];
+                if (updateStmt) sqlite3_finalize(updateStmt);
+                return;
+            }
+            sqlite3_bind_text(updateStmt, 1, op.did.UTF8String, -1, SQLITE_TRANSIENT);
+            for (NSUInteger i = 0; i < nullified.count; i++) {
+                sqlite3_bind_text(updateStmt, (int)i + 2, nullified[i].UTF8String, -1, SQLITE_TRANSIENT);
+            }
+            int updateStep = sqlite3_step(updateStmt);
+            if (updateStep != SQLITE_DONE) {
+                blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                                code:updateStep
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to nullify operations"}];
+            }
+            sqlite3_finalize(updateStmt);
+        }
     });
     
     if (blockError && error) {
@@ -380,6 +497,9 @@ static NSString * const kDeleteOperationsSQL =
     const unsigned char *sigText = sqlite3_column_text(stmt, 3);
     const void *dataBlob = sqlite3_column_blob(stmt, 4);
     int dataLen = sqlite3_column_bytes(stmt, 4);
+    const unsigned char *cidText = sqlite3_column_text(stmt, 5);
+    int nullifiedValue = sqlite3_column_int(stmt, 6);
+    const unsigned char *createdText = sqlite3_column_text(stmt, 7);
     
     if (!didText || !sigText || !dataBlob) {
         return nil;
@@ -400,6 +520,20 @@ static NSString * const kDeleteOperationsSQL =
     
     if (prevText) {
         op.prev = [NSString stringWithUTF8String:(const char *)prevText];
+    }
+    if (cidText) {
+        op.cid = [NSString stringWithUTF8String:(const char *)cidText];
+    }
+    op.nullified = nullifiedValue != 0;
+    if (createdText) {
+        NSString *createdString = [NSString stringWithUTF8String:(const char *)createdText];
+        if (createdString.length > 0) {
+            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+            formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+            formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+            formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
+            op.createdAt = [formatter dateFromString:createdString];
+        }
     }
     
     return op;

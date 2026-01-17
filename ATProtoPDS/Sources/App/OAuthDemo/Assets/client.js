@@ -5,6 +5,15 @@ const CONFIG = {
     issuer: window.location.origin // Assuming demo client is served by PDS
 };
 
+const STORAGE_KEYS = {
+    state: 'oauth_state',
+    codeVerifier: 'oauth_code_verifier',
+    accessToken: 'access_token'
+};
+
+let inMemoryKeyPair = null;
+let storageWarningShown = false;
+
 const elements = {
     handle: document.getElementById('handle'),
     btnLogin: document.getElementById('btn-login'),
@@ -16,12 +25,20 @@ const elements = {
     btnTestSession: document.getElementById('btn-test-session'),
     btnLogout: document.getElementById('btn-logout'),
     apiResult: document.getElementById('api-result'),
-    debugLog: document.getElementById('debug-log')
+    debugLog: document.getElementById('debug-log'),
+    storageWarning: document.getElementById('storage-warning')
 };
 
 function log(msg) {
     console.log(msg);
     elements.debugLog.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+}
+
+function showStorageWarning(message) {
+    if (storageWarningShown) return;
+    storageWarningShown = true;
+    elements.storageWarning.textContent = message;
+    elements.storageWarning.classList.remove('hidden');
 }
 
 // --- PKCE Helpers ---
@@ -55,6 +72,108 @@ function base64UrlEncode(a) {
         .replace(/=+$/, "");
 }
 
+function base64UrlEncodeString(str) {
+    return base64UrlEncode(new TextEncoder().encode(str));
+}
+
+function toUnpaddedUint8(bytes) {
+    let start = 0;
+    while (start < bytes.length && bytes[start] === 0) start++;
+    return bytes.slice(start);
+}
+
+function derToJose(signature, keySize) {
+    const bytes = new Uint8Array(signature);
+    if (bytes[0] !== 0x30) {
+        throw new Error('Invalid ECDSA signature');
+    }
+    let offset = 2;
+    if (bytes[1] & 0x80) {
+        const lengthBytes = bytes[1] & 0x7f;
+        offset = 2 + lengthBytes;
+    }
+    if (bytes[offset++] !== 0x02) {
+        throw new Error('Invalid ECDSA signature');
+    }
+    let rLen = bytes[offset++];
+    let r = bytes.slice(offset, offset + rLen);
+    offset += rLen;
+    if (bytes[offset++] !== 0x02) {
+        throw new Error('Invalid ECDSA signature');
+    }
+    let sLen = bytes[offset++];
+    let s = bytes.slice(offset, offset + sLen);
+    r = toUnpaddedUint8(r);
+    s = toUnpaddedUint8(s);
+    if (r.length > keySize || s.length > keySize) {
+        throw new Error('Invalid ECDSA signature size');
+    }
+    const out = new Uint8Array(keySize * 2);
+    out.set(r, keySize - r.length);
+    out.set(s, 2 * keySize - s.length);
+    return out;
+}
+
+async function sha256Bytes(data) {
+    return crypto.subtle.digest('SHA-256', data);
+}
+
+async function computeAth(accessToken) {
+    const hash = await sha256Bytes(new TextEncoder().encode(accessToken));
+    return base64UrlEncode(hash);
+}
+
+function normalizeDpopUrl(url) {
+    const u = new URL(url);
+    u.hash = '';
+    return u.toString();
+}
+
+async function openKeyDb() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('oauth-demo', 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('keys')) {
+                db.createObjectStore('keys');
+            }
+        };
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+async function saveKeyPair(keyPair) {
+    try {
+        const db = await openKeyDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('keys', 'readwrite');
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+            tx.objectStore('keys').put(keyPair, 'dpop');
+        });
+    } catch (err) {
+        log(`Warning: DPoP key not persisted (${err.message}).`);
+        showStorageWarning('DPoP key is stored in memory only. Refreshing the page will require a new login.');
+    }
+}
+
+async function loadKeyPair() {
+    try {
+        const db = await openKeyDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('keys', 'readonly');
+            const request = tx.objectStore('keys').get('dpop');
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error);
+        });
+    } catch (err) {
+        log(`Warning: DPoP key not loaded from storage (${err.message}).`);
+        showStorageWarning('DPoP key storage is unavailable. This browser may block persistent storage.');
+        return null;
+    }
+}
+
 // --- DPoP Helpers ---
 async function generateDPoPKey() {
     log("Generating DPoP key pair (ES256)...");
@@ -65,7 +184,18 @@ async function generateDPoPKey() {
     );
 }
 
-async function createDPoPProof(keyPair, method, url) {
+async function getOrCreateDPoPKey() {
+    const existing = await loadKeyPair();
+    if (existing) return existing;
+    if (inMemoryKeyPair) return inMemoryKeyPair;
+
+    const keyPair = await generateDPoPKey();
+    await saveKeyPair(keyPair);
+    inMemoryKeyPair = keyPair;
+    return keyPair;
+}
+
+async function createDPoPProof(keyPair, method, url, options = {}) {
     const header = {
         typ: "dpop+jwt",
         alg: "ES256",
@@ -74,13 +204,20 @@ async function createDPoPProof(keyPair, method, url) {
 
     const payload = {
         jti: generateRandomString(16),
-        htm: method,
-        htu: url,
+        htm: method.toUpperCase(),
+        htu: normalizeDpopUrl(url),
         iat: Math.floor(Date.now() / 1000)
     };
 
-    const headerEnc = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
-    const payloadEnc = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+    if (options.nonce) {
+        payload.nonce = options.nonce;
+    }
+    if (options.accessToken) {
+        payload.ath = await computeAth(options.accessToken);
+    }
+
+    const headerEnc = base64UrlEncodeString(JSON.stringify(header));
+    const payloadEnc = base64UrlEncodeString(JSON.stringify(payload));
     const unsignedToken = `${headerEnc}.${payloadEnc}`;
 
     const signature = await crypto.subtle.sign(
@@ -89,21 +226,66 @@ async function createDPoPProof(keyPair, method, url) {
         new TextEncoder().encode(unsignedToken)
     );
 
-    const signatureEnc = base64UrlEncode(signature);
+    const joseSignature = derToJose(signature, 32);
+    const signatureEnc = base64UrlEncode(joseSignature);
     return `${unsignedToken}.${signatureEnc}`;
+}
+
+function captureDpopNonce(headers) {
+    const nonce = headers.get('DPoP-Nonce');
+    if (nonce) {
+        sessionStorage.setItem(nonceStorageKey(), nonce);
+    }
+    return nonce;
+}
+
+function nonceStorageKey() {
+    return `dpop_nonce:${CONFIG.issuer}`;
+}
+
+async function fetchWithDpopNonceRetry(url, init, dpopKeyPair, options = {}) {
+    const method = (init.method || 'GET').toUpperCase();
+    const nonce = sessionStorage.getItem(nonceStorageKey());
+    const dpopProof = await createDPoPProof(dpopKeyPair, method, url, {
+        nonce,
+        accessToken: options.accessToken
+    });
+
+    const headers = new Headers(init.headers || {});
+    headers.set('DPoP', dpopProof);
+    const firstResponse = await fetch(url, { ...init, headers });
+    captureDpopNonce(firstResponse.headers);
+
+    if ((firstResponse.status === 400 || firstResponse.status === 401) &&
+        firstResponse.headers.get('DPoP-Nonce')) {
+        const retryProof = await createDPoPProof(dpopKeyPair, method, url, {
+            nonce: sessionStorage.getItem(nonceStorageKey()),
+            accessToken: options.accessToken
+        });
+        headers.set('DPoP', retryProof);
+        const retryResponse = await fetch(url, { ...init, headers });
+        captureDpopNonce(retryResponse.headers);
+        return retryResponse;
+    }
+
+    return firstResponse;
 }
 
 // --- OAuth Flow ---
 async function startLogin() {
     const handle = elements.handle.value;
+    if (!handle || handle.trim().length === 0) {
+        elements.tokenStatus.innerHTML = '<span class="error">Handle required</span>';
+        return;
+    }
     log(`Starting login for handle: ${handle}`);
 
     const state = generateRandomString(16);
     const codeVerifier = generateRandomString(64);
     const codeChallenge = base64UrlEncode(await sha256(codeVerifier));
 
-    sessionStorage.setItem('oauth_state', state);
-    sessionStorage.setItem('oauth_code_verifier', codeVerifier);
+    sessionStorage.setItem(STORAGE_KEYS.state, state);
+    sessionStorage.setItem(STORAGE_KEYS.codeVerifier, codeVerifier);
 
     const authUrl = new URL('/oauth/authorize', CONFIG.issuer);
     authUrl.searchParams.set('client_id', CONFIG.clientId);
@@ -124,8 +306,8 @@ async function handleCallback() {
     const code = params.get('code');
     const state = params.get('state');
 
-    const savedState = sessionStorage.getItem('oauth_state');
-    const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
+    const savedState = sessionStorage.getItem(STORAGE_KEYS.state);
+    const codeVerifier = sessionStorage.getItem(STORAGE_KEYS.codeVerifier);
 
     if (state !== savedState) {
         log("Error: State mismatch!");
@@ -138,9 +320,8 @@ async function handleCallback() {
     elements.callbackSection.classList.remove('hidden');
 
     // Need a DPoP key for the token request
-    const keyPair = await generateDPoPKey();
-    // ATProto spec says DPoP is required for token endpoint
-    const dpopProof = await createDPoPProof(keyPair, 'POST', new URL('/oauth/token', CONFIG.issuer).href);
+    const keyPair = await getOrCreateDPoPKey();
+    const tokenUrl = new URL('/oauth/token', CONFIG.issuer).href;
 
     const formData = new URLSearchParams();
     formData.set('grant_type', 'authorization_code');
@@ -150,14 +331,13 @@ async function handleCallback() {
     formData.set('code_verifier', codeVerifier);
 
     try {
-        const response = await fetch('/oauth/token', {
+        const response = await fetchWithDpopNonceRetry(tokenUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'DPoP': dpopProof
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: formData
-        });
+        }, keyPair);
 
         const data = await response.json();
         if (data.error) {
@@ -167,9 +347,7 @@ async function handleCallback() {
         }
 
         log("Tokens received successfully!");
-        sessionStorage.setItem('access_token', data.access_token);
-        // We'd normally save the DPoP key too, to use with the access token
-        // For this demo, we'll keep it in memory or just regenerate (might not work if bound)
+        sessionStorage.setItem(STORAGE_KEYS.accessToken, data.access_token);
         window.dpopKeyPair = keyPair;
 
         showSession(data);
@@ -186,20 +364,25 @@ function showSession(data) {
 }
 
 async function testSession() {
-    const token = sessionStorage.getItem('access_token');
+    const token = sessionStorage.getItem(STORAGE_KEYS.accessToken);
+    if (!token) {
+        elements.apiResult.classList.remove('hidden');
+        elements.apiResult.textContent = 'No access token - login first.';
+        return;
+    }
+    if (!window.dpopKeyPair) {
+        window.dpopKeyPair = await getOrCreateDPoPKey();
+    }
     const url = new URL('/xrpc/com.atproto.server.getSession', CONFIG.issuer).href;
 
     log(`Testing session: GET ${url}`);
 
-    const dpopProof = await createDPoPProof(window.dpopKeyPair, 'GET', url);
-
     try {
-        const response = await fetch(url, {
+        const response = await fetchWithDpopNonceRetry(url, {
             headers: {
-                'Authorization': `DPoP ${token}`,
-                'DPoP': dpopProof
+                'Authorization': `DPoP ${token}`
             }
-        });
+        }, window.dpopKeyPair, { accessToken: token });
         const data = await response.json();
         elements.apiResult.classList.remove('hidden');
         elements.apiResult.textContent = JSON.stringify(data, null, 2);

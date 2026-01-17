@@ -2,11 +2,26 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
-#import "Identity/ATProtoHandleValidator.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 NSString * const PLCErrorDomain = @"com.atproto.plc";
+
+static NSString *PLCNormalizeAtprotoHandle(NSString *value) {
+    if ([value hasPrefix:@"at://"]) {
+        return value;
+    }
+    NSString *stripped = [value stringByReplacingOccurrencesOfString:@"http://" withString:@""];
+    stripped = [stripped stringByReplacingOccurrencesOfString:@"https://" withString:@""];
+    return [NSString stringWithFormat:@"at://%@", stripped];
+}
+
+static NSString *PLCNormalizeServiceEndpoint(NSString *value) {
+    if ([value hasPrefix:@"http://"] || [value hasPrefix:@"https://"]) {
+        return value;
+    }
+    return [NSString stringWithFormat:@"https://%@", value];
+}
 
 @implementation PLCOperation
 
@@ -24,6 +39,16 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
         base32 = [base32 substringToIndex:24];
     }
     return [NSString stringWithFormat:@"did:plc:%@", base32];
+}
+
++ (nullable NSString *)calculateCIDForOperation:(NSDictionary *)operation error:(NSError **)error {
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:operation error:error];
+    if (!cborData) {
+        return nil;
+    }
+    NSData *digest = [CID sha256Digest:cborData];
+    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    return cid.stringValue;
 }
 
 + (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error {
@@ -49,20 +74,12 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
     
     NSString *type = op.data[@"type"];
     if ([type isEqualToString:@"update_handle"]) {
-        NSString *handle = op.data[@"handle"];
-        if (!handle || ![handle isKindOfClass:[NSString class]]) {
-            if (error) {
-                *error = [NSError errorWithDomain:PLCErrorDomain code:2 userInfo:@{NSLocalizedDescriptionKey: @"update_handle operation requires 'handle' field"}];
-            }
-            return nil;
+        if (error) {
+            *error = [NSError errorWithDomain:PLCErrorDomain
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"update_handle is not supported in spec-compliant PLC"}];
         }
-        NSError *validationError = nil;
-        if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
-            if (error) {
-                *error = [NSError errorWithDomain:PLCErrorDomain code:3 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid handle: %@", validationError.localizedDescription]}];
-            }
-            return nil;
-        }
+        return nil;
     }
     
     return op;
@@ -140,23 +157,13 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
         } else if ([type isEqualToString:@"plc_tombstone"]) {
             state.tombstoned = YES;
         } else if ([type isEqualToString:@"create"]) {
-            state.rotationKeys = @[op.data[@"recoveryKey"]];
+            state.rotationKeys = @[op.data[@"recoveryKey"], op.data[@"signingKey"]];
             state.verificationMethods = @{@"atproto": op.data[@"signingKey"]};
-            state.alsoKnownAs = @[op.data[@"handle"]];
-            state.services = @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer", @"endpoint": op.data[@"service"]}};
-            state.tombstoned = NO;
-        } else if ([type isEqualToString:@"update_handle"]) {
-            NSString *newHandle = op.data[@"handle"];
-            if (newHandle && [newHandle isKindOfClass:[NSString class]]) {
-                NSMutableArray *handles = [state.alsoKnownAs mutableCopy] ?: [NSMutableArray array];
-                NSString *existingHandle = handles.firstObject;
-                if (existingHandle) {
-                    [handles replaceObjectAtIndex:0 withObject:newHandle];
-                } else {
-                    [handles addObject:newHandle];
-                }
-                state.alsoKnownAs = [handles copy];
-            }
+            NSString *handle = op.data[@"handle"] ?: @"";
+            NSString *service = op.data[@"service"] ?: @"";
+            state.alsoKnownAs = @[PLCNormalizeAtprotoHandle(handle)];
+            state.services = @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer",
+                                                 @"endpoint": PLCNormalizeServiceEndpoint(service)}};
             state.tombstoned = NO;
         }
     }
@@ -167,4 +174,3 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
 @end
 
 NS_ASSUME_NONNULL_END
-

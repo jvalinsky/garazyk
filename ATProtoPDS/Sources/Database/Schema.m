@@ -10,6 +10,7 @@ NSString * const kPDSBlobTableName = @"blobs";
 NSString * const kPDSInviteCodeTableName = @"invite_codes";
 
 NSString * const kPDSAdminTakedownTableName = @"admin_takedowns";
+NSString * const kPDSLabelTableName = @"labels";
 NSString * const kPDSPasskeysTableName = @"passkeys";
 NSString * const kPDSOAuthClientsTableName = @"oauth_clients";
 
@@ -105,11 +106,29 @@ NSString * const kPDSAdminTakedownTableCreateSQL =
     @"createdAt DATETIME NOT NULL"
     @")";
 
+NSString * const kPDSLabelTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS labels ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"src TEXT NOT NULL,"
+    @"uri TEXT NOT NULL,"
+    @"cid TEXT,"
+    @"val TEXT NOT NULL,"
+    @"neg INTEGER DEFAULT 0,"
+    @"cts TEXT NOT NULL,"
+    @"exp TEXT"
+    @")";
+
 NSString * const kPDSIndexInviteCodesAccountDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_invite_codes_account_did ON invite_codes(account_did)";
 
 NSString * const kPDSIndexTakedownsSubjectIdSQL =
     @"CREATE INDEX IF NOT EXISTS idx_admin_takedowns_subject_id ON admin_takedowns(subjectId)";
+
+NSString * const kPDSIndexLabelsUriSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_labels_uri ON labels(uri)";
+
+NSString * const kPDSIndexLabelsSourceSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_labels_source ON labels(src)";
 
 NSString * const kPDSPasskeysTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS passkeys ("
