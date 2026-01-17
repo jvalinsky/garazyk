@@ -27,7 +27,7 @@ cleanup() {
         kill "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
-    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    pkill -f "september.*$PORT" 2>/dev/null || true
     rm -f "$PID_FILE"
     rm -f "$TEST_DB"
     rm -f "$HOME/Library/Application Support/ATProtoPDS/ratelimits.db"

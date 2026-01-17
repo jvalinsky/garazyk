@@ -14,7 +14,8 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}🚀 Performance testing ATProto PDS server...${NC}"
 
 # CLI path
-CLI_PATH="/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/atprotopds-cli"
+# Use CMake build path
+CLI_PATH="./build/bin/september"
 TEST_PORT=2583
 
 # Function to cleanup background processes

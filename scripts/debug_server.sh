@@ -6,7 +6,8 @@ set -e
 
 echo "🔍 Debugging server startup..."
 
-CLI_PATH="/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/atprotopds-cli"
+# Use CMake build path
+CLI_PATH="./build/bin/september"
 TEST_PORT=2583
 
 echo "Testing server startup..."
