@@ -445,7 +445,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
 
     // Migrations for accounts table
-    const char *migrations[] = {
+    const char *accountMigrations[] = {
         "ALTER TABLE accounts ADD COLUMN password_salt BLOB",
         "ALTER TABLE accounts ADD COLUMN tfa_enabled INTEGER DEFAULT 0",
         "ALTER TABLE accounts ADD COLUMN tfa_secret BLOB",
@@ -454,7 +454,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     };
 
     for (int i = 0; i < 5; i++) {
-        rc = sqlite3_exec(_db, migrations[i], NULL, NULL, &errMsg);
+        rc = sqlite3_exec(_db, accountMigrations[i], NULL, NULL, &errMsg);
         if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL) {
             NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
             sqlite3_free(errMsg);
@@ -466,7 +466,28 @@ static NSDateFormatter * iso8601Formatter(void) {
             errMsg = NULL;
         }
     }
-    
+
+    // Migrations for records table
+    const char *recordMigrations[] = {
+        "ALTER TABLE records ADD COLUMN value TEXT",
+        "ALTER TABLE records ADD COLUMN subject_did TEXT",
+        "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did)"
+    };
+
+    for (int i = 0; i < 3; i++) {
+        rc = sqlite3_exec(_db, recordMigrations[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL && strstr(errMsg, "already exists") == NULL) {
+            NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+            sqlite3_free(errMsg);
+            if (error) *error = e;
+            return NO;
+        }
+        if (errMsg) {
+            sqlite3_free(errMsg);
+            errMsg = NULL;
+        }
+    }
+
     if (errMsg) sqlite3_free(errMsg);
 
     return YES;
@@ -591,7 +612,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         if (param == [NSNull null]) {
             sqlite3_bind_null(stmt, paramIndex);
         } else if ([param isKindOfClass:[NSString class]]) {
-            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_TRANSIENT);
         } else if ([param isKindOfClass:[NSNumber class]]) {
             const char *objCType = [param objCType];
             if (strcmp(objCType, @encode(double)) == 0 || 
@@ -648,7 +669,7 @@ static NSDateFormatter * iso8601Formatter(void) {
         if (param == [NSNull null]) {
             sqlite3_bind_null(stmt, paramIndex);
         } else if ([param isKindOfClass:[NSString class]]) {
-            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_TRANSIENT);
         } else if ([param isKindOfClass:[NSNumber class]]) {
             const char *objCType = [param objCType];
             if (strcmp(objCType, @encode(double)) == 0 || 

@@ -168,6 +168,17 @@
         record.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
     }
 
+    // Extract subject DID for relationship indexing
+    if ([collection isEqualToString:@"app.bsky.graph.follow"] || 
+        [collection isEqualToString:@"app.bsky.graph.block"]) {
+        id subject = value[@"subject"];
+        if ([subject isKindOfClass:[NSString class]]) {
+            record.subjectDid = subject;
+        } else if ([subject isKindOfClass:[NSDictionary class]] && subject[@"did"]) {
+            record.subjectDid = subject[@"did"];
+        }
+    }
+
     __block BOOL success = NO;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;

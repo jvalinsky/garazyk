@@ -127,7 +127,8 @@
            @"    rkey TEXT NOT NULL,"
            @"    cid BLOB NOT NULL,"
            @"    value BLOB,"
-           @"    indexed_at DATETIME NOT NULL"
+           @"    indexed_at DATETIME NOT NULL,"
+           @"    subject_did TEXT"
            @")";
 }
 

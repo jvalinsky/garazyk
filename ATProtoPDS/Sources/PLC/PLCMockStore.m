@@ -40,7 +40,7 @@
         [[PLCMetrics sharedMetrics] recordMemcacheMiss];
     }
     
-    return history;
+    return history ?: @[];
 }
 
 - (BOOL)appendOperation:(PLCOperation *)op

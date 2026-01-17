@@ -47,11 +47,14 @@ NSString * const kPDSRecordTableCreateSQL =
     @"collection TEXT NOT NULL,"
     @"rkey TEXT NOT NULL,"
     @"cid TEXT NOT NULL,"
+    @"value TEXT,"
+    @"subject_did TEXT,"
     @"created_at TEXT NOT NULL,"
     @"FOREIGN KEY (did) REFERENCES accounts(did)"
     @");"
     @"CREATE INDEX IF NOT EXISTS idx_records_did_collection ON records(did, collection);"
-    @"CREATE INDEX IF NOT EXISTS idx_records_did_collection_rkey ON records(did, collection, rkey);";
+    @"CREATE INDEX IF NOT EXISTS idx_records_did_collection_rkey ON records(did, collection, rkey);"
+    @"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);";
 
 NSString * const kPDSBlockTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS blocks ("

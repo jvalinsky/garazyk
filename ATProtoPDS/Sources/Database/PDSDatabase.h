@@ -302,6 +302,9 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! The raw value of the record (JSON string). */
 @property (nonatomic, copy, nullable) NSString *value;
 
+/*! The subject DID for relationship records (e.g. follow target). */
+@property (nonatomic, copy, nullable) NSString *subjectDid;
+
 @end
 
 /*!
