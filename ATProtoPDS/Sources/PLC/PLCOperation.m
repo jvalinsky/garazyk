@@ -28,6 +28,7 @@ NSString * const PLCErrorDomain = @"com.atproto.plc";
 
 + (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error {
     PLCOperation *op = [[PLCOperation alloc] init];
+    op.did = dict[@"did"];
     op.sig = dict[@"sig"];
     
     id prev = dict[@"prev"];

@@ -14,6 +14,10 @@
 #import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import "Core/ATProtoError.h"
+#import "Core/Repositories/PDSAccountRepository.h"
+#import "Core/Repositories/PDSSessionRepository.h"
+#import "Database/PDSRepositoryFactory.h"
 
 #ifndef kCCSuccess
 #define kCCSuccess 0
@@ -34,11 +38,26 @@
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
         _databasePool = databasePool;
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-        _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:config.dataDirectory
-                                                           serviceMaxSize:1024*1024
-                                                         didCacheMaxSize:1000
-                                                       sequencerMaxSize:100];
+        _log = os_log_create("com.atproto.pds", "account");
+    }
+    return self;
+}
+
+- (void)setServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
+    _serviceDatabases = serviceDatabases;
+    if (serviceDatabases) {
+        _accountRepository = [PDSRepositoryFactory accountRepositoryWithServiceDatabases:serviceDatabases];
+        _sessionRepository = [PDSRepositoryFactory sessionRepositoryWithServiceDatabases:serviceDatabases];
+    }
+}
+
+- (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
+                        sessionRepository:(id<PDSSessionRepository>)sessionRepository
+                                  minter:(nullable JWTMinter *)minter {
+    if (self = [super init]) {
+        _accountRepository = accountRepository;
+        _sessionRepository = sessionRepository;
+        _minter = minter;
         _log = os_log_create("com.atproto.pds", "account");
     }
     return self;
@@ -81,12 +100,12 @@
     }
 
     NSError *dbError = nil;
-    PDSDatabaseAccount *existingAccount = [_serviceDatabases getAccountByDid:resolvedDid error:&dbError];
+    PDSDatabaseAccount *existingAccount = [_accountRepository accountForDid:resolvedDid error:&dbError];
 
     if (existingAccount) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account already exists"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeAlreadyExists
+                                       message:@"Account already exists"];
         }
         return nil;
     }
@@ -105,7 +124,7 @@
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
 
     NSError *createError = nil;
-    if (![_serviceDatabases createAccount:account error:&createError]) {
+    if (![_accountRepository saveAccount:account error:&createError]) {
         if (error) *error = createError;
         return nil;
     }
@@ -122,8 +141,8 @@
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
-    [_serviceDatabases storeRefreshToken:refreshToken forAccount:resolvedDid error:nil];
+    [_accountRepository saveAccount:account error:nil];
+    [_sessionRepository storeRefreshToken:refreshToken forAccountDid:resolvedDid error:nil];
 
     return @{
         @"did": resolvedDid,
@@ -145,8 +164,8 @@
                                          error:(NSError **)error {
     if (!identifier) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1000
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing identifier"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeMissingParameter
+                                       message:@"Missing identifier"];
         }
         return nil;
     }
@@ -154,9 +173,9 @@
     NSError *dbError = nil;
     PDSDatabaseAccount *account = nil;
     if ([identifier containsString:@"@"]) {
-        account = [_serviceDatabases getAccountByEmail:identifier error:&dbError];
+        account = [_accountRepository accountForEmail:identifier error:&dbError];
     } else {
-        account = [_serviceDatabases getAccountByHandle:identifier error:&dbError];
+        account = [_accountRepository accountForHandle:identifier error:&dbError];
     }
 
     if (dbError) {
@@ -166,8 +185,8 @@
 
     if (!account) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1000
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotFound
+                                       message:@"Account not found"];
         }
         return nil;
     }
@@ -195,8 +214,8 @@
 
     if (!isPasswordCorrect) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1002
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid password"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                       message:@"Invalid password"];
         }
         return nil;
     }
@@ -218,8 +237,8 @@
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
-    [_serviceDatabases storeRefreshToken:refreshToken forAccount:account.did error:nil];
+    [_accountRepository saveAccount:account error:nil];
+    [_sessionRepository storeRefreshToken:refreshToken forAccountDid:account.did error:nil];
 
     return @{
         @"did": account.did,
@@ -231,7 +250,7 @@
 }
 
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error {
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByDid:did error:error];
+    PDSDatabaseAccount *account = [_accountRepository accountForDid:did error:error];
     if (!account) return nil;
     
     return @{
@@ -242,19 +261,23 @@
 }
 
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error {
-    return [_serviceDatabases getAllAccountsWithError:error];
+    return [_accountRepository listAccountsWithLimit:1000 cursor:nil error:error];
 }
 
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
                                        error:(NSError **)error {
 
     NSError *dbError = nil;
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByRefreshToken:refreshToken error:&dbError];
+    NSString *did = [_sessionRepository accountDidForRefreshToken:refreshToken error:&dbError];
+    PDSDatabaseAccount *account = nil;
+    if (did) {
+        account = [_accountRepository accountForDid:did error:&dbError];
+    }
 
     if (!account) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1002
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                       message:@"Invalid refresh token"];
         }
         return nil;
     }
@@ -268,7 +291,7 @@
         accessToken = [[NSUUID UUID] UUIDString];
     }
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
-    [_serviceDatabases updateAccount:account error:nil];
+    [_accountRepository saveAccount:account error:nil];
 
     return @{
         @"accessJwt": accessToken
@@ -278,12 +301,12 @@
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error {
 
     NSError *dbError = nil;
-    PDSDatabaseAccount *account = [_serviceDatabases getAccountByDid:did error:&dbError];
+    PDSDatabaseAccount *account = [_accountRepository accountForDid:did error:&dbError];
 
     if (!account) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1000
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotFound
+                                       message:@"Account not found"];
         }
         return NO;
     }
@@ -292,13 +315,13 @@
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
     if (![passwordHash isEqualToData:account.passwordHash]) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSController" code:1007
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid password"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeUnauthorized
+                                       message:@"Invalid password"];
         }
         return NO;
     }
 
-    return [_serviceDatabases deleteAccount:did error:error];
+    return [_accountRepository deleteAccount:did error:error];
 }
 
 #pragma mark - Private Helpers
@@ -323,8 +346,7 @@
     // OWASP 2023 recommendation: 600,000 iterations for PBKDF2-HMAC-SHA256
     const uint32_t iterations = 600000;
     const size_t derivedKeyLength = 32; // 256 bits
-
-    unsigned char derivedKey[derivedKeyLength];
+    unsigned char derivedKey[32];
 
     int result = CCKeyDerivationPBKDF(
         kCCPBKDF2,                          // algorithm
@@ -366,15 +388,14 @@
     NSData *newHash = [self hashPassword:password salt:account.passwordSalt];
     if (!newHash) {
         if (error) {
-            *error = [NSError errorWithDomain:@"PDSAccountService"
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to rehash password"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInternalServerError
+                                       message:@"Failed to rehash password"];
         }
         return NO;
     }
 
     account.passwordHash = newHash;
-    BOOL success = [_serviceDatabases updateAccount:account error:error];
+    BOOL success = [_accountRepository saveAccount:account error:error];
     if (success) {
         os_log_info(self.log, "Upgraded password hash for account: %@", account.did);
     }

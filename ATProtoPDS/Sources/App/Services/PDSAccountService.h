@@ -17,27 +17,14 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @class JWTMinter;
+@protocol PDSAccountRepository;
+@protocol PDSSessionRepository;
 
 /*!
- @class PDSAccountService
-
- @abstract Service for account management operations.
+ @protocol PDSAccountService
+ @abstract Protocol defining the account service public interface.
  */
-@interface PDSAccountService : NSObject
-
-#if defined(GNUSTEP)
-@property (nonatomic, assign) PDSDatabasePool *databasePool;
-#else
-@property (nonatomic, weak) PDSDatabasePool *databasePool;
-#endif
-@property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
-
-/*! JWT minter for token generation. */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
-
-- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
-
-#pragma mark - Account Operations
+@protocol PDSAccountService <NSObject>
 
 /*! Creates a new account with email, password, and handle. */
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
@@ -68,6 +55,40 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Deletes an account after password verification. */
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error;
+
+@end
+
+/*!
+ @class PDSAccountService
+
+ @abstract Service for account management operations.
+ */
+@interface PDSAccountService : NSObject <PDSAccountService>
+
+#if defined(GNUSTEP)
+@property (nonatomic, assign) PDSDatabasePool *databasePool;
+#else
+@property (nonatomic, weak) PDSDatabasePool *databasePool;
+#endif
+@property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
+
+/*! Repositories for data access. */
+@property (nonatomic, strong) id<PDSAccountRepository> accountRepository;
+@property (nonatomic, strong) id<PDSSessionRepository> sessionRepository;
+
+/*! JWT minter for token generation. */
+@property (nonatomic, strong, nullable) JWTMinter *minter;
+
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
+
+/*! New DI initializer. */
+- (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
+                        sessionRepository:(id<PDSSessionRepository>)sessionRepository
+                                  minter:(nullable JWTMinter *)minter;
+
+#pragma mark - Account Operations
+
+
 
 @end
 
