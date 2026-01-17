@@ -1,0 +1,12 @@
+{
+    "name": "objpds-e2e",
+    "version": "1.0.0",
+    "description": "E2E tests for ATProtoPDS",
+    "main": "oauth_demo.spec.js",
+    "scripts": {
+        "test": "node oauth_demo.spec.js"
+    },
+    "dependencies": {
+        "puppeteer": "^24.1.0"
+    }
+}
