@@ -66,6 +66,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Skip PLC operations (debug mode). */
 @property (nonatomic, assign) BOOL debugSkipPlcOperations;
 
+/*! Use new repository implementation (Phase 2). */
+@property (nonatomic, assign) BOOL useNewRepositoryImplementation;
+
 /*! Enable verbose logging. */
 @property (nonatomic, readonly) BOOL debugVerboseLogging;
 

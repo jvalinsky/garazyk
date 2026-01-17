@@ -101,9 +101,9 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     blob.createdAt = [NSDate date];
 
     __block BOOL success = NO;
-    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store saveBlob:blob error:nil];
+        success = [store saveBlob:blob error:blockError];
     } error:&dbError];
 
     if (!success) {
@@ -187,9 +187,9 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     __block NSError *dbError = nil;
     
     // Delete metadata first using transaction
-    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
          PDSActorStore *store = (PDSActorStore *)transactor;
-         success = [store deleteBlobForCID:[cid bytes] forDid:did error:nil];
+         success = [store deleteBlobForCID:[cid bytes] forDid:did error:blockError];
     } error:&dbError];
 
     if (!success) {

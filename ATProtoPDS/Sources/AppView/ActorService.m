@@ -208,4 +208,92 @@
     return 0;
 }
 
+- (nullable NSDictionary *)searchActors:(NSString *)term
+                                   limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                   error:(NSError **)error {
+    if (!term || term.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing search term"}];
+        }
+        return nil;
+    }
+
+    limit = MIN(MAX(limit, 1), 100);
+
+    NSMutableArray *actors = [NSMutableArray array];
+    NSString *searchPattern = [NSString stringWithFormat:@"%%%@%%", term.lowercaseString];
+
+    NSString *query = @"SELECT DISTINCT did FROM records "
+                      @"WHERE collection = 'app.bsky.actor.profile' "
+                      @"AND (record LIKE ? OR record LIKE ?) ";
+    NSMutableArray *params = [NSMutableArray arrayWithObjects:searchPattern, searchPattern, nil];
+
+    if (cursor) {
+        query = [query stringByAppendingString:@"AND did < ? "];
+        [params addObject:cursor];
+    }
+
+    query = [query stringByAppendingString:@"ORDER BY did DESC LIMIT ?"];
+    [params addObject:@(limit + 1)];
+
+    NSArray *rows = [self.database executeParameterizedQuery:query params:params error:error];
+    if (!rows) return nil;
+
+    BOOL hasMore = rows.count > limit;
+    NSArray *resultRows = hasMore ? [rows subarrayWithRange:NSMakeRange(0, limit)] : rows;
+
+    for (NSDictionary *row in resultRows) {
+        NSDictionary *profile = [self getProfileForActor:row[@"did"] error:nil];
+        if (profile) {
+            [actors addObject:profile];
+        }
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"actors"] = actors;
+    if (hasMore && resultRows.count > 0) {
+        result[@"cursor"] = resultRows.lastObject[@"did"] ?: [NSNull null];
+    } else {
+        result[@"cursor"] = [NSNull null];
+    }
+
+    return [result copy];
+}
+
+- (nullable NSArray<NSDictionary *> *)searchActorsTypeahead:(NSString *)term
+                                                       limit:(NSInteger)limit
+                                                       error:(NSError **)error {
+    if (!term || term.length == 0) {
+        return @[];
+    }
+
+    limit = MIN(MAX(limit, 1), 10);
+    NSString *searchPattern = [NSString stringWithFormat:@"%%%@%%", term.lowercaseString];
+
+    NSString *query = @"SELECT DISTINCT did FROM records "
+                      @"WHERE collection = 'app.bsky.actor.profile' "
+                      @"AND (record LIKE ? OR record LIKE ?) "
+                      @"ORDER BY did DESC LIMIT ?";
+    NSArray *params = @[searchPattern, searchPattern, @(limit)];
+
+    NSArray *rows = [self.database executeParameterizedQuery:query params:params error:error];
+    if (!rows) return nil;
+
+    NSMutableArray *actors = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSDictionary *profile = [self getProfileForActor:row[@"did"] error:nil];
+        if (profile) {
+            [actors addObject:@{
+                @"did": row[@"did"],
+                @"handle": profile[@"handle"] ?: row[@"did"],
+                @"displayName": profile[@"displayName"] ?: @"",
+                @"avatar": profile[@"avatar"] ?: @""
+            }];
+        }
+    }
+
+    return [actors copy];
+}
+
 @end

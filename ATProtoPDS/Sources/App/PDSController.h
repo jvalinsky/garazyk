@@ -12,6 +12,7 @@
 
 #import <Foundation/Foundation.h>
 #import "Services/PDSRecordService.h"
+#import "Core/ATProtoError.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -29,36 +30,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSAccountService;
 @class PDSBlobService;
 @class PDSRepositoryService;
-@class PDSSyncService;
 @class JWTMinter;
 
-/*! Error domain for PDSController operations. */
-extern NSString * const PDSControllerErrorDomain;
 
-/*!
- @enum PDSControllerError
-
- @abstract Error codes for controller operations.
-
- @constant PDSControllerErrorAccountNotFound Account does not exist.
- @constant PDSControllerErrorAccountAlreadyExists Handle/email already taken.
- @constant PDSControllerErrorInvalidToken Token is invalid or expired.
- @constant PDSControllerErrorInvalidHandle Handle format is invalid.
- @constant PDSControllerErrorRepoNotFound Repository does not exist.
- @constant PDSControllerErrorRecordNotFound Record does not exist.
- @constant PDSControllerErrorBlobNotFound Blob does not exist.
- @constant PDSControllerErrorUnauthorized Operation not authorized.
- */
-typedef NS_ENUM(NSInteger, PDSControllerError) {
-    PDSControllerErrorAccountNotFound = 1000,
-    PDSControllerErrorAccountAlreadyExists,
-    PDSControllerErrorInvalidToken,
-    PDSControllerErrorInvalidHandle,
-    PDSControllerErrorRepoNotFound,
-    PDSControllerErrorRecordNotFound,
-    PDSControllerErrorBlobNotFound,
-    PDSControllerErrorUnauthorized,
-};
 
 /*!
  @class PDSController
@@ -97,9 +71,6 @@ typedef NS_ENUM(NSInteger, PDSControllerError) {
 
 /*! Repository management service. */
 @property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
-
-/*! Repository synchronization service. */
-@property (nonatomic, strong, readonly) PDSSyncService *syncService;
 
 /*! JWT minting for access tokens. */
 @property (nonatomic, strong, readonly) JWTMinter *jwtMinter;

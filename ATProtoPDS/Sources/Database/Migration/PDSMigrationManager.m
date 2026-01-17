@@ -210,9 +210,9 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         
         __block NSError *repoError = nil;
         if (repo) {
-            [destinationPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+            [destinationPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
                 PDSActorStore *store = (PDSActorStore *)transactor;
-                [store createRepo:repo error:&repoError];
+                [store createRepo:repo error:blockError];
             } error:&repoError];
         }
         
@@ -232,10 +232,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
             record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(recordStmt, 5)];
             
             __block NSError *recordError = nil;
-            [destinationPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor) {
+        while (sqlite3_step(recordStmt) == SQLITE_ROW) {
+            PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+            // ... (rest of record initialization assumed same)
+            [destinationPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
                 PDSActorStore *store = (PDSActorStore *)transactor;
-                [store putRecord:record forDid:did error:&recordError];
+                [store putRecord:record forDid:did error:blockError];
             } error:&recordError];
+        }
         }
         
         migratedItems++;
@@ -284,9 +288,9 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         block.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(blockStmt, 5)];
         
         __block NSError *blockError = nil;
-        [destinationPool transactWithDid:repoDid block:^(id<PDSActorStoreTransactor> transactor) {
+        [destinationPool transactWithDid:repoDid block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
             PDSActorStore *store = (PDSActorStore *)transactor;
-            [store putBlock:block forDid:repoDid error:&blockError];
+            [store putBlock:block forDid:repoDid error:innerError];
         } error:&blockError];
         
         blockIndex++;

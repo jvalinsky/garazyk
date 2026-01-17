@@ -172,4 +172,48 @@
     XCTAssertTrue(success, @"Auditor should accept valid chain with key rotation. Error: %@", error);
 }
 
+- (void)testAuditorValidatesUpdateHandle {
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSString *pubKeyHex = [CryptoUtils hexStringFromData:keyPair.compressedPublicKey];
+
+    // 1. Genesis operation (using 'create' type)
+    NSDictionary *op1Data = @{
+        @"type": @"create",
+        @"recoveryKey": pubKeyHex,
+        @"signingKey": pubKeyHex,
+        @"handle": @"test.bsky.social",
+        @"service": @"https://pds.example.com",
+        @"prev": [NSNull null]
+    };
+    NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
+    NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
+
+    PLCOperation *op1 = [[PLCOperation alloc] init];
+    op1.did = @"did:plc:test";
+    op1.sig = [CryptoUtils hexStringFromData:op1Sig];
+    op1.data = op1Data;
+    op1.prev = nil;
+    [self.store appendOperation:op1 error:nil];
+
+    // 2. update_handle operation signed by recoveryKey
+    NSDictionary *op2Data = @{
+        @"type": @"update_handle",
+        @"handle": @"newhandle.bsky.social",
+        @"prev": [CryptoUtils hexStringFromData:op1Hash]
+    };
+    NSData *op2Hash = [self.auditor hashForOperationData:op2Data];
+    NSData *op2Sig = [keyPair signHash:op2Hash error:nil];
+
+    PLCOperation *op2 = [[PLCOperation alloc] init];
+    op2.did = @"did:plc:test";
+    op2.sig = [CryptoUtils hexStringFromData:op2Sig];
+    op2.data = op2Data;
+    op2.prev = [CryptoUtils hexStringFromData:op1Hash];
+    [self.store appendOperation:op2 error:nil];
+
+    NSError *error = nil;
+    BOOL success = [self.auditor verifyDID:op1.did error:&error];
+    XCTAssertTrue(success, @"Auditor should accept valid update_handle operation. Error: %@", error);
+}
+
 @end

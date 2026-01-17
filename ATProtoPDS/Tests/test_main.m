@@ -8,6 +8,7 @@
 #import <objc/runtime.h>
 #import "Network/RateLimiter.h"
 #import "Network/HttpResponse.h"
+#import "App/PDSConfiguration.h"
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
 @property (nonatomic, assign) int failureCount;
@@ -76,6 +77,11 @@ int main(int argc, char * argv[]) {
         // Disable rate limiting for tests
         RateLimiterSetDisabledGlobally(YES);
         [RateLimiter sharedLimiter].enabled = NO;
+
+        if ([[[NSProcessInfo processInfo] environment][@"PDS_USE_NEW_REPOS"] isEqualToString:@"1"]) {
+            [PDSConfiguration sharedConfiguration].useNewRepositoryImplementation = YES;
+            fprintf(stderr, "TESTING: Enabled new repository implementation\n");
+        }
 
         NSArray *testClasses = @[
             @"MSTViewerHandlerTests",
@@ -152,7 +158,16 @@ int main(int argc, char * argv[]) {
             @"OAuthServerMetadataTests",
             @"OAuthSessionTests",
             @"NodeInfoTests",
-            @"ATProtoCBORSerializationTests"
+            @"ATProtoCBORSerializationTests",
+            @"ActorStoreCharacterizationTests",
+            @"XrpcMethodRegistryCharacterizationTests",
+            @"MSTCharacterizationTests",
+            @"SessionCharacterizationTests",
+            @"KeyManagerCharacterizationTests",
+            @"ATProtoErrorTests",
+            @"ProtocolCompileTests",
+            @"PDSServiceContainerTests",
+            @"PDSAccountManagerTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
@@ -162,9 +177,27 @@ int main(int argc, char * argv[]) {
         [center addTestObserver:observer];
 #endif
 
+        // Parse command line arguments for filtering
+        NSString *testFilter = nil;
+        for (int i = 1; i < argc; i++) {
+            NSString *arg = [NSString stringWithUTF8String:argv[i]];
+            if ([arg isEqualToString:@"-XCTest"] && i + 1 < argc) {
+                testFilter = [NSString stringWithUTF8String:argv[i+1]];
+                break;
+            }
+        }
+
         XCTestSuite *mainSuite = [XCTestSuite testSuiteWithName:@"All Tests"];
 
         for (NSString *className in testClasses) {
+            // Apply filter if present
+            if (testFilter) {
+                NSArray *filters = [testFilter componentsSeparatedByString:@","];
+                if (![filters containsObject:className]) {
+                    continue;
+                }
+            }
+
             Class testClass = NSClassFromString(className);
             if (testClass) {
                 NSArray *methodNames = discoverTestMethodsForClass(testClass);
@@ -178,7 +211,10 @@ int main(int argc, char * argv[]) {
                     [mainSuite addTest:classSuite];
                 }
             } else {
-                NSLog(@"Warning: Test class %@ not found", className);
+                // Only warn if we are not filtering, or if this is the specific class we asked for
+                if (!testFilter || [className isEqualToString:testFilter]) {
+                     NSLog(@"Warning: Test class %@ not found", className);
+                }
             }
         }
 
