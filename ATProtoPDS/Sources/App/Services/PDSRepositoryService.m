@@ -65,12 +65,10 @@
     if (!store) return NO;
     
     __block BOOL success = NO;
-    __block NSError *innerError = nil;
-    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor) {
-        success = [transactor updateRepoRoot:did rootCid:[repoRoot bytes] error:&innerError];
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        success = [transactor updateRepoRoot:did rootCid:[repoRoot bytes] error:blockError];
     } error:error];
     
-    if (innerError && error) *error = innerError;
     return success;
 }
 

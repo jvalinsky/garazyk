@@ -12,6 +12,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) int64_t memcacheMisses;
 @property (nonatomic, assign) int64_t verificationSuccesses;
 @property (nonatomic, assign) int64_t verificationFailures;
+@property (nonatomic, assign) int64_t totalRequests;
+@property (nonatomic, assign) int64_t totalErrors;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *operationCounts;
 @property (nonatomic, strong) NSMutableArray<NSNumber *> *latencySamples;
 @end
@@ -37,6 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
         _memcacheMisses = 0;
         _verificationSuccesses = 0;
         _verificationFailures = 0;
+        _totalRequests = 0;
+        _totalErrors = 0;
         _operationCounts = [NSMutableDictionary dictionary];
         _latencySamples = [NSMutableArray array];
     }
@@ -61,6 +65,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordMemcacheMiss {
     OSAtomicIncrement64(&_memcacheMisses);
     os_log_debug(_log, "PLC memcache miss");
+}
+
+- (void)recordRequest {
+    OSAtomicIncrement64(&_totalRequests);
+}
+
+- (void)recordError {
+    OSAtomicIncrement64(&_totalErrors);
+    os_log_debug(_log, "PLC error recorded");
 }
 
 - (void)recordOperation:(NSString *)operationType {
@@ -116,6 +129,14 @@ NS_ASSUME_NONNULL_BEGIN
     return _verificationFailures;
 }
 
+- (int64_t)totalRequests {
+    return _totalRequests;
+}
+
+- (int64_t)totalErrors {
+    return _totalErrors;
+}
+
 - (NSString *)renderMetrics {
     NSMutableString *output = [NSMutableString string];
     
@@ -142,6 +163,14 @@ NS_ASSUME_NONNULL_BEGIN
     [output appendString:@"# HELP plc_verification_failures_total Total number of failed verifications\n"];
     [output appendString:@"# TYPE plc_verification_failures_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_verification_failures_total %lld\n\n", (long long)self.verificationFailures]];
+    
+    [output appendString:@"# HELP plc_http_requests_total Total number of HTTP requests\n"];
+    [output appendString:@"# TYPE plc_http_requests_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_http_requests_total %lld\n\n", (long long)self.totalRequests]];
+    
+    [output appendString:@"# HELP plc_http_errors_total Total number of HTTP errors\n"];
+    [output appendString:@"# TYPE plc_http_errors_total counter\n"];
+    [output appendString:[NSString stringWithFormat:@"plc_http_errors_total %lld\n\n", (long long)self.totalErrors]];
     
     @synchronized(self.operationCounts) {
         [self.operationCounts enumerateKeysAndObjectsUsingBlock:^(NSString *opType, NSNumber *count, BOOL *stop) {

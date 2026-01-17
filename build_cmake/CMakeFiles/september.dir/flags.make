@@ -3,7 +3,7 @@
 
 # compile C with /usr/bin/cc
 # compile OBJC with /usr/bin/cc
-C_DEFINES = -DSQLITE_THREADSAFE=2
+C_DEFINES = -DDEBUG=1 -DSQLITE_THREADSAFE=2
 
 C_INCLUDES = -I/Users/jack/Software/objpds/ATProtoPDS/Sources -I/Users/jack/Software/objpds/secp256k1/include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks
 
@@ -11,7 +11,7 @@ C_FLAGSarm64 = -g -g -O0 -arch arm64
 
 C_FLAGS = -g -g -O0 -arch arm64
 
-OBJC_DEFINES = -DSQLITE_THREADSAFE=2
+OBJC_DEFINES = -DDEBUG=1 -DSQLITE_THREADSAFE=2
 
 OBJC_INCLUDES = -I/Users/jack/Software/objpds/ATProtoPDS/Sources -I/Users/jack/Software/objpds/secp256k1/include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks
 

@@ -177,7 +177,7 @@
     record2.createdAt = [NSDate date];
     
     __autoreleasing NSError *blockError = nil;
-    [self.store transactWithBlock:^(id<PDSActorStoreTransactor> transactor) {
+    [self.store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         __autoreleasing NSError *txError = nil;
         XCTAssertTrue([transactor putRecord:record1 forDid:self.testDID error:&txError], @"Put tx1 failed: %@", txError);
         __autoreleasing NSError *txError2 = nil;

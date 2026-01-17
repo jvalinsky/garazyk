@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
+#import "Core/ATProtoError.h"
 
 @interface PDSControllerTests : XCTestCase
 
@@ -14,10 +15,10 @@
 - (void)setUp {
     [super setUp];
     
-    self.testDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:@"PDSControllerTests"];
+    NSString *name = [@"PDSControllerTests_" stringByAppendingString:NSUUID.UUID.UUIDString];
+    self.testDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:name];
     
     NSFileManager *fm = [NSFileManager defaultManager];
-    [fm removeItemAtPath:self.testDirectory error:nil];
     [fm createDirectoryAtPath:self.testDirectory withIntermediateDirectories:YES attributes:nil error:nil];
     
     self.controller = [[PDSController alloc] initWithDirectory:self.testDirectory
@@ -76,7 +77,7 @@
     
     XCTAssertNil(duplicate, @"Duplicate account should fail");
     XCTAssertNotNil(dupError, @"Should have error for duplicate");
-    XCTAssertEqual(dupError.code, PDSControllerErrorAccountAlreadyExists);
+    XCTAssertEqual(dupError.code, ATProtoErrorCodeAlreadyExists);
 }
 
 - (void)testLogin {
@@ -114,7 +115,7 @@
     
     XCTAssertNil(session, @"Login should fail with wrong password");
     XCTAssertNotNil(loginError);
-    XCTAssertEqual(loginError.code, PDSControllerErrorInvalidToken);
+    XCTAssertEqual(loginError.code, ATProtoErrorCodeInvalidCredentials);
 }
 
 - (void)testRefreshToken {
@@ -143,7 +144,7 @@
     
     XCTAssertNil(refresh);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, PDSControllerErrorInvalidToken);
+    XCTAssertEqual(error.code, ATProtoErrorCodeInvalidCredentials);
 }
 
 - (void)testDeleteAccount {
@@ -185,7 +186,7 @@
     
     XCTAssertFalse(success, @"Delete should fail with wrong password");
     XCTAssertNotNil(deleteError);
-    XCTAssertEqual(deleteError.code, PDSControllerErrorUnauthorized);
+    XCTAssertEqual(deleteError.code, ATProtoErrorCodeUnauthorized);
 }
 
 - (void)testRecordOperations {

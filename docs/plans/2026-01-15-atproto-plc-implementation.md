@@ -89,7 +89,26 @@ Verify `prev` hashes and signature validity using `Secp256k1`.
 
 ---
 
-### Task 5: Standalone Binary & Build Integration
+### Task 5: Web Dashboard
+
+**Files:**
+- Create: `ATProtoPDS/Sources/PLC/Assets/index.html`
+- Create: `ATProtoPDS/Sources/PLC/Assets/css/style.css`
+- Create: `ATProtoPDS/Sources/PLC/Assets/js/app.js`
+- Modify: `ATProtoPDS/Sources/PLC/PLCServer.m`
+
+**Step 1: Implement static file serving**
+Add `serveStaticFile:` and `assetsPath` to `PLCServer`.
+**Step 2: Add routes**
+Add routes for `/`, `/css/:file`, `/js/:file`.
+**Step 3: Create Web UI**
+Implement `index.html` and supporting assets for a simple DID explorer.
+**Step 4: Verify Dashboard loads**
+**Step 5: Commit**
+
+---
+
+### Task 6: Standalone Binary & Build Integration
 
 **Files:**
 - Create: `ATProtoPDS/Sources/PLC/main.m`

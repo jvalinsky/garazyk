@@ -1328,6 +1328,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework/Headers/XCTMetric+UIAutomation.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRequest.h \

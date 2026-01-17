@@ -71,6 +71,7 @@ static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
 @property (nonatomic, strong) NSMutableArray<NSNumber *> *pendingRequestOffsets;
 @property (nonatomic, assign) NSUInteger pendingDispatchCount;
 @property (nonatomic, assign) NSUInteger maxPipelinedRequests;
+@property (nonatomic, assign) BOOL sendingActive;
 
 @end
 
@@ -95,6 +96,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         _pendingRequestOffsets = [NSMutableArray array];
         _pendingDispatchCount = 0;
         _maxPipelinedRequests = kDefaultMaxPipelinedRequests;
+        _sendingActive = NO;
     }
     return self;
 }
@@ -564,7 +566,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         [[PDSLogger sharedLogger] setCorrelationID:requestRef.correlationID];
 
+        PDS_LOG_HTTP_INFO(@"Starting dispatch for %@ %@", requestRef.methodString, requestRef.path);
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
+        PDS_LOG_HTTP_INFO(@"Finished dispatch for %@ %@, status %ld", requestRef.methodString, requestRef.path, (long)response.statusCode);
 
         dispatch_async(strongSelf.serverQueue, ^{
             [strongSelf enqueueResponse:response forConnection:strongConnection];
@@ -593,10 +597,11 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 }
 
 - (void)sendNextQueuedResponseForState:(HttpConnectionState *)state connection:(id<PDSNetworkConnection>)connection {
-    if (state.outputQueue.count == 0) {
+    if (state.outputQueue.count == 0 || state.sendingActive) {
         return;
     }
 
+    state.sendingActive = YES;
     NSData *responseData = state.outputQueue[0];
 
     __weak typeof(self) weakSelf = self;
@@ -612,11 +617,8 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         [state.outputQueue removeObjectAtIndex:0];
         state.outputQueueSize -= responseData.length;
-        
-        // Process next item in queue
-        [strongSelf sendNextQueuedResponseForState:state connection:connection];
-
         state.pendingDispatchCount--;
+        state.sendingActive = NO;
 
         if (state.outputQueue.count > 0) {
             [strongSelf sendNextQueuedResponseForState:state connection:connection];
@@ -735,10 +737,11 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 }
 
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
+    PDS_LOG_HTTP_INFO(@"%@ %@", request.methodString, request.path);
     HttpResponse *response = [HttpResponse response];
 
-    // Apply rate limiting for OAuth endpoints
-    if ([request.path hasPrefix:@"/oauth/"]) {
+    /* Force disabled for now to fix user block
+    if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() && [RateLimiter sharedLimiter].isEnabled) {
         RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
         if (!result.allowed) {
             response.statusCode = 429;
@@ -746,6 +749,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
             return response;
         }
     }
+    */
 
     if (self.requestHandler) {
         self.requestHandler(request, response);

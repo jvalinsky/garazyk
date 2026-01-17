@@ -68,12 +68,12 @@ typedef NS_ENUM(NSInteger, PDSDatabasePoolError) {
 
 /*! Executes a write transaction for a DID. */
 - (void)transactWithDid:(NSString *)did 
-                  block:(void (^)(id<PDSActorStoreTransactor> transactor))block 
+                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
                   error:(NSError **)error;
 
 /*! Executes a read-only transaction for a DID. */
 - (void)readWithDid:(NSString *)did 
-               block:(void (^)(id<PDSActorStoreReader> reader))block 
+               block:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
                error:(NSError **)error;
 
 /*! Gets an account by DID. */

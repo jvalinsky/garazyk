@@ -64,11 +64,15 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (self) {
         _didLimit = 5000;
         _didWindowSeconds = 3600;
-        _ipLimit = 100;
+        _ipLimit = 1000;
         _ipWindowSeconds = 60;
-        _blobLimit = 50;
+        _blobLimit = 500;
         _blobWindowSeconds = 3600;
+#ifdef DEBUG
+        _enabled = NO;
+#else
         _enabled = !_rateLimiterDisabledGlobally;
+#endif
         NSLog(@"[RATE LIMITER] Init called, enabled=%d (global=%d)", _enabled, _rateLimiterDisabledGlobally);
         
         _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);

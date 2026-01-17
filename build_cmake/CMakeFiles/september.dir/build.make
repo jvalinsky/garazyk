@@ -114,10 +114,24 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.s: cmake_for
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSAdminHandler.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/AppDelegate.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/AppDelegate.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.i: cmake_force
@@ -131,7 +145,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreCache.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreCache.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.i: cmake_force
@@ -145,7 +159,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.s: cmake_
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreHandler.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreHandler.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.i: cmake_force
@@ -159,7 +173,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.s: cmak
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.i: cmake_force
@@ -170,10 +184,66 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.s: 
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m > CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m > CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m > CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m > CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSConfiguration.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSConfiguration.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.i: cmake_force
@@ -187,7 +257,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.s: cmake_forc
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.i: cmake_force
@@ -201,7 +271,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSAccountService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSAccountService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.i: cmake_force
@@ -215,7 +285,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.s: 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSBlobService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSBlobService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.i: cmake_force
@@ -229,7 +299,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.s: cma
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.i: cmake_force
@@ -243,7 +313,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.s: c
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.i: cmake_force
@@ -257,7 +327,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/ActorService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/ActorService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.i: cmake_force
@@ -271,7 +341,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.s: cmake_forc
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/FeedService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/FeedService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.i: cmake_force
@@ -285,7 +355,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/NotificationService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/NotificationService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.i: cmake_force
@@ -299,7 +369,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.s: cma
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Base32Utils.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Base32Utils.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.i: cmake_force
@@ -313,7 +383,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/CryptoUtils.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/CryptoUtils.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.i: cmake_force
@@ -327,7 +397,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/DPoPUtil.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/DPoPUtil.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.i: cmake_force
@@ -341,7 +411,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/JWT.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/JWT.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.i: cmake_force
@@ -355,7 +425,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyManager.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyManager.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.i: cmake_force
@@ -369,7 +439,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyRotationManager.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyRotationManager.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.i: cmake_force
@@ -383,7 +453,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.s: cmake_f
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.i: cmake_force
@@ -397,7 +467,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2Handler.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2Handler.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.i: cmake_force
@@ -411,7 +481,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.i: cmake_force
@@ -425,7 +495,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.s: cmake_
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthSession.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthSession.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.i: cmake_force
@@ -439,7 +509,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/PKCEUtil.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/PKCEUtil.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.i: cmake_force
@@ -453,7 +523,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Secp256k1.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Secp256k1.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.i: cmake_force
@@ -467,7 +537,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Session.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Session.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.i: cmake_force
@@ -481,7 +551,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPGenerator.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPGenerator.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.i: cmake_force
@@ -495,7 +565,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.i: cmake_force
@@ -509,7 +579,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnDomain.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnDomain.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.i: cmake_force
@@ -523,7 +593,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.i: cmake_force
@@ -537,7 +607,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/YubiKeyOATH.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/YubiKeyOATH.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.i: cmake_force
@@ -551,7 +621,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/BlobStorage.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/BlobStorage.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.i: cmake_force
@@ -565,7 +635,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/MimeTypeValidator.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/MimeTypeValidator.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.i: cmake_force
@@ -579,7 +649,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.s: cmake_fo
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.i: cmake_force
@@ -593,7 +663,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.s: cmake_
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.i: cmake_force
@@ -607,7 +677,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.s: cmake_
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.i: cmake_force
@@ -621,7 +691,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.s: cmake_forc
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.i: cmake_force
@@ -635,7 +705,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.s: cmake_f
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.i: cmake_force
@@ -649,7 +719,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.s: cmake_f
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.i: cmake_force
@@ -663,7 +733,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.i: cmake_force
@@ -677,7 +747,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.i: cmake_force
@@ -691,7 +761,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.s: cmake_fo
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoBase32.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoBase32.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.i: cmake_force
@@ -705,7 +775,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.i: cmake_force
@@ -716,10 +786,24 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.s: c
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_52) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoValidator.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_53) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoValidator.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.i: cmake_force
@@ -733,7 +817,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_54) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.i: cmake_force
@@ -747,7 +831,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/DID.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_55) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/DID.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.i: cmake_force
@@ -758,10 +842,66 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/DID.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_56) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_57) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_58) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_59) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/TID.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_60) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/TID.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.i: cmake_force
@@ -775,7 +915,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_61) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.i: cmake_force
@@ -786,10 +926,38 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.s: 
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_62) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_63) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_52) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_64) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.i: cmake_force
@@ -803,7 +971,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManag
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_53) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_65) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.i: cmake_force
@@ -817,7 +985,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_54) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_66) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.i: cmake_force
@@ -828,10 +996,24 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.s: cmake_forc
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_67) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Pool/DatabasePool.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_55) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_68) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Pool/DatabasePool.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.i: cmake_force
@@ -845,7 +1027,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.s: cmak
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_56) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_69) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.i: cmake_force
@@ -859,7 +1041,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_57) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_70) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.i: cmake_force
@@ -873,7 +1055,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.s
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_58) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_71) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.i: cmake_force
@@ -887,7 +1069,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.
 CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_59) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_72) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.i: cmake_force
@@ -901,7 +1083,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Federation/FederationClient.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_60) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_73) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Federation/FederationClient.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.i: cmake_force
@@ -915,7 +1097,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.s: cma
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_61) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_74) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.i: cmake_force
@@ -929,7 +1111,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.s:
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/HandleResolver.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_62) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_75) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/HandleResolver.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.i: cmake_force
@@ -943,7 +1125,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.s: cmake_f
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_63) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_76) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.i: cmake_force
@@ -957,7 +1139,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_64) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_77) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.i: cmake_force
@@ -971,7 +1153,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.s: cmake
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_65) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_78) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.i: cmake_force
@@ -985,7 +1167,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.s: cma
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_66) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_79) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.i: cmake_force
@@ -999,7 +1181,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.s: 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_67) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_80) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.i: cmake_force
@@ -1013,7 +1195,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.s: cm
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_68) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_81) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.i: cmake_force
@@ -1027,7 +1209,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.s:
 CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Metrics/PDSMetrics.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_69) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_82) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Metrics/PDSMetrics.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.i: cmake_force
@@ -1041,7 +1223,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpBufferPool.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_70) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_83) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpBufferPool.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.i: cmake_force
@@ -1055,7 +1237,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.s: cmake_fo
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_71) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_84) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.i: cmake_force
@@ -1069,7 +1251,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.s: c
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRequest.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_72) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_85) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRequest.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.i: cmake_force
@@ -1083,7 +1265,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpResponse.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_73) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_86) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpResponse.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.i: cmake_force
@@ -1097,7 +1279,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.s: cmake_forc
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouteTrie.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_74) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_87) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouteTrie.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.i: cmake_force
@@ -1111,7 +1293,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouter.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_75) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_88) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouter.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.i: cmake_force
@@ -1125,7 +1307,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpServer.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_76) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_89) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpServer.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.i: cmake_force
@@ -1139,7 +1321,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpStreamingBody.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_77) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_90) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpStreamingBody.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.i: cmake_force
@@ -1153,7 +1335,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.s: cmake
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/RateLimiter.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_78) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_91) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/RateLimiter.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.i: cmake_force
@@ -1167,7 +1349,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/SSLPinningManager.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_79) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_92) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/SSLPinningManager.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.i: cmake_force
@@ -1181,7 +1363,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.s: cmake
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_80) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_93) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.i: cmake_force
@@ -1192,10 +1374,24 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.s:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_94) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_81) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_95) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.i: cmake_force
@@ -1209,7 +1405,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_82) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_96) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.i: cmake_force
@@ -1220,10 +1416,108 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.s: cmak
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_97) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_98) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_99) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_100) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_101) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_102) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.s
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_103) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m > CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CAR.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_83) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_104) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CAR.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.i: cmake_force
@@ -1237,7 +1531,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CBOR.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_84) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_105) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CBOR.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.i: cmake_force
@@ -1251,7 +1545,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MST.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_85) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_106) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MST.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.i: cmake_force
@@ -1265,7 +1559,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MSTPersistence.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_86) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_107) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MSTPersistence.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.i: cmake_force
@@ -1279,7 +1573,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.s: cmake
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/RepoCommit.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_87) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_108) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/RepoCommit.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.i: cmake_force
@@ -1293,7 +1587,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSAuthzManager.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_88) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_109) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSAuthzManager.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.i: cmake_force
@@ -1304,10 +1598,24 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.s: cmake_
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSAuthzManager.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.s
 
+CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o: CMakeFiles/september.dir/flags.make
+CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m
+CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o: CMakeFiles/september.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_110) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m > CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.i
+
+CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m -o CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.s
+
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSInputValidator.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_89) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_111) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSInputValidator.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.i: cmake_force
@@ -1321,7 +1629,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.s: cmak
 CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Services/AdminService.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_90) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_112) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Services/AdminService.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.i: cmake_force
@@ -1335,7 +1643,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.s: cmake_for
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/EventFormatter.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_91) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_113) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/EventFormatter.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.i: cmake_force
@@ -1349,7 +1657,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/Firehose.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_92) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_114) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/Firehose.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.i: cmake_force
@@ -1363,7 +1671,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/RelayClient.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_93) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_115) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/RelayClient.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.i: cmake_force
@@ -1377,7 +1685,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.s: cmake_force
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_94) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_116) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.i: cmake_force
@@ -1391,7 +1699,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.s: cmak
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketConnection.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_95) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_117) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketConnection.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.i: cmake_force
@@ -1405,7 +1713,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.s: cmake_
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketServer.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_96) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_118) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketServer.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.i: cmake_force
@@ -1419,7 +1727,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.s: cmake_forc
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_97) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_119) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.i: cmake_force
@@ -1433,7 +1741,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.s
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_98) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_120) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.i: cmake_force
@@ -1447,7 +1755,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.s: 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_99) "Building C object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_121) "Building C object CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i: cmake_force
@@ -1461,7 +1769,7 @@ CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s: cmake_
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o: CMakeFiles/september.dir/flags.make
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/main.m
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o: CMakeFiles/september.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_100) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_122) "Building OBJC object CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o -MF CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o.d -o CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/main.m
 
 CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/main.m.i: cmake_force
@@ -1477,10 +1785,15 @@ september_OBJECTS = \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o" \
@@ -1520,14 +1833,22 @@ september_OBJECTS = \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o" \
@@ -1554,14 +1875,23 @@ september_OBJECTS = \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o" \
+"CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o" \
 "CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o" \
@@ -1581,10 +1911,15 @@ september_EXTERNAL_OBJECTS =
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o
@@ -1624,14 +1959,22 @@ bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o
@@ -1658,14 +2001,23 @@ bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreaming
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o
+bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o
 bin/september: CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o
@@ -1682,7 +2034,7 @@ bin/september: CMakeFiles/september.dir/build.make
 bin/september: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libsqlite3.tbd
 bin/september: secp256k1/lib/libsecp256k1.a
 bin/september: CMakeFiles/september.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_101) "Linking C executable bin/september"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_123) "Linking C executable bin/september"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/september.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

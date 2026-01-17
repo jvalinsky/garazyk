@@ -10,7 +10,6 @@
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "Repository/MST.h"
 #import "Repository/MSTPersistence.h"
-#import "Repository/MSTPersistence.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Core/CID.h"
@@ -27,11 +26,12 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/RateLimiter.h"
 #import "App/PDSConfiguration.h"
+#import "App/OAuthDemo/OAuthDemoHandler.h"
+#import "Core/PDSServiceContainer.h"
 #import "Services/PDSAccountService.h"
 #import "Services/PDSRecordService.h"
 #import "Services/PDSBlobService.h"
 #import "Services/PDSRepositoryService.h"
-#import "Services/PDSSyncService.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/PDSLogger.h"
 #import "App/Explore/ExploreHandler.h"
@@ -41,8 +41,9 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import "Lexicon/ATProtoLexiconRegistry.h"
+#import "Core/ATProtoError.h"
 
-NSString *const PDSControllerErrorDomain = @"com.atproto.pds.controller";
+
 NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 @implementation PDSController {
@@ -54,7 +55,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     PDSBlobService *_blobService;
     PDSRecordService *_serviceRecordService;
     PDSRepositoryService *_repositoryService;
-    PDSSyncService *_syncService;
     JWTMinter *_jwtMinter;
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
@@ -181,8 +181,16 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                                            didCacheMaxSize:1000
                                                          sequencerMaxSize:100];
         _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:directory maxSize:userDatabaseSize];
-        _accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
-        _accountService.serviceDatabases = _serviceDatabases;
+        
+        // Setup Service Container
+        PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+        [container reset];
+        
+        PDSAccountService *accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
+        accountService.serviceDatabases = _serviceDatabases;
+        [container registerInstance:accountService forProtocol:@protocol(PDSAccountService)];
+        
+        _accountService = [container resolveProtocol:@protocol(PDSAccountService)];
         
         // Initialize JWT Minter
         _jwtMinter = [[JWTMinter alloc] init];
@@ -215,8 +223,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         
         _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
         _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
-        _syncService = [[PDSSyncService alloc] initWithDatabasePool:_userDatabasePool repositoryService:_repositoryService];
-        _syncService.serviceDatabases = _serviceDatabases;
         _repos = [NSMutableDictionary dictionary];
         _collections = [NSMutableDictionary dictionary];
         _repoQueue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
@@ -301,15 +307,25 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }];
 
     // Wildcard for static assets (css, js, etc.)
-    fprintf(stderr, "Registering wildcard route for /explore/*\n");
     [_httpServer addRoute:@"GET" path:@"/explore/*" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
     }];
     
     // Fallback exact route for debugging
     [_httpServer addRoute:@"GET" path:@"/explore/css/style.css" handler:^(HttpRequest *request, HttpResponse *response) {
-        fprintf(stderr, "Hit exact route for style.css\n");
         [exploreHandler handleRequest:request response:response];
+    }];
+
+    // OAuth Demo UI
+    OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
+    [oauthDemoHandler setController:self];
+
+    [_httpServer addHandlerForPath:@"/oauth-demo" handler:^(HttpRequest *request, HttpResponse *response) {
+        [oauthDemoHandler handleRequest:request response:response];
+    }];
+
+    [_httpServer addRoute:@"GET" path:@"/oauth-demo/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [oauthDemoHandler handleRequest:request response:response];
     }];
 
     // MST Viewer (development/debugging tool)
@@ -725,30 +741,54 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
+    if (error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotImplemented
+                                   message:@"takeDownAccount not implemented"];
+    }
     return NO;
 }
 
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
+    if (error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotImplemented
+                                   message:@"reinstateAccount not implemented"];
+    }
     return NO;
 }
 
 #pragma mark - Moderation Operations
 
 - (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error {
+    if (error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotImplemented
+                                   message:@"moderateAccount not implemented"];
+    }
     return @{@"status": @"not_implemented"};
 }
 
 - (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error {
+    if (error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotImplemented
+                                   message:@"moderateRecord not implemented"];
+    }
     return @{@"status": @"not_implemented"};
 }
 
 #pragma mark - Labeling Operations
 
 - (NSDictionary *)createLabel:(NSDictionary *)params error:(NSError **)error {
+    if (error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotImplemented
+                                   message:@"createLabel not implemented"];
+    }
     return @{@"status": @"not_implemented"};
 }
 
 - (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error {
+    if (error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotImplemented
+                                   message:@"getLabels not implemented"];
+    }
     return @{@"status": @"not_implemented"};
 }
 

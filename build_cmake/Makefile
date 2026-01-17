@@ -185,6 +185,19 @@ september/fast:
 .PHONY : september/fast
 
 #=============================================================================
+# Target rules for targets named atproto-plc
+
+# Build rule for target.
+atproto-plc: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 atproto-plc
+.PHONY : atproto-plc
+
+# fast build rule for target.
+atproto-plc/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/build
+.PHONY : atproto-plc/fast
+
+#=============================================================================
 # Target rules for targets named AllTests
 
 # Build rule for target.
@@ -385,6 +398,7 @@ ATProtoPDS/Sources/Admin/AdminMiddleware.o: ATProtoPDS/Sources/Admin/AdminMiddle
 # target to build an object file
 ATProtoPDS/Sources/Admin/AdminMiddleware.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o
 .PHONY : ATProtoPDS/Sources/Admin/AdminMiddleware.m.o
 
@@ -394,6 +408,7 @@ ATProtoPDS/Sources/Admin/PDSAdminAuth.o: ATProtoPDS/Sources/Admin/PDSAdminAuth.m
 # target to build an object file
 ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o
 .PHONY : ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o
 
@@ -403,8 +418,19 @@ ATProtoPDS/Sources/Admin/PDSAdminHandler.o: ATProtoPDS/Sources/Admin/PDSAdminHan
 # target to build an object file
 ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o
 .PHONY : ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o
+
+ATProtoPDS/Sources/Admin/PDSInstallerCommand.o: ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
+.PHONY : ATProtoPDS/Sources/Admin/PDSInstallerCommand.o
+
+# target to build an object file
+ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
+.PHONY : ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
 
 ATProtoPDS/Sources/App/AppDelegate.o: ATProtoPDS/Sources/App/AppDelegate.m.o
 .PHONY : ATProtoPDS/Sources/App/AppDelegate.o
@@ -412,6 +438,7 @@ ATProtoPDS/Sources/App/AppDelegate.o: ATProtoPDS/Sources/App/AppDelegate.m.o
 # target to build an object file
 ATProtoPDS/Sources/App/AppDelegate.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/AppDelegate.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/AppDelegate.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o
 .PHONY : ATProtoPDS/Sources/App/AppDelegate.m.o
 
@@ -421,6 +448,7 @@ ATProtoPDS/Sources/App/Explore/ExploreCache.o: ATProtoPDS/Sources/App/Explore/Ex
 # target to build an object file
 ATProtoPDS/Sources/App/Explore/ExploreCache.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o
 .PHONY : ATProtoPDS/Sources/App/Explore/ExploreCache.m.o
 
@@ -430,6 +458,7 @@ ATProtoPDS/Sources/App/Explore/ExploreHandler.o: ATProtoPDS/Sources/App/Explore/
 # target to build an object file
 ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o
 .PHONY : ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o
 
@@ -439,8 +468,49 @@ ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.o: ATProtoPDS/Sources/App/MSTV
 # target to build an object file
 ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o
 .PHONY : ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o
+
+ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.o: ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+.PHONY : ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.o
+
+# target to build an object file
+ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+.PHONY : ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+
+ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.o: ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+.PHONY : ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.o
+
+# target to build an object file
+ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+.PHONY : ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+
+ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.o: ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+.PHONY : ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.o
+
+# target to build an object file
+ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+.PHONY : ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+
+ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.o: ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
+.PHONY : ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.o
+
+# target to build an object file
+ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
+.PHONY : ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
 
 ATProtoPDS/Sources/App/PDSConfiguration.o: ATProtoPDS/Sources/App/PDSConfiguration.m.o
 .PHONY : ATProtoPDS/Sources/App/PDSConfiguration.o
@@ -448,6 +518,7 @@ ATProtoPDS/Sources/App/PDSConfiguration.o: ATProtoPDS/Sources/App/PDSConfigurati
 # target to build an object file
 ATProtoPDS/Sources/App/PDSConfiguration.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o
 .PHONY : ATProtoPDS/Sources/App/PDSConfiguration.m.o
 
@@ -457,6 +528,7 @@ ATProtoPDS/Sources/App/PDSController.o: ATProtoPDS/Sources/App/PDSController.m.o
 # target to build an object file
 ATProtoPDS/Sources/App/PDSController.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/PDSController.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/PDSController.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o
 .PHONY : ATProtoPDS/Sources/App/PDSController.m.o
 
@@ -466,6 +538,7 @@ ATProtoPDS/Sources/App/Services/PDSAccountService.o: ATProtoPDS/Sources/App/Serv
 # target to build an object file
 ATProtoPDS/Sources/App/Services/PDSAccountService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o
 .PHONY : ATProtoPDS/Sources/App/Services/PDSAccountService.m.o
 
@@ -475,6 +548,7 @@ ATProtoPDS/Sources/App/Services/PDSBlobService.o: ATProtoPDS/Sources/App/Service
 # target to build an object file
 ATProtoPDS/Sources/App/Services/PDSBlobService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o
 .PHONY : ATProtoPDS/Sources/App/Services/PDSBlobService.m.o
 
@@ -484,6 +558,7 @@ ATProtoPDS/Sources/App/Services/PDSRecordService.o: ATProtoPDS/Sources/App/Servi
 # target to build an object file
 ATProtoPDS/Sources/App/Services/PDSRecordService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o
 .PHONY : ATProtoPDS/Sources/App/Services/PDSRecordService.m.o
 
@@ -493,6 +568,7 @@ ATProtoPDS/Sources/App/Services/PDSRepositoryService.o: ATProtoPDS/Sources/App/S
 # target to build an object file
 ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o
 .PHONY : ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o
 
@@ -502,6 +578,7 @@ ATProtoPDS/Sources/AppView/ActorService.o: ATProtoPDS/Sources/AppView/ActorServi
 # target to build an object file
 ATProtoPDS/Sources/AppView/ActorService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/ActorService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/AppView/ActorService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o
 .PHONY : ATProtoPDS/Sources/AppView/ActorService.m.o
 
@@ -511,6 +588,7 @@ ATProtoPDS/Sources/AppView/FeedService.o: ATProtoPDS/Sources/AppView/FeedService
 # target to build an object file
 ATProtoPDS/Sources/AppView/FeedService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/FeedService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/AppView/FeedService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o
 .PHONY : ATProtoPDS/Sources/AppView/FeedService.m.o
 
@@ -520,6 +598,7 @@ ATProtoPDS/Sources/AppView/NotificationService.o: ATProtoPDS/Sources/AppView/Not
 # target to build an object file
 ATProtoPDS/Sources/AppView/NotificationService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o
 .PHONY : ATProtoPDS/Sources/AppView/NotificationService.m.o
 
@@ -529,6 +608,7 @@ ATProtoPDS/Sources/Auth/Base32Utils.o: ATProtoPDS/Sources/Auth/Base32Utils.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/Base32Utils.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o
 .PHONY : ATProtoPDS/Sources/Auth/Base32Utils.m.o
 
@@ -538,6 +618,7 @@ ATProtoPDS/Sources/Auth/CryptoUtils.o: ATProtoPDS/Sources/Auth/CryptoUtils.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/CryptoUtils.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o
 .PHONY : ATProtoPDS/Sources/Auth/CryptoUtils.m.o
 
@@ -547,6 +628,7 @@ ATProtoPDS/Sources/Auth/DPoPUtil.o: ATProtoPDS/Sources/Auth/DPoPUtil.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/DPoPUtil.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o
 .PHONY : ATProtoPDS/Sources/Auth/DPoPUtil.m.o
 
@@ -556,6 +638,7 @@ ATProtoPDS/Sources/Auth/JWT.o: ATProtoPDS/Sources/Auth/JWT.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/JWT.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/JWT.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/JWT.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o
 .PHONY : ATProtoPDS/Sources/Auth/JWT.m.o
 
@@ -565,6 +648,7 @@ ATProtoPDS/Sources/Auth/KeyManager.o: ATProtoPDS/Sources/Auth/KeyManager.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/KeyManager.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o
 .PHONY : ATProtoPDS/Sources/Auth/KeyManager.m.o
 
@@ -574,6 +658,7 @@ ATProtoPDS/Sources/Auth/KeyRotationManager.o: ATProtoPDS/Sources/Auth/KeyRotatio
 # target to build an object file
 ATProtoPDS/Sources/Auth/KeyRotationManager.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o
 .PHONY : ATProtoPDS/Sources/Auth/KeyRotationManager.m.o
 
@@ -583,6 +668,7 @@ ATProtoPDS/Sources/Auth/OAuth2.o: ATProtoPDS/Sources/Auth/OAuth2.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/OAuth2.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o
 .PHONY : ATProtoPDS/Sources/Auth/OAuth2.m.o
 
@@ -592,6 +678,7 @@ ATProtoPDS/Sources/Auth/OAuth2Handler.o: ATProtoPDS/Sources/Auth/OAuth2Handler.m
 # target to build an object file
 ATProtoPDS/Sources/Auth/OAuth2Handler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o
 .PHONY : ATProtoPDS/Sources/Auth/OAuth2Handler.m.o
 
@@ -601,6 +688,7 @@ ATProtoPDS/Sources/Auth/OAuthServerMetadata.o: ATProtoPDS/Sources/Auth/OAuthServ
 # target to build an object file
 ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o
 .PHONY : ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o
 
@@ -610,6 +698,7 @@ ATProtoPDS/Sources/Auth/OAuthSession.o: ATProtoPDS/Sources/Auth/OAuthSession.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/OAuthSession.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o
 .PHONY : ATProtoPDS/Sources/Auth/OAuthSession.m.o
 
@@ -619,6 +708,7 @@ ATProtoPDS/Sources/Auth/PKCEUtil.o: ATProtoPDS/Sources/Auth/PKCEUtil.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/PKCEUtil.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o
 .PHONY : ATProtoPDS/Sources/Auth/PKCEUtil.m.o
 
@@ -628,6 +718,7 @@ ATProtoPDS/Sources/Auth/Secp256k1.o: ATProtoPDS/Sources/Auth/Secp256k1.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/Secp256k1.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o
 .PHONY : ATProtoPDS/Sources/Auth/Secp256k1.m.o
 
@@ -637,6 +728,7 @@ ATProtoPDS/Sources/Auth/Session.o: ATProtoPDS/Sources/Auth/Session.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/Session.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/Session.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/Session.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o
 .PHONY : ATProtoPDS/Sources/Auth/Session.m.o
 
@@ -646,6 +738,7 @@ ATProtoPDS/Sources/Auth/TOTPGenerator.o: ATProtoPDS/Sources/Auth/TOTPGenerator.m
 # target to build an object file
 ATProtoPDS/Sources/Auth/TOTPGenerator.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o
 .PHONY : ATProtoPDS/Sources/Auth/TOTPGenerator.m.o
 
@@ -655,6 +748,7 @@ ATProtoPDS/Sources/Auth/TOTPService.o: ATProtoPDS/Sources/Auth/TOTPService.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/TOTPService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o
 .PHONY : ATProtoPDS/Sources/Auth/TOTPService.m.o
 
@@ -664,6 +758,7 @@ ATProtoPDS/Sources/Auth/WebAuthnDomain.o: ATProtoPDS/Sources/Auth/WebAuthnDomain
 # target to build an object file
 ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o
 .PHONY : ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o
 
@@ -673,6 +768,7 @@ ATProtoPDS/Sources/Auth/WebAuthnVerifier.o: ATProtoPDS/Sources/Auth/WebAuthnVeri
 # target to build an object file
 ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o
 .PHONY : ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o
 
@@ -682,6 +778,7 @@ ATProtoPDS/Sources/Auth/YubiKeyOATH.o: ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o
 # target to build an object file
 ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o
 .PHONY : ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o
 
@@ -691,6 +788,7 @@ ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.o: ATProtoPDS/Sources/Auth/secp256k1
 # target to build an object file
 ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o
 .PHONY : ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o
 
@@ -700,6 +798,7 @@ ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.i: ATProtoPDS/Sources/Auth/secp256k1
 # target to preprocess a source file
 ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i
 .PHONY : ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i
 
@@ -709,6 +808,7 @@ ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.s: ATProtoPDS/Sources/Auth/secp256k1
 # target to generate assembly for a file
 ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s
 .PHONY : ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s
 
@@ -718,6 +818,7 @@ ATProtoPDS/Sources/Blob/BlobStorage.o: ATProtoPDS/Sources/Blob/BlobStorage.m.o
 # target to build an object file
 ATProtoPDS/Sources/Blob/BlobStorage.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o
 .PHONY : ATProtoPDS/Sources/Blob/BlobStorage.m.o
 
@@ -727,6 +828,7 @@ ATProtoPDS/Sources/Blob/MimeTypeValidator.o: ATProtoPDS/Sources/Blob/MimeTypeVal
 # target to build an object file
 ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o
 .PHONY : ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o
 
@@ -736,6 +838,7 @@ ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.o: ATProtoPDS/Sources/Blob/PDSDiskBl
 # target to build an object file
 ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o
 .PHONY : ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o
 
@@ -745,6 +848,7 @@ ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.o: ATProtoPDS/Sources/CLI/PDSCLIAcco
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o
 
@@ -754,6 +858,7 @@ ATProtoPDS/Sources/CLI/PDSCLIDispatcher.o: ATProtoPDS/Sources/CLI/PDSCLIDispatch
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o
 
@@ -763,6 +868,7 @@ ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.o: ATProtoPDS/Sources/CLI/PDSCLIHealt
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o
 
@@ -772,6 +878,7 @@ ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.o: ATProtoPDS/Sources/CLI/PDSCLIInvit
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o
 
@@ -781,6 +888,7 @@ ATProtoPDS/Sources/CLI/PDSCLINukeCommand.o: ATProtoPDS/Sources/CLI/PDSCLINukeCom
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o
 
@@ -790,6 +898,7 @@ ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.o: ATProtoPDS/Sources/CLI/PDSCLIRepoCom
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o
 
@@ -799,6 +908,7 @@ ATProtoPDS/Sources/CLI/PDSCLIServeCommand.o: ATProtoPDS/Sources/CLI/PDSCLIServeC
 # target to build an object file
 ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o
 .PHONY : ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o
 
@@ -816,6 +926,7 @@ ATProtoPDS/Sources/Core/ATProtoBase32.o: ATProtoPDS/Sources/Core/ATProtoBase32.m
 # target to build an object file
 ATProtoPDS/Sources/Core/ATProtoBase32.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o
 .PHONY : ATProtoPDS/Sources/Core/ATProtoBase32.m.o
 
@@ -825,8 +936,19 @@ ATProtoPDS/Sources/Core/ATProtoCBORSerialization.o: ATProtoPDS/Sources/Core/ATPr
 # target to build an object file
 ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o
 .PHONY : ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o
+
+ATProtoPDS/Sources/Core/ATProtoError.o: ATProtoPDS/Sources/Core/ATProtoError.m.o
+.PHONY : ATProtoPDS/Sources/Core/ATProtoError.o
+
+# target to build an object file
+ATProtoPDS/Sources/Core/ATProtoError.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o
+.PHONY : ATProtoPDS/Sources/Core/ATProtoError.m.o
 
 ATProtoPDS/Sources/Core/ATProtoValidator.o: ATProtoPDS/Sources/Core/ATProtoValidator.m.o
 .PHONY : ATProtoPDS/Sources/Core/ATProtoValidator.o
@@ -834,6 +956,7 @@ ATProtoPDS/Sources/Core/ATProtoValidator.o: ATProtoPDS/Sources/Core/ATProtoValid
 # target to build an object file
 ATProtoPDS/Sources/Core/ATProtoValidator.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o
 .PHONY : ATProtoPDS/Sources/Core/ATProtoValidator.m.o
 
@@ -843,6 +966,7 @@ ATProtoPDS/Sources/Core/CID.o: ATProtoPDS/Sources/Core/CID.m.o
 # target to build an object file
 ATProtoPDS/Sources/Core/CID.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/CID.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/CID.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o
 .PHONY : ATProtoPDS/Sources/Core/CID.m.o
 
@@ -852,8 +976,49 @@ ATProtoPDS/Sources/Core/DID.o: ATProtoPDS/Sources/Core/DID.m.o
 # target to build an object file
 ATProtoPDS/Sources/Core/DID.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/DID.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/DID.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o
 .PHONY : ATProtoPDS/Sources/Core/DID.m.o
+
+ATProtoPDS/Sources/Core/Managers/PDSAccountManager.o: ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+.PHONY : ATProtoPDS/Sources/Core/Managers/PDSAccountManager.o
+
+# target to build an object file
+ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+.PHONY : ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+
+ATProtoPDS/Sources/Core/PDSServiceContainer.o: ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+.PHONY : ATProtoPDS/Sources/Core/PDSServiceContainer.o
+
+# target to build an object file
+ATProtoPDS/Sources/Core/PDSServiceContainer.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+.PHONY : ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+
+ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.o: ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+.PHONY : ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.o
+
+# target to build an object file
+ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+.PHONY : ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+
+ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.o: ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
+.PHONY : ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.o
+
+# target to build an object file
+ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
+.PHONY : ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
 
 ATProtoPDS/Sources/Core/TID.o: ATProtoPDS/Sources/Core/TID.m.o
 .PHONY : ATProtoPDS/Sources/Core/TID.o
@@ -861,6 +1026,7 @@ ATProtoPDS/Sources/Core/TID.o: ATProtoPDS/Sources/Core/TID.m.o
 # target to build an object file
 ATProtoPDS/Sources/Core/TID.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Core/TID.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Core/TID.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o
 .PHONY : ATProtoPDS/Sources/Core/TID.m.o
 
@@ -870,8 +1036,29 @@ ATProtoPDS/Sources/Database/ActorStore/ActorStore.o: ATProtoPDS/Sources/Database
 # target to build an object file
 ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o
 .PHONY : ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o
+
+ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.o: ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+.PHONY : ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.o
+
+# target to build an object file
+ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+.PHONY : ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+
+ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.o: ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
+.PHONY : ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.o
+
+# target to build an object file
+ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
+.PHONY : ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
 
 ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.o: ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
 .PHONY : ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.o
@@ -879,6 +1066,7 @@ ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.o: ATProtoPDS/Sources/
 # target to build an object file
 ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
 .PHONY : ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
 
@@ -888,6 +1076,7 @@ ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.o: ATProtoPDS/Sources/Data
 # target to build an object file
 ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o
 .PHONY : ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o
 
@@ -897,8 +1086,19 @@ ATProtoPDS/Sources/Database/PDSDatabase.o: ATProtoPDS/Sources/Database/PDSDataba
 # target to build an object file
 ATProtoPDS/Sources/Database/PDSDatabase.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o
 .PHONY : ATProtoPDS/Sources/Database/PDSDatabase.m.o
+
+ATProtoPDS/Sources/Database/PDSRepositoryFactory.o: ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
+.PHONY : ATProtoPDS/Sources/Database/PDSRepositoryFactory.o
+
+# target to build an object file
+ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
+.PHONY : ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
 
 ATProtoPDS/Sources/Database/Pool/DatabasePool.o: ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
 .PHONY : ATProtoPDS/Sources/Database/Pool/DatabasePool.o
@@ -906,6 +1106,7 @@ ATProtoPDS/Sources/Database/Pool/DatabasePool.o: ATProtoPDS/Sources/Database/Poo
 # target to build an object file
 ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
 .PHONY : ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
 
@@ -915,6 +1116,7 @@ ATProtoPDS/Sources/Database/Schema.o: ATProtoPDS/Sources/Database/Schema.m.o
 # target to build an object file
 ATProtoPDS/Sources/Database/Schema.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/Schema.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o
 .PHONY : ATProtoPDS/Sources/Database/Schema.m.o
 
@@ -924,6 +1126,7 @@ ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.o: ATProtoPDS/Sources/Databa
 # target to build an object file
 ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o
 .PHONY : ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o
 
@@ -933,6 +1136,7 @@ ATProtoPDS/Sources/Database/Service/ServiceDatabases.o: ATProtoPDS/Sources/Datab
 # target to build an object file
 ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o
 .PHONY : ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o
 
@@ -942,6 +1146,7 @@ ATProtoPDS/Sources/Debug/PDSLogger.o: ATProtoPDS/Sources/Debug/PDSLogger.m.o
 # target to build an object file
 ATProtoPDS/Sources/Debug/PDSLogger.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o
 .PHONY : ATProtoPDS/Sources/Debug/PDSLogger.m.o
 
@@ -951,6 +1156,7 @@ ATProtoPDS/Sources/Federation/FederationClient.o: ATProtoPDS/Sources/Federation/
 # target to build an object file
 ATProtoPDS/Sources/Federation/FederationClient.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o
 .PHONY : ATProtoPDS/Sources/Federation/FederationClient.m.o
 
@@ -960,6 +1166,7 @@ ATProtoPDS/Sources/Identity/ATProtoHandleValidator.o: ATProtoPDS/Sources/Identit
 # target to build an object file
 ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o
 .PHONY : ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o
 
@@ -969,6 +1176,7 @@ ATProtoPDS/Sources/Identity/HandleResolver.o: ATProtoPDS/Sources/Identity/Handle
 # target to build an object file
 ATProtoPDS/Sources/Identity/HandleResolver.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o
 .PHONY : ATProtoPDS/Sources/Identity/HandleResolver.m.o
 
@@ -978,6 +1186,7 @@ ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.o: ATProtoPDS/Sources/Lexic
 # target to build an object file
 ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o
 .PHONY : ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o
 
@@ -987,6 +1196,7 @@ ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.o: ATProtoPDS/Sources/Lexicon/ATPro
 # target to build an object file
 ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o
 .PHONY : ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o
 
@@ -996,6 +1206,7 @@ ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.o: ATProtoPDS/Sources/Lexicon/ATP
 # target to build an object file
 ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o
 .PHONY : ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o
 
@@ -1005,6 +1216,7 @@ ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.o: ATProtoPDS/Sources/Lexicon/
 # target to build an object file
 ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o
 .PHONY : ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o
 
@@ -1014,6 +1226,7 @@ ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.o: ATProtoPDS/Sources/Lexicon/AT
 # target to build an object file
 ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o
 .PHONY : ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o
 
@@ -1023,6 +1236,7 @@ ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.o: ATProtoPDS/Sources/Lexicon
 # target to build an object file
 ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o
 .PHONY : ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o
 
@@ -1032,6 +1246,7 @@ ATProtoPDS/Sources/Metrics/PDSMetrics.o: ATProtoPDS/Sources/Metrics/PDSMetrics.m
 # target to build an object file
 ATProtoPDS/Sources/Metrics/PDSMetrics.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o
 .PHONY : ATProtoPDS/Sources/Metrics/PDSMetrics.m.o
 
@@ -1041,6 +1256,7 @@ ATProtoPDS/Sources/Network/HttpBufferPool.o: ATProtoPDS/Sources/Network/HttpBuff
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpBufferPool.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpBufferPool.m.o
 
@@ -1050,6 +1266,7 @@ ATProtoPDS/Sources/Network/HttpChunkedBodyParser.o: ATProtoPDS/Sources/Network/H
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o
 
@@ -1059,6 +1276,7 @@ ATProtoPDS/Sources/Network/HttpRequest.o: ATProtoPDS/Sources/Network/HttpRequest
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpRequest.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpRequest.m.o
 
@@ -1068,6 +1286,7 @@ ATProtoPDS/Sources/Network/HttpResponse.o: ATProtoPDS/Sources/Network/HttpRespon
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpResponse.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpResponse.m.o
 
@@ -1077,6 +1296,7 @@ ATProtoPDS/Sources/Network/HttpRouteTrie.o: ATProtoPDS/Sources/Network/HttpRoute
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpRouteTrie.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpRouteTrie.m.o
 
@@ -1086,6 +1306,7 @@ ATProtoPDS/Sources/Network/HttpRouter.o: ATProtoPDS/Sources/Network/HttpRouter.m
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpRouter.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpRouter.m.o
 
@@ -1095,6 +1316,7 @@ ATProtoPDS/Sources/Network/HttpServer.o: ATProtoPDS/Sources/Network/HttpServer.m
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpServer.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpServer.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpServer.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpServer.m.o
 
@@ -1104,6 +1326,7 @@ ATProtoPDS/Sources/Network/HttpStreamingBody.o: ATProtoPDS/Sources/Network/HttpS
 # target to build an object file
 ATProtoPDS/Sources/Network/HttpStreamingBody.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o
 .PHONY : ATProtoPDS/Sources/Network/HttpStreamingBody.m.o
 
@@ -1113,6 +1336,7 @@ ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.o: ATProtoPDS/Sources/Networ
 # target to build an object file
 ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o
 .PHONY : ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o
 
@@ -1122,6 +1346,7 @@ ATProtoPDS/Sources/Network/PDSNetworkTransportMac.o: ATProtoPDS/Sources/Network/
 # target to build an object file
 ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o
 .PHONY : ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o
 
@@ -1131,6 +1356,7 @@ ATProtoPDS/Sources/Network/RateLimiter.o: ATProtoPDS/Sources/Network/RateLimiter
 # target to build an object file
 ATProtoPDS/Sources/Network/RateLimiter.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o
 .PHONY : ATProtoPDS/Sources/Network/RateLimiter.m.o
 
@@ -1140,6 +1366,7 @@ ATProtoPDS/Sources/Network/SSLPinningManager.o: ATProtoPDS/Sources/Network/SSLPi
 # target to build an object file
 ATProtoPDS/Sources/Network/SSLPinningManager.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o
 .PHONY : ATProtoPDS/Sources/Network/SSLPinningManager.m.o
 
@@ -1149,8 +1376,19 @@ ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.o: ATProtoPDS/Sources/Network
 # target to build an object file
 ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o
 .PHONY : ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o
+
+ATProtoPDS/Sources/Network/XRPCError.o: ATProtoPDS/Sources/Network/XRPCError.m.o
+.PHONY : ATProtoPDS/Sources/Network/XRPCError.o
+
+# target to build an object file
+ATProtoPDS/Sources/Network/XRPCError.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XRPCError.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/XRPCError.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o
+.PHONY : ATProtoPDS/Sources/Network/XRPCError.m.o
 
 ATProtoPDS/Sources/Network/XrpcHandler.o: ATProtoPDS/Sources/Network/XrpcHandler.m.o
 .PHONY : ATProtoPDS/Sources/Network/XrpcHandler.o
@@ -1158,6 +1396,7 @@ ATProtoPDS/Sources/Network/XrpcHandler.o: ATProtoPDS/Sources/Network/XrpcHandler
 # target to build an object file
 ATProtoPDS/Sources/Network/XrpcHandler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o
 .PHONY : ATProtoPDS/Sources/Network/XrpcHandler.m.o
 
@@ -1167,8 +1406,87 @@ ATProtoPDS/Sources/Network/XrpcMethodRegistry.o: ATProtoPDS/Sources/Network/Xrpc
 # target to build an object file
 ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o
 .PHONY : ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o
+
+ATProtoPDS/Sources/PLC/PLCAuditor.o: ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCAuditor.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCAuditor.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+
+ATProtoPDS/Sources/PLC/PLCCacheDirectory.o: ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCCacheDirectory.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+
+ATProtoPDS/Sources/PLC/PLCMetrics.o: ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCMetrics.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCMetrics.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+
+ATProtoPDS/Sources/PLC/PLCMockStore.o: ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCMockStore.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCMockStore.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+
+ATProtoPDS/Sources/PLC/PLCOperation.o: ATProtoPDS/Sources/PLC/PLCOperation.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCOperation.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCOperation.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCOperation.m.o
+
+ATProtoPDS/Sources/PLC/PLCPersistentStore.o: ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCPersistentStore.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+
+ATProtoPDS/Sources/PLC/PLCServer.o: ATProtoPDS/Sources/PLC/PLCServer.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCServer.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/PLCServer.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o
+.PHONY : ATProtoPDS/Sources/PLC/PLCServer.m.o
+
+ATProtoPDS/Sources/PLC/main.o: ATProtoPDS/Sources/PLC/main.m.o
+.PHONY : ATProtoPDS/Sources/PLC/main.o
+
+# target to build an object file
+ATProtoPDS/Sources/PLC/main.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/PLC/main.m.o
+.PHONY : ATProtoPDS/Sources/PLC/main.m.o
 
 ATProtoPDS/Sources/Repository/CAR.o: ATProtoPDS/Sources/Repository/CAR.m.o
 .PHONY : ATProtoPDS/Sources/Repository/CAR.o
@@ -1176,6 +1494,7 @@ ATProtoPDS/Sources/Repository/CAR.o: ATProtoPDS/Sources/Repository/CAR.m.o
 # target to build an object file
 ATProtoPDS/Sources/Repository/CAR.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CAR.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Repository/CAR.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o
 .PHONY : ATProtoPDS/Sources/Repository/CAR.m.o
 
@@ -1185,6 +1504,7 @@ ATProtoPDS/Sources/Repository/CBOR.o: ATProtoPDS/Sources/Repository/CBOR.m.o
 # target to build an object file
 ATProtoPDS/Sources/Repository/CBOR.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/CBOR.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Repository/CBOR.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o
 .PHONY : ATProtoPDS/Sources/Repository/CBOR.m.o
 
@@ -1194,6 +1514,7 @@ ATProtoPDS/Sources/Repository/MST.o: ATProtoPDS/Sources/Repository/MST.m.o
 # target to build an object file
 ATProtoPDS/Sources/Repository/MST.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MST.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Repository/MST.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o
 .PHONY : ATProtoPDS/Sources/Repository/MST.m.o
 
@@ -1203,6 +1524,7 @@ ATProtoPDS/Sources/Repository/MSTPersistence.o: ATProtoPDS/Sources/Repository/MS
 # target to build an object file
 ATProtoPDS/Sources/Repository/MSTPersistence.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o
 .PHONY : ATProtoPDS/Sources/Repository/MSTPersistence.m.o
 
@@ -1212,6 +1534,7 @@ ATProtoPDS/Sources/Repository/RepoCommit.o: ATProtoPDS/Sources/Repository/RepoCo
 # target to build an object file
 ATProtoPDS/Sources/Repository/RepoCommit.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o
 .PHONY : ATProtoPDS/Sources/Repository/RepoCommit.m.o
 
@@ -1221,8 +1544,19 @@ ATProtoPDS/Sources/Security/PDSAuthzManager.o: ATProtoPDS/Sources/Security/PDSAu
 # target to build an object file
 ATProtoPDS/Sources/Security/PDSAuthzManager.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o
 .PHONY : ATProtoPDS/Sources/Security/PDSAuthzManager.m.o
+
+ATProtoPDS/Sources/Security/PDSBiometricKeychain.o: ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
+.PHONY : ATProtoPDS/Sources/Security/PDSBiometricKeychain.o
+
+# target to build an object file
+ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
+.PHONY : ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
 
 ATProtoPDS/Sources/Security/PDSInputValidator.o: ATProtoPDS/Sources/Security/PDSInputValidator.m.o
 .PHONY : ATProtoPDS/Sources/Security/PDSInputValidator.o
@@ -1230,6 +1564,7 @@ ATProtoPDS/Sources/Security/PDSInputValidator.o: ATProtoPDS/Sources/Security/PDS
 # target to build an object file
 ATProtoPDS/Sources/Security/PDSInputValidator.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o
 .PHONY : ATProtoPDS/Sources/Security/PDSInputValidator.m.o
 
@@ -1239,6 +1574,7 @@ ATProtoPDS/Sources/Services/AdminService.o: ATProtoPDS/Sources/Services/AdminSer
 # target to build an object file
 ATProtoPDS/Sources/Services/AdminService.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Services/AdminService.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Services/AdminService.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o
 .PHONY : ATProtoPDS/Sources/Services/AdminService.m.o
 
@@ -1248,6 +1584,7 @@ ATProtoPDS/Sources/Sync/EventFormatter.o: ATProtoPDS/Sources/Sync/EventFormatter
 # target to build an object file
 ATProtoPDS/Sources/Sync/EventFormatter.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o
 .PHONY : ATProtoPDS/Sources/Sync/EventFormatter.m.o
 
@@ -1257,6 +1594,7 @@ ATProtoPDS/Sources/Sync/Firehose.o: ATProtoPDS/Sources/Sync/Firehose.m.o
 # target to build an object file
 ATProtoPDS/Sources/Sync/Firehose.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/Firehose.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Sync/Firehose.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o
 .PHONY : ATProtoPDS/Sources/Sync/Firehose.m.o
 
@@ -1266,6 +1604,7 @@ ATProtoPDS/Sources/Sync/RelayClient.o: ATProtoPDS/Sources/Sync/RelayClient.m.o
 # target to build an object file
 ATProtoPDS/Sources/Sync/RelayClient.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o
 .PHONY : ATProtoPDS/Sources/Sync/RelayClient.m.o
 
@@ -1275,6 +1614,7 @@ ATProtoPDS/Sources/Sync/SubscribeReposHandler.o: ATProtoPDS/Sources/Sync/Subscri
 # target to build an object file
 ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o
 .PHONY : ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o
 
@@ -1284,6 +1624,7 @@ ATProtoPDS/Sources/Sync/WebSocketConnection.o: ATProtoPDS/Sources/Sync/WebSocket
 # target to build an object file
 ATProtoPDS/Sources/Sync/WebSocketConnection.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o
 .PHONY : ATProtoPDS/Sources/Sync/WebSocketConnection.m.o
 
@@ -1293,6 +1634,7 @@ ATProtoPDS/Sources/Sync/WebSocketServer.o: ATProtoPDS/Sources/Sync/WebSocketServ
 # target to build an object file
 ATProtoPDS/Sources/Sync/WebSocketServer.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/september.dir/build.make CMakeFiles/september.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atproto-plc.dir/build.make CMakeFiles/atproto-plc.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o
 .PHONY : ATProtoPDS/Sources/Sync/WebSocketServer.m.o
 
@@ -1336,6 +1678,14 @@ ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o
 .PHONY : ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o
 
+ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.o: ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o
+.PHONY : ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o
+.PHONY : ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o
+
 ATProtoPDS/Tests/App/PDSConfigurationTests.o: ATProtoPDS/Tests/App/PDSConfigurationTests.m.o
 .PHONY : ATProtoPDS/Tests/App/PDSConfigurationTests.o
 
@@ -1351,6 +1701,46 @@ ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.o: ATProtoPDS/Tests/App/Ser
 ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o
 .PHONY : ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o
+
+ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.o: ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o
+
+ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.o: ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o
+
+ATProtoPDS/Tests/AppView/ActorServiceTests.o: ATProtoPDS/Tests/AppView/ActorServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/AppView/ActorServiceTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/AppView/ActorServiceTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/AppView/ActorServiceTests.m.o
+
+ATProtoPDS/Tests/AppView/FeedServiceTests.o: ATProtoPDS/Tests/AppView/FeedServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/AppView/FeedServiceTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/AppView/FeedServiceTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/AppView/FeedServiceTests.m.o
+
+ATProtoPDS/Tests/AppView/NotificationServiceTests.o: ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/AppView/NotificationServiceTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o
+.PHONY : ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o
 
 ATProtoPDS/Tests/Auth/CryptoTests.o: ATProtoPDS/Tests/Auth/CryptoTests.m.o
 .PHONY : ATProtoPDS/Tests/Auth/CryptoTests.o
@@ -1416,6 +1806,22 @@ ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o
 .PHONY : ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o
 
+ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.o: ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o
+.PHONY : ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o
+.PHONY : ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o
+
+ATProtoPDS/Tests/Auth/OAuthSessionTests.o: ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o
+.PHONY : ATProtoPDS/Tests/Auth/OAuthSessionTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o
+.PHONY : ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o
+
 ATProtoPDS/Tests/Auth/SessionStoreTests.o: ATProtoPDS/Tests/Auth/SessionStoreTests.m.o
 .PHONY : ATProtoPDS/Tests/Auth/SessionStoreTests.o
 
@@ -1472,6 +1878,22 @@ ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o
 .PHONY : ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o
 
+ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.o: ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o
+.PHONY : ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o
+.PHONY : ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o
+
+ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.o: ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o
+.PHONY : ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o
+.PHONY : ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o
+
 ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.o: ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o
 .PHONY : ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.o
 
@@ -1488,6 +1910,54 @@ ATProtoPDS/Tests/CLI/PDSCLITests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o
 .PHONY : ATProtoPDS/Tests/CLI/PDSCLITests.m.o
 
+ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.o: ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o
+
+ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.o: ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.o
+
+# target to build an object file
+ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o
+
+ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.o: ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o
+
+ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.o: ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o
+
+ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.o: ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o
+
+ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.o: ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o
+.PHONY : ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o
+
 ATProtoPDS/Tests/Core/ATProtoCoreTests.o: ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o
 .PHONY : ATProtoPDS/Tests/Core/ATProtoCoreTests.o
 
@@ -1495,6 +1965,14 @@ ATProtoPDS/Tests/Core/ATProtoCoreTests.o: ATProtoPDS/Tests/Core/ATProtoCoreTests
 ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o
 .PHONY : ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o
+
+ATProtoPDS/Tests/Core/ATProtoErrorTests.o: ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/ATProtoErrorTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o
 
 ATProtoPDS/Tests/Core/DIDValidationTests.o: ATProtoPDS/Tests/Core/DIDValidationTests.m.o
 .PHONY : ATProtoPDS/Tests/Core/DIDValidationTests.o
@@ -1511,6 +1989,30 @@ ATProtoPDS/Tests/Core/IdentifierTests.o: ATProtoPDS/Tests/Core/IdentifierTests.m
 ATProtoPDS/Tests/Core/IdentifierTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o
 .PHONY : ATProtoPDS/Tests/Core/IdentifierTests.m.o
+
+ATProtoPDS/Tests/Core/PDSAccountManagerTests.o: ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/PDSAccountManagerTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o
+
+ATProtoPDS/Tests/Core/PDSServiceContainerTests.o: ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/PDSServiceContainerTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o
+
+ATProtoPDS/Tests/Core/ProtocolCompileTests.o: ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/ProtocolCompileTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o
+.PHONY : ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o
 
 ATProtoPDS/Tests/Core/RecordPathValidationTests.o: ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o
 .PHONY : ATProtoPDS/Tests/Core/RecordPathValidationTests.o
@@ -1559,6 +2061,14 @@ ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.o: ATProtoPDS/
 ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o
 .PHONY : ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o
+
+ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.o: ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o
+.PHONY : ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o
+.PHONY : ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o
 
 ATProtoPDS/Tests/Database/PDSControllerTests.o: ATProtoPDS/Tests/Database/PDSControllerTests.m.o
 .PHONY : ATProtoPDS/Tests/Database/PDSControllerTests.o
@@ -1616,6 +2126,14 @@ ATProtoPDS/Tests/Identity/DIDResolverTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o
 .PHONY : ATProtoPDS/Tests/Identity/DIDResolverTests.m.o
 
+ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.o: ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o
+.PHONY : ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o
+.PHONY : ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o
+
 ATProtoPDS/Tests/Identity/HandleResolverTests.o: ATProtoPDS/Tests/Identity/HandleResolverTests.m.o
 .PHONY : ATProtoPDS/Tests/Identity/HandleResolverTests.o
 
@@ -1623,6 +2141,14 @@ ATProtoPDS/Tests/Identity/HandleResolverTests.o: ATProtoPDS/Tests/Identity/Handl
 ATProtoPDS/Tests/Identity/HandleResolverTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o
 .PHONY : ATProtoPDS/Tests/Identity/HandleResolverTests.m.o
+
+ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.o: ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o
+.PHONY : ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o
+.PHONY : ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o
 
 ATProtoPDS/Tests/Lexicon/LexiconValidationTests.o: ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o
 .PHONY : ATProtoPDS/Tests/Lexicon/LexiconValidationTests.o
@@ -1744,6 +2270,14 @@ ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o
 .PHONY : ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o
 
+ATProtoPDS/Tests/Network/XRPCErrorTests.o: ATProtoPDS/Tests/Network/XRPCErrorTests.m.o
+.PHONY : ATProtoPDS/Tests/Network/XRPCErrorTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Network/XRPCErrorTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o
+.PHONY : ATProtoPDS/Tests/Network/XRPCErrorTests.m.o
+
 ATProtoPDS/Tests/Network/XrpcIntegrationTests.o: ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o
 .PHONY : ATProtoPDS/Tests/Network/XrpcIntegrationTests.o
 
@@ -1759,6 +2293,46 @@ ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.o: ATProtoPDS/Tests/Network/Xrp
 ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o
 .PHONY : ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o
+
+ATProtoPDS/Tests/PLC/PLCAuditorTests.o: ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCAuditorTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o
+
+ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.o: ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o
+
+ATProtoPDS/Tests/PLC/PLCOperationTests.o: ATProtoPDS/Tests/PLC/PLCOperationTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCOperationTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/PLC/PLCOperationTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCOperationTests.m.o
+
+ATProtoPDS/Tests/PLC/PLCServerTests.o: ATProtoPDS/Tests/PLC/PLCServerTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCServerTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/PLC/PLCServerTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCServerTests.m.o
+
+ATProtoPDS/Tests/PLC/PLCStoreTests.o: ATProtoPDS/Tests/PLC/PLCStoreTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCStoreTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/PLC/PLCStoreTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o
+.PHONY : ATProtoPDS/Tests/PLC/PLCStoreTests.m.o
 
 ATProtoPDS/Tests/Repository/CARInteropTests.o: ATProtoPDS/Tests/Repository/CARInteropTests.m.o
 .PHONY : ATProtoPDS/Tests/Repository/CARInteropTests.o
@@ -1832,6 +2406,14 @@ ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o
 .PHONY : ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o
 
+ATProtoPDS/Tests/Sync/EventFormatterTests.o: ATProtoPDS/Tests/Sync/EventFormatterTests.m.o
+.PHONY : ATProtoPDS/Tests/Sync/EventFormatterTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Sync/EventFormatterTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o
+.PHONY : ATProtoPDS/Tests/Sync/EventFormatterTests.m.o
+
 ATProtoPDS/Tests/Sync/FirehoseTests.o: ATProtoPDS/Tests/Sync/FirehoseTests.m.o
 .PHONY : ATProtoPDS/Tests/Sync/FirehoseTests.o
 
@@ -1863,6 +2445,14 @@ ATProtoPDS/Tests/Sync/WebSocketConnectionTests.o: ATProtoPDS/Tests/Sync/WebSocke
 ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o
 .PHONY : ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o
+
+ATProtoPDS/Tests/Sync/WebSocketServerTests.o: ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o
+.PHONY : ATProtoPDS/Tests/Sync/WebSocketServerTests.o
+
+# target to build an object file
+ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/AllTests.dir/build.make CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o
+.PHONY : ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o
 
 ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.o: ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o
 .PHONY : ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.o
@@ -1924,6 +2514,7 @@ help:
 	@echo "... run-tests"
 	@echo "... scan-build"
 	@echo "... AllTests"
+	@echo "... atproto-plc"
 	@echo "... bench"
 	@echo "... bench_ecmult"
 	@echo "... bench_internal"
@@ -1936,10 +2527,15 @@ help:
 	@echo "... ATProtoPDS/Sources/Admin/AdminMiddleware.o"
 	@echo "... ATProtoPDS/Sources/Admin/PDSAdminAuth.o"
 	@echo "... ATProtoPDS/Sources/Admin/PDSAdminHandler.o"
+	@echo "... ATProtoPDS/Sources/Admin/PDSInstallerCommand.o"
 	@echo "... ATProtoPDS/Sources/App/AppDelegate.o"
 	@echo "... ATProtoPDS/Sources/App/Explore/ExploreCache.o"
 	@echo "... ATProtoPDS/Sources/App/Explore/ExploreHandler.o"
 	@echo "... ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.o"
+	@echo "... ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.o"
+	@echo "... ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.o"
+	@echo "... ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.o"
+	@echo "... ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.o"
 	@echo "... ATProtoPDS/Sources/App/PDSConfiguration.o"
 	@echo "... ATProtoPDS/Sources/App/PDSController.o"
 	@echo "... ATProtoPDS/Sources/App/Services/PDSAccountService.o"
@@ -1983,14 +2579,22 @@ help:
 	@echo "... ATProtoPDS/Sources/CLI/main.o"
 	@echo "... ATProtoPDS/Sources/Core/ATProtoBase32.o"
 	@echo "... ATProtoPDS/Sources/Core/ATProtoCBORSerialization.o"
+	@echo "... ATProtoPDS/Sources/Core/ATProtoError.o"
 	@echo "... ATProtoPDS/Sources/Core/ATProtoValidator.o"
 	@echo "... ATProtoPDS/Sources/Core/CID.o"
 	@echo "... ATProtoPDS/Sources/Core/DID.o"
+	@echo "... ATProtoPDS/Sources/Core/Managers/PDSAccountManager.o"
+	@echo "... ATProtoPDS/Sources/Core/PDSServiceContainer.o"
+	@echo "... ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.o"
+	@echo "... ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.o"
 	@echo "... ATProtoPDS/Sources/Core/TID.o"
 	@echo "... ATProtoPDS/Sources/Database/ActorStore/ActorStore.o"
+	@echo "... ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.o"
+	@echo "... ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.o"
 	@echo "... ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.o"
 	@echo "... ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.o"
 	@echo "... ATProtoPDS/Sources/Database/PDSDatabase.o"
+	@echo "... ATProtoPDS/Sources/Database/PDSRepositoryFactory.o"
 	@echo "... ATProtoPDS/Sources/Database/Pool/DatabasePool.o"
 	@echo "... ATProtoPDS/Sources/Database/Schema.o"
 	@echo "... ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.o"
@@ -2019,14 +2623,24 @@ help:
 	@echo "... ATProtoPDS/Sources/Network/RateLimiter.o"
 	@echo "... ATProtoPDS/Sources/Network/SSLPinningManager.o"
 	@echo "... ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.o"
+	@echo "... ATProtoPDS/Sources/Network/XRPCError.o"
 	@echo "... ATProtoPDS/Sources/Network/XrpcHandler.o"
 	@echo "... ATProtoPDS/Sources/Network/XrpcMethodRegistry.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCAuditor.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCCacheDirectory.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCMetrics.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCMockStore.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCOperation.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCPersistentStore.o"
+	@echo "... ATProtoPDS/Sources/PLC/PLCServer.o"
+	@echo "... ATProtoPDS/Sources/PLC/main.o"
 	@echo "... ATProtoPDS/Sources/Repository/CAR.o"
 	@echo "... ATProtoPDS/Sources/Repository/CBOR.o"
 	@echo "... ATProtoPDS/Sources/Repository/MST.o"
 	@echo "... ATProtoPDS/Sources/Repository/MSTPersistence.o"
 	@echo "... ATProtoPDS/Sources/Repository/RepoCommit.o"
 	@echo "... ATProtoPDS/Sources/Security/PDSAuthzManager.o"
+	@echo "... ATProtoPDS/Sources/Security/PDSBiometricKeychain.o"
 	@echo "... ATProtoPDS/Sources/Security/PDSInputValidator.o"
 	@echo "... ATProtoPDS/Sources/Services/AdminService.o"
 	@echo "... ATProtoPDS/Sources/Sync/EventFormatter.o"
@@ -2040,8 +2654,14 @@ help:
 	@echo "... ATProtoPDS/Tests/App/ExploreCacheTests.o"
 	@echo "... ATProtoPDS/Tests/App/ExploreHandlerTests.o"
 	@echo "... ATProtoPDS/Tests/App/MSTViewerHandlerTests.o"
+	@echo "... ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.o"
 	@echo "... ATProtoPDS/Tests/App/PDSConfigurationTests.o"
 	@echo "... ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.o"
+	@echo "... ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.o"
+	@echo "... ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.o"
+	@echo "... ATProtoPDS/Tests/AppView/ActorServiceTests.o"
+	@echo "... ATProtoPDS/Tests/AppView/FeedServiceTests.o"
+	@echo "... ATProtoPDS/Tests/AppView/NotificationServiceTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/CryptoTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/JWTTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/KeyRotationTests.o"
@@ -2050,6 +2670,8 @@ help:
 	@echo "... ATProtoPDS/Tests/Auth/OAuth2Tests.o"
 	@echo "... ATProtoPDS/Tests/Auth/OAuthDPoPTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/OAuthPKCETests.o"
+	@echo "... ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.o"
+	@echo "... ATProtoPDS/Tests/Auth/OAuthSessionTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/SessionStoreTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/TOTPTests.o"
 	@echo "... ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.o"
@@ -2057,17 +2679,30 @@ help:
 	@echo "... ATProtoPDS/Tests/Blob/BlobStorageTests.o"
 	@echo "... ATProtoPDS/Tests/Blob/BlobXrpcTests.o"
 	@echo "... ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.o"
+	@echo "... ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.o"
+	@echo "... ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.o"
 	@echo "... ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.o"
 	@echo "... ATProtoPDS/Tests/CLI/PDSCLITests.o"
+	@echo "... ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.o"
+	@echo "... ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.o"
+	@echo "... ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.o"
+	@echo "... ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.o"
+	@echo "... ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.o"
+	@echo "... ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.o"
 	@echo "... ATProtoPDS/Tests/Core/ATProtoCoreTests.o"
+	@echo "... ATProtoPDS/Tests/Core/ATProtoErrorTests.o"
 	@echo "... ATProtoPDS/Tests/Core/DIDValidationTests.o"
 	@echo "... ATProtoPDS/Tests/Core/IdentifierTests.o"
+	@echo "... ATProtoPDS/Tests/Core/PDSAccountManagerTests.o"
+	@echo "... ATProtoPDS/Tests/Core/PDSServiceContainerTests.o"
+	@echo "... ATProtoPDS/Tests/Core/ProtocolCompileTests.o"
 	@echo "... ATProtoPDS/Tests/Core/RecordPathValidationTests.o"
 	@echo "... ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.o"
 	@echo "... ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.o"
 	@echo "... ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.o"
 	@echo "... ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.o"
 	@echo "... ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.o"
+	@echo "... ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.o"
 	@echo "... ATProtoPDS/Tests/Database/PDSControllerTests.o"
 	@echo "... ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.o"
 	@echo "... ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.o"
@@ -2075,7 +2710,9 @@ help:
 	@echo "... ATProtoPDS/Tests/Federation/FederationClientTests.o"
 	@echo "... ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.o"
 	@echo "... ATProtoPDS/Tests/Identity/DIDResolverTests.o"
+	@echo "... ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.o"
 	@echo "... ATProtoPDS/Tests/Identity/HandleResolverTests.o"
+	@echo "... ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.o"
 	@echo "... ATProtoPDS/Tests/Lexicon/LexiconValidationTests.o"
 	@echo "... ATProtoPDS/Tests/Metrics/PDSMetricsTests.o"
 	@echo "... ATProtoPDS/Tests/Network/HttpBufferPoolTests.o"
@@ -2091,8 +2728,14 @@ help:
 	@echo "... ATProtoPDS/Tests/Network/RateLimiterTests.o"
 	@echo "... ATProtoPDS/Tests/Network/RateLimitingTests.o"
 	@echo "... ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.o"
+	@echo "... ATProtoPDS/Tests/Network/XRPCErrorTests.o"
 	@echo "... ATProtoPDS/Tests/Network/XrpcIntegrationTests.o"
 	@echo "... ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.o"
+	@echo "... ATProtoPDS/Tests/PLC/PLCAuditorTests.o"
+	@echo "... ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.o"
+	@echo "... ATProtoPDS/Tests/PLC/PLCOperationTests.o"
+	@echo "... ATProtoPDS/Tests/PLC/PLCServerTests.o"
+	@echo "... ATProtoPDS/Tests/PLC/PLCStoreTests.o"
 	@echo "... ATProtoPDS/Tests/Repository/CARInteropTests.o"
 	@echo "... ATProtoPDS/Tests/Repository/MSTInteropTests.o"
 	@echo "... ATProtoPDS/Tests/Repository/MSTPersistenceTests.o"
@@ -2102,10 +2745,12 @@ help:
 	@echo "... ATProtoPDS/Tests/Security/JWTSecurityTests.o"
 	@echo "... ATProtoPDS/Tests/Security/PDSAuthzManagerTests.o"
 	@echo "... ATProtoPDS/Tests/Security/PDSInputValidatorTests.o"
+	@echo "... ATProtoPDS/Tests/Sync/EventFormatterTests.o"
 	@echo "... ATProtoPDS/Tests/Sync/FirehoseTests.o"
 	@echo "... ATProtoPDS/Tests/Sync/RelayClientTests.o"
 	@echo "... ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.o"
 	@echo "... ATProtoPDS/Tests/Sync/WebSocketConnectionTests.o"
+	@echo "... ATProtoPDS/Tests/Sync/WebSocketServerTests.o"
 	@echo "... ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.o"
 	@echo "... ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.o"
 	@echo "... ATProtoPDS/Tests/XRPC/XrpcHandlerTests.o"

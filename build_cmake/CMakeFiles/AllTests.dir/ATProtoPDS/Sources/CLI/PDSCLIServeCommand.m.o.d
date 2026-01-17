@@ -768,6 +768,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreHandler.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSConfiguration.h \

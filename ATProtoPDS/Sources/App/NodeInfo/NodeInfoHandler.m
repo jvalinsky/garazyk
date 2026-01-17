@@ -96,8 +96,8 @@
     }
 
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setHeader:@"application/json; charset=utf-8" forKey:@"Content-Type"];
     [response setJsonBody:self.provider.discoveryDocument21];
+    response.contentType = @"application/json; charset=utf-8";
     response.statusCode = 200;
 }
 
@@ -113,8 +113,8 @@
     }
 
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setHeader:@"application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.0#\"" forKey:@"Content-Type"];
     [response setJsonBody:self.provider.nodeInfo20];
+    response.contentType = @"application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.0#\"";
     response.statusCode = 200;
 }
 
@@ -130,8 +130,8 @@
     }
 
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setHeader:@"application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.1#\"" forKey:@"Content-Type"];
     [response setJsonBody:self.provider.nodeInfo21];
+    response.contentType = @"application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.1#\"";
     response.statusCode = 200;
 }
 

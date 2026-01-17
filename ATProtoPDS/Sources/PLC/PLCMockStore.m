@@ -1,4 +1,6 @@
 #import "PLCMockStore.h"
+#import "PLC/PLCOperation.h"
+#import "PLC/PLCMetrics.h"
 
 @interface PLCMockStore ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<PLCOperation *> *> *storage;
@@ -19,9 +21,16 @@
 - (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did error:(NSError **)error {
     __block NSArray<PLCOperation *> *history = nil;
     dispatch_sync(self.queue, ^{
-        history = [self.storage[did] copy];
+        history = self.storage[did];
     });
-    return history ?: @[];
+    
+    if (history) {
+        [[PLCMetrics sharedMetrics] recordMemcacheHit];
+    } else {
+        [[PLCMetrics sharedMetrics] recordMemcacheMiss];
+    }
+    
+    return history;
 }
 
 - (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error {
@@ -42,6 +51,14 @@
     });
 
     return YES;
+}
+
+- (nullable NSArray<NSString *> *)getAllDIDsWithError:(NSError **)error {
+    __block NSArray<NSString *> *keys = nil;
+    dispatch_sync(self.queue, ^{
+        keys = [self.storage.allKeys copy];
+    });
+    return keys ?: @[];
 }
 
 @end

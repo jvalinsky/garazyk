@@ -13,7 +13,13 @@
 
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+
+#ifdef GNUSTEP
+#import "Compat/Security/Security.h"
+#else
 #import <Security/Security.h>
+#endif
+
 #import <resolv.h>
 #import <arpa/nameser.h>
 #import <netdb.h>

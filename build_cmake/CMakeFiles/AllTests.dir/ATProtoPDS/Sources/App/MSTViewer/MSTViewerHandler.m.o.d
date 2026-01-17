@@ -764,6 +764,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpResponse.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h \

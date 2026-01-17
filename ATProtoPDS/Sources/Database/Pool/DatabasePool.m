@@ -184,7 +184,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 #pragma mark - Transaction Support
 
 - (void)transactWithDid:(NSString *)did 
-                  block:(void (^)(id<PDSActorStoreTransactor> transactor))block 
+                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
                   error:(NSError **)error {
     PDSActorStore *store = [self storeForDid:did error:error];
     if (!store) {
@@ -195,7 +195,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 }
 
 - (void)readWithDid:(NSString *)did 
-              block:(void (^)(id<PDSActorStoreReader> reader))block 
+              block:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
               error:(NSError **)error {
     PDSActorStore *store = [self storeForDid:did error:error];
     if (!store) {

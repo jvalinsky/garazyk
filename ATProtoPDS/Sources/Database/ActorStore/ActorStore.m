@@ -1,4 +1,5 @@
 #import "ActorStore.h"
+#import "Core/ATProtoError.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Compat/PDSTypes.h"
 #import "Security/PDSBiometricKeychain.h"
@@ -8,28 +9,15 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Auth/Secp256k1.h"
+#import "PDSActorStoreInternal.h"
+#import "PDSActorStore+Account.h"
+#import "PDSActorStore+Blob.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
-@interface PDSActorStore ()
-
-@property (nonatomic, copy, readwrite) NSString *did;
-@property (nonatomic, copy, readwrite) NSString *dbPath;
-@property (nonatomic, assign, readwrite) sqlite3 *db;
-@property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
-@property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
-@property (nonatomic, assign, readwrite) BOOL keychainNeedsUpgrade;
-#if defined(GNUSTEP)
-@property (nonatomic, assign) dispatch_queue_t transactionQueue;
-@property (nonatomic, strong) NSData *signingKeyData;
-#else
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
-@property (nonatomic, assign) SecKeyRef signingKey;
-@property (nonatomic, strong) PDSBiometricKeychain *biometricKeychain;
-#endif
-
-@end
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincomplete-implementation"
+#pragma clang diagnostic ignored "-Wprotocol"
 
 @implementation PDSActorStore
 
@@ -87,10 +75,9 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         NSError *createError = nil;
         if (![fm createDirectoryAtPath:dbDir withIntermediateDirectories:YES attributes:nil error:&createError]) {
             if (error) {
-                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                            code:-1
-                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to create database directory",
-                                                 NSUnderlyingErrorKey: createError}];
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:@"Failed to create database directory"
+                                    underlyingError:createError];
             }
             return NO;
         }
@@ -137,9 +124,9 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         int result = sqlite3_exec(self.db, pragmas[i], NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
             if (error) {
-                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                            code:result
-                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:[NSString stringWithUTF8String:errMsg]
+                                          userInfo:@{@"sqlite_code": @(result)}];
             }
             sqlite3_free(errMsg);
             return NO;
@@ -157,9 +144,9 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
     if (result != SQLITE_OK) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:result
-                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:[NSString stringWithUTF8String:errMsg]
+                                      userInfo:@{@"sqlite_code": @(result)}];
         }
         sqlite3_free(errMsg);
         return NO;
@@ -210,23 +197,21 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #pragma mark - Error Handling
 
 - (NSError *)errorWithSQLiteResult:(int)result message:(NSString *)message {
-    return [NSError errorWithDomain:PDSActorStoreErrorDomain
-                              code:result
-                          userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error",
-                                   @"sqlite_code": @(result),
-                                   @"sqlite_message": [NSString stringWithUTF8String:sqlite3_errmsg(self.db)] ?: @""}];
+    return [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                             message:message ?: @"Unknown error"
+                            userInfo:@{@"sqlite_code": @(result),
+                                     @"sqlite_message": [NSString stringWithUTF8String:sqlite3_errmsg(self.db)] ?: @""}];
 }
 
 #pragma mark - Transaction Support
 
-- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor))block
+- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                     error:(NSError **)error {
     __block NSError *localError = nil;
     dispatch_sync(self.transactionQueue, ^{
         if (!self.open) {
-            localError = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                          code:PDSActorStoreErrorDatabaseClosed
-                                      userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
+            localError = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                         message:@"Database is closed"];
             return;
         }
         
@@ -242,15 +227,17 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
         __block NSError *blockError = nil;
         
         @try {
-            block(self);
+            block(self, &blockError);
+            if (blockError) {
+                success = NO;
+            }
         } @catch (NSException *exception) {
             success = NO;
-            blockError = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                             code:-1
-                                         userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Unknown exception"}];
+            blockError = [ATProtoError errorWithCode:ATProtoErrorCodeUnknown
+                                           message:exception.reason ?: @"Unknown exception"];
         }
         
-        if (success && !blockError) {
+        if (success) {
             result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
             if (result != SQLITE_OK) {
                 localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
@@ -270,18 +257,21 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
     }
 }
 
-- (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
+- (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
                 error:(NSError **)error {
     if (!self.open) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:PDSActorStoreErrorDatabaseClosed
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:@"Database is closed"];
         }
         return;
     }
     
-    block(self);
+    NSError *blockError = nil;
+    block(self, &blockError);
+    if (blockError && error) {
+        *error = blockError;
+    }
 }
 
 #pragma mark - Statement Management
@@ -289,9 +279,8 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error {
     if (!self.open || !self.db) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                        code:PDSActorStoreErrorDatabaseClosed
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is not open"}];
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:@"Database is not open"];
         }
         return NULL;
     }
@@ -316,258 +305,8 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 }
 
 
-#pragma mark - Account Operations (Reader)
+#pragma mark - Account Operations (Moved to PDSActorStore+Account)
 
-- (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError **)error {
-    __block PDSDatabaseAccount *account = nil;
-    __block NSError *blockError = nil;
-
-    dispatch_sync(self.transactionQueue, ^{
-        NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
-        NSError *prepError = nil;
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
-        if (!stmt) {
-            blockError = prepError;
-            return;
-        }
-
-        sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            account = [self accountFromStatement:stmt];
-        }
-    });
-
-    if (error && blockError) {
-        *error = blockError;
-    }
-    return account;
-}
-
-- (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
-    __block NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
-    __block NSError *blockError = nil;
-    
-    dispatch_sync(self.transactionQueue, ^{
-        NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
-        NSError *prepError = nil;
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
-        if (!stmt) {
-            blockError = prepError;
-            return;
-        }
-        
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            PDSDatabaseAccount *account = [self accountFromStatement:stmt];
-            if (account) {
-                [accounts addObject:account];
-            }
-        }
-    });
-
-    if (error && blockError) {
-        *error = blockError;
-    }
-    return [accounts copy];
-}
-
-- (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt {
-    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-    account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
-    account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
-    
-    int col = 2;
-    if (sqlite3_column_type(stmt, col) != SQLITE_NULL) {
-        account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, col)];
-    }
-    col++;
-    
-    if (sqlite3_column_type(stmt, col) != SQLITE_NULL) {
-        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(stmt, col) 
-                                              length:sqlite3_column_bytes(stmt, col)];
-    }
-    col++;
-    
-    if (sqlite3_column_type(stmt, col) != SQLITE_NULL) {
-        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(stmt, col) 
-                                              length:sqlite3_column_bytes(stmt, col)];
-    }
-    col++;
-    
-    if (sqlite3_column_type(stmt, col) != SQLITE_NULL) {
-        account.accessJwt = [NSData dataWithBytes:sqlite3_column_blob(stmt, col) 
-                                           length:sqlite3_column_bytes(stmt, col)];
-    }
-    col++;
-    
-    if (sqlite3_column_type(stmt, col) != SQLITE_NULL) {
-        account.refreshJwt = [NSData dataWithBytes:sqlite3_column_blob(stmt, col) 
-                                            length:sqlite3_column_bytes(stmt, col)];
-    }
-    col++;
-    
-    account.createdAt = sqlite3_column_double(stmt, col);
-    col++;
-    account.updatedAt = sqlite3_column_double(stmt, col);
-    
-    return account;
-}
-
-#pragma mark - Account Operations (Transactor)
-
-- (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
-    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, "
-                     @"access_jwt, refresh_jwt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
-    if (!stmt) return NO;
-
-    sqlite3_bind_text(stmt, 1, account.did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, account.handle.UTF8String, -1, SQLITE_TRANSIENT);
-    
-    if (account.email) {
-        sqlite3_bind_text(stmt, 3, account.email.UTF8String, -1, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, 3);
-    }
-    
-    if (account.passwordHash) {
-        sqlite3_bind_blob(stmt, 4, account.passwordHash.bytes, (int)account.passwordHash.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, 4);
-    }
-    
-    if (account.passwordSalt) {
-        sqlite3_bind_blob(stmt, 5, account.passwordSalt.bytes, (int)account.passwordSalt.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, 5);
-    }
-    
-    if (account.accessJwt) {
-        sqlite3_bind_blob(stmt, 6, account.accessJwt.bytes, (int)account.accessJwt.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, 6);
-    }
-    
-    if (account.refreshJwt) {
-        sqlite3_bind_blob(stmt, 7, account.refreshJwt.bytes, (int)account.refreshJwt.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, 7);
-    }
-    
-    sqlite3_bind_double(stmt, 8, account.createdAt);
-    sqlite3_bind_double(stmt, 9, account.updatedAt);
-    
-    int stepResult = sqlite3_step(stmt);
-    BOOL success = (stepResult == SQLITE_DONE);
-    if (!success) {
-        int sqliteCode = sqlite3_extended_errcode(self.db);
-        NSString *errorMsg = [NSString stringWithUTF8String:sqlite3_errmsg(self.db)];
-        
-        if (error) {
-            BOOL isConstraintViolation = (sqliteCode == SQLITE_CONSTRAINT_UNIQUE ||
-                                          sqliteCode == SQLITE_CONSTRAINT_PRIMARYKEY ||
-                                          sqliteCode == SQLITE_CONSTRAINT_FOREIGNKEY ||
-                                          sqliteCode == SQLITE_CONSTRAINT_CHECK ||
-                                          sqliteCode == SQLITE_CONSTRAINT_NOTNULL);
-            if (isConstraintViolation) {
-                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                            code:PDSActorStoreErrorAlreadyExists
-                                        userInfo:@{NSLocalizedDescriptionKey: @"Account already exists",
-                                                 @"sqlite_code": @(sqliteCode),
-                                                 @"sqlite_message": errorMsg ?: @""}];
-            } else {
-                *error = [self errorWithSQLiteResult:sqliteCode
-                                             message:@"Failed to insert account"];
-            }
-        }
-        return NO;
-    }
-    
-#if defined(GNUSTEP)
-    // Generate secp256k1 signing key for the new account using the account's DID
-    NSError *keyError = nil;
-    if (![self generateSigningKeyForDid:account.did error:&keyError]) {
-        NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
-        // Don't fail account creation if key generation fails - it can be retried later
-    } else {
-        NSLog(@"[ActorStore] Generated secp256k1 signing key for %@", account.did);
-    }
-#else
-    // Only generate signing key if we're using the keychain for storage
-    // In-memory stores (useKeychainSigningKey = NO) don't need persistent signing keys
-    if (self.useKeychainSigningKey) {
-        NSError *keyError = nil;
-        if (![self generateSigningKeyWithError:&keyError]) {
-            NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
-        } else {
-            NSLog(@"[ActorStore] Generated signing key for %@", account.did);
-        }
-    }
-#endif
-
-    return YES;
-}
-
-- (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
-    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, "
-                     @"password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ? WHERE did = ?";
-    
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
-    if (!stmt) return NO;
-    
-    int idx = 1;
-    sqlite3_bind_text(stmt, idx++, account.handle.UTF8String, -1, SQLITE_TRANSIENT);
-    
-    if (account.email) {
-        sqlite3_bind_text(stmt, idx++, account.email.UTF8String, -1, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, idx++);
-    }
-    
-    if (account.passwordHash) {
-        sqlite3_bind_blob(stmt, idx++, account.passwordHash.bytes, (int)account.passwordHash.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, idx++);
-    }
-    
-    if (account.passwordSalt) {
-        sqlite3_bind_blob(stmt, idx++, account.passwordSalt.bytes, (int)account.passwordSalt.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, idx++);
-    }
-    
-    if (account.accessJwt) {
-        sqlite3_bind_blob(stmt, idx++, account.accessJwt.bytes, (int)account.accessJwt.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, idx++);
-    }
-    
-    if (account.refreshJwt) {
-        sqlite3_bind_blob(stmt, idx++, account.refreshJwt.bytes, (int)account.refreshJwt.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, idx++);
-    }
-    
-    sqlite3_bind_double(stmt, idx++, account.updatedAt);
-    sqlite3_bind_text(stmt, idx, account.did.UTF8String, -1, SQLITE_TRANSIENT);
-    
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    
-    return success;
-}
-
-- (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"DELETE FROM accounts WHERE did = ?";
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
-    if (!stmt) return NO;
-    
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-    
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    
-    return success;
-}
 
 #pragma mark - Repo Operations
 
@@ -1384,129 +1123,8 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 #endif
 }
 
-#pragma mark - Blob Operations
+#pragma mark - Blob Operations (Moved to PDSActorStore+Blob)
 
-- (PDSDatabaseBlob *)blobFromStatement:(sqlite3_stmt *)stmt {
-    PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
-    blob.cid = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0)
-                              length:sqlite3_column_bytes(stmt, 0)];
-    blob.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
-
-    if (sqlite3_column_type(stmt, 2) != SQLITE_NULL) {
-        blob.mimeType = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
-    }
-
-    blob.size = sqlite3_column_int64(stmt, 3);
-    blob.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 4)];
-
-    return blob;
-}
-
-- (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?)";
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
-    if (!stmt) return NO;
-
-    if (blob.cid) {
-        sqlite3_bind_blob(stmt, 1, blob.cid.bytes, (int)blob.cid.length, SQLITE_TRANSIENT);
-    }
-    sqlite3_bind_text(stmt, 2, blob.did.UTF8String, -1, SQLITE_TRANSIENT);
-
-    if (blob.mimeType) {
-        sqlite3_bind_text(stmt, 3, blob.mimeType.UTF8String, -1, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_null(stmt, 3);
-    }
-
-    sqlite3_bind_int64(stmt, 4, blob.size);
-    sqlite3_bind_double(stmt, 5, blob.createdAt.timeIntervalSince1970);
-
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    return success;
-}
-
-- (nullable PDSDatabaseBlob *)getBlobForCID:(NSData *)cid error:(NSError **)error {
-    __block PDSDatabaseBlob *blob = nil;
-    __block NSError *blockError = nil;
-
-    dispatch_sync(self.transactionQueue, ^{
-        NSString *sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE cid = ?";
-        NSError *prepError = nil;
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
-        if (!stmt) {
-            blockError = prepError;
-            return;
-        }
-
-        sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
-
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            blob = [self blobFromStatement:stmt];
-        }
-    });
-
-    if (error && blockError) {
-        *error = blockError;
-    }
-    return blob;
-}
-
-- (NSArray<PDSDatabaseBlob *> *)listBlobsForDid:(NSString *)did
-                                          limit:(NSUInteger)limit
-                                         cursor:(nullable NSString *)cursor
-                                          error:(NSError **)error {
-    __block NSMutableArray<PDSDatabaseBlob *> *blobs = [NSMutableArray array];
-    __block NSError *blockError = nil;
-
-    dispatch_sync(self.transactionQueue, ^{
-        NSString *sql;
-        if (cursor) {
-            sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? AND cid > ? ORDER BY cid LIMIT ?";
-        } else {
-            sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? ORDER BY cid LIMIT ?";
-        }
-
-        NSError *prepError = nil;
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
-        if (!stmt) {
-            blockError = prepError;
-            return;
-        }
-
-        int idx = 1;
-        sqlite3_bind_text(stmt, idx++, did.UTF8String, -1, SQLITE_TRANSIENT);
-
-        if (cursor) {
-            NSData *cursorData = [[NSData alloc] initWithBase64EncodedString:cursor options:0];
-            if (cursorData) {
-                sqlite3_bind_blob(stmt, idx++, cursorData.bytes, (int)cursorData.length, SQLITE_TRANSIENT);
-            }
-        }
-
-        sqlite3_bind_int(stmt, idx++, (int)limit);
-
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            [blobs addObject:[self blobFromStatement:stmt]];
-        }
-    });
-
-    if (error && blockError) {
-        *error = blockError;
-    }
-    return blobs;
-}
-
-- (BOOL)deleteBlobForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"DELETE FROM blobs WHERE cid = ? AND did = ?";
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
-    if (!stmt) return NO;
-
-    sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
-
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    return success;
-}
 
 #pragma mark - Rotation Key Management
 
@@ -1765,3 +1383,6 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 }
 
 @end
+
+#pragma clang diagnostic pop
+

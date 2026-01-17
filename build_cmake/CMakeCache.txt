@@ -295,6 +295,9 @@ FOUNDATION:FILEPATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/L
 IMAGEIO:FILEPATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/ImageIO.framework
 
 //Path to a library.
+LOCALAUTH:FILEPATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework
+
+//Path to a library.
 NETWORK:FILEPATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Network.framework
 
 //Compiler flags that are appended to the command line after all

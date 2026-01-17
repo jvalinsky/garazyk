@@ -761,4 +761,5 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/NSUserScriptTask.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/FoundationLegacySwiftCompatibility.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonDigest.h
