@@ -14,8 +14,8 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🚀 Setting up ATProto PDS with test data...${NC}"
 
-# CLI path
-CLI_PATH="/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/atprotopds-cli"
+# CLI path using CMake build location
+CLI_PATH="./build/bin/september"
 
 # Check if CLI exists
 if [ ! -f "$CLI_PATH" ]; then

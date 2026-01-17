@@ -3,14 +3,14 @@ set -e
 
 # Build CLI
 echo "Building CLI..."
-xcodebuild -scheme ATProtoPDS-CLI build > /dev/null
+cd build && make -j$(sysctl -n hw.ncpu) september && cd ..
 
-CLI="./build/bin/atprotopds-cli"
+CLI="./build/bin/september"
 DATA_DIR="$(pwd)/data"
 
 # Stop existing server
 echo "Stopping existing server..."
-pkill -f atprotopds-cli || true
+pkill -f september || true
 
 # Wipe data
 echo "Wiping data directory: $DATA_DIR"
