@@ -38,6 +38,15 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Get profiles for multiple actors. */
 - (nullable NSArray<NSDictionary *> *)getProfilesForActors:(NSArray<NSString *> *)actorDIDs error:(NSError **)error;
 
+/*! Get followers count. */
+- (NSInteger)getFollowersCountForDID:(NSString *)did error:(NSError **)error;
+
+/*! Get follows count. */
+- (NSInteger)getFollowsCountForDID:(NSString *)did error:(NSError **)error;
+
+/*! Get posts count. */
+- (NSInteger)getPostsCountForDID:(NSString *)did error:(NSError **)error;
+
 /*! Get preferences for actor. */
 - (nullable NSDictionary *)getPreferencesForActor:(NSString *)actorDID error:(NSError **)error;
 
