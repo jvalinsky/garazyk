@@ -7,7 +7,7 @@
  * for persistent rate limit tracking across server restarts.
  *
  * Rate limits prevent abuse by tracking request counts per identifier within
- * time windows (default 60 seconds). Limits are configurable per type.
+ * time windows (defaults vary by limit type). Limits are configurable per type.
  *
  * Thread-safe through SQLite serialization.
  *
@@ -25,9 +25,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @enum RateLimitType
  * @brief Types of rate limits tracked by the system
  *
- * @constant RateLimitTypeDID Per-DID API request limit (default 300/min)
+ * @constant RateLimitTypeDID Per-DID API request limit (default 5000/hour)
  * @constant RateLimitTypeIP Per-IP request limit for unauthenticated requests (default 100/min)
- * @constant RateLimitTypeBlob Per-DID blob upload limit (default 50/min)
+ * @constant RateLimitTypeBlob Per-DID blob upload limit (default 50/hour)
  */
 typedef NS_ENUM(NSInteger, RateLimitType) {
     RateLimitTypeDID,
@@ -85,9 +85,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * timestamps in SQLite database, automatically cleaning old entries.
  *
  * Default Limits:
- * - DID-based API: 300 requests/minute
+ * - DID-based API: 5000 requests/hour
  * - IP-based: 100 requests/minute
- * - Blob uploads: 50 requests/minute
+ * - Blob uploads: 50 requests/hour
  *
  * Limits are configurable per-instance. The shared instance uses in-memory
  * storage for development; production should use database-backed storage.
@@ -107,10 +107,10 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  */
 @interface RateLimiter : NSObject
 
-/*! Maximum API requests per minute per DID (default: 300) */
+/*! Maximum API requests per hour per DID (default: 5000) */
 @property (nonatomic, assign) NSInteger didLimit;
 
-/*! Time window for DID rate limiting in seconds (default: 60) */
+/*! Time window for DID rate limiting in seconds (default: 3600) */
 @property (nonatomic, assign) NSTimeInterval didWindowSeconds;
 
 /*! Maximum API requests per minute per IP address (default: 100) */
@@ -119,10 +119,10 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 /*! Time window for IP rate limiting in seconds (default: 60) */
 @property (nonatomic, assign) NSTimeInterval ipWindowSeconds;
 
-/*! Maximum blob uploads per minute per DID (default: 50) */
+/*! Maximum blob uploads per hour per DID (default: 50) */
 @property (nonatomic, assign) NSInteger blobLimit;
 
-/*! Time window for blob upload limiting in seconds (default: 60) */
+/*! Time window for blob upload limiting in seconds (default: 3600) */
 @property (nonatomic, assign) NSTimeInterval blobWindowSeconds;
 
 /*! Whether rate limiting is enabled (default: YES) */
