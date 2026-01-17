@@ -11,6 +11,7 @@
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
 static NSDateFormatter * iso8601Formatter(void) {
+    // Thread-safe singleton
     static NSDateFormatter *formatter = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -396,6 +397,30 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
 
     rc = sqlite3_exec(_db, [kPDSOAuthClientsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSLabelTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexLabelsUriSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexLabelsSourceSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
@@ -1701,4 +1726,91 @@ static NSDateFormatter * iso8601Formatter(void) {
 #pragma mark - PDSDatabaseRecord
 
 @implementation PDSDatabaseRecord
+@end
+
+#pragma mark - Moderation
+
+@implementation PDSDatabase (Moderation)
+
+- (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason takedownRef:(NSString *)ref error:(NSError **)error {
+    NSString *sql = @"INSERT OR REPLACE INTO admin_takedowns (id, subjectType, subjectId, reason, takedownRef, applied, createdBy, createdAt) VALUES (?, ?, ?, ?, ?, 1, 'admin', ?)";
+    
+    // Generate simple ID
+    NSString *takedownId = [[NSUUID UUID] UUIDString];
+    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    
+    NSArray *params = @[
+        takedownId,
+        @"account",
+        did,
+        reason ?: [NSNull null],
+        ref ?: [NSNull null],
+        dateStr
+    ];
+    
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
+    // Mark takedown as applied=0
+    NSString *sql = @"UPDATE admin_takedowns SET applied = 0 WHERE subjectId = ? AND subjectType = 'account'";
+    return [self executeParameterizedUpdate:sql params:@[did] error:error];
+}
+
+- (BOOL)createLabel:(NSDictionary *)label error:(NSError **)error {
+    NSString *sql = @"INSERT INTO labels (src, uri, cid, val, neg, cts, exp) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    
+    NSArray *params = @[
+        label[@"src"] ?: [NSNull null],
+        label[@"uri"] ?: [NSNull null],
+        label[@"cid"] ?: [NSNull null],
+        label[@"val"] ?: [NSNull null],
+        label[@"neg"] ?: @0,
+        label[@"cts"] ?: [NSNull null],
+        label[@"exp"] ?: [NSNull null]
+    ];
+    
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (NSArray<NSDictionary *> *)getLabelsWithPatterns:(NSArray<NSString *> *)uriPatterns sources:(NSArray<NSString *> *)sources limit:(NSInteger)limit cursor:(NSString *)cursor error:(NSError **)error {
+    
+    NSMutableString *sql = [@"SELECT * FROM labels WHERE 1=1" mutableCopy];
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (sources && sources.count > 0) {
+        [sql appendString:@" AND src IN ("];
+        for (NSUInteger i = 0; i < sources.count; i++) {
+            [sql appendString:i == 0 ? @"?" : @", ?"];
+            [params addObject:sources[i]];
+        }
+        [sql appendString:@")"];
+    }
+    
+    if (uriPatterns && uriPatterns.count > 0) {
+        [sql appendString:@" AND ("];
+        for (NSUInteger i = 0; i < uriPatterns.count; i++) {
+            if (i > 0) [sql appendString:@" OR "];
+            NSString *pat = uriPatterns[i];
+            if ([pat containsString:@"*"]) {
+                 [sql appendString:@"uri GLOB ?"];
+            } else {
+                 [sql appendString:@"uri = ?"];
+            }
+            [params addObject:pat];
+        }
+        [sql appendString:@")"];
+    }
+    
+    if (cursor) {
+        [sql appendString:@" AND id > ?"];
+        [params addObject:cursor];
+    }
+    
+    [sql appendString:@" ORDER BY id ASC LIMIT ?"];
+    [params addObject:@(limit)];
+    
+    return [self executeParameterizedQuery:sql params:params error:error];
+}
+
 @end

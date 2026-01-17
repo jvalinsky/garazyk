@@ -34,6 +34,7 @@ extern NSString * const kPDSInviteCodeTableName;
 extern NSString * const kPDSPasskeysTableName;
 extern NSString * const kPDSOAuthClientsTableName;
 extern NSString * const kPDSAdminTakedownTableName;
+extern NSString * const kPDSLabelTableName;
 
 extern NSString * const kPDSAccountTableCreateSQL;
 extern NSString * const kPDSRepoTableCreateSQL;
@@ -45,6 +46,7 @@ extern NSString * const kPDSAdminTakedownTableCreateSQL;
 extern NSString * const kPDSPasskeysTableCreateSQL;
 extern NSString * const kPDSOAuthClientsTableCreateSQL;
 extern NSString * const kPDSJWTSigningKeysTableCreateSQL;
+extern NSString * const kPDSLabelTableCreateSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;
@@ -53,5 +55,7 @@ extern NSString * const kPDSIndexInviteCodesAccountDidSQL;
 extern NSString * const kPDSIndexTakedownsSubjectIdSQL;
 extern NSString * const kPDSIndexPasskeysAccountDidSQL;
 extern NSString * const kPDSIndexPasskeysCredentialIdSQL;
+extern NSString * const kPDSIndexLabelsUriSQL;
+extern NSString * const kPDSIndexLabelsSourceSQL;
 
 NS_ASSUME_NONNULL_END

@@ -18,10 +18,20 @@
     return self;
 }
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did error:(NSError **)error {
+- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+                                      includeNullified:(BOOL)includeNullified
+                                                 error:(NSError **)error {
     __block NSArray<PLCOperation *> *history = nil;
     dispatch_sync(self.queue, ^{
-        history = self.storage[did];
+        NSArray<PLCOperation *> *stored = self.storage[did];
+        if (!includeNullified && stored.count > 0) {
+            NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(PLCOperation *op, NSDictionary *bindings) {
+                return !op.nullified;
+            }];
+            history = [stored filteredArrayUsingPredicate:predicate];
+        } else {
+            history = stored;
+        }
     });
     
     if (history) {
@@ -33,7 +43,9 @@
     return history;
 }
 
-- (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error {
+- (BOOL)appendOperation:(PLCOperation *)op
+           nullifyCIDs:(NSArray<NSString *> *)nullified
+                 error:(NSError **)error {
     if (!op.did) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCMockStore" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Operation missing DID"}];
@@ -46,6 +58,22 @@
         if (!history) {
             history = [NSMutableArray array];
             self.storage[op.did] = history;
+        }
+        if (!op.createdAt) {
+            op.createdAt = [NSDate date];
+        }
+        if (!op.cid) {
+            NSError *cidError = nil;
+            op.cid = [PLCOperation calculateCIDForOperation:[op toDictionary] error:&cidError];
+        }
+        op.nullified = NO;
+        if (nullified.count > 0) {
+            NSSet<NSString *> *nullifiedSet = [NSSet setWithArray:nullified];
+            for (PLCOperation *existing in history) {
+                if (existing.cid && [nullifiedSet containsObject:existing.cid]) {
+                    existing.nullified = YES;
+                }
+            }
         }
         [history addObject:op];
     });

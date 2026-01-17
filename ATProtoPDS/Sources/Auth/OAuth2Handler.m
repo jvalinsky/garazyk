@@ -391,6 +391,59 @@
         }
     }
     
+    NSString *dpopProof = [request headerForKey:@"dpop"];
+    if (!dpopProof || dpopProof.length == 0) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"Missing DPoP proof"
+        }];
+        return;
+    }
+
+    NSString *scheme = [request headerForKey:@"x-forwarded-proto"] ?: @"https";
+    NSString *host = [request headerForKey:@"host"];
+    NSString *path = request.path ?: @"/";
+    NSMutableString *urlString = nil;
+    if (host.length > 0) {
+        urlString = [NSMutableString stringWithFormat:@"%@://%@%@", scheme, host, path];
+        if (request.queryString.length > 0) {
+            [urlString appendFormat:@"?%@", request.queryString];
+        }
+    } else if (self.oauthServer.issuer.length > 0) {
+        NSURL *issuerURL = [NSURL URLWithString:self.oauthServer.issuer];
+        urlString = [NSMutableString stringWithFormat:@"%@://%@%@", issuerURL.scheme ?: scheme, issuerURL.host ?: @"", path];
+        if (request.queryString.length > 0) {
+            [urlString appendFormat:@"?%@", request.queryString];
+        }
+    }
+
+    NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
+    if (!dpopURL) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"Unable to construct DPoP URL"
+        }];
+        return;
+    }
+
+    NSError *dpopError = nil;
+    NSString *dpopThumbprint = nil;
+    if (![OAuth2DPoPProof verifyProof:dpopProof
+                               method:request.methodString
+                                  url:dpopURL
+                                nonce:nil
+                        outThumbprint:&dpopThumbprint
+                                error:&dpopError]) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_dpop_proof",
+            @"error_description": dpopError.localizedDescription ?: @"Invalid DPoP proof"
+        }];
+        return;
+    }
+
     OAuth2TokenRequest *tokenRequest = [[OAuth2TokenRequest alloc] init];
     tokenRequest.grantType = params[@"grant_type"];
     tokenRequest.code = params[@"code"];
@@ -400,6 +453,8 @@
     tokenRequest.refreshToken = params[@"refresh_token"];
     tokenRequest.scope = params[@"scope"];
     tokenRequest.tfaCode = params[@"tfa_code"];
+    tokenRequest.dpopProof = dpopProof;
+    tokenRequest.dpopKeyThumbprint = dpopThumbprint;
     
     [self.oauthServer handleTokenRequest:tokenRequest completion:^(Session * _Nullable session, NSError * _Nullable error) {
         if (error) {

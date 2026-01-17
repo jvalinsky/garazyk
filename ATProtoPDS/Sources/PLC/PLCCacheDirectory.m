@@ -1,4 +1,5 @@
 #import "PLCCacheDirectory.h"
+#import "Compat/PDSTypes.h"
 
 NSTimeInterval const PLCCacheDefaultTTL = 300.0;
 NSUInteger const PLCCacheDefaultCapacity = 1000;
@@ -15,7 +16,7 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
 @property (nonatomic, strong, readwrite) id<PLCStore> innerStore;
 @property (nonatomic, strong) NSCache<NSString *, PLCCacheEntry *> *operationCache;
 @property (nonatomic, strong) NSMutableSet<NSString *> *cachedDIDs;
-@property (nonatomic, strong) dispatch_queue_t cacheQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 @property (nonatomic, assign) NSUInteger hitCount;
 @property (nonatomic, assign) NSUInteger missCount;
 @end
@@ -47,7 +48,13 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
 
 #pragma mark - PLCStore Protocol
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did error:(NSError **)error {
+- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+                                      includeNullified:(BOOL)includeNullified
+                                                 error:(NSError **)error {
+    if (includeNullified) {
+        return [self.innerStore getHistoryForDID:did includeNullified:YES error:error];
+    }
+
     __block NSArray<PLCOperation *> *result = nil;
     __block BOOL isStale = NO;
     __block NSError *blockError = nil;
@@ -67,7 +74,7 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
         
         self.missCount++;
         
-        result = [self.innerStore getHistoryForDID:did error:&blockError];
+        result = [self.innerStore getHistoryForDID:did includeNullified:NO error:&blockError];
         
         PLCCacheEntry *entry = [[PLCCacheEntry alloc] init];
         entry.operations = result ?: @[];
@@ -93,8 +100,10 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     return result;
 }
 
-- (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error {
-    BOOL success = [self.innerStore appendOperation:op error:error];
+- (BOOL)appendOperation:(PLCOperation *)op
+           nullifyCIDs:(NSArray<NSString *> *)nullified
+                 error:(NSError **)error {
+    BOOL success = [self.innerStore appendOperation:op nullifyCIDs:nullified error:error];
     
     if (success) {
         [self flushCacheForDID:op.did];

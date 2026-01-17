@@ -263,6 +263,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! The DPoP proof JWT. */
 @property (nonatomic, copy, nullable) NSString *dpopProof;
 
+/*! Thumbprint of the DPoP proof key. */
+@property (nonatomic, copy, nullable) NSString *dpopKeyThumbprint;
+
 /*! The requested scope for the new token. */
 @property (nonatomic, copy, nullable) NSString *scope;
 
@@ -358,6 +361,26 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
                                  method:(NSString *)method
                                    key:(NSDictionary *)jwk
                                   error:(NSError **)error;
+
+/*!
+ @method verifyProof:method:url:nonce:outThumbprint:error:
+ 
+ @abstract Verifies a DPoP proof JWT and validates its claims.
+ 
+ @param dpopJwt The proof JWT from the DPoP header.
+ @param method The HTTP method the proof is for.
+ @param url The URL the proof is for.
+ @param nonce Optional server-provided nonce.
+ @param thumbprint On return, the RFC 7638 JWK thumbprint if verification succeeds.
+ @param error On return, contains an error if verification failed.
+ @return YES if the proof is valid, NO otherwise.
+ */
++ (BOOL)verifyProof:(NSString *)dpopJwt
+             method:(NSString *)method
+                url:(NSURL *)url
+              nonce:(nullable NSString *)nonce
+      outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+              error:(NSError **)error;
 
 @end
 

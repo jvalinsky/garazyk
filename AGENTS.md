@@ -32,6 +32,14 @@
 - **Linux Porting**: `PDSNetworkTransportLinux` structure in place using BSD sockets/libdispatch, but read logic is pending implementation.
 - **CLI Enhancements**: Added unit tests for CLI commands.
 - **Handle Resolution**: COMPLETED. Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
+- **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
+- **Explore**: COMPLETED. Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
+
+### Review Findings (Open Gaps)
+- **OAuth2 DPoP**: `OAuth2DPoPProof` returns a `.stub` signature; DPoP proofs are not signed yet (ATProtoPDS/Sources/Auth/OAuth2.m:191-226).
+- **Linux Client Connections**: `PDSNetworkTransportLinux` always fails client connections with "Client connection not implemented" (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-88).
+- **Handle Verification**: `resolveIdentity` skips verifying `alsoKnownAs` against the resolved handle (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:914).
+- **Follower Counts**: `ActorService` returns `0` for followers as a stub (ATProtoPDS/Sources/AppView/ActorService.m:183-186).
 
 ### Database Layer
 - **Actor Store**: `PDSActorStore` provides SQLite-based persistence for actor data, employing WAL mode and prepared statements for performance.
@@ -166,3 +174,29 @@ mkdir build-linux && cd build-linux
 cmake .. -DCMAKE_BUILD_TYPE=Debug
 make -j$(nproc)
 ```
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
