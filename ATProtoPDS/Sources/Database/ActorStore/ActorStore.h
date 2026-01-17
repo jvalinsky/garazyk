@@ -152,11 +152,11 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (void)close;
 
 /*! Executes a write transaction. */
-- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor))block 
+- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
                     error:(NSError **)error;
 
 /*! Executes a read-only transaction. */
-- (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader))block 
+- (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
                 error:(NSError **)error;
 
 /*! Gets the signing key from Keychain. Caller must CFRelease the returned key. */

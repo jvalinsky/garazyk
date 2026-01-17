@@ -12,6 +12,7 @@
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuth2Handler.h"
 #import "App/MSTViewer/MSTViewerHandler.h"
+#import "App/OAuthDemo/OAuthDemoHandler.h"
 
 // Forward declaration for PDSAccountManager
 @interface PDSAccountManager : NSObject
@@ -174,6 +175,7 @@
         return;
     }
     OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:serviceDB];
+    oauthHandler.minter = controller.jwtMinter;
     [oauthHandler registerRoutesWithServer:httpServer];
     PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered OAuth2 routes");
 
@@ -219,6 +221,18 @@
         [mstViewerHandler handleRequest:request response:response];
     }];
     PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered MST Viewer routes");
+
+    // Register OAuth Demo routes
+    OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
+    [oauthDemoHandler setController:controller];
+    
+    [httpServer addHandlerForPath:@"/oauth-demo" handler:^(HttpRequest *request, HttpResponse *response) {
+        [oauthDemoHandler handleRequest:request response:response];
+    }];
+    
+    [httpServer addRoute:@"GET" path:@"/oauth-demo/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [oauthDemoHandler handleRequest:request response:response];
+    }];
 
     // Register Health Check
     [httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *request, HttpResponse *response) {

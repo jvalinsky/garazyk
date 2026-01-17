@@ -56,20 +56,56 @@
             break;
         }
         if (op.prev && [op.prev isKindOfClass:[NSString class]]) {
-            NSLog(@"[PLC AUDITOR] Loop Checking prev hash: %@ vs last: %@", op.prev, lastHash);
-            if (![op.prev isEqualToString:lastHash]) {
-                if (error) {
-                    *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
-                                                 code:3
-                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev hash mismatch. Expected %@, got %@", lastHash, op.prev]}];
+            // Updated logic: prev should be a CID string.
+            // We parse it, extract digest, and compare to SHA256(lastOp)
+            
+            NSLog(@"[PLC AUDITOR] Checking prev CID: %@", op.prev);
+            
+            CID *prevCid = [CID cidFromString:op.prev];
+            if (!prevCid) {
+                // Backward compatibility: try hex match?
+                // Or just fail if strict compliance is desired.
+                // Let's assume strict CID compliance for "Real" data, but fall back to hex check if parsing fails just in case.
+                if (![op.prev isEqualToString:lastHash]) {
+                     if (error) {
+                        *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                                     code:3
+                                                 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev CID invalid or mismatch. Expected hash %@, got %@", lastHash, op.prev]}];
+                    }
+                    success = NO;
+                    break;
                 }
-                success = NO;
-                break;
+            } else {
+                // It is a CID. Extract digest.
+                NSData *digest = [CID sha256Digest:[self dataFromHexString:lastHash]];
+                NSData *prevDigest = prevCid.multihash;
+                
+                // Compare digests (multihash bytes) - assuming both are SHA-256
+                // Note: CID.multihash includes the function code (0x12) and length (0x20).
+                // Our 'lastHash' is just raw SHA256 hex.
+                
+                // Let's reconstruct the expected CID from lastHash and compare strings or bytes.
+                // Easier: Reconstruct expected CID from raw hash data
+                NSData *lastOpDataHashRaw = [self dataFromHexString:lastHash];
+                CID *expectedCid = [CID cidWithDigest:lastOpDataHashRaw codec:0x71]; // DAG-CBOR
+                
+                if (![prevCid isEqualToCID:expectedCid]) {
+                     if (error) {
+                        *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                                     code:3
+                                                 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev CID mismatch. Expected %@, got %@", expectedCid.stringValue, op.prev]}];
+                    }
+                    success = NO;
+                    break;
+                }
             }
         }
 
         if (!authorizedKeys) {
             authorizedKeys = op.data[@"rotationKeys"];
+            if (!authorizedKeys && op.data[@"recoveryKey"]) {
+                authorizedKeys = @[op.data[@"recoveryKey"]];
+            }
         }
 
         BOOL sigOk = NO;
@@ -95,7 +131,13 @@
             break;
         }
 
-        authorizedKeys = op.data[@"rotationKeys"];
+        NSArray *nextRotationKeys = op.data[@"rotationKeys"];
+        if (!nextRotationKeys && op.data[@"recoveryKey"]) {
+            nextRotationKeys = @[op.data[@"recoveryKey"]];
+        }
+        if (nextRotationKeys) {
+            authorizedKeys = nextRotationKeys;
+        }
         lastHash = [CryptoUtils hexStringFromData:opDataHash];
     }
 
@@ -140,20 +182,41 @@
         return NO;
     }
     if (op.prev && [op.prev isKindOfClass:[NSString class]]) {
-        NSLog(@"[PLC AUDITOR] Checking prev hash: %@ vs last: %@", op.prev, lastHash);
-        if (![op.prev isEqualToString:lastHash]) {
-            if (error) {
-                *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
-                                             code:3
-                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev hash mismatch. Expected %@, got %@", lastHash, op.prev]}];
+        // Updated logic: prev should be a CID string.
+        NSLog(@"[PLC AUDITOR] Checking prev CID: %@", op.prev);
+        
+        CID *prevCid = [CID cidFromString:op.prev];
+        if (!prevCid) {
+             if (![op.prev isEqualToString:lastHash]) {
+                 if (error) {
+                    *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                                 code:3
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev CID invalid or mismatch. Expected hash %@, got %@", lastHash, op.prev]}];
+                }
+                [[PLCMetrics sharedMetrics] recordVerificationFailure];
+                return NO;
             }
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
-            return NO;
+        } else {
+            NSData *lastOpDataHashRaw = [self dataFromHexString:lastHash];
+            CID *expectedCid = [CID cidWithDigest:lastOpDataHashRaw codec:0x71]; // DAG-CBOR
+            
+            if (![prevCid isEqualToCID:expectedCid]) {
+                 if (error) {
+                    *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                                 code:3
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prev CID mismatch. Expected %@, got %@", expectedCid.stringValue, op.prev]}];
+                }
+                [[PLCMetrics sharedMetrics] recordVerificationFailure];
+                return NO;
+            }
         }
     }
 
     if (!authorizedKeys) {
         authorizedKeys = op.data[@"rotationKeys"];
+        if (!authorizedKeys && op.data[@"recoveryKey"]) {
+            authorizedKeys = @[op.data[@"recoveryKey"]];
+        }
     }
 
     BOOL sigOk = NO;
