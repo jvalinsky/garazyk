@@ -71,12 +71,13 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Creates a DPoP proof for a request. */
 + (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
-                                      nonce:(nullable NSString *)nonce
-                                      error:(NSError **)error;
+                                       nonce:(nullable NSString *)nonce
+                                         key:(SecKeyRef)privateKey
+                                       error:(NSError **)error;
 
 /*! Verifies a DPoP proof JWT. */
 + (BOOL)verifyDPoP:(NSString *)dpopJwt
-          withPublicKey:(SecKeyRef)publicKey
+          withPublicKey:(nullable SecKeyRef)publicKey
                method:(NSString *)htm
                   uri:(NSString *)htu
                nonce:(nullable NSString *)nonce

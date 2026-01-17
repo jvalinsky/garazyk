@@ -62,6 +62,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 + (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
                                       nonce:(nullable NSString *)nonce
+                                        key:(SecKeyRef)privateKey
                                       error:(NSError **)error {
     DPoPToken *token = [[DPoPToken alloc] init];
     token.htm = htm;
@@ -72,7 +73,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     token.nonce = nonce;
 
     NSError *signError = nil;
-    NSString *jwt = [self signDPoPToken:token error:&signError];
+    NSString *jwt = [self signDPoPToken:token withKey:privateKey error:&signError];
     if (!jwt) {
         if (error) *error = signError;
         return nil;
@@ -82,7 +83,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     return token;
 }
 
-+ (NSString *)signDPoPToken:(DPoPToken *)token error:(NSError **)error {
++ (NSString *)signDPoPToken:(DPoPToken *)token withKey:(SecKeyRef)privateKey error:(NSError **)error {
     NSDictionary *headerDict = [token header];
     NSMutableDictionary *header = [headerDict mutableCopy];
     // Ensure typ and alg are set if not present (though [token header] sets them)
@@ -107,15 +108,19 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     NSString *payloadB64 = [self base64URLEncode:payloadData];
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerB64, payloadB64];
 
-    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
-    NSMutableData *signature = [NSMutableData dataWithLength:64];
 
-    OSStatus status = SecRandomCopyBytes(kSecRandomDefault, 32, signature.mutableBytes);
-    if (status != errSecSuccess) {
+    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    
+    CFErrorRef keyError = NULL;
+    NSData *signature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+                                                                kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                                                (__bridge CFDataRef)signingData,
+                                                                &keyError));
+    if (!signature) {
         if (error) {
-            *error = [NSError errorWithDomain:DPoPErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate signature"}];
+            *error = CFBridgingRelease(keyError);
+        } else if (keyError) {
+            CFRelease(keyError);
         }
         return nil;
     }
@@ -261,7 +266,29 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         return NO;
     }
 
-    return YES;
+    NSData *signingInputData = [[NSString stringWithFormat:@"%@.%@", headerB64, payloadB64] dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signatureData = [self base64URLDecode:signatureB64];
+    
+    if (!publicKey) {
+        // If no public key provided, we can't verify functionality, but we can verify structure.
+        // This is useful for tests that don't have a key pair handy but want to check claims.
+        return YES; 
+    }
+
+    BOOL valid = SecKeyVerifySignature(publicKey,
+                                     kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                     (__bridge CFDataRef)signingInputData,
+                                     (__bridge CFDataRef)signatureData,
+                                     NULL);
+    
+    if (!valid) {
+        if (error) {
+            *error = [NSError errorWithDomain:DPoPErrorDomain
+                                         code:-14
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid signature"}];
+        }
+    }
+    return valid;
 }
 
 + (NSString *)base64URLEncode:(NSData *)data {
