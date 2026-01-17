@@ -84,10 +84,10 @@ run_test_with_output "XRPC Integration Tests" "./build/xrpc_integration_tests"
 echo ""
 echo "⚡ Performance Tests:"
 # Basic performance test - check if server starts within reasonable time
-run_test "Server Startup Performance" "timeout 10s ./build/atprotopds --help >/dev/null 2>&1 || true"
+run_test "Server Startup Performance" "timeout 10s ./build/bin/september --help >/dev/null 2>&1 || true"
 
 # Memory leak check (basic)
-run_test "Memory Usage Check" "timeout 5s ./build/atprotopds --help >/dev/null 2>&1 || true"
+run_test "Memory Usage Check" "timeout 5s ./build/bin/september --help >/dev/null 2>&1 || true"
 
 # Compilation Tests
 echo ""

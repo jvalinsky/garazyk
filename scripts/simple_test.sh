@@ -2,7 +2,7 @@
 
 # Simple test script to isolate issues
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVER="$SCRIPT_DIR/build/atprotopds"
+SERVER="$SCRIPT_DIR/../build/bin/september"
 PORT=2583
 BASE_URL="http://localhost:$PORT"
 SERVER_PID=""
@@ -18,7 +18,7 @@ cleanup() {
         kill "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
-    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    pkill -f "september.*$PORT" 2>/dev/null || true
     rm -f "$DB_PATH" 2>/dev/null || true
 }
 
@@ -118,7 +118,7 @@ test_get_record() {
 
 # Start server
 info "Starting ATProto PDS server..."
-pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+pkill -f "september.*$PORT" 2>/dev/null || true
 sleep 1
 rm -f "$DB_PATH" 2>/dev/null || true
 

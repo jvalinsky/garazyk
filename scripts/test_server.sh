@@ -14,7 +14,8 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}Starting ATProto PDS server test...${NC}"
 
 # Build paths
-CLI_PATH="/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/atprotopds-cli"
+# Use CMake build path
+CLI_PATH="./build/bin/september"
 TEST_PORT=2583
 TEST_URL="http://localhost:${TEST_PORT}/explore"
 
