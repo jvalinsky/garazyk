@@ -26,6 +26,14 @@
     XCTAssertTrue(success, @"Failed to start server: %@", error);
 }
 
+- (NSString *)base64URLEncode:(NSData *)data {
+    NSString *base64 = [data base64EncodedStringWithOptions:0];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@"=" withString:@""];
+    return base64;
+}
+
 - (void)tearDown {
     [self.server stop];
     // Give the server a moment to release the port
@@ -34,7 +42,6 @@
 }
 
 - (void)testGetDID {
-    NSString *did = @"did:plc:test";
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
@@ -47,12 +54,16 @@
     NSData *hash = [self.auditor hashForOperationData:opData];
     NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
     
+    NSMutableDictionary *payload = [opData mutableCopy];
+    payload[@"sig"] = [self base64URLEncode:sig];
+    NSString *did = [PLCOperation calculateDIDForData:payload];
+
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
-    op.sig = [sig base64EncodedStringWithOptions:0];
+    op.sig = payload[@"sig"];
     op.data = opData;
     op.prev = nil;
-    [self.store appendOperation:op error:nil];
+    [self.store appendOperation:op nullifyCIDs:@[] error:nil];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"GET /:did"];
     
@@ -76,7 +87,6 @@
 }
 
 - (void)testPostDID {
-    NSString *did = @"did:plc:testpost";
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
@@ -90,7 +100,8 @@
     NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
     
     NSMutableDictionary *payload = [opData mutableCopy];
-    payload[@"sig"] = [sig base64EncodedStringWithOptions:0];
+    payload[@"sig"] = [self base64URLEncode:sig];
+    NSString *did = [PLCOperation calculateDIDForData:payload];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"POST /:did"];
     
@@ -114,7 +125,7 @@
         XCTAssertEqualObjects(json[@"status"], @"ok");
         
         // Verify it's in the store
-        NSArray *history = [self.store getHistoryForDID:did error:nil];
+        NSArray *history = [self.store getHistoryForDID:did includeNullified:NO error:nil];
         XCTAssertEqual(history.count, 1);
         
         [expectation fulfill];
@@ -124,15 +135,6 @@
 }
 
 - (void)testPostInvalidDID {
-    // This test actually checks for signature verification failure because the DID is calculated from the op data.
-    // If we send a payload to a different DID path, it will still try to verify signature against the rotation keys in the op.
-    // Since it's a genesis op, authorizedKeys are from the op itself.
-    // So the signature WILL be valid for the op.
-    // BUT the path DID doesn't match the calculated DID?
-    // Actually, our PLCServer.m DOES NOT check if the path DID matches the calculated DID yet.
-    // It only checks if the signature is valid for the rotation keys in the op (for genesis).
-    
-    NSString *did = @"did:plc:testpost";
     NSString *wrongDid = @"did:plc:wrong";
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
@@ -144,16 +146,15 @@
         @"prev": [NSNull null]
     };
     NSData *hash = [self.auditor hashForOperationData:opData];
-    // Use a WRONG key to sign to ensure it fails
-    Secp256k1KeyPair *otherKeyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
-    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:otherKeyPair.privateKey error:nil];
+    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
     
     NSMutableDictionary *payload = [opData mutableCopy];
-    payload[@"sig"] = [sig base64EncodedStringWithOptions:0];
+    payload[@"sig"] = [self base64URLEncode:sig];
+    NSString *did = [PLCOperation calculateDIDForData:payload];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"POST /:did (invalid sig)"];
     
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/%@", (unsigned long)self.port, did]];
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/%@", (unsigned long)self.port, wrongDid]];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
