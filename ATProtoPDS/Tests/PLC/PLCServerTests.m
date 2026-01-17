@@ -56,7 +56,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForData:payload];
+    NSString *did = [PLCOperation calculateDIDForData:opData];
 
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
@@ -101,7 +101,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForData:payload];
+    NSString *did = [PLCOperation calculateDIDForData:opData];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"POST /:did"];
     
@@ -150,7 +150,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForData:payload];
+    NSString *did = [PLCOperation calculateDIDForData:opData];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"POST /:did (invalid sig)"];
     
