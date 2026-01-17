@@ -36,7 +36,7 @@
 - **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
 - **Explore**: COMPLETED. Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
 
-- **Linux Client Connections**: `PDSNetworkTransportLinux` always fails client connections with "Client connection not implemented" (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-88).
+- **Linux Client Connections**: COMPLETED. Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-168).
 - **Handle Verification**: `resolveIdentity` skips verifying `alsoKnownAs` against the resolved handle (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:914).
 - **Follower Counts**: `ActorService` returns `0` for followers as a stub (ATProtoPDS/Sources/AppView/ActorService.m:183-186).
 

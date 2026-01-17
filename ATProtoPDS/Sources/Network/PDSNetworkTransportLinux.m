@@ -40,6 +40,8 @@
     NSMutableArray<PDSReadRequest *> *_readRequests;
     NSMutableData *_writeBuffer;
     NSUInteger _writeOffset;
+    NSString *_host;
+    NSUInteger _port;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -49,6 +51,8 @@
     self = [super init];
     if (self) {
         _sockfd = -1;
+        _host = [host copy];
+        _port = port;
         _remoteAddress = [NSString stringWithFormat:@"%@:%lu", host, (unsigned long)port];
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
@@ -78,17 +82,87 @@
     _queue = queue;
     
     if (_sockfd == -1) {
-        // Connect logic would go here for client connections
-        // For now, simulate async failure for unimplemented client logic
-        dispatch_async(queue, ^{
+        _sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (_sockfd == -1) {
+            dispatch_async(queue, ^{
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+                }
+            });
+            return;
+        }
+        
+        int flags = fcntl(_sockfd, F_GETFL, 0);
+        fcntl(_sockfd, F_SETFL, flags | O_NONBLOCK);
+        
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons((uint16_t)_port);
+        
+        struct in_addr sin_addr;
+        if (inet_pton(AF_INET, [_host UTF8String], &sin_addr) == 1) {
+            addr.sin_addr = sin_addr;
+        } else {
+            dispatch_async(queue, ^{
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:@"PDSNetworkTransport" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid host address"}]);
+                }
+            });
+            close(_sockfd);
+            _sockfd = -1;
+            return;
+        }
+        
+        int result = connect(_sockfd, (struct sockaddr *)&addr, sizeof(addr));
+        if (result == 0) {
+            [self setupSources];
+            dispatch_async(queue, ^{
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+                }
+            });
+            return;
+        }
+        
+        if (errno != EINPROGRESS) {
+            dispatch_async(queue, ^{
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+                }
+            });
+            close(_sockfd);
+            _sockfd = -1;
+            return;
+        }
+        
+        __weak typeof(self) weakSelf = self;
+        dispatch_source_t connectSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, queue);
+        dispatch_source_set_event_handler(connectSource, ^{
+            int error = 0;
+            socklen_t len = sizeof(error);
+            getsockopt(_sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+            
+            dispatch_source_cancel(connectSource);
+            
+            if (error != 0) {
+                close(_sockfd);
+                _sockfd = -1;
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:error userInfo:nil]);
+                }
+                return;
+            }
+            
+            [weakSelf setupSources];
             if (self.stateChangedHandler) {
-                self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:@"PDSNetworkTransport" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Client connection not implemented"}]);
+                self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
             }
         });
+        dispatch_resume(connectSource);
         return;
     }
     
-    // Server-side connection already has a socket
     [self setupSources];
     
     if (self.stateChangedHandler) {
