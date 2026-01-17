@@ -65,11 +65,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface PDSAccountService : NSObject <PDSAccountService>
 
-#if defined(GNUSTEP)
-@property (nonatomic, assign) PDSDatabasePool *databasePool;
-#else
-@property (nonatomic, weak) PDSDatabasePool *databasePool;
-#endif
+/*! Database pool - owner (PDSController) must outlive this service. */
+@property (nonatomic, strong) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 
 /*! Repositories for data access. */
