@@ -30,6 +30,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSData *signingKeyData;
 #else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
+/* signingKey uses 'assign' (not 'strong') for Core Foundation compatibility.
+   The setter releases any existing key before assigning a new one.
+   Keys are released in -close. Do not release keys assigned to this property. */
 @property (nonatomic, assign) SecKeyRef signingKey;
 @property (nonatomic, strong) PDSBiometricKeychain *biometricKeychain;
 #endif
