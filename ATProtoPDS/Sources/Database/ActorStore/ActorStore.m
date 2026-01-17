@@ -19,6 +19,7 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     SecKeyRef oldKey = *ptr;
     if (oldKey == newKey) return;
+    if (newKey) CFRetain(newKey);
     if (oldKey) CFRelease(oldKey);
     *ptr = newKey;
 }

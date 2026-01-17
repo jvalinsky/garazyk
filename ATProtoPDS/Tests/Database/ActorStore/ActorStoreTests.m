@@ -215,6 +215,7 @@
     __autoreleasing NSError *keyError = nil;
     SecKeyRef key = [self.store signingKeyWithError:&keyError];
     XCTAssertNotNil((__bridge id)key, @"Should have signing key now: %@", keyError);
+    if (key) CFRelease(key);
 }
 
 - (void)testSigningKeyGenerationNoLeak {
@@ -240,6 +241,8 @@
     if (key1 != key2) {
         XCTAssertTrue(YES, @"Second key generation produced different key (no leak)");
     }
+    if (key1) CFRelease(key1);
+    if (key2) CFRelease(key2);
 }
 
 - (void)testRecordCount {
