@@ -8,12 +8,14 @@
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
 #import "Auth/JWT.h"
+#import "Auth/OAuth2.h"
 #import "Auth/Secp256k1.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
+#import "Security/PDSAuthzManager.h"
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
 
@@ -34,6 +36,39 @@ static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
         return nil;
     }
     return payload;
+}
+
+@interface XrpcMethodRegistry (AuthHelpers)
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request;
+@end
+
+static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response, PDSController *controller) {
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+    if (!did) {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+        return NO;
+    }
+
+    NSError *dbError = nil;
+    PDSDatabase *db = [controller serviceDatabaseWithError:&dbError];
+    if (!db) {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": dbError.localizedDescription ?: @"Failed to open service database"}];
+        return NO;
+    }
+
+    PDSAuthzManager *authz = [PDSAuthzManager sharedManager];
+    [authz setDatabase:db];
+    NSError *authError = nil;
+    if (![authz isAuthorizedForAdminOperation:did error:&authError]) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{@"error": @"Forbidden", @"message": authError.localizedDescription ?: @"Admin privileges required"}];
+        return NO;
+    }
+
+    return YES;
 }
 
 static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *config) {
@@ -289,6 +324,38 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         [response setJsonBody:session];
     }];
 
+    [dispatcher registerComAtprotoServerGetSession:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *account = [controller getAccountForDid:did error:&error];
+        if (error || !account) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": @"Account not found for session"}];
+            return;
+        }
+
+        // Return session info matching expected schema
+        NSMutableDictionary *result = [account mutableCopy];
+        result[@"did"] = did;
+        result[@"emailConfirmed"] = @YES;
+        // Ensure handle is present
+        if (!result[@"handle"]) {
+             // Fallback if handle missing (shouldn't happen for valid accounts)
+             result[@"handle"] = @"unknown.handle"; 
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     [dispatcher registerComAtprotoServerRefreshSession:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *refreshToken = body[@"refreshToken"];
@@ -445,9 +512,23 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 
         PDS_LOG_HTTP_DEBUG(@"createRecord params: repo=%@, collection=%@, record=%@", repo, collection, record);
 
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
         if (!repo || !collection || !record) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or record"}];
+            return;
+        }
+
+        if (![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
             return;
         }
 
@@ -530,9 +611,23 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         NSString *collection = body[@"collection"];
         NSString *rkey = body[@"rkey"];
 
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
         if (!repo || !collection || !rkey) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
+            return;
+        }
+
+        if (![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
             return;
         }
 
@@ -560,6 +655,13 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
             return;
         }
 
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
 
 
         NSString *repo = body[@"repo"];
@@ -570,6 +672,12 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         if (!repo || !writes || writes.count == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing required fields: repo and writes"}];
+            return;
+        }
+
+        if (![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
             return;
         }
 
@@ -619,9 +727,23 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         NSString *rkey = body[@"rkey"];
         NSDictionary *record = body[@"record"];
 
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
         if (!repo || !collection || !rkey || !record) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, rkey, or record"}];
+            return;
+        }
+
+        if (![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
             return;
         }
 
@@ -1045,6 +1167,9 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 
     // Moderation endpoints
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
         NSDictionary *body = request.jsonBody;
 
         NSError *error = nil;
@@ -1061,6 +1186,9 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     }];
 
     [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
         NSDictionary *body = request.jsonBody;
 
         NSError *error = nil;
@@ -1076,8 +1204,59 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         [response setJsonBody:result];
     }];
 
+    [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
+        NSDictionary *body = request.jsonBody;
+        NSString *did = body[@"did"];
+        NSString *reason = body[@"reason"] ?: @"Policy violation";
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+
+        NSError *error = nil;
+        if (![controller takeDownAccount:did reason:reason error:&error]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"TakedownFailed", @"message": error.localizedDescription ?: @"Takedown failed"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"did": did, @"applied": @YES}];
+    }];
+
+    [dispatcher registerMethod:@"com.atproto.admin.getAccountTakedown" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
+        NSDictionary *body = request.jsonBody;
+        NSString *did = body[@"did"];
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL applied = [controller isAccountTakedownActive:did error:&error];
+        if (error) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"TakedownStatusFailed", @"message": error.localizedDescription ?: @"Unable to fetch takedown status"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"did": did, @"applied": @(applied)}];
+    }];
+
     // Labeling endpoints
     [dispatcher registerComAtprotoLabelCreateLabel:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
         NSDictionary *body = request.jsonBody;
 
         NSError *error = nil;
@@ -1094,6 +1273,9 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     }];
 
     [dispatcher registerComAtprotoLabelGetLabels:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
         NSDictionary *body = request.jsonBody;
 
         NSError *error = nil;
@@ -1437,8 +1619,64 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request {
-    if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) return nil;
-    NSString *token = [authHeader substringFromIndex:7];
+    if (!authHeader) return nil;
+    NSString *token = nil;
+    BOOL isDPoP = NO;
+    if ([authHeader hasPrefix:@"Bearer "]) {
+        token = [authHeader substringFromIndex:7];
+    } else if ([authHeader hasPrefix:@"DPoP "]) {
+        token = [authHeader substringFromIndex:5];
+        isDPoP = YES;
+    } else {
+        return nil;
+    }
+
+    if (isDPoP) {
+        NSString *dpopProof = [request headerForKey:@"DPoP"];
+        if (dpopProof.length == 0) {
+            PDS_LOG_AUTH_WARN(@"Missing DPoP header for DPoP authorization");
+            return nil;
+        }
+
+        NSString *host = [request headerForKey:@"Host"] ?: @"";
+        NSString *scheme = nil;
+        NSString *forwardedProto = [request headerForKey:@"X-Forwarded-Proto"];
+        if (forwardedProto.length > 0) {
+            scheme = forwardedProto;
+        } else {
+            NSString *lowercaseHost = [host lowercaseString];
+            if ([lowercaseHost containsString:@"localhost"] || [lowercaseHost hasPrefix:@"127.0.0.1"] || [lowercaseHost hasPrefix:@"::1"]) {
+                scheme = @"http";
+            } else {
+                scheme = @"https";
+            }
+        }
+
+        NSMutableString *urlString = [NSMutableString string];
+        if (host.length > 0) {
+            [urlString appendFormat:@"%@://%@%@", scheme, host, request.path ?: @"/"];
+            if (request.queryString.length > 0) {
+                [urlString appendFormat:@"?%@", request.queryString];
+            }
+        }
+
+        NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
+        if (!dpopURL) {
+            PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+            return nil;
+        }
+
+        NSError *dpopError = nil;
+        if (![OAuth2DPoPProof verifyProof:dpopProof
+                                   method:request.methodString
+                                      url:dpopURL
+                                    nonce:nil
+                            outThumbprint:nil
+                                    error:&dpopError]) {
+            PDS_LOG_AUTH_WARN(@"Invalid DPoP proof: %@", dpopError.localizedDescription ?: @"unknown error");
+            return nil;
+        }
+    }
 
     // Parse the JWT token
     NSError *parseError = nil;
@@ -1473,6 +1711,17 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     NSString *did = jwt.payload.sub;
     if (!did || ![did hasPrefix:@"did:"]) {
         PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim: %@", did);
+        return nil;
+    }
+
+    NSError *takedownError = nil;
+    BOOL isTakedown = [controller isAccountTakedownActive:did error:&takedownError];
+    if (takedownError) {
+        PDS_LOG_AUTH_WARN(@"Failed to check takedown status for %@: %@", did, takedownError.localizedDescription);
+        return nil;
+    }
+    if (isTakedown) {
+        PDS_LOG_AUTH_WARN(@"Rejected request for suspended account %@", did);
         return nil;
     }
 

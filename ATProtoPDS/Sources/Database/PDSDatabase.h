@@ -794,6 +794,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 - (BOOL)takeDownAccount:(NSString *)did reason:(nullable NSString *)reason takedownRef:(nullable NSString *)ref error:(NSError **)error;
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error;
+- (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error;
 - (BOOL)createLabel:(NSDictionary *)label error:(NSError **)error;
 - (NSArray<NSDictionary *> *)getLabelsWithPatterns:(nullable NSArray<NSString *> *)uriPatterns sources:(nullable NSArray<NSString *> *)sources limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
 

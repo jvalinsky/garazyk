@@ -119,9 +119,10 @@ int main(int argc, const char * argv[]) {
         }
 
         @try {
-            [[PDSCLIDispatcher sharedDispatcher] dispatchWithCommandName:commandName
+            int result = [[PDSCLIDispatcher sharedDispatcher] dispatchWithCommandName:commandName
                                                                 arguments:commandArgs
                                                                  context:context];
+            return result;
         } @catch (NSException *exception) {
             if ([exception.name isEqualToString:@"PDSCLIUnknownCommandException"]) {
                 return PDSCLIExitCodeNotFound;

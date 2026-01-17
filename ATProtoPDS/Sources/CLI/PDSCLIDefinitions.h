@@ -74,7 +74,7 @@ typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
  * @param args    The command-line arguments passed to this command.
  * @param context The execution context containing configuration and services.
  */
-- (void)executeWithArguments:(NSArray<NSString *> *)args
+- (int)executeWithArguments:(NSArray<NSString *> *)args
                     context:(PDSCLICommandContext *)context;
 
 @optional
@@ -250,7 +250,7 @@ typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
  * @param args        The arguments to pass to the command.
  * @param context     The execution context.
  */
-- (void)dispatchWithCommandName:(NSString *)commandName
+- (int)dispatchWithCommandName:(NSString *)commandName
                         arguments:(NSArray<NSString *> *)args
                          context:(PDSCLICommandContext *)context;
 

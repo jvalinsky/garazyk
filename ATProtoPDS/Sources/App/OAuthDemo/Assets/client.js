@@ -8,7 +8,8 @@ const CONFIG = {
 const STORAGE_KEYS = {
     state: 'oauth_state',
     codeVerifier: 'oauth_code_verifier',
-    accessToken: 'access_token'
+    accessToken: 'access_token',
+    sessionDid: 'session_did'
 };
 
 let inMemoryKeyPair = null;
@@ -20,11 +21,18 @@ const elements = {
     loginSection: document.getElementById('login-section'),
     callbackSection: document.getElementById('callback-section'),
     sessionSection: document.getElementById('session-section'),
+    didDisplay: document.getElementById('did-display'),
+    publicDidDisplay: document.getElementById('public-did-display'),
     tokenStatus: document.getElementById('token-status'),
     tokenDisplay: document.getElementById('token-display'),
     btnTestSession: document.getElementById('btn-test-session'),
     btnLogout: document.getElementById('btn-logout'),
     apiResult: document.getElementById('api-result'),
+    postText: document.getElementById('post-text'),
+    btnCreatePost: document.getElementById('btn-create-post'),
+    postResult: document.getElementById('post-result'),
+    btnListRecords: document.getElementById('btn-list-records'),
+    recordsResult: document.getElementById('records-result'),
     debugLog: document.getElementById('debug-log'),
     storageWarning: document.getElementById('storage-warning')
 };
@@ -82,37 +90,7 @@ function toUnpaddedUint8(bytes) {
     return bytes.slice(start);
 }
 
-function derToJose(signature, keySize) {
-    const bytes = new Uint8Array(signature);
-    if (bytes[0] !== 0x30) {
-        throw new Error('Invalid ECDSA signature');
-    }
-    let offset = 2;
-    if (bytes[1] & 0x80) {
-        const lengthBytes = bytes[1] & 0x7f;
-        offset = 2 + lengthBytes;
-    }
-    if (bytes[offset++] !== 0x02) {
-        throw new Error('Invalid ECDSA signature');
-    }
-    let rLen = bytes[offset++];
-    let r = bytes.slice(offset, offset + rLen);
-    offset += rLen;
-    if (bytes[offset++] !== 0x02) {
-        throw new Error('Invalid ECDSA signature');
-    }
-    let sLen = bytes[offset++];
-    let s = bytes.slice(offset, offset + sLen);
-    r = toUnpaddedUint8(r);
-    s = toUnpaddedUint8(s);
-    if (r.length > keySize || s.length > keySize) {
-        throw new Error('Invalid ECDSA signature size');
-    }
-    const out = new Uint8Array(keySize * 2);
-    out.set(r, keySize - r.length);
-    out.set(s, 2 * keySize - s.length);
-    return out;
-}
+
 
 async function sha256Bytes(data) {
     return crypto.subtle.digest('SHA-256', data);
@@ -226,8 +204,9 @@ async function createDPoPProof(keyPair, method, url, options = {}) {
         new TextEncoder().encode(unsignedToken)
     );
 
-    const joseSignature = derToJose(signature, 32);
-    const signatureEnc = base64UrlEncode(joseSignature);
+    // WebCrypto returns raw R|S signature for ECDSA, which is what JOSE expects.
+    // No DER conversion needed.
+    const signatureEnc = base64UrlEncode(signature);
     return `${unsignedToken}.${signatureEnc}`;
 }
 
@@ -361,6 +340,21 @@ function showSession(data) {
     elements.callbackSection.classList.add('hidden');
     elements.sessionSection.classList.remove('hidden');
     elements.tokenDisplay.textContent = JSON.stringify(data, null, 2);
+    if (data && data.sub) {
+        localStorage.setItem(STORAGE_KEYS.sessionDid, data.sub);
+        elements.didDisplay.textContent = data.sub;
+    }
+}
+
+function getStoredDid() {
+    return localStorage.getItem(STORAGE_KEYS.sessionDid);
+}
+
+function setStoredDid(did) {
+    if (!did) return;
+    localStorage.setItem(STORAGE_KEYS.sessionDid, did);
+    elements.didDisplay.textContent = did;
+    elements.publicDidDisplay.textContent = did;
 }
 
 async function testSession() {
@@ -386,24 +380,139 @@ async function testSession() {
         const data = await response.json();
         elements.apiResult.classList.remove('hidden');
         elements.apiResult.textContent = JSON.stringify(data, null, 2);
+        if (data && data.did) {
+            setStoredDid(data.did);
+        }
         log("API call successful!");
     } catch (err) {
         log(`API error: ${err.message}`);
     }
 }
 
+async function createPost() {
+    await createPostWithReply();
+}
+
+async function createPostWithReply(reply) {
+    const token = sessionStorage.getItem(STORAGE_KEYS.accessToken);
+    const did = getStoredDid();
+    const text = elements.postText.value.trim();
+    if (!token) {
+        elements.postResult.classList.remove('hidden');
+        elements.postResult.textContent = 'No access token - login first.';
+        return;
+    }
+    if (!did) {
+        elements.postResult.classList.remove('hidden');
+        elements.postResult.textContent = 'No DID available - run getSession first.';
+        return;
+    }
+    if (!text) {
+        elements.postResult.classList.remove('hidden');
+        elements.postResult.textContent = 'Post text is empty.';
+        return;
+    }
+    if (!window.dpopKeyPair) {
+        window.dpopKeyPair = await getOrCreateDPoPKey();
+    }
+
+    const url = new URL('/xrpc/com.atproto.repo.createRecord', CONFIG.issuer).href;
+    const createdAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const record = {
+        $type: 'app.bsky.feed.post',
+        text,
+        createdAt
+    };
+    if (reply) {
+        record.reply = reply;
+    }
+    const payload = {
+        repo: did,
+        collection: 'app.bsky.feed.post',
+        record
+    };
+
+    log(`Creating post for ${did}...`);
+    try {
+        const response = await fetchWithDpopNonceRetry(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `DPoP ${token}`
+            },
+            body: JSON.stringify(payload)
+        }, window.dpopKeyPair, { accessToken: token });
+        const data = await response.json();
+        elements.postResult.classList.remove('hidden');
+        elements.postResult.textContent = JSON.stringify(data, null, 2);
+        if (!response.ok) {
+            throw new Error(data.error || data.message || 'Failed to create post');
+        }
+        log("Post created successfully!");
+        return data;
+    } catch (err) {
+        elements.postResult.classList.remove('hidden');
+        elements.postResult.textContent = `Post error: ${err.message}`;
+        log(`Post error: ${err.message}`);
+        throw err;
+    }
+}
+
+async function listRecords() {
+    const did = getStoredDid();
+    if (!did) {
+        elements.recordsResult.classList.remove('hidden');
+        elements.recordsResult.textContent = 'No DID available - run getSession first.';
+        return;
+    }
+    const url = new URL('/xrpc/com.atproto.repo.listRecords', CONFIG.issuer);
+    url.searchParams.set('repo', did);
+    url.searchParams.set('collection', 'app.bsky.feed.post');
+    url.searchParams.set('limit', '10');
+
+    log(`Listing records for ${did}...`);
+    try {
+        const response = await fetch(url.toString());
+        const data = await response.json();
+        elements.recordsResult.classList.remove('hidden');
+        elements.recordsResult.textContent = JSON.stringify(data, null, 2);
+        log("Records listed successfully!");
+    } catch (err) {
+        elements.recordsResult.classList.remove('hidden');
+        elements.recordsResult.textContent = `List error: ${err.message}`;
+        log(`List error: ${err.message}`);
+    }
+}
+
 function logout() {
-    sessionStorage.clear();
-    window.location.href = '/oauth-demo';
+    sessionStorage.removeItem(STORAGE_KEYS.accessToken);
+    sessionStorage.removeItem(STORAGE_KEYS.state);
+    sessionStorage.removeItem(STORAGE_KEYS.codeVerifier);
+    window.location.href = '/oauth-demo/';
 }
 
 // --- Initialization ---
 elements.btnLogin.addEventListener('click', startLogin);
 elements.btnTestSession.addEventListener('click', testSession);
+elements.btnCreatePost.addEventListener('click', createPost);
+elements.btnListRecords.addEventListener('click', listRecords);
 elements.btnLogout.addEventListener('click', logout);
 
 if (window.location.pathname.endsWith('/callback')) {
     handleCallback();
 } else {
+    const did = getStoredDid();
+    if (did) {
+        elements.didDisplay.textContent = did;
+        elements.publicDidDisplay.textContent = did;
+    } else {
+        elements.publicDidDisplay.textContent = 'unknown';
+    }
     log("Ready.");
 }
+
+window.oauthDemo = {
+    createPostWithReply,
+    listRecords,
+    getSessionDid: getStoredDid
+};

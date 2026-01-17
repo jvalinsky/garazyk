@@ -7,6 +7,8 @@
 #import "Auth/CryptoUtils.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
+#import "PLC/PLCOperation.h"
+#import "Auth/CryptoUtils.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 
@@ -251,8 +253,7 @@
 
     NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.publicKey]]];
 
-    // 2. Construct Genesis Op Data
-    // Note: In a real app, you'd want separate rotation and signing keys
+    // 3. Genesis Op Data
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[pubKeyDidKey],
@@ -261,46 +262,23 @@
         @"services": @{
             @"atproto_pds": @{
                 @"type": @"AtprotoPersonalDataServer",
-                @"endpoint": [NSString stringWithFormat:@"http://%@", pdsHost] // Assuming pdsHost includes port if needed, or we fix this
+                @"endpoint": [NSString stringWithFormat:@"http://%@", pdsHost]
             }
         },
         @"prev": [NSNull null]
     };
 
-    // 3. Encode and Hash
-    NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&cborError];
-    if (!cborData) {
-        if (error) *error = cborError;
-        return nil;
-    }
+    // 4. Generate DID (Derive from genesis data)
+    NSString *did = [PLCOperation calculateDIDForData:opData];
     
-    NSData *sha256 = [self sha256:cborData];
-    
-    // 4. Sign
-    NSError *sigError = nil;
-    NSData *signature = [signer signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
-    if (!signature) {
-        if (error) *error = sigError;
-        return nil;
-    }
-    
-    // 5. Construct Payload (Flattened)
-    NSMutableDictionary *payload = [opData mutableCopy];
-    payload[@"sig"] = [signature base64EncodedStringWithOptions:0];
-    
-    // 6. Generate DID
-    NSString *did = [self generatePlcDid];
-    
-    // 7. POST to PLC Server (loop 25 times)
+    // 5. POST to PLC Server (loop 3 times to verify chaining logic)
     NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: @"http://localhost:2582";
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
     
-    // Initial genesis op
     NSDictionary *currentOpData = opData;
     NSString *prevHash = nil;
     
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 3; i++) {
         // If not first op, update it
         if (i > 0) {
             NSMutableDictionary *newOp = [currentOpData mutableCopy];
@@ -325,10 +303,11 @@
             return nil;
         }
         
-        NSData *sha256 = [self sha256:cborData];
-        
-        // PLCAuditor expects 'prev' to be the CID string of the SHA256 hash (DAG-CBOR codec 0x71)
-        NSString *prevHashHex = [[CID cidWithDigest:sha256 codec:0x71] stringValue];
+        NSData *sha256 = [CryptoUtils sha256:cborData];
+        if (!sha256) {
+             if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
+             return nil;
+        }
         
         NSError *sigError = nil;
         NSData *signature = [signer signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
@@ -338,7 +317,7 @@
         }
         
         NSMutableDictionary *payload = [currentOpData mutableCopy];
-        payload[@"sig"] = [signature base64EncodedStringWithOptions:0];
+        payload[@"sig"] = [CryptoUtils base64URLEncode:signature];
         
         // Post
         NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
@@ -372,9 +351,10 @@
             return nil;
         }
         
-        prevHash = prevHashHex; // Set prev for next iteration
+        // Calculate CID of the SIGNED payload to use as 'prev' in next op
+        prevHash = [PLCOperation calculateCIDForOperation:payload error:nil];
         
-        if (i%5==0) [NSThread sleepForTimeInterval:0.1]; // Brief pause to be nice
+        if (i%5==0) [NSThread sleepForTimeInterval:0.05]; 
     }
     
     return did;
@@ -385,22 +365,6 @@
     NSMutableData *data = [NSMutableData dataWithBytes:"\xe7\x01" length:2];
     [data appendData:pubKey];
     return data;
-}
-
-+ (NSData *)sha256:(NSData *)data {
-    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
-    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
-}
-
-+ (NSString *)generatePlcDid {
-    NSString *alphabet = @"abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableString *identifier = [NSMutableString stringWithCapacity:24];
-    for (int i = 0; i < 24; i++) {
-        unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
-        [identifier appendFormat:@"%C", c];
-    }
-    return [NSString stringWithFormat:@"did:plc:%@", identifier];
 }
 
 + (BOOL)isValidPlcDid:(NSString *)did {
@@ -551,37 +515,38 @@
     return @[@"list", @"info", @"create", @"deactivate", @"reactivate", @"delete", @"update-email", @"update-handle"];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printInfo:[self helpText]];
-        return;
+        return 0;
     }
 
     NSString *subcommand = args[0];
     NSArray *subArgs = args.count > 1 ? [args subarrayWithRange:NSMakeRange(1, args.count - 1)] : @[];
 
     if ([subcommand isEqualToString:@"list"]) {
-        [self executeListWithArgs:subArgs context:context];
+        return [self executeListWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"info"]) {
-        [self executeInfoWithArgs:subArgs context:context];
+        return [self executeInfoWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"create"]) {
-        [self executeCreateWithArgs:subArgs context:context];
+        return [self executeCreateWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"deactivate"]) {
-        [self executeDeactivateWithArgs:subArgs context:context];
+        return [self executeDeactivateWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"reactivate"]) {
-        [self executeReactivateWithArgs:subArgs context:context];
+        return [self executeReactivateWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"delete"]) {
-        [self executeDeleteWithArgs:subArgs context:context];
+        return [self executeDeleteWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"update-email"]) {
-        [self executeUpdateEmailWithArgs:subArgs context:context];
+        return [self executeUpdateEmailWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"update-handle"]) {
-        [self executeUpdateHandleWithArgs:subArgs context:context];
+        return [self executeUpdateHandleWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
+        return 1;
     }
 }
 
-- (void)executeListWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeListWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     NSInteger limit = 100;
     NSString *filter = @"";
 
@@ -623,7 +588,7 @@
             [context printInfo:[NSString stringWithFormat:@"  pds account create --email you@example.com --handle yourhandle.%@", hostname]];
             [context printInfo:@"\nFor testing, you can use the .test TLD:"];
             [context printInfo:@"  pds account create -e test@test.com -h testuser.test"];
-            return;
+            return 0;
         }
         printf("%-44s %-30s %-30s %s\n", "DID", "Handle", "Email", "Created");
         printf("%-44s %-30s %-30s %s\n", "----", "------", "-----", "-------");
@@ -642,9 +607,10 @@
 
         printf("\nTotal accounts: %lu\n", (unsigned long)accounts.count);
     }
+    return 0;
 }
 
-- (void)executeInfoWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeInfoWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printError:@"Missing account identifier"];
         [context printInfo:@"\nUsage: pds account info <did|handle>"];
@@ -652,7 +618,7 @@
         [context printInfo:@"\nExamples:"];
         [context printInfo:@"  pds account info did:plc:abc123"];
         [context printInfo:[NSString stringWithFormat:@"  pds account info username.%@", hostname]];
-        return;
+        return 1;
     }
 
     NSString *identifier = args[0];
@@ -663,7 +629,7 @@
         [context printError:[NSString stringWithFormat:@"Account not found: %@", identifier]];
         [context printInfo:@"\nTo find accounts, run:"];
         [context printInfo:@"  pds account list"];
-        return;
+        return 1;
     }
 
     if (context.jsonOutput) {
@@ -687,9 +653,10 @@
         printf("  Created:    %s\n", [[formatter stringFromDate:created] UTF8String]);
         printf("  Updated:    %s\n", [[formatter stringFromDate:updated] UTF8String]);
     }
+    return 0;
 }
 
-- (void)executeCreateWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeCreateWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     NSString *email = @"";
     NSString *handle = @"";
     NSString *password = @"";
@@ -702,6 +669,9 @@
             if (i + 1 < args.count) handle = args[++i];
         } else if ([arg isEqualToString:@"--password"] || [arg isEqualToString:@"-p"]) {
             if (i + 1 < args.count) password = args[++i];
+        } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
+            context.verbose = YES;
+            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
         }
     }
     
@@ -712,7 +682,7 @@
         [context printInfo:[NSString stringWithFormat:@"\nExamples:"]];
         [context printInfo:[NSString stringWithFormat:@"  pds account create --email alice@example.com --handle alice.%@", hostname]];
         [context printInfo:@"  pds account create -e bob@test.com -h bob.test -p secret123"];
-        return;
+        return 1;
     }
 
     NSError *emailError = nil;
@@ -721,7 +691,7 @@
         if (emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
             [context printInfo:emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
         }
-        return;
+        return 1;
     }
 
     NSError *handleError = nil;
@@ -736,7 +706,7 @@
         [context printInfo:[NSString stringWithFormat:@"  username.%@       (uses this PDS)", hostname]];
         [context printInfo:@"  bob.test              (test TLD for development)"];
         [context printInfo:@"  carol.com             (any valid domain)"];
-        return;
+        return 1;
     }
 
     BOOL success = [PDSCLIAccountManager createAccountWithContext:context
@@ -749,6 +719,7 @@
         [context printInfo:@"Account created successfully"];
         [context printInfo:[NSString stringWithFormat:@"Handle: %@", normalizedHandle]];
         [context printInfo:[NSString stringWithFormat:@"Email: %@", email]];
+        return 0;
     } else {
         NSString *dbPath = [PDSCLIAccountManager databasePathForContext:context];
         if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
@@ -763,13 +734,14 @@
             [context printInfo:@"  - Email already registered"];
             [context printInfo:@"  - Database error"];
         }
+        return 1;
     }
 }
 
-- (void)executeDeactivateWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeDeactivateWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printError:@"Missing account DID"];
-        return;
+        return 1;
     }
 
     NSString *did = args[0];
@@ -777,15 +749,17 @@
 
     if (success) {
         [context printInfo:@"Account deactivated"];
+        return 0;
     } else {
         [context printError:@"Failed to deactivate account"];
+        return 1;
     }
 }
 
-- (void)executeReactivateWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeReactivateWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printError:@"Missing account DID"];
-        return;
+        return 1;
     }
 
     NSString *did = args[0];
@@ -793,15 +767,17 @@
 
     if (success) {
         [context printInfo:@"Account reactivated"];
+        return 0;
     } else {
         [context printError:@"Failed to reactivate account"];
+        return 1;
     }
 }
 
-- (void)executeDeleteWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeDeleteWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printError:@"Missing account DID"];
-        return;
+        return 1;
     }
 
     NSString *did = args[0];
@@ -809,18 +785,20 @@
 
     if (success) {
         [context printInfo:@"Account deleted"];
+        return 0;
     } else {
         [context printError:@"Failed to delete account"];
+        return 1;
     }
 }
 
-- (void)executeUpdateEmailWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeUpdateEmailWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count < 2) {
         [context printError:@"Missing arguments: --update-email <did> <email>"];
         [context printInfo:@"\nUsage: pds account update-email <did> <new-email>"];
         [context printInfo:@"\nExample:"];
         [context printInfo:@"  pds account update-email did:plc:abc123 newemail@example.com"];
-        return;
+        return 1;
     }
 
     NSString *did = args[0];
@@ -832,7 +810,7 @@
         if (emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
             [context printInfo:emailError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
         }
-        return;
+        return 1;
     }
 
     BOOL success = [PDSCLIAccountManager updateEmailWithContext:context did:did email:email];
@@ -841,22 +819,24 @@
         PDS_LOG_INFO(@"Email updated for account %@: %@", did, email);
         [context printInfo:@"Email updated successfully"];
         [context printInfo:[NSString stringWithFormat:@"New email: %@", email]];
+        return 0;
     } else {
         PDS_LOG_ERROR(@"Failed to update email for account %@", did);
         [context printError:@"Failed to update email"];
         [context printInfo:@"Possible causes:"];
         [context printInfo:@"  - Account not found"];
         [context printInfo:@"  - Database error"];
+        return 1;
     }
 }
 
-- (void)executeUpdateHandleWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeUpdateHandleWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count < 2) {
         [context printError:@"Missing arguments: --update-handle <did> <handle>"];
         [context printInfo:@"\nUsage: pds account update-handle <did> <new-handle>"];
         [context printInfo:@"\nExample:"];
         [context printInfo:@"  pds account update-handle did:plc:abc123 newhandle.bsky.social"];
-        return;
+        return 1;
     }
 
     NSString *did = args[0];
@@ -869,7 +849,7 @@
         if (handleError.userInfo[NSLocalizedRecoverySuggestionErrorKey]) {
             [context printInfo:handleError.userInfo[NSLocalizedRecoverySuggestionErrorKey]];
         }
-        return;
+        return 1;
     }
 
     BOOL success = [PDSCLIAccountManager updateHandleWithContext:context did:did handle:normalizedHandle];
@@ -878,6 +858,7 @@
         PDS_LOG_INFO(@"Handle updated for account %@: %@", did, normalizedHandle);
         [context printInfo:@"Handle updated successfully"];
         [context printInfo:[NSString stringWithFormat:@"New handle: %@", normalizedHandle]];
+        return 0;
     } else {
         PDS_LOG_ERROR(@"Failed to update handle for account %@", did);
         [context printError:@"Failed to update handle"];
@@ -885,6 +866,7 @@
         [context printInfo:@"  - Account not found"];
         [context printInfo:@"  - Handle already in use by another account"];
         [context printInfo:@"  - Database error"];
+        return 1;
     }
 }
 

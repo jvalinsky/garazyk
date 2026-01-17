@@ -59,7 +59,7 @@
     return @[@"start", @"run", @"server"];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     NSInteger port = 2583;
     BOOL foreground = NO;
     NSString *logLevel = @"info";
@@ -92,7 +92,7 @@
             foreground = YES;
         } else if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
             [context printInfo:[self helpText]];
-            return;
+            return 0;
         }
     }
 
@@ -148,7 +148,7 @@
     HttpServer *httpServer = [HttpServer serverWithPort:(uint16_t)port];
     if (!httpServer) {
         printf("Failed to create HTTP server\n");
-        return;
+        return 0;
     }
 
     // Initialize PDS controller with specified data directory
@@ -159,7 +159,7 @@
                                                        userDatabaseSize:30000];
     if (!controller) {
         printf("Failed to initialize PDS controller\n");
-        return;
+        return 0;
     }
 
     // Configure Explore handler
@@ -172,7 +172,7 @@
     PDSDatabase *serviceDB = [controller serviceDatabaseWithError:&dbError];
     if (!serviceDB) {
         printf("Failed to initialize service database: %s\n", dbError.localizedDescription.UTF8String);
-        return;
+        return 0;
     }
     OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:serviceDB];
     oauthHandler.minter = controller.jwtMinter;
@@ -196,16 +196,8 @@
     }];
     PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered XRPC routes");
 
-    // Register route handlers (using old routing system temporarily)
-    [httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-    [httpServer addRoute:@"GET" path:@"/explore/api/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-    
-    // Wildcard for static assets (css, js, etc.)
-    [httpServer addRoute:@"GET" path:@"/explore/*" handler:^(HttpRequest *request, HttpResponse *response) {
+    // Explore UI + API
+    [httpServer addRoute:@"GET" path:@"/api/pds/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
     }];
 
@@ -313,11 +305,16 @@
         [response setJsonBody:doc];
     }];
 
+    // Explore / Web UI Wildcard - MUST BE LAST
+    [httpServer addRoute:@"GET" path:@"/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
+
     // Start HTTP server
     NSError *serverError = nil;
     if (![httpServer startWithError:&serverError]) {
         printf("Failed to start HTTP server: %s\n", [serverError.localizedDescription UTF8String]);
-        return;
+        return 0;
     }
 
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
@@ -327,7 +324,7 @@
     }
 
     printf("HTTP server started successfully on port %ld\n", (long)port);
-    printf("Web interface available at: http://%s:%ld/explore\n", [displayHost UTF8String], (long)port);
+    printf("Web interface available at: http://%s:%ld/\n", [displayHost UTF8String], (long)port);
 
     if (!foreground) {
         printf("Running in background...\n");
@@ -384,6 +381,7 @@
 
     [httpServer stop];
     printf("Server stopped.\n");
+    return 0;
 }
 
 @end

@@ -114,8 +114,9 @@
     return @[];
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     [context printInfo:[self usage]];
+    return 0;
 }
 
 @end
@@ -143,7 +144,7 @@
     return @"Show help for pds commands. If no command is specified, show general help.";
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count > 0) {
         NSString *commandName = args[0];
         id<PDSCLICommand> command = [[PDSCLIDispatcher sharedDispatcher] commandForName:commandName];
@@ -151,10 +152,12 @@
             [[PDSCLIDispatcher sharedDispatcher] printUsageForCommand:command];
         } else {
             [context printError:[NSString stringWithFormat:@"Unknown command: %@", commandName]];
+            return 1;
         }
     } else {
         [[PDSCLIDispatcher sharedDispatcher] printUsage];
     }
+    return 0;
 }
 
 @end
@@ -182,7 +185,7 @@
     return @"Show the version of the PDS software.";
 }
 
-- (void)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+- (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (context.jsonOutput) {
         [context printJSON:@{
             @"version": @"1.0.0",
@@ -192,6 +195,7 @@
     } else {
         printf("PDS Version 1.0.0 (debug build)\n");
     }
+    return 0;
 }
 
 @end
@@ -246,7 +250,7 @@
     [self.commands removeObjectForKey:name];
 }
 
-- (void)dispatchWithCommandName:(NSString *)commandName
+- (int)dispatchWithCommandName:(NSString *)commandName
                         arguments:(NSArray<NSString *> *)args
                          context:(PDSCLICommandContext *)context {
     id<PDSCLICommand> command = self.commands[commandName];
@@ -254,8 +258,7 @@
     if (!command) {
         [context printError:[NSString stringWithFormat:@"Unknown command: %@", commandName]];
         [self printUsage];
-        [NSException raise:@"PDSCLIUnknownCommandException" format:@"Unknown command: %@", commandName];
-        return;
+        return 1;
     }
 
     if (context.verbose) {
@@ -263,10 +266,10 @@
     }
 
     @try {
-        [command executeWithArguments:args context:context];
+        return [command executeWithArguments:args context:context];
     } @catch (NSException *exception) {
         [context printError:[NSString stringWithFormat:@"Command failed: %@", exception.reason]];
-        [NSException raise:@"PDSCLICommandFailedException" format:@"Command failed: %@", exception.reason];
+        return 1;
     }
 }
 

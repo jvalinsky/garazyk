@@ -88,6 +88,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.createSession. */
 - (void)registerComAtprotoServerCreateSession:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.getSession. */
+- (void)registerComAtprotoServerGetSession:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.createAccount. */
 - (void)registerComAtprotoServerCreateAccount:(XrpcMethodHandler)handler;
 

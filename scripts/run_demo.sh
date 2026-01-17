@@ -5,15 +5,25 @@ set -e
 cleanup() {
     echo "Stopping servers..."
     if [ -f plc.pid ]; then
-        kill $(cat plc.pid) || true
+        kill $(cat plc.pid) 2>/dev/null || true
         rm plc.pid
     fi
     if [ -f pds.pid ]; then
-        kill $(cat pds.pid) || true
+        kill $(cat pds.pid) 2>/dev/null || true
         rm pds.pid
     fi
+    # Also ensure no strays are left on these ports
+    pkill -f "atproto-plc.*2582" || true
+    pkill -f "september.*2583" || true
 }
 trap cleanup EXIT
+
+# Force cleanup of any existing stray servers before starting
+echo "Cleaning up any existing stray servers..."
+pkill -f "atproto-plc.*2582" || true
+pkill -f "september.*2583" || true
+rm -f plc.log pds.log
+sleep 1
 
 # Build paths
 PLC_BIN="./build/bin/atproto-plc"
@@ -31,7 +41,7 @@ fi
 
 # IMPORTANT: Clean previous data to ensure fresh DB and avoid migration issues if previous run failed halfway
 rm -rf "$DATA_DIR"
-mkdir -p "$DATA_DIR"
+mkdir -p "$DATA_DIR/service" # Pre-create service dir to be safe
 
 echo "Starting PLC server on port 2582..."
 "$PLC_BIN" --port 2582 > plc.log 2>&1 &
