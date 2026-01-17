@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVER="$SCRIPT_DIR/build/atprotopds"
+SERVER="$SCRIPT_DIR/../build/bin/september"
 PORT=2583
 BASE_URL="http://localhost:$PORT"
 SERVER_PID=""
@@ -37,7 +37,7 @@ cleanup() {
         wait "$SERVER_PID" 2>/dev/null || true
     fi
     # Also kill any stray servers on our port
-    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    pkill -f "september.*$PORT" 2>/dev/null || true
     rm -f "$DB_PATH" 2>/dev/null || true
 }
 
@@ -51,7 +51,7 @@ start_server() {
 
     info "Starting ATProto PDS server..."
     # Kill any existing server on our port
-    pkill -f "atprotopds.*$PORT" 2>/dev/null || true
+    pkill -f "september.*$PORT" 2>/dev/null || true
     sleep 1
     rm -f "$DB_PATH" 2>/dev/null || true
 

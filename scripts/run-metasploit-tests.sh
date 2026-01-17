@@ -27,9 +27,9 @@ else
     exit 1
 fi
 
-if ! pgrep -f "atprotopds-cli serve" > /dev/null; then
+if ! pgrep -f "september serve" > /dev/null; then
     echo -e "${RED}Error: PDS Server not running.${NC}"
-    echo "Please start it with: ./build/bin/atprotopds-cli serve --foreground &"
+    echo "Please start it with: ./build/bin/september serve --foreground &"
     exit 1
 fi
 
