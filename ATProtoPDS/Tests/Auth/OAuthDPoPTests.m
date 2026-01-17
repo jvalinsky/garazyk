@@ -1,14 +1,37 @@
 #import <XCTest/XCTest.h>
 #import "Auth/DPoPUtil.h"
 
-@interface OAuthDPoPTests : XCTestCase
+
+@interface OAuthDPoPTests : XCTestCase {
+    SecKeyRef _privateKey;
+    SecKeyRef _publicKey;
+}
 @end
 
 @implementation OAuthDPoPTests
 
+- (void)setUp {
+    [super setUp];
+    NSDictionary* attributes = @{
+        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
+        (id)kSecAttrKeySizeInBits: @256,
+        (id)kSecAttrIsPermanent: @NO
+    };
+    CFErrorRef error = NULL;
+    _privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
+    XCTAssertTrue(_privateKey != NULL, @"Failed to create private key: %@", error);
+    _publicKey = SecKeyCopyPublicKey(_privateKey);
+}
+
+- (void)tearDown {
+    if (_privateKey) CFRelease(_privateKey);
+    if (_publicKey) CFRelease(_publicKey);
+    [super tearDown];
+}
+
 - (void)testDPoPProofStructure {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/tokens" nonce:nil error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/tokens" nonce:nil key:_privateKey error:&error];
     
     XCTAssertNotNil(token, @"Should create token");
     XCTAssertNil(error, @"Should be no error");
@@ -31,11 +54,11 @@
 
 - (void)testDPoPHtmBinding {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://resource.example.org/protected" nonce:nil error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://resource.example.org/protected" nonce:nil key:_privateKey error:&error];
     XCTAssertNotNil(token);
     
     BOOL valid = [DPoPUtil verifyDPoP:token.jwt
-                        withPublicKey:NULL
+                        withPublicKey:_publicKey
                                method:@"GET"
                                   uri:@"https://resource.example.org/protected"
                                 nonce:nil
@@ -56,10 +79,10 @@
 
 - (void)testDPoPHtuBinding {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/a" nonce:nil error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/a" nonce:nil key:_privateKey error:&error];
     
     BOOL valid = [DPoPUtil verifyDPoP:token.jwt
-                        withPublicKey:NULL
+                        withPublicKey:_publicKey
                                method:@"POST"
                                   uri:@"https://server.example.com/b"
                                 nonce:nil
@@ -70,12 +93,12 @@
 - (void)testDPoPNonceChallenge {
     NSError *error = nil;
     NSString *nonce = @"random-nonce-value";
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.com" nonce:nonce error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.com" nonce:nonce key:_privateKey error:&error];
     
     XCTAssertNotNil(token);
     
     BOOL valid = [DPoPUtil verifyDPoP:token.jwt
-                        withPublicKey:NULL
+                        withPublicKey:_publicKey
                                method:@"POST"
                                   uri:@"https://server.com"
                                 nonce:nonce
@@ -105,7 +128,7 @@
 
 - (void)testDPoPTokenProperties {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"PUT" uri:@"https://api.example.com/resource/123" nonce:@"test-nonce" error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"PUT" uri:@"https://api.example.com/resource/123" nonce:@"test-nonce" key:_privateKey error:&error];
     
     XCTAssertNotNil(token);
     XCTAssertEqualObjects(token.htm, @"PUT");
@@ -118,7 +141,7 @@
 
 - (void)testDPoPPayloadClaims {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"DELETE" uri:@"https://server.com/item/1" nonce:nil error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"DELETE" uri:@"https://server.com/item/1" nonce:nil key:_privateKey error:&error];
     
     NSDictionary *payload = [token payload];
     XCTAssertEqualObjects(payload[@"htm"], @"DELETE");
@@ -141,7 +164,7 @@
 
 - (void)testDPoPWithAthClaim {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil key:_privateKey error:&error];
     token.ath = @"access-token-hash";
     
     NSDictionary *payload = [token payload];
@@ -150,7 +173,7 @@
 
 - (void)testDPoPNoNonce {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil key:_privateKey error:&error];
     
     XCTAssertNotNil(token);
     XCTAssertNil(token.nonce);
