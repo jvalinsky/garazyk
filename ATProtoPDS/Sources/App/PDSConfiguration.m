@@ -41,6 +41,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _debugVerboseLogging = YES;
         _debugInMemoryDatabases = NO;
         _debugResetOnStartup = NO;
+        _useNewRepositoryImplementation = NO;
 
         _userDatabasePoolMaxSize = 100;
         _serviceDatabasePoolMaxSize = 10;
@@ -149,6 +150,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (debug[@"verbose_logging"]) _debugVerboseLogging = [self boolFromEnv:@"PDS_DEBUG_VERBOSE" default:[debug[@"verbose_logging"] boolValue]];
         if (debug[@"in_memory_databases"]) _debugInMemoryDatabases = [self boolFromEnv:@"PDS_DEBUG_IN_MEMORY" default:[debug[@"in_memory_databases"] boolValue]];
         if (debug[@"reset_on_startup"]) _debugResetOnStartup = [self boolFromEnv:@"PDS_DEBUG_RESET" default:[debug[@"reset_on_startup"] boolValue]];
+        if (debug[@"use_new_repository"]) _useNewRepositoryImplementation = [self boolFromEnv:@"PDS_USE_NEW_REPO" default:[debug[@"use_new_repository"] boolValue]];
     }
 
     NSDictionary *database = config[@"database"];

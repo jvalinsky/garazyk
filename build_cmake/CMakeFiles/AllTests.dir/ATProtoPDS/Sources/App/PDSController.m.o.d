@@ -761,6 +761,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/NSUserScriptTask.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/FoundationLegacySwiftCompatibility.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.h \
@@ -789,6 +790,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/RateLimiter.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSConfiguration.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSAccountService.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSBlobService.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRepositoryService.h \
@@ -796,6 +798,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreHandler.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/os/log.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/mach-o/loader.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/architecture/byte_order.h \

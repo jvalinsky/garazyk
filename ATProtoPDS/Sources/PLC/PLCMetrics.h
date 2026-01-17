@@ -33,7 +33,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordCacheMiss;
 
 - (void)recordMemcacheHit;
+- (void)recordMemcacheHit;
 - (void)recordMemcacheMiss;
+
+- (void)recordRequest;
+- (void)recordError;
 
 - (void)recordOperation:(NSString *)operationType;
 - (void)recordVerificationSuccess;
@@ -49,6 +53,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) int64_t memcacheMisses;
 @property (nonatomic, readonly) int64_t verificationSuccesses;
 @property (nonatomic, readonly) int64_t verificationFailures;
+@property (nonatomic, readonly) int64_t totalRequests;
+@property (nonatomic, readonly) int64_t totalErrors;
 
 @end
 

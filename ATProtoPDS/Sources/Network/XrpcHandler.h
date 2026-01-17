@@ -199,6 +199,12 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for app.bsky.actor.putPreferences. */
 - (void)registerAppBskyActorPutPreferences:(XrpcMethodHandler)handler;
 
+/*! Registers handler for app.bsky.actor.searchActors. */
+- (void)registerAppBskyActorSearchActors:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.actor.searchActorsTypeahead. */
+- (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler;
+
 /*! Registers handler for app.bsky.user.getUserStats. */
 - (void)registerAppBskyUserGetUserStats:(XrpcMethodHandler)handler;
 

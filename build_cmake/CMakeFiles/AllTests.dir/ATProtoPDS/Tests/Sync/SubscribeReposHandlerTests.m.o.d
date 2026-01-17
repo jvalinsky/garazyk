@@ -1329,6 +1329,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/SubscribeReposHandler.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/RepoCommit.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/TID.h \
@@ -1336,4 +1337,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketConnection.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransport.h \
-  /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketServer.h
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketServer.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/EventFormatter.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Service/ServiceDatabases.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.h

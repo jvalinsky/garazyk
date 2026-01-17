@@ -1,4 +1,5 @@
 /Users/jack/Software/objpds/build_cmake/CMakeFiles/september.dir
+/Users/jack/Software/objpds/build_cmake/CMakeFiles/atproto-plc.dir
 /Users/jack/Software/objpds/build_cmake/CMakeFiles/AllTests.dir
 /Users/jack/Software/objpds/build_cmake/CMakeFiles/run-fuzzers-limited.dir
 /Users/jack/Software/objpds/build_cmake/CMakeFiles/run-fuzzers-extended.dir

@@ -766,6 +766,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransport.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/EventFormatter.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/Firehose.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/RepoCommit.h \
@@ -776,6 +777,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Pool/DatabasePool.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Service/ServiceDatabases.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/os/log.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/mach-o/loader.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/architecture/byte_order.h \

@@ -228,6 +228,14 @@
     [self registerMethod:@"app.bsky.actor.putPreferences" handler:handler];
 }
 
+- (void)registerAppBskyActorSearchActors:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.actor.searchActors" handler:handler];
+}
+
+- (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.actor.searchActorsTypeahead" handler:handler];
+}
+
 - (void)registerAppBskyFeedGetTimeline:(XrpcMethodHandler)handler {
     [self registerMethod:@"app.bsky.feed.getTimeline" handler:handler];
 }

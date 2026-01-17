@@ -763,6 +763,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRequest.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpResponse.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/BlobStorage.h \

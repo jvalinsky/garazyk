@@ -95,6 +95,8 @@
 - (void)testBroadcastPersistsEvent {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Event persisted"];
     
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    
     [self.handler broadcastIdentityChange:@"did:plc:test_persist" handle:@"test.bsky.social"];
     
     // Wait a bit for async dispatch
@@ -112,12 +114,17 @@
         XCTAssertEqualObjects(event[@"type"], @"identity");
         XCTAssertEqualObjects(event[@"seq"], @(maxSeq));
         
-        // Decode data to verify content
+        // Decode stream event data using proper decoder
         NSData *data = event[@"data"];
-        id payload = [ATProtoCBORSerialization JSONObjectWithData:data error:nil];
+        NSInteger op = 0;
+        NSString *msgType = nil;
+        NSDictionary *payload = [formatter decodeEventFromData:data op:&op msgType:&msgType error:&error];
+        XCTAssertNil(error);
         XCTAssertNotNil(payload);
-        XCTAssertEqualObjects(payload[@"kind"], @"identity");
+        XCTAssertEqual(op, 1); // kXRPCStreamOpMessage
+        XCTAssertEqualObjects(msgType, @"#identity");
         XCTAssertEqualObjects(payload[@"did"], @"did:plc:test_persist");
+        XCTAssertEqualObjects(payload[@"handle"], @"test.bsky.social");
         
         [expectation fulfill];
     });
@@ -126,6 +133,8 @@
 }
 
 - (void)testReplayWithCursor {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    
     // 1. Create some events
     [self.handler broadcastInfo:@"info1" message:@"msg1"];
     [self.handler broadcastInfo:@"info2" message:@"msg2"];
@@ -142,13 +151,6 @@
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     conn.mockQueryParams = @{@"cursor": @"1"};
     
-    // Using performSelector to call private delegate method for testing
-    // or we can manually invoke the logic if we exposed it. 
-    // Ideally we'd invoke webSocketServer:didAcceptConnection:
-    
-    // Wait, didAcceptConnection calls sendInitialRepositoryStateToConnection
-    // which calls replayEventsAfterCursor
-    
     [(id<WebSocketServerDelegate>)self.handler webSocketServer:self.handler.webSocketServer didAcceptConnection:conn];
     
     // Wait for async replay
@@ -158,13 +160,25 @@
     });
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
     
-    // Verify received messages
+    // Verify received messages using proper stream decoder
     XCTAssertEqual(conn.sentMessages.count, 2, "Should receive 2 events (info2, info3)");
     
     if (conn.sentMessages.count >= 2) {
-        id msg1 = [ATProtoCBORSerialization JSONObjectWithData:conn.sentMessages[0] error:nil];
-        id msg2 = [ATProtoCBORSerialization JSONObjectWithData:conn.sentMessages[1] error:nil];
+        NSInteger op1 = 0, op2 = 0;
+        NSString *type1 = nil;
+        NSString *type2 = nil;
+        NSError *error = nil;
         
+        NSDictionary *msg1 = [formatter decodeEventFromData:conn.sentMessages[0] op:&op1 msgType:&type1 error:&error];
+        NSDictionary *msg2 = [formatter decodeEventFromData:conn.sentMessages[1] op:&op2 msgType:&type2 error:&error];
+        
+        XCTAssertNil(error);
+        XCTAssertNotNil(msg1);
+        XCTAssertNotNil(msg2);
+        XCTAssertEqual(op1, 1); // kXRPCStreamOpMessage
+        XCTAssertEqual(op2, 1);
+        XCTAssertEqualObjects(type1, @"#info");
+        XCTAssertEqualObjects(type2, @"#info");
         XCTAssertEqualObjects(msg1[@"info"], @"info2");
         XCTAssertEqualObjects(msg2[@"info"], @"info3");
     }

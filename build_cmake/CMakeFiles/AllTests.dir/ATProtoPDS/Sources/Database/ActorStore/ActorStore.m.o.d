@@ -761,8 +761,31 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/NSUserScriptTask.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/FoundationLegacySwiftCompatibility.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Utils/PDSSQLiteUtils.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Compat/PDSTypes.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LocalAuthentication.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LABase.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LABiometryType.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAPublicDefines.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LACompanionType.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAContext.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LADomainState.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAEnvironment.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAEnvironmentState.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAEnvironmentMechanism.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAEnvironmentMechanismBiometry.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAEnvironmentMechanismCompanion.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAEnvironmentMechanismUserPassword.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAError.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAPersistedRight.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LARight.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAPrivateKey.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LAPublicKey.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LARequirement.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LARightStore.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Headers/LASecret.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonCrypto.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonCryptor.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonCryptoError.h \
@@ -773,4 +796,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Secp256k1.h \
-  /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.h
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStoreInternal.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.h

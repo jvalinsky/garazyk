@@ -1328,5 +1328,6 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework/Headers/XCTMetric+UIAutomation.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h

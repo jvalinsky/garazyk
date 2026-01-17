@@ -761,4 +761,5 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/NSUserScriptTask.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Headers/FoundationLegacySwiftCompatibility.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIDefinitions.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.h

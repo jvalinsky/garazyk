@@ -246,7 +246,8 @@
     XCTAssertNil(error);
     XCTAssertNotNil(cbor);
     
-    NSData *expectedCBOR = [[NSData alloc] initWithBase64EncodedString:@"pmRwcmVvd2h5LmJza3kuc29jaWFsZ3NlcnZpY2VrYnNreS5zb2NpYWxqc2lnbmluZ0tleXg5ZGlkOmtleTp6RG5hZVJTWXM3YzJOcGNOQTVOUkFVcVM4RENrTFdEeU5MbkFUaMjhENnc3bm83aFhirelZlcnlSZXlLZXl4OWRpZDprZXk6ekRuYWVSU1lzN2MyTnBjTkE1TlJBVXFThDcGwpX3NpZy5iMzV3aS1IUWdOV1dGbV9HMHJ1WFVLNlhDSDV5MmxHUXRYc2pYRGZycUZRPT0" options:0];
+    // Using Base64 string from indigo/plc/client_test.go's EncodedOp (with padding added for NSData)
+    NSData *expectedCBOR = [[NSData alloc] initWithBase64EncodedString:@"pmRwcmV29mR0eXBlZmNyZWF0ZWZoYW5kbGVvd2h5LmJza3kuc29jaWFsZ3NlcnZpY2VrYnNreS5zb2NpYWxqc2lnbmluZ0tleXg5ZGlkOmtleTp6RG5hZVJTWXM3YzJOcGNOQTVOUkFVcVM4RENrTFdEeU5MbkFUaTI4RDZ3N25vN2hYa3JlY292ZXJ5S2V5eDlkaWQ6a2V5OnpEbmFlUlNZczdjMk5wY05BNU5SQVVxUzhEQ2tMV0R5TkxuQVRpMjhENnc3bm83aFg=" options:0];
     
     XCTAssertEqualObjects(cbor, expectedCBOR, @"CBOR encoding should match reference test vector");
 }
@@ -263,7 +264,7 @@
     
     NSString *calculatedDID = [PLCOperation calculateDIDForData:opData];
     
-    XCTAssertEqualObjects(calculatedDID, @"did:plc:3c5huvwmxxgrmkq2w2lk7pgq");
+    XCTAssertEqualObjects(calculatedDID, @"did:plc:taybjzkanfb23appusr452ga");
 }
 
 - (void)testDIDCalculationWithPLCOperation {
@@ -279,7 +280,7 @@
     NSString *calculatedDID = [PLCOperation calculateDIDForData:opData];
     
     XCTAssertTrue([calculatedDID hasPrefix:@"did:plc:"], @"DID should have did:plc: prefix");
-    XCTAssertEqual(calculatedDID.length, 31, @"DID should be 31 characters (did:plc: + 24 char hash)");
+    XCTAssertEqual(calculatedDID.length, 32, @"DID should be 32 characters (did:plc: + 24 char hash)");
 }
 
 - (void)testSignatureVerificationTestVector {
@@ -287,15 +288,17 @@
     XCTAssertNotNil(keyPair, @"Key pair should be generated");
     
     NSData *message = [@"test message" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *signature = [keyPair signHash:message error:nil];
+    NSData *hash = [CryptoUtils sha256:message];
+    NSData *signature = [keyPair signHash:hash error:nil];
     XCTAssertNotNil(signature, @"Signature should be created");
     XCTAssertEqual(signature.length, 64, @"Signature should be 64 bytes (R || S)");
     
-    BOOL verified = [[Secp256k1 shared] verifySignature:signature forHash:message withPublicKey:keyPair.publicKey error:nil];
+    BOOL verified = [[Secp256k1 shared] verifySignature:signature forHash:hash withPublicKey:keyPair.publicKey error:nil];
     XCTAssertTrue(verified, @"Signature should verify");
     
     NSData *wrongMessage = [@"wrong message" dataUsingEncoding:NSUTF8StringEncoding];
-    BOOL wrongVerified = [[Secp256k1 shared] verifySignature:signature forHash:wrongMessage withPublicKey:keyPair.publicKey error:nil];
+    NSData *wrongHash = [CryptoUtils sha256:wrongMessage];
+    BOOL wrongVerified = [[Secp256k1 shared] verifySignature:signature forHash:wrongHash withPublicKey:keyPair.publicKey error:nil];
     XCTAssertFalse(wrongVerified, @"Wrong message should not verify");
 }
 

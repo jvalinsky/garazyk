@@ -114,10 +114,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.s: cmake_forc
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSAdminHandler.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/AppDelegate.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/AppDelegate.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.i: cmake_force
@@ -131,7 +145,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreCache.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreCache.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.i: cmake_force
@@ -145,7 +159,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreHandler.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Explore/ExploreHandler.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.i: cmake_force
@@ -159,7 +173,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.s: cmake
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.i: cmake_force
@@ -170,10 +184,66 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.s: c
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSConfiguration.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSConfiguration.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.i: cmake_force
@@ -187,7 +257,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.i: cmake_force
@@ -201,7 +271,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSAccountService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSAccountService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.i: cmake_force
@@ -215,7 +285,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.s: c
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSBlobService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSBlobService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.i: cmake_force
@@ -229,7 +299,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSBlobService.m.s: cmak
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRecordService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.i: cmake_force
@@ -243,7 +313,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRecordService.m.s: cm
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.i: cmake_force
@@ -257,7 +327,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSRepositoryService.m.s
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/ActorService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/ActorService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.i: cmake_force
@@ -271,7 +341,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/ActorService.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/FeedService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/FeedService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.i: cmake_force
@@ -285,7 +355,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/FeedService.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/NotificationService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/AppView/NotificationService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.i: cmake_force
@@ -299,7 +369,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/AppView/NotificationService.m.s: cmak
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Base32Utils.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Base32Utils.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.i: cmake_force
@@ -313,7 +383,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Base32Utils.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/CryptoUtils.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/CryptoUtils.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.i: cmake_force
@@ -327,7 +397,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/CryptoUtils.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/DPoPUtil.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/DPoPUtil.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.i: cmake_force
@@ -341,7 +411,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/DPoPUtil.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/JWT.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/JWT.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.i: cmake_force
@@ -355,7 +425,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/JWT.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyManager.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyManager.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.i: cmake_force
@@ -369,7 +439,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyManager.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyRotationManager.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/KeyRotationManager.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.i: cmake_force
@@ -383,7 +453,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/KeyRotationManager.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.i: cmake_force
@@ -397,7 +467,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2Handler.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuth2Handler.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.i: cmake_force
@@ -411,7 +481,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuth2Handler.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.i: cmake_force
@@ -425,7 +495,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthServerMetadata.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthSession.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/OAuthSession.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.i: cmake_force
@@ -439,7 +509,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/OAuthSession.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/PKCEUtil.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/PKCEUtil.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.i: cmake_force
@@ -453,7 +523,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/PKCEUtil.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Secp256k1.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Secp256k1.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.i: cmake_force
@@ -467,7 +537,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Secp256k1.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Session.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Session.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.i: cmake_force
@@ -481,7 +551,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/Session.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPGenerator.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPGenerator.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.i: cmake_force
@@ -495,7 +565,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPGenerator.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/TOTPService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.i: cmake_force
@@ -509,7 +579,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/TOTPService.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnDomain.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnDomain.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.i: cmake_force
@@ -523,7 +593,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnDomain.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.i: cmake_force
@@ -537,7 +607,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/WebAuthnVerifier.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/YubiKeyOATH.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/YubiKeyOATH.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.i: cmake_force
@@ -551,7 +621,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/YubiKeyOATH.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/BlobStorage.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/BlobStorage.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.i: cmake_force
@@ -565,7 +635,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/BlobStorage.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/MimeTypeValidator.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/MimeTypeValidator.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.i: cmake_force
@@ -579,7 +649,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/MimeTypeValidator.m.s: cmake_for
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.i: cmake_force
@@ -593,7 +663,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.i: cmake_force
@@ -607,7 +677,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.i: cmake_force
@@ -621,7 +691,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.i: cmake_force
@@ -635,7 +705,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIHealthCommand.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.i: cmake_force
@@ -649,7 +719,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.i: cmake_force
@@ -663,7 +733,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLINukeCommand.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.i: cmake_force
@@ -677,7 +747,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.i: cmake_force
@@ -691,7 +761,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.s: cmake_for
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoBase32.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoBase32.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.i: cmake_force
@@ -705,7 +775,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.i: cmake_force
@@ -716,10 +786,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.s: cm
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_52) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoValidator.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_53) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoValidator.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.i: cmake_force
@@ -733,7 +817,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_54) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.i: cmake_force
@@ -747,7 +831,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/DID.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_55) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/DID.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.i: cmake_force
@@ -758,10 +842,66 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/DID.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_56) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_57) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/PDSServiceContainer.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_58) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_59) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/TID.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_60) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/TID.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.i: cmake_force
@@ -775,7 +915,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_61) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.i: cmake_force
@@ -786,10 +926,38 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.s: c
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_62) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_63) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_52) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_64) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.i: cmake_force
@@ -803,7 +971,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManage
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_53) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_65) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.i: cmake_force
@@ -817,7 +985,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_54) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_66) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.i: cmake_force
@@ -828,10 +996,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSDatabase.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_67) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Pool/DatabasePool.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_55) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_68) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Pool/DatabasePool.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.i: cmake_force
@@ -845,7 +1027,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.s: cmake
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_56) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_69) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.i: cmake_force
@@ -859,7 +1041,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_57) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_70) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.i: cmake_force
@@ -873,7 +1055,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.s:
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_58) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_71) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.i: cmake_force
@@ -887,7 +1069,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Service/ServiceDatabases.m.s
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_59) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_72) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.i: cmake_force
@@ -901,7 +1083,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Debug/PDSLogger.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Federation/FederationClient.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_60) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_73) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Federation/FederationClient.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.i: cmake_force
@@ -915,7 +1097,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Federation/FederationClient.m.s: cmak
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_61) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_74) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.i: cmake_force
@@ -929,7 +1111,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.m.s: 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/HandleResolver.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_62) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_75) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/HandleResolver.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.i: cmake_force
@@ -943,7 +1125,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Identity/HandleResolver.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_63) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_76) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.i: cmake_force
@@ -957,7 +1139,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconConstraints.m.s
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_64) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_77) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.i: cmake_force
@@ -971,7 +1153,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconDef.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_65) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_78) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.i: cmake_force
@@ -985,7 +1167,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconError.m.s: cmak
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_66) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_79) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.i: cmake_force
@@ -999,7 +1181,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m.s: c
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_67) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_80) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.i: cmake_force
@@ -1013,7 +1195,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconSchema.m.s: cma
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_68) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_81) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.i: cmake_force
@@ -1027,7 +1209,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m.s: 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Metrics/PDSMetrics.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_69) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_82) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Metrics/PDSMetrics.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.i: cmake_force
@@ -1041,7 +1223,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Metrics/PDSMetrics.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpBufferPool.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_70) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_83) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpBufferPool.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.i: cmake_force
@@ -1055,7 +1237,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpBufferPool.m.s: cmake_for
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_71) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_84) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.i: cmake_force
@@ -1069,7 +1251,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpChunkedBodyParser.m.s: cm
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRequest.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_72) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_85) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRequest.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.i: cmake_force
@@ -1083,7 +1265,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRequest.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpResponse.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_73) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_86) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpResponse.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.i: cmake_force
@@ -1097,7 +1279,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpResponse.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouteTrie.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_74) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_87) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouteTrie.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.i: cmake_force
@@ -1111,7 +1293,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouteTrie.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouter.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_75) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_88) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpRouter.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.i: cmake_force
@@ -1125,7 +1307,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpRouter.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpServer.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_76) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_89) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpServer.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.i: cmake_force
@@ -1139,7 +1321,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpServer.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpStreamingBody.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_77) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_90) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/HttpStreamingBody.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.i: cmake_force
@@ -1153,7 +1335,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreamingBody.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/RateLimiter.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_78) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_91) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/RateLimiter.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.i: cmake_force
@@ -1167,7 +1349,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/SSLPinningManager.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_79) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_92) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/SSLPinningManager.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.i: cmake_force
@@ -1181,7 +1363,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_80) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_93) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.i: cmake_force
@@ -1192,10 +1374,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.s: 
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_94) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XRPCError.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_81) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_95) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.i: cmake_force
@@ -1209,7 +1405,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_82) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_96) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.i: cmake_force
@@ -1220,10 +1416,108 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.s: cmake
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_97) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCAuditor.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_98) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_99) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMetrics.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_100) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCMockStore.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_101) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_102) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCPersistentStore.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_103) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCServer.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CAR.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_83) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_104) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CAR.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.i: cmake_force
@@ -1237,7 +1531,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CBOR.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_84) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_105) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/CBOR.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.i: cmake_force
@@ -1251,7 +1545,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MST.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_85) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_106) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MST.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.i: cmake_force
@@ -1265,7 +1559,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MSTPersistence.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_86) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_107) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/MSTPersistence.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.i: cmake_force
@@ -1279,7 +1573,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/RepoCommit.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_87) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_108) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Repository/RepoCommit.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.i: cmake_force
@@ -1293,7 +1587,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSAuthzManager.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_88) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_109) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSAuthzManager.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.i: cmake_force
@@ -1304,10 +1598,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.s: cmake_f
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSAuthzManager.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_110) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m > CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSInputValidator.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_89) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_111) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Security/PDSInputValidator.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.i: cmake_force
@@ -1321,7 +1629,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.s: cmake
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Services/AdminService.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_90) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_112) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Services/AdminService.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.i: cmake_force
@@ -1335,7 +1643,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/EventFormatter.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_91) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_113) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/EventFormatter.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.i: cmake_force
@@ -1349,7 +1657,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/Firehose.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_92) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_114) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/Firehose.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.i: cmake_force
@@ -1363,7 +1671,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/Firehose.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/RelayClient.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_93) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_115) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/RelayClient.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.i: cmake_force
@@ -1377,7 +1685,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/RelayClient.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_94) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_116) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.i: cmake_force
@@ -1391,7 +1699,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/SubscribeReposHandler.m.s: cmake
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketConnection.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_95) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_117) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketConnection.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.i: cmake_force
@@ -1405,7 +1713,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketConnection.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketServer.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_96) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_118) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Sync/WebSocketServer.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.i: cmake_force
@@ -1419,7 +1727,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/WebSocketServer.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_97) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_119) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.i: cmake_force
@@ -1433,7 +1741,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m.s:
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_98) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_120) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.i: cmake_force
@@ -1447,7 +1755,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m.s: c
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o: /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_99) "Building C object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_121) "Building C object CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.o -c /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.i: cmake_force
@@ -1461,7 +1769,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.c.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_100) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_122) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.i: cmake_force
@@ -1475,7 +1783,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminMiddlewareTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Admin/AdminServiceTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_101) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_123) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Admin/AdminServiceTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.i: cmake_force
@@ -1489,7 +1797,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/ExploreCacheTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_102) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_124) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/ExploreCacheTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.i: cmake_force
@@ -1503,7 +1811,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/ExploreHandlerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_103) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_125) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/ExploreHandlerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.i: cmake_force
@@ -1517,7 +1825,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_104) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_126) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.i: cmake_force
@@ -1528,10 +1836,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.s: cmake_fo
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_127) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/PDSConfigurationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_105) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_128) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/PDSConfigurationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.i: cmake_force
@@ -1545,7 +1867,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_106) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_129) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.i: cmake_force
@@ -1556,10 +1878,80 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.s
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_130) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_131) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/ActorServiceTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_132) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/ActorServiceTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/ActorServiceTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/ActorServiceTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/FeedServiceTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_133) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/FeedServiceTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/FeedServiceTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/FeedServiceTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/NotificationServiceTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_134) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/NotificationServiceTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/NotificationServiceTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/AppView/NotificationServiceTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/CryptoTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_107) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_135) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/CryptoTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.i: cmake_force
@@ -1573,7 +1965,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/JWTTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_108) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_136) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/JWTTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.i: cmake_force
@@ -1587,7 +1979,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/KeyRotationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_109) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_137) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/KeyRotationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.i: cmake_force
@@ -1601,7 +1993,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_110) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_138) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.i: cmake_force
@@ -1615,7 +2007,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2EndpointTests.m.s: cmake_for
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_111) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_139) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.i: cmake_force
@@ -1629,7 +2021,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuth2Tests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_112) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_140) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuth2Tests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.i: cmake_force
@@ -1643,7 +2035,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_113) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_141) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.i: cmake_force
@@ -1657,7 +2049,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthPKCETests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_114) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_142) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthPKCETests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.i: cmake_force
@@ -1668,10 +2060,38 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthPKCETests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_143) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthSessionTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_144) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthSessionTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthSessionTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/OAuthSessionTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/SessionStoreTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_115) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_145) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/SessionStoreTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.i: cmake_force
@@ -1685,7 +2105,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/TOTPTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_116) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_146) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/TOTPTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.i: cmake_force
@@ -1699,7 +2119,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_117) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_147) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.i: cmake_force
@@ -1713,7 +2133,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_118) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_148) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.i: cmake_force
@@ -1727,7 +2147,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/BlobStorageTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_119) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_149) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/BlobStorageTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.i: cmake_force
@@ -1741,7 +2161,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/BlobXrpcTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_120) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_150) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/BlobXrpcTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.i: cmake_force
@@ -1755,7 +2175,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_121) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_151) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.i: cmake_force
@@ -1766,10 +2186,38 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.s: cmake_
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_152) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_153) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_122) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_154) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.i: cmake_force
@@ -1783,7 +2231,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLITests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_123) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_155) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLITests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.i: cmake_force
@@ -1794,10 +2242,94 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CLI/PDSCLITests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_156) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_157) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_158) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_159) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_160) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_161) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoCoreTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_124) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_162) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoCoreTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.i: cmake_force
@@ -1808,10 +2340,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoCoreTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoErrorTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_163) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoErrorTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoErrorTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ATProtoErrorTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/DIDValidationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_125) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_164) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/DIDValidationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.i: cmake_force
@@ -1825,7 +2371,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/IdentifierTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_126) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_165) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/IdentifierTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.i: cmake_force
@@ -1836,10 +2382,52 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/IdentifierTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_166) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_167) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ProtocolCompileTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_168) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ProtocolCompileTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ProtocolCompileTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/ProtocolCompileTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/RecordPathValidationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_127) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_169) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Core/RecordPathValidationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.i: cmake_force
@@ -1853,7 +2441,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.s: cma
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_128) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_170) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.i: cmake_force
@@ -1867,7 +2455,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.s
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_129) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_171) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.i: cmake_force
@@ -1881,7 +2469,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationT
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_130) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_172) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.i: cmake_force
@@ -1895,7 +2483,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabas
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_131) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_173) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.i: cmake_force
@@ -1909,7 +2497,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegra
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_132) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_174) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.i: cmake_force
@@ -1920,10 +2508,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegra
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_175) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/PDSControllerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_133) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_176) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/PDSControllerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.i: cmake_force
@@ -1937,7 +2539,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_134) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_177) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.i: cmake_force
@@ -1951,7 +2553,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.s: cm
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_135) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_178) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.i: cmake_force
@@ -1965,7 +2567,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_136) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_179) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.i: cmake_force
@@ -1979,7 +2581,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerformanceTests.m.s: cm
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Federation/FederationClientTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_137) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_180) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Federation/FederationClientTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.i: cmake_force
@@ -1993,7 +2595,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.s: c
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_138) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_181) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.i: cmake_force
@@ -2007,7 +2609,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/DIDResolverTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_139) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_182) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/DIDResolverTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.i: cmake_force
@@ -2018,10 +2620,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.s: cmake_fo
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/DIDResolverTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_183) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_140) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_184) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.i: cmake_force
@@ -2032,10 +2648,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.s: cmake
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Identity/HandleResolverTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_185) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_141) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_186) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.i: cmake_force
@@ -2049,7 +2679,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.s: cma
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_142) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_187) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.i: cmake_force
@@ -2063,7 +2693,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_143) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_188) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.i: cmake_force
@@ -2077,7 +2707,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_144) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_189) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.i: cmake_force
@@ -2091,7 +2721,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpChunkedBodyParserTests.m.s:
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_145) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_190) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.i: cmake_force
@@ -2105,7 +2735,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRequestParsingTests.m.s: cm
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpResponseTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_146) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_191) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpResponseTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.i: cmake_force
@@ -2119,7 +2749,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpResponseTests.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_147) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_192) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.i: cmake_force
@@ -2133,7 +2763,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouteTrieTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpRouterTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_148) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_193) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpRouterTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.i: cmake_force
@@ -2147,7 +2777,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpRouterTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpServerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_149) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_194) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpServerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.i: cmake_force
@@ -2161,7 +2791,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpServerTests.m.s: cmake_forc
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_150) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_195) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.i: cmake_force
@@ -2175,7 +2805,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpStreamingBodyTests.m.s: cma
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_151) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_196) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m.i: cmake_force
@@ -2189,7 +2819,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportLinuxTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_152) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_197) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.i: cmake_force
@@ -2203,7 +2833,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m.s: c
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/RateLimiterTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_153) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_198) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/RateLimiterTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.i: cmake_force
@@ -2217,7 +2847,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.s: cmake_for
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/RateLimitingTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_154) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_199) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/RateLimitingTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.i: cmake_force
@@ -2231,7 +2861,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_155) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_200) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.i: cmake_force
@@ -2242,10 +2872,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XRPCErrorTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_201) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XRPCErrorTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XRPCErrorTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XRPCErrorTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_156) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_202) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.i: cmake_force
@@ -2259,7 +2903,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.s: cmake
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_157) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_203) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.i: cmake_force
@@ -2270,10 +2914,80 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.s: cm
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCAuditorTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_204) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCAuditorTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCAuditorTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCAuditorTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_205) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCOperationTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_206) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCOperationTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCOperationTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCOperationTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCServerTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_207) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCServerTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCServerTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCServerTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.s
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCStoreTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_208) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCStoreTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCStoreTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/PLC/PLCStoreTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/CARInteropTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_158) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_209) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/CARInteropTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.i: cmake_force
@@ -2287,7 +3001,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/MSTInteropTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_159) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_210) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/MSTInteropTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.i: cmake_force
@@ -2301,7 +3015,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_160) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_211) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.i: cmake_force
@@ -2315,7 +3029,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.s: cma
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/RepoCommitTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_161) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_212) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Repository/RepoCommitTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.i: cmake_force
@@ -2329,7 +3043,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/RepoCommitTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/CBORSecurityTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_162) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_213) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/CBORSecurityTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.i: cmake_force
@@ -2343,7 +3057,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/CBORSecurityTests.m.s: cmake_f
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_163) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_214) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.i: cmake_force
@@ -2357,7 +3071,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolverSecurityTests.m.
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/JWTSecurityTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_164) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_215) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/JWTSecurityTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.i: cmake_force
@@ -2371,7 +3085,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.s: cmake_fo
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_165) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_216) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.i: cmake_force
@@ -2385,7 +3099,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.s: cmak
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_166) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_217) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.i: cmake_force
@@ -2396,10 +3110,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.s: cm
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/EventFormatterTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_218) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/EventFormatterTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/EventFormatterTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/EventFormatterTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/FirehoseTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_167) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_219) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/FirehoseTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.i: cmake_force
@@ -2413,7 +3141,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/RelayClientTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_168) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_220) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/RelayClientTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.i: cmake_force
@@ -2427,7 +3155,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_169) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_221) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.i: cmake_force
@@ -2441,7 +3169,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.s: cm
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_170) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_222) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.i: cmake_force
@@ -2452,10 +3180,24 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.s: cmak
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.s"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.s
 
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o: CMakeFiles/AllTests.dir/flags.make
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketServerTests.m
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_223) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketServerTests.m
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing OBJC source to CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.i"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -E /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketServerTests.m > CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.i
+
+CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling OBJC source to assembly CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.s"
+	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) $(OBJC_FLAGS) -S /Users/jack/Software/objpds/ATProtoPDS/Tests/Sync/WebSocketServerTests.m -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.s
+
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_171) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_224) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.i: cmake_force
@@ -2469,7 +3211,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.s: cma
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_172) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_225) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.i: cmake_force
@@ -2483,7 +3225,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.s: cmake_
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_173) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_226) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.i: cmake_force
@@ -2497,7 +3239,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.s: cmake_force
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_174) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_227) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.i: cmake_force
@@ -2511,7 +3253,7 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcInputValidationTests.m.s: cmak
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o: CMakeFiles/AllTests.dir/flags.make
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o: /Users/jack/Software/objpds/ATProtoPDS/Tests/test_main.m
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o: CMakeFiles/AllTests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_175) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_228) "Building OBJC object CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o"
 	/usr/bin/cc $(OBJC_DEFINES) $(OBJC_INCLUDES) -x objective-c $(OBJC_FLAGS) -MD -MT CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o -MF CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o.d -o CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.o -c /Users/jack/Software/objpds/ATProtoPDS/Tests/test_main.m
 
 CMakeFiles/AllTests.dir/ATProtoPDS/Tests/test_main.m.i: cmake_force
@@ -2527,10 +3269,15 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o" \
@@ -2570,14 +3317,22 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o" \
@@ -2604,14 +3359,23 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o" \
@@ -2628,8 +3392,14 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o" \
@@ -2638,6 +3408,8 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o" \
@@ -2645,17 +3417,30 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o" \
@@ -2663,7 +3448,9 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o" \
@@ -2679,8 +3466,14 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o" \
@@ -2690,10 +3483,12 @@ AllTests_OBJECTS = \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o" \
+"CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o" \
 "CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o" \
@@ -2706,10 +3501,15 @@ AllTests_EXTERNAL_OBJECTS =
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/AdminMiddleware.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminAuth.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSAdminHandler.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Admin/PDSInstallerCommand.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/AppDelegate.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreCache.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Explore/ExploreHandler.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/MSTViewer/MSTViewerHandler.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoHandler.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoProvider.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/NodeInfo/NodeInfoSchemas.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/OAuthDemo/OAuthDemoHandler.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSConfiguration.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/PDSController.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o
@@ -2749,14 +3549,22 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIRepoCommand
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoBase32.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoError.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/ATProtoValidator.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/CID.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/DID.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Managers/PDSAccountManager.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/PDSServiceContainer.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacyAccountRepository.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/Repositories/PDSLegacySessionRepository.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Core/TID.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Blob.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSDatabase.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/PDSRepositoryFactory.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Pool/DatabasePool.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m.o
@@ -2783,14 +3591,23 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/HttpStreaming
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/RateLimiter.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/SSLPinningManager.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XRPCError.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcHandler.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCAuditor.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCCacheDirectory.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMetrics.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCMockStore.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCOperation.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCPersistentStore.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/PLC/PLCServer.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CAR.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/CBOR.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MST.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/MSTPersistence.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Repository/RepoCommit.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSAuthzManager.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSBiometricKeychain.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Security/PDSInputValidator.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Services/AdminService.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Sources/Sync/EventFormatter.m.o
@@ -2807,8 +3624,14 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Admin/AdminServiceTests
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreCacheTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/ExploreHandlerTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/MSTViewerHandlerTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/NodeInfo/NodeInfoTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/PDSConfigurationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/ActorServiceTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/FeedServiceTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/AppView/NotificationServiceTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/CryptoTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/JWTTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/KeyRotationTests.m.o
@@ -2817,6 +3640,8 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2HandlerTests
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuth2Tests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthDPoPTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthPKCETests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthServerMetadataTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/OAuthSessionTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/SessionStoreTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/TOTPTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/WebAuthnVerifierTests.m.o
@@ -2824,17 +3649,30 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Auth/YubiKeyOATHTests.m
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobStorageTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/BlobXrpcTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Blob/MimeTypeValidatorTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIInviteCommandTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLIServiceStubTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CLI/PDSCLITests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/ActorStoreCharacterizationTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/CharacterizationTestBase.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/KeyManagerCharacterizationTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/MSTCharacterizationTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoCoreTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ATProtoErrorTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/DIDValidationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/IdentifierTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSAccountManagerTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/PDSServiceContainerTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/ProtocolCompileTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Core/RecordPathValidationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/ActorStore/ActorStoreTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/MultiTenantDatabaseTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTestUtilities.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Integration/PDSDatabaseIntegrationTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Monitoring/PDSHealthCheckTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/PDSControllerTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m.o
@@ -2842,7 +3680,9 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Debug/PDSLoggerPerforma
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Federation/FederationClientTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/ATProtoHandleValidatorTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/DIDResolverTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Identity/HandleResolverTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Integration/PDSPLCIntegrationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Lexicon/LexiconValidationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Metrics/PDSMetricsTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/HttpBufferPoolTests.m.o
@@ -2858,8 +3698,14 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/PDSNetworkTrans
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimiterTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/RateLimitingTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XRPCErrorTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcIntegrationTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCAuditorTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCCacheDirectoryTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCOperationTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCServerTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/PLC/PLCStoreTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/CARInteropTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTInteropTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Repository/MSTPersistenceTests.m.o
@@ -2869,10 +3715,12 @@ tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/HandleResolver
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/JWTSecurityTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSAuthzManagerTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Security/PDSInputValidatorTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/EventFormatterTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/FirehoseTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/RelayClientTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m.o
+tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/Sync/WebSocketServerTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcErrorResponseTests.m.o
 tests/AllTests: CMakeFiles/AllTests.dir/ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m.o
@@ -2882,7 +3730,7 @@ tests/AllTests: CMakeFiles/AllTests.dir/build.make
 tests/AllTests: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libsqlite3.tbd
 tests/AllTests: secp256k1/lib/libsecp256k1.a
 tests/AllTests: CMakeFiles/AllTests.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_176) "Linking C executable tests/AllTests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/jack/Software/objpds/build_cmake/CMakeFiles --progress-num=$(CMAKE_PROGRESS_229) "Linking C executable tests/AllTests"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/AllTests.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

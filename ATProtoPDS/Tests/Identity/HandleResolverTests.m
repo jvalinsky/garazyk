@@ -11,7 +11,9 @@
 
 - (instancetype)initWithResponse:(NSDictionary *)response error:(NSError *)error delay:(NSTimeInterval)delay;
 - (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url
-                         completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+                          completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
+                            completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
 
 @end
 
@@ -63,13 +65,18 @@
 }
 
 - (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url
-                         completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler {
+                          completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler {
+    return [self dataTaskWithRequest:[NSURLRequest requestWithURL:url] completionHandler:completionHandler];
+}
+
+- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
+                            completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler {
     MockDataTask *task = [[MockDataTask alloc] init];
     task.completionHandler = completionHandler;
     task.mockResponse = self.mockResponse;
     task.mockError = self.mockError;
     task.mockDelay = self.mockDelay;
-    task.url = url;
+    task.url = request.URL;
     return (NSURLSessionDataTask *)task;
 }
 

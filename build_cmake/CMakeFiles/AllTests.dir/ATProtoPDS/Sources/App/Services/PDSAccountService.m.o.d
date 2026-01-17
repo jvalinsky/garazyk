@@ -768,6 +768,12 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Identity/ATProtoHandleValidator.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/JWT.h \
   /Users/jack/Software/objpds/ATProtoPDS/Sources/Debug/PDSLogger.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/PLC/PLCOperation.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/Secp256k1.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/secp256k1_wrapper_c.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Auth/CryptoUtils.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/CID.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoCBORSerialization.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/os/log.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/mach-o/loader.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/architecture/byte_order.h \
@@ -777,4 +783,9 @@ CMakeFiles/AllTests.dir/ATProtoPDS/Sources/App/Services/PDSAccountService.m.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_timeval64.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonDigest.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonKeyDerivation.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonHMAC.h
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/CommonCrypto/CommonHMAC.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/ATProtoError.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSAccountRepository.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSSessionRepository.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Database/PDSRepositoryFactory.h \
+  /Users/jack/Software/objpds/ATProtoPDS/Sources/Core/Repositories/PDSBlobRepository.h

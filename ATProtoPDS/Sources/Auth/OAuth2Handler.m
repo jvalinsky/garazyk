@@ -12,14 +12,24 @@
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
-@implementation OAuth2Handler
+@implementation OAuth2Handler {
+    JWTMinter *_minter;
+}
 
-@synthesize minter = _minter;
+- (void)setMinter:(JWTMinter *)minter {
+    _minter = minter;
+    self.oauthServer.jwtMinter = minter;
+}
+
+- (JWTMinter *)minter {
+    return _minter;
+}
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
-        self.oauthServer = [[OAuth2Server alloc] init];
+        _database = database;
+        self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
         self.oauthServer.jwtMinter = self.minter;
 
         // Use configurable issuer from environment, default to localhost
@@ -215,6 +225,7 @@
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    PDS_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
     // Use request.queryParams if available, otherwise parse manually
     NSMutableDictionary *params = [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
 
@@ -223,6 +234,7 @@
     NSError *clientError = nil;
     NSDictionary *client = [self validateClient:clientID error:&clientError];
     if (!client) {
+        PDS_LOG_AUTH_WARN(@"Invalid client_id: %@", clientID);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"unauthorized_client",
@@ -235,6 +247,7 @@
     NSString *redirectURI = params[@"redirect_uri"];
     NSError *redirectError = nil;
     if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+        PDS_LOG_AUTH_WARN(@"Invalid redirect_uri: %@", redirectURI);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -265,8 +278,11 @@
     authRequest.nonce = params[@"nonce"];
     authRequest.loginHint = params[@"login_hint"];
     
+    PDS_LOG_AUTH_INFO(@"Processing authorization for client: %@, hint: %@", clientID, authRequest.loginHint);
+
     [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
         if (error) {
+            PDS_LOG_AUTH_ERROR(@"Authorization failed: %@", error.localizedDescription);
             response.statusCode = 400;
             [response setJsonBody:@{
                 @"error": @"invalid_request",
@@ -276,6 +292,7 @@
         }
         
         if (authorizationURL) {
+            PDS_LOG_AUTH_INFO(@"Authorization successful, redirecting to: %@", authRequest.redirectURI);
             // For demo purposes, redirect with code
             response.statusCode = 302;
             NSString *redirectURL = [NSString stringWithFormat:@"%@?code=%@", 
@@ -296,7 +313,9 @@
 }
 
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    fprintf(stderr, "[OAuth2] handleTokenRequest called\n");
     NSString *body = [[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding];
+    fprintf(stderr, "[OAuth2] Request body: %s\n", body.UTF8String);
     if (!body) {
         response.statusCode = 400;
         [response setJsonBody:@{

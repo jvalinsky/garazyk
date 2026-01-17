@@ -424,10 +424,11 @@ static NSDateFormatter * iso8601Formatter(void) {
         "ALTER TABLE accounts ADD COLUMN password_salt BLOB",
         "ALTER TABLE accounts ADD COLUMN tfa_enabled INTEGER DEFAULT 0",
         "ALTER TABLE accounts ADD COLUMN tfa_secret BLOB",
-        "ALTER TABLE accounts ADD COLUMN recovery_codes BLOB"
+        "ALTER TABLE accounts ADD COLUMN recovery_codes BLOB",
+        "ALTER TABLE accounts ADD COLUMN invite_enabled INTEGER DEFAULT 0"
     };
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         rc = sqlite3_exec(_db, migrations[i], NULL, NULL, &errMsg);
         if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL) {
             NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
@@ -1575,8 +1576,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     #else
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
-        @"client_secret": @"test-secret",
-        @"redirect_uris": @[@"http://localhost:3000/callback", @"http://localhost:8080/callback"],
+        @"redirect_uris": @[@"http://localhost:3000/callback", @"http://localhost:8080/callback", @"https://localhost:2583/oauth-demo/callback", @"http://localhost:2583/oauth-demo/callback", @"https://127.0.0.1:2583/oauth-demo/callback", @"http://127.0.0.1:2583/oauth-demo/callback"],
         @"grant_types": @"authorization_code,refresh_token",
         @"scope": @"atproto"
     };

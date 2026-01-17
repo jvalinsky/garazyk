@@ -1,14 +1,5 @@
 # Agent Quick Reference
 
-## Bead (Issue Tracking)
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress
-bd close <id>         # Complete work
-bd sync               # Sync with git
-```
-
 ## Security Testing
 ```bash
 make clang-tidy              # Static analysis

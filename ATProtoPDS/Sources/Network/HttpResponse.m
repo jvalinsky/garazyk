@@ -55,12 +55,14 @@ NS_ASSUME_NONNULL_END
         case HttpStatusCreated: return @"Created";
         case HttpStatusAccepted: return @"Accepted";
         case HttpStatusNoContent: return @"No Content";
+        case 302: return @"Found";
         case HttpStatusBadRequest: return @"Bad Request";
         case HttpStatusUnauthorized: return @"Unauthorized";
         case HttpStatusForbidden: return @"Forbidden";
         case HttpStatusNotFound: return @"Not Found";
         case HttpStatusMethodNotAllowed: return @"Method Not Allowed";
         case HttpStatusConflict: return @"Conflict";
+        case 429: return @"Too Many Requests";
         case HttpStatusInternalServerError: return @"Internal Server Error";
         case HttpStatusNotImplemented: return @"Not Implemented";
         case HttpStatusServiceUnavailable: return @"Service Unavailable";
@@ -102,6 +104,10 @@ NS_ASSUME_NONNULL_END
     NSString *statusLine = [NSString stringWithFormat:@"HTTP/1.1 %ld %@\r\n", (long)self.statusCode, self.statusMessage];
     [result appendData:[statusLine dataUsingEncoding:NSUTF8StringEncoding]];
 
+    if (self.statusCode == 302 || self.statusCode == 429) {
+        NSLog(@"[HTTP RESPONSE] Status: %ld, Headers: %@", (long)self.statusCode, self.headers);
+    }
+
     /*! Handle Connection header based on keepAlive setting */
     if (self.keepAlive) {
         [self setHeader:@"keep-alive" forKey:@"Connection"];
@@ -139,6 +145,13 @@ NS_ASSUME_NONNULL_END
         [self setHeader:contentLength forKey:@"Content-Length"];
     }
 
+    /*! Add Date header */
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    dateFormatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+    dateFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT"];
+    dateFormatter.dateFormat = @"EEE, dd MMM yyyy HH:mm:ss 'GMT'";
+    [self setHeader:[dateFormatter stringFromDate:[NSDate date]] forKey:@"Date"];
+
     /*! Append all headers in HTTP format */
     for (NSString *key in self.headers) {
         NSString *headerLine = [NSString stringWithFormat:@"%@: %@\r\n", key, self.headers[key]];
@@ -164,6 +177,9 @@ NS_ASSUME_NONNULL_END
     headers[@"X-Content-Type-Options"] = self.xContentTypeOptions;
     headers[@"X-Frame-Options"] = self.xFrameOptions;
     headers[@"Content-Security-Policy"] = self.contentSecurityPolicy;
+    headers[@"Access-Control-Allow-Origin"] = @"*";
+    headers[@"Access-Control-Allow-Methods"] = @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
+    headers[@"Access-Control-Allow-Headers"] = @"DPoP, Authorization, Content-Type, *";
 }
 
 @end

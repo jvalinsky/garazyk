@@ -17,61 +17,44 @@ export function renderPlcOperations(operations) {
 
     let html = `
         <p class="description">
-            The following table lists the PLC (Public Ledger of Credentials) operations recorded for this identity. 
-            Each operation represents a modification to the identity state.
+            The Public Ledger of Credentials (PLC) records the identity history. 
+            Below is the sequence of operations that define the current state of this DID.
         </p>
         
-        <table class="param-table">
-            <tr>
-                <th style="width: 50px">#</th>
-                <th style="width: 120px">Type</th>
-                <th>CID</th>
-                <th>Timestamp</th>
-            </tr>
+        <div class="timeline-container" style="position: relative; padding: 10px 0;">
     `;
 
     for (let i = 0; i < operations.length; i++) {
-        const op = operations[i];
-        const opData = op.op || {};
-        const opType = opData.type || 'unknown';
-        const cid = op.cid || 'N/A';
-        const timestamp = op.createdAt || 'N/A';
+        const entry = operations[i];
+        const op = entry.op || entry;
+        const opType = op.type || 'unknown';
+        const cid = entry.cid || 'N/A';
+        const timestamp = entry.createdAt || 'N/A';
+        const isGenesis = i === 0;
 
         html += `
-            <tr>
-                <td>${i}</td>
-                <td><strong>${escapeHtml(opType)}</strong></td>
-                <td><code>${escapeHtml(typeof cid === 'string' ? cid.slice(0, 12) + '...' : JSON.stringify(cid))}</code></td>
-                <td>${escapeHtml(timestamp)}</td>
-            </tr>
-        `;
-    }
-
-    html += '</table>';
-
-    // Add details section
-    html += '<h3>Operation Details</h3>';
-
-    for (let i = 0; i < operations.length; i++) {
-        const op = operations[i];
-        const opData = op.op || {};
-
-        html += `
-            <div class="op-detail">
-                <h4>Operation ${i}: ${escapeHtml(opData.type || 'unknown')}</h4>
-                <div class="op-meta" style="margin-bottom: 10px; font-size: 11px; color: #666;">
-                    ${op.cid ? 'CID: ' + escapeHtml(op.cid) + ' • ' : ''}
-                    ${op.createdAt ? 'Time: ' + escapeHtml(op.createdAt) : ''}
+            <div class="timeline-item" style="position: relative; padding-left: 30px; margin-bottom: 20px; border-left: 2px solid #ccc;">
+                <div class="timeline-marker" style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background: ${isGenesis ? '#28a745' : '#0066cc'}; border: 2px solid white;"></div>
+                <div class="op-card" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                        <span style="font-weight: bold; color: #333;">${escapeHtml(opType.toUpperCase())}</span>
+                        <span style="font-size: 11px; color: #999;">${escapeHtml(timestamp)}</span>
+                    </div>
+                    <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
+                        CID: <code>${escapeHtml(typeof cid === 'string' ? cid.slice(0, 12) + '...' : JSON.stringify(cid))}</code>
+                    </div>
+                    <pre style="font-family: monospace; font-size: 11px; background: #eee; padding: 8px; border-radius: 3px; margin: 0; overflow-x: auto;">${escapeHtml(JSON.stringify(op, null, 2))}</pre>
                 </div>
-                <pre class="code-block">${escapeHtml(JSON.stringify(opData, null, 2))}</pre>
             </div>
         `;
     }
 
+    html += '</div>';
+
     html += `
-        <h3 class="see-also">See Also</h3>
+        <h3 class="see-also">Tools</h3>
         <ul class="see-also-links">
-            <li><a href="#" onclick="document.getElementById('nav-did-doc').click(); return false;">DID Document</a></li>
+            <li><a href="http://localhost:2582" target="_blank">Open Standalone PLC Explorer</a></li>
             <li><a href="https://github.com/did-method-plc/did-method-plc" target="_blank">PLC Specification</a></li>
         </ul>
     `;

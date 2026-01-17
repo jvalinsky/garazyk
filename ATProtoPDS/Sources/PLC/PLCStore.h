@@ -7,6 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did error:(NSError **)error;
 - (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error;
+- (nullable NSArray<NSString *> *)getAllDIDsWithError:(NSError **)error;
 
 @end
 
