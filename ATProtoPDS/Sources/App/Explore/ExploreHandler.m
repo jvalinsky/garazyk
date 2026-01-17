@@ -153,11 +153,8 @@
 @property (nonatomic, assign) NSTimeInterval plcTTL;
 @property (nonatomic, assign) NSTimeInterval accountTTL;
 @property (nonatomic, strong) ExploreCache *cache;
-#if defined(GNUSTEP)
-@property (nonatomic, assign) PDSController *controller;
-#else
-@property (nonatomic, weak) PDSController *controller;
-#endif
+/*! Controller - set once at init, never changed. Owner (singleton) outlives controller. */
+@property (nonatomic, strong) PDSController *controller;
 
 - (NSString *)formatAccountsAsJSON:(NSArray<PDSDatabaseAccount *> *)accounts;
 @end
