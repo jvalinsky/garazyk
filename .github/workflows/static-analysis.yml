@@ -1,0 +1,33 @@
+name: Static Analysis
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analysis:
+    name: Critical Checks
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Dependencies
+      run: |
+        brew install cmake
+        brew install llvm
+        brew install oclint || echo "OCLint not available via brew, checking cache or skipping"
+        
+    - name: Configure
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+        
+    - name: Run Static Analysis
+      run: |
+        # Add llvm to path for clang-tidy
+        export PATH="/usr/local/opt/llvm/bin:$PATH"
+        make static-analysis

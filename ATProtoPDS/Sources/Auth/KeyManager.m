@@ -104,6 +104,10 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 @implementation KeyManager
 
++ (BOOL)supportsSecureCoding {
+    return YES;
+}
+
 - (instancetype)init {
     self = [super init];
     if (self) {
@@ -144,11 +148,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 - (nullable instancetype)initWithCoder:(NSCoder *)coder {
     self = [super init];
     if (self) {
-        _serviceIdentifier = [coder decodeObjectForKey:@"serviceIdentifier"];
+        _serviceIdentifier = [coder decodeObjectOfClass:[NSString class] forKey:@"serviceIdentifier"];
         _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
-        _currentKeyID = [coder decodeObjectForKey:@"currentKeyID"];
+        _currentKeyID = [coder decodeObjectOfClass:[NSString class] forKey:@"currentKeyID"];
     }
     return self;
 }

@@ -167,7 +167,8 @@ int main(int argc, char * argv[]) {
             @"ATProtoErrorTests",
             @"ProtocolCompileTests",
             @"PDSServiceContainerTests",
-            @"PDSAccountManagerTests"
+            @"PDSAccountManagerTests",
+            @"Base58Tests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

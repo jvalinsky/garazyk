@@ -5,6 +5,7 @@
 #import "App/PDSController.h"
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
+#import "Core/CID.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
 #ifdef GNUSTEP
@@ -152,7 +153,11 @@
 @property (nonatomic, assign) NSTimeInterval plcTTL;
 @property (nonatomic, assign) NSTimeInterval accountTTL;
 @property (nonatomic, strong) ExploreCache *cache;
-@property (nonatomic, assign) PDSController *controller;  // assign instead of weak for Linux (no ARC)
+#if defined(GNUSTEP)
+@property (nonatomic, assign) PDSController *controller;
+#else
+@property (nonatomic, weak) PDSController *controller;
+#endif
 
 - (NSString *)formatAccountsAsJSON:(NSArray<PDSDatabaseAccount *> *)accounts;
 @end
@@ -1971,13 +1976,11 @@
             return result;
         }
     } else if (firstChar == 'z') {
-        // base58btc decoding would go here - for now return basic info
-        result[@"version"] = @(1);
-        result[@"cidType"] = @"CIDv1";
-        result[@"description"] = @"CIDv1 with base58btc encoding - full decoding requires base58 library";
-        result[@"structure"] = @"<multibase-prefix><cid-version><multicodec><multihash>";
-        result[@"decodingStatus"] = @"partial - base58 decoding not implemented";
-        return result;
+        decodedData = [CID base58btcDecode:encoded];
+        if (!decodedData) {
+            result[@"error"] = @"Failed to decode base58btc payload";
+            return result;
+        }
     } else {
         result[@"error"] = [NSString stringWithFormat:@"Unsupported multibase encoding: %C", firstChar];
         return result;

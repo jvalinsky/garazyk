@@ -5,8 +5,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol PLCStore <NSObject>
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did error:(NSError **)error;
-- (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error;
+- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+                                      includeNullified:(BOOL)includeNullified
+                                                 error:(NSError **)error;
+- (BOOL)appendOperation:(PLCOperation *)op
+           nullifyCIDs:(NSArray<NSString *> *)nullified
+                 error:(NSError **)error;
 - (nullable NSArray<NSString *> *)getAllDIDsWithError:(NSError **)error;
 
 @end

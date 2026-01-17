@@ -31,7 +31,11 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
 @interface PDSRecordService : NSObject
 
 /*! Database pool for user stores. */
+#if defined(GNUSTEP)
 @property (nonatomic, assign) PDSDatabasePool *databasePool;
+#else
+@property (nonatomic, weak) PDSDatabasePool *databasePool;
+#endif
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 

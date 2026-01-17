@@ -911,7 +911,6 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         } else {
             // It's a handle, resolve to DID then to document
             // For simplicity, resolve handle to DID, then DID to doc
-            // TODO: Verify handle matches document's alsoKnownAs
             NSError *handleError = nil;
             __block NSString *did = nil;
             dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -935,6 +934,31 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
             if (docError) {
                 response.statusCode = HttpStatusBadRequest;
                 [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": docError.localizedDescription}];
+                return;
+            }
+
+            BOOL handleMatches = NO;
+            NSString *normalizedHandle = [identifier lowercaseString];
+            for (id entry in doc.alsoKnownAs ?: @[]) {
+                if (![entry isKindOfClass:[NSString class]]) {
+                    continue;
+                }
+                NSString *value = [(NSString *)entry lowercaseString];
+                if ([value hasPrefix:@"at://"]) {
+                    value = [value substringFromIndex:5];
+                }
+                if ([value hasSuffix:@"/"]) {
+                    value = [value substringToIndex:value.length - 1];
+                }
+                if ([value isEqualToString:normalizedHandle]) {
+                    handleMatches = YES;
+                    break;
+                }
+            }
+
+            if (!handleMatches) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"HandleMismatch", @"message": @"Handle does not match DID document alsoKnownAs"}];
                 return;
             }
 
