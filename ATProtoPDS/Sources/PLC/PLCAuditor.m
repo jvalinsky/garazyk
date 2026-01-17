@@ -101,7 +101,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return NO;
     }
 
-    NSString *expectedDid = [PLCOperation calculateDIDForData:[first toDictionary]];
+    NSString *expectedDid = [PLCOperation calculateDIDForData:first.data];
     if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
@@ -216,7 +216,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
             [[PLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
-        NSString *expectedDid = [PLCOperation calculateDIDForData:[op toDictionary]];
+        NSString *expectedDid = [PLCOperation calculateDIDForData:op.data];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:op.did]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"

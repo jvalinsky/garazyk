@@ -181,8 +181,16 @@
 }
 
 - (NSInteger)getFollowersCountForDID:(NSString *)did error:(NSError **)error {
-    // Note: 'record' column doesn't exist in records table. efficiently counting followers requires an index which PDS doesn't have.
-    // Returning 0 for now as stub.
+    if (!did || did.length == 0) {
+        return 0;
+    }
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE subject_did = ? AND collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.graph.follow"] error:error];
+
+    if (rows && rows.count > 0) {
+        return [rows.firstObject[@"count"] integerValue];
+    }
+
     return 0;
 }
 
