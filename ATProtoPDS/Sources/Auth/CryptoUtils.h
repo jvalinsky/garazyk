@@ -36,6 +36,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Converts binary data to lowercase hex string. */
 + (NSString *)hexStringFromData:(NSData *)data;
 
+/*! Base64URL encodes data (no padding). */
++ (NSString *)base64URLEncode:(NSData *)data;
+
+/*! Base64URL decodes string. */
++ (nullable NSData *)base64URLDecode:(NSString *)string;
+
 @end
 
 NS_ASSUME_NONNULL_END

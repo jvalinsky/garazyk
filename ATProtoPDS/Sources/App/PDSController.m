@@ -310,21 +310,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
     [exploreHandler setController:self];
 
-    [_httpServer addHandlerForPath:@"/explore" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-
-    [_httpServer addRoute:@"GET" path:@"/explore/api/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-
-    // Wildcard for static assets (css, js, etc.)
-    [_httpServer addRoute:@"GET" path:@"/explore/*" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-    
-    // Fallback exact route for debugging
-    [_httpServer addRoute:@"GET" path:@"/explore/css/style.css" handler:^(HttpRequest *request, HttpResponse *response) {
+    // New API endpoint (moved from /explore/api)
+    [_httpServer addRoute:@"GET" path:@"/api/pds/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
         [exploreHandler handleRequest:request response:response];
     }];
 
@@ -380,7 +367,12 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     _wsPort = _subscribeReposHandler.webSocketServer.port;
     
     _running = YES;
-    os_log_info(_log, "PDS server started successfully - XRPC at port %lu, WebSocket at port %lu", (unsigned long)_httpPort, (unsigned long)_wsPort);
+    // Explore Handler Wildcard - delegated to ExploreHandler for static assets and UI
+    // This MUST be the last route registered to avoid masking other endpoints
+    [_httpServer addRoute:@"GET" path:@"/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
+
     return YES;
 }
 
@@ -765,6 +757,13 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     if (!db) return NO;
     
     return [db reinstateAccount:did error:error];
+}
+
+- (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error {
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return NO;
+
+    return [db isAccountTakedownActive:did error:error];
 }
 
 #pragma mark - Moderation Operations

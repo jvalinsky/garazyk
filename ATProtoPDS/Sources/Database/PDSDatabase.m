@@ -1622,11 +1622,21 @@ static NSDateFormatter * iso8601Formatter(void) {
     #else
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
+        // No client_secret for public client
         @"redirect_uris": @[@"http://localhost:3000/callback", @"http://localhost:8080/callback", @"https://localhost:2583/oauth-demo/callback", @"http://localhost:2583/oauth-demo/callback", @"https://127.0.0.1:2583/oauth-demo/callback", @"http://127.0.0.1:2583/oauth-demo/callback"],
         @"grant_types": @"authorization_code,refresh_token",
         @"scope": @"atproto"
     };
-    return [self createClient:testClient error:error];
+    [self createClient:testClient error:error];
+
+    NSDictionary *confidentialClient = @{
+        @"client_id": @"test-client-confidential",
+        @"client_secret": @"test-secret",
+        @"redirect_uris": @[@"http://localhost:3000/callback"],
+        @"grant_types": @"authorization_code,refresh_token",
+        @"scope": @"atproto"
+    };
+    return [self createClient:confidentialClient error:error];
     #endif
 }
 
@@ -1776,6 +1786,17 @@ static NSDateFormatter * iso8601Formatter(void) {
     // Mark takedown as applied=0
     NSString *sql = @"UPDATE admin_takedowns SET applied = 0 WHERE subjectId = ? AND subjectType = 'account'";
     return [self executeParameterizedUpdate:sql params:@[did] error:error];
+}
+
+- (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error {
+    if (!did) return NO;
+    NSString *sql = @"SELECT applied FROM admin_takedowns WHERE subjectId = ? AND subjectType = 'account' ORDER BY createdAt DESC LIMIT 1";
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+    if (rows.count == 0) {
+        return NO;
+    }
+    NSNumber *applied = rows.firstObject[@"applied"];
+    return applied ? applied.boolValue : NO;
 }
 
 - (BOOL)createLabel:(NSDictionary *)label error:(NSError **)error {
