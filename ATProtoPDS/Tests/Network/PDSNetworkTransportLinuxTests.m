@@ -69,6 +69,114 @@ NS_ASSUME_NONNULL_BEGIN
     [conn cancel];
 }
 
+- (void)testOutboundConnectionWithSocketPair {
+    int fds[2];
+    XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    PDSNetworkConnectionLinux *clientConn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.outbound", DISPATCH_QUEUE_SERIAL);
+    
+    XCTestExpectation *ready = [self expectationWithDescription:@"ready"];
+    __block PDSNetworkConnectionState lastState = PDSNetworkConnectionStatePreparing;
+    clientConn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        lastState = state;
+        if (state == PDSNetworkConnectionStateReady) {
+            [ready fulfill];
+        }
+    };
+    
+    [clientConn startWithQueue:queue];
+    [self waitForExpectations:@[ready] timeout:1.0];
+    XCTAssertEqual(lastState, PDSNetworkConnectionStateReady);
+    
+    XCTestExpectation *received = [self expectationWithDescription:@"received"];
+    [clientConn receiveWithMinimumLength:1 maximumLength:10 completion:^(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error) {
+        XCTAssertNil(error);
+        XCTAssertEqualObjects(data, [@"test" dataUsingEncoding:NSUTF8StringEncoding]);
+        XCTAssertTrue(isComplete);
+        [received fulfill];
+    }];
+    
+    ssize_t sent = send(fds[1], "test", 4, 0);
+    XCTAssertEqual(sent, 4);
+    
+    [self waitForExpectations:@[received] timeout:1.0];
+    
+    [clientConn cancel];
+    close(fds[1]);
+}
+
+- (void)testOutboundConnectionToLocalhost {
+    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithHost:@"127.0.0.1" port:0];
+    dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.localhost", DISPATCH_QUEUE_SERIAL);
+    
+    __block PDSNetworkConnectionState finalState = PDSNetworkConnectionStatePreparing;
+    XCTestExpectation *failed = [self expectationWithDescription:@"failed"];
+    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        finalState = state;
+        if (state == PDSNetworkConnectionStateFailed) {
+            XCTAssertNotNil(error);
+            [failed fulfill];
+        }
+    };
+    
+    [conn startWithQueue:queue];
+    [self waitForExpectations:@[failed] timeout:1.0];
+    XCTAssertEqual(finalState, PDSNetworkConnectionStateFailed);
+}
+
+- (void)testOutboundConnectionToInvalidHost {
+    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithHost:@"invalid.host.that.does.not.exist" port:9999];
+    dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.invalid", DISPATCH_QUEUE_SERIAL);
+    
+    __block PDSNetworkConnectionState finalState = PDSNetworkConnectionStatePreparing;
+    XCTestExpectation *failed = [self expectationWithDescription:@"failed"];
+    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        finalState = state;
+        if (state == PDSNetworkConnectionStateFailed) {
+            XCTAssertNotNil(error);
+            [failed fulfill];
+        }
+    };
+    
+    [conn startWithQueue:queue];
+    [self waitForExpectations:@[failed] timeout:2.0];
+    XCTAssertEqual(finalState, PDSNetworkConnectionStateFailed);
+}
+
+- (void)testSendDataOnConnectedSocket {
+    int fds[2];
+    XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.send", DISPATCH_QUEUE_SERIAL);
+    
+    XCTestExpectation *ready = [self expectationWithDescription:@"ready"];
+    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        if (state == PDSNetworkConnectionStateReady) {
+            [ready fulfill];
+        }
+    };
+    [conn startWithQueue:queue];
+    [self waitForExpectations:@[ready] timeout:1.0];
+    
+    XCTestExpectation *sent = [self expectationWithDescription:@"sent"];
+    [conn sendData:[@"hello" dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSError * _Nullable error) {
+        XCTAssertNil(error);
+        [sent fulfill];
+    }];
+    
+    [self waitForExpectations:@[sent] timeout:1.0];
+    
+    uint8_t buffer[64];
+    ssize_t received = recv(fds[1], buffer, sizeof(buffer), 0);
+    XCTAssertEqual(received, 5);
+    XCTAssertEqual(memcmp(buffer, "hello", 5), 0);
+    
+    [conn cancel];
+    close(fds[1]);
+}
+
 @end
 
 NS_ASSUME_NONNULL_END
