@@ -231,10 +231,20 @@
 
     // Validate client from database
     NSString *clientID = params[@"client_id"];
+    if (!clientID) {
+        PDS_LOG_AUTH_WARN(@"Missing client_id in authorize request");
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"Missing client_id"
+        }];
+        return;
+    }
+
     NSError *clientError = nil;
     NSDictionary *client = [self validateClient:clientID error:&clientError];
     if (!client) {
-        PDS_LOG_AUTH_WARN(@"Invalid client_id: %@", clientID);
+        PDS_LOG_AUTH_WARN(@"Invalid client_id: %@, error: %@", clientID, clientError.localizedDescription);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"unauthorized_client",
@@ -243,11 +253,13 @@
         return;
     }
 
+    PDS_LOG_AUTH_INFO(@"Found client: %@", clientID);
+
     // Validate redirect URI against client's registered URIs
     NSString *redirectURI = params[@"redirect_uri"];
     NSError *redirectError = nil;
     if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
-        PDS_LOG_AUTH_WARN(@"Invalid redirect_uri: %@", redirectURI);
+        PDS_LOG_AUTH_WARN(@"Invalid redirect_uri: %@ for client %@, error: %@", redirectURI, clientID, redirectError.localizedDescription);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -259,6 +271,7 @@
     // Validate state parameter (CSRF protection)
     NSString *state = params[@"state"];
     if (!state || [state stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]].length == 0) {
+        PDS_LOG_AUTH_WARN(@"Missing state parameter for client: %@", clientID);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -355,6 +368,8 @@
     // In ATProto, client authentication can use DPoP binding instead of client_secret
     NSString *clientSecret = params[@"client_secret"];
     NSString *dpopJWK = params[@"dpop_jwk"];
+    NSString *dpopProof = [request headerForKey:@"dpop"];
+    BOOL hasDpopProof = (dpopProof.length > 0);
     NSString *expectedSecret = client[@"client_secret"];
 
     if (clientSecret && expectedSecret && ![clientSecret isEqualToString:expectedSecret]) {
@@ -367,7 +382,7 @@
     }
 
     // Reject if client_secret is required but not provided and no DPoP binding
-    if (!clientSecret && !dpopJWK && expectedSecret) {
+    if (!clientSecret && !dpopJWK && !hasDpopProof && expectedSecret) {
         response.statusCode = 401;
         [response setJsonBody:@{
             @"error": @"invalid_client",
@@ -391,7 +406,6 @@
         }
     }
     
-    NSString *dpopProof = [request headerForKey:@"dpop"];
     if (!dpopProof || dpopProof.length == 0) {
         response.statusCode = 400;
         [response setJsonBody:@{
@@ -401,8 +415,18 @@
         return;
     }
 
-    NSString *scheme = [request headerForKey:@"x-forwarded-proto"] ?: @"https";
     NSString *host = [request headerForKey:@"host"];
+    NSString *scheme = [request headerForKey:@"x-forwarded-proto"];
+    if (!scheme) {
+        // Default to http for localhost/127.0.0.1, otherwise https
+        NSString *lowercaseHost = [host lowercaseString];
+        if ([lowercaseHost containsString:@"localhost"] || [lowercaseHost hasPrefix:@"127.0.0.1"] || [lowercaseHost hasPrefix:@"::1"]) {
+            scheme = @"http";
+        } else {
+            scheme = @"https";
+        }
+    }
+    
     NSString *path = request.path ?: @"/";
     NSMutableString *urlString = nil;
     if (host.length > 0) {
