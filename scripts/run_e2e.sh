@@ -53,15 +53,29 @@ SERVER_PID=$!
 echo "[E2E] Waiting for servers..."
 sleep 5
 
-# Create test account
-echo "[E2E] Creating test account..."
+# Create test accounts
+echo "[E2E] Creating test accounts..."
 ./build/bin/september --config "${CONFIG_PATH}" account create \
-    --handle e2e.test \
-    --email e2e@test.com \
+    --handle e2e1.test \
+    --email e2e1@test.com \
     --password hunter2 \
     --data-dir "${DATA_DIR}" \
     --verbose || {
-        echo "[E2E] Failed to create test account. Checking logs..."
+        echo "[E2E] Failed to create test account e2e1.test. Checking logs..."
+        echo "=== PDS LOG ==="
+        tail -n 20 "${PDS_LOG}"
+        echo "=== PLC LOG ==="
+        tail -n 20 "${PLC_LOG}"
+        exit 1
+    }
+
+./build/bin/september --config "${CONFIG_PATH}" account create \
+    --handle e2e2.test \
+    --email e2e2@test.com \
+    --password hunter2 \
+    --data-dir "${DATA_DIR}" \
+    --verbose || {
+        echo "[E2E] Failed to create test account e2e2.test. Checking logs..."
         echo "=== PDS LOG ==="
         tail -n 20 "${PDS_LOG}"
         echo "=== PLC LOG ==="

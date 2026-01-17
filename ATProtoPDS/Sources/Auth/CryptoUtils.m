@@ -113,6 +113,27 @@
  @param data The binary data to convert (nonnull).
  @return Lowercase hex string representation.
  */
++ (NSString *)base64URLEncode:(NSData *)data {
+    NSString *base64 = [data base64EncodedStringWithOptions:0];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    while ([base64 hasSuffix:@"="]) {
+        base64 = [base64 substringToIndex:base64.length - 1];
+    }
+    return base64;
+}
+
++ (nullable NSData *)base64URLDecode:(NSString *)string {
+    NSMutableString *base64 = [string mutableCopy];
+    NSUInteger remainder = base64.length % 4;
+    if (remainder > 0) {
+        [base64 appendString:[@"====" substringToIndex:(4 - remainder)]];
+    }
+    NSString *standardBase64 = [base64 stringByReplacingOccurrencesOfString:@"-" withString:@"+"];
+    standardBase64 = [standardBase64 stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+    return [[NSData alloc] initWithBase64EncodedString:standardBase64 options:0];
+}
+
 + (NSString *)hexStringFromData:(NSData *)data {
     const unsigned char *bytes = (const unsigned char *)data.bytes;
     NSMutableString *hex = [NSMutableString stringWithCapacity:data.length * 2];

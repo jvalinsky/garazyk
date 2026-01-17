@@ -102,6 +102,8 @@ int main(int argc, char * argv[]) {
             @"GetServiceAuthMethodTests",
             @"XrpcHandlerTests",
             @"XrpcMethodRegistryTests",
+            @"AdminAuthXrpcTests",
+            @"RepoAuthXrpcTests",
             @"PDSCLITests",
             @"PDSCLIServiceStubTests",
             @"ActorStoreTests",
@@ -170,7 +172,8 @@ int main(int argc, char * argv[]) {
             @"PDSAccountManagerTests",
             @"Base58Tests",
             @"WebSocketFrameParsingTests",
-            @"AdminModerationAuthTests"
+            @"AdminModerationAuthTests",
+            @"OAuthIntegrationTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
