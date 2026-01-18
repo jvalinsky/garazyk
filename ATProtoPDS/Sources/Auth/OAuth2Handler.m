@@ -363,6 +363,7 @@
         }];
         return;
     }
+    fprintf(stderr, "[OAuth2] Client validation PASSED\n");
 
     // Validate client secret (optional for DPoP-based clients)
     // In ATProto, client authentication can use DPoP binding instead of client_secret
@@ -467,6 +468,7 @@
         }];
         return;
     }
+    fprintf(stderr, "[OAuth2] DPoP verification PASSED, thumbprint: %s\n", dpopThumbprint.UTF8String);
 
     OAuth2TokenRequest *tokenRequest = [[OAuth2TokenRequest alloc] init];
     tokenRequest.grantType = params[@"grant_type"];
