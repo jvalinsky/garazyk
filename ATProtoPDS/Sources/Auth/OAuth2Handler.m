@@ -325,6 +325,20 @@
     }];
 }
 
+- (NSDictionary *)parseFormUrlEncodedString:(NSString *)input {
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    // NSURLComponents parses percent-encoded query strings automatically
+    NSURLComponents *components = [[NSURLComponents alloc] init];
+    components.query = input;
+    
+    for (NSURLQueryItem *item in components.queryItems) {
+        if (item.name) {
+            params[item.name] = item.value ?: @"";
+        }
+    }
+    return [params copy];
+}
+
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response {
     fprintf(stderr, "[OAuth2] handleTokenRequest called\n");
     NSString *body = [[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding];
@@ -338,18 +352,7 @@
         return;
     }
     
-    NSMutableDictionary *params = [NSMutableDictionary dictionary];
-    NSArray *pairs = [body componentsSeparatedByString:@"&"];
-    for (NSString *pair in pairs) {
-        NSArray *keyValue = [pair componentsSeparatedByString:@"="];
-        if (keyValue.count == 2) {
-            NSString *key = [keyValue[0] stringByRemovingPercentEncoding];
-            NSString *value = [keyValue[1] stringByRemovingPercentEncoding];
-            if (key && value) {
-                params[key] = value;
-            }
-        }
-    }
+    NSDictionary *params = [self parseFormUrlEncodedString:body];
 
     // Validate client from database
     NSString *clientID = params[@"client_id"];
@@ -532,18 +535,7 @@
         return;
     }
     
-    NSMutableDictionary *params = [NSMutableDictionary dictionary];
-    NSArray *pairs = [body componentsSeparatedByString:@"&"];
-    for (NSString *pair in pairs) {
-        NSArray *keyValue = [pair componentsSeparatedByString:@"="];
-        if (keyValue.count == 2) {
-            NSString *key = [keyValue[0] stringByRemovingPercentEncoding];
-            NSString *value = [keyValue[1] stringByRemovingPercentEncoding];
-            if (key && value) {
-                params[key] = value;
-            }
-        }
-    }
+    NSDictionary *params = [self parseFormUrlEncodedString:body];
 
     // Validate client from database
     NSString *clientID = params[@"client_id"];
