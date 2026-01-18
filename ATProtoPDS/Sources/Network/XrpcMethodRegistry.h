@@ -6,6 +6,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSApplication;
+
 /**
  @header XrpcMethodRegistry.h
  
@@ -31,9 +33,25 @@ NS_ASSUME_NONNULL_BEGIN
  
  @param dispatcher Dispatcher to register methods on.
  @param controller Backend controller that implements the handlers.
+ 
+ @note This method is provided for backward compatibility. For new code,
+ prefer registerMethodsWithDispatcher:application: which uses services directly.
  */
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller;
+
+/**
+ @brief Register the ATProto XRPC method handlers using PDSApplication services.
+ 
+ @param dispatcher Dispatcher to register methods on.
+ @param application The PDSApplication providing services.
+ 
+ @discussion This method registers XRPC handlers that use the application's
+ services directly, reducing coupling to PDSController. Internally, it still
+ uses the application's legacyController for handlers that haven't been migrated.
+ */
++ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                          application:(PDSApplication *)application;
 
 /**
  @brief Decode a DID `publicKeyMultibase` string into raw key bytes.

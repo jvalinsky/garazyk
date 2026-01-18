@@ -1,0 +1,296 @@
+/*!
+ @file PDSHttpServerBuilder.m
+
+ @abstract Implementation of HTTP server builder.
+
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
+#import "PDSHttpServerBuilder.h"
+#import "HttpServer.h"
+#import "HttpRequest.h"
+#import "HttpResponse.h"
+#import "XrpcHandler.h"
+#import "XrpcMethodRegistry.h"
+#import "../App/PDSController.h"
+#import "../App/PDSApplication.h"
+#import "../App/PDSConfiguration.h"
+#import "../Auth/JWT.h"
+#import "../Auth/OAuth2Handler.h"
+#import "../Database/Service/ServiceDatabases.h"
+#import "../App/Explore/ExploreHandler.h"
+#import "../App/OAuthDemo/OAuthDemoHandler.h"
+#import "../App/MSTViewer/MSTViewerHandler.h"
+#import "../App/NodeInfo/NodeInfoHandler.h"
+#import "../Debug/PDSLogger.h"
+
+@implementation PDSHttpServerBuilder
+
+#pragma mark - Initialization
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _port = 2583;
+        _enableXrpc = YES;
+        _enableOAuth = YES;
+        _enableExploreUI = YES;
+        _enableOAuthDemo = YES;
+        _enableMSTViewer = YES;
+        _enableNodeInfo = YES;
+    }
+    return self;
+}
+
+- (instancetype)initWithConfiguration:(PDSConfiguration *)configuration {
+    self = [self init];
+    if (self) {
+        if (configuration) {
+            _port = configuration.serverPort > 0 ? configuration.serverPort : 2583;
+            _enableNodeInfo = configuration.nodeinfoEnabled;
+        }
+    }
+    return self;
+}
+
+#pragma mark - Building
+
+- (nullable HttpServer *)buildWithError:(NSError **)error {
+    HttpServer *server = [HttpServer serverWithPort:self.port];
+    
+    if (![self configureServer:server error:error]) {
+        return nil;
+    }
+    
+    return server;
+}
+
+- (BOOL)configureServer:(HttpServer *)server error:(NSError **)error {
+    if (!server) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSHttpServerBuilderErrorDomain"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Server cannot be nil"}];
+        }
+        return NO;
+    }
+    
+    // Register OAuth routes first (specific paths take precedence)
+    if (self.enableOAuth) {
+        [self registerOAuthRoutesWithServer:server];
+    }
+    
+    // Register XRPC routes
+    if (self.enableXrpc) {
+        [self registerXrpcRoutesWithServer:server];
+    }
+    
+    // Register Explore UI routes
+    ExploreHandler *exploreHandler = nil;
+    if (self.enableExploreUI) {
+        exploreHandler = [self registerExploreRoutesWithServer:server];
+    }
+    
+    // Register OAuth Demo routes
+    if (self.enableOAuthDemo) {
+        [self registerOAuthDemoRoutesWithServer:server];
+    }
+    
+    // Register MST Viewer routes
+    if (self.enableMSTViewer) {
+        [self registerMSTViewerRoutesWithServer:server];
+    }
+    
+    // Register NodeInfo routes
+    if (self.enableNodeInfo) {
+        [self registerNodeInfoRoutesWithServer:server];
+    }
+    
+    // Register wildcard route LAST (must be after all specific routes)
+    if (self.enableExploreUI && exploreHandler) {
+        [server addRoute:@"GET" path:@"/*" handler:^(HttpRequest *request, HttpResponse *response) {
+            [exploreHandler handleRequest:request response:response];
+        }];
+    }
+    
+    return YES;
+}
+
+#pragma mark - Route Registration (Private)
+
+- (void)registerOAuthRoutesWithServer:(HttpServer *)server {
+    if (!self.serviceDatabases || !self.jwtMinter) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: OAuth routes not registered - missing serviceDatabases or jwtMinter");
+        return;
+    }
+    
+    NSError *dbError = nil;
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&dbError];
+    if (!db) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: OAuth routes not registered - could not get service database: %@", dbError);
+        return;
+    }
+    
+    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:db];
+    oauthHandler.minter = self.jwtMinter;
+    [oauthHandler registerRoutesWithServer:server];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth routes registered");
+}
+
+- (void)registerXrpcRoutesWithServer:(HttpServer *)server {
+    PDSController *controller = self.controller;
+    PDSApplication *application = self.application;
+    XrpcDispatcher *dispatcher = self.xrpcDispatcher;
+    
+    // Prefer application over controller for new code
+    if (!controller && !application) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: XRPC routes not registered - missing controller or application");
+        return;
+    }
+    
+    if (!dispatcher) {
+        dispatcher = [XrpcDispatcher sharedDispatcher];
+    }
+    
+    // Register XRPC methods with the dispatcher
+    // Prefer application-based registration when available
+    if (application) {
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:application];
+        // Use the legacy controller from application for route handlers
+        if (!controller) {
+            controller = application.legacyController;
+        }
+    } else {
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
+    }
+    
+    // Create weak reference for blocks
+    __weak PDSController *weakController = controller;
+    __weak XrpcDispatcher *weakDispatcher = dispatcher;
+    
+    // Handler for /xrpc
+    [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        XrpcDispatcher *strongDispatcher = weakDispatcher;
+        if (strongDispatcher && weakController) {
+            [strongDispatcher handleRequest:request response:response];
+        } else {
+            response.statusCode = 503;
+            [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
+        }
+    }];
+    
+    // Handler for /xrpc/
+    [server addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
+        XrpcDispatcher *strongDispatcher = weakDispatcher;
+        if (strongDispatcher && weakController) {
+            [strongDispatcher handleRequest:request response:response];
+        } else {
+            response.statusCode = 503;
+            [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
+        }
+    }];
+    
+    // Handler for /xrpc/:method
+    [server addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
+        XrpcDispatcher *strongDispatcher = weakDispatcher;
+        if (strongDispatcher && weakController) {
+            [strongDispatcher handleRequest:request response:response];
+        } else {
+            response.statusCode = 503;
+            [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
+        }
+    }];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: XRPC routes registered");
+}
+
+- (ExploreHandler *)registerExploreRoutesWithServer:(HttpServer *)server {
+    PDSController *controller = self.controller;
+    
+    if (!controller) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: Explore routes not registered - missing controller");
+        return nil;
+    }
+    
+    ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
+    [exploreHandler setController:controller];
+    
+    // API endpoint for PDS data
+    [server addRoute:@"GET" path:@"/api/pds/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
+        [exploreHandler handleRequest:request response:response];
+    }];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Explore routes registered");
+    
+    return exploreHandler;
+}
+
+- (void)registerOAuthDemoRoutesWithServer:(HttpServer *)server {
+    PDSController *controller = self.controller;
+    
+    if (!controller) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: OAuth Demo routes not registered - missing controller");
+        return;
+    }
+    
+    OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
+    [oauthDemoHandler setController:controller];
+    
+    [server addHandlerForPath:@"/oauth-demo" handler:^(HttpRequest *request, HttpResponse *response) {
+        [oauthDemoHandler handleRequest:request response:response];
+    }];
+    
+    [server addRoute:@"GET" path:@"/oauth-demo/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        [oauthDemoHandler handleRequest:request response:response];
+    }];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth Demo routes registered");
+}
+
+- (void)registerMSTViewerRoutesWithServer:(HttpServer *)server {
+    PDSController *controller = self.controller;
+    
+    if (!controller) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: MST Viewer routes not registered - missing controller");
+        return;
+    }
+    
+    MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
+    [mstViewerHandler setController:controller];
+    
+    [server addHandlerForPath:@"/mst-viewer" handler:^(HttpRequest *request, HttpResponse *response) {
+        [mstViewerHandler handleRequest:request response:response];
+    }];
+    
+    [server addHandlerForPath:@"/api/mst" handler:^(HttpRequest *request, HttpResponse *response) {
+        [mstViewerHandler handleRequest:request response:response];
+    }];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: MST Viewer routes registered");
+}
+
+- (void)registerNodeInfoRoutesWithServer:(HttpServer *)server {
+    PDSController *controller = self.controller;
+    
+    if (!controller) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: NodeInfo routes not registered - missing controller");
+        return;
+    }
+    
+    NodeInfoHandler *nodeInfoHandler = [NodeInfoHandler sharedHandler];
+    
+    // Use configured issuer or generate from port
+    NSString *issuer = self.issuer;
+    if (!issuer) {
+        issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.port];
+    }
+    
+    [nodeInfoHandler setIssuer:issuer];
+    [nodeInfoHandler setController:controller];
+    [nodeInfoHandler registerRoutesWithServer:server];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: NodeInfo routes registered");
+}
+
+@end

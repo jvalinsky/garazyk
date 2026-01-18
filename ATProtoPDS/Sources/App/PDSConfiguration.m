@@ -16,6 +16,18 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
     return shared;
 }
 
++ (NSString *)defaultDataDirectory {
+#if defined(__APPLE__)
+    NSArray *urls = [[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory
+                                                              inDomains:NSUserDomainMask];
+    NSURL *appSupport = [urls count] > 0 ? urls[0] : nil;
+    return [[appSupport URLByAppendingPathComponent:@"ATProtoPDS"] path];
+#else
+    NSString *home = NSHomeDirectory();
+    return [home stringByAppendingPathComponent:@".local/share/ATProtoPDS"];
+#endif
+}
+
 + (nullable instancetype)configurationWithPath:(NSString *)path error:(NSError **)error {
     PDSConfiguration *config = [[PDSConfiguration alloc] init];
     if ([config loadFromPath:path error:error]) {
