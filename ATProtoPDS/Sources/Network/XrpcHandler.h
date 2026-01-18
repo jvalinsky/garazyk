@@ -100,6 +100,21 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.getServiceAuth. */
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.getAccount. */
+- (void)registerComAtprotoServerGetAccount:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.deleteAccount. */
+- (void)registerComAtprotoServerDeleteAccount:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.checkAccountStatus. */
+- (void)registerComAtprotoServerCheckAccountStatus:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.activateAccount. */
+- (void)registerComAtprotoServerActivateAccount:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.deactivateAccount. */
+- (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler;
+
 // MARK: - Repository Methods
 
 /*! Registers handler for com.atproto.repo.createRecord. */
@@ -126,6 +141,12 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.repo.putRecord. */
 - (void)registerComAtprotoRepoPutRecord:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.repo.updateRecord. */
+- (void)registerComAtprotoRepoUpdateRecord:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.repo.getBlob. */
+- (void)registerComAtprotoRepoGetBlob:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.repo.uploadBlob. */
 - (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler;
 
@@ -142,6 +163,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.sync.listBlobs. */
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.notifyOfUpdate. */
+- (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler;
 
 /*! Registers handler for com.atproto.repo.deleteBlob. */
 - (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
