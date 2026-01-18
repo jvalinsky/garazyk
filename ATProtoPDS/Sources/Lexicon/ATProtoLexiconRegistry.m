@@ -1,12 +1,13 @@
 #import "ATProtoLexiconRegistry.h"
 #import "ATProtoLexiconSchema.h"
 #import "ATProtoLexiconError.h"
+#import "Compat/PDSTypes.h"
 #import "Debug/PDSLogger.h"
 
 @interface ATProtoLexiconRegistry ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoLexiconSchema *> *schemas;
-@property (nonatomic, strong) dispatch_queue_t registryQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t registryQueue;
 
 @end
 
@@ -151,6 +152,47 @@
         nsids = [self.schemas allKeys];
     });
     return nsids ?: @[];
+}
+
+- (NSArray<NSString *> *)searchPathsForDirectory:(NSString *)dataDirectory {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableOrderedSet<NSString *> *paths = [NSMutableOrderedSet orderedSet];
+    NSString *overridePath = [NSProcessInfo processInfo].environment[@"PDS_LEXICON_PATH"];
+    if (overridePath.length > 0) {
+        [paths addObject:overridePath];
+    }
+
+    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"lexicons" ofType:nil];
+    if (bundlePath.length > 0) {
+        [paths addObject:bundlePath];
+    }
+
+    NSString *cwd = fm.currentDirectoryPath ?: @"";
+    NSArray<NSString *> *candidates = @[
+        @"ATProtoPDS/Resources/lexicons",
+        @"Resources/lexicons",
+        @"lexicons",
+        @"../ATProtoPDS/Resources/lexicons",
+        @"../../ATProtoPDS/Resources/lexicons",
+        @"../../../ATProtoPDS/Resources/lexicons"
+    ];
+    for (NSString *candidate in candidates) {
+        NSString *path = [cwd stringByAppendingPathComponent:candidate];
+        BOOL isDir = NO;
+        if ([fm fileExistsAtPath:path isDirectory:&isDir] && isDir) {
+            [paths addObject:path];
+        }
+    }
+
+    if (dataDirectory.length > 0) {
+        NSString *customPath = [dataDirectory stringByAppendingPathComponent:@"lexicons"];
+        BOOL isDir = NO;
+        if ([fm fileExistsAtPath:customPath isDirectory:&isDir] && isDir) {
+            [paths addObject:customPath];
+        }
+    }
+
+    return paths.array;
 }
 
 @end
