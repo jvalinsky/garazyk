@@ -84,11 +84,38 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 }
 
 + (NSString *)signDPoPToken:(DPoPToken *)token withKey:(SecKeyRef)privateKey error:(NSError **)error {
+    // Extract public key components for JWK
+    NSString *xBase64 = nil;
+    NSString *yBase64 = nil;
+    
+    SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
+    if (publicKey) {
+        CFErrorRef keyError = NULL;
+        NSData *publicKeyData = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(publicKey, &keyError);
+        if (publicKeyData && publicKeyData.length == 65) {
+            // EC public key format is 0x04 || x || y (65 bytes for P-256)
+            // Skip the 0x04 prefix and extract x (32 bytes) and y (32 bytes)
+            NSData *xData = [publicKeyData subdataWithRange:NSMakeRange(1, 32)];
+            NSData *yData = [publicKeyData subdataWithRange:NSMakeRange(33, 32)];
+            xBase64 = [self base64URLEncode:xData];
+            yBase64 = [self base64URLEncode:yData];
+        }
+        CFRelease(publicKey);
+    }
+    
     NSDictionary *headerDict = [token header];
     NSMutableDictionary *header = [headerDict mutableCopy];
     // Ensure typ and alg are set if not present (though [token header] sets them)
     if (!header[@"typ"]) header[@"typ"] = @"dpop+jwt";
     if (!header[@"alg"]) header[@"alg"] = @"ES256";
+    
+    // Update JWK with actual public key coordinates
+    NSMutableDictionary *jwk = [header[@"jwk"] mutableCopy];
+    if (jwk) {
+        if (xBase64) jwk[@"x"] = xBase64;
+        if (yBase64) jwk[@"y"] = yBase64;
+        header[@"jwk"] = jwk;
+    }
 
     NSError *jsonError = nil;
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:&jsonError];
@@ -112,11 +139,11 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
     
     CFErrorRef keyError = NULL;
-    NSData *signature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+    NSData *derSignature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
                                                                 kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
                                                                 (__bridge CFDataRef)signingData,
                                                                 &keyError));
-    if (!signature) {
+    if (!derSignature) {
         if (error) {
             *error = CFBridgingRelease(keyError);
         } else if (keyError) {
@@ -124,8 +151,15 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         }
         return nil;
     }
-
-    NSString *signatureB64 = [self base64URLEncode:signature];
+    
+    // Extract raw signature (r || s) from DER-encoded signature
+    NSData *rawSignature = [self extractRawSignatureFromDER:derSignature];
+    if (!rawSignature) {
+        // Fallback: if extraction fails, usefor DER as-is ( debugging)
+        rawSignature = derSignature;
+    }
+    
+    NSString *signatureB64 = [self base64URLEncode:rawSignature];
 
     return [NSString stringWithFormat:@"%@.%@.%@", headerB64, payloadB64, signatureB64];
 }
@@ -310,6 +344,89 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
     [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
     return [[NSData alloc] initWithBase64EncodedData:[base64 dataUsingEncoding:NSUTF8StringEncoding] options:0];
+}
+
++ (nullable NSData *)extractRawSignatureFromDER:(NSData *)derSignature {
+    if (!derSignature || derSignature.length < 8) {
+        return nil;
+    }
+    
+    const uint8_t *bytes = derSignature.bytes;
+    
+    if (bytes[0] != 0x30) {
+        return nil;
+    }
+    
+    NSUInteger seqLen = bytes[1];
+    NSUInteger offset = 2;
+    if (bytes[1] & 0x80) {
+        int numBytes = bytes[1] & 0x7f;
+        if (numBytes > 3 || 2 + numBytes >= derSignature.length) {
+            return nil;
+        }
+        seqLen = 0;
+        for (int i = 0; i < numBytes; i++) {
+            seqLen = (seqLen << 8) | bytes[2 + i];
+        }
+        offset = 2 + numBytes;
+    }
+    
+    if (offset >= derSignature.length || bytes[offset] != 0x02) {
+        return nil;
+    }
+    offset++;
+    
+    NSUInteger rLen = bytes[offset];
+    offset++;
+    if (rLen & 0x80) {
+        int numBytes = rLen & 0x7f;
+        rLen = 0;
+        for (int i = 0; i < numBytes; i++) {
+            rLen = (rLen << 8) | bytes[offset + i];
+        }
+    }
+    
+    NSUInteger rDataOffset = offset;
+    NSUInteger rDataLen = rLen;
+    while (rDataLen > 0 && bytes[rDataOffset] == 0x00) {
+        rDataOffset++;
+        rDataLen--;
+    }
+    offset += rLen;
+    
+    if (offset >= derSignature.length || bytes[offset] != 0x02) {
+        return nil;
+    }
+    offset++;
+    
+    NSUInteger sLen = bytes[offset];
+    offset++;
+    if (sLen & 0x80) {
+        int numBytes = sLen & 0x7f;
+        sLen = 0;
+        for (int i = 0; i < numBytes; i++) {
+            sLen = (sLen << 8) | bytes[offset + i];
+        }
+    }
+    
+    NSUInteger sDataOffset = offset;
+    NSUInteger sDataLen = sLen;
+    while (sDataLen > 0 && bytes[sDataOffset] == 0x00) {
+        sDataOffset++;
+        sDataLen--;
+    }
+    offset += sLen;
+    
+    NSMutableData *raw = [NSMutableData dataWithLength:64];
+    uint8_t *rawBytes = raw.mutableBytes;
+    
+    NSUInteger rStart = 32 - rDataLen;
+    memcpy(rawBytes + rStart, bytes + rDataOffset, rDataLen);
+    
+    NSUInteger sStart = 32 - sDataLen;
+    memcpy(rawBytes + 64 - sDataLen, bytes + sDataOffset, sDataLen);
+    
+    return raw;
 }
 
 @end
