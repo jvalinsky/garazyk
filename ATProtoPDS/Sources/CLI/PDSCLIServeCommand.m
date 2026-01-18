@@ -14,13 +14,6 @@
 #import "App/MSTViewer/MSTViewerHandler.h"
 #import "App/OAuthDemo/OAuthDemoHandler.h"
 
-// Forward declaration for PDSAccountManager
-@interface PDSAccountManager : NSObject
-+ (NSArray *)listAccountsWithContext:(PDSCLICommandContext *)context
-                             filter:(NSString *)filter
-                              limit:(NSInteger)limit;
-@end
-
 // Category to access HttpServer's private requestHandler property
 @interface HttpServer (Private)
 @property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
