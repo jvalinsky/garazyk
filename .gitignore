@@ -46,3 +46,4 @@ com.apple.DeveloperTools/
 :memory:
 :memory:-shm
 :memory:-wal
+.worktrees/
