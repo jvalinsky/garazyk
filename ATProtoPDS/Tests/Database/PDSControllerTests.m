@@ -303,7 +303,7 @@
 }
 
 - (void)testModerateAccountEndpoint {
-    NSDictionary *params = @{@"did": @"did:plc:test", @"reason": @"spam"};
+    NSDictionary *params = @{@"did": @"did:plc:test", @"action": @"spam"};
 
     NSError *error = nil;
     NSDictionary *result = [self.controller moderateAccount:params error:&error];
@@ -314,7 +314,7 @@
 }
 
 - (void)testModerateRecordEndpoint {
-    NSDictionary *params = @{@"uri": @"at://did:plc:test/app.bsky.feed.post/123", @"reason": @"spam"};
+    NSDictionary *params = @{@"uri": @"at://did:plc:test/app.bsky.feed.post/123", @"action": @"spam"};
 
     NSError *error = nil;
     NSDictionary *result = [self.controller moderateRecord:params error:&error];
