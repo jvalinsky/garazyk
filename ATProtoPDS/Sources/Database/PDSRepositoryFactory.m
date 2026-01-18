@@ -8,7 +8,7 @@
 #import "App/PDSConfiguration.h"
 #import "Core/Repositories/PDSLegacyAccountRepository.h"
 #import "Core/Repositories/PDSLegacySessionRepository.h"
-#import "Core/Managers/PDSAccountManager.h"
+#import "Core/Repositories/PDSSQLiteAccountRepository.h"
 #import "Database/Service/ServiceDatabases.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     
     if (config.useNewRepositoryImplementation) {
-        return [[PDSAccountManager alloc] initWithServicePool:serviceDatabases.servicePool];
+        return [[PDSSQLiteAccountRepository alloc] initWithServicePool:serviceDatabases.servicePool];
     } else {
         return [[PDSLegacyAccountRepository alloc] initWithServiceDatabases:serviceDatabases];
     }

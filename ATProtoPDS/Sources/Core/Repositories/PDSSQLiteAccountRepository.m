@@ -1,10 +1,10 @@
 /*!
- @file PDSAccountManager.m
- @abstract Implementation of PDSAccountManager.
+ @file PDSSQLiteAccountRepository.m
+ @abstract Implementation of PDSSQLiteAccountRepository.
  @copyright Copyright (c) 2025 Jack Valinsky
  */
 
-#import "PDSAccountManager.h"
+#import "PDSSQLiteAccountRepository.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/ActorStore/PDSActorStoreInternal.h"
@@ -13,7 +13,7 @@
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
 
-@implementation PDSAccountManager {
+@implementation PDSSQLiteAccountRepository {
     PDSDatabasePool *_servicePool;
 }
 
