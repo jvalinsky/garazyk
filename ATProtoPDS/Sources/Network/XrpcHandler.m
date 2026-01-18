@@ -116,6 +116,26 @@
     [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
 }
 
+- (void)registerComAtprotoServerGetAccount:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.getAccount" handler:handler];
+}
+
+- (void)registerComAtprotoServerDeleteAccount:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.deleteAccount" handler:handler];
+}
+
+- (void)registerComAtprotoServerCheckAccountStatus:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.checkAccountStatus" handler:handler];
+}
+
+- (void)registerComAtprotoServerActivateAccount:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.activateAccount" handler:handler];
+}
+
+- (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.deactivateAccount" handler:handler];
+}
+
 - (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.createRecord" handler:handler];
 }
@@ -144,6 +164,14 @@
     [self registerMethod:@"com.atproto.repo.putRecord" handler:handler];
 }
 
+- (void)registerComAtprotoRepoUpdateRecord:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.repo.updateRecord" handler:handler];
+}
+
+- (void)registerComAtprotoRepoGetBlob:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.repo.getBlob" handler:handler];
+}
+
 - (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.uploadBlob" handler:handler];
 }
@@ -166,6 +194,10 @@
 
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.listBlobs" handler:handler];
+}
+
+- (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.notifyOfUpdate" handler:handler];
 }
 
 - (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler {
