@@ -18,8 +18,15 @@
 
 - (nullable NSString *)carFixturePathNamed:(NSString *)filename {
     NSFileManager *fm = [NSFileManager defaultManager];
-    NSString *cwd = [fm currentDirectoryPath];
+    NSString *cwd = fm.currentDirectoryPath;
+    NSBundle *bundle = [NSBundle mainBundle];
+    NSString *bundlePath = [bundle resourcePath];
+
     NSArray<NSString *> *candidates = @[
+        [@"ATProtoPDS/Tests/fixtures/mst" stringByAppendingPathComponent:filename],
+        [@"Tests/fixtures/mst" stringByAppendingPathComponent:filename],
+        [@"fixtures/mst" stringByAppendingPathComponent:filename],
+        [bundlePath stringByAppendingPathComponent:filename],
         [@"reference/indigo/testing/testdata" stringByAppendingPathComponent:filename],
         [@"../reference/indigo/testing/testdata" stringByAppendingPathComponent:filename],
         [@"../../reference/indigo/testing/testdata" stringByAppendingPathComponent:filename],
@@ -30,6 +37,13 @@
         NSString *path = [cwd stringByAppendingPathComponent:candidate];
         if ([fm fileExistsAtPath:path]) {
             return path;
+        }
+        NSString *absolutePath = candidate;
+        if (![candidate hasPrefix:@"/"]) {
+            absolutePath = [cwd stringByAppendingPathComponent:candidate];
+        }
+        if ([fm fileExistsAtPath:absolutePath]) {
+            return absolutePath;
         }
     }
     return nil;
