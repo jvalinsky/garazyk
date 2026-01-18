@@ -1,7 +1,10 @@
 #import "Network/XrpcMethodRegistry.h"
+#import "App/PDSApplication.h"
+#import "App/Services/PDSAccountService.h"
 #import "Blob/BlobStorage.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
+#import "Core/TID.h"
 #import "Core/ATProtoValidator.h"
 #import "Identity/HandleResolver.h"
 #import "AppView/ActorService.h"
@@ -16,6 +19,8 @@
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
 #import "Security/PDSAuthzManager.h"
+#import "App/Services/PDSBlobService.h"
+#import "App/Services/PDSRepositoryService.h"
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
 
@@ -1726,6 +1731,14 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     }
 
     return did;
+}
+
++ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                          application:(PDSApplication *)application {
+    // Delegate to the legacy controller-based registration for now.
+    // The XRPC handlers access services through the controller's service properties.
+    // Future work: Migrate individual handlers to use services directly.
+    [self registerMethodsWithDispatcher:dispatcher controller:application.legacyController];
 }
 
 @end

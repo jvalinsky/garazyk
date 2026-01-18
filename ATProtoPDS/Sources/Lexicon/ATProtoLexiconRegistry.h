@@ -110,6 +110,23 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (NSArray<NSString *> *)loadedNSIDs;
 
+/*!
+ @method searchPathsForDirectory:
+
+ @abstract Returns ordered search paths for lexicon directories.
+
+ @param dataDirectory Optional data directory to include in search paths.
+
+ @return Array of directory paths in search order.
+
+ @discussion Search order:
+ 1. PDS_LEXICON_PATH environment variable (if set)
+ 2. Bundle resources/lexicons
+ 3. Working directory variants (for development)
+ 4. Data directory/lexicons (if provided and exists)
+ */
+- (NSArray<NSString *> *)searchPathsForDirectory:(nullable NSString *)dataDirectory;
+
 @end
 
 NS_ASSUME_NONNULL_END
