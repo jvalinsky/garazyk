@@ -170,6 +170,18 @@
     return instance;
 }
 
+- (NSString *)didFromURI:(NSString *)uri {
+    if (!uri) return nil;
+    if ([uri hasPrefix:@"at://"]) {
+        NSString *path = [uri substringFromIndex:5];
+        NSArray *components = [path componentsSeparatedByString:@"/"];
+        if (components.count > 0) {
+            return components[0];
+        }
+    }
+    return nil;
+}
+
 - (instancetype)init {
     self = [super init];
     if (self) {
@@ -481,8 +493,20 @@
 
 - (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response endpoint:(NSString *)endpoint {
     PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"handleApiRequest: path=%@, endpoint=%@", request.path, endpoint);
-    NSString *query = request.queryString ?: @"";
-    NSDictionary *params = [self parseQueryString:query];
+    
+    // Robust query parsing using NSURLComponents
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    NSString *urlString = [NSString stringWithFormat:@"http://localhost%@", request.path];
+    if (request.queryString) {
+        urlString = [urlString stringByAppendingFormat:@"?%@", request.queryString];
+    }
+    
+    NSURLComponents *components = [NSURLComponents componentsWithString:urlString];
+    for (NSURLQueryItem *item in components.queryItems) {
+        if (item.name) {
+            params[item.name] = item.value ?: @"";
+        }
+    }
 
     
     response.statusCode = 200;
@@ -584,8 +608,18 @@
 }
 
 - (NSString *)apiEndpointForPath:(NSString *)path {
-    NSArray *parts = [[path substringFromIndex:[@"/api/pds/" length]] componentsSeparatedByString:@"/"];
-    return parts.firstObject ?: @"";
+    // Robust path parsing
+    if (!path) return @"";
+    
+    // Check prefix first
+    NSString *prefix = @"/api/pds/";
+    if ([path hasPrefix:prefix]) {
+        NSString *suffix = [path substringFromIndex:prefix.length];
+        // Split by '/' and take first component
+        NSArray *components = [suffix componentsSeparatedByString:@"/"];
+        return components.firstObject ?: @"";
+    }
+    return @"";
 }
 
 - (void)handleApiRepositories:(NSDictionary *)params response:(HttpResponse *)response {
@@ -800,9 +834,8 @@
         return;
     }
 
-    // Extract DID from URI
-    NSArray *uriParts = [uri componentsSeparatedByString:@"/"];
-    NSString *did = uriParts.count >= 3 ? uriParts[2] : nil;
+    // Extract DID from URI safely
+    NSString *did = [self didFromURI:uri];
 
     if (!did) {
         [response setJsonBody:@{@"error": @"Invalid URI format"}];
@@ -1030,9 +1063,8 @@
         return;
     }
 
-    // Extract DID from URI
-    NSArray *uriParts = [uri componentsSeparatedByString:@"/"];
-    NSString *did = uriParts.count >= 3 ? uriParts[2] : nil;
+    // Extract DID from URI safely
+    NSString *did = [self didFromURI:uri];
 
     if (!did) {
         [response setJsonBody:@{@"error": @"Invalid URI format"}];
@@ -1173,8 +1205,7 @@
         NSString *subjectUri = subject[@"uri"] ?: @"";
         NSString *subjectCid = subject[@"cid"] ?: @"";
 
-        NSArray *subjectParts = [subjectUri componentsSeparatedByString:@"/"];
-        NSString *subjectDid = subjectParts.count >= 3 ? subjectParts[2] : @"";
+        NSString *subjectDid = [self didFromURI:subjectUri] ?: @"";
         NSString *subjectHandle = [self resolveDidToHandle:subjectDid];
 
         NSDictionary *like = @{
@@ -1240,8 +1271,7 @@
         NSString *subjectUri = subject[@"uri"] ?: @"";
         NSString *subjectCid = subject[@"cid"] ?: @"";
 
-        NSArray *subjectParts = [subjectUri componentsSeparatedByString:@"/"];
-        NSString *subjectDid = subjectParts.count >= 3 ? subjectParts[2] : @"";
+        NSString *subjectDid = [self didFromURI:subjectUri] ?: @"";
         NSString *subjectHandle = [self resolveDidToHandle:subjectDid];
 
         NSDictionary *repost = @{
@@ -1395,9 +1425,12 @@
 }
 
 - (NSString *)getAccountCreatedAt:(NSString *)did {
-    PDSDatabaseAccount *account = [self.controller getAccountForDid:did error:nil];
+    NSDictionary *account = [self.controller getAccountForDid:did error:nil];
     if (account) {
-        return [[NSDate dateWithTimeIntervalSince1970:account.createdAt] description];
+        NSNumber *createdAt = account[@"createdAt"];
+        if (createdAt) {
+            return [[NSDate dateWithTimeIntervalSince1970:[createdAt doubleValue]] description];
+        }
     }
     return @"";
 }

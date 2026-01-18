@@ -1,5 +1,5 @@
 /*!
- @file PDSAccountManager.h
+ @file PDSSQLiteAccountRepository.h
  @abstract Manager for account data access.
  @copyright Copyright (c) 2025 Jack Valinsky
  */
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
 
-@interface PDSAccountManager : NSObject <PDSAccountRepository>
+@interface PDSSQLiteAccountRepository : NSObject <PDSAccountRepository>
 
 /*! Initializes the manager with a database pool. */
 - (instancetype)initWithServicePool:(PDSDatabasePool *)servicePool;
