@@ -1,0 +1,248 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
+      "node_type": "goal",
+      "title": "100% PLC spec compliance",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:23:42.376904-05:00",
+      "updated_at": "2026-01-17T00:23:46.708912-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"I want a 100% spec compliant plc for at protocol\"}"
+    },
+    {
+      "id": 2,
+      "change_id": "58888d8a-5416-4939-8ee7-d46e1014274a",
+      "node_type": "action",
+      "title": "Review did-method-plc constraints for PLC compliance gaps",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:23:51.799426-05:00",
+      "updated_at": "2026-01-17T00:23:51.799426-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 3,
+      "change_id": "511bf237-95e0-4fa2-88e2-193c7cda1ec7",
+      "node_type": "action",
+      "title": "Implement P-256 DID key support and PLC endpoint parity",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:34:47.380993-05:00",
+      "updated_at": "2026-01-17T00:34:47.380993-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 4,
+      "change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
+      "node_type": "goal",
+      "title": "Fix OAuthIntegrationTests.testFullOAuthFlow returning HTTP 400",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:46:53.729767-05:00",
+      "updated_at": "2026-01-17T23:46:53.729767-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"OAuthIntegrationTests.testFullOAuthFlow test was returning HTTP 400 on token exchange instead of 200. Debug logging revealed DPoP verification failing with \\\"Invalid JWK component length\\\" then \\\"DPoP signature verification failed\\\". Root cause: DPoP tokens created with empty x/y values in JWK header, and DER-encoded signature was being base64url encoded directly instead of extracting raw r||s components first.\"}"
+    },
+    {
+      "id": 5,
+      "change_id": "9bce5b4b-14d0-485e-8c6b-50f0777e1f77",
+      "node_type": "action",
+      "title": "Investigating DPoP verification failure with debug logging",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:47:09.923287-05:00",
+      "updated_at": "2026-01-17T23:47:09.923287-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"ATProtoPDS/Sources/Auth/OAuth2Handler.m\",\"ATProtoPDS/Sources/Auth/DPoPUtil.m\"]}"
+    },
+    {
+      "id": 6,
+      "change_id": "6d9e8214-6498-4ab1-99f8-a5b04e696fba",
+      "node_type": "observation",
+      "title": "DPoP JWK header had empty x and y values (empty strings)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:47:15.102827-05:00",
+      "updated_at": "2026-01-17T23:47:15.102827-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 7,
+      "change_id": "21610fd3-47b2-49d9-86f3-e597bf720ea5",
+      "node_type": "observation",
+      "title": "SecKeyCreateSignature returns DER-encoded signature but verification expects raw r||s format",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:47:21.342645-05:00",
+      "updated_at": "2026-01-17T23:47:21.342645-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 8,
+      "change_id": "8d0d0a83-9eed-4aa5-a0a3-a780d1e4dc14",
+      "node_type": "action",
+      "title": "Modifying signDPoPToken to extract public key coordinates and add extractRawSignatureFromDER helper",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:47:26.627242-05:00",
+      "updated_at": "2026-01-17T23:47:26.627242-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"ATProtoPDS/Sources/Auth/DPoPUtil.m\"]}"
+    },
+    {
+      "id": 9,
+      "change_id": "882bcd0b-c850-4854-85b5-ff9824bd361b",
+      "node_type": "outcome",
+      "title": "Fixed DPoP proof generation",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:47:45.193322-05:00",
+      "updated_at": "2026-01-17T23:47:45.193322-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"61f44a6\",\"confidence\":95}"
+    },
+    {
+      "id": 10,
+      "change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
+      "node_type": "decision",
+      "title": "How to encode ECDSA signature for DPoP",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:48:04.792983-05:00",
+      "updated_at": "2026-01-17T23:48:04.792983-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 11,
+      "change_id": "faa212cc-2516-4c8c-bd58-d8514174c1cb",
+      "node_type": "option",
+      "title": "Use raw (r||s) signature format, converting from DER",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:48:10.524170-05:00",
+      "updated_at": "2026-01-17T23:48:10.524170-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 12,
+      "change_id": "0f85327c-9b9f-43d4-b87d-d32c766310e7",
+      "node_type": "option",
+      "title": "Use DER-encoded signature directly",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:48:16.663266-05:00",
+      "updated_at": "2026-01-17T23:48:16.663266-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
+    }
+  ],
+  "edges": [
+    {
+      "id": 1,
+      "from_node_id": 1,
+      "to_node_id": 2,
+      "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
+      "to_change_id": "58888d8a-5416-4939-8ee7-d46e1014274a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Identify remaining PLC compliance gaps",
+      "created_at": "2026-01-17T00:23:54.419922-05:00"
+    },
+    {
+      "id": 2,
+      "from_node_id": 1,
+      "to_node_id": 3,
+      "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
+      "to_change_id": "511bf237-95e0-4fa2-88e2-193c7cda1ec7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implement missing PLC compliance pieces",
+      "created_at": "2026-01-17T00:34:51.762654-05:00"
+    },
+    {
+      "id": 3,
+      "from_node_id": 4,
+      "to_node_id": 5,
+      "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
+      "to_change_id": "9bce5b4b-14d0-485e-8c6b-50f0777e1f77",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Investigation",
+      "created_at": "2026-01-17T23:47:12.377983-05:00"
+    },
+    {
+      "id": 4,
+      "from_node_id": 4,
+      "to_node_id": 6,
+      "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
+      "to_change_id": "6d9e8214-6498-4ab1-99f8-a5b04e696fba",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Finding: Empty JWK coordinates",
+      "created_at": "2026-01-17T23:47:18.380531-05:00"
+    },
+    {
+      "id": 5,
+      "from_node_id": 4,
+      "to_node_id": 7,
+      "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
+      "to_change_id": "21610fd3-47b2-49d9-86f3-e597bf720ea5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Finding: DER vs raw signature mismatch",
+      "created_at": "2026-01-17T23:47:23.813297-05:00"
+    },
+    {
+      "id": 6,
+      "from_node_id": 4,
+      "to_node_id": 8,
+      "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
+      "to_change_id": "8d0d0a83-9eed-4aa5-a0a3-a780d1e4dc14",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-17T23:47:29.106500-05:00"
+    },
+    {
+      "id": 7,
+      "from_node_id": 8,
+      "to_node_id": 9,
+      "from_change_id": "8d0d0a83-9eed-4aa5-a0a3-a780d1e4dc14",
+      "to_change_id": "882bcd0b-c850-4854-85b5-ff9824bd361b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Complete",
+      "created_at": "2026-01-17T23:47:48.011841-05:00"
+    },
+    {
+      "id": 8,
+      "from_node_id": 4,
+      "to_node_id": 10,
+      "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
+      "to_change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Technical decision needed",
+      "created_at": "2026-01-17T23:48:07.344495-05:00"
+    },
+    {
+      "id": 9,
+      "from_node_id": 10,
+      "to_node_id": 11,
+      "from_change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
+      "to_change_id": "faa212cc-2516-4c8c-bd58-d8514174c1cb",
+      "edge_type": "chosen",
+      "weight": 1.0,
+      "rationale": "Matches what OAuth2DPoPProof.verifyProof expects - raw 64-byte signature",
+      "created_at": "2026-01-17T23:48:13.893178-05:00"
+    },
+    {
+      "id": 10,
+      "from_node_id": 10,
+      "to_node_id": 12,
+      "from_change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
+      "to_change_id": "0f85327c-9b9f-43d4-b87d-d32c766310e7",
+      "edge_type": "rejected",
+      "weight": 1.0,
+      "rationale": "Verification expects raw format, DER causes signature mismatch",
+      "created_at": "2026-01-17T23:48:19.863833-05:00"
+    }
+  ]
+}

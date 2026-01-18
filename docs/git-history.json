@@ -1,0 +1,10 @@
+[
+  {
+    "hash": "61f44a675bd2ced0e3e365ed5165fdac9a3207b9",
+    "short_hash": "61f44a6",
+    "author": "Security Bot",
+    "date": "2026-01-17T23:41:35-05:00",
+    "message": "Fix DPoP proof generation with proper JWK and raw signature encoding\n\n- Extract public key coordinates (x, y) from EC private key for JWK header\n- Extract raw ECDSA signature (r||s) from DER-encoded signature before base64url encoding\n- Add extractRawSignatureFromDER: helper method for proper DER parsing\n- Remove debug logging added during investigation\n\nThis fixes OAuthIntegrationTests.testFullOAuthFlow which was failing with HTTP 400 due to invalid DPoP proof signatures.",
+    "files_changed": 2
+  }
+]
