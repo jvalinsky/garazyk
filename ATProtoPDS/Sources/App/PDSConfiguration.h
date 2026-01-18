@@ -172,6 +172,18 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;
 
+/*!
+ @method defaultDataDirectory
+
+ @abstract Returns the default data directory for the PDS.
+
+ @discussion On macOS: ~/Library/Application Support/ATProtoPDS
+ On Linux: ~/.local/share/ATProtoPDS
+
+ @return Path to the default data directory.
+ */
++ (NSString *)defaultDataDirectory;
+
 /*! Loads configuration from a file path. */
 + (nullable instancetype)configurationWithPath:(NSString *)path error:(NSError **)error;
 
