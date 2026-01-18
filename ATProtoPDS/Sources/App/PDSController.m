@@ -14,17 +14,7 @@
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Core/CID.h"
 
-static NSDateFormatter * iso8601Formatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-    });
-    return formatter;
-}
+
 #import "Core/TID.h"
 #import "Auth/JWT.h"
 #import "Sync/SubscribeReposHandler.h"
@@ -54,12 +44,16 @@ static NSDateFormatter * iso8601Formatter(void) {
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Core/ATProtoError.h"
+#import "Network/PDSHttpServerBuilder.h"
+#import "Admin/PDSAdminController.h"
+#import "PDSApplication.h"
 
 
 NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 @implementation PDSController {
     os_log_t _log;
+    PDSApplication *_backingApplication;  // When initialized via initWithApplication:
     PDSServiceDatabases *_serviceDatabases;
     PDSDatabasePool *_userDatabasePool;
     PDSAccountService *_accountService;
@@ -67,6 +61,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     PDSBlobService *_blobService;
     PDSRecordService *_serviceRecordService;
     PDSRepositoryService *_repositoryService;
+    PDSAdminController *_adminController;
     JWTMinter *_jwtMinter;
     NSMutableDictionary<NSString *, MST *> *_repos;
     NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
@@ -83,73 +78,61 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return _dataDirectory;
 }
 
+- (PDSAdminController *)adminController {
+    return _adminController;
+}
+
+- (BOOL)isRunning {
+    if (_backingApplication) {
+        return _backingApplication.isRunning;
+    }
+    return _running;
+}
+
 - (id)database {
     return nil;
+}
+
+- (instancetype)initWithApplication:(PDSApplication *)application {
+    self = [super init];
+    if (self) {
+        _log = os_log_create("com.atproto.pds", "PDSController");
+        _backingApplication = application;
+        
+        // Reference application's components
+        _dataDirectory = application.dataDirectory;
+        _serviceDatabases = application.serviceDatabases;
+        _userDatabasePool = application.userDatabasePool;
+        _accountService = (PDSAccountService *)application.accountService;
+        _recordService = application.recordService;
+        _blobService = application.blobService;
+        _repositoryService = application.repositoryService;
+        _adminController = (PDSAdminController *)application.adminController;
+        _jwtMinter = application.jwtMinter;
+        _httpPort = application.httpPort;
+        _wsPort = application.wsPort;
+        _plcServerURL = kDefaultPlcServerURL;
+        
+        // Initialize internal state
+        _repos = [NSMutableDictionary dictionary];
+        _collections = [NSMutableDictionary dictionary];
+        _repoQueue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
+        _controllerQueue = dispatch_queue_create("com.atproto.pds.controller", DISPATCH_QUEUE_SERIAL);
+        _running = NO;
+        
+        os_log_info(_log, "PDSController initialized as facade over PDSApplication");
+    }
+    return self;
 }
 
 + (instancetype)sharedController {
     static PDSController *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[PDSController alloc] initWithDirectory:[self defaultDataDirectory]
-                                           serviceMaxSize:100
-                                         userDatabaseSize:30000];
+        // Use PDSApplication as the backing implementation
+        shared = [PDSApplication sharedApplication].legacyController;
     });
     return shared;
-}
-
-+ (NSString *)defaultDataDirectory {
-#if defined(__APPLE__)
-    NSArray *urls = [[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory 
-                                                               inDomains:NSUserDomainMask];
-    NSURL *appSupport = [urls count] > 0 ? urls[0] : nil;
-    return [[appSupport URLByAppendingPathComponent:@"ATProtoPDS"] path];
-#else
-    // Linux: use ~/.local/share/ATProtoPDS
-    NSString *home = NSHomeDirectory();
-    return [home stringByAppendingPathComponent:@".local/share/ATProtoPDS"];
-#endif
-}
-
-- (NSArray<NSString *> *)lexiconSearchPathsForDirectory:(NSString *)dataDirectory {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSMutableOrderedSet<NSString *> *paths = [NSMutableOrderedSet orderedSet];
-    NSString *overridePath = [NSProcessInfo processInfo].environment[@"PDS_LEXICON_PATH"];
-    if (overridePath.length > 0) {
-        [paths addObject:overridePath];
-    }
-
-    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"lexicons" ofType:nil];
-    if (bundlePath.length > 0) {
-        [paths addObject:bundlePath];
-    }
-
-    NSString *cwd = fm.currentDirectoryPath ?: @"";
-    NSArray<NSString *> *candidates = @[
-        @"ATProtoPDS/Resources/lexicons",
-        @"Resources/lexicons",
-        @"lexicons",
-        @"../ATProtoPDS/Resources/lexicons",
-        @"../../ATProtoPDS/Resources/lexicons",
-        @"../../../ATProtoPDS/Resources/lexicons"
-    ];
-    for (NSString *candidate in candidates) {
-        NSString *path = [cwd stringByAppendingPathComponent:candidate];
-        BOOL isDir = NO;
-        if ([fm fileExistsAtPath:path isDirectory:&isDir] && isDir) {
-            [paths addObject:path];
-        }
-    }
-
-    if (dataDirectory.length > 0) {
-        NSString *customPath = [dataDirectory stringByAppendingPathComponent:@"lexicons"];
-        BOOL isDir = NO;
-        if ([fm fileExistsAtPath:customPath isDirectory:&isDir] && isDir) {
-            [paths addObject:customPath];
-        }
-    }
-
-    return paths.array;
 }
 
 - (instancetype)initWithDirectory:(NSString *)directory
@@ -235,6 +218,11 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         
         _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
         _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
+        
+        // Initialize Admin Controller
+        _adminController = [[PDSAdminController alloc] initWithServiceDatabases:_serviceDatabases
+                                                                 accountService:_accountService];
+        
         _repos = [NSMutableDictionary dictionary];
         _collections = [NSMutableDictionary dictionary];
         _repoQueue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
@@ -246,7 +234,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
         // Load lexicons from bundle, working directory, or data directory.
         ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
-        NSArray<NSString *> *lexiconPaths = [self lexiconSearchPathsForDirectory:_dataDirectory];
+        NSArray<NSString *> *lexiconPaths = [registry searchPathsForDirectory:_dataDirectory];
         BOOL loadedAny = NO;
         for (NSString *path in lexiconPaths) {
             NSError *loadError = nil;
@@ -270,82 +258,50 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #pragma mark - Server Lifecycle
 
 - (BOOL)startServerWithError:(NSError **)error {
+    // If backed by PDSApplication, delegate to it
+    if (_backingApplication) {
+        os_log_info(_log, "Starting server via PDSApplication...");
+        BOOL result = [_backingApplication startWithError:error];
+        if (result) {
+            _httpPort = _backingApplication.httpPort;
+            _wsPort = _backingApplication.wsPort;
+            _httpServer = _backingApplication.httpServer;
+            _running = YES;
+        }
+        return result;
+    }
+    
+    // Legacy path: initialize everything ourselves
     os_log_info(_log, "Starting ATProto PDS server with single-tenant architecture...");
     
-    // Start HTTP server with XRPC handlers
-    _httpServer = [HttpServer serverWithPort:self.httpPort];
-    
-    // Add OAuth2 routes
-    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:[self serviceDatabaseWithError:nil]];
-    oauthHandler.minter = _jwtMinter;
-    [oauthHandler registerRoutesWithServer:_httpServer];
-    
+    // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
     
-    [XrpcMethodRegistry registerMethodsWithDispatcher:_xrpcDispatcher controller:self];
+    // Build and configure HTTP server using builder
+    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    builder.port = self.httpPort;
+    builder.controller = self;
+    builder.jwtMinter = _jwtMinter;
+    builder.serviceDatabases = _serviceDatabases;
+    builder.xrpcDispatcher = _xrpcDispatcher;
+    builder.issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
     
-    __weak typeof(self) weakSelf = self;
-    [_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        PDSController *strongSelf = weakSelf;
-        if (strongSelf) {
-            [strongSelf->_xrpcDispatcher handleRequest:request response:response];
-        }
-    }];
-
-    [_httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
-        PDSController *strongSelf = weakSelf;
-        if (strongSelf) {
-            [strongSelf->_xrpcDispatcher handleRequest:request response:response];
-        }
-    }];
-
-    [_httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
-        PDSController *strongSelf = weakSelf;
-        if (strongSelf) {
-            [strongSelf->_xrpcDispatcher handleRequest:request response:response];
-        }
-    }];
-
-    // Explore UI + API
-    ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
-    [exploreHandler setController:self];
-
-    // New API endpoint (moved from /explore/api)
-    [_httpServer addRoute:@"GET" path:@"/api/pds/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-
-    // OAuth Demo UI
-    OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
-    [oauthDemoHandler setController:self];
-
-    [_httpServer addHandlerForPath:@"/oauth-demo" handler:^(HttpRequest *request, HttpResponse *response) {
-        [oauthDemoHandler handleRequest:request response:response];
-    }];
-
-    [_httpServer addRoute:@"GET" path:@"/oauth-demo/*" handler:^(HttpRequest *request, HttpResponse *response) {
-        [oauthDemoHandler handleRequest:request response:response];
-    }];
-
-    // MST Viewer (development/debugging tool)
-    MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
-    [mstViewerHandler setController:self];
-
-    [_httpServer addHandlerForPath:@"/mst-viewer" handler:^(HttpRequest *request, HttpResponse *response) {
-        [mstViewerHandler handleRequest:request response:response];
-    }];
-
-    [_httpServer addHandlerForPath:@"/api/mst" handler:^(HttpRequest *request, HttpResponse *response) {
-        [mstViewerHandler handleRequest:request response:response];
-    }];
-
-    // NodeInfo endpoints
-    NodeInfoHandler *nodeInfoHandler = [NodeInfoHandler sharedHandler];
-    NSString *issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
-    [nodeInfoHandler setIssuer:issuer];
-    [nodeInfoHandler setController:self];
-    [nodeInfoHandler registerRoutesWithServer:_httpServer];
-
+    // Feature flags (all enabled by default)
+    builder.enableXrpc = YES;
+    builder.enableOAuth = YES;
+    builder.enableExploreUI = YES;
+    builder.enableOAuthDemo = YES;
+    builder.enableMSTViewer = YES;
+    builder.enableNodeInfo = YES;
+    
+    NSError *buildError = nil;
+    _httpServer = [builder buildWithError:&buildError];
+    if (!_httpServer) {
+        os_log_error(_log, "Failed to build HTTP server: %@", buildError);
+        if (error) *error = buildError;
+        return NO;
+    }
+    
     NSError *httpError = nil;
     if (![_httpServer startWithError:&httpError]) {
         os_log_error(_log, "Failed to start HTTP server: %@", httpError);
@@ -367,16 +323,20 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     _wsPort = _subscribeReposHandler.webSocketServer.port;
     
     _running = YES;
-    // Explore Handler Wildcard - delegated to ExploreHandler for static assets and UI
-    // This MUST be the last route registered to avoid masking other endpoints
-    [_httpServer addRoute:@"GET" path:@"/*" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-
     return YES;
 }
 
 - (void)stopServer {
+    // If backed by PDSApplication, delegate to it
+    if (_backingApplication) {
+        PDS_LOG_CORE_INFO(@"Stopping server via PDSApplication...");
+        [_backingApplication stop];
+        _httpServer = nil;
+        _running = NO;
+        return;
+    }
+    
+    // Legacy path
     PDS_LOG_CORE_INFO(@"Stopping PDS server...");
     
     [_httpServer stop];
@@ -505,33 +465,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 - (nullable NSString *)getRepoHeadForDid:(NSString *)did error:(NSError **)error {
     NSData *root = [self getRepoRoot:did error:error];
     if (!root) return nil;
-    return [self base32Encode:root];
-}
-
-- (NSString *)base32Encode:(NSData *)data {
-    static const char *alphabet = "abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableString *result = [NSMutableString string];
-    NSUInteger length = data.length;
-    NSUInteger i = 0;
-
-    while (i < length) {
-        uint8_t byte = ((uint8_t *)data.bytes)[i++];
-        [result appendFormat:@"%c", alphabet[byte >> 3]];
-        uint8_t nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        [result appendFormat:@"%c", alphabet[((byte & 0x07) << 2) | (nextByte >> 6)]];
-        if (i >= length + 1) break;
-        [result appendFormat:@"%c", alphabet[(nextByte >> 1) & 0x1F]];
-        if (i >= length) break;
-        nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        [result appendFormat:@"%c", alphabet[((nextByte & 0x0F) << 1) | (nextByte >> 7)]];
-        if (i >= length) break;
-        [result appendFormat:@"%c", alphabet[(nextByte >> 2) & 0x1F]];
-        if (i >= length) break;
-        nextByte = (i < length) ? ((uint8_t *)data.bytes)[i++] : 0;
-        [result appendFormat:@"%c", alphabet[nextByte & 0x1F]];
-    }
-
-    return result;
+    // Use CID's base32 encoding utility
+    return [CID base32Encode:root];
 }
 
 #pragma mark - Record Operations
@@ -745,75 +680,35 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return NO;
-    
-    // Use generic reference/reason if simplified
-    return [db takeDownAccount:did reason:reason takedownRef:nil error:error];
+    return [_adminController takeDownAccount:did reason:reason error:error];
 }
 
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return NO;
-    
-    return [db reinstateAccount:did error:error];
+    return [_adminController reinstateAccount:did error:error];
 }
 
 - (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return NO;
-
-    return [db isAccountTakedownActive:did error:error];
+    return [_adminController isAccountTakedownActive:did error:error];
 }
 
 #pragma mark - Moderation Operations
 
 - (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error {
-    // Stub implementation: Log the moderation action but return success
-    PDS_LOG_INFO(@"Moderating account: %@", params);
-    return @{@"status": @"success"};
+    return [_adminController moderateAccount:params error:error];
 }
 
 - (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error {
-    // Stub implementation: Log the moderation action but return success
-    PDS_LOG_INFO(@"Moderating record: %@", params);
-    return @{@"status": @"success"};
+    return [_adminController moderateRecord:params error:error];
 }
 
 #pragma mark - Labeling Operations
 
 - (NSDictionary *)createLabel:(NSDictionary *)params error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return nil;
-    
-    if ([db createLabel:params error:error]) {
-        return @{
-            @"src": params[@"src"] ?: [NSNull null],
-            @"uri": params[@"uri"] ?: [NSNull null],
-            @"val": params[@"val"] ?: [NSNull null],
-            @"cts": params[@"cts"] ?: [iso8601Formatter() stringFromDate:[NSDate date]]
-        };
-    }
-    return nil;
+    return [_adminController createLabel:params error:error];
 }
 
 - (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return nil;
-    
-    NSArray *uriPatterns = params[@"uriPatterns"];
-    NSArray *sources = params[@"sources"];
-    NSInteger limit = [params[@"limit"] integerValue];
-    if (limit <= 0) limit = 10;
-    NSString *cursor = params[@"cursor"];
-    
-    NSArray *labels = [db getLabelsWithPatterns:uriPatterns sources:sources limit:limit cursor:cursor error:error];
-    if (!labels) return nil;
-    
-    return @{
-        @"labels": labels,
-        @"cursor": (labels.count > 0) ? [NSString stringWithFormat:@"%@", labels.lastObject[@"id"]] : [NSNull null]
-    };
+    return [_adminController getLabels:params error:error];
 }
 
 @end
