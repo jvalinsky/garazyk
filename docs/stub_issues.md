@@ -7,8 +7,7 @@
 
 2. `ATProtoPDS/Sources/AppView/ActorService.m:183`
    - Follower counts use `records.subject_did` for follow records and have supporting indices (`idx_records_subject_did`, `idx_records_subject_did_collection`).
-   - Impact: Remaining risk is correctness: ensure all follow/block write paths populate `subject_did` consistently.
-   - Next step: add a targeted integration test that creates a follow and asserts follower count increments for the subject.
+   - Status: Covered by tests (ActorService unit test + record-service integration test writing follow records).
 
 ## Recently Resolved
 - `did:key` parsing now supports secp256k1 + P-256 multicodecs via `PLCDIDKey` (ATProtoPDS/Sources/PLC/PLCDIDKey.m).
