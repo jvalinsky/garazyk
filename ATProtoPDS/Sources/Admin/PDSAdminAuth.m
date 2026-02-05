@@ -48,7 +48,34 @@ static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
 }
 
 - (BOOL)isAuthenticatedWithRequest:(NSObject *)request {
-    return self.adminToken != nil;
+    if (self.adminToken.length == 0) {
+        return NO;
+    }
+
+    if (![request isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSDictionary *headers = (NSDictionary *)request;
+
+    NSString *authorization = headers[@"Authorization"] ?: headers[@"authorization"];
+    NSString *token = nil;
+    if ([authorization isKindOfClass:[NSString class]] && [authorization hasPrefix:@"Bearer "]) {
+        token = [authorization substringFromIndex:@"Bearer ".length];
+    }
+
+    if (token.length == 0) {
+        NSString *adminTokenHeader = headers[@"X-Admin-Token"] ?: headers[@"x-admin-token"];
+        if ([adminTokenHeader isKindOfClass:[NSString class]]) {
+            token = adminTokenHeader;
+        }
+    }
+
+    if (token.length == 0) {
+        return NO;
+    }
+
+    return PDSConstantTimeEqualStrings(token, self.adminToken);
 }
 
 - (BOOL)authenticateWithPassword:(NSString *)password error:(NSError **)error {
