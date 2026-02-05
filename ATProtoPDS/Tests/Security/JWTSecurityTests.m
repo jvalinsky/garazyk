@@ -10,7 +10,7 @@
 - (void)setUp {
     [super setUp];
     self.verifier = [[JWTVerifier alloc] init];
-    self.verifier.allowedAlgorithms = @[@"ES256"];
+    self.verifier.allowedAlgorithms = @[@"ES256K", @"ES256"];
 }
 
 - (void)testAlgNoneRejection {

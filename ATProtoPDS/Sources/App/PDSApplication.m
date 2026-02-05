@@ -209,7 +209,7 @@
     // Initialize JWT Minter
     _jwtMinter = [[JWTMinter alloc] init];
     _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
-    _jwtMinter.signingAlgorithm = @"ES256";
+    _jwtMinter.signingAlgorithm = @"ES256K";
     
     // Generate server signing key
     Secp256k1KeyPair *serverKey = [[Secp256k1 shared] generateKeyPairWithError:nil];
