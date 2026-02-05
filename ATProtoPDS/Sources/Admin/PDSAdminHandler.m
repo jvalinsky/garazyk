@@ -98,7 +98,11 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     BOOL success = [[PDSAdminAuth sharedAuth] authenticateWithPassword:password error:&authError];
 
     if (success) {
-        return [self jsonResponseWithStatus:200 body:@{@"message": @"Login successful"}];
+        NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+        return [self jsonResponseWithStatus:200 body:@{
+            @"message": @"Login successful",
+            @"token": token ?: @""
+        }];
     } else {
         return [self jsonResponseWithStatus:401 body:@{@"error": authError.localizedDescription ?: @"Invalid password"}];
     }
@@ -204,10 +208,9 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:body options:0 error:&error];
     if (error) {
-        return [NSString stringWithFormat:@"HTTP/1.1 %ld\r\nContent-Type: text/plain\r\n\r\nInternal Error", (long)status];
+        return @"Internal Error";
     }
-    return [NSString stringWithFormat:@"HTTP/1.1 %ld\r\nContent-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@",
-            (long)status, (unsigned long)data.length, [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+    return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 }
 
 - (NSString *)textResponseWithStatus:(NSInteger)status body:(NSString *)body {

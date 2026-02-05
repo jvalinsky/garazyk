@@ -1,11 +1,11 @@
 /*!
  @file PDSAdminController.h
 
- @abstract Administrative operations controller for the PDS.
+ @abstract Thin controller for administrative operations.
 
- @discussion PDSAdminController centralizes all administrative operations
- including account management, moderation, and labeling. This extraction
- from PDSController improves separation of concerns and testability.
+ @discussion PDSAdminController is a thin controller that delegates to PDSAdminService
+ for all business logic. This class handles request parsing, validation, and response
+ formatting only. All administrative operations are implemented in PDSAdminService.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -15,8 +15,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
-@class PDSDatabase;
+@class PDSAdminService;
 @protocol PDSAccountService;
+@protocol PDSAdminService;
 
 /*!
  @protocol PDSAdminController
@@ -127,31 +128,27 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class PDSAdminController
 
- @abstract Implementation of administrative operations for the PDS.
+ @abstract Thin controller for administrative operations.
 
- @discussion Provides administrative capabilities including account takedowns,
- moderation actions, and content labeling. Requires service databases for
- persistence and optionally an account service for account lookups.
+ @discussion Delegates all operations to PDSAdminService for business logic.
+ Handles request parsing, validation, and response formatting.
 
  @code
  PDSAdminController *admin = [[PDSAdminController alloc] initWithServiceDatabases:databases
-                                                                   accountService:accountService];
- 
+                                                                    accountService:accountService];
+
  // Take down an account
  NSError *error = nil;
  [admin takeDownAccount:@"did:plc:abc123" reason:@"TOS violation" error:&error];
- 
+
  // Create a label
  NSDictionary *label = [admin createLabel:@{@"uri": @"at://...", @"val": @"spam"} error:&error];
  @endcode
  */
 @interface PDSAdminController : NSObject <PDSAdminController>
 
-/*! Service databases for persistence operations. */
-@property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
-
-/*! Account service for account lookups (optional). */
-@property (nonatomic, strong, readonly, nullable) id<PDSAccountService> accountService;
+/*! Admin service for business logic delegation (readonly). */
+@property (nonatomic, strong, readonly) id<PDSAdminService> adminService;
 
 /*!
  @method initWithServiceDatabases:accountService:
@@ -160,10 +157,11 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param serviceDatabases The service databases for persistence.
  @param accountService The account service for account operations (may be nil).
- @return An initialized admin controller.
+ @return An initialized admin controller, or nil if service creation failed.
  */
-- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
-                          accountService:(nullable id<PDSAccountService>)accountService NS_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                   accountService:(nullable id<PDSAccountService>)accountService
+    NS_DESIGNATED_INITIALIZER;
 
 /*!
  @method initWithServiceDatabases:
@@ -174,6 +172,16 @@ NS_ASSUME_NONNULL_BEGIN
  @return An initialized admin controller.
  */
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
+
+/*!
+ @method initWithAdminService:
+
+ @abstract Initializes the admin controller with a pre-configured admin service.
+
+ @param adminService The admin service to delegate to.
+ @return An initialized admin controller.
+ */
+- (instancetype)initWithAdminService:(id<PDSAdminService>)adminService;
 
 - (instancetype)init NS_UNAVAILABLE;
 

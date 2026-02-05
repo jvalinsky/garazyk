@@ -40,6 +40,19 @@
 - **Handle Verification**: `resolveIdentity` skips verifying `alsoKnownAs` against the resolved handle (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:914).
 - **Follower Counts**: `ActorService` returns `0` for followers as a stub (ATProtoPDS/Sources/AppView/ActorService.m:183-186).
 
+### Phase 6: Professional Script Development - COMPLETED
+- **Professional Bash Scripting Skill**: Created comprehensive skill (`skills/professional-bash-scripting/SKILL.md`) documenting industry best practices from Google, Greg's Wiki, and authoritative sources for writing maintainable, secure, and efficient bash scripts.
+- **Script Quality Improvements**: Upgraded core shell scripts following professional bash scripting standards:
+  - `simple_test.sh`: Complete overhaul with proper error handling, structured logging, input validation, and dependency checking
+  - `start_server.sh`: Enhanced with comprehensive initialization, cleanup, and process management
+  - `quality_gate.sh`: Improved error handling, validation, and structured logging
+  - `run-tests.sh`: Added professional structure with proper validation and logging
+- **New E2E Test Scripts**: Created comprehensive end-to-end test coverage for core features:
+  - `test_social_features.sh`: Complete social features testing (feeds, follows, likes, profiles, search, timelines)
+  - `test_moderation.sh`: Full moderation testing (reports, account moderation, content labeling)
+- **Script Ecosystem Enhancement**: Professional bash scripting now covers the full development lifecycle with standardized, colored output, comprehensive error handling, and ShellCheck compliance.
+- **Script Validation**: All scripts (existing and new) pass ShellCheck linting with zero warnings and follow SC2155 best practices for variable declaration.
+
 ### Database Layer
 - **Actor Store**: `PDSActorStore` provides SQLite-based persistence for actor data, employing WAL mode and prepared statements for performance.
 
@@ -102,6 +115,7 @@ clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 ## Repository Skills
 
 - `skills/stub-finder/SKILL.md` documents the repository-level stub-finder skill that uses `scripts/stub_find.sh` to scan for `TODO`/`FIXME`/`not implemented` markers. Run `./scripts/stub_find.sh .` before code reviews to catch placeholder logic and report/find follow-up work.
+- `skills/professional-bash-scripting/SKILL.md` documents the comprehensive bash scripting skill for writing maintainable, secure, and efficient shell scripts following industry best practices from Google's Bash Style Guide, Greg's Wiki, and other authoritative sources.
 
 ## CI/CD Pipeline
 
