@@ -1,5 +1,10 @@
 #import "CharacterizationTestBase.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcHandler.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
+#import "Auth/Secp256k1.h"
+#import "Core/CID.h"
 
 @interface XrpcMethodRegistryCharacterizationTests : CharacterizationTestBase
 
@@ -11,8 +16,7 @@
 
 - (void)setUp {
     [super setUp];
-    // TODO: Initialize self.subject
-    // self.subject = [[XrpcMethodRegistry alloc] init];
+    self.subject = [[XrpcMethodRegistry alloc] init];
 }
 
 - (void)tearDown {
@@ -31,13 +35,24 @@
                            controller:(PDSController *)controller;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [XrpcMethodRegistry registerMethodsWithDispatcher...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:nil];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/xrpc/com.atproto.server.describeServer"
+                                                   queryString:@""
+                                                    queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [HttpResponse response];
+    [dispatcher handleRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertNotNil(((NSDictionary *)response.jsonBody)[@"did"]);
 }
 
 - (void)testCharacterization_Class_publicKeyBytesFromMultibase {
@@ -45,13 +60,25 @@
      + (nullable NSData *)publicKeyBytesFromMultibase:(NSString *)multibase error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [XrpcMethodRegistry publicKeyBytesFromMultibase...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *keyError = nil;
+    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
+    XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", keyError);
+
+    uint8_t prefixBytes[] = {0xE7, 0x01};
+    NSMutableData *multicodec = [NSMutableData dataWithBytes:prefixBytes length:sizeof(prefixBytes)];
+    [multicodec appendData:keyPair.compressedPublicKey];
+
+    NSString *multibase = [NSString stringWithFormat:@"z%@", [CID base58btcEncode:multicodec]];
+
+    NSError *decodeError = nil;
+    NSData *decoded = [XrpcMethodRegistry publicKeyBytesFromMultibase:multibase error:&decodeError];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(decodeError);
+    XCTAssertEqualObjects(decoded, keyPair.compressedPublicKey);
+
+    NSError *invalidError = nil;
+    XCTAssertNil([XrpcMethodRegistry publicKeyBytesFromMultibase:@"xnot-supported" error:&invalidError]);
+    XCTAssertNotNil(invalidError);
 }
 
 @end
