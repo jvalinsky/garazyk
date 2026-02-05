@@ -28,6 +28,26 @@ static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
     return diff == 0;
 }
 
+static BOOL PDSScopesContainAdmin(NSString *scopeString) {
+    if (scopeString.length == 0) {
+        return NO;
+    }
+    NSArray<NSString *> *parts = [scopeString componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    for (NSString *part in parts) {
+        if (part.length == 0) {
+            continue;
+        }
+        if ([part isEqualToString:@"admin"]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+@interface PDSAdminAuth ()
+@property (nonatomic, strong, nullable) NSDate *minimumTokenIssuedAt;
+@end
+
 @implementation PDSAdminAuth
 
 + (instancetype)sharedAuth {
@@ -43,15 +63,12 @@ static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
     self = [super init];
     if (self) {
         _adminToken = nil;
+        _minimumTokenIssuedAt = nil;
     }
     return self;
 }
 
 - (BOOL)isAuthenticatedWithRequest:(NSObject *)request {
-    if (self.adminToken.length == 0) {
-        return NO;
-    }
-
     if (![request isKindOfClass:[NSDictionary class]]) {
         return NO;
     }
@@ -75,7 +92,40 @@ static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
         return NO;
     }
 
-    return PDSConstantTimeEqualStrings(token, self.adminToken);
+    NSError *parseError = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&parseError];
+    if (!jwt || parseError) {
+        return NO;
+    }
+
+    if (!PDSScopesContainAdmin(jwt.payload.scope)) {
+        return NO;
+    }
+
+    PDSController *controller = [PDSController sharedController];
+    if (!controller || !controller.jwtMinter) {
+        return NO;
+    }
+
+    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    verifier.keyRotationManager = controller.jwtMinter.keyRotationManager;
+    verifier.publicKey = controller.jwtMinter.publicKey;
+
+    NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+    verifier.expectedIssuer = expectedIssuer;
+    verifier.expectedAudience = expectedIssuer;
+    verifier.allowedAlgorithms = @[@"ES256", @"ES256K"];
+
+    NSError *verifyError = nil;
+    if (![verifier verifyJWT:jwt error:&verifyError]) {
+        return NO;
+    }
+
+    if (self.minimumTokenIssuedAt && jwt.payload.iat && [jwt.payload.iat compare:self.minimumTokenIssuedAt] == NSOrderedAscending) {
+        return NO;
+    }
+
+    return YES;
 }
 
 - (BOOL)authenticateWithPassword:(NSString *)password error:(NSError **)error {
@@ -138,6 +188,7 @@ static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
 
 - (void)logout {
     self.adminToken = nil;
+    self.minimumTokenIssuedAt = [NSDate date];
 }
 
 @end
