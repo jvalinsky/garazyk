@@ -471,10 +471,11 @@ static NSDateFormatter * iso8601Formatter(void) {
     const char *recordMigrations[] = {
         "ALTER TABLE records ADD COLUMN value TEXT",
         "ALTER TABLE records ADD COLUMN subject_did TEXT",
-        "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did)"
+        "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did)",
+        "CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection)"
     };
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         rc = sqlite3_exec(_db, recordMigrations[i], NULL, NULL, &errMsg);
         if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL && strstr(errMsg, "already exists") == NULL) {
             NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
