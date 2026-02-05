@@ -427,6 +427,12 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! In-memory storage for active sessions. */
 @property (nonatomic, strong) NSMutableDictionary *activeSessions;
 
+/*! Serial queue for thread-safe authorization code access. */
+@property (nonatomic, strong, readonly) dispatch_queue_t authorizationQueue;
+
+/*! Serial queue for thread-safe session access. */
+@property (nonatomic, strong, readonly) dispatch_queue_t sessionQueue;
+
 /*! JWT minting service. */
 @property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
 

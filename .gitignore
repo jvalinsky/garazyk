@@ -32,6 +32,9 @@ xcuserdata/
 .cache/
 .worktrees/
 
+# Codex/OpenCode local state
+.opencode/
+
 # Data and Logs
 data/
 *.log

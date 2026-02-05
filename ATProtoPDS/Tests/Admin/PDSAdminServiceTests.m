@@ -1,16 +1,16 @@
 #import <XCTest/XCTest.h>
-#import "Services/AdminService.h"
+#import "Services/PDSAdminService.h"
 #import "Database/PDSDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface AdminServiceTests : XCTestCase
+@interface PDSAdminServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong, nullable) PDSDatabase *database;
-@property (nonatomic, strong, nullable) AdminService *service;
+@property (nonatomic, strong, nullable) PDSAdminService *service;
 @end
 
-@implementation AdminServiceTests
+@implementation PDSAdminServiceTests
 
 - (void)setUp {
     [super setUp];
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
-    self.service = [[AdminService alloc] initWithDatabase:self.database databasePool:nil];
+    self.service = [[PDSAdminService alloc] initWithDatabase:self.database databasePool:nil];
 }
 
 - (void)tearDown {
@@ -181,8 +181,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testUpdatePasswordNonexistentAccount {
     NSError *error = nil;
     BOOL result = [self.service updateAccountPassword:@"did:plc:nonexistent"
-                                            newPassword:@"password123"
-                                                  error:&error];
+                                             newPassword:@"password123"
+                                                   error:&error];
     XCTAssertFalse(result);
 }
 
