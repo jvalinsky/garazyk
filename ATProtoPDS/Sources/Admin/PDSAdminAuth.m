@@ -114,7 +114,14 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
     NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer;
-    verifier.allowedAlgorithms = @[@"ES256", @"ES256K"];
+    NSMutableArray<NSString *> *allowedAlgorithms = [NSMutableArray array];
+    if (verifier.publicKey) {
+        [allowedAlgorithms addObject:@"ES256K"];
+    }
+    if (verifier.keyRotationManager) {
+        [allowedAlgorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
+    }
+    verifier.allowedAlgorithms = allowedAlgorithms.count > 0 ? allowedAlgorithms : nil;
 
     NSError *verifyError = nil;
     if (![verifier verifyJWT:jwt error:&verifyError]) {
