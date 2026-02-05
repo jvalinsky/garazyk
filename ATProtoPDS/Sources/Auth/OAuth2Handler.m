@@ -399,8 +399,17 @@
     NSString *grantType = params[@"grant_type"];
     if ([grantType isEqualToString:@"authorization_code"]) {
         NSString *redirectURI = params[@"redirect_uri"];
+        // URL-decode the redirect_uri since browsers send it encoded in form data
+        if (redirectURI) {
+            NSString *decodedRedirectURI = [redirectURI stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+            if (decodedRedirectURI) {
+                redirectURI = decodedRedirectURI;
+            }
+        }
+        fprintf(stderr, "[OAuth2] Token request redirect_uri: '%s'\n", redirectURI.UTF8String ?: "(nil)");
         NSError *redirectError = nil;
         if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+            fprintf(stderr, "[OAuth2] Redirect URI validation failed: %s\n", redirectError.localizedDescription.UTF8String ?: "unknown");
             response.statusCode = 400;
             [response setJsonBody:@{
                 @"error": @"invalid_request",
@@ -408,6 +417,7 @@
             }];
             return;
         }
+        fprintf(stderr, "[OAuth2] Redirect URI validation PASSED\n");
     }
     
     if (!dpopProof || dpopProof.length == 0) {

@@ -2,6 +2,7 @@
 
 ## Core Guides
 - [Developer Guide](guides/DEVELOPER_GUIDE.md)
+- [Script Development](guides/SCRIPT_DEVELOPMENT.md) - Professional bash scripting standards and new E2E tests
 - [Troubleshooting](guides/TROUBLESHOOTING.md)
 - [Workflows](guides/DEVELOPMENT_WORKFLOWS.md)
 - [Executive Summary](guides/EXECUTIVE_SUMMARY.md)
