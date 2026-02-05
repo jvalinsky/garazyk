@@ -15,7 +15,7 @@
     // Create a test minter with a known private key
     self.minter = [[JWTMinter alloc] init];
     self.minter.issuer = @"test.issuer";
-    self.minter.signingAlgorithm = @"ES256";
+    self.minter.signingAlgorithm = @"ES256K";
     self.minter.defaultExpiration = 3600;
 
     // Use a valid generated key pair
