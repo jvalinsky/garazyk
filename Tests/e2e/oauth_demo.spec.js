@@ -144,6 +144,75 @@ const puppeteer = require('puppeteer');
         return data;
     }
 
+    async function loginAsAdmin(label) {
+        console.log(`[${label}] Logging in as admin...`);
+        const response = await fetch('http://localhost:2583/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: 'admin123' })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.token) {
+            throw new Error(`[${label}] Admin login failed: ${JSON.stringify(data)}`);
+        }
+        console.log(`[${label}] Admin login successful`);
+        return data.token;
+    }
+
+    async function adminModerateAccount(did, reason, adminToken, label) {
+        console.log(`[${label}] Moderating account: ${did}`);
+        const response = await fetch('http://localhost:2583/xrpc/com.atproto.admin.moderateAccount', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({ did, reason })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`[${label}] moderateAccount failed: ${JSON.stringify(data)}`);
+        }
+        console.log(`[${label}] Account moderated: ${did}`);
+        return data;
+    }
+
+    async function adminTakeDownAccount(did, reason, adminToken, label) {
+        console.log(`[${label}] Taking down account: ${did}`);
+        const response = await fetch('http://localhost:2583/xrpc/com.atproto.admin.takeDownAccount', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({ did, reason })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`[${label}] takeDownAccount failed: ${JSON.stringify(data)}`);
+        }
+        console.log(`[${label}] Account taken down: ${did}`);
+        return data;
+    }
+
+    async function adminGetTakedown(did, adminToken, label) {
+        console.log(`[${label}] Getting takedown status: ${did}`);
+        const response = await fetch('http://localhost:2583/xrpc/com.atproto.admin.getAccountTakedown', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({ did })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`[${label}] getAccountTakedown failed: ${JSON.stringify(data)}`);
+        }
+        console.log(`[${label}] Takedown status: ${data.applied}`);
+        return data;
+    }
+
     try {
         const user1Page = await loginWithHandle('e2e1.test', 'user1');
         const user2Page = await loginWithHandle('e2e2.test', 'user2');
@@ -182,27 +251,13 @@ const puppeteer = require('puppeteer');
         await sleepMs(10);
         await createPost(user2Page, 'user2', user2PostText);
 
-        const moderationPayload = {
-            did: user2Did,
-            reason: 'ToS violation: abusive comment'
-        };
-        await fetchJson('http://localhost:2583/xrpc/com.atproto.admin.moderateAccount', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(moderationPayload)
-        }, 'moderateAccount');
+        const adminToken = await loginAsAdmin('E2E');
 
-        await fetchJson('http://localhost:2583/xrpc/com.atproto.admin.takeDownAccount', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ did: user2Did, reason: 'ToS violation: abusive comment' })
-        }, 'takeDownAccount');
+        await adminModerateAccount(user2Did, 'ToS violation: abusive comment', adminToken, 'E2E');
 
-        const takedownStatus = await fetchJson('http://localhost:2583/xrpc/com.atproto.admin.getAccountTakedown', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ did: user2Did })
-        }, 'getAccountTakedown');
+        await adminTakeDownAccount(user2Did, 'ToS violation: abusive comment', adminToken, 'E2E');
+
+        const takedownStatus = await adminGetTakedown(user2Did, adminToken, 'E2E');
 
         if (!takedownStatus.applied) {
             throw new Error('Expected account takedown to be applied');

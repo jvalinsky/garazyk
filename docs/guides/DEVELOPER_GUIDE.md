@@ -16,7 +16,13 @@ ATProtoPDS/
 │   └── Network/              # HTTP server implementation
 ├── Tests/                    # Unit and integration tests
 ├── docs/                     # Documentation
-├── scripts/                  # Build and utility scripts
+├── scripts/                  # Professional build and utility scripts
+│   ├── simple_test.sh        # AT Proto PDS integration tests
+│   ├── start_server.sh      # Production server startup script
+│   ├── quality_gate.sh       # Code quality and static analysis
+│   └── run-tests.sh          # Test suite runner
+├── skills/                   # Development skills and best practices
+│   └── professional-bash-scripting/SKILL.md  # Bash scripting standards
 ├── CMakeLists.txt            # Main build configuration
 └── project.yml               # Xcode project configuration
 ```
@@ -61,13 +67,49 @@ Fuzzer binaries will be at `./build/fuzzing/`.
 
 **Run all unit tests:**
 ```bash
+./scripts/run-tests.sh
+# or manually:
 ./build/tests/AllTests
+```
+
+**Run integration tests:**
+```bash
+./scripts/simple_test.sh
 ```
 
 **Run fuzzers:**
 ```bash
 ./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/xrpc_valid_create.txt
 ```
+
+### Script Development Standards
+
+All shell scripts in this project follow professional bash scripting standards as documented in `skills/professional-bash-scripting/SKILL.md`. Key requirements:
+
+#### Script Structure
+- Use `#!/usr/bin/env bash` shebang for portability
+- Set shell options: `set -euo pipefail`
+- Include comprehensive header documentation
+- Implement proper error handling with trap handlers
+- Use structured logging (debug, info, warn, error)
+
+#### Code Quality
+- All scripts pass ShellCheck linting with zero warnings
+- Follow SC2155 best practices (declare and assign separately)
+- Use local variables in functions
+- Validate all inputs and dependencies
+
+#### Available Scripts
+- `scripts/start_server.sh`: Production server startup with proper process management
+- `scripts/run-tests.sh`: Test suite execution with validation
+- `scripts/simple_test.sh`: AT Proto integration testing
+- `scripts/quality_gate.sh`: Code quality and static analysis
+
+#### Script Development Workflow
+1. Follow the professional bash scripting skill guidelines
+2. Run ShellCheck before committing: `shellcheck script.sh`
+3. Test scripts on target environment
+4. Update documentation for new scripts
 
 ## Adding New API Endpoints
 
@@ -335,6 +377,8 @@ If you encounter build errors:
 - OpenAPI Specification: `http://localhost:2583/explore/api/openapi.yaml`
 - Architecture Documentation: `docs/ARCHITECTURE_DIAGRAMS.md`
 - Session Summary: `docs/SESSION_SUMMARY.md`
+- Script Development Standards: `docs/guides/SCRIPT_DEVELOPMENT.md`
+- Professional Bash Scripting: `skills/professional-bash-scripting/SKILL.md`
 
 ### Contributing
 
