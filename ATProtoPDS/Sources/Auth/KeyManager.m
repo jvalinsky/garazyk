@@ -329,8 +329,6 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     dispatch_sync(self.accessQueue, ^{
         KeyPair *keyPair = self.keyPairs[keyID];
         if (keyPair) {
-            if (keyPair.privateKey) CFRelease(keyPair.privateKey);
-            if (keyPair.publicKey) CFRelease(keyPair.publicKey);
             [self.keyPairs removeObjectForKey:keyID];
             success = YES;
         }

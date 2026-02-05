@@ -11,8 +11,7 @@
 
 - (void)setUp {
     [super setUp];
-    // TODO: Initialize self.subject
-    // self.subject = [[KeyManager alloc] init];
+    self.subject = [[KeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys"];
 }
 
 - (void)tearDown {
@@ -30,13 +29,9 @@
      - (nullable instancetype)initWithServiceIdentifier:(NSString *)serviceIdentifier;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject initWithServiceIdentifier...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    KeyManager *manager = [[KeyManager alloc] initWithServiceIdentifier:@"com.atproto.pds.test.keys2"];
+    XCTAssertNotNil(manager);
+    XCTAssertEqualObjects(manager.serviceIdentifier, @"com.atproto.pds.test.keys2");
 }
 
 - (void)testCharacterization_initWithDatabase {
@@ -44,13 +39,10 @@
      - (nullable instancetype)initWithDatabase:(PDSDatabase *)database serviceIdentifier:(NSString *)serviceIdentifier;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject initWithDatabase...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    KeyManager *manager = [[KeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys3"];
+    XCTAssertNotNil(manager);
+    XCTAssertEqualObjects(manager.serviceIdentifier, @"com.atproto.pds.test.keys3");
+    XCTAssertNotNil(manager.database);
 }
 
 - (void)testCharacterization_generateKeyPairWithAlgorithm {
@@ -60,13 +52,13 @@
                                              error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject generateKeyPairWithAlgorithm...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(keyPair.algorithm, @"RS256");
+    XCTAssertNotNil(keyPair.keyID);
+    XCTAssertEqualObjects(self.subject.currentKeyID, keyPair.keyID);
 }
 
 - (void)testCharacterization_getKeyPairWithID {
@@ -74,13 +66,13 @@
      - (nullable KeyPair *)getKeyPairWithID:(NSString *)keyID error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject getKeyPairWithID...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    KeyPair *fetched = [self.subject getKeyPairWithID:keyPair.keyID error:&error];
+    XCTAssertNotNil(fetched);
+    XCTAssertEqualObjects(fetched.keyID, keyPair.keyID);
 }
 
 - (void)testCharacterization_getActiveKeyPair {
@@ -88,13 +80,14 @@
      - (nullable KeyPair *)getActiveKeyPair:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject getActiveKeyPair...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    KeyPair *active = [self.subject getActiveKeyPair:&error];
+    XCTAssertNotNil(active);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(active.keyID, keyPair.keyID);
 }
 
 - (void)testCharacterization_allKeyPairs {
@@ -102,13 +95,13 @@
      - (NSArray<KeyPair *> *)allKeyPairs:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject allKeyPairs...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+
+    NSArray<KeyPair *> *pairs = [self.subject allKeyPairs:&error];
+    XCTAssertNil(error);
+    XCTAssertGreaterThanOrEqual(pairs.count, 2U);
 }
 
 - (void)testCharacterization_deleteKeyPairWithID {
@@ -116,13 +109,16 @@
      - (BOOL)deleteKeyPairWithID:(NSString *)keyID error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject deleteKeyPairWithID...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    BOOL deleted = [self.subject deleteKeyPairWithID:keyPair.keyID error:&error];
+    XCTAssertTrue(deleted);
+
+    NSError *fetchError = nil;
+    XCTAssertNil([self.subject getKeyPairWithID:keyPair.keyID error:&fetchError]);
+    XCTAssertNotNil(fetchError);
 }
 
 - (void)testCharacterization_setKeyPairActive {
@@ -130,13 +126,19 @@
      - (BOOL)setKeyPairActive:(NSString *)keyID error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject setKeyPairActive...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *first = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    KeyPair *second = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(first);
+    XCTAssertNotNil(second);
+
+    BOOL activated = [self.subject setKeyPairActive:second.keyID error:&error];
+    XCTAssertTrue(activated);
+    XCTAssertNil(error);
+
+    KeyPair *active = [self.subject getActiveKeyPair:&error];
+    XCTAssertNotNil(active);
+    XCTAssertEqualObjects(active.keyID, second.keyID);
 }
 
 - (void)testCharacterization_signData {
@@ -146,13 +148,18 @@
                          error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject signData...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    NSData *data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signature = [self.subject signData:data withKeyID:keyPair.keyID error:&error];
+    XCTAssertNotNil(signature, @"Signature failed: %@", error);
+    XCTAssertNil(error);
+
+    BOOL verified = [self.subject verifySignature:signature forData:data withKey:keyPair.publicKey error:&error];
+    XCTAssertTrue(verified);
+    XCTAssertNil(error);
 }
 
 - (void)testCharacterization_signPayload {
@@ -162,13 +169,15 @@
                                   error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject signPayload...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    NSDictionary *payload = @{@"iss": @"test.issuer", @"sub": @"did:plc:test"};
+    NSDictionary *result = [self.subject signPayload:payload withKeyID:keyPair.keyID error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertTrue([result[@"token"] isKindOfClass:[NSString class]]);
 }
 
 - (void)testCharacterization_signString {
@@ -178,13 +187,13 @@
                              error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject signString...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    NSString *sig = [self.subject signString:@"hello" withKeyID:keyPair.keyID error:&error];
+    XCTAssertNotNil(sig);
+    XCTAssertNil(error);
 }
 
 - (void)testCharacterization_verifySignature {
@@ -195,13 +204,17 @@
                   error:(NSError **)error;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject verifySignature...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
+
+    NSData *data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signature = [self.subject signData:data withKeyID:keyPair.keyID error:&error];
+    XCTAssertNotNil(signature, @"Signature failed: %@", error);
+
+    BOOL verified = [self.subject verifySignature:signature forData:data withKey:keyPair.publicKey error:&error];
+    XCTAssertTrue(verified);
+    XCTAssertNil(error);
 }
 
 - (void)testCharacterization_toJWKS {
@@ -209,13 +222,11 @@
      - (NSDictionary *)toJWKS;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject toJWKS...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    NSDictionary *jwks = [self.subject toJWKS];
+    XCTAssertTrue([jwks isKindOfClass:[NSDictionary class]]);
+    XCTAssertGreaterThan(jwks.count, 0U);
 }
 
 - (void)testCharacterization_toJWKSArray {
@@ -223,13 +234,11 @@
      - (NSArray<NSDictionary *> *)toJWKSArray;
     */
     
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject toJWKSArray...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+    NSError *error = nil;
+    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    NSArray<NSDictionary *> *jwks = [self.subject toJWKSArray];
+    XCTAssertTrue([jwks isKindOfClass:[NSArray class]]);
+    XCTAssertGreaterThan(jwks.count, 0U);
 }
 
 @end
