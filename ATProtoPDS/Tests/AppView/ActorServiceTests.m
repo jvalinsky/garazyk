@@ -35,8 +35,12 @@
     
     NSString *createRecords = @"CREATE TABLE IF NOT EXISTS records ("
         @"id INTEGER PRIMARY KEY, uri TEXT UNIQUE, did TEXT, collection TEXT, rkey TEXT, "
-        @"cid TEXT, value TEXT, created_at REAL, indexed_at REAL)";
+        @"cid TEXT, value TEXT, subject_did TEXT, created_at REAL, indexed_at REAL)";
     XCTAssertTrue([self.database executeParameterizedUpdate:createRecords params:@[] error:&error], @"Records table: %@", error);
+
+    NSString *createRecordIndices = @"CREATE INDEX IF NOT EXISTS idx_records_did_collection ON records(did, collection);"
+        @"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);";
+    XCTAssertTrue([self.database executeParameterizedUpdate:createRecordIndices params:@[] error:&error], @"Records indices: %@", error);
     
     NSString *createBlocks = @"CREATE TABLE IF NOT EXISTS blocks ("
         @"id INTEGER PRIMARY KEY, cid BLOB UNIQUE, repo_did TEXT, block_data BLOB, size INTEGER)";
@@ -120,6 +124,33 @@
     
     XCTAssertNotNil(profile);
     XCTAssertEqualObjects(profile[@"followsCount"], @(5));
+}
+
+- (void)testGetProfileWithFollowersCount {
+    NSError *error = nil;
+    NSString *subjectDid = @"did:plc:testactor";
+    NSString *insertFollowers = @"INSERT INTO records (uri, did, subject_did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))";
+
+    for (int i = 0; i < 4; i++) {
+        NSString *followerDid = [NSString stringWithFormat:@"did:plc:follower-%d", i];
+        BOOL result = [self.database executeParameterizedUpdate:insertFollowers
+                                                        params:@[
+                                                            [NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%d", followerDid, i],
+                                                            followerDid,
+                                                            subjectDid,
+                                                            @"app.bsky.graph.follow",
+                                                            [NSString stringWithFormat:@"follow-%d", i],
+                                                            @"bafyreifakecid"
+                                                        ]
+                                                         error:&error];
+        XCTAssertTrue(result, @"Insert follower record failed: %@", error);
+        error = nil;
+    }
+
+    NSDictionary *profile = [self.service getProfileForActor:subjectDid error:&error];
+    XCTAssertNotNil(profile);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(profile[@"followersCount"], @(4));
 }
 
 - (void)testGetProfileWithPostsCount {
