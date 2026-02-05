@@ -13,6 +13,7 @@
 #import "Auth/OAuth2Handler.h"
 #import "App/MSTViewer/MSTViewerHandler.h"
 #import "App/OAuthDemo/OAuthDemoHandler.h"
+#import "Admin/PDSAdminHandler.h"
 
 // Category to access HttpServer's private requestHandler property
 @interface HttpServer (Private)
@@ -296,6 +297,37 @@
         
         response.statusCode = 200;
         [response setJsonBody:doc];
+    }];
+
+    // Register Admin routes
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+
+    [httpServer addRoute:@"POST" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                            path:@"/admin/login"
+                                                         headers:request.headers
+                                                            body:request.body];
+        if (result) {
+            response.statusCode = 200;
+            [response setBodyString:result];
+        } else {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found"}];
+        }
+    }];
+
+    [httpServer addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                            path:@"/admin/logout"
+                                                         headers:request.headers
+                                                            body:request.body];
+        if (result) {
+            response.statusCode = 200;
+            [response setBodyString:result];
+        } else {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found"}];
+        }
     }];
 
     // Explore / Web UI Wildcard - MUST BE LAST

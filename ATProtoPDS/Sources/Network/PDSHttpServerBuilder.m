@@ -22,6 +22,7 @@
 #import "../App/OAuthDemo/OAuthDemoHandler.h"
 #import "../App/MSTViewer/MSTViewerHandler.h"
 #import "../App/NodeInfo/NodeInfoHandler.h"
+#import "../Admin/PDSAdminHandler.h"
 #import "../Debug/PDSLogger.h"
 
 @implementation PDSHttpServerBuilder
@@ -105,6 +106,9 @@
     if (self.enableNodeInfo) {
         [self registerNodeInfoRoutesWithServer:server];
     }
+
+    // Register Admin routes
+    [self registerAdminRoutesWithServer:server];
     
     // Register wildcard route LAST (must be after all specific routes)
     if (self.enableExploreUI && exploreHandler) {
@@ -291,6 +295,40 @@
     [nodeInfoHandler registerRoutesWithServer:server];
     
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: NodeInfo routes registered");
+}
+
+- (void)registerAdminRoutesWithServer:(HttpServer *)server {
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+
+    [server addRoute:@"POST" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                            path:@"/admin/login"
+                                                         headers:request.headers
+                                                            body:request.body];
+        if (result) {
+            response.statusCode = 200;
+            [response setBodyString:result];
+        } else {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found"}];
+        }
+    }];
+
+    [server addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                            path:@"/admin/logout"
+                                                         headers:request.headers
+                                                            body:request.body];
+        if (result) {
+            response.statusCode = 200;
+            [response setBodyString:result];
+        } else {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found"}];
+        }
+    }];
+
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin routes registered");
 }
 
 @end

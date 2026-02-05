@@ -1,11 +1,11 @@
 /*!
  @file PDSAccountManagerTests.m
- @abstract Unit tests for PDSAccountManager.
+ @abstract Unit tests for PDSSQLiteAccountRepository (formerly PDSAccountManager).
  @copyright Copyright (c) 2025 Jack Valinsky
  */
 
 #import <XCTest/XCTest.h>
-#import "Core/Managers/PDSAccountManager.h"
+#import "Core/Repositories/PDSSQLiteAccountRepository.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSDatabase.h"
 #import "Core/ATProtoError.h"
@@ -13,7 +13,7 @@
 @interface PDSAccountManagerTests : XCTestCase {
     NSString *_tempDir;
     PDSDatabasePool *_pool;
-    PDSAccountManager *_manager;
+    id<PDSAccountRepository> _manager;
 }
 @end
 
@@ -25,7 +25,7 @@
     [[NSFileManager defaultManager] createDirectoryAtPath:_tempDir withIntermediateDirectories:YES attributes:nil error:nil];
     
     _pool = [[PDSDatabasePool alloc] initWithDbDirectory:_tempDir maxSize:1];
-    _manager = [[PDSAccountManager alloc] initWithServicePool:_pool];
+    _manager = [[PDSSQLiteAccountRepository alloc] initWithServicePool:_pool];
 }
 
 - (void)tearDown {

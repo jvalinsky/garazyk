@@ -156,16 +156,28 @@ rm -f data/pds.db
 
 ## Running the Server
 
-### Basic Startup
+### Professional Startup Scripts
+
+The project includes production-ready startup scripts that follow professional bash scripting standards:
 
 ```bash
-# Using script
+# Production server startup with process management
 ./scripts/start_server.sh
 
+# Run with verbose logging
+VERBOSE=true ./scripts/start_server.sh
+
+# Run tests first, then start server
+./scripts/run-tests.sh && ./scripts/start_server.sh
+```
+
+### Manual Startup (Development)
+
+```bash
 # Manual startup
 ./build/release/atprotopds-cli serve --port 2583
 
-# Background process
+# Background process (not recommended for production)
 nohup ./scripts/start_server.sh &
 ```
 
@@ -212,6 +224,33 @@ sudo systemctl start atproto-pds
 ```
 
 ## Verification
+
+### Professional Test Scripts
+
+All project scripts follow professional bash scripting standards and include comprehensive error handling, input validation, and logging.
+
+```bash
+# Run comprehensive integration tests
+./scripts/simple_test.sh
+
+# Run social features e2e tests (feeds, follows, likes, profiles)
+./scripts/test_social_features.sh
+
+# Run moderation e2e tests (reports, labels, account moderation)
+./scripts/test_moderation.sh
+
+# Run performance tests
+./scripts/test_performance.sh
+
+# Run quality gate checks (linting, static analysis)
+./scripts/quality_gate.sh
+
+# Run unit test suite
+./scripts/run-tests.sh
+
+# Run with verbose output for debugging (works with all scripts)
+VERBOSE=true ./scripts/test_social_features.sh
+```
 
 ### Health Checks
 
@@ -480,3 +519,5 @@ CMD ["/app/atprotopds-cli", "serve", "--port", "2583"]
 - API Reference: `http://localhost:2583/explore/api/docs`
 - Architecture: `docs/ARCHITECTURE_DIAGRAMS.md`
 - Implementation: `docs/SESSION_SUMMARY.md`
+- Script Development: `docs/guides/SCRIPT_DEVELOPMENT.md`
+- Professional Bash Scripting: `skills/professional-bash-scripting/SKILL.md`

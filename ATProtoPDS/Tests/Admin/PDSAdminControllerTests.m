@@ -62,19 +62,17 @@
 
 - (void)testInitWithServiceDatabases {
     PDSAdminController *controller = [[PDSAdminController alloc] initWithServiceDatabases:self.serviceDatabases];
-    
+
     XCTAssertNotNil(controller);
-    XCTAssertEqual(controller.serviceDatabases, self.serviceDatabases);
-    XCTAssertNil(controller.accountService);
+    XCTAssertNotNil(controller.adminService);
 }
 
 - (void)testInitWithServiceDatabasesAndAccountService {
-    // Using nil for account service since we don't have a mock
     PDSAdminController *controller = [[PDSAdminController alloc] initWithServiceDatabases:self.serviceDatabases
-                                                                           accountService:nil];
-    
+                                                                            accountService:nil];
+
     XCTAssertNotNil(controller);
-    XCTAssertEqual(controller.serviceDatabases, self.serviceDatabases);
+    XCTAssertNotNil(controller.adminService);
 }
 
 #pragma mark - Account Administration Tests
