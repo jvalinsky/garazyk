@@ -181,7 +181,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param adminService The admin service to delegate to.
  @return An initialized admin controller.
  */
-- (instancetype)initWithAdminService:(id<PDSAdminService>)adminService;
+- (instancetype)initWithAdminService:(id<PDSAdminService>)adminService NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)init NS_UNAVAILABLE;
 
