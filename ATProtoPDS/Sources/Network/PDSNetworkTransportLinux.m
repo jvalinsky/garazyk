@@ -6,6 +6,7 @@
 #import <netinet/in.h>
 #import <arpa/inet.h>
 #import <netdb.h>
+#import <stdio.h>
 #import <unistd.h>
 #import <fcntl.h>
 
@@ -32,18 +33,22 @@
 @implementation PDSReadRequest
 @end
 
-@implementation PDSNetworkConnectionLinux {
-    int _sockfd;
-    dispatch_source_t _readSource;
-    dispatch_source_t _writeSource;
-    dispatch_queue_t _queue;
-    NSMutableData *_inputBuffer;
-    NSMutableArray<PDSReadRequest *> *_readRequests;
-    NSMutableData *_writeBuffer;
-    NSUInteger _writeOffset;
-    NSString *_host;
-    NSUInteger _port;
-}
+	@implementation PDSNetworkConnectionLinux {
+	    int _sockfd;
+	    dispatch_source_t _connectSource;
+	    dispatch_source_t _readSource;
+	    dispatch_source_t _writeSource;
+	    dispatch_queue_t _queue;
+	    NSMutableData *_inputBuffer;
+	    NSMutableArray<PDSReadRequest *> *_readRequests;
+	    NSMutableData *_writeBuffer;
+	    NSUInteger _writeOffset;
+	    NSString *_host;
+	    NSUInteger _port;
+	    struct addrinfo *_connectAddrInfo;
+	    struct addrinfo *_connectAddrInfoCurrent;
+	    int _connectLastError;
+	}
 
 @synthesize stateChangedHandler = _stateChangedHandler;
 @synthesize remoteAddress = _remoteAddress;
@@ -82,117 +87,143 @@
 - (void)startWithQueue:(dispatch_queue_t)queue {
     _queue = queue;
     
-	    if (_sockfd == -1) {
-	        char portString[16];
-	        snprintf(portString, sizeof(portString), "%lu", (unsigned long)_port);
-
-	        struct addrinfo hints;
-	        memset(&hints, 0, sizeof(hints));
-	        hints.ai_socktype = SOCK_STREAM;
-	        hints.ai_protocol = IPPROTO_TCP;
-	        hints.ai_family = AF_UNSPEC;
-
-	        struct addrinfo *res = NULL;
-	        int gai = getaddrinfo([_host UTF8String], portString, &hints, &res);
-	        if (gai != 0 || res == NULL) {
-	            dispatch_async(queue, ^{
-	                if (self.stateChangedHandler) {
-	                    NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @"No address candidates";
-	                    self.stateChangedHandler(PDSNetworkConnectionStateFailed,
-	                                            [NSError errorWithDomain:@"PDSNetworkTransport"
-	                                                                code:-2
-	                                                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Address resolution failed"}]);
-	                }
-	            });
-	            return;
-	        }
-
-	        int connectResult = -1;
-	        int connectErrno = 0;
-	        int fd = -1;
-	        for (struct addrinfo *ai = res; ai != NULL; ai = ai->ai_next) {
-	            fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-	            if (fd == -1) {
-	                connectErrno = errno;
-	                continue;
-	            }
-
-	            int flags = fcntl(fd, F_GETFL, 0);
-	            fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-	            connectResult = connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
-	            if (connectResult == 0 || errno == EINPROGRESS) {
-	                break;
-	            }
-
-	            connectErrno = errno;
-	            close(fd);
-	            fd = -1;
-	        }
-
-	        freeaddrinfo(res);
-
-	        if (fd == -1) {
-	            dispatch_async(queue, ^{
-	                if (self.stateChangedHandler) {
-	                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:connectErrno ?: errno userInfo:nil]);
-	                }
-	            });
-	            return;
-	        }
-
-	        _sockfd = fd;
-
-	        if (connectResult == 0) {
-	            [self setupSources];
-	            dispatch_async(queue, ^{
-	                if (self.stateChangedHandler) {
-	                    self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
-                }
-            });
-	            return;
-	        }
-	        
-	        if (errno != EINPROGRESS) {
-	            dispatch_async(queue, ^{
-	                if (self.stateChangedHandler) {
-	                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
-	                }
-	            });
-	            close(_sockfd);
-	            _sockfd = -1;
-	            return;
-	        }
-        
-        __weak typeof(self) weakSelf = self;
-        dispatch_source_t connectSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, queue);
-        dispatch_source_set_event_handler(connectSource, ^{
-            int error = 0;
-            socklen_t len = sizeof(error);
-            getsockopt(_sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
-            
-            dispatch_source_cancel(connectSource);
-            
-            if (error != 0) {
-                close(_sockfd);
-                _sockfd = -1;
-                if (self.stateChangedHandler) {
-                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:error userInfo:nil]);
-                }
-                return;
-            }
-            
-            [weakSelf setupSources];
-            if (self.stateChangedHandler) {
-                self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
-            }
+    if (_sockfd == -1) {
+        dispatch_async(queue, ^{
+            [self beginOutboundConnect];
         });
-        dispatch_resume(connectSource);
         return;
     }
     
     [self setupSources];
     
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+    }
+}
+
+- (void)cleanupConnectState {
+    if (_connectSource) {
+        dispatch_source_cancel(_connectSource);
+        _connectSource = nil;
+    }
+
+    if (_connectAddrInfo) {
+        freeaddrinfo(_connectAddrInfo);
+        _connectAddrInfo = NULL;
+    }
+
+    _connectAddrInfoCurrent = NULL;
+    _connectLastError = 0;
+}
+
+- (void)beginOutboundConnect {
+    if (_queue == NULL) {
+        return;
+    }
+
+    if (_connectAddrInfo) {
+        [self cleanupConnectState];
+    }
+
+    char portString[16];
+    snprintf(portString, sizeof(portString), "%lu", (unsigned long)_port);
+
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_family = AF_UNSPEC;
+
+    struct addrinfo *res = NULL;
+    int gai = getaddrinfo([_host UTF8String], portString, &hints, &res);
+    if (gai != 0 || res == NULL) {
+        if (self.stateChangedHandler) {
+            NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @"No address candidates";
+            self.stateChangedHandler(PDSNetworkConnectionStateFailed,
+                                     [NSError errorWithDomain:@"PDSNetworkTransport"
+                                                         code:-2
+                                                     userInfo:@{NSLocalizedDescriptionKey: message ?: @"Address resolution failed"}]);
+        }
+        return;
+    }
+
+    _connectAddrInfo = res;
+    _connectAddrInfoCurrent = res;
+
+    [self startConnectToNextCandidate];
+}
+
+- (void)startConnectToNextCandidate {
+    while (_connectAddrInfoCurrent != NULL) {
+        struct addrinfo *ai = _connectAddrInfoCurrent;
+        _connectAddrInfoCurrent = ai->ai_next;
+
+        int fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (fd == -1) {
+            _connectLastError = errno;
+            continue;
+        }
+
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+        int result = connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+        if (result == 0) {
+            _sockfd = fd;
+            [self cleanupConnectState];
+            [self setupSources];
+            if (self.stateChangedHandler) {
+                self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+            }
+            return;
+        }
+
+        if (errno == EINPROGRESS) {
+            _sockfd = fd;
+            __weak typeof(self) weakSelf = self;
+            _connectSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+            dispatch_source_set_event_handler(_connectSource, ^{
+                [weakSelf handleConnectCompletion];
+            });
+            dispatch_resume(_connectSource);
+            return;
+        }
+
+        _connectLastError = errno;
+        close(fd);
+    }
+
+    NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:_connectLastError ?: errno userInfo:nil];
+    [self cleanupConnectState];
+
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
+    }
+}
+
+- (void)handleConnectCompletion {
+    int error = 0;
+    socklen_t len = sizeof(error);
+    getsockopt(_sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+
+    if (_connectSource) {
+        dispatch_source_cancel(_connectSource);
+        _connectSource = nil;
+    }
+
+    if (error != 0) {
+        _connectLastError = error;
+        if (_sockfd != -1) {
+            close(_sockfd);
+            _sockfd = -1;
+        }
+
+        [self startConnectToNextCandidate];
+        return;
+    }
+
+    [self cleanupConnectState];
+    [self setupSources];
     if (self.stateChangedHandler) {
         self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
     }
@@ -307,6 +338,8 @@
 }
 
 - (void)cancel {
+    [self cleanupConnectState];
+
     if (_readSource) {
         dispatch_source_cancel(_readSource);
         _readSource = nil;
