@@ -103,7 +103,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param dataDirectory Path to the data directory for databases and blobs.
  @return An initialized PDSApplication instance.
  */
-- (instancetype)initWithDataDirectory:(NSString *)dataDirectory;
+- (instancetype)initWithDataDirectory:(NSString *)dataDirectory NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)init NS_UNAVAILABLE;
 
