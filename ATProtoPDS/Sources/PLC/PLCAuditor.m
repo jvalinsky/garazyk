@@ -181,9 +181,9 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 }
 
 - (BOOL)verifyOperation:(PLCOperation *)op
-           proposedDate:(NSDate *)proposedDate
-          nullifiedCIDs:(NSArray<NSString *> * _Nullable *)nullified
-                  error:(NSError **)error {
+	           proposedDate:(NSDate *)proposedDate
+	          nullifiedCIDs:(NSArray<NSString *> * _Nullable __autoreleasing * _Nullable)nullified
+	                  error:(NSError **)error {
     NSDate *startTime = [NSDate date];
 
     NSString *opType = op.data[@"type"];

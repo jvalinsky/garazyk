@@ -8,9 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithStore:(id<PLCStore>)store;
 - (BOOL)verifyDID:(NSString *)did error:(NSError **)error;
 - (BOOL)verifyOperation:(PLCOperation *)op
-           proposedDate:(NSDate *)proposedDate
-          nullifiedCIDs:(NSArray<NSString *> * _Nullable *)nullified
-                  error:(NSError **)error;
+	           proposedDate:(NSDate *)proposedDate
+	          nullifiedCIDs:(NSArray<NSString *> * _Nullable __autoreleasing * _Nullable)nullified
+	                  error:(NSError **)error;
 - (BOOL)verifyOperation:(PLCOperation *)op error:(NSError **)error;
 - (NSData *)hashForOperationData:(NSDictionary *)data;
 
