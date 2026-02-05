@@ -30,7 +30,7 @@
 - **CLI Verification**: Application runs successfully with all commands functional
 
 ### Phase 5: Linux Support & Reliability Improvements - IN PROGRESS
-- **Linux Porting**: `PDSNetworkTransportLinux` implements non-blocking connect + read/write using BSD sockets/libdispatch; remaining work is hostname (DNS) + IPv6 support and additional hardening.
+- **Linux Porting**: `PDSNetworkTransportLinux` implements non-blocking connect + read/write and uses `getaddrinfo()` for hostname + IPv4/IPv6 resolution; remaining work is Linux/GNUstep validation, fallback behavior, and additional hardening.
 - **CLI Enhancements**: Added unit tests for CLI commands.
 - **Handle Resolution**: COMPLETED. Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
 - **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
