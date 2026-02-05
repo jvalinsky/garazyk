@@ -6,9 +6,9 @@
    - Next step: define the production model (env vs file vs hash, rotation, and per-request authorization) and enforce it consistently across admin endpoints.
 
 2. `ATProtoPDS/Sources/AppView/ActorService.m:183`
-   - Follower counts now use a SQL count query, but it depends on `records.subject_did` being populated for follow records and may need indexing for scale.
-   - Impact: Counts can be wrong/slow if `subject_did` isn’t consistently written or if the table grows large.
-   - Next step: ensure write paths populate `subject_did` for `app.bsky.graph.follow` and add an index covering `(subject_did, collection)`.
+   - Follower counts use `records.subject_did` for follow records and have supporting indices (`idx_records_subject_did`, `idx_records_subject_did_collection`).
+   - Impact: Remaining risk is correctness: ensure all follow/block write paths populate `subject_did` consistently.
+   - Next step: add a targeted integration test that creates a follow and asserts follower count increments for the subject.
 
 ## Recently Resolved
 - `did:key` parsing now supports secp256k1 + P-256 multicodecs via `PLCDIDKey` (ATProtoPDS/Sources/PLC/PLCDIDKey.m).
