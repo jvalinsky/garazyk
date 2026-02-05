@@ -1704,7 +1704,7 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
-    verifier.allowedAlgorithms = @[@"RS256", @"ES256"]; // Restrict to secure algorithms
+    verifier.allowedAlgorithms = @[@"ES256K", @"ES256", @"RS256"]; // Restrict to secure algorithms
 
     // Verify the JWT
     NSError *verifyError = nil;
