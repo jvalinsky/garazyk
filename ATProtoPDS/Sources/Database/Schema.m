@@ -54,7 +54,8 @@ NSString * const kPDSRecordTableCreateSQL =
     @");"
     @"CREATE INDEX IF NOT EXISTS idx_records_did_collection ON records(did, collection);"
     @"CREATE INDEX IF NOT EXISTS idx_records_did_collection_rkey ON records(did, collection, rkey);"
-    @"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);";
+    @"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);"
+    @"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);";
 
 NSString * const kPDSBlockTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS blocks ("
