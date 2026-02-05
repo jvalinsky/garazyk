@@ -10,14 +10,12 @@
    - Impact: Unsafe default; blocks any credible “production-ready” claim for admin/moderation endpoints even if the controller/service paths are implemented.
    - Next step: replace with secure, configurable auth (env-provided secret or hash; constant-time compare) and/or gate admin endpoints if unset.
 
-3. `ATProtoPDS/Sources/PLC/PLCDIDKey.m:5`
-   - `did:key` parsing is currently a stub (it only checks the prefix and returns a placeholder object).
-   - Impact: PLC and identity tooling can’t reliably parse/validate `did:key` identifiers.
-   - Next step: implement multibase(base58btc) + multicodec parsing with strict length checks and unit tests for secp256k1/P-256 (and any other required key types).
-
-4. `ATProtoPDS/Sources/AppView/ActorService.m:183`
+3. `ATProtoPDS/Sources/AppView/ActorService.m:183`
    - Follower counts now use a SQL count query, but it depends on `records.subject_did` being populated for follow records and may need indexing for scale.
    - Impact: Counts can be wrong/slow if `subject_did` isn’t consistently written or if the table grows large.
    - Next step: ensure write paths populate `subject_did` for `app.bsky.graph.follow` and add an index covering `(subject_did, collection)`.
+
+## Recently Resolved
+- `did:key` parsing now supports secp256k1 + P-256 multicodecs via `PLCDIDKey` (ATProtoPDS/Sources/PLC/PLCDIDKey.m).
 
 Please file follow-up work items if you want these tracked in an issue tracker, and reopen this file if the list grows.

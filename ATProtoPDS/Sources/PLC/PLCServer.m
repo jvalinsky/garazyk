@@ -34,7 +34,16 @@ static BOOL PLCValidateDidKey(NSString *key, NSError **error) {
         }
         return NO;
     }
-    NSString *base58 = [key substringFromIndex:@"did:key:".length];
+    NSString *multibase = [key substringFromIndex:@"did:key:".length];
+    if (multibase.length < 2 || [multibase characterAtIndex:0] != 'z') {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                         code:3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported did:key multibase (expected base58btc 'z')"}];
+        }
+        return NO;
+    }
+    NSString *base58 = [multibase substringFromIndex:1];
     NSData *decoded = [CID base58btcDecode:base58];
     if (!decoded || decoded.length == 0) {
         if (error) {
