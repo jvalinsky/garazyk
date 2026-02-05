@@ -4,20 +4,25 @@
 We are currently focused on implementing the core PDS/PLC functionality. These tasks capture the follow-up work needed for stubbed paths that fall outside of the current scope or are necessary for long term parity.
 
 ## Tasks
-1. **Track Linux transport client implementation**  
-   - Reference: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-100`  
-   - Reason: The client path (`_sockfd == -1`) currently fails with `Client connection not implemented`. Implementing this is a prerequisite to shipping a Linux target that can participate as a client PDS.
+1. **Finish Linux transport “real network” support**  
+   - Reference: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`  
+   - Reason: The non-blocking connect + read/write loop exists, but outbound connections currently only accept numeric IPv4 addresses. Add hostname (DNS) + IPv6 support (`getaddrinfo`) and tighten error handling/backpressure behavior.
 
-2. **Track regularization of moderation & labeling APIs**  
-   - Reference: `ATProtoPDS/Sources/App/PDSController.m:746-793`  
-   - Reason: Admin/moderation/labeling endpoints immediately return `ATProtoErrorCodeNotImplemented`. They should either be implemented or gated before declaring those XRPC endpoints production-ready.
+2. **Implement `did:key` parsing**  
+   - Reference: `ATProtoPDS/Sources/PLC/PLCDIDKey.m:5-20`  
+   - Reason: `PLCDIDKey.parseFromString:` is still a stub, so PLC/identity tooling can’t validate or extract key material.
 
-3. **Track CIDv1 base58btc decoding for explorer tooling**  
-   - Reference: `ATProtoPDS/Sources/App/Explore/ExploreHandler.m:1965-1995`  
-   - Reason: Explore currently aborts base58btc (`z`) decoding, so CIDv1 data cannot be inspected via the UI. Integrating base58 decoding enables better tooling diagnostics.
+3. **Secure admin authentication + gating**  
+   - Reference: `ATProtoPDS/Sources/Admin/PDSAdminAuth.m:29`  
+   - Reason: Admin auth currently uses a hardcoded password (`admin123`). Replace with secure configuration and/or gate admin endpoints when unset.
 
-4. **Track follower count query implementation**  
-   - Reference: `ATProtoPDS/Sources/AppView/ActorService.m:150-190`  
-   - Reason: `getFollowersCountForDID:` is stubbed to return `0`, which causes downstream UI/analytics to think no accounts have followers. Adding a true count query or derived calculation will improve accuracy.
+4. **Bring characterization tests up to real coverage**  
+   - Reference: `ATProtoPDS/Tests/CharacterizationTests/*`  
+   - Reason: Many characterization tests are scaffolds (`TODO: Initialize self.subject` / commented `XCTFail`) and currently provide little safety net.
 
 Only the Linux/PLC work that keeps the PDS/PLC core running is in scope now; treat other tasks as backlog.
+
+## Recently Completed (no longer tracked here)
+- Moderation/labeling controller paths now route through the admin controller/service (no longer immediate `NotImplemented`).
+- Explore CID base58btc (“z” multibase) decoding support exists in `Base58`/`CID`.
+- Follower counts use a SQL count query in `ActorService` (remaining work is correctness/perf hardening).
