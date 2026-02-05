@@ -17,6 +17,7 @@
 
 #import "Core/TID.h"
 #import "Auth/JWT.h"
+#import "Auth/JWTSigningKeyStore.h"
 #import "Sync/SubscribeReposHandler.h"
 #import "Sync/WebSocketServer.h"
 #import "Repository/RepoCommit.h"
@@ -197,7 +198,11 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         
         // Use a generated server key for now
         // In production, this should be loaded from secure storage or config
-        Secp256k1KeyPair *serverKey = [[Secp256k1 shared] generateKeyPairWithError:nil];
+        NSError *serverKeyError = nil;
+        Secp256k1KeyPair *serverKey = [JWTSigningKeyStore loadOrCreateKeyPairForDataDirectory:_dataDirectory error:&serverKeyError];
+        if (serverKeyError) {
+            PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
+        }
         _jwtMinter.privateKey = serverKey.privateKey;
         _jwtMinter.publicKey = serverKey.publicKey;
         

@@ -18,6 +18,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
+#import "Auth/JWTSigningKeyStore.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Network/HttpServer.h"
@@ -212,7 +213,11 @@
     _jwtMinter.signingAlgorithm = @"ES256K";
     
     // Generate server signing key
-    Secp256k1KeyPair *serverKey = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSError *serverKeyError = nil;
+    Secp256k1KeyPair *serverKey = [JWTSigningKeyStore loadOrCreateKeyPairForDataDirectory:_dataDirectory error:&serverKeyError];
+    if (serverKeyError) {
+        PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
+    }
     _jwtMinter.privateKey = serverKey.privateKey;
     _jwtMinter.publicKey = serverKey.publicKey;
 }
