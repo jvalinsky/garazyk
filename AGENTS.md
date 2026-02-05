@@ -39,7 +39,7 @@
 - **Linux Client Connections**: COMPLETED. Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-168).
 - **Handle Verification**: `resolveIdentity` validates the requested handle against the DID document `alsoKnownAs` list and returns a `HandleMismatch` error when they disagree (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:1069-1092).
 - **Follower Counts**: `ActorService` uses a SQL count query for followers; remaining work is correctness/perf hardening (ensuring `subject_did` is populated and indexed) (ATProtoPDS/Sources/AppView/ActorService.m:183-195).
-- **PLC `did:key` Parsing**: IN PROGRESS. `PLCDIDKey.parseFromString:` is currently stubbed and needs real multibase/multicodec parsing (ATProtoPDS/Sources/PLC/PLCDIDKey.m:5-20).
+- **PLC `did:key` Parsing**: COMPLETED. `PLCDIDKey.parseFromString:` implements base58btc multibase decoding and multicodec parsing for secp256k1 + P-256 keys (ATProtoPDS/Sources/PLC/PLCDIDKey.m:27-141).
 
 ### Phase 6: Professional Script Development - COMPLETED
 - **Professional Bash Scripting Skill**: Created comprehensive skill (`skills/professional-bash-scripting/SKILL.md`) documenting industry best practices from Google, Greg's Wiki, and authoritative sources for writing maintainable, secure, and efficient bash scripts.
