@@ -1,23 +1,23 @@
-# Stubbed Behaviors to Track
+# Behaviors to Track (Remaining Work)
 
-1. `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:85`
-   - The Linux transport will always short-circuit with `Client connection not implemented` when `_sockfd` is `-1`, so client/outbound Socket connections never become ready.
-   - Impact: The Linux target cannot establish any client connections and therefore cannot act as a PDS peer.
-   - Next step: implement the client-side connect/read loop (or defer the Linux target until the full transport is ready).
+1. `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`
+   - The non-blocking connect + read/write loop is implemented, but outbound connections currently only accept numeric IPv4 addresses (`inet_pton(AF_INET, ...)`).
+   - Impact: Linux/GNUstep builds can’t connect to hostnames (DNS) or IPv6 targets, limiting real-world deployability.
+   - Next step: switch to `getaddrinfo()` (IPv4/IPv6), attempt multiple candidates, and add targeted tests.
 
-2. `ATProtoPDS/Sources/App/PDSController.m:746`, `:764`, `:782`, `:790`
-   - Admin (`takeDownAccount`, `reinstateAccount`), moderation (`moderateAccount`, `moderateRecord`), and labeling (`createLabel`, `getLabels`) methods immediately return `ATProtoErrorCodeNotImplemented`.
-   - Impact: These XRPC endpoints are surface-complete but effectively fail, so API consumers cannot perform moderation workflows.
-   - Next step: implement the actual moderation/labeling workflows or gate these endpoints until they are ready.
+2. `ATProtoPDS/Sources/Admin/PDSAdminAuth.m:29`
+   - Admin auth currently uses a hardcoded password (`admin123`).
+   - Impact: Unsafe default; blocks any credible “production-ready” claim for admin/moderation endpoints even if the controller/service paths are implemented.
+   - Next step: replace with secure, configurable auth (env-provided secret or hash; constant-time compare) and/or gate admin endpoints if unset.
 
-3. `ATProtoPDS/Sources/App/Explore/ExploreHandler.m:1983`
-   - CIDv1 entries with base58btc (`"z"`) multibase prefixes stop early with a `decodingStatus` of `"partial - base58 decoding not implemented"`.
-   - Impact: Exploring or validating CIDv1 resources that use base58btc cannot be decoded.
-   - Next step: plug in a base58btc decoder or reuse a shared CID library so `ExploreHandler` can emit proper CID metadata.
+3. `ATProtoPDS/Sources/PLC/PLCDIDKey.m:5`
+   - `did:key` parsing is currently a stub (it only checks the prefix and returns a placeholder object).
+   - Impact: PLC and identity tooling can’t reliably parse/validate `did:key` identifiers.
+   - Next step: implement multibase(base58btc) + multicodec parsing with strict length checks and unit tests for secp256k1/P-256 (and any other required key types).
 
-4. `ATProtoPDS/Sources/AppView/ActorService.m:185`
-   - `getFollowersCountForDID:` always returns `0` as a stub because the necessary schema/index is missing.
-   - Impact: Actor views report zero followers even when accounts have followers, skewing usage statistics.
-   - Next step: add a follower-count query/index (or derive counts from `graph.follow` records) so the method returns accurate values.
+4. `ATProtoPDS/Sources/AppView/ActorService.m:183`
+   - Follower counts now use a SQL count query, but it depends on `records.subject_did` being populated for follow records and may need indexing for scale.
+   - Impact: Counts can be wrong/slow if `subject_did` isn’t consistently written or if the table grows large.
+   - Next step: ensure write paths populate `subject_did` for `app.bsky.graph.follow` and add an index covering `(subject_did, collection)`.
 
 Please file follow-up work items if you want these tracked in an issue tracker, and reopen this file if the list grows.
