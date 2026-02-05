@@ -239,15 +239,6 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error {
-    if (!self.keyRotationManager && !self.publicKey) {
-        if (error) {
-            *error = [NSError errorWithDomain:JWTErrorDomain
-                                         code:JWTErrorNoPublicKey
-                                     userInfo:@{NSLocalizedDescriptionKey: @"No public key configured for signature verification"}];
-        }
-        return NO;
-    }
-
     if (self.allowedAlgorithms && ![self.allowedAlgorithms containsObject:jwt.header.alg ?: @""]) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
@@ -262,14 +253,31 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (!signatureData) return NO;
 
     BOOL verified = NO;
-    if (self.keyRotationManager) {
-        verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
-    } else if (self.publicKey) {
+    NSString *alg = jwt.header.alg ?: @"";
+    if ([alg isEqualToString:@"ES256K"]) {
+        if (!self.publicKey) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorNoPublicKey
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No public key configured for ES256K signature verification"}];
+            }
+            return NO;
+        }
         Secp256k1 *secp = [Secp256k1 shared];
         unsigned char hash[32];
         CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:32];
         verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+    } else {
+        if (!self.keyRotationManager) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorNoPublicKey
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No key rotation manager configured for signature verification"}];
+            }
+            return NO;
+        }
+        verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
     }
 
     if (!verified) {
