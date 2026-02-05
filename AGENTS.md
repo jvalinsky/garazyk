@@ -30,15 +30,16 @@
 - **CLI Verification**: Application runs successfully with all commands functional
 
 ### Phase 5: Linux Support & Reliability Improvements - IN PROGRESS
-- **Linux Porting**: `PDSNetworkTransportLinux` structure in place using BSD sockets/libdispatch, but read logic is pending implementation.
+- **Linux Porting**: `PDSNetworkTransportLinux` implements non-blocking connect + read/write using BSD sockets/libdispatch; remaining work is hostname (DNS) + IPv6 support and additional hardening.
 - **CLI Enhancements**: Added unit tests for CLI commands.
 - **Handle Resolution**: COMPLETED. Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
 - **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
 - **Explore**: COMPLETED. Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
 
 - **Linux Client Connections**: COMPLETED. Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-168).
-- **Handle Verification**: `resolveIdentity` skips verifying `alsoKnownAs` against the resolved handle (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:914).
-- **Follower Counts**: `ActorService` returns `0` for followers as a stub (ATProtoPDS/Sources/AppView/ActorService.m:183-186).
+- **Handle Verification**: `resolveIdentity` validates the requested handle against the DID document `alsoKnownAs` list and returns a `HandleMismatch` error when they disagree (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:1069-1092).
+- **Follower Counts**: `ActorService` uses a SQL count query for followers; remaining work is correctness/perf hardening (ensuring `subject_did` is populated and indexed) (ATProtoPDS/Sources/AppView/ActorService.m:183-195).
+- **PLC `did:key` Parsing**: IN PROGRESS. `PLCDIDKey.parseFromString:` is currently stubbed and needs real multibase/multicodec parsing (ATProtoPDS/Sources/PLC/PLCDIDKey.m:5-20).
 
 ### Phase 6: Professional Script Development - COMPLETED
 - **Professional Bash Scripting Skill**: Created comprehensive skill (`skills/professional-bash-scripting/SKILL.md`) documenting industry best practices from Google, Greg's Wiki, and authoritative sources for writing maintainable, secure, and efficient bash scripts.
@@ -200,6 +201,9 @@ make -j$(nproc)
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
+   # If using Deciduous for decision graphs:
+   deciduous sync
+   # If using Beads:
    bd sync
    git push
    git status  # MUST show "up to date with origin"
