@@ -5,6 +5,7 @@
 #import <sys/socket.h>
 #import <netinet/in.h>
 #import <arpa/inet.h>
+#import <netdb.h>
 #import <unistd.h>
 #import <fcntl.h>
 
@@ -81,60 +82,87 @@
 - (void)startWithQueue:(dispatch_queue_t)queue {
     _queue = queue;
     
-    if (_sockfd == -1) {
-        _sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (_sockfd == -1) {
-            dispatch_async(queue, ^{
-                if (self.stateChangedHandler) {
-                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+	    if (_sockfd == -1) {
+	        char portString[16];
+	        snprintf(portString, sizeof(portString), "%lu", (unsigned long)_port);
+
+	        struct addrinfo hints;
+	        memset(&hints, 0, sizeof(hints));
+	        hints.ai_socktype = SOCK_STREAM;
+	        hints.ai_protocol = IPPROTO_TCP;
+	        hints.ai_family = AF_UNSPEC;
+
+	        struct addrinfo *res = NULL;
+	        int gai = getaddrinfo([_host UTF8String], portString, &hints, &res);
+	        if (gai != 0 || res == NULL) {
+	            dispatch_async(queue, ^{
+	                if (self.stateChangedHandler) {
+	                    NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @"No address candidates";
+	                    self.stateChangedHandler(PDSNetworkConnectionStateFailed,
+	                                            [NSError errorWithDomain:@"PDSNetworkTransport"
+	                                                                code:-2
+	                                                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Address resolution failed"}]);
+	                }
+	            });
+	            return;
+	        }
+
+	        int connectResult = -1;
+	        int connectErrno = 0;
+	        int fd = -1;
+	        for (struct addrinfo *ai = res; ai != NULL; ai = ai->ai_next) {
+	            fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+	            if (fd == -1) {
+	                connectErrno = errno;
+	                continue;
+	            }
+
+	            int flags = fcntl(fd, F_GETFL, 0);
+	            fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+	            connectResult = connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+	            if (connectResult == 0 || errno == EINPROGRESS) {
+	                break;
+	            }
+
+	            connectErrno = errno;
+	            close(fd);
+	            fd = -1;
+	        }
+
+	        freeaddrinfo(res);
+
+	        if (fd == -1) {
+	            dispatch_async(queue, ^{
+	                if (self.stateChangedHandler) {
+	                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:connectErrno ?: errno userInfo:nil]);
+	                }
+	            });
+	            return;
+	        }
+
+	        _sockfd = fd;
+
+	        if (connectResult == 0) {
+	            [self setupSources];
+	            dispatch_async(queue, ^{
+	                if (self.stateChangedHandler) {
+	                    self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
                 }
             });
-            return;
-        }
-        
-        int flags = fcntl(_sockfd, F_GETFL, 0);
-        fcntl(_sockfd, F_SETFL, flags | O_NONBLOCK);
-        
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons((uint16_t)_port);
-        
-        struct in_addr sin_addr;
-        if (inet_pton(AF_INET, [_host UTF8String], &sin_addr) == 1) {
-            addr.sin_addr = sin_addr;
-        } else {
-            dispatch_async(queue, ^{
-                if (self.stateChangedHandler) {
-                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:@"PDSNetworkTransport" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid host address"}]);
-                }
-            });
-            close(_sockfd);
-            _sockfd = -1;
-            return;
-        }
-        
-        int result = connect(_sockfd, (struct sockaddr *)&addr, sizeof(addr));
-        if (result == 0) {
-            [self setupSources];
-            dispatch_async(queue, ^{
-                if (self.stateChangedHandler) {
-                    self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
-                }
-            });
-            return;
-        }
-        
-        if (errno != EINPROGRESS) {
-            dispatch_async(queue, ^{
-                if (self.stateChangedHandler) {
-                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
-                }
-            });
-            close(_sockfd);
-            _sockfd = -1;
-            return;
-        }
+	            return;
+	        }
+	        
+	        if (errno != EINPROGRESS) {
+	            dispatch_async(queue, ^{
+	                if (self.stateChangedHandler) {
+	                    self.stateChangedHandler(PDSNetworkConnectionStateFailed, [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+	                }
+	            });
+	            close(_sockfd);
+	            _sockfd = -1;
+	            return;
+	        }
         
         __weak typeof(self) weakSelf = self;
         dispatch_source_t connectSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, queue);

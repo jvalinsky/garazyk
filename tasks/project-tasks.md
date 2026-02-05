@@ -6,11 +6,11 @@ We are currently focused on implementing the core PDS/PLC functionality. These t
 ## Tasks
 1. **Finish Linux transport “real network” support**  
    - Reference: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`  
-   - Reason: The non-blocking connect + read/write loop exists, but outbound connections currently only accept numeric IPv4 addresses. Add hostname (DNS) + IPv6 support (`getaddrinfo`) and tighten error handling/backpressure behavior.
+   - Reason: Hostname + IPv4/IPv6 resolution is in place (`getaddrinfo`), but we still need real Linux/GNUstep validation, test coverage, and fallback behavior (for example: trying the next `getaddrinfo` candidate if an async connect fails).
 
 2. **Secure admin authentication + gating**  
    - Reference: `ATProtoPDS/Sources/Admin/PDSAdminAuth.m:29`  
-   - Reason: Admin auth currently uses a hardcoded password (`admin123`). Replace with secure configuration and/or gate admin endpoints when unset.
+   - Reason: Admin auth now requires `PDS_ADMIN_PASSWORD`, but we still need a clear production story (secret files/hashes, rotation, and request-level authorization rather than process-global state).
 
 3. **Bring characterization tests up to real coverage**  
    - Reference: `ATProtoPDS/Tests/CharacterizationTests/*`  
@@ -20,6 +20,8 @@ Only the Linux/PLC work that keeps the PDS/PLC core running is in scope now; tre
 
 ## Recently Completed (no longer tracked here)
 - `did:key` parsing supports secp256k1 + P-256 via `PLCDIDKey`.
+- Linux transport outbound connects resolve hostnames + IPv4/IPv6 via `getaddrinfo()`.
+- Admin auth no longer uses a hardcoded password (uses `PDS_ADMIN_PASSWORD`).
 - Moderation/labeling controller paths now route through the admin controller/service (no longer immediate `NotImplemented`).
 - Explore CID base58btc (“z” multibase) decoding support exists in `Base58`/`CID`.
 - Follower counts use a SQL count query in `ActorService` (remaining work is correctness/perf hardening).
