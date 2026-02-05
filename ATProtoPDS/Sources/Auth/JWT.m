@@ -415,7 +415,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         
         return [keyPair signHash:hashData error:error];
     } else {
-        // Fallback to stub
+        // No private key configured for signing
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
                                          code:JWTErrorSigningFailed
