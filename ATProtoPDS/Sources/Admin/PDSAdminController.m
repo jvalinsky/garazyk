@@ -12,7 +12,6 @@
 
 #import "PDSAdminController.h"
 #import "Services/PDSAdminService.h"
-#import "../Debug/PDSLogger.h"
 
 @interface PDSAdminController ()
 @property (nonatomic, strong, readwrite) id<PDSAdminService> adminService;
@@ -24,12 +23,16 @@
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
                           accountService:(nullable id<PDSAccountService>)accountService {
-    PDSAdminService *service = [[PDSAdminService alloc] initWithServiceDatabases:serviceDatabases
-                                                                   accountService:accountService];
-    if (!service) {
-        return nil;
+    self = [super init];
+    if (self) {
+        PDSAdminService *service = [[PDSAdminService alloc] initWithServiceDatabases:serviceDatabases
+                                                                       accountService:accountService];
+        if (!service) {
+            return nil;
+        }
+        _adminService = service;
     }
-    return [self initWithAdminService:service];
+    return self;
 }
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
@@ -42,19 +45,6 @@
         _adminService = adminService;
     }
     return self;
-}
-
-- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
-                         adminService:(id<PDSAdminService>)adminService {
-    self = [super init];
-    if (self) {
-        _adminService = adminService;
-    }
-    return self;
-}
-
-- (instancetype)init {
-    return [super init];
 }
 
 #pragma mark - Account Administration
