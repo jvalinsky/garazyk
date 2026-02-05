@@ -39,14 +39,11 @@
     /* Target Method:
      - (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject initWithRootNode...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    MSTNode *rootNode = [MSTNode leafNodeWithEntries:@[]];
+    MST *tree = [[MST alloc] initWithRootNode:rootNode];
+    XCTAssertNotNil(tree);
+    XCTAssertNotNil(tree.rootCID);
 }
 
 - (void)testCharacterization_get {
@@ -90,14 +87,11 @@
     /* Target Method:
      - (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(nullable NSString *)subKey;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject put...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    [self.subject put:@"app.bsky.feed.post" valueCID:cid subKey:@"rkey1"];
+
+    XCTAssertNotNil([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"]);
 }
 
 - (void)testCharacterization_delete {
@@ -117,14 +111,13 @@
     /* Target Method:
      - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject delete...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    [self.subject put:@"app.bsky.feed.post" valueCID:cid subKey:@"rkey1"];
+    XCTAssertNotNil([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"]);
+
+    [self.subject delete:@"app.bsky.feed.post" subKey:@"rkey1"];
+    XCTAssertNil([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"]);
 }
 
 - (void)testCharacterization_allEntries {
@@ -159,14 +152,13 @@
     /* Target Method:
      - (NSData *)exportCAR;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject exportCAR...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"b" valueCID:[CID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
+
+    NSData *carData = [self.subject exportCAR];
+    XCTAssertNotNil(carData);
+    XCTAssertGreaterThan(carData.length, 0U);
 }
 
 - (void)testCharacterization_serializeToCBOR {
@@ -232,28 +224,22 @@
     /* Target Method:
      + (NSUInteger)keyDepthBytes:(NSData *)keyBytes;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [MST keyDepthBytes...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    NSData *keyBytes = [@"key" dataUsingEncoding:NSUTF8StringEncoding];
+    NSUInteger depthA = [MST keyDepthBytes:keyBytes];
+    NSUInteger depthB = [MST keyDepthString:@"key"];
+    XCTAssertEqual(depthA, depthB);
 }
 
 - (void)testCharacterization_Class_keyDepth {
     /* Target Method:
      + (uint32_t)keyDepth:(NSString *)key;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [MST keyDepth...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    NSString *key = @"key";
+    uint32_t depthA = [MST keyDepth:key];
+    NSUInteger depthB = [MST keyDepthString:key];
+    XCTAssertEqual((NSUInteger)depthA, depthB);
 }
 
 - (void)testCharacterization_getProofNodesForKey {
@@ -271,56 +257,50 @@
     /* Target Method:
      - (nullable NSData *)serializeNode:(MSTNode *)node;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject serializeNode...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    [self.subject put:@"proofKey" valueCID:[CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
+    NSArray<MSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
+    XCTAssertNotNil(nodes);
+    XCTAssertGreaterThan(nodes.count, 0U);
+
+    NSData *nodeData = [self.subject serializeNode:nodes.firstObject];
+    XCTAssertNotNil(nodeData);
+    XCTAssertGreaterThan(nodeData.length, 0U);
 }
 
 - (void)testCharacterization_toJSON {
     /* Target Method:
      - (nullable NSDictionary *)toJSON;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject toJSON...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    NSDictionary *json = [self.subject toJSON];
+    XCTAssertNotNil(json);
+    XCTAssertNotNil(json[@"rootCID"]);
+    XCTAssertNotNil(json[@"nodeCount"]);
 }
 
 - (void)testCharacterization_getStatistics {
     /* Target Method:
      - (NSDictionary *)getStatistics;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject getStatistics...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    NSDictionary *stats = [self.subject getStatistics];
+    XCTAssertNotNil(stats);
+    XCTAssertNotNil(stats[@"nodeCount"]);
+    XCTAssertNotNil(stats[@"entryCount"]);
 }
 
 - (void)testCharacterization_toDOT {
     /* Target Method:
      - (nullable NSString *)toDOT;
     */
-    
-    // 1. Arrange
-    
-    // 2. Act
-    // [self.subject toDOT...];
-    
-    // 3. Assert
-    // XCTFail(@"Test not implemented");
+
+    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    NSString *dot = [self.subject toDOT];
+    XCTAssertNotNil(dot);
+    XCTAssertTrue([dot hasPrefix:@"digraph MST"]);
 }
 
 @end
