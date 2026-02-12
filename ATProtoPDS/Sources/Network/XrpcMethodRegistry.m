@@ -334,6 +334,43 @@ static NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account) {
     return view;
 }
 
+static NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key) {
+    NSMutableArray<NSString *> *values = [NSMutableArray array];
+    NSArray<NSString *> *pairs = [request.queryString componentsSeparatedByString:@"&"];
+    for (NSString *pair in pairs) {
+        if (pair.length == 0) {
+            continue;
+        }
+        NSRange eqRange = [pair rangeOfString:@"="];
+        NSString *rawKey = eqRange.location == NSNotFound ? pair : [pair substringToIndex:eqRange.location];
+        NSString *rawValue = eqRange.location == NSNotFound ? @"" : [pair substringFromIndex:eqRange.location + 1];
+
+        NSString *decodedKey = [[rawKey stringByReplacingOccurrencesOfString:@"+" withString:@" "] stringByRemovingPercentEncoding] ?: rawKey;
+        if (![decodedKey isEqualToString:key]) {
+            continue;
+        }
+
+        NSString *decodedValue = [[rawValue stringByReplacingOccurrencesOfString:@"+" withString:@" "] stringByRemovingPercentEncoding] ?: rawValue;
+        for (NSString *component in [decodedValue componentsSeparatedByString:@","]) {
+            NSString *trimmed = [component stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (trimmed.length > 0) {
+                [values addObject:trimmed];
+            }
+        }
+    }
+
+    if (values.count == 0) {
+        NSString *singleValue = [request queryParamForKey:key];
+        for (NSString *component in [singleValue componentsSeparatedByString:@","]) {
+            NSString *trimmed = [component stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (trimmed.length > 0) {
+                [values addObject:trimmed];
+            }
+        }
+    }
+
+    return values;
+}
 static NSString *normalizedHostnameString(NSString *hostInput) {
     if (![hostInput isKindOfClass:[NSString class]]) {
         return @"localhost";
@@ -2884,6 +2921,43 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:adminAccountViewFromAccount(account)];
     }];
 
+    [dispatcher registerComAtprotoAdminGetAccountInfos:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSArray<NSString *> *dids = queryArrayValues(request, @"dids");
+        if (dids.count == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing dids parameter"}];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *infos = [NSMutableArray arrayWithCapacity:dids.count];
+        for (NSString *did in dids) {
+            NSError *didError = nil;
+            if (![ATProtoValidator validateDID:did error:&didError]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+                return;
+            }
+
+            PDSDatabaseAccount *account = [controller.serviceDatabases getAccountByDid:did error:nil];
+            if (account) {
+                [infos addObject:adminAccountViewFromAccount(account)];
+            }
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"infos": infos}];
+    }];
+
     // Moderation endpoints
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         if (!authorizeAdminRequest(request, response, controller)) {
@@ -5110,6 +5184,43 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:adminAccountViewFromAccount(account)];
+    }];
+
+    [dispatcher registerComAtprotoAdminGetAccountInfos:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSArray<NSString *> *dids = queryArrayValues(request, @"dids");
+        if (dids.count == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing dids parameter"}];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *infos = [NSMutableArray arrayWithCapacity:dids.count];
+        for (NSString *did in dids) {
+            NSError *didError = nil;
+            if (![ATProtoValidator validateDID:did error:&didError]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+                return;
+            }
+
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+            if (account) {
+                [infos addObject:adminAccountViewFromAccount(account)];
+            }
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"infos": infos}];
     }];
 
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
