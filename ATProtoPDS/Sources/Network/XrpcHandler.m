@@ -116,6 +116,14 @@
     [self registerMethod:@"com.atproto.server.deleteSession" handler:handler];
 }
 
+- (void)registerComAtprotoServerCreateInviteCode:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.createInviteCode" handler:handler];
+}
+
+- (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.createInviteCodes" handler:handler];
+}
+
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
 }
