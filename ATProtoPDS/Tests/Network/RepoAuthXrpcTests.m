@@ -350,6 +350,50 @@
     XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
 }
 
+- (void)testTempRevokeAccountCredentialsRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
+                                                      body:@{@"account": self.did1}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testTempRevokeAccountCredentialsRejectsOtherAccount {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
+                                                      body:@{@"account": self.did2}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testTempRevokeAccountCredentialsRevokesRefreshAndAppPasswords {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    HttpResponse *createdResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAppPassword"
+                                                             body:@{@"name": @"temp-revoke-test"}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(createdResponse.statusCode, 200);
+    NSString *appPassword = createdResponse.jsonBody[@"password"];
+    XCTAssertNotNil(appPassword);
+
+    HttpResponse *revokeResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
+                                                            body:@{@"account": @"repoauth1.test"}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(revokeResponse.statusCode, 200);
+    XCTAssertTrue([revokeResponse.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)revokeResponse.jsonBody).count, 0U);
+
+    NSError *refreshError = nil;
+    NSDictionary *refreshed = [self.controller refreshAccessToken:self.refreshJwt1 error:&refreshError];
+    XCTAssertNil(refreshed);
+    XCTAssertNotNil(refreshError);
+
+    HttpResponse *sessionAfterRevoke = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
+                                                                body:@{@"identifier": @"repoauth1.test",
+                                                                       @"password": appPassword}
+                                                             headers:@{}];
+    XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
+}
+
 - (void)testGetAccountInviteCodesRequiresAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.server.getAccountInviteCodes"
                                                queryParams:@{}
