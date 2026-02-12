@@ -110,6 +110,28 @@
     return response;
 }
 
+- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+                             queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
+                                 headers:(NSDictionary<NSString *, NSString *> *)headers {
+    NSMutableDictionary *allHeaders = [NSMutableDictionary dictionary];
+    if (headers) {
+        [allHeaders addEntriesFromDictionary:headers];
+    }
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:path
+                                                   queryString:@""
+                                                   queryParams:queryParams ?: @{}
+                                                       version:@"1.1"
+                                                       headers:allHeaders
+                                                          body:nil
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:request response:response];
+    return response;
+}
+
 - (void)testDeleteRecordRequiresAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
@@ -301,6 +323,32 @@
                                                                        @"password": appPassword}
                                                              headers:@{}];
     XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
+}
+
+- (void)testSyncGetRecordReturnsCARWithoutAuth {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"sync getRecord test",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                        record:record
+                                                validationMode:PDSValidationModeRequired
+                                                         error:nil];
+    XCTAssertNotNil(created);
+    NSString *uri = created[@"uri"];
+    NSString *rkey = [[uri componentsSeparatedByString:@"/"] lastObject];
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRecord"
+                                              queryParams:@{@"did": self.did1,
+                                                           @"collection": @"app.bsky.feed.post",
+                                                           @"rkey": rkey ?: @""}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
+    XCTAssertNotNil(response.bodyData);
+    XCTAssertTrue(response.bodyData.length > 0);
 }
 
 @end
