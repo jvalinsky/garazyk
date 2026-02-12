@@ -6536,6 +6536,16 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
         NSDictionary *body = request.jsonBody;
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
@@ -6566,6 +6576,16 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminGetSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
         NSString *did = [request queryParamForKey:@"did"];
         if (!did) {
             response.statusCode = HttpStatusBadRequest;
@@ -6886,6 +6906,16 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
         NSDictionary *body = request.jsonBody;
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
@@ -6907,6 +6937,16 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
         NSDictionary *body = request.jsonBody;
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
