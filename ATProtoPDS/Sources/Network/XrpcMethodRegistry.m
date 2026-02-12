@@ -305,6 +305,35 @@ static NSString *currentISO8601String(void) {
     return [formatter stringFromDate:[NSDate date]];
 }
 
+static NSString *iso8601StringFromUnixTimestamp(NSTimeInterval timestamp) {
+    NSDate *date = timestamp > 0 ? [NSDate dateWithTimeIntervalSince1970:timestamp] : [NSDate date];
+    if (@available(macOS 10.12, iOS 10.0, *)) {
+        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
+        return [formatter stringFromDate:date];
+    }
+
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+    return [formatter stringFromDate:date];
+}
+
+static NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account) {
+    NSMutableDictionary *view = [@{
+        @"did": account.did ?: @"",
+        @"handle": account.handle ?: @"",
+        @"indexedAt": iso8601StringFromUnixTimestamp(account.createdAt)
+    } mutableCopy];
+
+    if (account.email.length > 0) {
+        view[@"email"] = account.email;
+    }
+
+    return view;
+}
+
 static NSString *normalizedHostnameString(NSString *hostInput) {
     if (![hostInput isKindOfClass:[NSString class]]) {
         return @"localhost";
@@ -2818,6 +2847,43 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
                                             controller.userDatabasePool,
                                             [PDSConfiguration sharedConfiguration]);
 
+    [dispatcher registerComAtprotoAdminGetAccountInfo:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *did = [request queryParamForKey:@"did"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *didError = nil;
+        if (![ATProtoValidator validateDID:did error:&didError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+            return;
+        }
+
+        NSError *error = nil;
+        PDSDatabaseAccount *account = [controller.serviceDatabases getAccountByDid:did error:&error];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": error.localizedDescription ?: @"Account not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:adminAccountViewFromAccount(account)];
+    }];
+
     // Moderation endpoints
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         if (!authorizeAdminRequest(request, response, controller)) {
@@ -5007,6 +5073,43 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             @"subject": @{@"did": did},
             @"takedown": @(isTakedown)
         }];
+    }];
+
+    [dispatcher registerComAtprotoAdminGetAccountInfo:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *did = [request queryParamForKey:@"did"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *didError = nil;
+        if (![ATProtoValidator validateDID:did error:&didError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+            return;
+        }
+
+        NSError *error = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&error];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": error.localizedDescription ?: @"Account not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:adminAccountViewFromAccount(account)];
     }];
 
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
