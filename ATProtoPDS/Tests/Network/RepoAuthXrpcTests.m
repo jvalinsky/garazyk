@@ -179,4 +179,59 @@
     XCTAssertNotNil(error);
 }
 
+- (void)testCreateInviteCodeRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createInviteCode"
+                                                      body:@{@"useCount": @1}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testCreateInviteCodeCreatesInviteInDatabase {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createInviteCode"
+                                                      body:@{@"useCount": @2}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSString *code = response.jsonBody[@"code"];
+    XCTAssertNotNil(code);
+    XCTAssertTrue([code isKindOfClass:[NSString class]]);
+    XCTAssertTrue(code.length > 0);
+
+    NSError *error = nil;
+    NSString *dbCode = [self.controller.serviceDatabases getInviteCodeForAccount:self.did1 error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(dbCode);
+    XCTAssertEqualObjects(dbCode, code);
+}
+
+- (void)testCreateInviteCodesRejectsOtherAccounts {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createInviteCodes"
+                                                      body:@{@"codeCount": @1,
+                                                             @"useCount": @1,
+                                                             @"forAccounts": @[self.did2]}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testCreateInviteCodesCreatesMultipleForSelf {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createInviteCodes"
+                                                      body:@{@"codeCount": @3,
+                                                             @"useCount": @1}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSArray *codesByAccount = response.jsonBody[@"codes"];
+    XCTAssertNotNil(codesByAccount);
+    XCTAssertTrue([codesByAccount isKindOfClass:[NSArray class]]);
+    XCTAssertEqual(codesByAccount.count, 1U);
+
+    NSDictionary *entry = codesByAccount.firstObject;
+    XCTAssertEqualObjects(entry[@"account"], self.did1);
+    NSArray *codes = entry[@"codes"];
+    XCTAssertNotNil(codes);
+    XCTAssertTrue([codes isKindOfClass:[NSArray class]]);
+    XCTAssertEqual(codes.count, 3U);
+}
+
 @end
