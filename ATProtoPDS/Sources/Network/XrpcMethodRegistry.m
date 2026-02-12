@@ -214,6 +214,20 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *outValue) {
     return YES;
 }
 
+static NSString *currentISO8601String(void) {
+    if (@available(macOS 10.12, iOS 10.0, *)) {
+        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
+        return [formatter stringFromDate:[NSDate date]];
+    }
+
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+    return [formatter stringFromDate:[NSDate date]];
+}
+
 static NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error) {
     const uint32_t iterations = 600000;
     const size_t derivedKeyLength = 32;
@@ -609,6 +623,66 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerGetAccountInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSString *code = [serviceDatabases getInviteCodeForAccount:did error:&error];
+        if (error) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InviteCodeLookupFailed", @"message": error.localizedDescription ?: @"Failed to load invite codes"}];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *codes = [NSMutableArray array];
+        if (code.length > 0) {
+            [codes addObject:@{
+                @"code": code,
+                @"available": @1,
+                @"disabled": @NO,
+                @"forAccount": did,
+                @"createdBy": did,
+                @"createdAt": currentISO8601String(),
+                @"uses": @[]
+            }];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"codes": codes}];
+    }];
+
+    [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerRequestEmailUpdate:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"tokenRequired": @NO}];
     }];
 
     [dispatcher registerComAtprotoServerConfirmEmail:^(HttpRequest *request, HttpResponse *response) {
