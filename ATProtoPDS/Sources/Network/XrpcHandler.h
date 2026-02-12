@@ -106,6 +106,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.createInviteCodes. */
 - (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.getAccountInviteCodes. */
+- (void)registerComAtprotoServerGetAccountInviteCodes:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.createAppPassword. */
 - (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler;
 
@@ -150,6 +153,12 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.server.updateEmail. */
 - (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.requestEmailConfirmation. */
+- (void)registerComAtprotoServerRequestEmailConfirmation:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.requestEmailUpdate. */
+- (void)registerComAtprotoServerRequestEmailUpdate:(XrpcMethodHandler)handler;
 
 // MARK: - Repository Methods
 
