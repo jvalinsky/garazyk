@@ -116,6 +116,7 @@ int main(int argc, char * argv[]) {
             @"GetServiceAuthMethodTests",
             @"XrpcHandlerTests",
             @"XrpcMethodRegistryTests",
+            @"AdminAuthApplicationXrpcTests",
             @"AdminAuthXrpcTests",
             @"LexiconResolveXrpcTests",
             @"RepoAuthXrpcTests",
