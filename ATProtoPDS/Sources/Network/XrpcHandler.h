@@ -151,6 +151,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.resetPassword. */
 - (void)registerComAtprotoServerResetPassword:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.temp.revokeAccountCredentials. */
+- (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.updateEmail. */
 - (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler;
 
