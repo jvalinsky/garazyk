@@ -2,6 +2,7 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
+#import "App/PDSConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
@@ -271,8 +272,16 @@
     // 4. Generate DID (Derive from genesis data)
     NSString *did = [PLCOperation calculateDIDForData:opData];
     
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
+    BOOL shouldPostToPlc = (!config.debugSkipPlcOperations &&
+                            plcUrl.length > 0 &&
+                            ![plcUrl isEqualToString:@"mock"]);
+    if (!shouldPostToPlc) {
+        return did;
+    }
+
     // 5. POST to PLC Server (loop 3 times to verify chaining logic)
-    NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: @"http://localhost:2582";
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
     
     NSDictionary *currentOpData = opData;

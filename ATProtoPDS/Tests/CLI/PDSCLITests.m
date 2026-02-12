@@ -33,9 +33,8 @@
 }
 
 - (void)testUnknownCommand {
-    XCTAssertThrowsSpecificNamed([self.dispatcher dispatchWithCommandName:@"nonexistent" arguments:@[] context:self.context],
-                                 NSException, @"PDSCLIUnknownCommandException",
-                                 @"Unknown command should throw PDSCLIUnknownCommandException");
+    int rc = [self.dispatcher dispatchWithCommandName:@"nonexistent" arguments:@[] context:self.context];
+    XCTAssertEqual(rc, 1);
 }
 
 - (void)testHelpWithCommandArgument {

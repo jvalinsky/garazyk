@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#include <stdlib.h>
 
 #ifdef __APPLE__
 #import <XCTest/XCTest.h>
@@ -77,6 +78,19 @@ int main(int argc, char * argv[]) {
         // Disable rate limiting for tests
         RateLimiterSetDisabledGlobally(YES);
         [RateLimiter sharedLimiter].enabled = NO;
+
+        // Ensure listeners bind to loopback by default in tests to avoid macOS Local Network permission prompts.
+        if (getenv("PDS_LISTEN_HOST") == NULL) {
+            setenv("PDS_LISTEN_HOST", "127.0.0.1", 1);
+        }
+
+        // Avoid CFNetwork trying to create a default on-disk cache under ~/Library/Caches/AllTests.
+        NSString *cacheDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"objpds-alltests-urlcache"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:cacheDir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSURLCache *urlCache = [[NSURLCache alloc] initWithMemoryCapacity:4 * 1024 * 1024
+                                                            diskCapacity:4 * 1024 * 1024
+                                                                diskPath:cacheDir];
+        [NSURLCache setSharedURLCache:urlCache];
 
         if ([[[NSProcessInfo processInfo] environment][@"PDS_USE_NEW_REPOS"] isEqualToString:@"1"]) {
             [PDSConfiguration sharedConfiguration].useNewRepositoryImplementation = YES;

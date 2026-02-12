@@ -82,7 +82,8 @@
 - (void)testCreateAccountSuccess {
     NSArray *args = @[@"create", @"--email", @"test@example.com", @"--handle", @"test.bsky.social", @"--password", @"password123"];
     
-    [self.dispatcher dispatchWithCommandName:@"account" arguments:args context:self.context];
+    int rc = [self.dispatcher dispatchWithCommandName:@"account" arguments:args context:self.context];
+    XCTAssertEqual(rc, 0);
     
     // Verify output
     BOOL foundSuccessMessage = NO;
@@ -138,11 +139,14 @@
 
 - (void)testListAccounts {
     // Create two accounts
-    [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"create", @"--email", @"a@e.com", @"--handle", @"a.bsky.social"] context:self.context];
-    [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"create", @"--email", @"b@e.com", @"--handle", @"b.bsky.social"] context:self.context];
+    NSArray *createAArgs = @[@"create", @"--email", @"a@e.com", @"--handle", @"a.bsky.social", @"--password", @"pw-a"];
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createAArgs context:self.context], 0);
+    NSArray *createBArgs = @[@"create", @"--email", @"b@e.com", @"--handle", @"b.bsky.social", @"--password", @"pw-b"];
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createBArgs context:self.context], 0);
     
     // Clear messages from creation
     [self.context.infoMessages removeAllObjects];
+    [self.context.errorMessages removeAllObjects];
     
     // List
     [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"list"] context:self.context];
@@ -162,7 +166,8 @@
 
 - (void)testListAccountsJSON {
     // Create account
-    [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"create", @"--email", @"json@e.com", @"--handle", @"json.bsky.social"] context:self.context];
+    NSArray *createArgs = @[@"create", @"--email", @"json@e.com", @"--handle", @"json.bsky.social", @"--password", @"pw-json"];
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createArgs context:self.context], 0);
     
     self.context.jsonOutput = YES;
     [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"list"] context:self.context];
@@ -176,7 +181,8 @@
 
 - (void)testInfoCommand {
     // Create account
-    [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"create", @"--email", @"info@e.com", @"--handle", @"info.bsky.social"] context:self.context];
+    NSArray *createArgs = @[@"create", @"--email", @"info@e.com", @"--handle", @"info.bsky.social", @"--password", @"pw-info"];
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createArgs context:self.context], 0);
     
     // Get info
     self.context.jsonOutput = YES; // Use JSON to capture output easily

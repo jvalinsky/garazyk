@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -214,7 +215,8 @@
                                                       body:@{}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertEqual(response.jsonBody.count, 0U);
+    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)response.jsonBody).count, 0U);
 
     NSError *error = nil;
     NSDictionary *refreshed = [self.controller refreshAccessToken:self.refreshJwt1 error:&error];
@@ -235,7 +237,8 @@
                                                       body:@{@"useCount": @2}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    NSString *code = response.jsonBody[@"code"];
+    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+    NSString *code = ((NSDictionary *)response.jsonBody)[@"code"];
     XCTAssertNotNil(code);
     XCTAssertTrue([code isKindOfClass:[NSString class]]);
     XCTAssertTrue(code.length > 0);
@@ -347,8 +350,8 @@
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
-    XCTAssertNotNil(response.bodyData);
-    XCTAssertTrue(response.bodyData.length > 0);
+    XCTAssertNotNil(response.body);
+    XCTAssertTrue(response.body.length > 0);
 }
 
 @end

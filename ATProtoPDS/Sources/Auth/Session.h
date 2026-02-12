@@ -248,16 +248,30 @@ typedef NS_ENUM(NSInteger, SessionError) {
  */
 - (NSDictionary *)toBearerTokenResponse;
 
-/*!
- @method refreshAccessToken
+ /*!
+  @method refreshAccessToken
  
- @abstract Generates a new access token for the session.
+  @abstract Generates a new access token for the session.
  
- @return The new access token value.
- */
-- (NSString *)refreshAccessToken;
+  @return The new access token value.
+  */
+ - (NSString *)refreshAccessToken;
 
-@end
+/*!
+ @method isAccessTokenValid
+
+ @abstract Returns YES if the access token is currently valid (not expired).
+ */
+- (BOOL)isAccessTokenValid;
+
+/*!
+ @method isRefreshTokenValid
+
+ @abstract Returns YES if the refresh token is currently valid (not expired).
+ */
+- (BOOL)isRefreshTokenValid;
+
+ @end
 
 /*!
  @class SessionStore
