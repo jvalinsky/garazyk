@@ -133,6 +133,28 @@
     return response;
 }
 
+- (HttpResponse *)sendRawPostRequestWithPath:(NSString *)path
+                                    bodyData:(NSData *)bodyData
+                                     headers:(NSDictionary<NSString *, NSString *> *)headers {
+    NSMutableDictionary *allHeaders = [NSMutableDictionary dictionary];
+    if (headers) {
+        [allHeaders addEntriesFromDictionary:headers];
+    }
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:path
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:allHeaders
+                                                          body:bodyData
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:request response:response];
+    return response;
+}
+
 - (void)testDeleteRecordRequiresAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
@@ -546,6 +568,44 @@
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertNotNil(response.jsonBody[@"blobs"]);
     XCTAssertTrue([response.jsonBody[@"blobs"] isKindOfClass:[NSArray class]]);
+}
+
+- (void)testRepoImportRepoRequiresAuth {
+    NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
+    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+                                                     bodyData:carData
+                                                      headers:@{
+                                                          @"content-type": @"application/vnd.ipld.car",
+                                                          @"content-length": [NSString stringWithFormat:@"%lu", (unsigned long)carData.length]
+                                                      }];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testRepoImportRepoRequiresContentLengthHeader {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
+    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+                                                     bodyData:carData
+                                                      headers:@{
+                                                          @"authorization": authHeader,
+                                                          @"content-type": @"application/vnd.ipld.car"
+                                                      }];
+    XCTAssertEqual(response.statusCode, 400);
+}
+
+- (void)testRepoImportRepoAcceptsCARPayload {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
+    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+                                                     bodyData:carData
+                                                      headers:@{
+                                                          @"authorization": authHeader,
+                                                          @"content-type": @"application/vnd.ipld.car",
+                                                          @"content-length": [NSString stringWithFormat:@"%lu", (unsigned long)carData.length]
+                                                      }];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)response.jsonBody).count, 0U);
 }
 
 - (void)testSyncGetRepoStatusReturnsActiveForExistingRepo {
