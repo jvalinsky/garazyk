@@ -34,6 +34,7 @@ xcuserdata/
 
 # Codex/OpenCode local state
 .opencode/
+.deciduous/deciduous.db
 
 # Data and Logs
 data/
