@@ -11,6 +11,7 @@
 @property (nonatomic, copy) NSString *did1;
 @property (nonatomic, copy) NSString *did2;
 @property (nonatomic, copy) NSString *accessJwt1;
+@property (nonatomic, copy) NSString *refreshJwt1;
 @end
 
 @implementation RepoAuthXrpcTests
@@ -46,7 +47,9 @@
     NSDictionary *session = [self.controller loginWithHandle:@"repoauth1.test" password:@"password" error:&error];
     XCTAssertNil(error);
     self.accessJwt1 = session[@"accessJwt"];
+    self.refreshJwt1 = session[@"refreshJwt"];
     XCTAssertNotNil(self.accessJwt1);
+    XCTAssertNotNil(self.refreshJwt1);
 }
 
 - (void)tearDown {
@@ -153,6 +156,27 @@
                                                              @"record": record}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testDeleteSessionRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteSession"
+                                                      body:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testDeleteSessionRevokesRefreshTokens {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteSession"
+                                                      body:@{}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqual(response.jsonBody.count, 0U);
+
+    NSError *error = nil;
+    NSDictionary *refreshed = [self.controller refreshAccessToken:self.refreshJwt1 error:&error];
+    XCTAssertNil(refreshed);
+    XCTAssertNotNil(error);
 }
 
 @end

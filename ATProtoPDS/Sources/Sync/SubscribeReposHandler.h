@@ -18,6 +18,8 @@
 @class EventFormatter;
 @class RepoCommit;
 @class CID;
+@class HttpRequest;
+@protocol PDSNetworkConnection;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -52,8 +54,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Delegate for lifecycle events. */
 @property (nonatomic, weak, nullable) id<SubscribeReposHandlerDelegate> delegate;
 
-/*! The WebSocket server for connections. */
-@property (nonatomic, readonly) WebSocketServer *webSocketServer;
+/*! Legacy standalone WebSocket server (compatibility/test use only). */
+@property (nonatomic, readonly) WebSocketServer *webSocketServer
+    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; use acceptUpgradedConnection:request:");
 
 /*! Formats events for transmission. */
 @property (nonatomic, readonly) EventFormatter *eventFormatter;
@@ -63,11 +66,15 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 
 - (instancetype)initWithController:(PDSController *)controller;
 
-/*! Starts listening on a port. */
-- (BOOL)startOnPort:(uint16_t)port error:(NSError **)error;
+/*! Starts a legacy standalone listener (compatibility/test use only). */
+- (BOOL)startOnPort:(uint16_t)port error:(NSError **)error
+    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; this legacy listener is deprecated");
 
 /*! Stops the handler. */
 - (void)stop;
+
+/*! Accepts a WebSocket-upgraded connection from the main HTTP server. */
+- (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection request:(HttpRequest *)request;
 
 /*! Broadcasts a repository commit event. */
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit 

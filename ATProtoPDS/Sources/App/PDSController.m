@@ -19,7 +19,6 @@
 #import "Auth/JWT.h"
 #import "Auth/JWTSigningKeyStore.h"
 #import "Sync/SubscribeReposHandler.h"
-#import "Sync/WebSocketServer.h"
 #import "Repository/RepoCommit.h"
 #import "Auth/OAuth2Handler.h"
 #import "Network/HttpRequest.h"
@@ -90,6 +89,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return _running;
 }
 
+- (NSUInteger)wsPort {
+    return self.httpPort;
+}
+
 - (id)database {
     return nil;
 }
@@ -111,7 +114,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _adminController = (PDSAdminController *)application.adminController;
         _jwtMinter = application.jwtMinter;
         _httpPort = application.httpPort;
-        _wsPort = application.wsPort;
         _plcServerURL = kDefaultPlcServerURL;
         
         // Initialize internal state
@@ -192,7 +194,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _jwtMinter = [[JWTMinter alloc] init];
         
         _httpPort = 2583;
-        _wsPort = 8081;
         _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
         _jwtMinter.signingAlgorithm = @"ES256K";
         
@@ -269,7 +270,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         BOOL result = [_backingApplication startWithError:error];
         if (result) {
             _httpPort = _backingApplication.httpPort;
-            _wsPort = _backingApplication.wsPort;
             _httpServer = _backingApplication.httpServer;
             _running = YES;
         }
@@ -281,6 +281,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+    if (!_subscribeReposHandler) {
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
+    }
     
     // Build and configure HTTP server using builder
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
@@ -289,6 +292,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     builder.jwtMinter = _jwtMinter;
     builder.serviceDatabases = _serviceDatabases;
     builder.xrpcDispatcher = _xrpcDispatcher;
+    builder.subscribeReposHandler = _subscribeReposHandler;
     builder.issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
     
     // Feature flags (all enabled by default)
@@ -315,17 +319,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }
     _httpPort = _httpServer.port;
     os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpPort);
-    
-    // Start WebSocket handler for subscribeRepos
-    NSError *streamingError = nil;
-    _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
-    
-    if (![_subscribeReposHandler startOnPort:self.wsPort error:&streamingError]) {
-        os_log_error(_log, "Failed to start subscribeRepos WebSocket handler: %@", streamingError);
-        if (error) *error = streamingError;
-        return NO;
-    }
-    _wsPort = _subscribeReposHandler.webSocketServer.port;
+    os_log_info(_log, "subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
     _running = YES;
     return YES;

@@ -91,4 +91,58 @@
     XCTAssertEqualObjects(response.jsonBody[@"result"], @"path-params");
 }
 
+- (void)testRegisterComAtprotoSyncSubscribeReposMapsToMethod {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"subscribeRepos handler called"];
+
+    [self.dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"ok": @YES}];
+        [expectation fulfill];
+    }];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/xrpc/com.atproto.sync.subscribeRepos"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.dispatcher handleRequest:request response:response];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
+}
+
+- (void)testRegisterComAtprotoServerDeleteSessionMapsToMethod {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"deleteSession handler called"];
+
+    [self.dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"ok": @YES}];
+        [expectation fulfill];
+    }];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/xrpc/com.atproto.server.deleteSession"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.dispatcher handleRequest:request response:response];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
+}
+
 @end
