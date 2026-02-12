@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-12T07:08:53.483Z",
+  "generated_at": "2026-02-12T12:33:48.375Z",
   "inputs": {
     "methods_tsv": "/Users/jack/Software/objpds/reports/xrpc_sync_raw/methods.tsv",
     "lexicons_tsv": "/Users/jack/Software/objpds/reports/xrpc_sync_raw/lexicons.tsv",
@@ -7,12 +7,12 @@
     "stubs_json": "/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json"
   },
   "counts": {
-    "implemented_unique": 62,
+    "implemented_unique": 73,
     "lexicon_unique": 321,
-    "in_both": 53,
-    "missing_in_code": 268,
+    "in_both": 64,
+    "missing_in_code": 257,
     "missing_in_lexicons": 9,
-    "coverage_pct": 16.51,
+    "coverage_pct": 19.94,
     "unknown_registry_entries": 2,
     "duplicate_registry_registrations": 31
   },
@@ -27,15 +27,6 @@
       "coverage_pct": 12.24
     },
     {
-      "namespace": "com.atproto",
-      "lexicon_methods": 86,
-      "implemented_methods": 49,
-      "in_both": 41,
-      "missing_in_code_count": 45,
-      "missing_in_lexicons_count": 8,
-      "coverage_pct": 47.67
-    },
-    {
       "namespace": "tools.ozone",
       "lexicon_methods": 45,
       "implemented_methods": 0,
@@ -43,6 +34,15 @@
       "missing_in_code_count": 45,
       "missing_in_lexicons_count": 0,
       "coverage_pct": 0
+    },
+    {
+      "namespace": "com.atproto",
+      "lexicon_methods": 86,
+      "implemented_methods": 60,
+      "in_both": 52,
+      "missing_in_code_count": 34,
+      "missing_in_lexicons_count": 8,
+      "coverage_pct": 60.47
     },
     {
       "namespace": "social.grain",
@@ -212,24 +212,13 @@
     "com.atproto.admin.updateAccountHandle",
     "com.atproto.admin.updateAccountPassword",
     "com.atproto.admin.updateAccountSigningKey",
-    "com.atproto.identity.refreshIdentity",
-    "com.atproto.identity.requestPlcOperationSignature",
-    "com.atproto.identity.signPlcOperation",
-    "com.atproto.identity.submitPlcOperation",
-    "com.atproto.identity.updateHandle",
     "com.atproto.label.subscribeLabels",
     "com.atproto.lexicon.resolveLexicon",
     "com.atproto.repo.importRepo",
     "com.atproto.repo.listMissingBlobs",
-    "com.atproto.server.confirmEmail",
     "com.atproto.server.getAccountInviteCodes",
-    "com.atproto.server.requestAccountDelete",
     "com.atproto.server.requestEmailConfirmation",
     "com.atproto.server.requestEmailUpdate",
-    "com.atproto.server.requestPasswordReset",
-    "com.atproto.server.reserveSigningKey",
-    "com.atproto.server.resetPassword",
-    "com.atproto.server.updateEmail",
     "com.atproto.sync.getCheckout",
     "com.atproto.sync.getHostStatus",
     "com.atproto.sync.getRepoStatus",
@@ -374,7 +363,7 @@
   "stub_scan": {
     "not_implemented_count": 0,
     "todo_fixme_count": 0,
-    "stub_markers_count": 4,
+    "stub_markers_count": 0,
     "xrpc_related_stub_markers_count": 0,
     "xrpc_related_stub_markers": []
   }

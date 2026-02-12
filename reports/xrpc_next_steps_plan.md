@@ -1,11 +1,11 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-12T07:13:23.738Z
+Generated: 2026-02-12T12:33:56.600Z
 
 ## Baseline
 
-- Missing in code: 268
-- Coverage: 16.51%
+- Missing in code: 257
+- Coverage: 19.94%
 - Unknown registry entries: 2
 - Duplicate registry registrations: 31
 
@@ -20,21 +20,12 @@ Generated: 2026-02-12T07:13:23.738Z
 
 ### Phase 1: Identity and Account Safety
 
-- Endpoint count: 14
-- P0: 10, P1: 4, P2: 0, P3: 0
+- Endpoint count: 3
+- P0: 0, P1: 3, P2: 0, P3: 0
 - Next batch:
-  - P0 `com.atproto.identity.requestPlcOperationSignature`
-  - P0 `com.atproto.identity.signPlcOperation`
-  - P0 `com.atproto.identity.submitPlcOperation`
-  - P0 `com.atproto.identity.updateHandle`
-  - P0 `com.atproto.server.confirmEmail`
-  - P0 `com.atproto.server.requestAccountDelete`
-  - P0 `com.atproto.server.requestPasswordReset`
-  - P0 `com.atproto.server.reserveSigningKey`
-  - P0 `com.atproto.server.resetPassword`
-  - P0 `com.atproto.server.updateEmail`
   - P1 `com.atproto.server.getAccountInviteCodes`
-  - P1 `com.atproto.identity.refreshIdentity`
+  - P1 `com.atproto.server.requestEmailConfirmation`
+  - P1 `com.atproto.server.requestEmailUpdate`
 
 ### Phase 2: Repository and Sync Completeness
 
