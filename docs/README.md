@@ -16,6 +16,7 @@
 ## Operations & Security
 - [Security Testing Plan](security/SECURITY_TESTING_IMPROVEMENT_PLAN.md)
 - [Metasploit Testing](security/METASPLOIT_TESTING.md)
+- [Admin Auth Configuration](security/ADMIN_AUTH_CONFIGURATION.md)
 - [Logging](guides/LOGGING.md)
 
 ## Plans

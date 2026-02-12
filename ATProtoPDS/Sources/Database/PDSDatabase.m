@@ -412,6 +412,14 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
+    rc = sqlite3_exec(_db, [kPDSReservedHandleTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
     rc = sqlite3_exec(_db, [kPDSIndexLabelsUriSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
@@ -421,6 +429,14 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexLabelsSourceSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexReservedHandlesHandleSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);

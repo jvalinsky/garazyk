@@ -5,6 +5,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 
 @implementation PDSConfiguration {
     NSDictionary *_config;
+    NSString *_phoneVerificationProvider;
 }
 
 + (instancetype)sharedConfiguration {
@@ -63,6 +64,7 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _accessTokenTtlSeconds = 3600;
         _refreshTokenTtlSeconds = 604800;
         _inviteCodeRequired = NO;
+        _phoneVerificationProvider = @"none";
 
         _rateLimitEnabled = YES;
         _rateLimitRequestsPerMinute = 1000;
@@ -178,6 +180,17 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (session[@"access_token_ttl_seconds"]) _accessTokenTtlSeconds = [session[@"access_token_ttl_seconds"] unsignedIntegerValue];
         if (session[@"refresh_token_ttl_seconds"]) _refreshTokenTtlSeconds = [session[@"refresh_token_ttl_seconds"] unsignedIntegerValue];
         if (session[@"invite_code_required"]) _inviteCodeRequired = [session[@"invite_code_required"] boolValue];
+    }
+
+    NSDictionary *phoneVerification = config[@"phone_verification"];
+    if (phoneVerification) {
+        NSString *provider = phoneVerification[@"provider"];
+        if ([provider isKindOfClass:[NSString class]]) {
+            NSString *trimmed = [provider stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (trimmed.length > 0) {
+                _phoneVerificationProvider = trimmed.lowercaseString;
+            }
+        }
     }
 
     NSDictionary *rateLimit = config[@"rate_limit"];
@@ -344,6 +357,17 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
     if (!value) return NO;
     return [@"true" isEqualToString:value.lowercaseString] ||
            [@"1" isEqualToString:value];
+}
+
+- (NSString *)phoneVerificationProvider {
+    NSString *envValue = [self resolveEnvOverrideForKey:@"PDS_PHONE_VERIFICATION_PROVIDER" default:nil];
+    NSString *candidate = envValue ?: _phoneVerificationProvider;
+    if (![candidate isKindOfClass:[NSString class]]) {
+        return @"none";
+    }
+
+    NSString *trimmed = [[candidate stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    return trimmed.length > 0 ? trimmed : @"none";
 }
 
 @end

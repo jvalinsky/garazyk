@@ -8,6 +8,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Identity/ATProtoHandleValidator.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -458,6 +459,66 @@ static NSString *appPasswordGenerateSecret(void) {
     }
 
     return success;
+}
+
+#pragma mark - Reserved Handle Operations
+
+- (BOOL)reserveHandle:(NSString *)handle error:(NSError **)error {
+    NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle ?: @""];
+    if (normalizedHandle.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing handle"}];
+        }
+        return NO;
+    }
+
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) {
+        return NO;
+    }
+
+    BOOL success = [db executeParameterizedUpdate:@"INSERT OR IGNORE INTO reserved_handles (handle, created_at) VALUES (?, ?)"
+                                           params:@[normalizedHandle, @([[NSDate date] timeIntervalSince1970])]
+                                            error:error];
+    [db close];
+    return success;
+}
+
+- (BOOL)isHandleReserved:(NSString *)handle error:(NSError **)error {
+    NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle ?: @""];
+    if (normalizedHandle.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing handle"}];
+        }
+        return NO;
+    }
+
+    NSError *queryError = nil;
+    PDSDatabase *db = [self serviceDatabaseWithError:&queryError];
+    if (!db) {
+        if (error) {
+            *error = queryError;
+        }
+        return NO;
+    }
+
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT handle FROM reserved_handles WHERE handle = ? LIMIT 1"
+                                                           params:@[normalizedHandle]
+                                                            error:&queryError];
+    [db close];
+
+    if (queryError) {
+        if (error) {
+            *error = queryError;
+        }
+        return NO;
+    }
+
+    return rows.count > 0;
 }
 
 #pragma mark - App Password Operations

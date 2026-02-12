@@ -150,6 +150,13 @@ NS_ASSUME_NONNULL_BEGIN
     error = nil;
     BOOL disabled = [self.service disableInviteCode:code error:&error];
     XCTAssertTrue(disabled);
+    XCTAssertNil(error);
+
+    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT disabled FROM invite_codes WHERE code = ?"
+                                                     params:@[code]
+                                                      error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual([rows.firstObject[@"disabled"] integerValue], 1);
 }
 
 - (void)testDisableInviteCodesGlobal {
@@ -201,7 +208,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testDisableNonexistentInviteCode {
     NSError *error = nil;
     BOOL result = [self.service disableInviteCode:@"nonexistent-code" error:&error];
-    XCTAssertTrue(result);
+    XCTAssertFalse(result);
+    XCTAssertEqual(error.code, 404);
 }
 
 - (void)testInviteCodeForNonexistentAccount {
