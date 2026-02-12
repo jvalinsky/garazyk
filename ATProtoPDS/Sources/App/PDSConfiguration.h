@@ -99,6 +99,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether invite codes are required. */
 @property (nonatomic, readonly) BOOL inviteCodeRequired;
 
+/*! Phone verification provider name (`none`, `mock`, or provider key). */
+@property (nonatomic, readonly) NSString *phoneVerificationProvider;
+
 /*! Whether rate limiting is enabled. */
 @property (nonatomic, readonly) BOOL rateLimitEnabled;
 

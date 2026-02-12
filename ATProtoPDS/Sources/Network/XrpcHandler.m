@@ -188,6 +188,10 @@
     [self registerMethod:@"com.atproto.temp.revokeAccountCredentials" handler:handler];
 }
 
+- (void)registerComAtprotoLexiconResolveLexicon:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.lexicon.resolveLexicon" handler:handler];
+}
+
 - (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.updateEmail" handler:handler];
 }
@@ -374,6 +378,46 @@
 
 - (void)registerComAtprotoAdminGetInviteCodes:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.admin.getInviteCodes" handler:handler];
+}
+
+- (void)registerComAtprotoAdminDeleteAccount:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.deleteAccount" handler:handler];
+}
+
+- (void)registerComAtprotoAdminDisableAccountInvites:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.disableAccountInvites" handler:handler];
+}
+
+- (void)registerComAtprotoAdminEnableAccountInvites:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.enableAccountInvites" handler:handler];
+}
+
+- (void)registerComAtprotoAdminDisableInviteCodes:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.disableInviteCodes" handler:handler];
+}
+
+- (void)registerComAtprotoAdminSearchAccounts:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.searchAccounts" handler:handler];
+}
+
+- (void)registerComAtprotoAdminSendEmail:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.sendEmail" handler:handler];
+}
+
+- (void)registerComAtprotoAdminUpdateAccountEmail:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.updateAccountEmail" handler:handler];
+}
+
+- (void)registerComAtprotoAdminUpdateAccountHandle:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.updateAccountHandle" handler:handler];
+}
+
+- (void)registerComAtprotoAdminUpdateAccountPassword:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.updateAccountPassword" handler:handler];
+}
+
+- (void)registerComAtprotoAdminUpdateAccountSigningKey:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.updateAccountSigningKey" handler:handler];
 }
 
 - (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler {

@@ -77,7 +77,10 @@ function methodGroup(methodId) {
   if (methodId.startsWith("com.atproto.repo.") || methodId.startsWith("com.atproto.sync.")) {
     return "phase_2_repo_sync";
   }
-  if (methodId.startsWith("com.atproto.admin.") || methodId.startsWith("com.atproto.label.") || methodId.startsWith("com.atproto.temp.")) {
+  if (methodId.startsWith("com.atproto.admin.")
+      || methodId.startsWith("com.atproto.label.")
+      || methodId.startsWith("com.atproto.temp.")
+      || methodId.startsWith("com.atproto.lexicon.")) {
     return "phase_3_admin_label_temp";
   }
   return "phase_4_non_core_namespaces";
@@ -88,7 +91,9 @@ function scoreMethod(methodId) {
 
   if (methodId.startsWith("com.atproto.server.") || methodId.startsWith("com.atproto.repo.") || methodId.startsWith("com.atproto.sync.") || methodId.startsWith("com.atproto.identity.")) {
     score += 100;
-  } else if (methodId.startsWith("com.atproto.admin.") || methodId.startsWith("com.atproto.label.")) {
+  } else if (methodId.startsWith("com.atproto.admin.")
+      || methodId.startsWith("com.atproto.label.")
+      || methodId.startsWith("com.atproto.lexicon.")) {
     score += 80;
   } else if (methodId.startsWith("com.atproto.temp.")) {
     score += 70;

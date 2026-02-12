@@ -92,6 +92,25 @@
     XCTAssertTrue(success, @"Use invite failed: %@", error);
 }
 
+- (void)testReservedHandlePersistsAcrossReopen {
+    NSError *error = nil;
+    BOOL reserveSuccess = [self.serviceDatabases reserveHandle:@"reserved.persistence.test" error:&error];
+    XCTAssertTrue(reserveSuccess, @"Reserve handle failed: %@", error);
+
+    BOOL reserved = [self.serviceDatabases isHandleReserved:@"reserved.persistence.test" error:&error];
+    XCTAssertTrue(reserved, @"Expected handle to be reserved: %@", error);
+
+    [self.serviceDatabases closeAll];
+
+    PDSServiceDatabases *reopened = [[PDSServiceDatabases alloc] initWithDirectory:self.testDirectory
+                                                                     serviceMaxSize:10
+                                                                   didCacheMaxSize:10
+                                                                 sequencerMaxSize:10];
+    BOOL stillReserved = [reopened isHandleReserved:@"reserved.persistence.test" error:&error];
+    XCTAssertTrue(stillReserved, @"Expected reserved handle to persist after reopen: %@", error);
+    [reopened closeAll];
+}
+
 - (void)testDIDCaching {
     NSString *did = @"did:plc:cache_test";
     NSDictionary *document = @{@"@context": @"https://www.w3.org/ns/did/v1", @"id": did};

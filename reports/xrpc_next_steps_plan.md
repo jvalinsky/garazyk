@@ -1,13 +1,13 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-12T13:24:10.618Z
+Generated: 2026-02-12T17:25:29.859Z
 
 ## Baseline
 
-- Missing in code: 243
-- Coverage: 24.3%
-- Unknown registry entries: 2
-- Duplicate registry registrations: 42
+- Missing in code: 6
+- Coverage: 93.02%
+- Unknown registry entries: 0
+- Duplicate registry registrations: 50
 
 ## Priority Rubric
 
@@ -32,39 +32,21 @@ Generated: 2026-02-12T13:24:10.618Z
 
 ### Phase 3: Admin, Label, and Temp APIs
 
-- Endpoint count: 19
-- P0: 0, P1: 0, P2: 19, P3: 0
+- Endpoint count: 6
+- P0: 0, P1: 0, P2: 6, P3: 0
 - Next batch:
-  - P2 `com.atproto.admin.getAccountInfo`
-  - P2 `com.atproto.admin.getAccountInfos`
-  - P2 `com.atproto.admin.getInviteCodes`
-  - P2 `com.atproto.admin.deleteAccount`
-  - P2 `com.atproto.admin.disableAccountInvites`
-  - P2 `com.atproto.admin.disableInviteCodes`
-  - P2 `com.atproto.admin.enableAccountInvites`
-  - P2 `com.atproto.admin.searchAccounts`
-  - P2 `com.atproto.admin.sendEmail`
-  - P2 `com.atproto.admin.updateAccountEmail`
-  - P2 `com.atproto.admin.updateAccountHandle`
-  - P2 `com.atproto.admin.updateAccountPassword`
+  - P2 `com.atproto.temp.addReservedHandle`
+  - P2 `com.atproto.temp.checkHandleAvailability`
+  - P2 `com.atproto.temp.checkSignupQueue`
+  - P2 `com.atproto.temp.dereferenceScope`
+  - P2 `com.atproto.temp.fetchLabels`
+  - P2 `com.atproto.temp.requestPhoneVerification`
 
 ### Phase 4: Non-core Namespaces
 
-- Endpoint count: 224
-- P0: 0, P1: 0, P2: 0, P3: 224
+- Endpoint count: 0
+- P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
-  - P3 `app.bsky.actor.getSuggestions`
-  - P3 `app.bsky.ageassurance.getConfig`
-  - P3 `app.bsky.ageassurance.getState`
-  - P3 `app.bsky.bookmark.getBookmarks`
-  - P3 `app.bsky.contact.getMatches`
-  - P3 `app.bsky.contact.getSyncStatus`
-  - P3 `app.bsky.feed.getActorFeeds`
-  - P3 `app.bsky.feed.getFeedGenerator`
-  - P3 `app.bsky.feed.getFeedGenerators`
-  - P3 `app.bsky.feed.getFeedSkeleton`
-  - P3 `app.bsky.feed.getLikes`
-  - P3 `app.bsky.feed.getListFeed`
 
 ## Recommended Work Order
 

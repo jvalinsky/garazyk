@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.admin.getAccountTakedown",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Legacy compatibility endpoint returning account takedown status.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["did"],
+          "properties": {
+            "did": { "type": "string", "format": "did" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["did", "applied"],
+          "properties": {
+            "did": { "type": "string", "format": "did" },
+            "applied": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

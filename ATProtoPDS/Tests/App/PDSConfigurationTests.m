@@ -150,4 +150,37 @@
     [[NSFileManager defaultManager] removeItemAtPath:configPath error:nil];
 }
 
+- (void)testPhoneVerificationProviderDefaultIsNone {
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    XCTAssertEqualObjects(config.phoneVerificationProvider, @"none");
+}
+
+- (void)testPhoneVerificationProviderEnvironmentOverride {
+    NSDictionary *env = @{@"PDS_PHONE_VERIFICATION_PROVIDER": @"MoCk"};
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:env];
+    XCTAssertEqualObjects(config.phoneVerificationProvider, @"mock");
+}
+
+- (void)testPhoneVerificationProviderConfigFileFallback {
+    NSString *tempDir = NSTemporaryDirectory();
+    NSString *configPath = [tempDir stringByAppendingPathComponent:@"test_phone_provider_config.json"];
+
+    NSDictionary *jsonConfig = @{
+        @"phone_verification": @{
+            @"provider": @"mock"
+        }
+    };
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonConfig options:0 error:nil];
+    [jsonData writeToFile:configPath atomically:YES];
+
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    NSError *error = nil;
+    BOOL success = [config loadFromPath:configPath error:&error];
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(config.phoneVerificationProvider, @"mock");
+
+    [[NSFileManager defaultManager] removeItemAtPath:configPath error:nil];
+}
+
 @end
