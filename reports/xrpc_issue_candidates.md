@@ -1,6 +1,6 @@
 # XRPC Issue Candidates
 
-Generated: 2026-02-12T07:13:23.738Z
+Generated: 2026-02-12T12:33:56.600Z
 
 Top 30 missing endpoints by priority score.
 
@@ -52,71 +52,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 4. [P0] Implement `com.atproto.identity.requestPlcOperationSignature`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/identity/requestPlcOperationSignature.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.identity.requestPlcOperationSignature` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 5. [P0] Implement `com.atproto.identity.signPlcOperation`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/identity/signPlcOperation.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.identity.signPlcOperation` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 6. [P0] Implement `com.atproto.identity.submitPlcOperation`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/identity/submitPlcOperation.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.identity.submitPlcOperation` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 7. [P0] Implement `com.atproto.identity.updateHandle`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/identity/updateHandle.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.identity.updateHandle` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 8. [P0] Implement `com.atproto.repo.importRepo`
+## 4. [P0] Implement `com.atproto.repo.importRepo`
 
 - Namespace: `com.atproto`
 - Score: 120
@@ -132,103 +68,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 9. [P0] Implement `com.atproto.server.confirmEmail`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/server/confirmEmail.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.server.confirmEmail` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 10. [P0] Implement `com.atproto.server.requestAccountDelete`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/server/requestAccountDelete.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.server.requestAccountDelete` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 11. [P0] Implement `com.atproto.server.requestPasswordReset`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/server/requestPasswordReset.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.server.requestPasswordReset` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 12. [P0] Implement `com.atproto.server.reserveSigningKey`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/server/reserveSigningKey.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.server.reserveSigningKey` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 13. [P0] Implement `com.atproto.server.resetPassword`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/server/resetPassword.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.server.resetPassword` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 14. [P0] Implement `com.atproto.server.updateEmail`
-
-- Namespace: `com.atproto`
-- Score: 120
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/server/updateEmail.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.server.updateEmail` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 15. [P0] Implement `com.atproto.sync.requestCrawl`
+## 5. [P0] Implement `com.atproto.sync.requestCrawl`
 
 - Namespace: `com.atproto`
 - Score: 120
@@ -244,7 +84,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 16. [P1] Implement `com.atproto.server.getAccountInviteCodes`
+## 6. [P1] Implement `com.atproto.server.getAccountInviteCodes`
 
 - Namespace: `com.atproto`
 - Score: 105
@@ -260,7 +100,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 17. [P1] Implement `com.atproto.sync.getCheckout`
+## 7. [P1] Implement `com.atproto.sync.getCheckout`
 
 - Namespace: `com.atproto`
 - Score: 105
@@ -276,7 +116,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 18. [P1] Implement `com.atproto.sync.getHostStatus`
+## 8. [P1] Implement `com.atproto.sync.getHostStatus`
 
 - Namespace: `com.atproto`
 - Score: 105
@@ -292,7 +132,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 19. [P1] Implement `com.atproto.sync.listHosts`
+## 9. [P1] Implement `com.atproto.sync.listHosts`
 
 - Namespace: `com.atproto`
 - Score: 105
@@ -308,7 +148,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 20. [P1] Implement `com.atproto.sync.listRepos`
+## 10. [P1] Implement `com.atproto.sync.listRepos`
 
 - Namespace: `com.atproto`
 - Score: 105
@@ -324,23 +164,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 21. [P1] Implement `com.atproto.identity.refreshIdentity`
-
-- Namespace: `com.atproto`
-- Score: 100
-- Phase: Phase 1: Identity and Account Safety
-- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/identity/refreshIdentity.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.identity.refreshIdentity` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 22. [P1] Implement `com.atproto.label.subscribeLabels`
+## 11. [P1] Implement `com.atproto.label.subscribeLabels`
 
 - Namespace: `com.atproto`
 - Score: 100
@@ -356,7 +180,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 23. [P1] Implement `com.atproto.server.requestEmailConfirmation`
+## 12. [P1] Implement `com.atproto.server.requestEmailConfirmation`
 
 - Namespace: `com.atproto`
 - Score: 100
@@ -372,7 +196,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 24. [P1] Implement `com.atproto.server.requestEmailUpdate`
+## 13. [P1] Implement `com.atproto.server.requestEmailUpdate`
 
 - Namespace: `com.atproto`
 - Score: 100
@@ -388,7 +212,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 25. [P2] Implement `com.atproto.temp.revokeAccountCredentials`
+## 14. [P2] Implement `com.atproto.temp.revokeAccountCredentials`
 
 - Namespace: `com.atproto`
 - Score: 90
@@ -404,7 +228,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 26. [P2] Implement `com.atproto.admin.getAccountInfo`
+## 15. [P2] Implement `com.atproto.admin.getAccountInfo`
 
 - Namespace: `com.atproto`
 - Score: 85
@@ -420,7 +244,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 27. [P2] Implement `com.atproto.admin.getAccountInfos`
+## 16. [P2] Implement `com.atproto.admin.getAccountInfos`
 
 - Namespace: `com.atproto`
 - Score: 85
@@ -436,7 +260,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 28. [P2] Implement `com.atproto.admin.getInviteCodes`
+## 17. [P2] Implement `com.atproto.admin.getInviteCodes`
 
 - Namespace: `com.atproto`
 - Score: 85
@@ -452,7 +276,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 29. [P2] Implement `com.atproto.admin.deleteAccount`
+## 18. [P2] Implement `com.atproto.admin.deleteAccount`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -468,7 +292,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 30. [P2] Implement `com.atproto.admin.disableAccountInvites`
+## 19. [P2] Implement `com.atproto.admin.disableAccountInvites`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -480,6 +304,182 @@ Top 30 missing endpoints by priority score.
   - `ATProtoPDS/Sources/App/Services/` (new or existing service)
 - Acceptance criteria:
   - Register and route `com.atproto.admin.disableAccountInvites` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 20. [P2] Implement `com.atproto.admin.disableInviteCodes`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/disableInviteCodes.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.disableInviteCodes` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 21. [P2] Implement `com.atproto.admin.enableAccountInvites`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/enableAccountInvites.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.enableAccountInvites` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 22. [P2] Implement `com.atproto.admin.searchAccounts`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/searchAccounts.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.searchAccounts` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 23. [P2] Implement `com.atproto.admin.sendEmail`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/sendEmail.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.sendEmail` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 24. [P2] Implement `com.atproto.admin.updateAccountEmail`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/updateAccountEmail.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.updateAccountEmail` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 25. [P2] Implement `com.atproto.admin.updateAccountHandle`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/updateAccountHandle.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.updateAccountHandle` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 26. [P2] Implement `com.atproto.admin.updateAccountPassword`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/updateAccountPassword.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.updateAccountPassword` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 27. [P2] Implement `com.atproto.admin.updateAccountSigningKey`
+
+- Namespace: `com.atproto`
+- Score: 80
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/admin/updateAccountSigningKey.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.admin.updateAccountSigningKey` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 28. [P2] Implement `com.atproto.temp.addReservedHandle`
+
+- Namespace: `com.atproto`
+- Score: 70
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/temp/addReservedHandle.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.temp.addReservedHandle` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 29. [P2] Implement `com.atproto.temp.checkHandleAvailability`
+
+- Namespace: `com.atproto`
+- Score: 70
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/temp/checkHandleAvailability.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.temp.checkHandleAvailability` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 30. [P2] Implement `com.atproto.temp.checkSignupQueue`
+
+- Namespace: `com.atproto`
+- Score: 70
+- Phase: Phase 3: Admin, Label, and Temp APIs
+- Lexicon: `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons/com/atproto/temp/checkSignupQueue.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `com.atproto.temp.checkSignupQueue` through XRPC registry.
   - Enforce auth/session checks and input validation.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.

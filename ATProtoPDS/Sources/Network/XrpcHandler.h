@@ -186,6 +186,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.repo.uploadBlob. */
 - (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.repo.listMissingBlobs. */
+- (void)registerComAtprotoRepoListMissingBlobs:(XrpcMethodHandler)handler;
+
 // MARK: - Sync Methods
 
 /*! Registers handler for com.atproto.sync.getRepo. */
@@ -209,8 +212,17 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.sync.getRecord. */
 - (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.sync.getRepoStatus. */
+- (void)registerComAtprotoSyncGetRepoStatus:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.listReposByCollection. */
+- (void)registerComAtprotoSyncListReposByCollection:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.sync.notifyOfUpdate. */
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.requestCrawl. */
+- (void)registerComAtprotoSyncRequestCrawl:(XrpcMethodHandler)handler;
 
 /*! Registers handler for com.atproto.sync.subscribeRepos. */
 - (void)registerComAtprotoSyncSubscribeRepos:(XrpcMethodHandler)handler;
