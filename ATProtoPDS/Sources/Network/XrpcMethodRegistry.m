@@ -214,6 +214,40 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *outValue) {
     return YES;
 }
 
+static void setSubscribeLabelsUpgradeRequired(HttpRequest *request, HttpResponse *response) {
+    if (request.method != HttpMethodGET) {
+        response.statusCode = HttpStatusMethodNotAllowed;
+        [response setHeader:@"GET" forKey:@"Allow"];
+        [response setJsonBody:@{
+            @"error": @"MethodNotAllowed",
+            @"message": @"subscribeLabels only supports GET"
+        }];
+        return;
+    }
+
+    NSString *cursorString = [request queryParamForKey:@"cursor"];
+    if (cursorString.length > 0) {
+        NSInteger cursor = 0;
+        if (!parseStrictIntegerString(cursorString, &cursor) || cursor < 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"Invalid cursor"
+            }];
+            return;
+        }
+    }
+
+    response.statusCode = 426;
+    [response setHeader:@"websocket" forKey:@"Upgrade"];
+    [response setHeader:@"Upgrade" forKey:@"Connection"];
+    [response setJsonBody:@{
+        @"error": @"UpgradeRequired",
+        @"message": @"WebSocket upgrade required for subscribeLabels"
+    }];
+    response.keepAlive = NO;
+}
+
 static NSString *currentISO8601String(void) {
     if (@available(macOS 10.12, iOS 10.0, *)) {
         NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
@@ -2795,6 +2829,10 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
     }];
+
+    [dispatcher registerComAtprotoLabelSubscribeLabels:^(HttpRequest *request, HttpResponse *response) {
+        setSubscribeLabelsUpgradeRequired(request, response);
+    }];
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:controller.database];
     FeedService *feedService = [[FeedService alloc] initWithDatabase:controller.database];
@@ -4901,6 +4939,10 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
+    }];
+
+    [dispatcher registerComAtprotoLabelSubscribeLabels:^(HttpRequest *request, HttpResponse *response) {
+        setSubscribeLabelsUpgradeRequired(request, response);
     }];
 }
 
