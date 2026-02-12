@@ -184,6 +184,10 @@
     [self registerMethod:@"com.atproto.server.resetPassword" handler:handler];
 }
 
+- (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.temp.revokeAccountCredentials" handler:handler];
+}
+
 - (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.updateEmail" handler:handler];
 }
