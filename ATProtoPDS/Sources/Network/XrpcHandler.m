@@ -248,6 +248,10 @@
     [self registerMethod:@"com.atproto.sync.getRepo" handler:handler];
 }
 
+- (void)registerComAtprotoSyncGetCheckout:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getCheckout" handler:handler];
+}
+
 - (void)registerComAtprotoSyncGetHead:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.getHead" handler:handler];
 }
@@ -270,6 +274,18 @@
 
 - (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.getRecord" handler:handler];
+}
+
+- (void)registerComAtprotoSyncGetHostStatus:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getHostStatus" handler:handler];
+}
+
+- (void)registerComAtprotoSyncListHosts:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.listHosts" handler:handler];
+}
+
+- (void)registerComAtprotoSyncListRepos:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.listRepos" handler:handler];
 }
 
 - (void)registerComAtprotoSyncGetRepoStatus:(XrpcMethodHandler)handler {
