@@ -1,26 +1,10 @@
 # XRPC Issue Candidates
 
-Generated: 2026-02-12T13:11:57.278Z
+Generated: 2026-02-12T13:13:07.793Z
 
 Top 30 missing endpoints by priority score.
 
-## 1. [P1] Implement `com.atproto.label.subscribeLabels`
-
-- Namespace: `com.atproto`
-- Score: 100
-- Phase: Phase 3: Admin, Label, and Temp APIs
-- Lexicon: `ATProtoPDS/Resources/lexicons/com/atproto/label/subscribeLabels.json`
-- Suggested implementation files:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - `ATProtoPDS/Sources/App/PDSController.m`
-  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
-- Acceptance criteria:
-  - Register and route `com.atproto.label.subscribeLabels` through XRPC registry.
-  - Enforce auth/session checks and input validation.
-  - Add successful path test and at least one failure path test.
-  - Add/update lexicon conformance assertions for request/response fields.
-
-## 2. [P2] Implement `com.atproto.temp.revokeAccountCredentials`
+## 1. [P2] Implement `com.atproto.temp.revokeAccountCredentials`
 
 - Namespace: `com.atproto`
 - Score: 90
@@ -36,7 +20,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 3. [P2] Implement `com.atproto.admin.getAccountInfo`
+## 2. [P2] Implement `com.atproto.admin.getAccountInfo`
 
 - Namespace: `com.atproto`
 - Score: 85
@@ -52,7 +36,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 4. [P2] Implement `com.atproto.admin.getAccountInfos`
+## 3. [P2] Implement `com.atproto.admin.getAccountInfos`
 
 - Namespace: `com.atproto`
 - Score: 85
@@ -68,7 +52,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 5. [P2] Implement `com.atproto.admin.getInviteCodes`
+## 4. [P2] Implement `com.atproto.admin.getInviteCodes`
 
 - Namespace: `com.atproto`
 - Score: 85
@@ -84,7 +68,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 6. [P2] Implement `com.atproto.admin.deleteAccount`
+## 5. [P2] Implement `com.atproto.admin.deleteAccount`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -100,7 +84,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 7. [P2] Implement `com.atproto.admin.disableAccountInvites`
+## 6. [P2] Implement `com.atproto.admin.disableAccountInvites`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -116,7 +100,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 8. [P2] Implement `com.atproto.admin.disableInviteCodes`
+## 7. [P2] Implement `com.atproto.admin.disableInviteCodes`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -132,7 +116,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 9. [P2] Implement `com.atproto.admin.enableAccountInvites`
+## 8. [P2] Implement `com.atproto.admin.enableAccountInvites`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -148,7 +132,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 10. [P2] Implement `com.atproto.admin.searchAccounts`
+## 9. [P2] Implement `com.atproto.admin.searchAccounts`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -164,7 +148,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 11. [P2] Implement `com.atproto.admin.sendEmail`
+## 10. [P2] Implement `com.atproto.admin.sendEmail`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -180,7 +164,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 12. [P2] Implement `com.atproto.admin.updateAccountEmail`
+## 11. [P2] Implement `com.atproto.admin.updateAccountEmail`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -196,7 +180,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 13. [P2] Implement `com.atproto.admin.updateAccountHandle`
+## 12. [P2] Implement `com.atproto.admin.updateAccountHandle`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -212,7 +196,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 14. [P2] Implement `com.atproto.admin.updateAccountPassword`
+## 13. [P2] Implement `com.atproto.admin.updateAccountPassword`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -228,7 +212,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 15. [P2] Implement `com.atproto.admin.updateAccountSigningKey`
+## 14. [P2] Implement `com.atproto.admin.updateAccountSigningKey`
 
 - Namespace: `com.atproto`
 - Score: 80
@@ -244,7 +228,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 16. [P2] Implement `com.atproto.temp.addReservedHandle`
+## 15. [P2] Implement `com.atproto.temp.addReservedHandle`
 
 - Namespace: `com.atproto`
 - Score: 70
@@ -260,7 +244,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 17. [P2] Implement `com.atproto.temp.checkHandleAvailability`
+## 16. [P2] Implement `com.atproto.temp.checkHandleAvailability`
 
 - Namespace: `com.atproto`
 - Score: 70
@@ -276,7 +260,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 18. [P2] Implement `com.atproto.temp.checkSignupQueue`
+## 17. [P2] Implement `com.atproto.temp.checkSignupQueue`
 
 - Namespace: `com.atproto`
 - Score: 70
@@ -292,7 +276,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 19. [P2] Implement `com.atproto.temp.dereferenceScope`
+## 18. [P2] Implement `com.atproto.temp.dereferenceScope`
 
 - Namespace: `com.atproto`
 - Score: 70
@@ -308,7 +292,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 20. [P2] Implement `com.atproto.temp.fetchLabels`
+## 19. [P2] Implement `com.atproto.temp.fetchLabels`
 
 - Namespace: `com.atproto`
 - Score: 70
@@ -324,7 +308,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 21. [P2] Implement `com.atproto.temp.requestPhoneVerification`
+## 20. [P2] Implement `com.atproto.temp.requestPhoneVerification`
 
 - Namespace: `com.atproto`
 - Score: 70
@@ -340,7 +324,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 22. [P3] Implement `app.bsky.actor.getSuggestions`
+## 21. [P3] Implement `app.bsky.actor.getSuggestions`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -356,7 +340,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 23. [P3] Implement `app.bsky.ageassurance.getConfig`
+## 22. [P3] Implement `app.bsky.ageassurance.getConfig`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -372,7 +356,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 24. [P3] Implement `app.bsky.ageassurance.getState`
+## 23. [P3] Implement `app.bsky.ageassurance.getState`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -388,7 +372,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 25. [P3] Implement `app.bsky.bookmark.getBookmarks`
+## 24. [P3] Implement `app.bsky.bookmark.getBookmarks`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -404,7 +388,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 26. [P3] Implement `app.bsky.contact.getMatches`
+## 25. [P3] Implement `app.bsky.contact.getMatches`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -420,7 +404,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 27. [P3] Implement `app.bsky.contact.getSyncStatus`
+## 26. [P3] Implement `app.bsky.contact.getSyncStatus`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -436,7 +420,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 28. [P3] Implement `app.bsky.feed.getActorFeeds`
+## 27. [P3] Implement `app.bsky.feed.getActorFeeds`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -452,7 +436,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 29. [P3] Implement `app.bsky.feed.getFeedGenerator`
+## 28. [P3] Implement `app.bsky.feed.getFeedGenerator`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -468,7 +452,7 @@ Top 30 missing endpoints by priority score.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
 
-## 30. [P3] Implement `app.bsky.feed.getFeedGenerators`
+## 29. [P3] Implement `app.bsky.feed.getFeedGenerators`
 
 - Namespace: `app.bsky`
 - Score: 45
@@ -480,6 +464,22 @@ Top 30 missing endpoints by priority score.
   - `ATProtoPDS/Sources/App/Services/` (new or existing service)
 - Acceptance criteria:
   - Register and route `app.bsky.feed.getFeedGenerators` through XRPC registry.
+  - Enforce auth/session checks and input validation.
+  - Add successful path test and at least one failure path test.
+  - Add/update lexicon conformance assertions for request/response fields.
+
+## 30. [P3] Implement `app.bsky.feed.getFeedSkeleton`
+
+- Namespace: `app.bsky`
+- Score: 45
+- Phase: Phase 4: Non-core Namespaces
+- Lexicon: `ATProtoPDS/Resources/lexicons/app/bsky/feed/getFeedSkeleton.json`
+- Suggested implementation files:
+  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `ATProtoPDS/Sources/App/PDSController.m`
+  - `ATProtoPDS/Sources/App/Services/` (new or existing service)
+- Acceptance criteria:
+  - Register and route `app.bsky.feed.getFeedSkeleton` through XRPC registry.
   - Enforce auth/session checks and input validation.
   - Add successful path test and at least one failure path test.
   - Add/update lexicon conformance assertions for request/response fields.
