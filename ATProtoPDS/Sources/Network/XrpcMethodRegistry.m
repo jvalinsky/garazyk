@@ -102,6 +102,61 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     return audiences;
 }
 
+static NSString *inviteAlphabet(void) {
+    return @"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+}
+
+static NSString *generateInviteCode(NSUInteger groupCount, NSUInteger groupLength) {
+    NSString *alphabet = inviteAlphabet();
+    NSMutableString *code = [NSMutableString string];
+    for (NSUInteger groupIndex = 0; groupIndex < groupCount; groupIndex++) {
+        if (groupIndex > 0) {
+            [code appendString:@"-"];
+        }
+        for (NSUInteger i = 0; i < groupLength; i++) {
+            unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
+            [code appendFormat:@"%C", c];
+        }
+    }
+    return code;
+}
+
+static BOOL createInviteCodeInDatabase(PDSServiceDatabases *serviceDatabases,
+                                       NSString *accountDid,
+                                       NSInteger maxUses,
+                                       NSString **outCode,
+                                       NSError **error) {
+    if (maxUses <= 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"useCount must be > 0"}];
+        }
+        return NO;
+    }
+
+    const NSUInteger kMaxAttempts = 10;
+    NSError *lastError = nil;
+    for (NSUInteger attempt = 0; attempt < kMaxAttempts; attempt++) {
+        NSString *code = generateInviteCode(4, 5);
+        NSError *createError = nil;
+        if ([serviceDatabases createInviteCode:code forAccount:accountDid maxUses:maxUses error:&createError]) {
+            if (outCode) {
+                *outCode = code;
+            }
+            return YES;
+        }
+        lastError = createError;
+    }
+
+    if (error) {
+        *error = lastError ?: [NSError errorWithDomain:@"com.atproto.server"
+                                                 code:500
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to create invite code"}];
+    }
+    return NO;
+}
+
 static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse *response) {
     if (request.method != HttpMethodGET) {
         response.statusCode = HttpStatusMethodNotAllowed;
@@ -427,6 +482,94 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSNumber *useCountNumber = body[@"useCount"];
+        NSInteger useCount = useCountNumber.integerValue;
+        NSString *forAccount = body[@"forAccount"];
+        NSString *targetDid = forAccount.length > 0 ? forAccount : did;
+
+        if (![targetDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot create invite codes for other accounts"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSString *code = nil;
+        if (!createInviteCodeInDatabase(controller.serviceDatabases, targetDid, useCount, &code, &error)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InviteCodeCreateFailed", @"message": error.localizedDescription ?: @"Failed to create invite code"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"code": code ?: @""}];
+    }];
+
+    [dispatcher registerComAtprotoServerCreateInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSNumber *codeCountNumber = body[@"codeCount"] ?: @1;
+        NSNumber *useCountNumber = body[@"useCount"];
+        NSInteger codeCount = codeCountNumber.integerValue;
+        NSInteger useCount = useCountNumber.integerValue;
+        NSArray<NSString *> *forAccounts = body[@"forAccounts"];
+        if (![forAccounts isKindOfClass:[NSArray class]] || forAccounts.count == 0) {
+            forAccounts = @[did];
+        }
+
+        if (codeCount <= 0 || codeCount > 100) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"codeCount must be between 1 and 100"}];
+            return;
+        }
+
+        for (NSString *accountDid in forAccounts) {
+            if (![accountDid isKindOfClass:[NSString class]] || ![accountDid isEqualToString:did]) {
+                response.statusCode = HttpStatusForbidden;
+                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot create invite codes for other accounts"}];
+                return;
+            }
+        }
+
+        NSMutableArray *codesByAccount = [NSMutableArray array];
+        for (NSString *accountDid in forAccounts) {
+            NSMutableArray<NSString *> *codes = [NSMutableArray arrayWithCapacity:(NSUInteger)codeCount];
+            for (NSInteger i = 0; i < codeCount; i++) {
+                NSError *error = nil;
+                NSString *code = nil;
+                if (!createInviteCodeInDatabase(controller.serviceDatabases, accountDid, useCount, &code, &error)) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InviteCodeCreateFailed", @"message": error.localizedDescription ?: @"Failed to create invite code"}];
+                    return;
+                }
+                if (code.length > 0) {
+                    [codes addObject:code];
+                }
+            }
+            [codesByAccount addObject:@{@"account": accountDid, @"codes": codes}];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"codes": codesByAccount}];
     }];
 
     [dispatcher registerComAtprotoServerGetServiceAuth:^(HttpRequest *request, HttpResponse *response) {
@@ -2037,6 +2180,94 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSNumber *useCountNumber = body[@"useCount"];
+        NSInteger useCount = useCountNumber.integerValue;
+        NSString *forAccount = body[@"forAccount"];
+        NSString *targetDid = forAccount.length > 0 ? forAccount : did;
+
+        if (![targetDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot create invite codes for other accounts"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSString *code = nil;
+        if (!createInviteCodeInDatabase(serviceDatabases, targetDid, useCount, &code, &error)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InviteCodeCreateFailed", @"message": error.localizedDescription ?: @"Failed to create invite code"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"code": code ?: @""}];
+    }];
+
+    [dispatcher registerComAtprotoServerCreateInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSNumber *codeCountNumber = body[@"codeCount"] ?: @1;
+        NSNumber *useCountNumber = body[@"useCount"];
+        NSInteger codeCount = codeCountNumber.integerValue;
+        NSInteger useCount = useCountNumber.integerValue;
+        NSArray<NSString *> *forAccounts = body[@"forAccounts"];
+        if (![forAccounts isKindOfClass:[NSArray class]] || forAccounts.count == 0) {
+            forAccounts = @[did];
+        }
+
+        if (codeCount <= 0 || codeCount > 100) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"codeCount must be between 1 and 100"}];
+            return;
+        }
+
+        for (NSString *accountDid in forAccounts) {
+            if (![accountDid isKindOfClass:[NSString class]] || ![accountDid isEqualToString:did]) {
+                response.statusCode = HttpStatusForbidden;
+                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot create invite codes for other accounts"}];
+                return;
+            }
+        }
+
+        NSMutableArray *codesByAccount = [NSMutableArray array];
+        for (NSString *accountDid in forAccounts) {
+            NSMutableArray<NSString *> *codes = [NSMutableArray arrayWithCapacity:(NSUInteger)codeCount];
+            for (NSInteger i = 0; i < codeCount; i++) {
+                NSError *error = nil;
+                NSString *code = nil;
+                if (!createInviteCodeInDatabase(serviceDatabases, accountDid, useCount, &code, &error)) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InviteCodeCreateFailed", @"message": error.localizedDescription ?: @"Failed to create invite code"}];
+                    return;
+                }
+                if (code.length > 0) {
+                    [codes addObject:code];
+                }
+            }
+            [codesByAccount addObject:@{@"account": accountDid, @"codes": codes}];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"codes": codesByAccount}];
     }];
 
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
