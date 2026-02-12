@@ -462,6 +462,83 @@
     XCTAssertEqual(deleteWithAuth.statusCode, 200);
 }
 
+- (void)testRepoListMissingBlobsRequiresAuth {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
+                                               queryParams:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testRepoListMissingBlobsReturnsEmptyList {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
+                                               queryParams:@{@"limit": @"10"}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"blobs"]);
+    XCTAssertTrue([response.jsonBody[@"blobs"] isKindOfClass:[NSArray class]]);
+}
+
+- (void)testSyncGetRepoStatusReturnsActiveForExistingRepo {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
+                                               queryParams:@{@"did": self.did1}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"did"], self.did1);
+    XCTAssertEqualObjects(response.jsonBody[@"active"], @YES);
+}
+
+- (void)testSyncGetRepoStatusReturnsNotFoundForMissingRepo {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
+                                               queryParams:@{@"did": @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 404);
+}
+
+- (void)testSyncListReposByCollectionReturnsMatchingRepos {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"collection listing test",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                         record:record
+                                                 validationMode:PDSValidationModeRequired
+                                                          error:nil];
+    XCTAssertNotNil(created);
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+                                               queryParams:@{@"collection": @"app.bsky.feed.post", @"limit": @"100"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSArray *repos = response.jsonBody[@"repos"];
+    XCTAssertTrue([repos isKindOfClass:[NSArray class]]);
+
+    NSMutableSet<NSString *> *repoDids = [NSMutableSet set];
+    for (NSDictionary *entry in repos) {
+        if ([entry isKindOfClass:[NSDictionary class]] && [entry[@"did"] isKindOfClass:[NSString class]]) {
+            [repoDids addObject:entry[@"did"]];
+        }
+    }
+    XCTAssertTrue([repoDids containsObject:self.did1]);
+    XCTAssertFalse([repoDids containsObject:self.did2]);
+}
+
+- (void)testSyncRequestCrawlRequiresHostname {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.sync.requestCrawl"
+                                                      body:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+}
+
+- (void)testSyncRequestCrawlAcceptsHostname {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.sync.requestCrawl"
+                                                      body:@{@"hostname": @"example.test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+}
+
 - (void)testSyncGetRecordReturnsCARWithoutAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",

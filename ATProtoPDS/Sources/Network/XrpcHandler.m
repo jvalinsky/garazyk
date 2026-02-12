@@ -224,6 +224,10 @@
     [self registerMethod:@"com.atproto.repo.uploadBlob" handler:handler];
 }
 
+- (void)registerComAtprotoRepoListMissingBlobs:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.repo.listMissingBlobs" handler:handler];
+}
+
 - (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.deleteBlob" handler:handler];
 }
@@ -256,8 +260,20 @@
     [self registerMethod:@"com.atproto.sync.getRecord" handler:handler];
 }
 
+- (void)registerComAtprotoSyncGetRepoStatus:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getRepoStatus" handler:handler];
+}
+
+- (void)registerComAtprotoSyncListReposByCollection:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.listReposByCollection" handler:handler];
+}
+
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.notifyOfUpdate" handler:handler];
+}
+
+- (void)registerComAtprotoSyncRequestCrawl:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.requestCrawl" handler:handler];
 }
 
 - (void)registerComAtprotoSyncSubscribeRepos:(XrpcMethodHandler)handler {
