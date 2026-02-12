@@ -371,6 +371,62 @@ static NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key
 
     return values;
 }
+
+static NSDictionary *adminInviteCodeViewFromRow(NSDictionary *row) {
+    NSString *code = [row[@"code"] isKindOfClass:[NSString class]] ? row[@"code"] : @"";
+    NSString *accountDid = [row[@"account_did"] isKindOfClass:[NSString class]] ? row[@"account_did"] : @"";
+    NSInteger uses = [row[@"uses"] respondsToSelector:@selector(integerValue)] ? [row[@"uses"] integerValue] : 0;
+    NSInteger maxUses = [row[@"max_uses"] respondsToSelector:@selector(integerValue)] ? [row[@"max_uses"] integerValue] : 1;
+    if (maxUses < 0) {
+        maxUses = 0;
+    }
+    NSInteger available = maxUses - uses;
+    if (available < 0) {
+        available = 0;
+    }
+    BOOL disabled = [row[@"disabled"] respondsToSelector:@selector(boolValue)] ? [row[@"disabled"] boolValue] : NO;
+    NSTimeInterval createdAt = [row[@"created_at"] respondsToSelector:@selector(doubleValue)] ? [row[@"created_at"] doubleValue] : 0;
+
+    return @{
+        @"code": code,
+        @"available": @(available),
+        @"disabled": @(disabled),
+        @"forAccount": accountDid,
+        @"createdBy": accountDid,
+        @"createdAt": iso8601StringFromUnixTimestamp(createdAt),
+        @"uses": @[]
+    };
+}
+
+static NSArray<NSDictionary *> *loadAdminInviteCodeViews(PDSServiceDatabases *serviceDatabases,
+                                                         NSString *sort,
+                                                         NSInteger limit,
+                                                         NSInteger offset,
+                                                         NSError **error) {
+    PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:error];
+    if (!db) {
+        return nil;
+    }
+
+    NSString *orderBy = [sort isEqualToString:@"usage"] ? @"uses DESC, created_at DESC, code ASC" : @"created_at DESC, code ASC";
+    NSString *sql = [NSString stringWithFormat:
+                     @"SELECT code, account_did, created_at, uses, max_uses, disabled "
+                     @"FROM invite_codes ORDER BY %@ LIMIT ? OFFSET ?", orderBy];
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql
+                                                           params:@[@(limit), @(offset)]
+                                                            error:error];
+    [db close];
+    if (!rows) {
+        return nil;
+    }
+
+    NSMutableArray<NSDictionary *> *codes = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        [codes addObject:adminInviteCodeViewFromRow(row)];
+    }
+    return codes;
+}
+
 static NSString *normalizedHostnameString(NSString *hostInput) {
     if (![hostInput isKindOfClass:[NSString class]]) {
         return @"localhost";
@@ -2958,6 +3014,57 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{@"infos": infos}];
     }];
 
+    [dispatcher registerComAtprotoAdminGetInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, controller)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *sort = [request queryParamForKey:@"sort"] ?: @"recent";
+        if (![sort isEqualToString:@"recent"] && ![sort isEqualToString:@"usage"]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"sort must be one of: recent, usage"}];
+            return;
+        }
+
+        NSInteger limit = 100;
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 500)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 500"}];
+            return;
+        }
+
+        NSInteger offset = 0;
+        NSString *cursorParam = [request queryParamForKey:@"cursor"];
+        if (cursorParam.length > 0 && (!parseStrictIntegerString(cursorParam, &offset) || offset < 0)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSArray<NSDictionary *> *codes = loadAdminInviteCodeViews(controller.serviceDatabases, sort, limit, offset, &error);
+        if (!codes) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription ?: @"Failed to query invite codes"}];
+            return;
+        }
+
+        NSMutableDictionary *result = [@{@"codes": codes} mutableCopy];
+        if (codes.count == (NSUInteger)limit) {
+            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)(offset + (NSInteger)codes.count)];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     // Moderation endpoints
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         if (!authorizeAdminRequest(request, response, controller)) {
@@ -5221,6 +5328,57 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"infos": infos}];
+    }];
+
+    [dispatcher registerComAtprotoAdminGetInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *sort = [request queryParamForKey:@"sort"] ?: @"recent";
+        if (![sort isEqualToString:@"recent"] && ![sort isEqualToString:@"usage"]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"sort must be one of: recent, usage"}];
+            return;
+        }
+
+        NSInteger limit = 100;
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 500)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 500"}];
+            return;
+        }
+
+        NSInteger offset = 0;
+        NSString *cursorParam = [request queryParamForKey:@"cursor"];
+        if (cursorParam.length > 0 && (!parseStrictIntegerString(cursorParam, &offset) || offset < 0)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSArray<NSDictionary *> *codes = loadAdminInviteCodeViews(serviceDatabases, sort, limit, offset, &error);
+        if (!codes) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription ?: @"Failed to query invite codes"}];
+            return;
+        }
+
+        NSMutableDictionary *result = [@{@"codes": codes} mutableCopy];
+        if (codes.count == (NSUInteger)limit) {
+            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)(offset + (NSInteger)codes.count)];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
     }];
 
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
