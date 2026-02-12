@@ -160,6 +160,30 @@
     [self registerMethod:@"com.atproto.server.deactivateAccount" handler:handler];
 }
 
+- (void)registerComAtprotoServerConfirmEmail:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.confirmEmail" handler:handler];
+}
+
+- (void)registerComAtprotoServerRequestAccountDelete:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.requestAccountDelete" handler:handler];
+}
+
+- (void)registerComAtprotoServerRequestPasswordReset:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.requestPasswordReset" handler:handler];
+}
+
+- (void)registerComAtprotoServerReserveSigningKey:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.reserveSigningKey" handler:handler];
+}
+
+- (void)registerComAtprotoServerResetPassword:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.resetPassword" handler:handler];
+}
+
+- (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.updateEmail" handler:handler];
+}
+
 - (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.createRecord" handler:handler];
 }
@@ -254,6 +278,26 @@
 
 - (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.identity.getRecommendedDidCredentials" handler:handler];
+}
+
+- (void)registerComAtprotoIdentityRefreshIdentity:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.refreshIdentity" handler:handler];
+}
+
+- (void)registerComAtprotoIdentityRequestPlcOperationSignature:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.requestPlcOperationSignature" handler:handler];
+}
+
+- (void)registerComAtprotoIdentitySignPlcOperation:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.signPlcOperation" handler:handler];
+}
+
+- (void)registerComAtprotoIdentitySubmitPlcOperation:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.submitPlcOperation" handler:handler];
+}
+
+- (void)registerComAtprotoIdentityUpdateHandle:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.identity.updateHandle" handler:handler];
 }
 
 - (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler {
