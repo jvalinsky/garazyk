@@ -14,7 +14,12 @@
 @implementation PDSNetworkTransportFactory
 
 + (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port {
-    return [[PDSNetworkListenerLinux alloc] initWithPort:port];
+    NSString *bindHost = [[NSProcessInfo processInfo] environment][@"PDS_LISTEN_HOST"];
+    return [[PDSNetworkListenerLinux alloc] initWithHost:bindHost port:port];
+}
+
++ (id<PDSNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port {
+    return [[PDSNetworkListenerLinux alloc] initWithHost:host port:port];
 }
 
 + (id<PDSNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
@@ -421,6 +426,7 @@
     int _listenfd;
     dispatch_source_t _source;
     dispatch_queue_t _queue;
+    NSString *_bindHost;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
@@ -428,10 +434,15 @@
 @synthesize port = _port;
 
 - (instancetype)initWithPort:(NSUInteger)port {
+    return [self initWithHost:nil port:port];
+}
+
+- (instancetype)initWithHost:(NSString * _Nullable)host port:(NSUInteger)port {
     self = [super init];
     if (self) {
         _port = port;
         _listenfd = -1;
+        _bindHost = [host copy];
     }
     return self;
 }
@@ -453,7 +464,18 @@
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
+        if (_bindHost.length > 0) {
+            struct in_addr parsed;
+            if (inet_pton(AF_INET, [_bindHost UTF8String], &parsed) == 1) {
+                addr.sin_addr = parsed;
+            } else if ([_bindHost isEqualToString:@"localhost"]) {
+                inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+            } else {
+                addr.sin_addr.s_addr = INADDR_ANY;
+            }
+        } else {
+            addr.sin_addr.s_addr = INADDR_ANY;
+        }
         addr.sin_port = htons((uint16_t)portToBind);
         
         if (bind(_listenfd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
