@@ -5,25 +5,46 @@
 #import "PLC/PLCOperation.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 
 @interface PLCServerTests : XCTestCase
 @property (nonatomic, strong) PLCMockStore *store;
 @property (nonatomic, strong) PLCAuditor *auditor;
 @property (nonatomic, strong) PLCServer *server;
-@property (nonatomic, assign) NSUInteger port;
+@end
+
+@interface PLCServer (TestAccess)
+- (void)handleGetDID:(HttpRequest *)req response:(HttpResponse *)resp;
+- (void)handlePostDID:(HttpRequest *)req response:(HttpResponse *)resp;
 @end
 
 @implementation PLCServerTests
+
+- (HttpRequest *)requestWithMethod:(HttpMethod)method
+                      methodString:(NSString *)methodString
+                              path:(NSString *)path
+                        pathParams:(NSDictionary<NSString *, NSString *> *)pathParams
+                           headers:(NSDictionary<NSString *, NSString *> *)headers
+                              body:(NSData *)body {
+    HttpRequest *req = [[HttpRequest alloc] initWithMethod:method
+                                              methodString:methodString
+                                                    path:path
+                                             queryString:@""
+                                              queryParams:@{}
+                                                  version:@"HTTP/1.1"
+                                                  headers:headers ?: @{}
+                                                     body:body ?: [NSData data]
+                                             remoteAddress:@"127.0.0.1"];
+    req.pathParameters = pathParams;
+    return req;
+}
 
 - (void)setUp {
     [super setUp];
     self.store = [[PLCMockStore alloc] init];
     self.auditor = [[PLCAuditor alloc] initWithStore:self.store];
-    self.port = 8888;
-    self.server = [[PLCServer alloc] initWithStore:self.store auditor:self.auditor port:self.port];
-    NSError *error = nil;
-    BOOL success = [self.server startWithError:&error];
-    XCTAssertTrue(success, @"Failed to start server: %@", error);
+    self.server = [[PLCServer alloc] initWithStore:self.store auditor:self.auditor port:0];
 }
 
 - (NSString *)base64URLEncode:(NSData *)data {
@@ -35,9 +56,6 @@
 }
 
 - (void)tearDown {
-    [self.server stop];
-    // Give the server a moment to release the port
-    [NSThread sleepForTimeInterval:0.1];
     [super tearDown];
 }
 
@@ -64,26 +82,21 @@
     op.data = opData;
     op.prev = nil;
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
-    
-    XCTestExpectation *expectation = [self expectationWithDescription:@"GET /:did"];
-    
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/%@", (unsigned long)self.port, did]];
-    [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        XCTAssertNil(error);
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        XCTAssertEqual(httpResponse.statusCode, 200);
-        
-        NSError *jsonError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-        XCTAssertNil(jsonError);
-        XCTAssertNotNil(json);
-        XCTAssertEqualObjects(json[@"id"], did);
-        XCTAssertNotNil(json[@"verificationMethod"]);
-        
-        [expectation fulfill];
-    }] resume];
-    
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+
+    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+                                  methodString:@"GET"
+                                          path:[NSString stringWithFormat:@"/%@", did]
+                                    pathParams:@{@"did": did}
+                                       headers:@{}
+                                          body:nil];
+    HttpResponse *resp = [HttpResponse response];
+    [self.server handleGetDID:req response:resp];
+
+    XCTAssertEqual(resp.statusCode, 200);
+    XCTAssertTrue([resp.jsonBody isKindOfClass:[NSDictionary class]]);
+    NSDictionary *json = (NSDictionary *)resp.jsonBody;
+    XCTAssertEqualObjects(json[@"id"], did);
+    XCTAssertNotNil(json[@"verificationMethod"]);
 }
 
 - (void)testPostDID {
@@ -102,36 +115,23 @@
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
     NSString *did = [PLCOperation calculateDIDForData:opData];
-    
-    XCTestExpectation *expectation = [self expectationWithDescription:@"POST /:did"];
-    
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/%@", (unsigned long)self.port, did]];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.HTTPMethod = @"POST";
-    request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    
-    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        XCTAssertNil(error);
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        if (httpResponse.statusCode != 200) {
-            NSLog(@"POST failed: %@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
-        }
-        XCTAssertEqual(httpResponse.statusCode, 200);
-        
-        NSError *jsonError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-        XCTAssertNil(jsonError);
-        XCTAssertEqualObjects(json[@"status"], @"ok");
-        
-        // Verify it's in the store
-        NSArray *history = [self.store getHistoryForDID:did includeNullified:NO error:nil];
-        XCTAssertEqual(history.count, 1);
-        
-        [expectation fulfill];
-    }] resume];
-    
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+
+    NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    HttpRequest *req = [self requestWithMethod:HttpMethodPOST
+                                  methodString:@"POST"
+                                          path:[NSString stringWithFormat:@"/%@", did]
+                                    pathParams:@{@"did": did}
+                                       headers:@{@"content-type": @"application/json"}
+                                          body:body];
+    HttpResponse *resp = [HttpResponse response];
+    [self.server handlePostDID:req response:resp];
+
+    XCTAssertEqual(resp.statusCode, 200);
+    XCTAssertTrue([resp.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqualObjects(((NSDictionary *)resp.jsonBody)[@"status"], @"ok");
+
+    NSArray *history = [self.store getHistoryForDID:did includeNullified:NO error:nil];
+    XCTAssertEqual(history.count, 1);
 }
 
 - (void)testPostInvalidDID {
@@ -151,24 +151,18 @@
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
     NSString *did = [PLCOperation calculateDIDForData:opData];
-    
-    XCTestExpectation *expectation = [self expectationWithDescription:@"POST /:did (invalid sig)"];
-    
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/%@", (unsigned long)self.port, wrongDid]];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.HTTPMethod = @"POST";
-    request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    
-    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        XCTAssertNil(error);
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        XCTAssertEqual(httpResponse.statusCode, 400); // Bad Request (Audit failed)
-        
-        [expectation fulfill];
-    }] resume];
-    
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+
+    NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    HttpRequest *req = [self requestWithMethod:HttpMethodPOST
+                                  methodString:@"POST"
+                                          path:[NSString stringWithFormat:@"/%@", wrongDid]
+                                    pathParams:@{@"did": wrongDid}
+                                       headers:@{@"content-type": @"application/json"}
+                                          body:body];
+    HttpResponse *resp = [HttpResponse response];
+    [self.server handlePostDID:req response:resp];
+    XCTAssertEqual(resp.statusCode, 400);
+    XCTAssertNotEqualObjects(did, wrongDid);
 }
 
 @end

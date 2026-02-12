@@ -508,9 +508,15 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         for (NSDictionary *op in preparedOps) {
             NSString *action = op[@"action"];
 
-            if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
+            if ([action isEqualToString:@"create"]) {
                 PDSDatabaseRecord *dbRecord = op[@"record"];
-                if (![transactor putRecord:dbRecord forDid:did error:blockError]) {
+                if (![transactor createRecord:dbRecord forDid:did error:blockError]) {
+                    success = NO;
+                    return;
+                }
+            } else if ([action isEqualToString:@"update"]) {
+                PDSDatabaseRecord *dbRecord = op[@"record"];
+                if (![transactor updateRecord:dbRecord forDid:did error:blockError]) {
                     success = NO;
                     return;
                 }
