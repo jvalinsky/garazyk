@@ -115,6 +115,27 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     return audiences;
 }
 
+static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
+    if (!minter) {
+        return nil;
+    }
+
+    NSMutableOrderedSet<NSString *> *algorithms = [NSMutableOrderedSet orderedSet];
+    NSString *configuredAlgorithm = [[minter.signingAlgorithm stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
+    if (configuredAlgorithm.length > 0) {
+        [algorithms addObject:configuredAlgorithm];
+    }
+
+    if (algorithms.count == 0 && minter.publicKey) {
+        [algorithms addObject:@"ES256K"];
+    }
+    if (algorithms.count == 0 && minter.keyRotationManager) {
+        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
+    }
+
+    return algorithms.count > 0 ? algorithms.array : nil;
+}
+
 static NSDictionary *loadLexiconJSONForNSID(NSString *nsid,
                                             NSString *dataDirectory,
                                             NSError **error) {
@@ -4879,14 +4900,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
-    NSMutableArray<NSString *> *allowedAlgorithms = [NSMutableArray array];
-    if (verifier.publicKey) {
-        [allowedAlgorithms addObject:@"ES256K"];
-    }
-    if (verifier.keyRotationManager) {
-        [allowedAlgorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
-    }
-    verifier.allowedAlgorithms = allowedAlgorithms.count > 0 ? allowedAlgorithms : nil;
+    verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(controller.jwtMinter);
 
     // Verify the JWT
     NSError *verifyError = nil;
