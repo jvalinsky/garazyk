@@ -212,6 +212,13 @@
         }
     }
 
+    if (!isPasswordCorrect && self.serviceDatabases) {
+        NSError *appPasswordError = nil;
+        if ([self.serviceDatabases verifyAppPasswordForAccount:account.did password:password error:&appPasswordError]) {
+            isPasswordCorrect = YES;
+        }
+    }
+
     if (!isPasswordCorrect) {
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials

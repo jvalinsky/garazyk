@@ -7,9 +7,55 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Schema/PDSSchemaManager.h"
+#import "Core/NSDateFormatter+ATProto.h"
+#import <CommonCrypto/CommonCrypto.h>
+#import <CommonCrypto/CommonKeyDerivation.h>
+#import <CommonCrypto/CommonDigest.h>
 #import <sqlite3.h>
 
 NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.databases";
+
+static NSData *appPasswordGenerateSalt(void) {
+    NSMutableData *salt = [NSMutableData dataWithLength:32];
+    [[NSUUID UUID] getUUIDBytes:salt.mutableBytes];
+    return salt;
+}
+
+static NSData *appPasswordHash(NSString *password, NSData *salt) {
+    const uint32_t iterations = 600000;
+    const size_t derivedKeyLength = 32;
+    unsigned char derivedKey[32];
+
+    int result = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                      password.UTF8String,
+                                      (size_t)password.length,
+                                      salt.bytes,
+                                      (size_t)salt.length,
+                                      kCCPRFHmacAlgSHA256,
+                                      iterations,
+                                      derivedKey,
+                                      derivedKeyLength);
+    if (result != kCCSuccess) {
+        return nil;
+    }
+
+    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
+}
+
+static NSString *appPasswordGenerateSecret(void) {
+    static NSString *const kAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    NSMutableString *secret = [NSMutableString string];
+    for (NSUInteger groupIndex = 0; groupIndex < 4; groupIndex++) {
+        if (groupIndex > 0) {
+            [secret appendString:@"-"];
+        }
+        for (NSUInteger i = 0; i < 4; i++) {
+            unichar c = [kAlphabet characterAtIndex:arc4random_uniform((uint32_t)kAlphabet.length)];
+            [secret appendFormat:@"%C", c];
+        }
+    }
+    return secret;
+}
 
 @interface PDSServiceDatabases ()
 
@@ -412,6 +458,195 @@ NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.data
     }
 
     return success;
+}
+
+#pragma mark - App Password Operations
+
+- (nullable NSDictionary *)createAppPasswordForAccount:(NSString *)accountDid
+                                                 name:(NSString *)name
+                                           privileged:(BOOL)privileged
+                                                error:(NSError **)error {
+    if (accountDid.length == 0 || name.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing accountDid or name"}];
+        }
+        return nil;
+    }
+
+    __block NSDictionary *result = nil;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+
+        NSString *password = appPasswordGenerateSecret();
+        NSData *salt = appPasswordGenerateSalt();
+        NSData *hash = appPasswordHash(password, salt);
+        if (!hash) {
+            if (innerError) {
+                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                                 code:-1
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to hash app password"}];
+            }
+            return;
+        }
+
+        NSTimeInterval createdAt = [[NSDate date] timeIntervalSince1970];
+
+        NSString *sql = @"INSERT INTO app_passwords (id, account_did, name, password_hash, password_salt, privileged, created_at) "
+                        @"VALUES (?, ?, ?, ?, ?, ?, ?)";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        NSString *uuid = [[NSUUID UUID] UUIDString];
+        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, name.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 4, hash.bytes, (int)hash.length, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 5, salt.bytes, (int)salt.length, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 6, privileged ? 1 : 0);
+        sqlite3_bind_double(stmt, 7, createdAt);
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            if (innerError) {
+                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                                 code:sqlite3_errcode(store.db)
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to insert app password"}];
+            }
+            return;
+        }
+
+        NSString *createdAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]];
+        result = @{
+            @"name": name,
+            @"password": password,
+            @"createdAt": createdAtString ?: @"",
+            @"privileged": @(privileged)
+        };
+    } error:&localError];
+
+    if (!result && localError) {
+        if (error) *error = localError;
+    }
+
+    return result;
+}
+
+- (NSArray<NSDictionary *> *)listAppPasswordsForAccount:(NSString *)accountDid
+                                                 error:(NSError **)error {
+    if (accountDid.length == 0) return @[];
+
+    __block NSMutableArray<NSDictionary *> *passwords = [NSMutableArray array];
+    __block NSError *localError = nil;
+
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+
+        NSString *sql = @"SELECT name, created_at, privileged FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *nameText = (const char *)sqlite3_column_text(stmt, 0);
+            double createdAt = sqlite3_column_double(stmt, 1);
+            int privilegedFlag = sqlite3_column_int(stmt, 2);
+
+            NSString *name = nameText ? [NSString stringWithUTF8String:nameText] : @"";
+            NSString *createdAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]] ?: @"";
+
+            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+            entry[@"name"] = name;
+            entry[@"createdAt"] = createdAtString;
+            if (privilegedFlag != 0) {
+                entry[@"privileged"] = @YES;
+            }
+            [passwords addObject:entry];
+        }
+    } error:&localError];
+
+    if (localError && error) {
+        *error = localError;
+    }
+
+    return passwords;
+}
+
+- (BOOL)revokeAppPasswordForAccount:(NSString *)accountDid
+                               name:(NSString *)name
+                              error:(NSError **)error {
+    if (accountDid.length == 0 || name.length == 0) return NO;
+
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+
+        NSString *sql = @"DELETE FROM app_passwords WHERE account_did = ? AND name = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, name.UTF8String, -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            return;
+        }
+        success = (sqlite3_changes(store.db) > 0);
+    } error:&localError];
+
+    if (!success && localError) {
+        if (error) *error = localError;
+    }
+
+    return success;
+}
+
+- (BOOL)verifyAppPasswordForAccount:(NSString *)accountDid
+                           password:(NSString *)password
+                              error:(NSError **)error {
+    if (accountDid.length == 0 || password.length == 0) return NO;
+
+    __block BOOL matches = NO;
+    __block NSError *localError = nil;
+
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+
+        NSString *sql = @"SELECT password_hash, password_salt FROM app_passwords WHERE account_did = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const void *hashBytes = sqlite3_column_blob(stmt, 0);
+            int hashLen = sqlite3_column_bytes(stmt, 0);
+            const void *saltBytes = sqlite3_column_blob(stmt, 1);
+            int saltLen = sqlite3_column_bytes(stmt, 1);
+            if (!hashBytes || hashLen <= 0 || !saltBytes || saltLen <= 0) {
+                continue;
+            }
+
+            NSData *storedHash = [NSData dataWithBytes:hashBytes length:(NSUInteger)hashLen];
+            NSData *salt = [NSData dataWithBytes:saltBytes length:(NSUInteger)saltLen];
+            NSData *candidate = appPasswordHash(password, salt);
+            if (candidate && [candidate isEqualToData:storedHash]) {
+                matches = YES;
+                break;
+            }
+        }
+    } error:&localError];
+
+    if (localError && error) {
+        *error = localError;
+    }
+
+    return matches;
 }
 
 #pragma mark - DID Cache Operations
