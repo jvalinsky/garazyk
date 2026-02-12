@@ -3,9 +3,11 @@
 #import "Sync/WebSocketServer.h"
 #import "Sync/WebSocketConnection.h"
 #import "App/PDSController.h"
+#import "App/Services/PDSRecordService.h"
 #import "Sync/EventFormatter.h"
 #import "Sync/Firehose.h"
 #import "Repository/RepoCommit.h"
+#import "Core/TID.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -39,8 +41,17 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         _log = os_log_create("com.atproto.pds.subscribeRepos", "SubscribeReposHandler");
         _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events", DISPATCH_QUEUE_SERIAL);
         _sequenceNumber = 0;
+
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(handleRecordChange:)
+                                                     name:PDSRecordDidChangeNotification
+                                                   object:nil];
     }
     return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
@@ -109,6 +120,32 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 - (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state {
     os_log_info(self.log, "WebSocket server state changed to: %ld", (long)state);
+}
+
+#pragma mark - Record Change Notification
+
+- (void)handleRecordChange:(NSNotification *)notification {
+    NSDictionary *info = notification.userInfo;
+    NSString *did = info[@"did"];
+    NSString *collection = info[@"collection"];
+    NSString *rkey = info[@"rkey"];
+    NSString *action = info[@"action"];
+
+    if (!did || !collection || !rkey) return;
+
+    NSString *path = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+    NSDictionary *op = @{
+        @"action": action ?: @"create",
+        @"path": path,
+        @"cid": [NSNull null]
+    };
+
+    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                    data:nil
+                                                     rev:[[TID tid] stringValue]
+                                                   prev:nil];
+
+    [self broadcastRepositoryCommit:commit forRepo:did ops:@[op] blobs:@[]];
 }
 
 #pragma mark - Event Broadcasting

@@ -146,7 +146,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
     NSString *host = self.serverURL.host ?: @"bsky.social";
     NSNumber *portNum = self.serverURL.port;
     uint16_t port = portNum ? (uint16_t)[portNum intValue] : ([self.serverURL.scheme.lowercaseString isEqualToString:@"https"] ? 443 : 80);
-    NSString *path = [NSString stringWithFormat:@"/xrpc/com.atproto.server.subscribeRepos"];
+    NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
 
     BOOL useTLS = [self.serverURL.scheme.lowercaseString isEqualToString:@"wss"] ||
                   [self.serverURL.scheme.lowercaseString isEqualToString:@"https"];
