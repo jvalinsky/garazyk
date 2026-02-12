@@ -145,6 +145,16 @@ Secp256k1Error secp256k1_wrapper_public_key_parse(const uint8_t *input65,
                                                    Secp256k1PublicKey *out_public_key);
 
 /**
+ * @brief Derive uncompressed public key from private key.
+ *
+ * @param private_key Valid private key.
+ * @param out_public_key Pointer to receive 65-byte uncompressed public key.
+ * @return Secp256k1ErrorNone on success, error code on failure.
+ */
+Secp256k1Error secp256k1_wrapper_public_key_from_private_key(const Secp256k1PrivateKey *private_key,
+                                                              Secp256k1PublicKey *out_public_key);
+
+/**
  * @brief Serialize public key to compressed format.
  *
  * Compresses 65-byte key to 33-byte format (prefix + x coordinate).

@@ -154,6 +154,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.temp.revokeAccountCredentials. */
 - (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.lexicon.resolveLexicon. */
+- (void)registerComAtprotoLexiconResolveLexicon:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.updateEmail. */
 - (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler;
 
@@ -305,6 +308,36 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.admin.getInviteCodes. */
 - (void)registerComAtprotoAdminGetInviteCodes:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.deleteAccount. */
+- (void)registerComAtprotoAdminDeleteAccount:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.disableAccountInvites. */
+- (void)registerComAtprotoAdminDisableAccountInvites:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.enableAccountInvites. */
+- (void)registerComAtprotoAdminEnableAccountInvites:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.disableInviteCodes. */
+- (void)registerComAtprotoAdminDisableInviteCodes:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.searchAccounts. */
+- (void)registerComAtprotoAdminSearchAccounts:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.sendEmail. */
+- (void)registerComAtprotoAdminSendEmail:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.updateAccountEmail. */
+- (void)registerComAtprotoAdminUpdateAccountEmail:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.updateAccountHandle. */
+- (void)registerComAtprotoAdminUpdateAccountHandle:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.updateAccountPassword. */
+- (void)registerComAtprotoAdminUpdateAccountPassword:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.updateAccountSigningKey. */
+- (void)registerComAtprotoAdminUpdateAccountSigningKey:(XrpcMethodHandler)handler;
 
 /*! Registers handler for com.atproto.admin.moderateAccount. */
 - (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler;

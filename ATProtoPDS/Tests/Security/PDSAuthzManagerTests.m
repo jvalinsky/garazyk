@@ -7,6 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSAuthzManagerTests : XCTestCase
 @property (nonatomic, strong, nullable) PDSDatabase *database;
 @property (nonatomic, strong, nullable) PDSAuthzManager *manager;
+@property (nonatomic, copy, nullable) NSString *databasePath;
 @end
 
 @implementation PDSAuthzManagerTests
@@ -25,11 +26,21 @@ NS_ASSUME_NONNULL_BEGIN
     [self.database close];
     self.database = nil;
     self.manager = nil;
+    if (self.databasePath.length > 0) {
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        [fileManager removeItemAtPath:self.databasePath error:nil];
+        [fileManager removeItemAtPath:[self.databasePath stringByAppendingString:@"-wal"] error:nil];
+        [fileManager removeItemAtPath:[self.databasePath stringByAppendingString:@"-shm"] error:nil];
+        self.databasePath = nil;
+    }
     [super tearDown];
 }
 
 - (PDSDatabase *)createInMemoryDatabase:(NSError **)error {
-    PDSDatabase *database = [PDSDatabase databaseAtURL:[NSURL URLWithString:@":memory:"]];
+    NSString *filename = [NSString stringWithFormat:@"pds-authz-tests-%@.sqlite", [[NSUUID UUID] UUIDString]];
+    self.databasePath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
+    NSURL *databaseURL = [NSURL fileURLWithPath:self.databasePath];
+    PDSDatabase *database = [PDSDatabase databaseAtURL:databaseURL];
     if (![database openWithError:error]) {
         return nil;
     }
@@ -115,7 +126,23 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertFalse(userAllowed);
     XCTAssertEqual(error.code, PDSAuthzErrorAdminRequired);
 
-    XCTAssertTrue([self.manager isAdminEndpoint:@"com.atproto.admin.getAccountInfo"]);
+    NSArray<NSString *> *adminMethods = @[
+        @"com.atproto.admin.getAccountInfo",
+        @"com.atproto.admin.moderateAccount",
+        @"com.atproto.admin.moderateRecord",
+        @"com.atproto.admin.takeDownAccount",
+        @"com.atproto.admin.getAccountTakedown",
+        @"com.atproto.admin.disableInviteCodes",
+        @"com.atproto.admin.getSubjectStatus",
+        @"com.atproto.admin.updateSubjectStatus",
+    ];
+    for (NSString *method in adminMethods) {
+        XCTAssertTrue([self.manager isAdminEndpoint:method], @"Expected %@ to require admin", method);
+    }
+
+    XCTAssertTrue([self.manager isAdminEndpoint:@"com.atproto.temp.addReservedHandle"]);
+    XCTAssertFalse([self.manager isAdminEndpoint:@"com.atproto.server.createInviteCode"]);
+    XCTAssertFalse([self.manager isAdminEndpoint:@"com.atproto.server.createInviteCodes"]);
     XCTAssertFalse([self.manager isAdminEndpoint:@"com.atproto.repo.getRecord"]);
 }
 
