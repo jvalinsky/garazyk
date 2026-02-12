@@ -1,0 +1,22 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.repo.getBlob",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Legacy compatibility endpoint for authenticated blob retrieval from repo context.",
+      "parameters": {
+        "type": "params",
+        "required": ["cid"],
+        "properties": {
+          "cid": { "type": "string", "format": "cid" },
+          "did": { "type": "string", "format": "did" }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": { "type": "unknown" }
+      }
+    }
+  }
+}

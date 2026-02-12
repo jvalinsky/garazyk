@@ -133,17 +133,61 @@
 #pragma mark - Invite Management
 
 - (BOOL)disableAccountInvitesForDid:(NSString *)did error:(NSError **)error {
+    if (did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Account DID is required"}];
+        }
+        return NO;
+    }
+
     PDSDatabaseAccount *account = [_database getAccountByDid:did error:error];
-    if (!account) return NO;
-    PDS_LOG_INFO(@"Disabling invites for account: %@", did);
-    return YES;
+    if (!account) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                         code:404
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+        }
+        return NO;
+    }
+
+    account.inviteEnabled = NO;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    BOOL success = [_database updateAccount:account error:error];
+    if (success) {
+        PDS_LOG_INFO(@"Disabled invites for account: %@", did);
+    }
+    return success;
 }
 
 - (BOOL)enableAccountInvitesForDid:(NSString *)did error:(NSError **)error {
+    if (did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Account DID is required"}];
+        }
+        return NO;
+    }
+
     PDSDatabaseAccount *account = [_database getAccountByDid:did error:error];
-    if (!account) return NO;
-    PDS_LOG_INFO(@"Enabling invites for account: %@", did);
-    return YES;
+    if (!account) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                         code:404
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+        }
+        return NO;
+    }
+
+    account.inviteEnabled = YES;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    BOOL success = [_database updateAccount:account error:error];
+    if (success) {
+        PDS_LOG_INFO(@"Enabled invites for account: %@", did);
+    }
+    return success;
 }
 
 - (nullable NSDictionary *)createInviteCode:(NSDictionary *)params error:(NSError **)error {
@@ -154,9 +198,24 @@
     }
     PDSDatabaseAccount *account = [_database getAccountByDid:forAccount error:error];
     if (!account) return nil;
+    NSInteger maxUses = params[@"usesAvailable"] ? [params[@"usesAvailable"] integerValue] : 1;
+    if (maxUses < 1) {
+        maxUses = 1;
+    }
+
+    NSString *code = [NSUUID UUID].UUIDString;
+    NSString *inviteID = [NSUUID UUID].UUIDString;
+    NSTimeInterval createdAt = [[NSDate date] timeIntervalSince1970];
+    BOOL inserted = [_database executeParameterizedUpdate:@"INSERT INTO invite_codes (id, code, account_did, created_at, max_uses, uses, disabled) VALUES (?, ?, ?, ?, ?, 0, 0)"
+                                                   params:@[inviteID, code, forAccount, @(createdAt), @(maxUses)]
+                                                    error:error];
+    if (!inserted) {
+        return nil;
+    }
+
     return @{
-        @"code": [NSUUID UUID].UUIDString,
-        @"available": @(params[@"usesAvailable"] ? [params[@"usesAvailable"] integerValue] : 1),
+        @"code": code,
+        @"available": @(maxUses),
         @"disabled": @NO,
         @"forAccount": forAccount
     };
@@ -167,12 +226,32 @@
         if (error) *error = [NSError errorWithDomain:@"com.atproto.admin" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invite code cannot be empty"}];
         return NO;
     }
-    return YES;
+
+    NSArray<NSDictionary *> *rows = [_database executeParameterizedQuery:@"SELECT code FROM invite_codes WHERE code = ? LIMIT 1"
+                                                                  params:@[code]
+                                                                   error:error];
+    if (!rows) {
+        return NO;
+    }
+    if (rows.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.admin"
+                                         code:404
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invite code not found"}];
+        }
+        return NO;
+    }
+
+    return [_database executeParameterizedUpdate:@"UPDATE invite_codes SET disabled = 1 WHERE code = ?"
+                                          params:@[code]
+                                           error:error];
 }
 
 - (BOOL)disableInviteCodes:(BOOL)disabled error:(NSError **)error {
-    PDS_LOG_INFO(@"Setting global invite codes disabled: %d", disabled);
-    return YES;
+    PDS_LOG_INFO(@"Setting global invite codes disabled: %@", disabled ? @"YES" : @"NO");
+    return [_database executeParameterizedUpdate:@"UPDATE invite_codes SET disabled = ?"
+                                          params:@[@(disabled ? 1 : 0)]
+                                           error:error];
 }
 
 #pragma mark - Moderation
