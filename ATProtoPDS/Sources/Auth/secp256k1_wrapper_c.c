@@ -124,6 +124,32 @@ Secp256k1Error secp256k1_wrapper_public_key_parse(const uint8_t *input65,
     return Secp256k1ErrorNone;
 }
 
+Secp256k1Error secp256k1_wrapper_public_key_from_private_key(const Secp256k1PrivateKey *private_key,
+                                                              Secp256k1PublicKey *out_public_key) {
+    if (!secp256k1_ec_seckey_verify(get_context(), private_key->data)) {
+        return Secp256k1ErrorInvalidPrivateKey;
+    }
+
+    secp256k1_pubkey pubkey;
+    if (!secp256k1_ec_pubkey_create(get_context(), &pubkey, private_key->data)) {
+        return Secp256k1ErrorInvalidPrivateKey;
+    }
+
+    unsigned char pubkey_bytes[65];
+    size_t pubkey_len = sizeof(pubkey_bytes);
+    secp256k1_ec_pubkey_serialize(get_context(),
+                                  pubkey_bytes,
+                                  &pubkey_len,
+                                  &pubkey,
+                                  SECP256K1_EC_UNCOMPRESSED);
+    if (pubkey_len != 65) {
+        return Secp256k1ErrorInvalidPublicKey;
+    }
+
+    memcpy(out_public_key->data, pubkey_bytes, 65);
+    return Secp256k1ErrorNone;
+}
+
 void secp256k1_wrapper_public_key_serialize_compressed(const Secp256k1PublicKey *public_key,
                                                         uint8_t *out_compressed33) {
     secp256k1_pubkey pubkey;

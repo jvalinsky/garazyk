@@ -42,10 +42,18 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
     }
 
     Secp256k1PrivateKey privKey;
-    memcpy(privKey.data, privateKey.bytes, 32);
+    Secp256k1Error parseResult = secp256k1_wrapper_private_key_parse(privateKey.bytes, &privKey);
+    if (parseResult != Secp256k1ErrorNone) {
+        if (error) {
+            *error = [NSError errorWithDomain:Secp256k1ErrorDomain
+                                         code:parseResult
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:secp256k1_error_string(parseResult)]}];
+        }
+        return nil;
+    }
 
     Secp256k1PublicKey pubKey;
-    Secp256k1Error result = secp256k1_wrapper_generate_key_pair(&privKey, &pubKey);
+    Secp256k1Error result = secp256k1_wrapper_public_key_from_private_key(&privKey, &pubKey);
     if (result != Secp256k1ErrorNone) {
         if (error) {
             *error = [NSError errorWithDomain:Secp256k1ErrorDomain

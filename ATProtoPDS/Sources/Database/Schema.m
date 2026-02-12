@@ -11,6 +11,7 @@ NSString * const kPDSInviteCodeTableName = @"invite_codes";
 
 NSString * const kPDSAdminTakedownTableName = @"admin_takedowns";
 NSString * const kPDSLabelTableName = @"labels";
+NSString * const kPDSReservedHandleTableName = @"reserved_handles";
 NSString * const kPDSPasskeysTableName = @"passkeys";
 NSString * const kPDSOAuthClientsTableName = @"oauth_clients";
 
@@ -122,6 +123,12 @@ NSString * const kPDSLabelTableCreateSQL =
     @"exp TEXT"
     @")";
 
+NSString * const kPDSReservedHandleTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS reserved_handles ("
+    @"handle TEXT PRIMARY KEY,"
+    @"created_at REAL NOT NULL"
+    @")";
+
 NSString * const kPDSIndexInviteCodesAccountDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_invite_codes_account_did ON invite_codes(account_did)";
 
@@ -133,6 +140,9 @@ NSString * const kPDSIndexLabelsUriSQL =
 
 NSString * const kPDSIndexLabelsSourceSQL =
     @"CREATE INDEX IF NOT EXISTS idx_labels_source ON labels(src)";
+
+NSString * const kPDSIndexReservedHandlesHandleSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_reserved_handles_handle ON reserved_handles(handle)";
 
 NSString * const kPDSPasskeysTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS passkeys ("

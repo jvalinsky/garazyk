@@ -2,12 +2,17 @@
 #import "Auth/JWT.h"
 #import "App/PDSController.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
+#include <stdlib.h>
 
 #ifndef kCCSuccess
 #define kCCSuccess 0
 #endif
 
 static NSString *const PDSAdminAuthErrorDomain = @"PDSAdminAuth";
+static NSString *const PDSAdminAuthDefaultIssuer = @"https://pds.local:8443";
+static const NSTimeInterval PDSAdminAuthDefaultTokenTTLSeconds = 3600.0;
+static const NSTimeInterval PDSAdminAuthMinTokenTTLSeconds = 60.0;
+static const NSTimeInterval PDSAdminAuthMaxTokenTTLSeconds = 86400.0;
 
 static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
     if (a == nil || b == nil) {
@@ -49,6 +54,78 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
     return NO;
 }
 
+static BOOL PDSAdminAuthEnvBool(NSString *value) {
+    if (value.length == 0) {
+        return NO;
+    }
+    NSString *normalized = [[value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    return [normalized isEqualToString:@"1"] ||
+           [normalized isEqualToString:@"true"] ||
+           [normalized isEqualToString:@"yes"] ||
+           [normalized isEqualToString:@"on"];
+}
+
+static BOOL PDSAdminAuthIsIssuerRequired(NSDictionary *env) {
+    if (PDSAdminAuthEnvBool(env[@"PDS_REQUIRE_ISSUER"])) {
+        return YES;
+    }
+    NSString *environment = [env[@"PDS_ENV"] lowercaseString];
+    return [environment isEqualToString:@"production"];
+}
+
+static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredButMissing) {
+    NSString *issuer = [env[@"PDS_ISSUER"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (issuer.length > 0) {
+        if (requiredButMissing) *requiredButMissing = NO;
+        return issuer;
+    }
+    if (PDSAdminAuthIsIssuerRequired(env)) {
+        if (requiredButMissing) *requiredButMissing = YES;
+        return nil;
+    }
+    if (requiredButMissing) *requiredButMissing = NO;
+    return PDSAdminAuthDefaultIssuer;
+}
+
+static NSInteger PDSAdminAuthParsePositiveInteger(NSString *value) {
+    if (value.length == 0) {
+        return NSNotFound;
+    }
+    NSString *trimmed = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (trimmed.length == 0) {
+        return NSNotFound;
+    }
+
+    NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    if ([trimmed rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
+        return NSNotFound;
+    }
+
+    unsigned long long parsed = strtoull(trimmed.UTF8String, NULL, 10);
+    if (parsed == 0 || parsed > NSIntegerMax) {
+        return NSNotFound;
+    }
+    return (NSInteger)parsed;
+}
+
+static NSTimeInterval PDSAdminAuthResolvedTokenTTL(NSDictionary *env) {
+    NSInteger parsed = PDSAdminAuthParsePositiveInteger(env[@"PDS_ADMIN_TOKEN_TTL_SECONDS"]);
+    if (parsed == NSNotFound) {
+        return PDSAdminAuthDefaultTokenTTLSeconds;
+    }
+    if (parsed < (NSInteger)PDSAdminAuthMinTokenTTLSeconds) {
+        return PDSAdminAuthMinTokenTTLSeconds;
+    }
+    if (parsed > (NSInteger)PDSAdminAuthMaxTokenTTLSeconds) {
+        return PDSAdminAuthMaxTokenTTLSeconds;
+    }
+    return (NSTimeInterval)parsed;
+}
+
+static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
+    return PDSAdminAuthEnvBool(env[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"]);
+}
+
 @interface PDSAdminAuth ()
 @property (nonatomic, strong, nullable) NSDate *minimumTokenIssuedAt;
 @end
@@ -80,13 +157,15 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
 
     NSDictionary *headers = (NSDictionary *)request;
 
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+
     NSString *authorization = headers[@"Authorization"] ?: headers[@"authorization"];
     NSString *token = nil;
     if ([authorization isKindOfClass:[NSString class]] && [authorization hasPrefix:@"Bearer "]) {
         token = [authorization substringFromIndex:@"Bearer ".length];
     }
 
-    if (token.length == 0) {
+    if (token.length == 0 && !PDSAdminAuthIsXAdminTokenHeaderDisabled(env)) {
         NSString *adminTokenHeader = headers[@"X-Admin-Token"] ?: headers[@"x-admin-token"];
         if ([adminTokenHeader isKindOfClass:[NSString class]]) {
             token = adminTokenHeader;
@@ -116,7 +195,11 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
     verifier.keyRotationManager = controller.jwtMinter.keyRotationManager;
     verifier.publicKey = controller.jwtMinter.publicKey;
 
-    NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+    BOOL issuerRequiredButMissing = NO;
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, &issuerRequiredButMissing);
+    if (issuerRequiredButMissing || expectedIssuer.length == 0) {
+        return NO;
+    }
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer;
     NSMutableArray<NSString *> *allowedAlgorithms = [NSMutableArray array];
@@ -203,6 +286,8 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
 }
 
 - (BOOL)authenticateWithPassword:(NSString *)password error:(NSError **)error {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+
     NSString *expectedPassword = [self resolveAdminPassword];
     if (expectedPassword.length == 0) {
         if (error) {
@@ -232,18 +317,31 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
         return NO;
     }
 
-    NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+    BOOL issuerRequiredButMissing = NO;
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, &issuerRequiredButMissing);
+    if (issuerRequiredButMissing || expectedIssuer.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain
+                                         code:503
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PDS_ISSUER is required in production mode"}];
+        }
+        return NO;
+    }
     NSURLComponents *issuerComponents = [NSURLComponents componentsWithString:expectedIssuer];
     NSString *issuerHost = issuerComponents.host ?: expectedIssuer;
     NSString *adminDID = [NSString stringWithFormat:@"did:web:%@", issuerHost];
+
+    NSTimeInterval tokenTTLSeconds = PDSAdminAuthResolvedTokenTTL(env);
+    NSDate *issuedAt = [NSDate date];
+    NSDate *expiresAt = [issuedAt dateByAddingTimeInterval:tokenTTLSeconds];
 
     NSMutableDictionary *claims = [NSMutableDictionary dictionary];
     claims[@"sub"] = adminDID;
     claims[@"scope"] = @"admin";
     claims[@"iss"] = expectedIssuer;
     claims[@"aud"] = expectedIssuer;
-    claims[@"exp"] = @([[NSDate dateWithTimeIntervalSinceNow:3600] timeIntervalSince1970]);
-    claims[@"iat"] = @([[NSDate date] timeIntervalSince1970]);
+    claims[@"exp"] = @([expiresAt timeIntervalSince1970]);
+    claims[@"iat"] = @([issuedAt timeIntervalSince1970]);
 
     NSError *signError = nil;
     NSString *token = [controller.jwtMinter signPayload:claims error:&signError];
