@@ -196,6 +196,14 @@
     [self registerMethod:@"com.atproto.sync.listBlobs" handler:handler];
 }
 
+- (void)registerComAtprotoSyncGetLatestCommit:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getLatestCommit" handler:handler];
+}
+
+- (void)registerComAtprotoSyncGetBlocks:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getBlocks" handler:handler];
+}
+
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.notifyOfUpdate" handler:handler];
 }

@@ -164,6 +164,12 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.sync.listBlobs. */
 - (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.sync.getLatestCommit. */
+- (void)registerComAtprotoSyncGetLatestCommit:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.getBlocks. */
+- (void)registerComAtprotoSyncGetBlocks:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.sync.notifyOfUpdate. */
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler;
 

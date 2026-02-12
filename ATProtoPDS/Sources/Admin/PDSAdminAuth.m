@@ -135,18 +135,80 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
     return YES;
 }
 
+- (NSString *)resolveAdminPassword {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+
+    // Check PDS_ADMIN_PASSWORD_FILE first (production: secret from file)
+    NSString *passwordFile = env[@"PDS_ADMIN_PASSWORD_FILE"];
+    if (passwordFile.length > 0) {
+        NSError *readError = nil;
+        NSString *content = [NSString stringWithContentsOfFile:passwordFile
+                                                     encoding:NSUTF8StringEncoding
+                                                        error:&readError];
+        if (content) {
+            // Trim whitespace/newlines (common with Docker secrets)
+            return [content stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+
+    // Fall back to PDS_ADMIN_PASSWORD environment variable
+    return env[@"PDS_ADMIN_PASSWORD"];
+}
+
+- (BOOL)verifyPassword:(NSString *)password against:(NSString *)expected {
+    // If expected starts with "$2" it's a bcrypt hash — use PBKDF2 comparison
+    // For now, support plain-text comparison with constant-time check,
+    // and PBKDF2-SHA256 hashed passwords (prefix "pbkdf2:")
+    if ([expected hasPrefix:@"pbkdf2:"]) {
+        // Format: pbkdf2:<iterations>:<base64salt>:<base64hash>
+        NSArray *parts = [expected componentsSeparatedByString:@":"];
+        if (parts.count != 4) return NO;
+
+        NSInteger iterations = [parts[1] integerValue];
+        NSData *salt = [[NSData alloc] initWithBase64EncodedString:parts[2] options:0];
+        NSData *expectedHash = [[NSData alloc] initWithBase64EncodedString:parts[3] options:0];
+
+        if (!salt || !expectedHash || iterations < 1) return NO;
+
+        NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+        NSMutableData *derivedKey = [NSMutableData dataWithLength:expectedHash.length];
+
+        int result = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                          passwordData.bytes, passwordData.length,
+                                          salt.bytes, salt.length,
+                                          kCCPRFHmacAlgSHA256,
+                                          (uint)iterations,
+                                          derivedKey.mutableBytes, derivedKey.length);
+
+        if (result != kCCSuccess) return NO;
+
+        // Constant-time comparison
+        if (derivedKey.length != expectedHash.length) return NO;
+        const uint8_t *a = derivedKey.bytes;
+        const uint8_t *b = expectedHash.bytes;
+        uint8_t diff = 0;
+        for (NSUInteger i = 0; i < derivedKey.length; i++) {
+            diff |= (uint8_t)(a[i] ^ b[i]);
+        }
+        return diff == 0;
+    }
+
+    // Plain-text comparison (dev/testing only)
+    return PDSConstantTimeEqualStrings(password, expected);
+}
+
 - (BOOL)authenticateWithPassword:(NSString *)password error:(NSError **)error {
-    NSString *expectedPassword = [[NSProcessInfo processInfo] environment][@"PDS_ADMIN_PASSWORD"];
+    NSString *expectedPassword = [self resolveAdminPassword];
     if (expectedPassword.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain
                                          code:503
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Admin password not configured (set PDS_ADMIN_PASSWORD)"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Admin password not configured (set PDS_ADMIN_PASSWORD or PDS_ADMIN_PASSWORD_FILE)"}];
         }
         return NO;
     }
 
-    if (!PDSConstantTimeEqualStrings(password, expectedPassword)) {
+    if (![self verifyPassword:password against:expectedPassword]) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain
                                          code:401
