@@ -3,22 +3,12 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/XrpcHandler.h"
-#import "Network/XrpcMethodRegistry.h"
-#import "App/Explore/ExploreHandler.h"
+#import "Network/PDSHttpServerBuilder.h"
 #import "App/PDSController.h"
 #import "Core/CID.h"
 #import "App/PDSConfiguration.h"
-#import "Database/PDSDatabase.h"
-#import "Auth/OAuth2Handler.h"
-#import "App/MSTViewer/MSTViewerHandler.h"
-#import "App/OAuthDemo/OAuthDemoHandler.h"
-#import "Admin/PDSAdminHandler.h"
-
-// Category to access HttpServer's private requestHandler property
-@interface HttpServer (Private)
-@property (nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *);
-@end
+#import "Auth/JWT.h"
+#import "Sync/SubscribeReposHandler.h"
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end
@@ -156,69 +146,22 @@
         return 0;
     }
 
-    // Configure Explore handler
-    ExploreHandler *exploreHandler = [ExploreHandler sharedHandler];
-    [exploreHandler setController:controller];
-    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Set controller on explore handler: %@", controller);
+    SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:controller];
 
-    // Configure OAuth2 handler
-    NSError *dbError = nil;
-    PDSDatabase *serviceDB = [controller serviceDatabaseWithError:&dbError];
-    if (!serviceDB) {
-        printf("Failed to initialize service database: %s\n", dbError.localizedDescription.UTF8String);
+    PDSHttpServerBuilder *serverBuilder = [[PDSHttpServerBuilder alloc] initWithConfiguration:[PDSConfiguration sharedConfiguration]];
+    serverBuilder.port = (NSUInteger)port;
+    serverBuilder.controller = controller;
+    serverBuilder.jwtMinter = controller.jwtMinter;
+    serverBuilder.serviceDatabases = controller.serviceDatabases;
+    serverBuilder.subscribeReposHandler = subscribeReposHandler;
+    serverBuilder.issuer = [NSString stringWithFormat:@"https://localhost:%ld", (long)port];
+
+    NSError *builderError = nil;
+    if (![serverBuilder configureServer:httpServer error:&builderError]) {
+        printf("Failed to configure HTTP server routes: %s\n", builderError.localizedDescription.UTF8String);
         return 0;
     }
-    OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:serviceDB];
-    oauthHandler.minter = controller.jwtMinter;
-    [oauthHandler registerRoutesWithServer:httpServer];
-    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered OAuth2 routes");
-
-    // Configure XRPC dispatcher
-    XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
-    
-    [httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        [dispatcher handleRequest:request response:response];
-    }];
-    
-    [httpServer addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
-        [dispatcher handleRequest:request response:response];
-    }];
-
-    [httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
-        [dispatcher handleRequest:request response:response];
-    }];
-    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered XRPC routes");
-
-    // Explore UI + API
-    [httpServer addRoute:@"GET" path:@"/api/pds/:endpoint" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-
-    // Register MST Viewer routes
-    MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
-    [mstViewerHandler setController:controller];
-    
-    [httpServer addHandlerForPath:@"/mst-viewer" handler:^(HttpRequest *request, HttpResponse *response) {
-        [mstViewerHandler handleRequest:request response:response];
-    }];
-    
-    [httpServer addHandlerForPath:@"/api/mst" handler:^(HttpRequest *request, HttpResponse *response) {
-        [mstViewerHandler handleRequest:request response:response];
-    }];
-    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered MST Viewer routes");
-
-    // Register OAuth Demo routes
-    OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
-    [oauthDemoHandler setController:controller];
-    
-    [httpServer addHandlerForPath:@"/oauth-demo" handler:^(HttpRequest *request, HttpResponse *response) {
-        [oauthDemoHandler handleRequest:request response:response];
-    }];
-    
-    [httpServer addRoute:@"GET" path:@"/oauth-demo/*" handler:^(HttpRequest *request, HttpResponse *response) {
-        [oauthDemoHandler handleRequest:request response:response];
-    }];
+    PDS_LOG_DEBUG_C(PDSLogComponentCLI, @"PDSCLIServeCommand: Registered routes via PDSHttpServerBuilder");
 
     // Register Health Check
     [httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -299,42 +242,6 @@
         [response setJsonBody:doc];
     }];
 
-    // Register Admin routes
-    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
-
-    [httpServer addRoute:@"POST" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
-                                                            path:@"/admin/login"
-                                                         headers:request.headers
-                                                            body:request.body];
-        if (result) {
-            response.statusCode = 200;
-            [response setBodyString:result];
-        } else {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found"}];
-        }
-    }];
-
-    [httpServer addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
-                                                            path:@"/admin/logout"
-                                                         headers:request.headers
-                                                            body:request.body];
-        if (result) {
-            response.statusCode = 200;
-            [response setBodyString:result];
-        } else {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found"}];
-        }
-    }];
-
-    // Explore / Web UI Wildcard - MUST BE LAST
-    [httpServer addRoute:@"GET" path:@"/*" handler:^(HttpRequest *request, HttpResponse *response) {
-        [exploreHandler handleRequest:request response:response];
-    }];
-
     // Start HTTP server
     NSError *serverError = nil;
     if (![httpServer startWithError:&serverError]) {
@@ -366,6 +273,7 @@
     dispatch_source_set_event_handler(intSource, ^{
         shouldExit = 1;
         printf("\nShutting down server...\n");
+        [subscribeReposHandler stop];
         [httpServer stop];
         // Give async operations 2 seconds to complete before forcing exit
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
@@ -379,6 +287,7 @@
     dispatch_source_set_event_handler(termSource, ^{
         shouldExit = 1;
         printf("\nShutting down server...\n");
+        [subscribeReposHandler stop];
         [httpServer stop];
         // Give async operations 2 seconds to complete before forcing exit
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
@@ -404,6 +313,7 @@
         }
     }
 
+    [subscribeReposHandler stop];
     [httpServer stop];
     printf("Server stopped.\n");
     return 0;

@@ -94,8 +94,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Port for the HTTP XRPC server (default 2583). */
 @property (nonatomic, assign) NSUInteger httpPort;
 
-/*! Port for the WebSocket subscribeRepos handler (default 8081). */
-@property (nonatomic, assign) NSUInteger wsPort;
+/*! Compatibility property for subscribeRepos streaming; mirrors HTTP port when running. */
+@property (nonatomic, assign, readonly) NSUInteger wsPort
+    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP port upgrades; use httpPort");
 
 #pragma mark - Initialization & Lifecycle
 
@@ -120,7 +121,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithApplication:(PDSApplication *)application;
 
-/*! Starts the HTTP and WebSocket servers. */
+/*! Starts the HTTP server (including subscribeRepos WebSocket upgrades). */
 - (BOOL)startServerWithError:(NSError **)error;
 
 /*! Stops all servers and closes connections. */

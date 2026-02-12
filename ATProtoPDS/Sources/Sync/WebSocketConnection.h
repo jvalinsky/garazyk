@@ -117,6 +117,9 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! Starts internal read loop for an already connected/accepted connection. */
 - (void)start;
 
+/*! Starts read loop/heartbeats without re-starting the transport. */
+- (void)startOnExistingTransport;
+
 /*! Closes the connection. */
 - (void)close;
 

@@ -102,6 +102,27 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
     return audiences;
 }
 
+static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse *response) {
+    if (request.method != HttpMethodGET) {
+        response.statusCode = HttpStatusMethodNotAllowed;
+        [response setHeader:@"GET" forKey:@"Allow"];
+        [response setJsonBody:@{
+            @"error": @"MethodNotAllowed",
+            @"message": @"subscribeRepos only supports GET"
+        }];
+        return;
+    }
+
+    response.statusCode = 426;
+    [response setHeader:@"websocket" forKey:@"Upgrade"];
+    [response setHeader:@"Upgrade" forKey:@"Connection"];
+    [response setJsonBody:@{
+        @"error": @"UpgradeRequired",
+        @"message": @"WebSocket upgrade required for subscribeRepos"
+    }];
+    response.keepAlive = NO;
+}
+
 @implementation XrpcMethodRegistry
 
 /**
@@ -385,6 +406,27 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:session];
+    }];
+
+    [dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [controller.serviceDatabases deleteRefreshTokensForAccount:did error:&error];
+        if (!success) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"SessionDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete session"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
     }];
 
     [dispatcher registerComAtprotoServerGetServiceAuth:^(HttpRequest *request, HttpResponse *response) {
@@ -906,6 +948,10 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         response.statusCode = HttpStatusOK;
         response.contentType = @"application/vnd.ipld.car";
         [response setBodyData:carData];
+    }];
+
+    [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
+        setSubscribeReposUpgradeRequired(request, response);
     }];
 
     [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
@@ -1972,6 +2018,27 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         [response setJsonBody:session];
     }];
 
+    [dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [serviceDatabases deleteRefreshTokensForAccount:did error:&error];
+        if (!success) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"SessionDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete session"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
@@ -2574,6 +2641,10 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"blobs": blobs ?: @[]}];
+    }];
+
+    [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
+        setSubscribeReposUpgradeRequired(request, response);
     }];
 
     [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
