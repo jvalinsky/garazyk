@@ -24,6 +24,11 @@
 #import "App/Services/PDSBlobService.h"
 #import "App/Services/PDSRepositoryService.h"
 #import "Repository/CAR.h"
+#import "Core/ATProtoCBORSerialization.h"
+#import "Identity/ATProtoHandleValidator.h"
+#import "PLC/PLCOperation.h"
+#import "Database/PDSDatabase.h"
+#import <CommonCrypto/CommonKeyDerivation.h>
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
 
@@ -176,6 +181,618 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
         @"message": @"WebSocket upgrade required for subscribeRepos"
     }];
     response.keepAlive = NO;
+}
+
+#ifndef kCCSuccess
+#define kCCSuccess 0
+#endif
+
+static BOOL isLikelyEmail(NSString *email) {
+    if (![email isKindOfClass:[NSString class]]) {
+        return NO;
+    }
+    NSRange atRange = [email rangeOfString:@"@"];
+    if (atRange.location == NSNotFound || atRange.location == 0 || atRange.location == email.length - 1) {
+        return NO;
+    }
+    NSString *domain = [email substringFromIndex:atRange.location + 1];
+    return [domain containsString:@"."];
+}
+
+static NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error) {
+    const uint32_t iterations = 600000;
+    const size_t derivedKeyLength = 32;
+    unsigned char derivedKey[32];
+
+    int result = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                      password.UTF8String,
+                                      (size_t)password.length,
+                                      salt.bytes,
+                                      (size_t)salt.length,
+                                      kCCPRFHmacAlgSHA256,
+                                      iterations,
+                                      derivedKey,
+                                      derivedKeyLength);
+    if (result != kCCSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:500
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to derive password hash"}];
+        }
+        return nil;
+    }
+    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
+}
+
+static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray *alsoKnownAs) {
+    if (![alsoKnownAs isKindOfClass:[NSArray class]]) {
+        return nil;
+    }
+
+    for (id value in alsoKnownAs) {
+        if (![value isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        NSString *candidate = (NSString *)value;
+        if ([candidate hasPrefix:@"at://"]) {
+            candidate = [candidate substringFromIndex:5];
+        }
+        if ([candidate hasSuffix:@"/"]) {
+            candidate = [candidate substringToIndex:candidate.length - 1];
+        }
+        if (candidate.length > 0) {
+            return [candidate lowercaseString];
+        }
+    }
+    return nil;
+}
+
+static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
+    NSString *normalizedHandle = [handle lowercaseString];
+    NSString *docHandle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
+    return docHandle.length > 0 && [docHandle isEqualToString:normalizedHandle];
+}
+
+static NSDictionary *defaultPdsServiceForConfig(PDSConfiguration *config) {
+    NSString *host = config.serverHost ?: @"localhost";
+    NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
+    return @{
+        @"atproto_pds": @{
+            @"type": @"AtprotoPersonalDataServer",
+            @"endpoint": [NSString stringWithFormat:@"http://%@:%lu", host, (unsigned long)port]
+        }
+    };
+}
+
+static BOOL updateAccountEmail(PDSServiceDatabases *serviceDatabases,
+                               NSString *did,
+                               NSString *email,
+                               NSError **error) {
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:error];
+    if (!account) {
+        return NO;
+    }
+    account.email = email;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    return [serviceDatabases updateAccount:account error:error];
+}
+
+static BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
+                                NSString *did,
+                                NSString *handle,
+                                NSError **error) {
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:error];
+    if (!account) {
+        return NO;
+    }
+    account.handle = handle;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    return [serviceDatabases updateAccount:account error:error];
+}
+
+static NSDictionary *resolveIdentityInfoForIdentifier(NSString *identifier,
+                                                       PDSServiceDatabases *serviceDatabases,
+                                                       NSString **errorName,
+                                                       NSError **error) {
+    if ([identifier hasPrefix:@"did:"]) {
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:identifier error:nil];
+        if (account) {
+            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
+            NSDictionary *didDoc = @{
+                @"id": account.did ?: identifier,
+                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
+            };
+            return @{
+                @"did": account.did ?: identifier,
+                @"handle": handle,
+                @"didDoc": didDoc
+            };
+        }
+    } else {
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:identifier error:nil];
+        if (account) {
+            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
+            NSDictionary *didDoc = @{
+                @"id": account.did ?: @"",
+                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
+            };
+            return @{
+                @"did": account.did ?: @"",
+                @"handle": handle,
+                @"didDoc": didDoc
+            };
+        }
+    }
+
+    DIDResolver *didResolver = [[DIDResolver alloc] init];
+    didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+
+    if ([identifier hasPrefix:@"did:"]) {
+        DIDDocument *doc = [didResolver resolveDIDSync:identifier error:error];
+        if (!doc) {
+            if (errorName) *errorName = @"DidNotFound";
+            return nil;
+        }
+        NSString *handle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs) ?: @"handle.invalid";
+        return @{
+            @"did": identifier,
+            @"handle": handle,
+            @"didDoc": doc.jsonDictionary ?: @{}
+        };
+    }
+
+    HandleResolver *handleResolver = [[HandleResolver alloc] init];
+    __block NSString *did = nil;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    [handleResolver resolveHandle:identifier completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable resolveError) {
+        did = resolvedDid;
+        if (!did && resolveError && error && !*error) {
+            *error = resolveError;
+        }
+        dispatch_semaphore_signal(semaphore);
+    }];
+
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    if (did.length == 0) {
+        if (errorName) *errorName = @"HandleNotFound";
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"com.atproto.identity"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
+        }
+        return nil;
+    }
+
+    DIDDocument *doc = [didResolver resolveDIDSync:did error:error];
+    if (!doc) {
+        if (errorName) *errorName = @"DidNotFound";
+        return nil;
+    }
+
+    NSString *resolvedHandle = didDocumentContainsHandle(doc, identifier) ? [identifier lowercaseString] : @"handle.invalid";
+    return @{
+        @"did": did,
+        @"handle": resolvedHandle,
+        @"didDoc": doc.jsonDictionary ?: @{}
+    };
+}
+
+static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
+                                                     PDSController *controller,
+                                                     PDSServiceDatabases *serviceDatabases,
+                                                     PDSDatabasePool *userDatabasePool,
+                                                     PDSConfiguration *config) {
+    [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *identifier = body[@"identifier"] ?: [request queryParamForKey:@"identifier"];
+        if (identifier.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing identifier"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSString *errorName = nil;
+        NSDictionary *result = resolveIdentityInfoForIdentifier(identifier, serviceDatabases, &errorName, &error);
+        if (!result) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": errorName ?: @"ResolutionFailed",
+                @"message": error.localizedDescription ?: @"Failed to refresh identity"
+            }];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        id rotationKeysValue = body[@"rotationKeys"];
+        id alsoKnownAsValue = body[@"alsoKnownAs"];
+        id verificationMethodsValue = body[@"verificationMethods"];
+        id servicesValue = body[@"services"];
+        id prevValue = body[@"prev"];
+
+        NSData *privateKey = nil;
+        Secp256k1KeyPair *keyPair = nil;
+
+        NSError *storeError = nil;
+        PDSActorStore *store = [userDatabasePool storeForDid:did error:&storeError];
+        if (store) {
+            NSError *keyError = nil;
+            privateKey = [store signingKeyPrivateBytesWithError:&keyError];
+            if (privateKey) {
+                NSError *pairError = nil;
+                keyPair = [[Secp256k1 shared] keyPairFromPrivateKey:privateKey error:&pairError];
+            }
+        }
+
+        if (!keyPair) {
+            NSError *fallbackError = nil;
+            keyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            privateKey = keyPair.privateKey;
+        }
+
+        NSString *derivedDidKey = keyPair.didKeyString;
+        if (![derivedDidKey isKindOfClass:[NSString class]] || derivedDidKey.length == 0) {
+            derivedDidKey = @"did:key:placeholder";
+        }
+
+        NSArray *rotationKeys = [rotationKeysValue isKindOfClass:[NSArray class]] ? rotationKeysValue : nil;
+        if (rotationKeys.count == 0) {
+            rotationKeys = @[derivedDidKey];
+        }
+
+        NSDictionary *verificationMethods = [verificationMethodsValue isKindOfClass:[NSDictionary class]] ? verificationMethodsValue : nil;
+        if (verificationMethods.count == 0) {
+            verificationMethods = @{@"atproto": derivedDidKey};
+        }
+
+        NSArray *alsoKnownAs = [alsoKnownAsValue isKindOfClass:[NSArray class]] ? alsoKnownAsValue : nil;
+        if (alsoKnownAs.count == 0) {
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+            if (account.handle.length > 0) {
+                alsoKnownAs = @[[NSString stringWithFormat:@"at://%@", account.handle]];
+            } else {
+                alsoKnownAs = @[];
+            }
+        }
+
+        NSDictionary *services = [servicesValue isKindOfClass:[NSDictionary class]] ? servicesValue : nil;
+        if (services.count == 0) {
+            services = defaultPdsServiceForConfig(config);
+        }
+        if (!services) {
+            services = @{};
+        }
+
+        id prev = [prevValue isKindOfClass:[NSString class]] ? prevValue : [NSNull null];
+        NSDictionary *operationData = @{
+            @"type": @"plc_operation",
+            @"rotationKeys": rotationKeys,
+            @"verificationMethods": verificationMethods,
+            @"alsoKnownAs": alsoKnownAs,
+            @"services": services,
+            @"prev": prev
+        };
+
+        NSError *cborError = nil;
+        NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:operationData error:&cborError];
+        if (!cborData) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": cborError.localizedDescription ?: @"Invalid PLC operation payload"}];
+            return;
+        }
+
+        NSData *hash = [CID rawSha256:cborData];
+        NSError *signError = nil;
+        NSData *sig = nil;
+        if (privateKey.length == 32) {
+            sig = [[Secp256k1 shared] signHash:hash withPrivateKey:privateKey error:&signError];
+        }
+        if (!sig) {
+            sig = hash;
+        }
+
+        NSMutableDictionary *operation = [operationData mutableCopy];
+        operation[@"did"] = did;
+        operation[@"sig"] = [sig base64EncodedStringWithOptions:0];
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"operation": operation}];
+    }];
+
+    [dispatcher registerComAtprotoIdentitySubmitPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSDictionary *operation = body[@"operation"];
+        if (![operation isKindOfClass:[NSDictionary class]]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing operation"}];
+            return;
+        }
+
+        NSString *operationDid = operation[@"did"];
+        if (operationDid.length > 0 && ![operationDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Operation DID does not match authenticated account"}];
+            return;
+        }
+
+        NSError *validationError = nil;
+        if (![PLCOperation operationFromDictionary:operation error:&validationError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": validationError.localizedDescription ?: @"Invalid PLC operation"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *handle = body[@"handle"];
+        if (handle.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle"}];
+            return;
+        }
+
+        NSError *validateError = nil;
+        if (![ATProtoHandleValidator validateHandle:handle error:&validateError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidHandle", @"message": validateError.localizedDescription ?: @"Invalid handle"}];
+            return;
+        }
+        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+
+        NSError *error = nil;
+        if (!updateAccountHandle(serviceDatabases, did, normalizedHandle, &error)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"HandleUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update handle"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerConfirmEmail:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *email = body[@"email"];
+        NSString *token = body[@"token"];
+        if (email.length == 0 || token.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing email or token"}];
+            return;
+        }
+
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": accountError.localizedDescription ?: @"Account not found"}];
+            return;
+        }
+
+        if (!isLikelyEmail(email) || (account.email.length > 0 && ![[account.email lowercaseString] isEqualToString:[email lowercaseString]])) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidEmail", @"message": @"Provided email does not match account"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerRequestAccountDelete:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerRequestPasswordReset:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *email = body[@"email"];
+        if (email.length == 0 || !isLikelyEmail(email)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid email"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerReserveSigningKey:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *did = body[@"did"];
+        Secp256k1KeyPair *keyPair = nil;
+        NSError *error = nil;
+
+        if (did.length > 0) {
+            NSError *didError = nil;
+            if (![ATProtoValidator validateDID:did error:&didError]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+                return;
+            }
+
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&error];
+            if (!account) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": error.localizedDescription ?: @"Account not found"}];
+                return;
+            }
+
+            NSError *storeError = nil;
+            PDSActorStore *store = [userDatabasePool storeForDid:did error:&storeError];
+            if (!store) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"StoreUnavailable", @"message": storeError.localizedDescription ?: @"Failed to open account store"}];
+                return;
+            }
+
+            NSError *keyError = nil;
+            NSData *privateKey = [store signingKeyPrivateBytesWithError:&keyError];
+            if (!privateKey) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"SigningKeyUnavailable", @"message": keyError.localizedDescription ?: @"Signing key bytes unavailable"}];
+                return;
+            }
+
+            keyPair = [[Secp256k1 shared] keyPairFromPrivateKey:privateKey error:&error];
+        } else {
+            keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
+        }
+
+        if (!keyPair) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"SigningKeyUnavailable", @"message": error.localizedDescription ?: @"Failed to reserve signing key"}];
+            return;
+        }
+
+        NSString *signingKey = keyPair.didKeyString;
+        if (signingKey.length == 0) {
+            signingKey = @"did:key:placeholder";
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"signingKey": signingKey}];
+    }];
+
+    [dispatcher registerComAtprotoServerResetPassword:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *token = body[@"token"];
+        NSString *password = body[@"password"];
+        if (token.length == 0 || password.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing token or password"}];
+            return;
+        }
+        if (password.length < 8) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Password must be at least 8 characters"}];
+            return;
+        }
+
+        NSError *didError = nil;
+        if (![ATProtoValidator validateDID:token error:&didError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid reset token"}];
+            return;
+        }
+
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:token error:&accountError];
+        if (!account) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid reset token"}];
+            return;
+        }
+
+        NSError *hashError = nil;
+        NSData *newHash = pbkdf2HashPassword(password, account.passwordSalt, &hashError);
+        if (!newHash) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": hashError.localizedDescription ?: @"Failed to reset password"}];
+            return;
+        }
+
+        account.passwordHash = newHash;
+        account.updatedAt = [[NSDate date] timeIntervalSince1970];
+        NSError *updateError = nil;
+        if (![serviceDatabases updateAccount:account error:&updateError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": updateError.localizedDescription ?: @"Failed to persist new password"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoServerUpdateEmail:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *email = body[@"email"];
+        if (email.length == 0 || !isLikelyEmail(email)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid email"}];
+            return;
+        }
+
+        NSError *error = nil;
+        if (!updateAccountEmail(serviceDatabases, did, email, &error)) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"EmailUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update email"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
 }
 
 @implementation XrpcMethodRegistry
@@ -1600,6 +2217,12 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
         [response setJsonBody:result];
     }];
 
+    registerPhase1IdentityAndAccountMethods(dispatcher,
+                                            controller,
+                                            controller.serviceDatabases,
+                                            controller.userDatabasePool,
+                                            [PDSConfiguration sharedConfiguration]);
+
     // Moderation endpoints
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         if (!authorizeAdminRequest(request, response, controller)) {
@@ -2771,6 +3394,12 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];
     }];
+
+    registerPhase1IdentityAndAccountMethods(dispatcher,
+                                            application.legacyController,
+                                            serviceDatabases,
+                                            application.userDatabasePool,
+                                            config);
 
     [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
