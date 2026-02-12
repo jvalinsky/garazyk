@@ -328,6 +328,75 @@
     XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
 }
 
+- (void)testGetAccountInviteCodesRequiresAuth {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.server.getAccountInviteCodes"
+                                               queryParams:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testGetAccountInviteCodesReturnsInviteCodeObjects {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *createCodeResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createInviteCode"
+                                                                body:@{@"useCount": @2}
+                                                             headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(createCodeResponse.statusCode, 200);
+    NSString *createdCode = createCodeResponse.jsonBody[@"code"];
+    XCTAssertNotNil(createdCode);
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.server.getAccountInviteCodes"
+                                               queryParams:@{@"includeUsed": @"true"}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSArray *codes = response.jsonBody[@"codes"];
+    XCTAssertNotNil(codes);
+    XCTAssertTrue([codes isKindOfClass:[NSArray class]]);
+    XCTAssertTrue(codes.count >= 1U);
+
+    NSDictionary *first = codes.firstObject;
+    XCTAssertTrue([first isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqualObjects(first[@"code"], createdCode);
+    XCTAssertNotNil(first[@"available"]);
+    XCTAssertNotNil(first[@"disabled"]);
+    XCTAssertEqualObjects(first[@"forAccount"], self.did1);
+    XCTAssertEqualObjects(first[@"createdBy"], self.did1);
+    XCTAssertNotNil(first[@"createdAt"]);
+    XCTAssertTrue([first[@"uses"] isKindOfClass:[NSArray class]]);
+}
+
+- (void)testRequestEmailConfirmationRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestEmailConfirmation"
+                                                      body:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testRequestEmailConfirmationSucceedsWithAuth {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestEmailConfirmation"
+                                                      body:@{}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)response.jsonBody).count, 0U);
+}
+
+- (void)testRequestEmailUpdateRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestEmailUpdate"
+                                                      body:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testRequestEmailUpdateReturnsTokenRequired {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestEmailUpdate"
+                                                      body:@{}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"tokenRequired"], @NO);
+}
+
 - (void)testUpdateEmailRequiresAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.updateEmail"
                                                       body:@{@"email": @"updated@example.com"}
