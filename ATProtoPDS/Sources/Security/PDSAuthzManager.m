@@ -28,6 +28,7 @@ static NSSet<NSString *> *kAdminMethods = nil;
     if (self == [PDSAuthzManager class]) {
         kAdminMethods = [NSSet setWithArray:@[
             @"com.atproto.admin.getAccountInfo",
+            @"com.atproto.admin.getAccountInfos",
             @"com.atproto.admin.getInviteCodes",
             @"com.atproto.admin.resolveModerationReports",
             @"com.atproto.admin.takeModerationAction",
