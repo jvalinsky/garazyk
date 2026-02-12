@@ -100,6 +100,12 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.deleteSession. */
 - (void)registerComAtprotoServerDeleteSession:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.createInviteCode. */
+- (void)registerComAtprotoServerCreateInviteCode:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.createInviteCodes. */
+- (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.getServiceAuth. */
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
 
