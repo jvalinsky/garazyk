@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -45,6 +46,14 @@
                                                                  error:&error];
     XCTAssertNil(error);
     self.userDid = userAccount[@"did"];
+
+    NSString *inviteCode = [NSString stringWithFormat:@"TEST-%@", [[NSUUID UUID] UUIDString]];
+    BOOL createdInvite = [self.controller.serviceDatabases createInviteCode:inviteCode
+                                                                  forAccount:self.userDid
+                                                                     maxUses:3
+                                                                       error:&error];
+    XCTAssertTrue(createdInvite);
+    XCTAssertNil(error);
 
     NSDictionary *session = [self.controller loginWithHandle:@"user.test" password:@"password" error:&error];
     XCTAssertNil(error);
@@ -162,6 +171,45 @@
     NSArray *infos = response.jsonBody[@"infos"];
     XCTAssertTrue([infos isKindOfClass:[NSArray class]]);
     XCTAssertEqual(infos.count, 2);
+}
+
+- (void)testGetInviteCodesRequiresAuth {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
+                                              queryString:@"limit=10"
+                                              queryParams:@{@"limit": @"10"}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testGetInviteCodesNonAdminForbidden {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
+                                              queryString:@"limit=10"
+                                              queryParams:@{@"limit": @"10"}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testGetInviteCodesAdminSuccess {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
+                                              queryString:@"limit=10"
+                                              queryParams:@{@"limit": @"10"}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+
+    NSArray *codes = response.jsonBody[@"codes"];
+    XCTAssertTrue([codes isKindOfClass:[NSArray class]]);
+    XCTAssertGreaterThan(codes.count, 0);
+
+    NSDictionary *first = codes.firstObject;
+    XCTAssertNotNil(first[@"code"]);
+    XCTAssertNotNil(first[@"available"]);
+    XCTAssertNotNil(first[@"disabled"]);
+    XCTAssertNotNil(first[@"forAccount"]);
+    XCTAssertNotNil(first[@"createdBy"]);
+    XCTAssertNotNil(first[@"createdAt"]);
+    XCTAssertNotNil(first[@"uses"]);
 }
 
 - (void)testModerateAccountRequiresAuth {

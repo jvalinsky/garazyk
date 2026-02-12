@@ -303,6 +303,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.admin.getAccountInfos. */
 - (void)registerComAtprotoAdminGetAccountInfos:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.admin.getInviteCodes. */
+- (void)registerComAtprotoAdminGetInviteCodes:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.admin.moderateAccount. */
 - (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler;
 
