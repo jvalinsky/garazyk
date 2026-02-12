@@ -126,6 +126,27 @@ static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
     return PDSAdminAuthEnvBool(env[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"]);
 }
 
+static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *minter) {
+    if (!minter) {
+        return nil;
+    }
+
+    NSMutableOrderedSet<NSString *> *algorithms = [NSMutableOrderedSet orderedSet];
+    NSString *configuredAlgorithm = [[minter.signingAlgorithm stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
+    if (configuredAlgorithm.length > 0) {
+        [algorithms addObject:configuredAlgorithm];
+    }
+
+    if (algorithms.count == 0 && minter.publicKey) {
+        [algorithms addObject:@"ES256K"];
+    }
+    if (algorithms.count == 0 && minter.keyRotationManager) {
+        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
+    }
+
+    return algorithms.count > 0 ? algorithms.array : nil;
+}
+
 @interface PDSAdminAuth ()
 @property (nonatomic, strong, nullable) NSDate *minimumTokenIssuedAt;
 @end
@@ -182,6 +203,12 @@ static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
         return NO;
     }
 
+    NSString *issuerClaim = [jwt.payload.iss stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *audienceClaim = [jwt.payload.aud stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (issuerClaim.length == 0 || audienceClaim.length == 0) {
+        return NO;
+    }
+
     if (!PDSScopesContainAdmin(jwt.payload.scope)) {
         return NO;
     }
@@ -202,14 +229,7 @@ static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
     }
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer;
-    NSMutableArray<NSString *> *allowedAlgorithms = [NSMutableArray array];
-    if (verifier.publicKey) {
-        [allowedAlgorithms addObject:@"ES256K"];
-    }
-    if (verifier.keyRotationManager) {
-        [allowedAlgorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
-    }
-    verifier.allowedAlgorithms = allowedAlgorithms.count > 0 ? allowedAlgorithms : nil;
+    verifier.allowedAlgorithms = PDSAdminAuthAllowedAlgorithmsForMinter(controller.jwtMinter);
 
     NSError *verifyError = nil;
     if (![verifier verifyJWT:jwt error:&verifyError]) {

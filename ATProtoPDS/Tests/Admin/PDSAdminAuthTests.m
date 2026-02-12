@@ -61,6 +61,37 @@
     }
 }
 
+- (NSString *)expectedIssuer {
+    NSString *configuredIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"];
+    if ([configuredIssuer isKindOfClass:[NSString class]] && configuredIssuer.length > 0) {
+        return configuredIssuer;
+    }
+    return @"https://pds.local:8443";
+}
+
+- (nullable NSString *)mintAdminTokenWithIssuer:(nullable NSString *)issuer
+                                       audience:(nullable NSString *)audience
+                                          scope:(NSString *)scope
+                                          error:(NSError **)error {
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSInteger issuedAt = (NSInteger)now;
+    NSInteger expiresAt = issuedAt + 600;
+    NSMutableDictionary *claims = [NSMutableDictionary dictionary];
+    claims[@"sub"] = @"did:web:admin.pds.example";
+    claims[@"scope"] = scope ?: @"admin";
+    if (issuer.length > 0) {
+        claims[@"iss"] = issuer;
+    }
+    if (audience.length > 0) {
+        claims[@"aud"] = audience;
+    }
+    claims[@"iat"] = @(issuedAt);
+    claims[@"exp"] = @(expiresAt);
+
+    PDSController *controller = [PDSController sharedController];
+    return [controller.jwtMinter signPayload:claims error:error];
+}
+
 - (void)testAuthenticateWithPasswordSucceedsWithDefaultIssuer {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
     [self setEnv:@"PDS_ISSUER" value:nil];
@@ -163,6 +194,36 @@
 
     [[PDSAdminAuth sharedAuth] logout];
     XCTAssertNil([PDSAdminAuth sharedAuth].adminToken);
+    XCTAssertFalse([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:bearerHeaders]);
+}
+
+- (void)testIsAuthenticatedWithRequestRejectsTokenMissingIssuerClaim {
+    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+
+    NSError *error = nil;
+    NSString *token = [self mintAdminTokenWithIssuer:nil
+                                             audience:[self expectedIssuer]
+                                                scope:@"admin"
+                                                error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+
+    NSDictionary *bearerHeaders = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
+    XCTAssertFalse([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:bearerHeaders]);
+}
+
+- (void)testIsAuthenticatedWithRequestRejectsTokenMissingAudienceClaim {
+    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+
+    NSError *error = nil;
+    NSString *token = [self mintAdminTokenWithIssuer:[self expectedIssuer]
+                                             audience:nil
+                                                scope:@"admin"
+                                                error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+
+    NSDictionary *bearerHeaders = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
     XCTAssertFalse([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:bearerHeaders]);
 }
 
