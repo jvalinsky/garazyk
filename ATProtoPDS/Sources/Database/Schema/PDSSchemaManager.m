@@ -170,6 +170,10 @@
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_uri ON records(uri);"];
     [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);"];
+    [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_ipld_blocks_cid ON ipld_blocks(cid);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
