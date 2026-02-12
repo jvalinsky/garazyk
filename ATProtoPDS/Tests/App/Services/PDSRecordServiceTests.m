@@ -319,7 +319,7 @@
         @"$type": @"app.bsky.feed.post",
         @"text": @"test"
     };
-    
+
     NSError *error = nil;
     BOOL success = [self.service putRecord:@"invalid.collection.id"
                                       rkey:@"test"
@@ -328,6 +328,223 @@
                                      error:&error];
     XCTAssertFalse(success);
     XCTAssertNotNil(error);
+}
+
+#pragma mark - applyWrites Atomicity Tests
+
+- (void)testApplyWritesAtomicSuccess {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"atomic-1",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"First atomic write",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        },
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"atomic-2",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"Second atomic write",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+
+    // Both records should exist
+    NSDictionary *r1 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/atomic-1", self.testDID]
+                                        forDid:self.testDID error:nil];
+    NSDictionary *r2 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/atomic-2", self.testDID]
+                                        forDid:self.testDID error:nil];
+    XCTAssertNotNil(r1);
+    XCTAssertNotNil(r2);
+}
+
+- (void)testApplyWritesAtomicRollbackOnFailure {
+    // Write #1 is valid, write #2 has an invalid collection NSID, so the whole batch fails
+    // before the transaction even starts (pre-validation catches it)
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"rollback-1",
+            @"record": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"Should be rolled back",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        },
+        @{
+            @"action": @"create",
+            @"collection": @"invalid.collection.id",
+            @"rkey": @"rollback-2",
+            @"record": @{
+                @"$type": @"invalid",
+                @"text": @"This will fail validation"
+            }
+        },
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"rollback-3",
+            @"record": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"Should never be reached",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNil(result, @"Batch should fail due to invalid collection NSID");
+    XCTAssertNotNil(error);
+
+    // Record #1 should NOT exist because the whole batch was rolled back
+    NSDictionary *r1 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/rollback-1", self.testDID]
+                                        forDid:self.testDID error:nil];
+    XCTAssertNil(r1, @"Record #1 should have been rolled back");
+}
+
+- (void)testApplyWritesWithMixedOps {
+    // First create a record to delete
+    [self.service putRecord:@"app.bsky.feed.post"
+                       rkey:@"to-delete"
+                      value:@{
+                          @"$type": @"app.bsky.feed.post",
+                          @"text": @"Will be deleted",
+                          @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+                      }
+                     forDid:self.testDID
+                      error:nil];
+
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"mixed-create",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"New record",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        },
+        @{
+            @"action": @"delete",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"to-delete"
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result);
+
+    // New record exists
+    NSDictionary *created = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/mixed-create", self.testDID]
+                                             forDid:self.testDID error:nil];
+    XCTAssertNotNil(created);
+
+    // Deleted record is gone
+    NSDictionary *deleted = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/to-delete", self.testDID]
+                                             forDid:self.testDID error:nil];
+    XCTAssertNil(deleted);
+}
+
+- (void)testApplyWritesEmptyBatch {
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:@[]
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+}
+
+- (void)testApplyWritesSubjectDid {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.graph.follow",
+            @"rkey": @"follow-atomic",
+            @"value": @{
+                @"$type": @"app.bsky.graph.follow",
+                @"subject": @"did:plc:target-user",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result);
+
+    // Verify the record was created
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/follow-atomic", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
+}
+
+- (void)testApplyWritesCreateWithoutRkeyGeneratesKeyAndResult {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"No rkey",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+
+    NSArray *results = result[@"results"];
+    XCTAssertEqual(results.count, 1);
+
+    NSDictionary *opResult = results.firstObject;
+    NSString *uri = opResult[@"uri"];
+    NSString *cid = opResult[@"cid"];
+
+    XCTAssertNotNil(uri);
+    XCTAssertNotNil(cid);
+    XCTAssertTrue([uri hasPrefix:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/", self.testDID]]);
+    XCTAssertTrue(cid.length > 0);
 }
 
 - (void)testPutRecordWithEmptyRkey {

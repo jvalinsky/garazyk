@@ -6,10 +6,14 @@
 #import "Core/ATProtoBase32.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
+#import "Core/CID.h"
+#import "Core/TID.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconError.h"
 #import <CommonCrypto/CommonDigest.h>
+
+NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNotification";
 
 @interface PDSRecordService ()
 
@@ -185,6 +189,17 @@
         success = [store putRecord:record forDid:did error:blockError];
     } error:error];
 
+    if (success) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
+                                                            object:self
+                                                          userInfo:@{
+            @"did": did,
+            @"collection": collection,
+            @"rkey": rkey,
+            @"action": @"create"
+        }];
+    }
+
     return success;
 }
 
@@ -215,7 +230,348 @@
         success = [store deleteRecord:uri forDid:did error:blockError];
     } error:error];
 
+    if (success) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
+                                                            object:self
+                                                          userInfo:@{
+            @"did": did,
+            @"collection": collection,
+            @"rkey": rkey,
+            @"action": @"delete"
+        }];
+    }
+
     return success;
+}
+
+- (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
+                                forDid:(NSString *)did
+                              validate:(BOOL)validate
+                            swapCommit:(nullable NSString *)swapCommit
+                                 error:(NSError **)error {
+    if (!writes.count) {
+        return @{@"results": @[]};
+    }
+
+    // Validate swapCommit if provided
+    if (swapCommit) {
+        NSData *currentRoot = [_databasePool getRepoRoot:did error:error];
+        if (!currentRoot) {
+            if (error && !*error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                             code:1
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Repository not found"}];
+            }
+            return nil;
+        }
+        CID *currentRootCID = [CID cidFromBytes:currentRoot];
+        NSString *currentRootStr = currentRootCID.stringValue ?: [CID base32Encode:currentRoot];
+        if (![swapCommit isEqualToString:currentRootStr]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                             code:2
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                            [NSString stringWithFormat:@"InvalidSwap: expected %@ but repo is at %@",
+                                             swapCommit, currentRootStr]}];
+            }
+            return nil;
+        }
+    }
+
+    // Pre-validate all writes and build records before entering the transaction
+    PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
+
+    NSMutableArray *preparedOps = [NSMutableArray arrayWithCapacity:writes.count];
+    NSMutableArray *resultOps = [NSMutableArray arrayWithCapacity:writes.count];
+    for (NSDictionary *write in writes) {
+        NSString *action = write[@"action"];
+        NSString *collection = write[@"collection"];
+        NSString *rkey = write[@"rkey"];
+        NSDictionary *record = write[@"value"];
+        if (!record) {
+            // Compatibility fallback for pre-lexicon field names.
+            record = write[@"record"];
+        }
+
+        if (!action || !collection) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                             code:3
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Each write must have action and collection"}];
+            }
+            return nil;
+        }
+
+        if ([action isEqualToString:@"create"]) {
+            if (!rkey || rkey.length == 0) {
+                rkey = [TID tid].stringValue;
+            }
+            if (!record) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                 code:4
+                                             userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"Write %@ requires a record value", action]}];
+                }
+                return nil;
+            }
+
+            // Validate collection NSID
+            NSError *nsidError = nil;
+            if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+                if (error) *error = nsidError;
+                return nil;
+            }
+
+            // Lexicon validation
+            if (mode != PDSValidationModeOff) {
+                ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+                    initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+                ATProtoValidationMode validationMode;
+                switch (mode) {
+                    case PDSValidationModeRequired:
+                        validationMode = ATProtoValidationModeRequired;
+                        break;
+                    case PDSValidationModeOptimistic:
+                        validationMode = ATProtoValidationModeOptimistic;
+                        break;
+                    case PDSValidationModeOff:
+                        validationMode = ATProtoValidationModeOff;
+                        break;
+                }
+                NSError *validationError = nil;
+                if (![validator validateRecord:record collection:collection mode:validationMode error:&validationError]) {
+                    if (error) *error = validationError;
+                    return nil;
+                }
+            }
+
+            // Build the database record
+            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            NSError *cidError = nil;
+            NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cidError];
+            if (!cborData) {
+                if (error) *error = cidError;
+                return nil;
+            }
+            NSString *cidString = [self generateCIDForData:cborData error:&cidError];
+            if (!cidString) {
+                if (error) *error = cidError;
+                return nil;
+            }
+
+            PDSDatabaseRecord *dbRecord = [[PDSDatabaseRecord alloc] init];
+            dbRecord.uri = uri;
+            dbRecord.did = did;
+            dbRecord.collection = collection;
+            dbRecord.rkey = rkey;
+            dbRecord.cid = cidString;
+            dbRecord.createdAt = [NSDate date];
+
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+            if (jsonData) {
+                dbRecord.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            }
+
+            // Extract subject DID for relationship indexing
+            if ([collection isEqualToString:@"app.bsky.graph.follow"] ||
+                [collection isEqualToString:@"app.bsky.graph.block"]) {
+                id subject = record[@"subject"];
+                if ([subject isKindOfClass:[NSString class]]) {
+                    dbRecord.subjectDid = subject;
+                } else if ([subject isKindOfClass:[NSDictionary class]] && subject[@"did"]) {
+                    dbRecord.subjectDid = subject[@"did"];
+                }
+            }
+
+            [preparedOps addObject:@{@"action": action, @"record": dbRecord}];
+            [resultOps addObject:@{
+                @"action": action,
+                @"uri": uri,
+                @"cid": cidString
+            }];
+        } else if ([action isEqualToString:@"update"]) {
+            if (!rkey || rkey.length == 0) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                 code:6
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Write update requires rkey"}];
+                }
+                return nil;
+            }
+            if (!record) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                 code:4
+                                             userInfo:@{NSLocalizedDescriptionKey:
+                                                @"Write update requires a record value"}];
+                }
+                return nil;
+            }
+
+            NSError *nsidError = nil;
+            if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+                if (error) *error = nsidError;
+                return nil;
+            }
+
+            if (mode != PDSValidationModeOff) {
+                ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+                    initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+                ATProtoValidationMode validationMode;
+                switch (mode) {
+                    case PDSValidationModeRequired:
+                        validationMode = ATProtoValidationModeRequired;
+                        break;
+                    case PDSValidationModeOptimistic:
+                        validationMode = ATProtoValidationModeOptimistic;
+                        break;
+                    case PDSValidationModeOff:
+                        validationMode = ATProtoValidationModeOff;
+                        break;
+                }
+                NSError *validationError = nil;
+                if (![validator validateRecord:record collection:collection mode:validationMode error:&validationError]) {
+                    if (error) *error = validationError;
+                    return nil;
+                }
+            }
+
+            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            NSError *cidError = nil;
+            NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cidError];
+            if (!cborData) {
+                if (error) *error = cidError;
+                return nil;
+            }
+            NSString *cidString = [self generateCIDForData:cborData error:&cidError];
+            if (!cidString) {
+                if (error) *error = cidError;
+                return nil;
+            }
+
+            PDSDatabaseRecord *dbRecord = [[PDSDatabaseRecord alloc] init];
+            dbRecord.uri = uri;
+            dbRecord.did = did;
+            dbRecord.collection = collection;
+            dbRecord.rkey = rkey;
+            dbRecord.cid = cidString;
+            dbRecord.createdAt = [NSDate date];
+
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+            if (jsonData) {
+                dbRecord.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            }
+
+            if ([collection isEqualToString:@"app.bsky.graph.follow"] ||
+                [collection isEqualToString:@"app.bsky.graph.block"]) {
+                id subject = record[@"subject"];
+                if ([subject isKindOfClass:[NSString class]]) {
+                    dbRecord.subjectDid = subject;
+                } else if ([subject isKindOfClass:[NSDictionary class]] && subject[@"did"]) {
+                    dbRecord.subjectDid = subject[@"did"];
+                }
+            }
+
+            [preparedOps addObject:@{@"action": action, @"record": dbRecord}];
+            [resultOps addObject:@{
+                @"action": action,
+                @"uri": uri,
+                @"cid": cidString
+            }];
+        } else if ([action isEqualToString:@"delete"]) {
+            if (!rkey || rkey.length == 0) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                 code:7
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Write delete requires rkey"}];
+                }
+                return nil;
+            }
+            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            [preparedOps addObject:@{@"action": @"delete", @"uri": uri}];
+            [resultOps addObject:@{@"action": @"delete"}];
+        } else {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                             code:5
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                            [NSString stringWithFormat:@"Unknown action: %@", action]}];
+            }
+            return nil;
+        }
+    }
+
+    // Execute all writes in a single transaction
+    __block BOOL success = YES;
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        for (NSDictionary *op in preparedOps) {
+            NSString *action = op[@"action"];
+
+            if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
+                PDSDatabaseRecord *dbRecord = op[@"record"];
+                if (![transactor putRecord:dbRecord forDid:did error:blockError]) {
+                    success = NO;
+                    return;
+                }
+            } else if ([action isEqualToString:@"delete"]) {
+                NSString *uri = op[@"uri"];
+                if (![transactor deleteRecord:uri forDid:did error:blockError]) {
+                    success = NO;
+                    return;
+                }
+            }
+        }
+    } error:error];
+
+    if (!success) {
+        return nil;
+    }
+
+    // Notify firehose of all writes in the batch
+    for (NSDictionary *write in writes) {
+        NSString *action = write[@"action"];
+        NSString *collection = write[@"collection"];
+        NSString *rkey = write[@"rkey"];
+
+        NSString *normalizedAction = ([action isEqualToString:@"update"]) ? @"update"
+                                   : ([action isEqualToString:@"delete"] ? @"delete" : @"create");
+        [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
+                                                            object:self
+                                                          userInfo:@{
+            @"did": did,
+            @"collection": collection ?: @"",
+            @"rkey": rkey ?: @"",
+            @"action": normalizedAction
+        }];
+    }
+
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:resultOps.count];
+    NSString *validationStatus = validate ? @"valid" : @"unknown";
+    for (NSDictionary *op in resultOps) {
+        NSString *action = op[@"action"];
+        if ([action isEqualToString:@"delete"]) {
+            [results addObject:@{}];
+            continue;
+        }
+        NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+        entry[@"uri"] = op[@"uri"] ?: @"";
+        entry[@"cid"] = op[@"cid"] ?: @"";
+        entry[@"validationStatus"] = validationStatus;
+        [results addObject:entry];
+    }
+
+    NSMutableDictionary *response = [NSMutableDictionary dictionaryWithObject:results forKey:@"results"];
+    NSData *currentRoot = [_databasePool getRepoRoot:did error:nil];
+    CID *currentRootCID = currentRoot ? [CID cidFromBytes:currentRoot] : nil;
+    if (currentRootCID) {
+        response[@"commit"] = @{
+            @"cid": currentRootCID.stringValue ?: @"",
+            @"rev": [TID tid].stringValue
+        };
+    }
+
+    return response;
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {

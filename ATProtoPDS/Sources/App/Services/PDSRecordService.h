@@ -13,6 +13,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/*! Posted when a record is written (put or delete). userInfo keys: did, collection, rkey, action ("create"/"delete"). */
+extern NSNotificationName const PDSRecordDidChangeNotification;
+
 @class PDSDatabasePool;
 @class ATProtoLexiconValidator;
 
@@ -67,6 +70,20 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
                 rkey:(NSString *)rkey
               forDid:(NSString *)did
                error:(NSError **)error;
+
+/*! Atomically applies a batch of writes (create/update/delete) in a single transaction.
+    If any write fails, all preceding writes in the batch are rolled back.
+    @param writes Array of write operations, each a dictionary with keys: action, collection, rkey (required for update/delete), and value (for create/update). Legacy key 'record' is also accepted for compatibility.
+    @param did The repository DID.
+    @param validate Whether to apply lexicon validation.
+    @param swapCommit If non-nil, the expected current repo root CID. Fails if it doesn't match.
+    @param error On failure, describes what went wrong.
+    @return Result dictionary with commit info on success, nil on failure. */
+- (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
+                                forDid:(NSString *)did
+                              validate:(BOOL)validate
+                            swapCommit:(nullable NSString *)swapCommit
+                                 error:(NSError **)error;
 
 /*! Gets repository statistics (record count, blob count, etc). */
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error;

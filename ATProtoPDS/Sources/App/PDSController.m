@@ -633,29 +633,16 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 #pragma mark - Write Operations (for backward compatibility)
 
-- (nullable NSDictionary *)applyWrites:(NSArray *)writes 
-                                 repo:(NSString *)repo 
-                             validate:(BOOL)validate 
+- (nullable NSDictionary *)applyWrites:(NSArray *)writes
+                                 repo:(NSString *)repo
+                             validate:(BOOL)validate
                            swapCommit:(nullable NSString *)swapCommit
                                 error:(NSError **)error {
-    for (NSDictionary *write in writes) {
-        NSString *action = write[@"action"];
-        NSDictionary *record = write[@"record"];
-        NSString *collection = write[@"collection"];
-        NSString *rkey = write[@"rkey"];
-        
-        if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
-            PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
-            if (![self putRecord:collection rkey:rkey value:record forDid:repo validationMode:mode error:error]) {
-                return nil;
-            }
-        } else if ([action isEqualToString:@"delete"]) {
-            if (![self deleteRecord:collection rkey:rkey forDid:repo error:error]) {
-                return nil;
-            }
-        }
-    }
-    return @{@"commit": @{@"root": @"newroot"}};
+    return [_recordService applyWrites:writes
+                                forDid:repo
+                              validate:validate
+                            swapCommit:swapCommit
+                                 error:error];
 }
 
 #pragma mark - Health & Metrics

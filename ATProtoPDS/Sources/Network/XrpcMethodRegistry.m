@@ -23,6 +23,7 @@
 #import "Security/PDSAuthzManager.h"
 #import "App/Services/PDSBlobService.h"
 #import "App/Services/PDSRepositoryService.h"
+#import "Repository/CAR.h"
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
 
@@ -815,6 +816,96 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"root": head ?: [NSNull null]}];
+    }];
+
+    [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSData *rootData = [controller getRepoRoot:did error:&error];
+
+        if (!rootData || error) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound",
+                                    @"message": error.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        NSString *cidStr = [CID base32Encode:rootData];
+        NSString *rev = [[TID tid] stringValue];
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"cid": cidStr ?: [NSNull null], @"rev": rev}];
+    }];
+
+    [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *cidsParam = [request queryParamForKey:@"cids"];
+
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        if (!cidsParam) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cids parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        PDSActorStore *store = [controller.userDatabasePool storeForDid:did error:&error];
+        if (!store) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound",
+                                    @"message": error.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        NSArray *cidStrings = [cidsParam componentsSeparatedByString:@","];
+
+        // Use the first requested CID as the CAR root
+        CID *rootCID = nil;
+        for (NSString *s in cidStrings) {
+            NSString *trimmed = [s stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            if (trimmed.length > 0) {
+                rootCID = [CID cidFromString:trimmed];
+                if (rootCID) break;
+            }
+        }
+
+        if (!rootCID) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"No valid CIDs provided"}];
+            return;
+        }
+
+        CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+
+        for (NSString *cidStr in cidStrings) {
+            NSString *trimmed = [cidStr stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            if (trimmed.length == 0) continue;
+
+            CID *cid = [CID cidFromString:trimmed];
+            if (!cid) continue;
+
+            NSData *blockData = [store getBlockForCID:cid.bytes forDid:did error:&error];
+            if (blockData) {
+                [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
+            }
+        }
+
+        NSData *carData = [writer serialize];
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"application/vnd.ipld.car";
+        [response setBodyData:carData];
     }];
 
     [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
@@ -2598,6 +2689,7 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
         NSDictionary *body = request.jsonBody;
         NSArray *writes = body[@"writes"];
         BOOL validate = [body[@"validate"] boolValue];
+        NSString *swapCommit = body[@"swapCommit"];
 
         if (!writes || ![writes isKindOfClass:[NSArray class]]) {
             response.statusCode = HttpStatusBadRequest;
@@ -2605,32 +2697,21 @@ static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *confi
             return;
         }
 
-        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
         NSError *error = nil;
+        NSDictionary *result = [recordService applyWrites:writes
+                                                   forDid:did
+                                                 validate:validate
+                                               swapCommit:swapCommit
+                                                    error:&error];
 
-        for (NSDictionary *write in writes) {
-            NSString *action = write[@"action"];
-            NSDictionary *record = write[@"record"];
-            NSString *collection = write[@"collection"];
-            NSString *rkey = write[@"rkey"];
-
-            if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
-                if (![recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error]) {
-                    response.statusCode = 400;
-                    [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to write record"}];
-                    return;
-                }
-            } else if ([action isEqualToString:@"delete"]) {
-                if (![recordService deleteRecord:collection rkey:rkey forDid:did error:&error]) {
-                    response.statusCode = 400;
-                    [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to delete record"}];
-                    return;
-                }
-            }
+        if (!result) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to apply writes"}];
+            return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"commit": @{@"root": @"newroot"}}];
+        [response setJsonBody:result];
     }];
 
     [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
