@@ -1,13 +1,13 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-12T13:13:07.793Z
+Generated: 2026-02-12T13:24:10.618Z
 
 ## Baseline
 
-- Missing in code: 244
-- Coverage: 23.99%
+- Missing in code: 243
+- Coverage: 24.3%
 - Unknown registry entries: 2
-- Duplicate registry registrations: 41
+- Duplicate registry registrations: 42
 
 ## Priority Rubric
 
@@ -32,10 +32,9 @@ Generated: 2026-02-12T13:13:07.793Z
 
 ### Phase 3: Admin, Label, and Temp APIs
 
-- Endpoint count: 20
-- P0: 0, P1: 0, P2: 20, P3: 0
+- Endpoint count: 19
+- P0: 0, P1: 0, P2: 19, P3: 0
 - Next batch:
-  - P2 `com.atproto.temp.revokeAccountCredentials`
   - P2 `com.atproto.admin.getAccountInfo`
   - P2 `com.atproto.admin.getAccountInfos`
   - P2 `com.atproto.admin.getInviteCodes`
@@ -47,6 +46,7 @@ Generated: 2026-02-12T13:13:07.793Z
   - P2 `com.atproto.admin.sendEmail`
   - P2 `com.atproto.admin.updateAccountEmail`
   - P2 `com.atproto.admin.updateAccountHandle`
+  - P2 `com.atproto.admin.updateAccountPassword`
 
 ### Phase 4: Non-core Namespaces
 
