@@ -53,6 +53,9 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
  */
 @interface HttpServer : NSObject
 
+/*! Optional local host/interface to bind to (nil binds to all interfaces). */
+@property (nonatomic, readonly, nullable) NSString *host;
+
 /*! The port the server is listening on. */
 @property (nonatomic, readonly) NSUInteger port;
 
@@ -71,6 +74,16 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
  @return A new HttpServer instance.
  */
 + (instancetype)serverWithPort:(NSUInteger)port;
+
+/*!
+ @method serverWithHost:port:
+
+ @abstract Creates a server instance bound to a specific local host/interface.
+
+ @param host The local host/interface to bind to (e.g. 127.0.0.1).
+ @param port The port to listen on (0 for ephemeral port assignment).
+ */
++ (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port;
 
 /*!
  @method startWithError:

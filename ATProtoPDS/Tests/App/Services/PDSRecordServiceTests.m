@@ -359,7 +359,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                            validate:YES
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -375,13 +375,13 @@
 }
 
 - (void)testApplyWritesAtomicRollbackOnFailure {
-    // Write #1 is valid, write #2 has an invalid collection NSID, so the whole batch fails
-    // before the transaction even starts (pre-validation catches it)
+    // Make the transaction fail mid-flight by attempting to create two records with the same URI.
+    // The second insert should fail (UNIQUE constraint), and the first should be rolled back.
     NSArray *writes = @[
         @{
             @"action": @"create",
             @"collection": @"app.bsky.feed.post",
-            @"rkey": @"rollback-1",
+            @"rkey": @"rollback-dup",
             @"record": @{
                 @"$type": @"app.bsky.feed.post",
                 @"text": @"Should be rolled back",
@@ -390,20 +390,11 @@
         },
         @{
             @"action": @"create",
-            @"collection": @"invalid.collection.id",
-            @"rkey": @"rollback-2",
-            @"record": @{
-                @"$type": @"invalid",
-                @"text": @"This will fail validation"
-            }
-        },
-        @{
-            @"action": @"create",
             @"collection": @"app.bsky.feed.post",
-            @"rkey": @"rollback-3",
+            @"rkey": @"rollback-dup",
             @"record": @{
                 @"$type": @"app.bsky.feed.post",
-                @"text": @"Should never be reached",
+                @"text": @"Duplicate URI should cause rollback",
                 @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
             }
         }
@@ -415,11 +406,11 @@
                                             validate:NO
                                           swapCommit:nil
                                                error:&error];
-    XCTAssertNil(result, @"Batch should fail due to invalid collection NSID");
+    XCTAssertNil(result, @"Batch should fail due to a duplicate record URI");
     XCTAssertNotNil(error);
 
     // Record #1 should NOT exist because the whole batch was rolled back
-    NSDictionary *r1 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/rollback-1", self.testDID]
+    NSDictionary *r1 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/rollback-dup", self.testDID]
                                         forDid:self.testDID error:nil];
     XCTAssertNil(r1, @"Record #1 should have been rolled back");
 }
@@ -543,7 +534,8 @@
 
     XCTAssertNotNil(uri);
     XCTAssertNotNil(cid);
-    XCTAssertTrue([uri hasPrefix:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/", self.testDID]]);
+    NSString *expectedPrefix = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/", self.testDID];
+    XCTAssertTrue([uri hasPrefix:expectedPrefix]);
     XCTAssertTrue(cid.length > 0);
 }
 

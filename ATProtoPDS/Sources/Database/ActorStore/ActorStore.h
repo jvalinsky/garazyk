@@ -109,6 +109,8 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error;
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
+- (BOOL)createRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
+- (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)putRecords:(NSArray<PDSDatabaseRecord *> *)records forDid:(NSString *)did error:(NSError **)error;
 

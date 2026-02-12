@@ -317,7 +317,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     if (self) {
         _store = store;
         _auditor = auditor;
-        _httpServer = [HttpServer serverWithPort:port];
+        _httpServer = [HttpServer serverWithHost:@"127.0.0.1" port:port];
         [self setupRoutes];
     }
     return self;

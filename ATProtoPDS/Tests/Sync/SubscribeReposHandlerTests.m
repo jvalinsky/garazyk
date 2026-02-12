@@ -31,6 +31,10 @@
 }
 @end
 
+@interface SubscribeReposHandler (TestAccess)
+- (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor;
+@end
+
 @interface SubscribeReposHandlerTests : XCTestCase
 @property (nonatomic, strong) SubscribeReposHandler *handler;
 @property (nonatomic, strong) PDSController *controller;
@@ -52,8 +56,6 @@
     }
     
     self.handler = [[SubscribeReposHandler alloc] initWithController:self.controller];
-    // Start handler to init sequence number
-    [self.handler startOnPort:0 error:nil];
 }
 
 - (void)tearDown {
@@ -150,8 +152,7 @@
     // 2. Simulate connection with cursor=1 (should get info2 and info3)
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     conn.mockQueryParams = @{@"cursor": @"1"};
-    
-    [(id<WebSocketServerDelegate>)self.handler webSocketServer:self.handler.webSocketServer didAcceptConnection:conn];
+    [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
     
     // Wait for async replay
     XCTestExpectation *replayExp = [self expectationWithDescription:@"Replay finished"];

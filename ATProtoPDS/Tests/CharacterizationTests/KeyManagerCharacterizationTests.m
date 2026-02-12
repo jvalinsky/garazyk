@@ -9,6 +9,30 @@
 
 @implementation KeyManagerCharacterizationTests
 
+- (void)requireSecurityKeyGeneration {
+    static dispatch_once_t onceToken;
+    static BOOL isAvailable = NO;
+    static NSError *availabilityError = nil;
+    dispatch_once(&onceToken, ^{
+        NSDictionary *attributes = @{
+            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+            (__bridge id)kSecAttrKeySizeInBits: @1024
+        };
+        CFErrorRef error = NULL;
+        SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
+        if (privateKey != NULL) {
+            isAvailable = YES;
+            CFRelease(privateKey);
+        } else {
+            availabilityError = CFBridgingRelease(error);
+        }
+    });
+
+    if (!isAvailable) {
+        XCTSkip(@"Skipping key generation/signing tests: Security key generation unavailable (%@)", availabilityError);
+    }
+}
+
 - (void)setUp {
     [super setUp];
     self.subject = [[KeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys"];
@@ -52,6 +76,7 @@
                                              error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -66,6 +91,7 @@
      - (nullable KeyPair *)getKeyPairWithID:(NSString *)keyID error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -80,6 +106,7 @@
      - (nullable KeyPair *)getActiveKeyPair:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -95,6 +122,7 @@
      - (NSArray<KeyPair *> *)allKeyPairs:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
     XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
@@ -109,6 +137,7 @@
      - (BOOL)deleteKeyPairWithID:(NSString *)keyID error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -126,6 +155,7 @@
      - (BOOL)setKeyPairActive:(NSString *)keyID error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *first = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     KeyPair *second = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
@@ -148,6 +178,7 @@
                          error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -169,6 +200,7 @@
                                   error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -187,6 +219,7 @@
                              error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -204,6 +237,7 @@
                   error:(NSError **)error;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
@@ -222,6 +256,7 @@
      - (NSDictionary *)toJWKS;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
     NSDictionary *jwks = [self.subject toJWKS];
@@ -234,6 +269,7 @@
      - (NSArray<NSDictionary *> *)toJWKSArray;
     */
     
+    [self requireSecurityKeyGeneration];
     NSError *error = nil;
     XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
     NSArray<NSDictionary *> *jwks = [self.subject toJWKSArray];

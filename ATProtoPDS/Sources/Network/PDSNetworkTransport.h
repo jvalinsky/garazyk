@@ -177,6 +177,22 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 + (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port;
 
 /*!
+ @method createListenerWithHost:port:
+
+ @abstract Creates a listener bound to the specified host+port.
+
+ @discussion When host is nil, the listener binds to all interfaces (platform default).
+ When host is non-nil, the listener should bind only to that interface (e.g. 127.0.0.1).
+
+ @param host The local host/interface to bind to, or nil for all interfaces.
+
+ @param port The port number to listen on (0 for ephemeral port).
+
+ @return A listener instance, or nil if creation failed.
+ */
++ (id<PDSNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port;
+
+/*!
  @method createConnectionWithHost:port:
 
  @abstract Creates an outbound connection to a remote host.

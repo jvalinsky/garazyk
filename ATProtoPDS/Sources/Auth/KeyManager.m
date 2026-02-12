@@ -167,22 +167,18 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                              error:(NSError **)error {
     NSString *keyID = [[NSUUID UUID] UUIDString];
 
-    CFTypeRef keyType = kSecAttrKeyTypeRSA;
-    if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
-        keyType = kSecAttrKeyTypeECSECPrimeRandom;
-    }
+	    CFTypeRef keyType = kSecAttrKeyTypeRSA;
+	    if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
+	        keyType = kSecAttrKeyTypeECSECPrimeRandom;
+	    }
 
-    NSDictionary *parameters = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
-        (__bridge id)kSecAttrKeySizeInBits: @(keySize),
-        (__bridge id)kSecPrivateKeyAttrs: @{
-            (__bridge id)kSecAttrIsPermanent: @NO,
-            (__bridge id)kSecAttrApplicationTag: [keyID dataUsingEncoding:NSUTF8StringEncoding]
-        }
-    };
+	    NSDictionary *parameters = @{
+	        (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
+	        (__bridge id)kSecAttrKeySizeInBits: @(keySize)
+	    };
 
-    CFErrorRef cfError = NULL;
-    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
+	    CFErrorRef cfError = NULL;
+	    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
 
     if (!privateKey) {
         if (error) {
@@ -232,14 +228,14 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                              error:(NSError **)error {
     NSString *keyID = [[NSUUID UUID] UUIDString];
 
-    NSDictionary *parameters = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
-        (__bridge id)kSecAttrKeySizeInBits: @(256),
-        (__bridge id)kSecPrivateKeyAttrs: @{
-            (__bridge id)kSecAttrIsPermanent: @NO,
-            (__bridge id)kSecAttrApplicationTag: [keyID dataUsingEncoding:NSUTF8StringEncoding]
-        }
-    };
+	    NSDictionary *parameters = @{
+	        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+	        (__bridge id)kSecAttrKeySizeInBits: @(256),
+	        (__bridge id)kSecPrivateKeyAttrs: @{
+	            (__bridge id)kSecAttrIsPermanent: (__bridge id)kCFBooleanFalse,
+	            (__bridge id)kSecAttrApplicationTag: [keyID dataUsingEncoding:NSUTF8StringEncoding]
+	        }
+	    };
 
     CFErrorRef cfError = NULL;
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
