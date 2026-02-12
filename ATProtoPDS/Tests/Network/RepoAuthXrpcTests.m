@@ -608,10 +608,36 @@
     XCTAssertEqual(((NSDictionary *)response.jsonBody).count, 0U);
 }
 
+- (void)testLabelSubscribeLabelsRequiresWebSocketUpgrade {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 426);
+    XCTAssertEqualObjects(response.headers[@"Upgrade"], @"websocket");
+    XCTAssertEqualObjects(response.headers[@"Connection"], @"Upgrade");
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"UpgradeRequired");
+}
+
+- (void)testLabelSubscribeLabelsRejectsInvalidCursor {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
+                                              queryParams:@{@"cursor": @"not-an-integer"}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testLabelSubscribeLabelsOnlySupportsGet {
+    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
+                                                     bodyData:[NSData data]
+                                                      headers:@{}];
+    XCTAssertEqual(response.statusCode, 405);
+    XCTAssertEqualObjects(response.headers[@"Allow"], @"GET");
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotAllowed");
+}
+
 - (void)testSyncGetRepoStatusReturnsActiveForExistingRepo {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
                                                queryParams:@{@"did": self.did1}
-                                                   headers:@{}];
+                                                  headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects(response.jsonBody[@"did"], self.did1);
     XCTAssertEqualObjects(response.jsonBody[@"active"], @YES);

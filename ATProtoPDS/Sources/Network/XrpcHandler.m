@@ -380,6 +380,10 @@
     [self registerMethod:@"com.atproto.label.getLabels" handler:handler];
 }
 
+- (void)registerComAtprotoLabelSubscribeLabels:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.label.subscribeLabels" handler:handler];
+}
+
 - (void)registerAppBskyActorGetProfile:(XrpcMethodHandler)handler {
     [self registerMethod:@"app.bsky.actor.getProfile" handler:handler];
 }
