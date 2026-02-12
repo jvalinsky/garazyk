@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.label.createLabel",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Legacy compatibility endpoint to create a label record.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["uri", "val"],
+          "properties": {
+            "src": { "type": "string", "format": "did" },
+            "uri": { "type": "string", "format": "uri" },
+            "cid": { "type": "string", "format": "cid" },
+            "val": { "type": "string", "maxLength": 128 },
+            "neg": { "type": "boolean" },
+            "cts": { "type": "string", "format": "datetime" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "ref",
+          "ref": "com.atproto.label.defs#label"
+        }
+      }
+    }
+  }
+}

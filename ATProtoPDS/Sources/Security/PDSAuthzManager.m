@@ -16,7 +16,7 @@
 
 NSErrorDomain const PDSAuthzErrorDomain = @"com.atproto.pds.authz";
 
-static NSSet<NSString *> *kAdminMethods = nil;
+static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 
 @interface PDSAuthzManager ()
 @property (nonatomic, strong) PDSDatabase *database;
@@ -26,19 +26,8 @@ static NSSet<NSString *> *kAdminMethods = nil;
 
 + (void)initialize {
     if (self == [PDSAuthzManager class]) {
-        kAdminMethods = [NSSet setWithArray:@[
-            @"com.atproto.admin.getAccountInfo",
-            @"com.atproto.admin.getAccountInfos",
-            @"com.atproto.admin.getInviteCodes",
-            @"com.atproto.admin.resolveModerationReports",
-            @"com.atproto.admin.takeModerationAction",
-            @"com.atproto.admin.disableAccountInvites",
-            @"com.atproto.admin.enableAccountInvites",
-            @"com.atproto.admin.deleteAccount",
-            @"com.atproto.admin.updateAccountEmail",
-            @"com.atproto.admin.updateAccountHandle",
-            @"com.atproto.server.createInviteCode",
-            @"com.atproto.server.createInviteCodes",
+        kNonNamespaceAdminMethods = [NSSet setWithArray:@[
+            @"com.atproto.temp.addReservedHandle",
         ]];
     }
 }
@@ -154,7 +143,10 @@ static NSSet<NSString *> *kAdminMethods = nil;
 
 - (BOOL)isAdminEndpoint:(NSString *)xrpcMethod {
     if (!xrpcMethod) return NO;
-    return [kAdminMethods containsObject:xrpcMethod];
+    if ([xrpcMethod hasPrefix:@"com.atproto.admin."]) {
+        return YES;
+    }
+    return [kNonNamespaceAdminMethods containsObject:xrpcMethod];
 }
 
 - (BOOL)isAuthorizedForAdminOperation:(NSString *)requestingDID error:(NSError **)error {

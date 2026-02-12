@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.repo.deleteBlob",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Legacy compatibility endpoint for deleting an uploaded blob.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["blob"],
+          "properties": {
+            "blob": { "type": "string", "format": "cid" },
+            "collection": { "type": "string", "format": "nsid" },
+            "rkey": { "type": "string" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

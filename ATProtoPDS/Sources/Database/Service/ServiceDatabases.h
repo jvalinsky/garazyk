@@ -264,6 +264,30 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (BOOL)useInviteCode:(NSString *)code error:(NSError **)error;
 
+#pragma mark - Reserved Handles
+
+/*!
+ @method reserveHandle:error:
+
+ @abstract Persist a normalized reserved handle.
+
+ @param handle Normalized handle string to reserve.
+ @param error Error pointer for persistence failures.
+ @return YES if reserved or already reserved, NO on failure.
+ */
+- (BOOL)reserveHandle:(NSString *)handle error:(NSError **)error;
+
+/*!
+ @method isHandleReserved:error:
+
+ @abstract Check whether a normalized handle is reserved.
+
+ @param handle Normalized handle string.
+ @param error Error pointer for query failures.
+ @return YES when handle exists in reserved_handles table, otherwise NO.
+ */
+- (BOOL)isHandleReserved:(NSString *)handle error:(NSError **)error;
+
 #pragma mark - App Passwords
 
 /*!

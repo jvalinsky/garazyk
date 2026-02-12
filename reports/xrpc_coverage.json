@@ -1,96 +1,51 @@
 {
-  "generated_at": "2026-02-12T13:24:10.552Z",
+  "generated_at": "2026-02-12T19:47:24.606Z",
   "inputs": {
-    "methods_tsv": "reports/xrpc_sync_raw/methods.tsv",
-    "lexicons_tsv": "reports/xrpc_sync_raw/lexicons.tsv",
-    "diff_json": "reports/xrpc_sync_raw/diff.json",
-    "stubs_json": "reports/stub_scan_raw/stubs.json"
+    "mode": "source-parsed",
+    "methods_tsv": null,
+    "lexicons_tsv": null,
+    "diff_json": null,
+    "registry_source": "/Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m",
+    "handler_source": "/Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m",
+    "lexicon_roots": [
+      "/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons"
+    ],
+    "unresolved_typed_registrations": [],
+    "lexicon_parse_errors": [],
+    "stubs_json": "/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json"
+  },
+  "scope": {
+    "source": "/Users/jack/Software/objpds/scripts/xrpc_coverage_scope.txt",
+    "includes": [
+      "com.atproto.*"
+    ],
+    "excludes": []
   },
   "counts": {
-    "implemented_unique": 87,
-    "lexicon_unique": 321,
-    "in_both": 78,
-    "missing_in_code": 243,
-    "missing_in_lexicons": 9,
-    "coverage_pct": 24.3,
-    "unknown_registry_entries": 2,
-    "duplicate_registry_registrations": 42
+    "implemented_unique": 109,
+    "lexicon_unique_total": 331,
+    "lexicon_unique_in_scope": 96,
+    "in_both_in_scope": 96,
+    "missing_in_code": 0,
+    "missing_in_lexicons": 0,
+    "missing_in_code_out_of_scope": 223,
+    "coverage_pct": 100,
+    "unknown_registry_entries": 0,
+    "duplicate_registry_registrations": 50
   },
   "namespace_coverage": [
     {
-      "namespace": "app.bsky",
-      "lexicon_methods": 98,
-      "implemented_methods": 13,
-      "in_both": 12,
-      "missing_in_code_count": 86,
-      "missing_in_lexicons_count": 1,
-      "coverage_pct": 12.24
-    },
-    {
-      "namespace": "tools.ozone",
-      "lexicon_methods": 45,
-      "implemented_methods": 0,
-      "in_both": 0,
-      "missing_in_code_count": 45,
-      "missing_in_lexicons_count": 0,
-      "coverage_pct": 0
-    },
-    {
-      "namespace": "social.grain",
-      "lexicon_methods": 31,
-      "implemented_methods": 0,
-      "in_both": 0,
-      "missing_in_code_count": 31,
-      "missing_in_lexicons_count": 0,
-      "coverage_pct": 0
-    },
-    {
-      "namespace": "place.stream",
-      "lexicon_methods": 27,
-      "implemented_methods": 0,
-      "in_both": 0,
-      "missing_in_code_count": 27,
-      "missing_in_lexicons_count": 0,
-      "coverage_pct": 0
-    },
-    {
-      "namespace": "chat.bsky",
-      "lexicon_methods": 22,
-      "implemented_methods": 0,
-      "in_both": 0,
-      "missing_in_code_count": 22,
-      "missing_in_lexicons_count": 0,
-      "coverage_pct": 0
-    },
-    {
       "namespace": "com.atproto",
-      "lexicon_methods": 86,
-      "implemented_methods": 74,
-      "in_both": 66,
-      "missing_in_code_count": 20,
-      "missing_in_lexicons_count": 8,
-      "coverage_pct": 76.74
-    },
-    {
-      "namespace": "com.shinolabs",
-      "lexicon_methods": 8,
-      "implemented_methods": 0,
-      "in_both": 0,
-      "missing_in_code_count": 8,
+      "lexicon_methods": 96,
+      "implemented_methods": 96,
+      "in_both": 96,
+      "missing_in_code_count": 0,
       "missing_in_lexicons_count": 0,
-      "coverage_pct": 0
-    },
-    {
-      "namespace": "com.whtwnd",
-      "lexicon_methods": 4,
-      "implemented_methods": 0,
-      "in_both": 0,
-      "missing_in_code_count": 4,
-      "missing_in_lexicons_count": 0,
-      "coverage_pct": 0
+      "coverage_pct": 100
     }
   ],
-  "missing_in_code": [
+  "missing_in_code": [],
+  "missing_in_code_out_of_scope": [
     "app.bsky.actor.getSuggestions",
     "app.bsky.ageassurance.begin",
     "app.bsky.ageassurance.getConfig",
@@ -199,26 +154,6 @@
     "chat.bsky.moderation.getActorMetadata",
     "chat.bsky.moderation.getMessageContext",
     "chat.bsky.moderation.updateActorAccess",
-    "com.atproto.admin.deleteAccount",
-    "com.atproto.admin.disableAccountInvites",
-    "com.atproto.admin.disableInviteCodes",
-    "com.atproto.admin.enableAccountInvites",
-    "com.atproto.admin.getAccountInfo",
-    "com.atproto.admin.getAccountInfos",
-    "com.atproto.admin.getInviteCodes",
-    "com.atproto.admin.searchAccounts",
-    "com.atproto.admin.sendEmail",
-    "com.atproto.admin.updateAccountEmail",
-    "com.atproto.admin.updateAccountHandle",
-    "com.atproto.admin.updateAccountPassword",
-    "com.atproto.admin.updateAccountSigningKey",
-    "com.atproto.lexicon.resolveLexicon",
-    "com.atproto.temp.addReservedHandle",
-    "com.atproto.temp.checkHandleAvailability",
-    "com.atproto.temp.checkSignupQueue",
-    "com.atproto.temp.dereferenceScope",
-    "com.atproto.temp.fetchLabels",
-    "com.atproto.temp.requestPhoneVerification",
     "com.shinolabs.pinksea.getAuthorFeed",
     "com.shinolabs.pinksea.getAuthorReplies",
     "com.shinolabs.pinksea.getHandleFromDid",
@@ -335,17 +270,7 @@
     "tools.ozone.verification.listVerifications",
     "tools.ozone.verification.revokeVerifications"
   ],
-  "missing_in_lexicons": [
-    "app.bsky.user.getUserStats",
-    "com.atproto.admin.moderateAccount",
-    "com.atproto.admin.moderateRecord",
-    "com.atproto.label.createLabel",
-    "com.atproto.label.getLabels",
-    "com.atproto.repo.deleteBlob",
-    "com.atproto.repo.getBlob",
-    "com.atproto.repo.updateRecord",
-    "com.atproto.server.getAccount"
-  ],
+  "missing_in_lexicons": [],
   "stub_scan": {
     "not_implemented_count": 0,
     "todo_fixme_count": 0,

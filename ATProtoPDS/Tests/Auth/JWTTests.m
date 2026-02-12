@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
+#import <CommonCrypto/CommonDigest.h>
 
 @interface JWTTests : XCTestCase
 @property (nonatomic, strong) JWTMinter *minter;
@@ -35,6 +36,32 @@
     self.minter = nil;
     self.verifier = nil;
     [super tearDown];
+}
+
+- (void)testKeyPairWithPrivateKeyDerivesMatchingPublicKey {
+    NSError *error = nil;
+    Secp256k1KeyPair *generated = [Secp256k1KeyPair generateKeyPair:&error];
+    XCTAssertNotNil(generated);
+    XCTAssertNil(error);
+
+    Secp256k1KeyPair *derived = [Secp256k1KeyPair keyPairWithPrivateKey:generated.privateKey error:&error];
+    XCTAssertNotNil(derived);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(derived.publicKey, generated.publicKey);
+    XCTAssertEqualObjects(derived.compressedPublicKey, generated.compressedPublicKey);
+
+    NSData *message = [@"jwt-key-derivation" dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned char hashBytes[32];
+    CC_SHA256(message.bytes, (CC_LONG)message.length, hashBytes);
+    NSData *hash = [NSData dataWithBytes:hashBytes length:sizeof(hashBytes)];
+
+    NSData *signature = [derived signHash:hash error:&error];
+    XCTAssertNotNil(signature);
+    XCTAssertNil(error);
+
+    BOOL verified = [derived verifySignature:signature forHash:hash error:&error];
+    XCTAssertTrue(verified);
+    XCTAssertNil(error);
 }
 
 #pragma mark - JWT Parsing Tests

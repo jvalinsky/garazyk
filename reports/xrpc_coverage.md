@@ -1,32 +1,30 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-12T13:24:10.552Z
+Generated: 2026-02-12T19:47:24.606Z
 
 ## Summary
 
-- Implemented methods (unique, excluding `unknown`): 87
-- Lexicon XRPC methods (unique): 321
-- Implemented and in lexicons: 78
-- Missing in code: 243
-- Implemented but missing lexicon: 9
-- Overall coverage (implemented / lexicon): 24.3%
-- Unknown registry entries: 2
-- Duplicate registry registrations: 42
+- Implemented methods (unique, excluding `unknown`): 109
+- Lexicon XRPC methods (unique, all scopes): 331
+- Lexicon XRPC methods (in scope): 96
+- Implemented and in lexicons (in scope): 96
+- Missing in code (in scope): 0
+- Implemented but missing lexicon (in scope): 0
+- Coverage (in scope, implemented / lexicon): 100%
+- Missing in code (out of scope): 223
+- Unknown registry entries: 0
+- Duplicate registry registrations: 50
 
 ## Namespace Coverage
 
 | Namespace | Lexicon | Implemented | In Both | Coverage | Missing In Code |
 |---|---:|---:|---:|---:|---:|
-| app.bsky | 98 | 13 | 12 | 12.24% | 86 |
-| tools.ozone | 45 | 0 | 0 | 0% | 45 |
-| social.grain | 31 | 0 | 0 | 0% | 31 |
-| place.stream | 27 | 0 | 0 | 0% | 27 |
-| chat.bsky | 22 | 0 | 0 | 0% | 22 |
-| com.atproto | 86 | 74 | 66 | 76.74% | 20 |
-| com.shinolabs | 8 | 0 | 0 | 0% | 8 |
-| com.whtwnd | 4 | 0 | 0 | 0% | 4 |
+| com.atproto | 96 | 96 | 96 | 100% | 0 |
 
-## Missing In Code (Top 60)
+## Missing In Code (Top 60, In Scope)
+
+
+## Missing In Code (Top 40, Out Of Scope)
 
 - `app.bsky.actor.getSuggestions`
 - `app.bsky.ageassurance.begin`
@@ -68,38 +66,15 @@ Generated: 2026-02-12T13:24:10.552Z
 - `app.bsky.graph.getListsWithMembership`
 - `app.bsky.graph.getMutes`
 - `app.bsky.graph.getRelationships`
-- `app.bsky.graph.getStarterPack`
-- `app.bsky.graph.getStarterPacks`
-- `app.bsky.graph.getStarterPacksWithMembership`
-- `app.bsky.graph.getSuggestedFollowsByActor`
-- `app.bsky.graph.muteActor`
-- `app.bsky.graph.muteActorList`
-- `app.bsky.graph.muteThread`
-- `app.bsky.graph.searchStarterPacks`
-- `app.bsky.graph.unmuteActor`
-- `app.bsky.graph.unmuteActorList`
-- `app.bsky.graph.unmuteThread`
-- `app.bsky.labeler.getServices`
-- `app.bsky.notification.getPreferences`
-- `app.bsky.notification.getUnreadCount`
-- `app.bsky.notification.listActivitySubscriptions`
-- `app.bsky.notification.listNotifications`
-- `app.bsky.notification.putActivitySubscription`
-- `app.bsky.notification.putPreferences`
-- `app.bsky.notification.putPreferencesV2`
-- `app.bsky.notification.unregisterPush`
 
 ## Implemented But Missing Lexicon
 
-- `app.bsky.user.getUserStats`
-- `com.atproto.admin.moderateAccount`
-- `com.atproto.admin.moderateRecord`
-- `com.atproto.label.createLabel`
-- `com.atproto.label.getLabels`
-- `com.atproto.repo.deleteBlob`
-- `com.atproto.repo.getBlob`
-- `com.atproto.repo.updateRecord`
-- `com.atproto.server.getAccount`
+
+## Scope
+
+- Scope config source: `/Users/jack/Software/objpds/scripts/xrpc_coverage_scope.txt`
+- Include globs: `com.atproto.*`
+- Exclude globs: (none)
 
 ## Stub Scan
 
@@ -110,8 +85,9 @@ Generated: 2026-02-12T13:24:10.552Z
 
 ## Inputs
 
-- `reports/xrpc_sync_raw/methods.tsv`
-- `reports/xrpc_sync_raw/lexicons.tsv`
-- `reports/xrpc_sync_raw/diff.json`
-- `reports/stub_scan_raw/stubs.json`
+- Input mode: `source-parsed`
+- `/Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- `/Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m`
+- `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons`
+- `/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json`
 

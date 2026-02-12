@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.admin.takeDownAccount",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Legacy compatibility endpoint to apply account takedown status.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["did"],
+          "properties": {
+            "did": { "type": "string", "format": "did" },
+            "reason": { "type": "string" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["did", "applied"],
+          "properties": {
+            "did": { "type": "string", "format": "did" },
+            "applied": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

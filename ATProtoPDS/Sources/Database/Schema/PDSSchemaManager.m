@@ -39,6 +39,13 @@
            @")";
 }
 
+- (NSString *)serviceReservedHandlesTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS reserved_handles ("
+           @"    handle TEXT PRIMARY KEY,"
+           @"    created_at REAL NOT NULL"
+           @")";
+}
+
 - (NSString *)serviceAppPasswordsTableSchema {
     return @"CREATE TABLE IF NOT EXISTS app_passwords ("
            @"    id TEXT PRIMARY KEY,"
@@ -107,6 +114,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceInviteCodesTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceReservedHandlesTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self serviceAppPasswordsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceRefreshTokensTableSchema]];
@@ -118,6 +127,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_reserved_handles_handle ON reserved_handles(handle);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_app_passwords_account ON app_passwords(account_did);"];
     [sql appendString:@";\n"];
