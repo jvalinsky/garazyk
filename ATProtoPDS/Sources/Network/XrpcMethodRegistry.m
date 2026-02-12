@@ -1199,6 +1199,48 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
         [response setBodyData:carData];
     }];
 
+    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *collection = [request queryParamForKey:@"collection"];
+        NSString *rkey = [request queryParamForKey:@"rkey"];
+
+        if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
+            return;
+        }
+
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSError *recordError = nil;
+        NSDictionary *record = [controller getRecord:uri forDid:did error:&recordError];
+        if (!record) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound",
+                                    @"message": recordError.localizedDescription ?: @"Record not found"}];
+            return;
+        }
+
+        NSError *repoError = nil;
+        NSData *carData = [controller getRepoContents:did since:nil error:&repoError];
+        if (!carData || repoError) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound",
+                                    @"message": repoError.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"application/vnd.ipld.car";
+        [response setBodyData:carData];
+    }];
+
     [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
         setSubscribeReposUpgradeRequired(request, response);
     }];
@@ -3088,6 +3130,48 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse 
 
     [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
         setSubscribeReposUpgradeRequired(request, response);
+    }];
+
+    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *collection = [request queryParamForKey:@"collection"];
+        NSString *rkey = [request queryParamForKey:@"rkey"];
+
+        if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
+            return;
+        }
+
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSError *recordError = nil;
+        NSDictionary *record = [recordService getRecord:uri forDid:did error:&recordError];
+        if (!record) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound",
+                                    @"message": recordError.localizedDescription ?: @"Record not found"}];
+            return;
+        }
+
+        NSError *repoError = nil;
+        NSData *carData = [repositoryService getRepoContents:did since:nil error:&repoError];
+        if (!carData || repoError) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound",
+                                    @"message": repoError.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"application/vnd.ipld.car";
+        [response setBodyData:carData];
     }];
 
     [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {

@@ -228,6 +228,10 @@
     [self registerMethod:@"com.atproto.sync.getBlocks" handler:handler];
 }
 
+- (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.getRecord" handler:handler];
+}
+
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.notifyOfUpdate" handler:handler];
 }
