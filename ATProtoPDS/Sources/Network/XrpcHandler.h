@@ -311,6 +311,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.label.getLabels. */
 - (void)registerComAtprotoLabelGetLabels:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.label.subscribeLabels. */
+- (void)registerComAtprotoLabelSubscribeLabels:(XrpcMethodHandler)handler;
+
 // MARK: - App Bsky Actor Methods
 
 /*! Registers handler for app.bsky.actor.getProfile. */
