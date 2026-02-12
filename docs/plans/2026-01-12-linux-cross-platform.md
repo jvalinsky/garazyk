@@ -24,7 +24,7 @@ Complete the cross-platform build to support both macOS (Xcode/Apple frameworks)
 - kCCSuccess - CommonCrypto constant (PDSAccountService.m)
 - Format string warnings
 
-## Task Breakdown (Beads IDs)
+## Task Breakdown (Deciduous IDs)
 
 | ID | Task | Priority | Status |
 |---|---|---|---|

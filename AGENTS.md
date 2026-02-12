@@ -201,10 +201,8 @@ make -j$(nproc)
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   # If using Deciduous for decision graphs:
+   # Sync Deciduous decision graph state:
    deciduous sync
-   # If using Beads:
-   bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
