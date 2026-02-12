@@ -328,6 +328,140 @@
     XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
 }
 
+- (void)testUpdateEmailRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.updateEmail"
+                                                      body:@{@"email": @"updated@example.com"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testUpdateEmailUpdatesAccountEmail {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.updateEmail"
+                                                      body:@{@"email": @"updated@example.com"}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+
+    NSError *error = nil;
+    NSDictionary *account = [self.controller getAccountForDid:self.did1 error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(account[@"email"], @"updated@example.com");
+}
+
+- (void)testIdentityUpdateHandleRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+                                                      body:@{@"handle": @"repoauth1-renamed.test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testIdentityUpdateHandleUpdatesAccountHandle {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+                                                      body:@{@"handle": @"repoauth1-renamed.test"}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+
+    NSError *error = nil;
+    NSDictionary *account = [self.controller getAccountForDid:self.did1 error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(account[@"handle"], @"repoauth1-renamed.test");
+
+    NSDictionary *session = [self.controller loginWithHandle:@"repoauth1-renamed.test" password:@"password" error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(session[@"accessJwt"]);
+}
+
+- (void)testRefreshIdentityReturnsIdentityInfo {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.refreshIdentity"
+                                                      body:@{@"identifier": @"repoauth1.test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"did"], self.did1);
+    XCTAssertNotNil(response.jsonBody[@"didDoc"]);
+    XCTAssertNotNil(response.jsonBody[@"handle"]);
+}
+
+- (void)testReserveSigningKeyReturnsDidKey {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.reserveSigningKey"
+                                                      body:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSString *signingKey = response.jsonBody[@"signingKey"];
+    XCTAssertNotNil(signingKey);
+    XCTAssertTrue([signingKey hasPrefix:@"did:key:"]);
+}
+
+- (void)testRequestAndResetPasswordFlowWithDidToken {
+    HttpResponse *requestMissingEmail = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestPasswordReset"
+                                                                 body:@{}
+                                                              headers:@{}];
+    XCTAssertEqual(requestMissingEmail.statusCode, 400);
+
+    HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestPasswordReset"
+                                                             body:@{@"email": @"repoauth1@example.com"}
+                                                          headers:@{}];
+    XCTAssertEqual(requestResponse.statusCode, 200);
+
+    HttpResponse *resetResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
+                                                           body:@{@"token": self.did1,
+                                                                  @"password": @"new-password-123"}
+                                                        headers:@{}];
+    XCTAssertEqual(resetResponse.statusCode, 200);
+
+    HttpResponse *sessionResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
+                                                            body:@{@"identifier": @"repoauth1.test",
+                                                                   @"password": @"new-password-123"}
+                                                         headers:@{}];
+    XCTAssertEqual(sessionResponse.statusCode, 200);
+}
+
+- (void)testIdentitySignAndSubmitPlcOperation {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
+                                                              body:@{}
+                                                           headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(requestSignature.statusCode, 200);
+
+    HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
+                                                          body:@{}
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(signResponse.statusCode, 200);
+    NSDictionary *operation = signResponse.jsonBody[@"operation"];
+    XCTAssertNotNil(operation);
+    XCTAssertEqualObjects(operation[@"did"], self.did1);
+    XCTAssertNotNil(operation[@"sig"]);
+
+    HttpResponse *submitResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.submitPlcOperation"
+                                                            body:@{@"operation": operation}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(submitResponse.statusCode, 200);
+}
+
+- (void)testConfirmEmailAndRequestAccountDeleteRequireAuth {
+    HttpResponse *confirmWithoutAuth = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.confirmEmail"
+                                                                body:@{@"email": @"repoauth1@example.com", @"token": @"123456"}
+                                                             headers:@{}];
+    XCTAssertEqual(confirmWithoutAuth.statusCode, 401);
+
+    HttpResponse *deleteWithoutAuth = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                               body:@{}
+                                                            headers:@{}];
+    XCTAssertEqual(deleteWithoutAuth.statusCode, 401);
+
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *confirmWithAuth = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.confirmEmail"
+                                                             body:@{@"email": @"repoauth1@example.com", @"token": @"123456"}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(confirmWithAuth.statusCode, 200);
+
+    HttpResponse *deleteWithAuth = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                            body:@{}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(deleteWithAuth.statusCode, 200);
+}
+
 - (void)testSyncGetRecordReturnsCARWithoutAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",

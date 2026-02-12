@@ -133,6 +133,24 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.deactivateAccount. */
 - (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.confirmEmail. */
+- (void)registerComAtprotoServerConfirmEmail:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.requestAccountDelete. */
+- (void)registerComAtprotoServerRequestAccountDelete:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.requestPasswordReset. */
+- (void)registerComAtprotoServerRequestPasswordReset:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.reserveSigningKey. */
+- (void)registerComAtprotoServerReserveSigningKey:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.resetPassword. */
+- (void)registerComAtprotoServerResetPassword:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.updateEmail. */
+- (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler;
+
 // MARK: - Repository Methods
 
 /*! Registers handler for com.atproto.repo.createRecord. */
@@ -213,6 +231,21 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.identity.getRecommendedDidCredentials. */
 - (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.identity.refreshIdentity. */
+- (void)registerComAtprotoIdentityRefreshIdentity:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.identity.requestPlcOperationSignature. */
+- (void)registerComAtprotoIdentityRequestPlcOperationSignature:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.identity.signPlcOperation. */
+- (void)registerComAtprotoIdentitySignPlcOperation:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.identity.submitPlcOperation. */
+- (void)registerComAtprotoIdentitySubmitPlcOperation:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.identity.updateHandle. */
+- (void)registerComAtprotoIdentityUpdateHandle:(XrpcMethodHandler)handler;
 
 // MARK: - Moderation Methods
 
