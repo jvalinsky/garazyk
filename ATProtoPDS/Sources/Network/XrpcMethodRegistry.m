@@ -199,6 +199,21 @@ static BOOL isLikelyEmail(NSString *email) {
     return [domain containsString:@"."];
 }
 
+static BOOL parseStrictIntegerString(NSString *value, NSInteger *outValue) {
+    if (![value isKindOfClass:[NSString class]] || value.length == 0) {
+        return NO;
+    }
+    NSScanner *scanner = [NSScanner scannerWithString:value];
+    NSInteger parsed = 0;
+    if (![scanner scanInteger:&parsed] || !scanner.isAtEnd) {
+        return NO;
+    }
+    if (outValue) {
+        *outValue = parsed;
+    }
+    return YES;
+}
+
 static NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error) {
     const uint32_t iterations = 600000;
     const size_t derivedKeyLength = 32;
@@ -615,7 +630,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *accountError = nil;
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+        PDSDatabaseAccount *account = [controller.serviceDatabases getAccountByDid:did error:&accountError];
         if (!account) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"AccountNotFound", @"message": accountError.localizedDescription ?: @"Account not found"}];
@@ -1681,6 +1696,35 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", repo, collection, rkey]}];
     }];
 
+    [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        NSInteger limit = 500;
+        if (limitParam.length > 0) {
+            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 1000) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
+                return;
+            }
+        }
+
+        NSMutableDictionary *result = [@{@"blobs": @[]} mutableCopy];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        if (cursor.length > 0) {
+            result[@"cursor"] = cursor;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
 
@@ -1724,6 +1768,106 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"root": head ?: [NSNull null]}];
+    }];
+
+    [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+
+        NSError *validateError = nil;
+        if (![ATProtoValidator validateDID:did error:&validateError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": validateError.localizedDescription ?: @"Invalid did"}];
+            return;
+        }
+
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [controller.serviceDatabases getAccountByDid:did error:&accountError];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": accountError.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"did": did, @"active": @YES}];
+    }];
+
+    [dispatcher registerComAtprotoSyncListReposByCollection:^(HttpRequest *request, HttpResponse *response) {
+        NSString *collection = [request queryParamForKey:@"collection"];
+        if (collection.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection"}];
+            return;
+        }
+
+        NSError *nsidError = nil;
+        if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": nsidError.localizedDescription ?: @"Invalid collection"}];
+            return;
+        }
+
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        NSInteger limit = 500;
+        if (limitParam.length > 0) {
+            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 2000) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 2000"}];
+                return;
+            }
+        }
+
+        NSString *cursorParam = [request queryParamForKey:@"cursor"];
+        NSInteger startIndex = 0;
+        if (cursorParam.length > 0) {
+            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
+                return;
+            }
+        }
+
+        NSError *accountsError = nil;
+        NSArray<PDSDatabaseAccount *> *accounts = [controller.serviceDatabases getAllAccountsWithError:&accountsError];
+        if (!accounts) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
+        NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
+        while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
+            PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
+            if (account.did.length > 0) {
+                NSError *storeError = nil;
+                PDSActorStore *store = [controller.userDatabasePool storeForDid:account.did error:&storeError];
+                if (store) {
+                    NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:account.did
+                                                                           collection:collection
+                                                                                limit:1
+                                                                               offset:0
+                                                                                error:nil];
+                    if (records.count > 0) {
+                        [repos addObject:@{@"did": account.did}];
+                    }
+                }
+            }
+            scanIndex += 1;
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
+        if (scanIndex < (NSInteger)accounts.count) {
+            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
     }];
 
     [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
@@ -1856,6 +2000,19 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         response.contentType = @"application/vnd.ipld.car";
         [response setBodyData:carData];
+    }];
+
+    [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *hostname = body[@"hostname"];
+        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
     }];
 
     [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
@@ -3681,6 +3838,34 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{@"success": @YES}];
     }];
 
+    [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSInteger limit = 500;
+        if (limitStr.length > 0) {
+            if (!parseStrictIntegerString(limitStr, &limit) || limit < 1 || limit > 1000) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
+                return;
+            }
+        }
+
+        NSMutableDictionary *result = [@{@"blobs": @[]} mutableCopy];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        if (cursor.length > 0) {
+            result[@"cursor"] = cursor;
+        }
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
@@ -3726,6 +3911,106 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"root": [CID base32Encode:root]}];
+    }];
+
+    [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+
+        NSError *validateError = nil;
+        if (![ATProtoValidator validateDID:did error:&validateError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": validateError.localizedDescription ?: @"Invalid did"}];
+            return;
+        }
+
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": accountError.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"did": did, @"active": @YES}];
+    }];
+
+    [dispatcher registerComAtprotoSyncListReposByCollection:^(HttpRequest *request, HttpResponse *response) {
+        NSString *collection = [request queryParamForKey:@"collection"];
+        if (collection.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection"}];
+            return;
+        }
+
+        NSError *nsidError = nil;
+        if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": nsidError.localizedDescription ?: @"Invalid collection"}];
+            return;
+        }
+
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        NSInteger limit = 500;
+        if (limitParam.length > 0) {
+            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 2000) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 2000"}];
+                return;
+            }
+        }
+
+        NSString *cursorParam = [request queryParamForKey:@"cursor"];
+        NSInteger startIndex = 0;
+        if (cursorParam.length > 0) {
+            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
+                return;
+            }
+        }
+
+        NSError *accountsError = nil;
+        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
+        if (!accounts) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
+        NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
+        while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
+            PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
+            if (account.did.length > 0) {
+                NSError *storeError = nil;
+                PDSActorStore *store = [application.userDatabasePool storeForDid:account.did error:&storeError];
+                if (store) {
+                    NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:account.did
+                                                                           collection:collection
+                                                                                limit:1
+                                                                               offset:0
+                                                                                error:nil];
+                    if (records.count > 0) {
+                        [repos addObject:@{@"did": account.did}];
+                    }
+                }
+            }
+            scanIndex += 1;
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
+        if (scanIndex < (NSInteger)accounts.count) {
+            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
     }];
 
     [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
@@ -3824,6 +4109,19 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];
+    }];
+
+    [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *hostname = body[@"hostname"];
+        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
     }];
 
     [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
