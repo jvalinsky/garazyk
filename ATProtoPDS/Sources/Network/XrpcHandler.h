@@ -297,6 +297,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.admin.getSubjectStatus. */
 - (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.admin.getAccountInfo. */
+- (void)registerComAtprotoAdminGetAccountInfo:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.admin.moderateAccount. */
 - (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler;
 
