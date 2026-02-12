@@ -236,6 +236,10 @@
     [self registerMethod:@"com.atproto.repo.uploadBlob" handler:handler];
 }
 
+- (void)registerComAtprotoRepoImportRepo:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.repo.importRepo" handler:handler];
+}
+
 - (void)registerComAtprotoRepoListMissingBlobs:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.repo.listMissingBlobs" handler:handler];
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-12T13:00:35.011Z",
+  "generated_at": "2026-02-12T13:05:51.381Z",
   "inputs": {
     "methods_tsv": "reports/xrpc_sync_raw/methods.tsv",
     "lexicons_tsv": "reports/xrpc_sync_raw/lexicons.tsv",
@@ -7,14 +7,14 @@
     "stubs_json": "reports/stub_scan_raw/stubs.json"
   },
   "counts": {
-    "implemented_unique": 84,
+    "implemented_unique": 85,
     "lexicon_unique": 321,
-    "in_both": 75,
-    "missing_in_code": 246,
+    "in_both": 76,
+    "missing_in_code": 245,
     "missing_in_lexicons": 9,
-    "coverage_pct": 23.36,
+    "coverage_pct": 23.68,
     "unknown_registry_entries": 2,
-    "duplicate_registry_registrations": 39
+    "duplicate_registry_registrations": 40
   },
   "namespace_coverage": [
     {
@@ -54,15 +54,6 @@
       "coverage_pct": 0
     },
     {
-      "namespace": "com.atproto",
-      "lexicon_methods": 86,
-      "implemented_methods": 71,
-      "in_both": 63,
-      "missing_in_code_count": 23,
-      "missing_in_lexicons_count": 8,
-      "coverage_pct": 73.26
-    },
-    {
       "namespace": "chat.bsky",
       "lexicon_methods": 22,
       "implemented_methods": 0,
@@ -70,6 +61,15 @@
       "missing_in_code_count": 22,
       "missing_in_lexicons_count": 0,
       "coverage_pct": 0
+    },
+    {
+      "namespace": "com.atproto",
+      "lexicon_methods": 86,
+      "implemented_methods": 72,
+      "in_both": 64,
+      "missing_in_code_count": 22,
+      "missing_in_lexicons_count": 8,
+      "coverage_pct": 74.42
     },
     {
       "namespace": "com.shinolabs",
@@ -214,7 +214,6 @@
     "com.atproto.admin.updateAccountSigningKey",
     "com.atproto.label.subscribeLabels",
     "com.atproto.lexicon.resolveLexicon",
-    "com.atproto.repo.importRepo",
     "com.atproto.temp.addReservedHandle",
     "com.atproto.temp.checkHandleAvailability",
     "com.atproto.temp.checkSignupQueue",
