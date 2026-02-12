@@ -89,6 +89,27 @@
     return response;
 }
 
+- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+                                 headers:(NSDictionary<NSString *, NSString *> *)headers {
+    NSMutableDictionary *allHeaders = [NSMutableDictionary dictionary];
+    if (headers) {
+        [allHeaders addEntriesFromDictionary:headers];
+    }
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:path
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:allHeaders
+                                                          body:nil
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:request response:response];
+    return response;
+}
+
 - (void)testDeleteRecordRequiresAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
@@ -232,6 +253,54 @@
     XCTAssertNotNil(codes);
     XCTAssertTrue([codes isKindOfClass:[NSArray class]]);
     XCTAssertEqual(codes.count, 3U);
+}
+
+- (void)testCreateAppPasswordRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAppPassword"
+                                                      body:@{@"name": @"test-app"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testAppPasswordAllowsCreateSessionAndCanBeRevoked {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    HttpResponse *createdResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAppPassword"
+                                                             body:@{@"name": @"test-app"}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(createdResponse.statusCode, 200);
+    NSString *appPassword = createdResponse.jsonBody[@"password"];
+    XCTAssertNotNil(appPassword);
+    XCTAssertTrue([appPassword isKindOfClass:[NSString class]]);
+    XCTAssertTrue(appPassword.length > 0);
+
+    HttpResponse *listResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.server.listAppPasswords"
+                                                     headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(listResponse.statusCode, 200);
+    NSArray *passwords = listResponse.jsonBody[@"passwords"];
+    XCTAssertNotNil(passwords);
+    XCTAssertTrue([passwords isKindOfClass:[NSArray class]]);
+    XCTAssertTrue(passwords.count >= 1U);
+    NSDictionary *first = passwords.firstObject;
+    XCTAssertNil(first[@"password"]);
+
+    HttpResponse *sessionResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
+                                                            body:@{@"identifier": @"repoauth1.test",
+                                                                   @"password": appPassword}
+                                                         headers:@{}];
+    XCTAssertEqual(sessionResponse.statusCode, 200);
+    XCTAssertNotNil(sessionResponse.jsonBody[@"accessJwt"]);
+
+    HttpResponse *revokeResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.revokeAppPassword"
+                                                           body:@{@"name": @"test-app"}
+                                                        headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(revokeResponse.statusCode, 200);
+
+    HttpResponse *sessionAfterRevoke = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
+                                                                body:@{@"identifier": @"repoauth1.test",
+                                                                       @"password": appPassword}
+                                                             headers:@{}];
+    XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
 }
 
 @end
