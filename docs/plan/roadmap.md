@@ -78,6 +78,6 @@ These items from the original plan are now complete:
 ---
 
 ## Tracking
-- Use `bd` (Beads) to track these items
+- Use Deciduous to track these items
 - Create an issue for each high-level item
 - Link PRs to these issues
