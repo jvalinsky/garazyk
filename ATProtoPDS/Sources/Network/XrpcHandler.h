@@ -97,6 +97,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.refreshSession. */
 - (void)registerComAtprotoServerRefreshSession:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.deleteSession. */
+- (void)registerComAtprotoServerDeleteSession:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.getServiceAuth. */
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
 
@@ -172,6 +175,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.sync.notifyOfUpdate. */
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.subscribeRepos. */
+- (void)registerComAtprotoSyncSubscribeRepos:(XrpcMethodHandler)handler;
 
 /*! Registers handler for com.atproto.repo.deleteBlob. */
 - (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;

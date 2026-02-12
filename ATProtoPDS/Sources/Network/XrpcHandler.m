@@ -112,6 +112,10 @@
     [self registerMethod:@"com.atproto.server.refreshSession" handler:handler];
 }
 
+- (void)registerComAtprotoServerDeleteSession:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.deleteSession" handler:handler];
+}
+
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
 }
@@ -206,6 +210,10 @@
 
 - (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.sync.notifyOfUpdate" handler:handler];
+}
+
+- (void)registerComAtprotoSyncSubscribeRepos:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.sync.subscribeRepos" handler:handler];
 }
 
 - (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler {

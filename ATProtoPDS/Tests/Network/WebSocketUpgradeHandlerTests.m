@@ -61,6 +61,37 @@ NS_ASSUME_NONNULL_BEGIN
 
     XCTAssertFalse(shouldUpgrade);
     XCTAssertEqual(response.statusCode, 426);
+    XCTAssertEqualObjects([response.headers objectForKey:@"Connection"], @"Upgrade");
+    XCTAssertEqualObjects([response.headers objectForKey:@"Upgrade"], @"websocket");
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"UpgradeRequired");
+    XCTAssertFalse(response.keepAlive);
+}
+
+- (void)testMissingConnectionHeaderReturns426 {
+    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                methodString:@"GET"
+                                                        path:@"/xrpc/com.atproto.sync.subscribeRepos"
+                                                 queryString:@""
+                                                  queryParams:@{}
+                                                      version:@"HTTP/1.1"
+                                                      headers:@{
+            @"Upgrade": @"websocket",
+            @"Sec-WebSocket-Version": @"13",
+            @"Sec-WebSocket-Key": @"dGhlIHNhbXBsZSBub25jZQ=="
+        }
+                                                         body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+    BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
+
+    XCTAssertFalse(shouldUpgrade);
+    XCTAssertEqual(response.statusCode, 426);
+    XCTAssertEqualObjects([response.headers objectForKey:@"Connection"], @"Upgrade");
+    XCTAssertEqualObjects([response.headers objectForKey:@"Upgrade"], @"websocket");
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"UpgradeRequired");
     XCTAssertFalse(response.keepAlive);
 }
 
