@@ -1,13 +1,13 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-12T13:00:35.090Z
+Generated: 2026-02-12T13:05:54.139Z
 
 ## Baseline
 
-- Missing in code: 246
-- Coverage: 23.36%
+- Missing in code: 245
+- Coverage: 23.68%
 - Unknown registry entries: 2
-- Duplicate registry registrations: 39
+- Duplicate registry registrations: 40
 
 ## Priority Rubric
 
@@ -26,10 +26,9 @@ Generated: 2026-02-12T13:00:35.090Z
 
 ### Phase 2: Repository and Sync Completeness
 
-- Endpoint count: 1
-- P0: 1, P1: 0, P2: 0, P3: 0
+- Endpoint count: 0
+- P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
-  - P0 `com.atproto.repo.importRepo`
 
 ### Phase 3: Admin, Label, and Temp APIs
 

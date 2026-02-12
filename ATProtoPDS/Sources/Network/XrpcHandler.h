@@ -195,6 +195,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.repo.uploadBlob. */
 - (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.repo.importRepo. */
+- (void)registerComAtprotoRepoImportRepo:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.repo.listMissingBlobs. */
 - (void)registerComAtprotoRepoListMissingBlobs:(XrpcMethodHandler)handler;
 
