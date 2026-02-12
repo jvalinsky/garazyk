@@ -28,7 +28,7 @@ sleep 1
 # Build paths
 PLC_BIN="./build/bin/atproto-plc"
 PDS_BIN="./build/bin/september"
-DATA_DIR="./demo_data"
+DATA_DIR="${DATA_DIR:-/tmp/objpds-demo-data}"
 
 if [ ! -f "$PLC_BIN" ]; then
     echo "Error: $PLC_BIN not found"
@@ -46,10 +46,26 @@ mkdir -p "$DATA_DIR/service" # Pre-create service dir to be safe
 echo "Starting PLC server on port 2582..."
 "$PLC_BIN" --port 2582 > plc.log 2>&1 &
 echo $! > plc.pid
-sleep 2
+
+# Wait for PLC to come up (local-only listener on 127.0.0.1)
+echo "Waiting for PLC server to be ready..."
+for i in {1..20}; do
+    if curl -s --max-time 1 "http://127.0.0.1:2582/_health" >/dev/null 2>&1; then
+        echo "PLC server is up!"
+        break
+    fi
+    sleep 0.25
+done
+
+if ! curl -s --max-time 1 "http://127.0.0.1:2582/_health" >/dev/null 2>&1; then
+    echo "Error: PLC server failed to start. plc.log tail:"
+    tail -n 80 plc.log || true
+    exit 1
+fi
 
 echo "Starting PDS server on port 2583..."
-export PDS_PLC_URL="http://localhost:2582"
+export PDS_PLC_URL="http://127.0.0.1:2582"
+export PDS_DEBUG_SKIP_PLC="0"
 export PDS_ISSUER="http://localhost:2583"
 export PDS_LOG_LEVEL="debug"
 # Note: we pass a fake config file to ensure CLI arg for data-dir is respected

@@ -157,6 +157,12 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (plc[@"retry_count"]) _plcRetryCount = [plc[@"retry_count"] unsignedIntegerValue];
         if (plc[@"retry_delay_ms"]) _plcRetryDelayMs = [plc[@"retry_delay_ms"] unsignedIntegerValue];
     }
+    
+    // Allow env overrides even when plc section is missing.
+    NSString *envPlcURL = [[NSProcessInfo processInfo] environment][@"PDS_PLC_URL"];
+    if (envPlcURL.length > 0) {
+        _plcURL = envPlcURL;
+    }
 
     NSDictionary *debug = config[@"debug"];
     if (debug) {
@@ -165,6 +171,12 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (debug[@"in_memory_databases"]) _debugInMemoryDatabases = [self boolFromEnv:@"PDS_DEBUG_IN_MEMORY" default:[debug[@"in_memory_databases"] boolValue]];
         if (debug[@"reset_on_startup"]) _debugResetOnStartup = [self boolFromEnv:@"PDS_DEBUG_RESET" default:[debug[@"reset_on_startup"] boolValue]];
         if (debug[@"use_new_repository"]) _useNewRepositoryImplementation = [self boolFromEnv:@"PDS_USE_NEW_REPO" default:[debug[@"use_new_repository"] boolValue]];
+    }
+    
+    // Allow env overrides even when debug section is missing.
+    NSString *envSkipPlc = [[NSProcessInfo processInfo] environment][@"PDS_DEBUG_SKIP_PLC"];
+    if (envSkipPlc.length > 0) {
+        _debugSkipPlcOperations = [self boolFromEnv:@"PDS_DEBUG_SKIP_PLC" default:_debugSkipPlcOperations];
     }
 
     NSDictionary *database = config[@"database"];

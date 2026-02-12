@@ -155,8 +155,14 @@
         if (host.length > 0) {
             nw_endpoint_t localEndpoint = nw_endpoint_create_host(host.UTF8String, portStr);
             nw_parameters_set_local_endpoint(parameters, localEndpoint);
+            _listener = nw_listener_create(parameters);
+        } else {
+            _listener = nw_listener_create_with_port(portStr, parameters);
         }
-        _listener = nw_listener_create_with_port(portStr, parameters);
+
+        if (!_listener) {
+            return nil;
+        }
         
         __weak typeof(self) weakSelf = self;
         nw_listener_set_state_changed_handler(_listener, ^(nw_listener_state_t state, nw_error_t error) {
