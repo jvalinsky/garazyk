@@ -109,10 +109,12 @@ NS_ASSUME_NONNULL_END
     }
 
     /*! Handle Connection header based on keepAlive setting */
-    if (self.keepAlive) {
-        [self setHeader:@"keep-alive" forKey:@"Connection"];
-    } else {
-        [self setHeader:@"close" forKey:@"Connection"];
+    if (!self.headers[@"Connection"]) {
+        if (self.keepAlive) {
+            [self setHeader:@"keep-alive" forKey:@"Connection"];
+        } else {
+            [self setHeader:@"close" forKey:@"Connection"];
+        }
     }
 
     /*! Ensure Content-Type is set for JSON responses */

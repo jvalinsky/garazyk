@@ -31,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
                                                 serviceMaxSize:10
                                               userDatabaseSize:20];
     self.controller.httpPort = 0;
-    self.controller.wsPort = 0;
 }
 
 - (void)tearDown {
@@ -539,6 +538,7 @@ NS_ASSUME_NONNULL_BEGIN
         return;
     }
     XCTAssertNil(serverError);
+    XCTAssertEqual(self.controller.wsPort, self.controller.httpPort);
     
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.server.describeServer", (unsigned long)self.controller.httpPort]];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];

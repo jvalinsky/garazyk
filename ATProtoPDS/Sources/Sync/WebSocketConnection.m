@@ -95,6 +95,18 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     [self startHeartbeat];
 }
 
+- (void)startOnExistingTransport {
+    if (!self.connection) {
+        return;
+    }
+    __weak typeof(self) weakSelf = self;
+    self.connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+        [weakSelf handlePDSStateChange:state error:error];
+    };
+    [self startReading];
+    [self startHeartbeat];
+}
+
 - (instancetype)init {
     return [self initWithHost:@"localhost" port:0 path:@"/"];
 }

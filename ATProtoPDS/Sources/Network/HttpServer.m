@@ -21,6 +21,7 @@
 #import "Debug/PDSLogger.h"
 #import <CoreFoundation/CoreFoundation.h>
 #import "Network/HttpRouteTrie.h"
+#import "Network/WebSocketUpgradeHandler.h"
 
 @class HttpRouteTrie;
 
@@ -44,6 +45,8 @@
 @property (nonatomic, strong) NSMapTable<id<PDSNetworkConnection>, id> *connectionStates;
 
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t concurrencySemaphore;
+@property (nonatomic, strong) WebSocketUpgradeHandler *webSocketUpgradeHandler;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, WebSocketRequestHandler> *webSocketHandlers;
 
 @end
 
@@ -72,6 +75,7 @@ static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
 @property (nonatomic, assign) NSUInteger pendingDispatchCount;
 @property (nonatomic, assign) NSUInteger maxPipelinedRequests;
 @property (nonatomic, assign) BOOL sendingActive;
+@property (nonatomic, assign) BOOL upgradedToWebSocket;
 
 @end
 
@@ -97,6 +101,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         _pendingDispatchCount = 0;
         _maxPipelinedRequests = kDefaultMaxPipelinedRequests;
         _sendingActive = NO;
+        _upgradedToWebSocket = NO;
     }
     return self;
 }
@@ -160,6 +165,8 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         _concurrencySemaphore = dispatch_semaphore_create(kMaxConcurrentRequests);
         _taskGroup = dispatch_group_create();
         _connectionStates = [NSMapTable strongToStrongObjectsMapTable];
+        _webSocketUpgradeHandler = [[WebSocketUpgradeHandler alloc] init];
+        _webSocketHandlers = [NSMutableDictionary dictionary];
         _listenerReady = NO;
         _startupFinished = NO;
         _running = NO;
@@ -299,6 +306,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
 - (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
     HttpConnectionState *state = [self connectionStateForConnection:connection];
+    if (state.upgradedToWebSocket) {
+        return;
+    }
 
     if (state.pendingDispatchCount > 0 || state.outputQueue.count > 0 || state.pendingRequests.count > 0) {
         return;
@@ -509,6 +519,34 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         return YES;
     }
 
+    WebSocketRequestHandler webSocketHandler = self.webSocketHandlers[path];
+    if (webSocketHandler) {
+        HttpResponse *upgradeResponse = [HttpResponse response];
+        BOOL shouldUpgrade = [self.webSocketUpgradeHandler handleUpgradeRequest:request response:upgradeResponse];
+        if (!shouldUpgrade) {
+            [state resetForNextRequest];
+            [self queueResponse:upgradeResponse forState:state connection:connection];
+            return YES;
+        }
+
+        state.upgradedToWebSocket = YES;
+        [state.pendingRequests removeAllObjects];
+        [state.pendingRequestOffsets removeAllObjects];
+        [state.outputQueue removeAllObjects];
+        state.outputQueueSize = 0;
+        [state.buffer setLength:0];
+
+        NSData *responseData = [upgradeResponse serialize];
+        [connection sendData:responseData completion:^(NSError * _Nullable error) {
+            if (error) {
+                [connection cancel];
+                return;
+            }
+            webSocketHandler(request, upgradeResponse, connection);
+        }];
+        return YES;
+    }
+
     [state resetForNextRequest];
 
     NSUInteger requestOffset = consumedOffset;
@@ -617,7 +655,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         [state.outputQueue removeObjectAtIndex:0];
         state.outputQueueSize -= responseData.length;
-        state.pendingDispatchCount--;
+        if (state.pendingDispatchCount > 0) {
+            state.pendingDispatchCount--;
+        }
         state.sendingActive = NO;
 
         if (state.outputQueue.count > 0) {
@@ -872,6 +912,13 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler {
     self.pathHandlers[path] = [handler copy];
+}
+
+- (void)addWebSocketRoute:(NSString *)path handler:(WebSocketRequestHandler)handler {
+    if (!path || !handler) {
+        return;
+    }
+    self.webSocketHandlers[path] = [handler copy];
 }
 
 @end

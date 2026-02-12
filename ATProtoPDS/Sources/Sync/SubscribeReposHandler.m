@@ -6,6 +6,7 @@
 #import "App/Services/PDSRecordService.h"
 #import "Sync/EventFormatter.h"
 #import "Sync/Firehose.h"
+#import "Network/HttpRequest.h"
 #import "Repository/RepoCommit.h"
 #import "Core/TID.h"
 #import "Database/Pool/DatabasePool.h"
@@ -16,7 +17,7 @@
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
 NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
-@interface SubscribeReposHandler () <WebSocketServerDelegate>
+@interface SubscribeReposHandler () <WebSocketServerDelegate, WebSocketConnectionDelegate>
 
 @property (nonatomic, strong) WebSocketServer *webSocketServer;
 @property (nonatomic, strong) EventFormatter *eventFormatter;
@@ -28,6 +29,10 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 #endif
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger sequenceNumber;
+@property (nonatomic, assign) BOOL sequenceInitialized;
+@property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
+
+- (void)ensureSequenceInitialized;
 
 @end
 
@@ -41,6 +46,8 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         _log = os_log_create("com.atproto.pds.subscribeRepos", "SubscribeReposHandler");
         _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events", DISPATCH_QUEUE_SERIAL);
         _sequenceNumber = 0;
+        _sequenceInitialized = NO;
+        _attachedConnections = [NSMutableSet set];
 
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(handleRecordChange:)
@@ -57,12 +64,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
     os_log_info(self.log, "Starting subscribeRepos WebSocket handler on port %d", port);
 
-    NSError *dbError = nil;
-    self.sequenceNumber = (NSUInteger)[self.controller.serviceDatabases getMaxEventSequence:&dbError];
-    if (dbError) {
-        os_log_error(self.log, "Failed to get max event sequence: %@", dbError);
-    }
-    os_log_info(self.log, "Initialized sequence number to %lu", (unsigned long)self.sequenceNumber);
+    [self ensureSequenceInitialized];
 
     self.webSocketServer = [[WebSocketServer alloc] initWithHost:@"localhost" port:port];
     self.webSocketServer.delegate = self;
@@ -84,6 +86,15 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 - (void)stop {
     os_log_info(self.log, "Stopping subscribeRepos WebSocket handler");
 
+    NSSet<WebSocketConnection *> *attachedSnapshot = nil;
+    @synchronized (self.attachedConnections) {
+        attachedSnapshot = [self.attachedConnections copy];
+        [self.attachedConnections removeAllObjects];
+    }
+    for (WebSocketConnection *connection in attachedSnapshot) {
+        [connection close];
+    }
+
     [self.webSocketServer stop];
     self.webSocketServer = nil;
 
@@ -92,6 +103,23 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
     }
 
     os_log_info(self.log, "SubscribeRepos WebSocket handler stopped");
+}
+
+- (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection request:(HttpRequest *)request {
+    [self ensureSequenceInitialized];
+
+    WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:connection];
+    webSocketConnection.delegate = self;
+    @synchronized (self.attachedConnections) {
+        [self.attachedConnections addObject:webSocketConnection];
+    }
+
+    if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didAcceptConnection:)]) {
+        [self.delegate subscribeReposHandler:self didAcceptConnection:webSocketConnection];
+    }
+
+    [webSocketConnection startOnExistingTransport];
+    [self sendInitialRepositoryStateToConnection:webSocketConnection cursor:[request queryParamForKey:@"cursor"]];
 }
 
 #pragma mark - WebSocketServerDelegate
@@ -103,7 +131,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
     }
 
-    [self sendInitialRepositoryStateToConnection:connection];
+    [self sendInitialRepositoryStateToConnection:connection cursor:nil];
 }
 
 - (void)webSocketServer:(WebSocketServer *)server didCloseConnection:(WebSocketConnection *)connection {
@@ -120,6 +148,28 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 - (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state {
     os_log_info(self.log, "WebSocket server state changed to: %ld", (long)state);
+}
+
+#pragma mark - WebSocketConnectionDelegate
+
+- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
+    os_log_info(self.log, "Main-port WebSocket connection closed (code=%ld, reason=%@)", (long)code, reason ?: @"");
+    @synchronized (self.attachedConnections) {
+        [self.attachedConnections removeObject:connection];
+    }
+    if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
+        [self.delegate subscribeReposHandler:self didCloseConnection:connection];
+    }
+}
+
+- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
+    os_log_error(self.log, "Main-port WebSocket connection failed: %@", error);
+    @synchronized (self.attachedConnections) {
+        [self.attachedConnections removeObject:connection];
+    }
+    if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
+        [self.delegate subscribeReposHandler:self didCloseConnection:connection];
+    }
 }
 
 #pragma mark - Record Change Notification
@@ -155,6 +205,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
                               ops:(NSArray<NSDictionary *> *)ops
                             blobs:(NSArray<CID *> *)blobs {
     dispatch_async(self.eventQueue, ^{
+        [self ensureSequenceInitialized];
         self.sequenceNumber++;
 
         FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
@@ -177,13 +228,14 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
             os_log_error(self.log, "Failed to persist commit event: %@", persistError);
         }
 
-        [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+        [self broadcastEventData:eventData];
         os_log_info(self.log, "Broadcast commit event for repo %@, seq %lu", repoDid, (unsigned long)self.sequenceNumber);
     });
 }
 
 - (void)broadcastIdentityChange:(NSString *)did handle:(nullable NSString *)handle {
     dispatch_async(self.eventQueue, ^{
+        [self ensureSequenceInitialized];
         self.sequenceNumber++;
 
         FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
@@ -203,13 +255,14 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
             os_log_error(self.log, "Failed to persist identity event: %@", persistError);
         }
 
-        [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+        [self broadcastEventData:eventData];
         os_log_info(self.log, "Broadcast identity event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
     });
 }
 
 - (void)broadcastAccountTakedown:(NSString *)did {
     dispatch_async(self.eventQueue, ^{
+        [self ensureSequenceInitialized];
         self.sequenceNumber++;
 
         FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
@@ -231,13 +284,14 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
             os_log_error(self.log, "Failed to persist account event: %@", persistError);
         }
 
-        [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+        [self broadcastEventData:eventData];
         os_log_info(self.log, "Broadcast account takedown event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
     });
 }
 
 - (void)broadcastInfo:(NSString *)kind message:(NSString *)message {
     dispatch_async(self.eventQueue, ^{
+        [self ensureSequenceInitialized];
         self.sequenceNumber++;
 
         FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
@@ -257,17 +311,30 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
             os_log_error(self.log, "Failed to persist info event: %@", persistError);
         }
 
-        [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+        [self broadcastEventData:eventData];
         os_log_info(self.log, "Broadcast info event (%@), seq %lu", kind, (unsigned long)self.sequenceNumber);
     });
 }
 
 #pragma mark - Private Methods
 
-- (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection {
+- (void)broadcastEventData:(NSData *)eventData {
+    [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+    NSSet<WebSocketConnection *> *attachedSnapshot = nil;
+    @synchronized (self.attachedConnections) {
+        attachedSnapshot = [self.attachedConnections copy];
+    }
+    for (WebSocketConnection *connection in attachedSnapshot) {
+        [connection sendMessage:eventData];
+    }
+}
+
+- (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor {
     os_log_info(self.log, "Sending initial repository state to new connection");
 
-    NSString *cursor = connection.queryParams[@"cursor"];
+    if (!cursor) {
+        cursor = connection.queryParams[@"cursor"];
+    }
     NSUInteger cursorSeq = 0;
     if (cursor) {
         cursorSeq = [cursor integerValue];
@@ -316,6 +383,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor toConnection:(WebSocketConnection *)connection {
     os_log_info(self.log, "Replaying events after cursor %lu", (unsigned long)cursor);
+    [self ensureSequenceInitialized];
     
     NSUInteger fetchCursor = cursor;
     BOOL hasMore = YES;
@@ -366,6 +434,25 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         os_log_debug(self.log, "Sent info event (%@) to connection", kind);
     } else {
         os_log_error(self.log, "Failed to encode info event: %@", error);
+    }
+}
+
+- (void)ensureSequenceInitialized {
+    @synchronized (self) {
+        if (self.sequenceInitialized) {
+            return;
+        }
+
+        NSError *dbError = nil;
+        int64_t maxSequence = [self.controller.serviceDatabases getMaxEventSequence:&dbError];
+        if (dbError) {
+            os_log_error(self.log, "Failed to get max event sequence: %@", dbError);
+            return;
+        }
+
+        self.sequenceNumber = (NSUInteger)MAX((int64_t)0, maxSequence);
+        self.sequenceInitialized = YES;
+        os_log_info(self.log, "Initialized sequence number to %lu", (unsigned long)self.sequenceNumber);
     }
 }
 

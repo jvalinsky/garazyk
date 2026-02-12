@@ -6,6 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 @class HttpServer;
+@protocol PDSNetworkConnection;
 
 /*!
  @header HttpServer.h
@@ -28,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param response The response object to populate.
  */
 typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
+typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *response, id<PDSNetworkConnection> connection);
 
 /*!
  @class HttpServer
@@ -107,6 +109,16 @@ typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
  @param handler The handler block to invoke for matching requests.
  */
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler;
+
+/*!
+ @method addWebSocketRoute:path:handler:
+
+ @abstract Registers a WebSocket upgrade handler for an exact path.
+
+ @param path The URL path to match for upgrades.
+ @param handler The handler invoked after a successful upgrade handshake.
+ */
+- (void)addWebSocketRoute:(NSString *)path handler:(WebSocketRequestHandler)handler;
 
 @end
 
