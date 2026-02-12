@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class JWTMinter;
 @class PDSServiceDatabases;
 @class XrpcDispatcher;
+@class SubscribeReposHandler;
 
 /*!
  @class PDSHttpServerBuilder
@@ -66,6 +67,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! XRPC dispatcher for method routing. */
 @property (nonatomic, strong, nullable) XrpcDispatcher *xrpcDispatcher;
+
+/*! subscribeRepos handler for main-port WebSocket upgrades. */
+@property (nonatomic, strong, nullable) SubscribeReposHandler *subscribeReposHandler;
 
 /*! Issuer URL for NodeInfo (e.g., "https://localhost:2583"). */
 @property (nonatomic, copy, nullable) NSString *issuer;

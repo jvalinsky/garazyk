@@ -10,11 +10,19 @@
 #import "Network/PDSHttpServerBuilder.h"
 #import "Network/HttpServer.h"
 #import "App/PDSConfiguration.h"
+#import "App/PDSController.h"
+#import "Sync/SubscribeReposHandler.h"
 
 @interface PDSHttpServerBuilderTests : XCTestCase
 @end
 
 @implementation PDSHttpServerBuilderTests
+
+- (NSString *)makeTemporaryDirectory {
+    NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"pds-builder-tests-%@", NSUUID.UUID.UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
+    return path;
+}
 
 #pragma mark - Initialization Tests
 
@@ -171,6 +179,58 @@
     // Should still succeed, but XRPC routes won't be registered
     XCTAssertNotNil(server);
     XCTAssertNil(error);
+}
+
+- (void)testConfigureServerRegistersSubscribeReposWebSocketRoute {
+    NSString *tempDir = [self makeTemporaryDirectory];
+    PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
+    SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:controller];
+
+    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    builder.controller = controller;
+    builder.subscribeReposHandler = subscribeReposHandler;
+    builder.enableOAuth = NO;
+    builder.enableExploreUI = NO;
+    builder.enableOAuthDemo = NO;
+    builder.enableMSTViewer = NO;
+    builder.enableNodeInfo = NO;
+
+    HttpServer *server = [HttpServer serverWithPort:8080];
+    NSError *error = nil;
+    BOOL result = [builder configureServer:server error:&error];
+
+    XCTAssertTrue(result);
+    XCTAssertNil(error);
+
+    NSDictionary *webSocketHandlers = [server valueForKey:@"webSocketHandlers"];
+    XCTAssertNotNil(webSocketHandlers[@"/xrpc/com.atproto.sync.subscribeRepos"]);
+
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+}
+
+- (void)testConfigureServerWithoutSubscribeReposHandlerHasNoWebSocketRoute {
+    NSString *tempDir = [self makeTemporaryDirectory];
+    PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
+
+    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    builder.controller = controller;
+    builder.enableOAuth = NO;
+    builder.enableExploreUI = NO;
+    builder.enableOAuthDemo = NO;
+    builder.enableMSTViewer = NO;
+    builder.enableNodeInfo = NO;
+
+    HttpServer *server = [HttpServer serverWithPort:8080];
+    NSError *error = nil;
+    BOOL result = [builder configureServer:server error:&error];
+
+    XCTAssertTrue(result);
+    XCTAssertNil(error);
+
+    NSDictionary *webSocketHandlers = [server valueForKey:@"webSocketHandlers"];
+    XCTAssertNil(webSocketHandlers[@"/xrpc/com.atproto.sync.subscribeRepos"]);
+
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
 }
 
 - (void)testOAuthNotRegisteredWhenDependenciesMissing {

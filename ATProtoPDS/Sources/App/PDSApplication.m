@@ -27,7 +27,6 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/RateLimiter.h"
 #import "Sync/SubscribeReposHandler.h"
-#import "Sync/WebSocketServer.h"
 #import "Core/PDSServiceContainer.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
@@ -68,6 +67,10 @@
     return shared;
 }
 
+- (NSUInteger)wsPort {
+    return self.httpPort;
+}
+
 #pragma mark - Initialization
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
@@ -78,7 +81,6 @@
         _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
         _dataDirectory = _configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory];
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
-        _wsPort = 8081;
         _running = NO;
         
         // Configure logging from configuration
@@ -118,12 +120,10 @@
         _configuration = [PDSConfiguration sharedConfiguration];
         _dataDirectory = [dataDirectory copy];
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
-        _wsPort = 8081;
         _running = NO;
         
         // Ensure default ports are set
         if (_httpPort == 0) _httpPort = 2583;
-        if (_wsPort == 0) _wsPort = 8081;
         
         // Configure logging from configuration
         [self configureLogging];
@@ -332,6 +332,9 @@
     
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+    if (!_subscribeReposHandler) {
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:_legacyController];
+    }
     
     // Build and configure HTTP server
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:_configuration];
@@ -341,6 +344,7 @@
     builder.jwtMinter = _jwtMinter;
     builder.serviceDatabases = _serviceDatabases;
     builder.xrpcDispatcher = _xrpcDispatcher;
+    builder.subscribeReposHandler = _subscribeReposHandler;
     builder.issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
     
     NSError *buildError = nil;
@@ -360,18 +364,7 @@
     }
     _httpPort = _httpServer.port;
     os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpPort);
-    
-    // Start WebSocket handler for subscribeRepos
-    _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:_legacyController];
-    NSError *wsError = nil;
-    if (![_subscribeReposHandler startOnPort:self.wsPort error:&wsError]) {
-        os_log_error(_log, "Failed to start WebSocket handler: %@", wsError);
-        if (error) *error = wsError;
-        [_httpServer stop];
-        return NO;
-    }
-    _wsPort = _subscribeReposHandler.webSocketServer.port;
-    os_log_info(_log, "WebSocket server started on port %lu", (unsigned long)_wsPort);
+    os_log_info(_log, "subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
     _running = YES;
     os_log_info(_log, "PDSApplication started successfully");

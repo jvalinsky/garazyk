@@ -1,6 +1,11 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
 #import "App/PDSController.h"
+#import <CommonCrypto/CommonKeyDerivation.h>
+
+#ifndef kCCSuccess
+#define kCCSuccess 0
+#endif
 
 static NSString *const PDSAdminAuthErrorDomain = @"PDSAdminAuth";
 

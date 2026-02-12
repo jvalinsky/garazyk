@@ -42,6 +42,24 @@
     XCTAssertFalse(self.controller.isRunning);
 }
 
+- (void)testWsPortMirrorsHttpPortBeforeStart {
+    self.controller.httpPort = 7777;
+    XCTAssertEqual(self.controller.wsPort, self.controller.httpPort);
+}
+
+- (void)testWsPortMirrorsHttpPortAfterStart {
+    self.controller.httpPort = 0;
+    NSError *serverError = nil;
+    BOOL started = [self.controller startServerWithError:&serverError];
+    if (!started) {
+        XCTSkip(@"HTTP server unavailable in this environment (or blocked): %@", serverError);
+        return;
+    }
+    XCTAssertNil(serverError);
+    XCTAssertGreaterThan(self.controller.httpPort, 0);
+    XCTAssertEqual(self.controller.wsPort, self.controller.httpPort);
+}
+
 - (void)testCreateAccount {
     __autoreleasing NSError *error = nil;
     
