@@ -81,28 +81,19 @@
 }
 
 - (HttpResponse *)sendGetRequestWithPath:(NSString *)path
-                                   query:(NSDictionary<NSString *, NSString *> *)query
-                                 headers:(NSDictionary<NSString *, NSString *> *)headers {
+                              queryString:(NSString *)queryString
+                              queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
+                                  headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSMutableDictionary *allHeaders = [NSMutableDictionary dictionary];
     if (headers) {
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    NSMutableString *queryString = [NSMutableString string];
-    NSMutableDictionary<NSString *, NSString *> *queryParams = [NSMutableDictionary dictionary];
-    [query enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
-        queryParams[key] = value ?: @"";
-        if (queryString.length > 0) {
-            [queryString appendString:@"&"];
-        }
-        [queryString appendFormat:@"%@=%@", key, value ?: @""];
-    }];
-
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:path
-                                                   queryString:queryString
-                                                   queryParams:queryParams
+                                                   queryString:queryString ?: @""
+                                                   queryParams:queryParams ?: @{}
                                                        version:@"1.1"
                                                        headers:allHeaders
                                                           body:[NSData data]
@@ -114,7 +105,16 @@
 
 - (void)testGetAccountInfoRequiresAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
-                                                    query:@{@"did": self.userDid}
+                                              queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
+                                              queryParams:@{@"did": self.userDid}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testGetAccountInfosRequiresAuth {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
+                                              queryString:[NSString stringWithFormat:@"dids=%@", self.userDid]
+                                              queryParams:@{@"dids": self.userDid}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
@@ -122,7 +122,17 @@
 - (void)testGetAccountInfoNonAdminForbidden {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
-                                                    query:@{@"did": self.userDid}
+                                              queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
+                                              queryParams:@{@"did": self.userDid}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testGetAccountInfosNonAdminForbidden {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
+                                              queryString:[NSString stringWithFormat:@"dids=%@", self.userDid]
+                                              queryParams:@{@"dids": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
 }
@@ -130,12 +140,28 @@
 - (void)testGetAccountInfoAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
-                                                    query:@{@"did": self.userDid}
+                                              queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
+                                              queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects(response.jsonBody[@"did"], self.userDid);
     XCTAssertEqualObjects(response.jsonBody[@"handle"], @"user.test");
     XCTAssertNotNil(response.jsonBody[@"indexedAt"]);
+}
+
+- (void)testGetAccountInfosAdminSuccess {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    NSString *queryString = [NSString stringWithFormat:@"dids=%@&dids=%@", self.userDid, self.adminDid];
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
+                                              queryString:queryString
+                                              queryParams:@{@"dids": self.adminDid}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+
+    NSArray *infos = response.jsonBody[@"infos"];
+    XCTAssertTrue([infos isKindOfClass:[NSArray class]]);
+    XCTAssertEqual(infos.count, 2);
 }
 
 - (void)testModerateAccountRequiresAuth {

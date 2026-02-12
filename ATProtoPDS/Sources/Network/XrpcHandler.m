@@ -368,6 +368,10 @@
     [self registerMethod:@"com.atproto.admin.getAccountInfo" handler:handler];
 }
 
+- (void)registerComAtprotoAdminGetAccountInfos:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.getAccountInfos" handler:handler];
+}
+
 - (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.admin.moderateAccount" handler:handler];
 }
