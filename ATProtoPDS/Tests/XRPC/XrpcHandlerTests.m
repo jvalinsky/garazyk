@@ -145,4 +145,31 @@
     XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
 }
 
+- (void)testRegisterComAtprotoSyncGetRecordMapsToMethod {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"getRecord handler called"];
+
+    [self.dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"ok": @YES}];
+        [expectation fulfill];
+    }];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/xrpc/com.atproto.sync.getRecord"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:nil
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.dispatcher handleRequest:request response:response];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
+}
+
 @end
