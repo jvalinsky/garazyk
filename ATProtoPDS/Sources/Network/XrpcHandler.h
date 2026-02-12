@@ -106,6 +106,15 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.server.createInviteCodes. */
 - (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.server.createAppPassword. */
+- (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.listAppPasswords. */
+- (void)registerComAtprotoServerListAppPasswords:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.server.revokeAppPassword. */
+- (void)registerComAtprotoServerRevokeAppPassword:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.server.getServiceAuth. */
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
 

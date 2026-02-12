@@ -264,6 +264,64 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (BOOL)useInviteCode:(NSString *)code error:(NSError **)error;
 
+#pragma mark - App Passwords
+
+/*!
+ @method createAppPasswordForAccount:name:privileged:error:
+
+ @abstract Create an app password for an account.
+
+ @param accountDid Account DID that owns the app password.
+ @param name Human-friendly name of the app password.
+ @param privileged Whether the app password is privileged.
+ @param error Error pointer for creation failures.
+ @return Dictionary matching com.atproto.server.createAppPassword output (includes password).
+ */
+- (nullable NSDictionary *)createAppPasswordForAccount:(NSString *)accountDid
+                                                 name:(NSString *)name
+                                           privileged:(BOOL)privileged
+                                                error:(NSError **)error;
+
+/*!
+ @method listAppPasswordsForAccount:error:
+
+ @abstract List existing app passwords for an account (excluding secret password).
+
+ @param accountDid Account DID.
+ @param error Error pointer for retrieval failures.
+ @return Array of dictionaries matching com.atproto.server.listAppPasswords schema.
+ */
+- (NSArray<NSDictionary *> *)listAppPasswordsForAccount:(NSString *)accountDid
+                                                 error:(NSError **)error;
+
+/*!
+ @method revokeAppPasswordForAccount:name:error:
+
+ @abstract Revoke an app password by name for an account.
+
+ @param accountDid Account DID.
+ @param name App password name.
+ @param error Error pointer for revocation failures.
+ @return YES if revoked, NO on failure or not found.
+ */
+- (BOOL)revokeAppPasswordForAccount:(NSString *)accountDid
+                               name:(NSString *)name
+                              error:(NSError **)error;
+
+/*!
+ @method verifyAppPasswordForAccount:password:error:
+
+ @abstract Verify an app password string for an account.
+
+ @param accountDid Account DID.
+ @param password Candidate app password string.
+ @param error Error pointer for verification failures.
+ @return YES if password matches an active app password.
+ */
+- (BOOL)verifyAppPasswordForAccount:(NSString *)accountDid
+                           password:(NSString *)password
+                              error:(NSError **)error;
+
 #pragma mark - DID Cache
 
 /*!

@@ -71,8 +71,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)serviceInviteCodesTableSchema;
 
 /*!
- @method serviceRefreshTokensTableSchema
+ @method serviceAppPasswordsTableSchema
 
+ @abstract Schema for app passwords table.
+
+ @return CREATE TABLE SQL for app passwords.
+ */
+- (NSString *)serviceAppPasswordsTableSchema;
+
+/*!
+ @method serviceRefreshTokensTableSchema
+ 
  @abstract Schema for refresh tokens table (token, did, expires).
 
  @return CREATE TABLE SQL for refresh tokens.

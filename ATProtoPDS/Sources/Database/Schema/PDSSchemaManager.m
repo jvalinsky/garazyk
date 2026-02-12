@@ -39,6 +39,19 @@
            @")";
 }
 
+- (NSString *)serviceAppPasswordsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS app_passwords ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    account_did TEXT NOT NULL,"
+           @"    name TEXT NOT NULL,"
+           @"    password_hash BLOB NOT NULL,"
+           @"    password_salt BLOB NOT NULL,"
+           @"    privileged INTEGER DEFAULT 0,"
+           @"    created_at REAL NOT NULL,"
+           @"    UNIQUE(account_did, name)"
+           @")";
+}
+
 - (NSString *)serviceRefreshTokensTableSchema {
     return @"CREATE TABLE IF NOT EXISTS refresh_tokens ("
            @"    token TEXT PRIMARY KEY,"
@@ -94,6 +107,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceInviteCodesTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceAppPasswordsTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self serviceRefreshTokensTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceJWTSigningKeysTableSchema]];
@@ -103,6 +118,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_app_passwords_account ON app_passwords(account_did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);"];
     [sql appendString:@";\n"];
