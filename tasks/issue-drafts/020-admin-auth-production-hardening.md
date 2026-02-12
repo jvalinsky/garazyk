@@ -55,6 +55,10 @@ Implemented:
   - `PDSAdminAuthTests` now verifies `logout` invalidates previously minted admin tokens.
 - Added operator documentation:
   - `docs/security/ADMIN_AUTH_CONFIGURATION.md` now documents required env vars, production issuer semantics, `X-Admin-Token` policy, TTL bounds, and rotation/invalidation playbooks.
+- Tightened JWT verification behavior for admin/auth request paths:
+  - `PDSAdminAuth` now rejects admin tokens missing `iss` or `aud` claims.
+  - `PDSAdminAuth` and `XrpcMethodRegistry` now derive `allowedAlgorithms` from configured `JWTMinter.signingAlgorithm` (with conservative fallback only when unset), reducing permissive algorithm acceptance.
+  - Added tests for missing-issuer/missing-audience admin token rejection in `PDSAdminAuthTests`.
 
 ## Gaps to address
 
@@ -127,7 +131,7 @@ Also ensure:
 - [x] Document “production mode” semantics for `PDS_ISSUER` (implementation now requires explicit issuer in production mode).
 - [x] Add configurable admin token TTL.
 - [x] Document `X-Admin-Token` policy (currently supported by default; can be disabled with `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1`).
-- [ ] Confirm `allowedAlgorithms` is correct for the current JWT signing configuration; tighten if needed.
+- [x] Confirm `allowedAlgorithms` is correct for the current JWT signing configuration; tighten if needed.
 - [x] Add tests for issuer requirement and header policy (`PDSAdminAuthTests`).
 - [x] Add tests for issuer/audience mismatch and logout invalidation in XRPC/admin route flows.
 - [x] Verify admin method allowlist covers all `com.atproto.admin.*` endpoints (including newly added ones).
@@ -145,5 +149,5 @@ Also ensure:
 - [x] Clear operator documentation exists (how to configure + rotate).
 - [ ] Admin method allowlist is explicit and consistently enforced.
 - [ ] Tests cover the major negative auth cases.
-- [ ] Admin token TTL / issuer configuration is explicit and safe in production mode.
+- [x] Admin token TTL / issuer configuration is explicit and safe in production mode.
 - [ ] No regressions to existing admin endpoints.
