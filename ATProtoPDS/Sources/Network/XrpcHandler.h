@@ -203,6 +203,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 /*! Registers handler for com.atproto.sync.getRepo. */
 - (void)registerComAtprotoSyncGetRepo:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.sync.getCheckout. */
+- (void)registerComAtprotoSyncGetCheckout:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.sync.getHead. */
 - (void)registerComAtprotoSyncGetHead:(XrpcMethodHandler)handler;
 
@@ -220,6 +223,15 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Registers handler for com.atproto.sync.getRecord. */
 - (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.getHostStatus. */
+- (void)registerComAtprotoSyncGetHostStatus:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.listHosts. */
+- (void)registerComAtprotoSyncListHosts:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.sync.listRepos. */
+- (void)registerComAtprotoSyncListRepos:(XrpcMethodHandler)handler;
 
 /*! Registers handler for com.atproto.sync.getRepoStatus. */
 - (void)registerComAtprotoSyncGetRepoStatus:(XrpcMethodHandler)handler;

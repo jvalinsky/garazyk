@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-12T12:53:22.018Z",
+  "generated_at": "2026-02-12T13:00:35.011Z",
   "inputs": {
     "methods_tsv": "reports/xrpc_sync_raw/methods.tsv",
     "lexicons_tsv": "reports/xrpc_sync_raw/lexicons.tsv",
@@ -7,14 +7,14 @@
     "stubs_json": "reports/stub_scan_raw/stubs.json"
   },
   "counts": {
-    "implemented_unique": 80,
+    "implemented_unique": 84,
     "lexicon_unique": 321,
-    "in_both": 71,
-    "missing_in_code": 250,
+    "in_both": 75,
+    "missing_in_code": 246,
     "missing_in_lexicons": 9,
-    "coverage_pct": 22.12,
+    "coverage_pct": 23.36,
     "unknown_registry_entries": 2,
-    "duplicate_registry_registrations": 35
+    "duplicate_registry_registrations": 39
   },
   "namespace_coverage": [
     {
@@ -45,15 +45,6 @@
       "coverage_pct": 0
     },
     {
-      "namespace": "com.atproto",
-      "lexicon_methods": 86,
-      "implemented_methods": 67,
-      "in_both": 59,
-      "missing_in_code_count": 27,
-      "missing_in_lexicons_count": 8,
-      "coverage_pct": 68.6
-    },
-    {
       "namespace": "place.stream",
       "lexicon_methods": 27,
       "implemented_methods": 0,
@@ -61,6 +52,15 @@
       "missing_in_code_count": 27,
       "missing_in_lexicons_count": 0,
       "coverage_pct": 0
+    },
+    {
+      "namespace": "com.atproto",
+      "lexicon_methods": 86,
+      "implemented_methods": 71,
+      "in_both": 63,
+      "missing_in_code_count": 23,
+      "missing_in_lexicons_count": 8,
+      "coverage_pct": 73.26
     },
     {
       "namespace": "chat.bsky",
@@ -215,10 +215,6 @@
     "com.atproto.label.subscribeLabels",
     "com.atproto.lexicon.resolveLexicon",
     "com.atproto.repo.importRepo",
-    "com.atproto.sync.getCheckout",
-    "com.atproto.sync.getHostStatus",
-    "com.atproto.sync.listHosts",
-    "com.atproto.sync.listRepos",
     "com.atproto.temp.addReservedHandle",
     "com.atproto.temp.checkHandleAvailability",
     "com.atproto.temp.checkSignupQueue",

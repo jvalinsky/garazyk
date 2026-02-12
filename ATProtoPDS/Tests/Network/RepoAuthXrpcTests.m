@@ -564,6 +564,110 @@
     XCTAssertEqual(response.statusCode, 404);
 }
 
+- (void)testSyncGetCheckoutRequiresDid {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getCheckout"
+                                               queryParams:@{}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+}
+
+- (void)testSyncGetCheckoutReturnsCAR {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"checkout test",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                         record:record
+                                                 validationMode:PDSValidationModeRequired
+                                                          error:nil];
+    XCTAssertNotNil(created);
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getCheckout"
+                                               queryParams:@{@"did": self.did1}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
+    XCTAssertNotNil(response.body);
+    XCTAssertTrue(response.body.length > 0);
+}
+
+- (void)testSyncListHostsReturnsHosts {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listHosts"
+                                               queryParams:@{@"limit": @"10"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSArray *hosts = response.jsonBody[@"hosts"];
+    XCTAssertTrue([hosts isKindOfClass:[NSArray class]]);
+    XCTAssertTrue(hosts.count >= 1U);
+    NSDictionary *first = hosts.firstObject;
+    XCTAssertTrue([first[@"hostname"] isKindOfClass:[NSString class]]);
+    XCTAssertNotNil(first[@"status"]);
+    XCTAssertNotNil(first[@"accountCount"]);
+}
+
+- (void)testSyncGetHostStatusReturnsNotFoundForUnknownHost {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getHostStatus"
+                                               queryParams:@{@"hostname": @"unknown.example.test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 404);
+}
+
+- (void)testSyncGetHostStatusReturnsExistingHost {
+    HttpResponse *hostsResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listHosts"
+                                                    queryParams:@{}
+                                                        headers:@{}];
+    XCTAssertEqual(hostsResponse.statusCode, 200);
+    NSArray *hosts = hostsResponse.jsonBody[@"hosts"];
+    XCTAssertTrue([hosts isKindOfClass:[NSArray class]]);
+    XCTAssertTrue(hosts.count >= 1U);
+    NSString *hostname = hosts.firstObject[@"hostname"];
+    XCTAssertTrue([hostname isKindOfClass:[NSString class]]);
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getHostStatus"
+                                               queryParams:@{@"hostname": hostname}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"hostname"], hostname);
+    XCTAssertNotNil(response.jsonBody[@"status"]);
+}
+
+- (void)testSyncListReposReturnsRepoEntries {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"list repos test",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                         record:record
+                                                 validationMode:PDSValidationModeRequired
+                                                          error:nil];
+    XCTAssertNotNil(created);
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listRepos"
+                                               queryParams:@{@"limit": @"100"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSArray *repos = response.jsonBody[@"repos"];
+    XCTAssertTrue([repos isKindOfClass:[NSArray class]]);
+    XCTAssertTrue(repos.count >= 1U);
+
+    BOOL foundDid1 = NO;
+    for (NSDictionary *entry in repos) {
+        if (![entry isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+        if ([entry[@"did"] isEqualToString:self.did1]) {
+            foundDid1 = YES;
+            XCTAssertTrue([entry[@"head"] isKindOfClass:[NSString class]]);
+            XCTAssertTrue([entry[@"rev"] isKindOfClass:[NSString class]]);
+        }
+    }
+    XCTAssertTrue(foundDid1);
+}
+
 - (void)testSyncListReposByCollectionReturnsMatchingRepos {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",

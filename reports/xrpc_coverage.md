@@ -1,17 +1,17 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-12T12:53:22.018Z
+Generated: 2026-02-12T13:00:35.011Z
 
 ## Summary
 
-- Implemented methods (unique, excluding `unknown`): 80
+- Implemented methods (unique, excluding `unknown`): 84
 - Lexicon XRPC methods (unique): 321
-- Implemented and in lexicons: 71
-- Missing in code: 250
+- Implemented and in lexicons: 75
+- Missing in code: 246
 - Implemented but missing lexicon: 9
-- Overall coverage (implemented / lexicon): 22.12%
+- Overall coverage (implemented / lexicon): 23.36%
 - Unknown registry entries: 2
-- Duplicate registry registrations: 35
+- Duplicate registry registrations: 39
 
 ## Namespace Coverage
 
@@ -20,8 +20,8 @@ Generated: 2026-02-12T12:53:22.018Z
 | app.bsky | 98 | 13 | 12 | 12.24% | 86 |
 | tools.ozone | 45 | 0 | 0 | 0% | 45 |
 | social.grain | 31 | 0 | 0 | 0% | 31 |
-| com.atproto | 86 | 67 | 59 | 68.6% | 27 |
 | place.stream | 27 | 0 | 0 | 0% | 27 |
+| com.atproto | 86 | 71 | 63 | 73.26% | 23 |
 | chat.bsky | 22 | 0 | 0 | 0% | 22 |
 | com.shinolabs | 8 | 0 | 0 | 0% | 8 |
 | com.whtwnd | 4 | 0 | 0 | 0% | 4 |
