@@ -4,7 +4,15 @@
 @implementation PDSNetworkTransportFactory
 
 + (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port {
-    return [[PDSNetworkListenerMac alloc] initWithPort:port];
+    NSString *bindHost = [[NSProcessInfo processInfo] environment][@"PDS_LISTEN_HOST"];
+    return [self createListenerWithHost:bindHost port:port];
+}
+
++ (id<PDSNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port {
+    if (host.length == 0) {
+        return [[PDSNetworkListenerMac alloc] initWithPort:port];
+    }
+    return [[PDSNetworkListenerMac alloc] initWithHost:host port:port];
 }
 
 + (id<PDSNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
@@ -134,12 +142,20 @@
 @synthesize port = _port;
 
 - (instancetype)initWithPort:(NSUInteger)port {
+    return [self initWithHost:nil port:port];
+}
+
+- (instancetype)initWithHost:(NSString * _Nullable)host port:(NSUInteger)port {
     self = [super init];
     if (self) {
         _port = port;
         nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         char portStr[16];
         snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)port);
+        if (host.length > 0) {
+            nw_endpoint_t localEndpoint = nw_endpoint_create_host(host.UTF8String, portStr);
+            nw_parameters_set_local_endpoint(parameters, localEndpoint);
+        }
         _listener = nw_listener_create_with_port(portStr, parameters);
         
         __weak typeof(self) weakSelf = self;

@@ -79,6 +79,22 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithPort:(NSUInteger)port;
 
+/*!
+ @method initWithHost:port:
+
+ @abstract Creates a listener bound to the specified host+port.
+
+ @discussion This is used for local-only listeners (e.g. 127.0.0.1) where binding
+ to all interfaces is undesirable.
+
+ @param host The local host/interface to bind to, or nil for all interfaces.
+
+ @param port The port number (0 for ephemeral port assignment).
+
+ @return An initialized listener (starts in Waiting state).
+ */
+- (instancetype)initWithHost:(nullable NSString *)host port:(NSUInteger)port;
+
 @end
 
 NS_ASSUME_NONNULL_END

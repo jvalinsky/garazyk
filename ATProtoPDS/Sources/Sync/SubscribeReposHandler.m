@@ -30,6 +30,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger sequenceNumber;
 @property (nonatomic, assign) BOOL sequenceInitialized;
+@property (nonatomic, assign) BOOL stopping;
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
 
 - (void)ensureSequenceInitialized;
@@ -38,6 +39,8 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 @implementation SubscribeReposHandler
 
+static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
+
 - (instancetype)initWithController:(PDSController *)controller {
     self = [super init];
     if (self) {
@@ -45,8 +48,10 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
         _eventFormatter = [[EventFormatter alloc] init];
         _log = os_log_create("com.atproto.pds.subscribeRepos", "SubscribeReposHandler");
         _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events", DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_eventQueue, kSubscribeReposEventQueueKey, kSubscribeReposEventQueueKey, NULL);
         _sequenceNumber = 0;
         _sequenceInitialized = NO;
+        _stopping = NO;
         _attachedConnections = [NSMutableSet set];
 
         [[NSNotificationCenter defaultCenter] addObserver:self
@@ -85,6 +90,12 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
 - (void)stop {
     os_log_info(self.log, "Stopping subscribeRepos WebSocket handler");
+
+    self.stopping = YES;
+    if (dispatch_get_specific(kSubscribeReposEventQueueKey) == NULL) {
+        dispatch_sync(self.eventQueue, ^{
+        });
+    }
 
     NSSet<WebSocketConnection *> *attachedSnapshot = nil;
     @synchronized (self.attachedConnections) {
@@ -204,6 +215,9 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
                           forRepo:(NSString *)repoDid
                               ops:(NSArray<NSDictionary *> *)ops
                             blobs:(NSArray<CID *> *)blobs {
+    if (self.stopping) {
+        return;
+    }
     dispatch_async(self.eventQueue, ^{
         [self ensureSequenceInitialized];
         self.sequenceNumber++;
@@ -234,6 +248,9 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 }
 
 - (void)broadcastIdentityChange:(NSString *)did handle:(nullable NSString *)handle {
+    if (self.stopping) {
+        return;
+    }
     dispatch_async(self.eventQueue, ^{
         [self ensureSequenceInitialized];
         self.sequenceNumber++;
@@ -261,6 +278,9 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 }
 
 - (void)broadcastAccountTakedown:(NSString *)did {
+    if (self.stopping) {
+        return;
+    }
     dispatch_async(self.eventQueue, ^{
         [self ensureSequenceInitialized];
         self.sequenceNumber++;
@@ -290,6 +310,9 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 }
 
 - (void)broadcastInfo:(NSString *)kind message:(NSString *)message {
+    if (self.stopping) {
+        return;
+    }
     dispatch_async(self.eventQueue, ^{
         [self ensureSequenceInitialized];
         self.sequenceNumber++;
