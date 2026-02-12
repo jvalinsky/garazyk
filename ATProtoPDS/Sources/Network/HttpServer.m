@@ -27,6 +27,7 @@
 
 @interface HttpServer ()
 
+@property (nonatomic, readwrite, nullable) NSString *host;
 @property (nonatomic, readwrite) NSUInteger port;
 @property (nonatomic, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, strong) id<PDSNetworkListener> listener;
@@ -137,7 +138,11 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 @implementation HttpServer
 
 + (instancetype)serverWithPort:(NSUInteger)port {
-    return [[self alloc] initWithPort:port];
+    return [[self alloc] initWithHost:nil port:port];
+}
+
++ (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port {
+    return [[self alloc] initWithHost:host port:port];
 }
 
 /*!
@@ -151,9 +156,10 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
  @param port The port number to listen on.
  @return An initialized server instance.
  */
-- (instancetype)initWithPort:(NSUInteger)port {
+- (instancetype)initWithHost:(NSString * _Nullable)host port:(NSUInteger)port {
     self = [super init];
     if (self) {
+        _host = [host copy];
         _port = port;
         _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver", DISPATCH_QUEUE_SERIAL);
         _routeTries = [NSMutableDictionary dictionary];
@@ -179,7 +185,11 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         return YES;
     }
 
-    self.listener = [PDSNetworkTransportFactory createListenerWithPort:self.port];
+    if (self.host.length > 0) {
+        self.listener = [PDSNetworkTransportFactory createListenerWithHost:self.host port:self.port];
+    } else {
+        self.listener = [PDSNetworkTransportFactory createListenerWithPort:self.port];
+    }
 
     if (!self.listener) {
         if (error) {

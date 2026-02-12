@@ -97,13 +97,20 @@
                                                  delegate:self.redirectDelegate 
                                             delegateQueue:nil];
     
-    // Add a simple health handler
-    [self.server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *res) {
-        res.statusCode = 200;
-        [res setBodyString:@"OK"];
-    }];
-    
-    [self.server startWithError:nil];
+	    // Add a simple health handler
+	    [self.server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *res) {
+	        res.statusCode = 200;
+	        [res setBodyString:@"OK"];
+	    }];
+	    
+	    NSError *startError = nil;
+	    if (![self.server startWithError:&startError]) {
+	        NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
+	        if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
+	            XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
+	        }
+	        XCTFail(@"Failed to start HttpServer: %@", startError);
+	    }
 }
 
 - (void)tearDown {
@@ -180,7 +187,7 @@
     NSDictionary* attributes = @{
         (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
         (id)kSecAttrKeySizeInBits: @256,
-        (id)kSecAttrIsPermanent: @NO
+        (id)kSecAttrIsPermanent: (__bridge id)kCFBooleanFalse
     };
     CFErrorRef keyError = NULL;
     privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &keyError);

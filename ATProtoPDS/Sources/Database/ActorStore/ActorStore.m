@@ -546,6 +546,87 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     return success;
 }
 
+- (BOOL)createRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, value, indexed_at, subject_did) "
+                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return NO;
+
+    sqlite3_bind_text(stmt, 1, record.uri.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, record.collection.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, record.rkey.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, record.cid.UTF8String, -1, SQLITE_TRANSIENT);
+
+    if (record.value) {
+        sqlite3_bind_text(stmt, 6, record.value.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 6);
+    }
+
+    sqlite3_bind_double(stmt, 7, record.createdAt.timeIntervalSince1970);
+
+    if (record.subjectDid) {
+        sqlite3_bind_text(stmt, 8, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 8);
+    }
+
+    int stepResult = sqlite3_step(stmt);
+    if (stepResult != SQLITE_DONE) {
+        if (error) {
+            *error = [self errorWithSQLiteResult:stepResult message:@"Failed to create record"];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"UPDATE records SET did = ?, collection = ?, rkey = ?, cid = ?, value = ?, indexed_at = ?, subject_did = ? "
+                     @"WHERE uri = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return NO;
+
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, record.collection.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, record.rkey.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, record.cid.UTF8String, -1, SQLITE_TRANSIENT);
+
+    if (record.value) {
+        sqlite3_bind_text(stmt, 5, record.value.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 5);
+    }
+
+    sqlite3_bind_double(stmt, 6, record.createdAt.timeIntervalSince1970);
+
+    if (record.subjectDid) {
+        sqlite3_bind_text(stmt, 7, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 7);
+    }
+
+    sqlite3_bind_text(stmt, 8, record.uri.UTF8String, -1, SQLITE_TRANSIENT);
+
+    int stepResult = sqlite3_step(stmt);
+    if (stepResult != SQLITE_DONE) {
+        if (error) {
+            *error = [self errorWithSQLiteResult:stepResult message:@"Failed to update record"];
+        }
+        return NO;
+    }
+
+    if (sqlite3_changes(self.db) == 0) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError message:@"Record not found"];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
 - (BOOL)deleteRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM records WHERE uri = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
@@ -961,13 +1042,13 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     return [self storeSigningKeyData:keyPair.privateKey forDid:targetDid error:error];
 }
 #else
-    NSDictionary *attributes = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeySizeInBits: @(2048),
-        (__bridge id)kSecPrivateKeyAttrs: @{
-            (__bridge id)kSecAttrIsPermanent: @NO
-        }
-    };
+	    NSDictionary *attributes = @{
+	        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+	        (__bridge id)kSecAttrKeySizeInBits: @(2048),
+	        (__bridge id)kSecPrivateKeyAttrs: @{
+	            (__bridge id)kSecAttrIsPermanent: (__bridge id)kCFBooleanFalse
+	        }
+	    };
     CFErrorRef cfError = NULL;
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &cfError);
 
@@ -1414,4 +1495,3 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 @end
 
 #pragma clang diagnostic pop
-

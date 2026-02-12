@@ -26,20 +26,32 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/september"
     prebuildScripts:
-      - name: "Build with CMake"
-        script: |
-          #!/bin/bash
-          set -e
-          mkdir -p "${PROJECT_DIR}/build"
-          cd "${PROJECT_DIR}/build"
-          # Configure and build
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
-            -DBUILD_SECP256K1=ON \
-            -DBUILD_TESTS=OFF \
-            -DBUILD_FUZZERS=OFF
-          make -j$(sysctl -n hw.ncpu) september
+	      - name: "Build with CMake"
+	        script: |
+	          #!/bin/bash
+	          set -e
+	          mkdir -p "${PROJECT_DIR}/build"
+	          cd "${PROJECT_DIR}/build"
+	          XCODE_CLANG="$(xcrun -find clang)"
+	          XCODE_CLANGXX="$(xcrun -find clang++)"
+	          # CMake does not allow changing compilers in an existing build directory.
+	          # If this build dir was configured via ~/.swiftly/bin/cc, reset it.
+	          if [ -f CMakeCache.txt ] && grep -q "/\\.swiftly/bin/cc" CMakeCache.txt; then
+	            rm -f CMakeCache.txt
+	            rm -rf CMakeFiles
+	          fi
+	          # Configure and build
+	          cmake .. \
+	            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+	            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+	            -DCMAKE_C_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_CXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DCMAKE_OBJC_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DBUILD_SECP256K1=ON \
+	            -DBUILD_TESTS=OFF \
+	            -DBUILD_FUZZERS=OFF
+	          make -j$(sysctl -n hw.ncpu) september
 
   # Standalone PLC Server
   atproto-plc:
@@ -53,20 +65,30 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/atproto-plc"
     prebuildScripts:
-      - name: "Build PLC with CMake"
-        script: |
-          #!/bin/bash
-          set -e
-          mkdir -p "${PROJECT_DIR}/build"
-          cd "${PROJECT_DIR}/build"
-          # Configure and build
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
-            -DBUILD_SECP256K1=ON \
-            -DBUILD_TESTS=OFF \
-            -DBUILD_FUZZERS=OFF
-          make -j$(sysctl -n hw.ncpu) atproto-plc
+	      - name: "Build PLC with CMake"
+	        script: |
+	          #!/bin/bash
+	          set -e
+	          mkdir -p "${PROJECT_DIR}/build"
+	          cd "${PROJECT_DIR}/build"
+	          XCODE_CLANG="$(xcrun -find clang)"
+	          XCODE_CLANGXX="$(xcrun -find clang++)"
+	          if [ -f CMakeCache.txt ] && grep -q "/\\.swiftly/bin/cc" CMakeCache.txt; then
+	            rm -f CMakeCache.txt
+	            rm -rf CMakeFiles
+	          fi
+	          # Configure and build
+	          cmake .. \
+	            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+	            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+	            -DCMAKE_C_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_CXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DCMAKE_OBJC_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DBUILD_SECP256K1=ON \
+	            -DBUILD_TESTS=OFF \
+	            -DBUILD_FUZZERS=OFF
+	          make -j$(sysctl -n hw.ncpu) atproto-plc
 
   # Test Runner - wrapper around CMake build
   AllTests:
@@ -80,20 +102,30 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/tests/AllTests"
     prebuildScripts:
-      - name: "Build Tests with CMake"
-        script: |
-          #!/bin/bash
-          set -e
-          mkdir -p "${PROJECT_DIR}/build"
-          cd "${PROJECT_DIR}/build"
-          # Configure and build tests
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
-            -DBUILD_SECP256K1=ON \
-            -DBUILD_TESTS=ON \
-            -DBUILD_FUZZERS=OFF
-          make -j$(sysctl -n hw.ncpu) AllTests
+	      - name: "Build Tests with CMake"
+	        script: |
+	          #!/bin/bash
+	          set -e
+	          mkdir -p "${PROJECT_DIR}/build"
+	          cd "${PROJECT_DIR}/build"
+	          XCODE_CLANG="$(xcrun -find clang)"
+	          XCODE_CLANGXX="$(xcrun -find clang++)"
+	          if [ -f CMakeCache.txt ] && grep -q "/\\.swiftly/bin/cc" CMakeCache.txt; then
+	            rm -f CMakeCache.txt
+	            rm -rf CMakeFiles
+	          fi
+	          # Configure and build tests
+	          cmake .. \
+	            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+	            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+	            -DCMAKE_C_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_CXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DCMAKE_OBJC_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DBUILD_SECP256K1=ON \
+	            -DBUILD_TESTS=ON \
+	            -DBUILD_FUZZERS=OFF
+	          make -j$(sysctl -n hw.ncpu) AllTests
 
   # Fuzzers - aggregate target to build all fuzzers
   Fuzzers:
@@ -104,17 +136,27 @@ targets:
       base:
         PRODUCT_NAME: Fuzzers
     prebuildScripts:
-      - name: "Build Fuzzers with CMake"
-        script: |
-          #!/bin/bash
-          set -e
-          mkdir -p "${PROJECT_DIR}/build"
-          cd "${PROJECT_DIR}/build"
-          # Configure and build fuzzers
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
-            -DBUILD_SECP256K1=ON \
-            -DBUILD_TESTS=OFF \
-            -DBUILD_FUZZERS=ON
-          make -j$(sysctl -n hw.ncpu) fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth
+	      - name: "Build Fuzzers with CMake"
+	        script: |
+	          #!/bin/bash
+	          set -e
+	          mkdir -p "${PROJECT_DIR}/build"
+	          cd "${PROJECT_DIR}/build"
+	          XCODE_CLANG="$(xcrun -find clang)"
+	          XCODE_CLANGXX="$(xcrun -find clang++)"
+	          if [ -f CMakeCache.txt ] && grep -q "/\\.swiftly/bin/cc" CMakeCache.txt; then
+	            rm -f CMakeCache.txt
+	            rm -rf CMakeFiles
+	          fi
+	          # Configure and build fuzzers
+	          cmake .. \
+	            -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+	            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+	            -DCMAKE_C_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_CXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DCMAKE_OBJC_COMPILER="${XCODE_CLANG}" \
+	            -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
+	            -DBUILD_SECP256K1=ON \
+	            -DBUILD_TESTS=OFF \
+	            -DBUILD_FUZZERS=ON
+	          make -j$(sysctl -n hw.ncpu) fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth
