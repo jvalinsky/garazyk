@@ -124,6 +124,18 @@
     [self registerMethod:@"com.atproto.server.createInviteCodes" handler:handler];
 }
 
+- (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.createAppPassword" handler:handler];
+}
+
+- (void)registerComAtprotoServerListAppPasswords:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.listAppPasswords" handler:handler];
+}
+
+- (void)registerComAtprotoServerRevokeAppPassword:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.revokeAppPassword" handler:handler];
+}
+
 - (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
 }
