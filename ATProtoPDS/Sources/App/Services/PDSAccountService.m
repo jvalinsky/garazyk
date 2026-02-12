@@ -420,7 +420,7 @@
     
     // Fallback to default if not configured or "mock"
     if ([plcURLString isEqualToString:@"mock"] || plcURLString.length == 0) {
-        plcURLString = @"http://localhost:2582";
+        plcURLString = @"http://127.0.0.1:2582";
     }
     
     NSString *pdsURL = [NSString stringWithFormat:@"http://%@:%lu", config.serverHost, (unsigned long)config.serverPort];
