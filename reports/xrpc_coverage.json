@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-02-12T12:33:48.375Z",
+  "generated_at": "2026-02-12T12:53:22.018Z",
   "inputs": {
-    "methods_tsv": "/Users/jack/Software/objpds/reports/xrpc_sync_raw/methods.tsv",
-    "lexicons_tsv": "/Users/jack/Software/objpds/reports/xrpc_sync_raw/lexicons.tsv",
-    "diff_json": "/Users/jack/Software/objpds/reports/xrpc_sync_raw/diff.json",
-    "stubs_json": "/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json"
+    "methods_tsv": "reports/xrpc_sync_raw/methods.tsv",
+    "lexicons_tsv": "reports/xrpc_sync_raw/lexicons.tsv",
+    "diff_json": "reports/xrpc_sync_raw/diff.json",
+    "stubs_json": "reports/stub_scan_raw/stubs.json"
   },
   "counts": {
-    "implemented_unique": 73,
+    "implemented_unique": 80,
     "lexicon_unique": 321,
-    "in_both": 64,
-    "missing_in_code": 257,
+    "in_both": 71,
+    "missing_in_code": 250,
     "missing_in_lexicons": 9,
-    "coverage_pct": 19.94,
+    "coverage_pct": 22.12,
     "unknown_registry_entries": 2,
-    "duplicate_registry_registrations": 31
+    "duplicate_registry_registrations": 35
   },
   "namespace_coverage": [
     {
@@ -36,15 +36,6 @@
       "coverage_pct": 0
     },
     {
-      "namespace": "com.atproto",
-      "lexicon_methods": 86,
-      "implemented_methods": 60,
-      "in_both": 52,
-      "missing_in_code_count": 34,
-      "missing_in_lexicons_count": 8,
-      "coverage_pct": 60.47
-    },
-    {
       "namespace": "social.grain",
       "lexicon_methods": 31,
       "implemented_methods": 0,
@@ -52,6 +43,15 @@
       "missing_in_code_count": 31,
       "missing_in_lexicons_count": 0,
       "coverage_pct": 0
+    },
+    {
+      "namespace": "com.atproto",
+      "lexicon_methods": 86,
+      "implemented_methods": 67,
+      "in_both": 59,
+      "missing_in_code_count": 27,
+      "missing_in_lexicons_count": 8,
+      "coverage_pct": 68.6
     },
     {
       "namespace": "place.stream",
@@ -215,17 +215,10 @@
     "com.atproto.label.subscribeLabels",
     "com.atproto.lexicon.resolveLexicon",
     "com.atproto.repo.importRepo",
-    "com.atproto.repo.listMissingBlobs",
-    "com.atproto.server.getAccountInviteCodes",
-    "com.atproto.server.requestEmailConfirmation",
-    "com.atproto.server.requestEmailUpdate",
     "com.atproto.sync.getCheckout",
     "com.atproto.sync.getHostStatus",
-    "com.atproto.sync.getRepoStatus",
     "com.atproto.sync.listHosts",
     "com.atproto.sync.listRepos",
-    "com.atproto.sync.listReposByCollection",
-    "com.atproto.sync.requestCrawl",
     "com.atproto.temp.addReservedHandle",
     "com.atproto.temp.checkHandleAvailability",
     "com.atproto.temp.checkSignupQueue",

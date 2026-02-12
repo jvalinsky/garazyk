@@ -1,13 +1,13 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-12T12:33:56.600Z
+Generated: 2026-02-12T12:53:22.097Z
 
 ## Baseline
 
-- Missing in code: 257
-- Coverage: 19.94%
+- Missing in code: 250
+- Coverage: 22.12%
 - Unknown registry entries: 2
-- Duplicate registry registrations: 31
+- Duplicate registry registrations: 35
 
 ## Priority Rubric
 
@@ -20,23 +20,16 @@ Generated: 2026-02-12T12:33:56.600Z
 
 ### Phase 1: Identity and Account Safety
 
-- Endpoint count: 3
-- P0: 0, P1: 3, P2: 0, P3: 0
+- Endpoint count: 0
+- P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
-  - P1 `com.atproto.server.getAccountInviteCodes`
-  - P1 `com.atproto.server.requestEmailConfirmation`
-  - P1 `com.atproto.server.requestEmailUpdate`
 
 ### Phase 2: Repository and Sync Completeness
 
-- Endpoint count: 9
-- P0: 5, P1: 4, P2: 0, P3: 0
+- Endpoint count: 5
+- P0: 1, P1: 4, P2: 0, P3: 0
 - Next batch:
-  - P0 `com.atproto.repo.listMissingBlobs`
-  - P0 `com.atproto.sync.getRepoStatus`
-  - P0 `com.atproto.sync.listReposByCollection`
   - P0 `com.atproto.repo.importRepo`
-  - P0 `com.atproto.sync.requestCrawl`
   - P1 `com.atproto.sync.getCheckout`
   - P1 `com.atproto.sync.getHostStatus`
   - P1 `com.atproto.sync.listHosts`

@@ -124,6 +124,10 @@
     [self registerMethod:@"com.atproto.server.createInviteCodes" handler:handler];
 }
 
+- (void)registerComAtprotoServerGetAccountInviteCodes:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.getAccountInviteCodes" handler:handler];
+}
+
 - (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.createAppPassword" handler:handler];
 }
@@ -182,6 +186,14 @@
 
 - (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.server.updateEmail" handler:handler];
+}
+
+- (void)registerComAtprotoServerRequestEmailConfirmation:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.requestEmailConfirmation" handler:handler];
+}
+
+- (void)registerComAtprotoServerRequestEmailUpdate:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.server.requestEmailUpdate" handler:handler];
 }
 
 - (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler {

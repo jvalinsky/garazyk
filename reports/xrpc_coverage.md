@@ -1,17 +1,17 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-12T12:33:48.375Z
+Generated: 2026-02-12T12:53:22.018Z
 
 ## Summary
 
-- Implemented methods (unique, excluding `unknown`): 73
+- Implemented methods (unique, excluding `unknown`): 80
 - Lexicon XRPC methods (unique): 321
-- Implemented and in lexicons: 64
-- Missing in code: 257
+- Implemented and in lexicons: 71
+- Missing in code: 250
 - Implemented but missing lexicon: 9
-- Overall coverage (implemented / lexicon): 19.94%
+- Overall coverage (implemented / lexicon): 22.12%
 - Unknown registry entries: 2
-- Duplicate registry registrations: 31
+- Duplicate registry registrations: 35
 
 ## Namespace Coverage
 
@@ -19,8 +19,8 @@ Generated: 2026-02-12T12:33:48.375Z
 |---|---:|---:|---:|---:|---:|
 | app.bsky | 98 | 13 | 12 | 12.24% | 86 |
 | tools.ozone | 45 | 0 | 0 | 0% | 45 |
-| com.atproto | 86 | 60 | 52 | 60.47% | 34 |
 | social.grain | 31 | 0 | 0 | 0% | 31 |
+| com.atproto | 86 | 67 | 59 | 68.6% | 27 |
 | place.stream | 27 | 0 | 0 | 0% | 27 |
 | chat.bsky | 22 | 0 | 0 | 0% | 22 |
 | com.shinolabs | 8 | 0 | 0 | 0% | 8 |
@@ -110,8 +110,8 @@ Generated: 2026-02-12T12:33:48.375Z
 
 ## Inputs
 
-- `/Users/jack/Software/objpds/reports/xrpc_sync_raw/methods.tsv`
-- `/Users/jack/Software/objpds/reports/xrpc_sync_raw/lexicons.tsv`
-- `/Users/jack/Software/objpds/reports/xrpc_sync_raw/diff.json`
-- `/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json`
+- `reports/xrpc_sync_raw/methods.tsv`
+- `reports/xrpc_sync_raw/lexicons.tsv`
+- `reports/xrpc_sync_raw/diff.json`
+- `reports/stub_scan_raw/stubs.json`
 
