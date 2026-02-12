@@ -59,6 +59,9 @@ Implemented:
   - `PDSAdminAuth` now rejects admin tokens missing `iss` or `aud` claims.
   - `PDSAdminAuth` and `XrpcMethodRegistry` now derive `allowedAlgorithms` from configured `JWTMinter.signingAlgorithm` (with conservative fallback only when unset), reducing permissive algorithm acceptance.
   - Added tests for missing-issuer/missing-audience admin token rejection in `PDSAdminAuthTests`.
+- Closed auth-enforcement gaps in application-registered admin handlers:
+  - `com.atproto.admin.updateSubjectStatus`, `com.atproto.admin.getSubjectStatus`, `com.atproto.admin.moderateAccount`, and `com.atproto.admin.moderateRecord` now enforce `authorizeAdminRequest(...)` in the `registerMethodsWithDispatcher:application:` path.
+  - Added explicit regression coverage in `AdminAuthApplicationXrpcTests` for `401` (missing auth), `403` (non-admin), and admin-allowed behavior.
 
 ## Gaps to address
 
@@ -147,7 +150,7 @@ Also ensure:
 ## Definition of done
 
 - [x] Clear operator documentation exists (how to configure + rotate).
-- [ ] Admin method allowlist is explicit and consistently enforced.
-- [ ] Tests cover the major negative auth cases.
+- [x] Admin method allowlist is explicit and consistently enforced.
+- [x] Tests cover the major negative auth cases.
 - [x] Admin token TTL / issuer configuration is explicit and safe in production mode.
 - [ ] No regressions to existing admin endpoints.
