@@ -214,6 +214,49 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *outValue) {
     return YES;
 }
 
+static BOOL resolveAccountIdentifierToDid(PDSServiceDatabases *serviceDatabases,
+                                          NSString *accountIdentifier,
+                                          NSString **outDid,
+                                          NSError **error) {
+    if (![accountIdentifier isKindOfClass:[NSString class]] || accountIdentifier.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.temp"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing account identifier"}];
+        }
+        return NO;
+    }
+
+    PDSDatabaseAccount *account = nil;
+    NSError *lookupError = nil;
+    if ([ATProtoValidator validateDID:accountIdentifier error:nil]) {
+        account = [serviceDatabases getAccountByDid:accountIdentifier error:&lookupError];
+    } else if ([ATProtoHandleValidator validateHandle:accountIdentifier error:nil]) {
+        account = [serviceDatabases getAccountByHandle:accountIdentifier error:&lookupError];
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.temp"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid account identifier"}];
+        }
+        return NO;
+    }
+
+    if (!account) {
+        if (error) {
+            *error = lookupError ?: [NSError errorWithDomain:@"com.atproto.temp"
+                                                        code:404
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+        }
+        return NO;
+    }
+
+    if (outDid) {
+        *outDid = account.did;
+    }
+    return YES;
+}
+
 static void setSubscribeLabelsUpgradeRequired(HttpRequest *request, HttpResponse *response) {
     if (request.method != HttpMethodGET) {
         response.statusCode = HttpStatusMethodNotAllowed;
@@ -918,6 +961,77 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": updateError.localizedDescription ?: @"Failed to persist new password"}];
             return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *accountIdentifier = body[@"account"];
+        NSString *targetDid = nil;
+        NSError *resolveError = nil;
+        if (!resolveAccountIdentifierToDid(serviceDatabases, accountIdentifier, &targetDid, &resolveError)) {
+            if (resolveError.code == 404) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": resolveError.localizedDescription ?: @"Account not found"}];
+            } else {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": resolveError.localizedDescription ?: @"Invalid account identifier"}];
+            }
+            return;
+        }
+
+        if (![targetDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
+            return;
+        }
+
+        NSError *deleteError = nil;
+        if (![serviceDatabases deleteRefreshTokensForAccount:targetDid error:&deleteError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
+            return;
+        }
+
+        NSError *listError = nil;
+        NSArray<NSDictionary *> *appPasswords = [serviceDatabases listAppPasswordsForAccount:targetDid error:&listError];
+        if (listError) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": listError.localizedDescription ?: @"Failed to list app passwords"}];
+            return;
+        }
+
+        for (NSDictionary *entry in appPasswords) {
+            NSString *name = entry[@"name"];
+            if (name.length == 0) {
+                continue;
+            }
+
+            NSError *revokeError = nil;
+            BOOL revoked = [serviceDatabases revokeAppPasswordForAccount:targetDid name:name error:&revokeError];
+            if (!revoked && revokeError) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
+                return;
+            }
         }
 
         response.statusCode = HttpStatusOK;
@@ -3626,6 +3740,77 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"AppPasswordRevokeFailed", @"message": error.localizedDescription ?: @"Failed to revoke app password"}];
             return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *accountIdentifier = body[@"account"];
+        NSString *targetDid = nil;
+        NSError *resolveError = nil;
+        if (!resolveAccountIdentifierToDid(serviceDatabases, accountIdentifier, &targetDid, &resolveError)) {
+            if (resolveError.code == 404) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": resolveError.localizedDescription ?: @"Account not found"}];
+            } else {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": resolveError.localizedDescription ?: @"Invalid account identifier"}];
+            }
+            return;
+        }
+
+        if (![targetDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
+            return;
+        }
+
+        NSError *deleteError = nil;
+        if (![serviceDatabases deleteRefreshTokensForAccount:targetDid error:&deleteError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
+            return;
+        }
+
+        NSError *listError = nil;
+        NSArray<NSDictionary *> *appPasswords = [serviceDatabases listAppPasswordsForAccount:targetDid error:&listError];
+        if (listError) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": listError.localizedDescription ?: @"Failed to list app passwords"}];
+            return;
+        }
+
+        for (NSDictionary *entry in appPasswords) {
+            NSString *name = entry[@"name"];
+            if (name.length == 0) {
+                continue;
+            }
+
+            NSError *revokeError = nil;
+            BOOL revoked = [serviceDatabases revokeAppPasswordForAccount:targetDid name:name error:&revokeError];
+            if (!revoked && revokeError) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
+                return;
+            }
         }
 
         response.statusCode = HttpStatusOK;
