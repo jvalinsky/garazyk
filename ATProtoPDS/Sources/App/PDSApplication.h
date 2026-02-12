@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
  - Database pools (service and user databases)
  - Service layer (account, record, blob, repository)
  - Admin controller (moderation, labeling, takedowns)
- - HTTP and WebSocket servers
+ - HTTP server (including WebSocket upgrades for subscribeRepos)
  - JWT minting for authentication
 
  @code
@@ -114,9 +114,10 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Starts the application servers.
 
- @discussion Starts the HTTP server for XRPC endpoints and the WebSocket
- server for subscribeRepos. All services are initialized during init,
- so this method only starts the network listeners.
+ @discussion Starts the HTTP server for XRPC endpoints. The
+ com.atproto.sync.subscribeRepos stream is exposed via WebSocket upgrade
+ on the same HTTP port. All services are initialized during init, so this
+ method only starts the network listener.
 
  @param error On return, contains an error if startup failed.
  @return YES if the application started successfully, NO otherwise.
@@ -169,12 +170,14 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @property wsPort
 
- @abstract The WebSocket server port (default: 8081).
+ @abstract Compatibility property for subscribeRepos streaming port.
 
- @discussion Can be changed before calling startWithError:. After starting,
- reflects the actual port the server is listening on.
+ @discussion subscribeRepos is served via WebSocket upgrade on the HTTP port.
+ This property is retained for compatibility and reflects the active HTTP port
+ after startup.
  */
-@property (nonatomic, assign) NSUInteger wsPort;
+@property (nonatomic, assign, readonly) NSUInteger wsPort
+    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP port upgrades; use httpPort");
 
 #pragma mark - Infrastructure
 

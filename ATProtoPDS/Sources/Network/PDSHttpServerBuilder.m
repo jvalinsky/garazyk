@@ -12,6 +12,7 @@
 #import "HttpResponse.h"
 #import "XrpcHandler.h"
 #import "XrpcMethodRegistry.h"
+#import "PDSNetworkTransport.h"
 #import "../App/PDSController.h"
 #import "../App/PDSApplication.h"
 #import "../App/PDSConfiguration.h"
@@ -24,6 +25,7 @@
 #import "../App/NodeInfo/NodeInfoHandler.h"
 #import "../Admin/PDSAdminHandler.h"
 #import "../Debug/PDSLogger.h"
+#import "../Sync/SubscribeReposHandler.h"
 
 @implementation PDSHttpServerBuilder
 
@@ -172,6 +174,7 @@
     // Create weak reference for blocks
     __weak PDSController *weakController = controller;
     __weak XrpcDispatcher *weakDispatcher = dispatcher;
+    __weak SubscribeReposHandler *weakSubscribeReposHandler = self.subscribeReposHandler;
     
     // Handler for /xrpc
     [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -205,6 +208,17 @@
             [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
         }
     }];
+
+    if (self.subscribeReposHandler) {
+        [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos" handler:^(HttpRequest *request, HttpResponse *response, id<PDSNetworkConnection> connection) {
+            SubscribeReposHandler *strongSubscribeReposHandler = weakSubscribeReposHandler;
+            if (!strongSubscribeReposHandler) {
+                [connection cancel];
+                return;
+            }
+            [strongSubscribeReposHandler acceptUpgradedConnection:connection request:request];
+        }];
+    }
     
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: XRPC routes registered");
 }

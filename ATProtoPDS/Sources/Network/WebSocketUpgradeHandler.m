@@ -25,7 +25,7 @@ static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     if (!hasUpgradeHeader || !hasConnectionUpgrade) {
         response.statusCode = 426;
         [response setHeader:@"websocket" forKey:@"Upgrade"];
-        [response setHeader:@"Connection" forKey:@"Upgrade"];
+        [response setHeader:@"Upgrade" forKey:@"Connection"];
         [response setJsonBody:@{
             @"error": @"UpgradeRequired",
             @"message": @"WebSocket upgrade required. Missing Upgrade or Connection header."

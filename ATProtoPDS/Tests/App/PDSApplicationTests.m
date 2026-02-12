@@ -78,7 +78,8 @@
     // Ports should be set to reasonable values (may vary based on configuration)
     XCTAssertGreaterThan(self.application.httpPort, 0);
     XCTAssertGreaterThan(self.application.wsPort, 0);
-    // Standard defaults are 2583/8081, but configuration may override
+    // subscribeRepos now upgrades on the main HTTP port
+    XCTAssertEqual(self.application.wsPort, self.application.httpPort);
     XCTAssertLessThan(self.application.httpPort, 65536);
     XCTAssertLessThan(self.application.wsPort, 65536);
 }
@@ -154,9 +155,10 @@
     NSError *error = nil;
     [self.application startWithError:&error];
     
-    // Ports should be assigned (may be different if defaults were in use)
+    // subscribeRepos upgrades on the main HTTP port after startup
     XCTAssertGreaterThan(self.application.httpPort, 0);
     XCTAssertGreaterThan(self.application.wsPort, 0);
+    XCTAssertEqual(self.application.wsPort, self.application.httpPort);
 }
 
 - (void)testStopSucceeds {
@@ -212,9 +214,8 @@
     XCTAssertEqual(self.application.httpPort, 9999);
 }
 
-- (void)testWsPortCanBeChangedBeforeStart {
-    self.application.wsPort = 9998;
-    
+- (void)testWsPortMirrorsHttpPortBeforeStart {
+    self.application.httpPort = 9998;
     XCTAssertEqual(self.application.wsPort, 9998);
 }
 
