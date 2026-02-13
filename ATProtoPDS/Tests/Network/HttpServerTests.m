@@ -1,10 +1,12 @@
 #import <XCTest/XCTest.h>
 #import <objc/runtime.h>
+#include <string.h>
 #import "Network/HttpServer.h"
 #import "Network/HttpResponse.h"
 #import "Network/PDSNetworkTransport.h"
 
 typedef id<PDSNetworkListener> (^PDSListenerFactory)(NSUInteger port);
+static const NSUInteger kGeneratedChunkCap = 64 * 1024;
 
 static PDSListenerFactory sListenerFactory = nil;
 static IMP sOriginalCreateListenerIMP = NULL;
@@ -255,6 +257,64 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
                       NSNotFound);
     XCTAssertEqualObjects(connection.sentData[1], [@"3\r\nabc\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
     XCTAssertEqual(connection.receiveCallCount, (NSUInteger)0);
+    XCTAssertTrue(connection.cancelCalled);
+}
+
+- (void)testSendResponseSplitsOversizedProducerChunkByPolicy {
+    HttpServer *server = [HttpServer serverWithPort:0];
+    PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
+
+    NSMutableData *largePayload = [NSMutableData dataWithLength:(kGeneratedChunkCap * 2) + 137];
+    memset(largePayload.mutableBytes, 'x', largePayload.length);
+
+    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    response.contentType = @"application/vnd.ipld.car";
+    __block BOOL emitted = NO;
+    [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
+        if (emitted) {
+            return [NSData data];
+        }
+        emitted = YES;
+        return [largePayload copy];
+    } chunkedTransferEncoding:YES];
+
+    [server sendResponse:response onConnection:connection];
+
+    XCTAssertTrue(connection.sentData.count >= 5, @"Expected header, multiple chunk frames, and terminator");
+    NSData *terminator = [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertEqualObjects(connection.sentData.lastObject, terminator);
+
+    NSUInteger totalChunkPayloadBytes = 0;
+    NSUInteger chunkFrameCount = 0;
+    for (NSUInteger i = 1; i + 1 < connection.sentData.count; i++) {
+        NSData *frame = connection.sentData[i];
+        const uint8_t *bytes = frame.bytes;
+        NSUInteger lineEnd = NSNotFound;
+        for (NSUInteger j = 0; j + 1 < frame.length; j++) {
+            if (bytes[j] == '\r' && bytes[j + 1] == '\n') {
+                lineEnd = j;
+                break;
+            }
+        }
+        XCTAssertNotEqual(lineEnd, NSNotFound);
+        XCTAssertTrue(lineEnd > 0);
+
+        NSData *sizeLineData = [frame subdataWithRange:NSMakeRange(0, lineEnd)];
+        NSString *sizeLine = [[NSString alloc] initWithData:sizeLineData encoding:NSUTF8StringEncoding];
+        XCTAssertNotNil(sizeLine);
+        unsigned long chunkSize = strtoul(sizeLine.UTF8String, NULL, 16);
+        XCTAssertTrue(chunkSize > 0);
+        XCTAssertTrue(chunkSize <= kGeneratedChunkCap);
+
+        NSUInteger expectedFrameLength = lineEnd + 2 + (NSUInteger)chunkSize + 2;
+        XCTAssertEqual(frame.length, expectedFrameLength);
+        totalChunkPayloadBytes += (NSUInteger)chunkSize;
+        chunkFrameCount += 1;
+    }
+
+    XCTAssertTrue(chunkFrameCount >= 3, @"Large payload should be split into multiple wire chunks");
+    XCTAssertEqual(totalChunkPayloadBytes, largePayload.length);
+    XCTAssertEqual(connection.receiveCallCount, (NSUInteger)1);
     XCTAssertTrue(connection.cancelCalled);
 }
 
