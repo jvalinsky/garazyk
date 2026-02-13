@@ -744,7 +744,6 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
     __weak typeof(self) weakSelf = self;
     __block void (^sendNextChunk)(void) = nil;
-    __weak void (^weakSendNextChunk)(void) = nil;
     sendNextChunk = ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
@@ -752,6 +751,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                 [fileHandle closeFile];
             } @catch (__unused NSException *exception) {
             }
+            sendNextChunk = nil;
             return;
         }
 
@@ -763,6 +763,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                 } @catch (__unused NSException *exception) {
                 }
                 [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                sendNextChunk = nil;
                 return;
             }
 
@@ -777,15 +778,15 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                         [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath error:nil];
                     }
                     [connection cancel];
+                    sendNextChunk = nil;
                     return;
                 }
-                if (weakSendNextChunk) {
-                    weakSendNextChunk();
+                if (sendNextChunk) {
+                    sendNextChunk();
                 }
             }];
         }
     };
-    weakSendNextChunk = sendNextChunk;
 
     sendNextChunk();
 }
@@ -795,10 +796,10 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                       connection:(id<PDSNetworkConnection>)connection {
     __weak typeof(self) weakSelf = self;
     __block void (^sendNextChunk)(void) = nil;
-    __weak void (^weakSendNextChunk)(void) = nil;
     sendNextChunk = ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
+            sendNextChunk = nil;
             return;
         }
 
@@ -808,6 +809,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
             if (produceError) {
                 PDS_LOG_HTTP_ERROR(@"Failed to produce response body chunk: %@", produceError);
                 [connection cancel];
+                sendNextChunk = nil;
                 return;
             }
 
@@ -818,14 +820,17 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                         if (error) {
                             PDS_LOG_HTTP_ERROR(@"Failed to stream chunked terminator: %@", error);
                             [connection cancel];
+                            sendNextChunk = nil;
                             return;
                         }
                         [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                        sendNextChunk = nil;
                     }];
                     return;
                 }
 
                 [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                sendNextChunk = nil;
                 return;
             }
 
@@ -843,15 +848,15 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                 if (error) {
                     PDS_LOG_HTTP_ERROR(@"Failed to stream generated response body: %@", error);
                     [connection cancel];
+                    sendNextChunk = nil;
                     return;
                 }
-                if (weakSendNextChunk) {
-                    weakSendNextChunk();
+                if (sendNextChunk) {
+                    sendNextChunk();
                 }
             }];
         }
     };
-    weakSendNextChunk = sendNextChunk;
 
     sendNextChunk();
 }

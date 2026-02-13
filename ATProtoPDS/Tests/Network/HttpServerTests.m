@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import <objc/runtime.h>
 #import "Network/HttpServer.h"
+#import "Network/HttpResponse.h"
 #import "Network/PDSNetworkTransport.h"
 
 typedef id<PDSNetworkListener> (^PDSListenerFactory)(NSUInteger port);
@@ -46,6 +47,64 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 - (void)cancel {
     if (self.stateChangedHandler) {
         self.stateChangedHandler(PDSNetworkListenerStateCancelled, nil);
+    }
+}
+
+@end
+
+@interface HttpServer (Testing)
+- (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection;
+@end
+
+@interface PDSFakeConnection : NSObject <PDSNetworkConnection>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkConnectionState state, NSError * _Nullable error);
+@property (nonatomic, strong, readonly, nullable) NSString *remoteAddress;
+@property (nonatomic, strong) NSMutableArray<NSData *> *sentData;
+@property (nonatomic, assign) NSUInteger receiveCallCount;
+@property (nonatomic, assign) BOOL cancelCalled;
+@end
+
+@implementation PDSFakeConnection
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _remoteAddress = @"127.0.0.1";
+        _sentData = [NSMutableArray array];
+        _receiveCallCount = 0;
+        _cancelCalled = NO;
+    }
+    return self;
+}
+
+- (void)startWithQueue:(dispatch_queue_t)queue {
+    dispatch_async(queue, ^{
+        if (self.stateChangedHandler) {
+            self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+        }
+    });
+}
+
+- (void)cancel {
+    self.cancelCalled = YES;
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkConnectionStateCancelled, nil);
+    }
+}
+
+- (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
+    [self.sentData addObject:[data copy]];
+    if (completion) {
+        completion(nil);
+    }
+}
+
+- (void)receiveWithMinimumLength:(NSUInteger)minLength
+                    maximumLength:(NSUInteger)maxLength
+                       completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+    self.receiveCallCount += 1;
+    if (completion) {
+        completion(nil, YES, nil);
     }
 }
 
@@ -127,6 +186,76 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
     XCTAssertTrue(started);
     XCTAssertNil(error);
     XCTAssertEqual(server.port, 12345);
+}
+
+- (void)testSendResponseStreamsChunkedProducerFrames {
+    HttpServer *server = [HttpServer serverWithPort:0];
+    PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
+
+    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    response.contentType = @"application/vnd.ipld.car";
+    __block NSUInteger chunkIndex = 0;
+    NSArray<NSData *> *chunks = @[
+        [@"abc" dataUsingEncoding:NSUTF8StringEncoding],
+        [@"def" dataUsingEncoding:NSUTF8StringEncoding]
+    ];
+    [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
+        if (chunkIndex < chunks.count) {
+            return chunks[chunkIndex++];
+        }
+        return [NSData data];
+    } chunkedTransferEncoding:YES];
+
+    [server sendResponse:response onConnection:connection];
+
+    XCTAssertEqual(connection.sentData.count, (NSUInteger)4);
+    NSString *headerString = [[NSString alloc] initWithData:connection.sentData[0]
+                                                   encoding:NSUTF8StringEncoding];
+    XCTAssertNotNil(headerString);
+    XCTAssertTrue([headerString containsString:@"HTTP/1.1 200"]);
+    XCTAssertNotEqual([headerString rangeOfString:@"Transfer-Encoding: chunked"
+                                          options:NSCaseInsensitiveSearch].location,
+                      NSNotFound);
+    XCTAssertEqual([headerString rangeOfString:@"Content-Length:"
+                                       options:NSCaseInsensitiveSearch].location,
+                   NSNotFound);
+    XCTAssertEqualObjects(connection.sentData[1], [@"3\r\nabc\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
+    XCTAssertEqualObjects(connection.sentData[2], [@"3\r\ndef\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
+    XCTAssertEqualObjects(connection.sentData[3], [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
+    XCTAssertEqual(connection.receiveCallCount, (NSUInteger)1);
+    XCTAssertTrue(connection.cancelCalled);
+}
+
+- (void)testSendResponseCancelsConnectionWhenChunkProducerFails {
+    HttpServer *server = [HttpServer serverWithPort:0];
+    PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
+
+    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    response.contentType = @"application/vnd.ipld.car";
+    __block NSUInteger invocation = 0;
+    [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
+        NSUInteger current = invocation++;
+        if (current == 0) {
+            return [@"abc" dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        if (error) {
+            *error = [NSError errorWithDomain:@"test.chunk.producer" code:17 userInfo:nil];
+        }
+        return nil;
+    } chunkedTransferEncoding:YES];
+
+    [server sendResponse:response onConnection:connection];
+
+    XCTAssertEqual(connection.sentData.count, (NSUInteger)2);
+    NSString *headerString = [[NSString alloc] initWithData:connection.sentData[0]
+                                                   encoding:NSUTF8StringEncoding];
+    XCTAssertNotNil(headerString);
+    XCTAssertNotEqual([headerString rangeOfString:@"Transfer-Encoding: chunked"
+                                          options:NSCaseInsensitiveSearch].location,
+                      NSNotFound);
+    XCTAssertEqualObjects(connection.sentData[1], [@"3\r\nabc\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
+    XCTAssertEqual(connection.receiveCallCount, (NSUInteger)0);
+    XCTAssertTrue(connection.cancelCalled);
 }
 
 @end
