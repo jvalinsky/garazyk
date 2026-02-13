@@ -16,6 +16,7 @@ function parseArgs(argv) {
     handlerPath: null,
     lexiconRoots: [],
     sourceOnly: false,
+    failOnDuplicates: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -40,6 +41,8 @@ function parseArgs(argv) {
       args.lexiconRoots.push(argv[++index]);
     } else if (arg === "--source-only") {
       args.sourceOnly = true;
+    } else if (arg === "--fail-on-duplicates") {
+      args.failOnDuplicates = true;
     } else if (arg === "--help" || arg === "-h") {
       printUsageAndExit(0);
     } else {
@@ -78,6 +81,7 @@ function printUsageAndExit(code) {
     "  --handler-path <p>   XrpcHandler.m path",
     "  --lexicon-root <p>   Lexicon root directory (repeatable)",
     "  --source-only        Ignore xrpcDir input files and parse from source",
+    "  --fail-on-duplicates Exit non-zero when scoped duplicate registrations are found",
   ].join("\n");
   console.error(usage);
   process.exit(code);
@@ -234,33 +238,143 @@ function parseDispatcherMethodMap(handlerPath) {
   return map;
 }
 
-function extractImplementedMethodsFromSource(registryPath, handlerPath) {
-  ensureFileExists(registryPath);
-  const source = fs.readFileSync(registryPath, "utf8");
-  const methodMap = parseDispatcherMethodMap(handlerPath);
-  const implementedRaw = [];
+function findMatchingBrace(source, openIndex) {
+  let depth = 0;
+  for (let index = openIndex; index < source.length; index += 1) {
+    const ch = source[index];
+    if (ch === "{") {
+      depth += 1;
+    } else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  return -1;
+}
+
+function extractMethodIdsFromSourceSnippet(sourceSnippet, methodMap) {
+  const methods = [];
   const unresolvedTyped = [];
 
   const typedRegex = /\[dispatcher\s+(register[A-Za-z0-9]+)\s*:\s*\^\(/g;
-  for (const match of source.matchAll(typedRegex)) {
+  for (const match of sourceSnippet.matchAll(typedRegex)) {
     const registrationName = match[1];
     const methodId = methodMap.get(registrationName);
     if (methodId) {
-      implementedRaw.push(methodId);
+      methods.push(methodId);
     } else {
-      implementedRaw.push("unknown");
+      methods.push("unknown");
       unresolvedTyped.push(registrationName);
     }
   }
 
   const rawRegex = /\[dispatcher\s+registerMethod:\s*@"([^"]+)"\s+handler:\s*\^\(/g;
-  for (const match of source.matchAll(rawRegex)) {
-    implementedRaw.push(match[1]);
+  for (const match of sourceSnippet.matchAll(rawRegex)) {
+    methods.push(match[1]);
   }
 
   return {
-    implementedRaw,
+    methods,
     unresolvedTyped: uniqueSorted(unresolvedTyped),
+  };
+}
+
+function duplicateMethodsForList(methods) {
+  const counts = new Map();
+  for (const methodId of methods) {
+    if (methodId === "unknown") {
+      continue;
+    }
+    counts.set(methodId, (counts.get(methodId) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .filter((entry) => entry[1] > 1)
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+      return left[0].localeCompare(right[0]);
+    })
+    .map((entry) => ({ method_id: entry[0], count: entry[1] }));
+}
+
+function extractRegistrationScopeStats(registrySource, methodMap) {
+  const scopePatterns = [
+    {
+      name: "static.registerTempUtilityMethods",
+      regex: /static void registerTempUtilityMethods\s*\(\s*XrpcDispatcher \*dispatcher[\s\S]*?\{/gm,
+    },
+    {
+      name: "static.registerAdminAccountMaintenanceMethods",
+      regex: /static void registerAdminAccountMaintenanceMethods\s*\(\s*XrpcDispatcher \*dispatcher[\s\S]*?\{/gm,
+    },
+    {
+      name: "static.registerPhase1IdentityAndAccountMethods",
+      regex: /static void registerPhase1IdentityAndAccountMethods\s*\(\s*XrpcDispatcher \*dispatcher[\s\S]*?\{/gm,
+    },
+    {
+      name: "class.registerMethodsWithDispatcher:controller",
+      regex: /\+\s*\(void\)\s*registerMethodsWithDispatcher:\(XrpcDispatcher \*\)dispatcher\s*controller:\(PDSController \*\)controller\s*\{/gm,
+    },
+    {
+      name: "class.registerMethodsWithDispatcher:application",
+      regex: /\+\s*\(void\)\s*registerMethodsWithDispatcher:\(XrpcDispatcher \*\)dispatcher\s*application:\(PDSApplication \*\)application\s*\{/gm,
+    },
+  ];
+
+  const scopes = [];
+
+  for (const scopeDef of scopePatterns) {
+    const match = scopeDef.regex.exec(registrySource);
+    if (!match) {
+      continue;
+    }
+
+    const openBraceOffset = match[0].lastIndexOf("{");
+    if (openBraceOffset < 0) {
+      continue;
+    }
+    const openBraceIndex = match.index + openBraceOffset;
+    const closeBraceIndex = findMatchingBrace(registrySource, openBraceIndex);
+    if (closeBraceIndex < 0) {
+      continue;
+    }
+
+    const snippet = registrySource.slice(openBraceIndex, closeBraceIndex + 1);
+    const extracted = extractMethodIdsFromSourceSnippet(snippet, methodMap);
+    const filteredMethods = extracted.methods.filter((methodId) => methodId !== "unknown");
+    const duplicateMethods = duplicateMethodsForList(extracted.methods);
+    const duplicateRegistrations = duplicateMethods.reduce((sum, entry) => sum + (entry.count - 1), 0);
+
+    scopes.push({
+      scope: scopeDef.name,
+      registrations_total: filteredMethods.length,
+      registrations_unique: uniqueSorted(filteredMethods).length,
+      unknown_registry_entries: extracted.methods.filter((methodId) => methodId === "unknown").length,
+      duplicate_registrations: duplicateRegistrations,
+      duplicate_methods: duplicateMethods,
+      unresolved_typed_registrations: extracted.unresolvedTyped,
+    });
+  }
+
+  return scopes;
+}
+
+function extractImplementedMethodsFromSource(registryPath, handlerPath) {
+  ensureFileExists(registryPath);
+  const source = fs.readFileSync(registryPath, "utf8");
+  const methodMap = parseDispatcherMethodMap(handlerPath);
+  const extracted = extractMethodIdsFromSourceSnippet(source, methodMap);
+  const scopeStats = extractRegistrationScopeStats(source, methodMap);
+  const scopedDuplicateRegistrations = scopeStats.reduce((sum, scope) => sum + scope.duplicate_registrations, 0);
+
+  return {
+    implementedRaw: extracted.methods,
+    unresolvedTyped: extracted.unresolvedTyped,
+    registrationScopeStats: scopeStats,
+    scopedDuplicateRegistrations,
   };
 }
 
@@ -356,6 +470,9 @@ function createMarkdown(report) {
   lines.push(`- Missing in code (out of scope): ${report.counts.missing_in_code_out_of_scope}`);
   lines.push(`- Unknown registry entries: ${report.counts.unknown_registry_entries}`);
   lines.push(`- Duplicate registry registrations: ${report.counts.duplicate_registry_registrations}`);
+  if (typeof report.counts.duplicate_registry_registrations_cross_scope === "number") {
+    lines.push(`- Duplicate registry registrations (cross-scope): ${report.counts.duplicate_registry_registrations_cross_scope}`);
+  }
   lines.push("");
   lines.push("## Namespace Coverage");
   lines.push("");
@@ -430,6 +547,24 @@ function createMarkdown(report) {
     });
     lines.push("");
   }
+  if (Array.isArray(report.registration_scope_stats) && report.registration_scope_stats.length > 0) {
+    lines.push("## Registration Scope Duplicates");
+    lines.push("");
+    report.registration_scope_stats.forEach((scopeStat) => {
+      lines.push(`### ${scopeStat.scope}`);
+      lines.push("");
+      lines.push(`- Duplicate registrations: ${scopeStat.duplicate_registrations}`);
+      lines.push(`- Unknown registrations: ${scopeStat.unknown_registry_entries}`);
+      const topMethods = (scopeStat.duplicate_methods || []).slice(0, 8);
+      if (topMethods.length > 0) {
+        lines.push("- Top duplicate methods:");
+        topMethods.forEach((entry) => {
+          lines.push(`  - \`${entry.method_id}\` (${entry.count}x)`);
+        });
+      }
+      lines.push("");
+    });
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -444,6 +579,8 @@ function main() {
   let implementedRaw = [];
   let lexiconUniqueAll = [];
   let unresolvedTypedRegistrations = [];
+  let registrationScopeStats = [];
+  let scopedDuplicateRegistrations = null;
   const lexiconParseErrors = [];
   let methodsTsvUsed = methodsTsv;
   let lexiconsTsvUsed = lexiconsTsv;
@@ -468,6 +605,8 @@ function main() {
     const extracted = extractImplementedMethodsFromSource(args.registryPath, args.handlerPath);
     implementedRaw = extracted.implementedRaw;
     unresolvedTypedRegistrations = extracted.unresolvedTyped;
+    registrationScopeStats = extracted.registrationScopeStats;
+    scopedDuplicateRegistrations = extracted.scopedDuplicateRegistrations;
 
     const lexiconExtract = extractLexiconMethodsFromRoots(args.lexiconRoots);
     lexiconUniqueAll = uniqueSorted(lexiconExtract.methodIds);
@@ -483,7 +622,10 @@ function main() {
   const unknownRegistryEntries = implementedRaw.filter((methodId) => methodId === "unknown").length;
   const implementedFiltered = implementedRaw.filter((methodId) => methodId !== "unknown");
   const implementedUnique = uniqueSorted(implementedFiltered);
-  const duplicateRegistrations = implementedFiltered.length - implementedUnique.length;
+  const duplicateRegistrationsCrossScope = implementedFiltered.length - implementedUnique.length;
+  const duplicateRegistrations = typeof scopedDuplicateRegistrations === "number"
+    ? scopedDuplicateRegistrations
+    : duplicateRegistrationsCrossScope;
   const implementedInScope = uniqueSorted(implementedUnique.filter(inScope));
   const lexiconUniqueInScope = uniqueSorted(lexiconUniqueAll.filter(inScope));
 
@@ -522,6 +664,7 @@ function main() {
       handler_source: inputMode === "source-parsed" ? args.handlerPath : null,
       lexicon_roots: inputMode === "source-parsed" ? args.lexiconRoots : null,
       unresolved_typed_registrations: unresolvedTypedRegistrations,
+      registration_scopes: inputMode === "source-parsed" ? registrationScopeStats.map((entry) => entry.scope) : null,
       lexicon_parse_errors: lexiconParseErrors,
       stubs_json: args.stubPath,
     },
@@ -537,11 +680,13 @@ function main() {
       coverage_pct: toPercent(inBothInScope, lexiconUniqueInScope.length),
       unknown_registry_entries: unknownRegistryEntries,
       duplicate_registry_registrations: duplicateRegistrations,
+      duplicate_registry_registrations_cross_scope: duplicateRegistrationsCrossScope,
     },
     namespace_coverage: makeNamespaceCoverage(new Set(implementedInScope), new Set(lexiconUniqueInScope)),
     missing_in_code: missingInCode,
     missing_in_code_out_of_scope: missingInCodeOutOfScope,
     missing_in_lexicons: missingInLexicons,
+    registration_scope_stats: registrationScopeStats,
     stub_scan: {
       not_implemented_count: Array.isArray(stubs.not_implemented) ? stubs.not_implemented.length : 0,
       todo_fixme_count: Array.isArray(stubs.todo_fixme) ? stubs.todo_fixme.length : 0,
@@ -557,6 +702,11 @@ function main() {
 
   console.log(`Wrote ${args.outJson}`);
   console.log(`Wrote ${args.outMd}`);
+
+  if (args.failOnDuplicates && duplicateRegistrations > 0) {
+    console.error(`Scoped duplicate XRPC registrations found: ${duplicateRegistrations}`);
+    process.exitCode = 2;
+  }
 }
 
 main();

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-12T19:47:24.606Z",
+  "generated_at": "2026-02-13T03:02:26.242Z",
   "inputs": {
     "mode": "source-parsed",
     "methods_tsv": null,
@@ -11,6 +11,13 @@
       "/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons"
     ],
     "unresolved_typed_registrations": [],
+    "registration_scopes": [
+      "static.registerTempUtilityMethods",
+      "static.registerAdminAccountMaintenanceMethods",
+      "static.registerPhase1IdentityAndAccountMethods",
+      "class.registerMethodsWithDispatcher:controller",
+      "class.registerMethodsWithDispatcher:application"
+    ],
     "lexicon_parse_errors": [],
     "stubs_json": "/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json"
   },
@@ -31,7 +38,8 @@
     "missing_in_code_out_of_scope": 223,
     "coverage_pct": 100,
     "unknown_registry_entries": 0,
-    "duplicate_registry_registrations": 50
+    "duplicate_registry_registrations": 0,
+    "duplicate_registry_registrations_cross_scope": 49
   },
   "namespace_coverage": [
     {
@@ -271,6 +279,53 @@
     "tools.ozone.verification.revokeVerifications"
   ],
   "missing_in_lexicons": [],
+  "registration_scope_stats": [
+    {
+      "scope": "static.registerTempUtilityMethods",
+      "registrations_total": 6,
+      "registrations_unique": 6,
+      "unknown_registry_entries": 0,
+      "duplicate_registrations": 0,
+      "duplicate_methods": [],
+      "unresolved_typed_registrations": []
+    },
+    {
+      "scope": "static.registerAdminAccountMaintenanceMethods",
+      "registrations_total": 6,
+      "registrations_unique": 6,
+      "unknown_registry_entries": 0,
+      "duplicate_registrations": 0,
+      "duplicate_methods": [],
+      "unresolved_typed_registrations": []
+    },
+    {
+      "scope": "static.registerPhase1IdentityAndAccountMethods",
+      "registrations_total": 15,
+      "registrations_unique": 15,
+      "unknown_registry_entries": 0,
+      "duplicate_registrations": 0,
+      "duplicate_methods": [],
+      "unresolved_typed_registrations": []
+    },
+    {
+      "scope": "class.registerMethodsWithDispatcher:controller",
+      "registrations_total": 70,
+      "registrations_unique": 70,
+      "unknown_registry_entries": 0,
+      "duplicate_registrations": 0,
+      "duplicate_methods": [],
+      "unresolved_typed_registrations": []
+    },
+    {
+      "scope": "class.registerMethodsWithDispatcher:application",
+      "registrations_total": 61,
+      "registrations_unique": 61,
+      "unknown_registry_entries": 0,
+      "duplicate_registrations": 0,
+      "duplicate_methods": [],
+      "unresolved_typed_registrations": []
+    }
+  ],
   "stub_scan": {
     "not_implemented_count": 0,
     "todo_fixme_count": 0,
