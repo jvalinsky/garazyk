@@ -11,11 +11,19 @@
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconError.h"
+#import "Repository/MST.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNotification";
 
 @interface PDSRecordService ()
+
+- (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
+                                      store:(PDSActorStore *)store
+                                      error:(NSError **)error;
+- (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
+                                                                     preferredRev:(nullable NSString *)preferredRev
+                                                                            error:(NSError **)error;
 
 @end
 
@@ -159,12 +167,14 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+    NSString *writeRev = [TID tid].stringValue;
     record.uri = uri;
     record.did = did;
     record.collection = collection;
     record.rkey = rkey;
     record.cid = cidString;
     record.createdAt = [NSDate date];
+    record.rev = writeRev;
 
     // Store serialized JSON value
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
@@ -223,10 +233,25 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                error:(NSError **)error {
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSString *writeRev = [TID tid].stringValue;
+    BOOL hadExistingRecord = ([_databasePool getRecord:uri forDid:did error:nil] != nil);
 
     __block BOOL success = NO;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
+
+        if (hadExistingRecord) {
+            if (![store addRecordTombstoneURI:uri
+                                          did:did
+                                    collection:collection
+                                         rkey:rkey
+                                           rev:writeRev
+                                         error:blockError]) {
+                success = NO;
+                return;
+            }
+        }
+
         success = [store deleteRecord:uri forDid:did error:blockError];
     } error:error];
 
@@ -280,6 +305,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 
     // Pre-validate all writes and build records before entering the transaction
     PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
+    NSString *batchRev = [TID tid].stringValue;
 
     NSMutableArray *preparedOps = [NSMutableArray arrayWithCapacity:writes.count];
     NSMutableArray *resultOps = [NSMutableArray arrayWithCapacity:writes.count];
@@ -367,6 +393,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             dbRecord.rkey = rkey;
             dbRecord.cid = cidString;
             dbRecord.createdAt = [NSDate date];
+            dbRecord.rev = batchRev;
 
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
             if (jsonData) {
@@ -457,6 +484,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             dbRecord.rkey = rkey;
             dbRecord.cid = cidString;
             dbRecord.createdAt = [NSDate date];
+            dbRecord.rev = batchRev;
 
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
             if (jsonData) {
@@ -489,7 +517,14 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 return nil;
             }
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-            [preparedOps addObject:@{@"action": @"delete", @"uri": uri}];
+            BOOL recordExists = ([_databasePool getRecord:uri forDid:did error:nil] != nil);
+            [preparedOps addObject:@{
+                @"action": @"delete",
+                @"uri": uri,
+                @"collection": collection ?: @"",
+                @"rkey": rkey ?: @"",
+                @"exists": @(recordExists)
+            }];
             [resultOps addObject:@{@"action": @"delete"}];
         } else {
             if (error) {
@@ -522,6 +557,20 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 }
             } else if ([action isEqualToString:@"delete"]) {
                 NSString *uri = op[@"uri"];
+                BOOL recordExists = [op[@"exists"] boolValue];
+                if (recordExists) {
+                    NSString *collection = op[@"collection"] ?: @"";
+                    NSString *rkey = op[@"rkey"] ?: @"";
+                    if (![transactor addRecordTombstoneURI:uri
+                                                       did:did
+                                                 collection:collection
+                                                      rkey:rkey
+                                                        rev:batchRev
+                                                      error:blockError]) {
+                        success = NO;
+                        return;
+                    }
+                }
                 if (![transactor deleteRecord:uri forDid:did error:blockError]) {
                     success = NO;
                     return;
@@ -568,16 +617,104 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     NSMutableDictionary *response = [NSMutableDictionary dictionaryWithObject:results forKey:@"results"];
-    NSData *currentRoot = [_databasePool getRepoRoot:did error:nil];
-    CID *currentRootCID = currentRoot ? [CID cidFromBytes:currentRoot] : nil;
-    if (currentRootCID) {
+    NSDictionary<NSString *, NSString *> *commitMeta = [self refreshRepoRootMetadataForDid:did
+                                                                               preferredRev:batchRev
+                                                                                      error:nil];
+    NSString *commitCID = commitMeta[@"cid"];
+    NSString *commitRev = commitMeta[@"rev"];
+    if (commitCID.length > 0 && commitRev.length > 0) {
         response[@"commit"] = @{
-            @"cid": currentRootCID.stringValue ?: @"",
-            @"rev": [TID tid].stringValue
+            @"cid": commitCID,
+            @"rev": commitRev
         };
     }
 
     return response;
+}
+
+- (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
+                                      store:(PDSActorStore *)store
+                                      error:(NSError **)error {
+    MST *mst = [[MST alloc] init];
+    const NSUInteger pageSize = 1000;
+    NSUInteger offset = 0;
+
+    while (YES) {
+        NSArray<PDSDatabaseRecord *> *page = [store listRecordsForDid:did
+                                                            collection:nil
+                                                                 limit:pageSize
+                                                                offset:offset
+                                                                 error:error];
+        if (!page) {
+            if (error && !*error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                             code:8
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to list repository records"}];
+            }
+            return nil;
+        }
+
+        for (PDSDatabaseRecord *record in page) {
+            if (record.collection.length == 0 || record.rkey.length == 0 || record.cid.length == 0) {
+                continue;
+            }
+            CID *recordCID = [CID cidFromString:record.cid];
+            if (!recordCID) {
+                continue;
+            }
+            NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
+            [mst put:key valueCID:recordCID subKey:nil];
+        }
+
+        if (page.count < pageSize) {
+            break;
+        }
+        offset += pageSize;
+    }
+
+    CID *rootCID = mst.rootCID;
+    if (!rootCID && error && !*error) {
+        *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                     code:9
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute repository root"}];
+    }
+    return rootCID;
+}
+
+- (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
+                                                                     preferredRev:(nullable NSString *)preferredRev
+                                                                            error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) {
+        return nil;
+    }
+
+    CID *rootCID = [self computeRepoRootCIDForDid:did store:store error:error];
+    if (!rootCID) {
+        return nil;
+    }
+
+    NSString *resolvedRev = [store latestMutationRevisionWithError:nil];
+    if (resolvedRev.length == 0) {
+        resolvedRev = preferredRev;
+    }
+    if (resolvedRev.length == 0) {
+        resolvedRev = [TID tid].stringValue;
+    }
+
+    __block BOOL updated = NO;
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        updated = [transactor updateRepoRoot:did rootCid:rootCID.bytes rev:resolvedRev error:blockError];
+    } error:error];
+
+    if (!updated) {
+        return nil;
+    }
+
+    return @{
+        @"cid": rootCID.stringValue ?: @"",
+        @"rev": resolvedRev ?: @""
+    };
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {

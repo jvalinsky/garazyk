@@ -143,6 +143,7 @@
 - (NSString *)actorStoreRepoRootTableSchema {
     return @"CREATE TABLE IF NOT EXISTS repo_root ("
            @"    cid BLOB PRIMARY KEY,"
+           @"    rev TEXT,"
            @"    updated_at DATETIME NOT NULL"
            @")";
 }
@@ -156,6 +157,7 @@
            @"    cid BLOB NOT NULL,"
            @"    value BLOB,"
            @"    indexed_at DATETIME NOT NULL,"
+           @"    rev TEXT,"
            @"    subject_did TEXT"
            @")";
 }
@@ -165,6 +167,18 @@
            @"    cid BLOB PRIMARY KEY,"
            @"    block BLOB NOT NULL,"
            @"    size INTEGER NOT NULL"
+           @")";
+}
+
+- (NSString *)actorStoreRecordTombstonesTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS record_tombstones ("
+           @"    uri TEXT NOT NULL,"
+           @"    did TEXT NOT NULL,"
+           @"    collection TEXT NOT NULL,"
+           @"    rkey TEXT NOT NULL,"
+           @"    rev TEXT NOT NULL,"
+           @"    indexed_at DATETIME NOT NULL,"
+           @"    PRIMARY KEY (uri, rev)"
            @")";
 }
 
@@ -186,6 +200,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreBlocksTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreRecordTombstonesTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self accountsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self inviteCodesTableSchema]];
@@ -201,6 +217,12 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_rev ON records(rev);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_ipld_blocks_cid ON ipld_blocks(cid);"];
     [sql appendString:@";\n"];

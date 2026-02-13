@@ -52,4 +52,28 @@
     XCTAssertNil(response.headers[@"Content-Type"], @"setJsonBody: does NOT update headers - headers only updated during serialize");
 }
 
+- (void)testBodyFilePathLazyLoadsBody {
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"httpresponse-body-%@.txt", [NSUUID UUID].UUIDString]];
+    NSData *payload = [@"streamed-body" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([payload writeToFile:tempPath atomically:YES]);
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [response setBodyFileAtPath:tempPath deleteAfterSend:NO];
+
+    NSData *loaded = response.body;
+    XCTAssertNotNil(loaded);
+    XCTAssertEqualObjects(loaded, payload);
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+}
+
+- (void)testSerializeHeadersForBodyLengthDoesNotIncludeBodyBytes {
+    HttpResponse *response = [[HttpResponse alloc] init];
+    response.contentType = @"application/octet-stream";
+    NSData *headers = [response serializeHeadersForBodyLength:12];
+    NSString *headerString = [[NSString alloc] initWithData:headers encoding:NSUTF8StringEncoding];
+    XCTAssertTrue([headerString containsString:@"Content-Length: 12"]);
+    XCTAssertTrue([headerString hasSuffix:@"\r\n\r\n"]);
+    XCTAssertFalse([headerString containsString:@"streamed-body"]);
+}
+
 @end

@@ -1,9 +1,13 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/Pool/DatabasePool.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Repository/CAR.h"
+#import "Repository/CBOR.h"
 
 @interface AdminAuthApplicationXrpcTests : XCTestCase
 @property (nonatomic, strong) PDSApplication *application;
@@ -103,6 +107,15 @@
     return response;
 }
 
+- (NSString *)iso8601String {
+    if (@available(macOS 10.12, iOS 10.0, *)) {
+        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
+        return [formatter stringFromDate:[NSDate date]];
+    }
+    return [[NSDate date] description];
+}
+
 - (void)testApplicationGetSubjectStatusRequiresAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
@@ -184,6 +197,255 @@
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
+}
+
+- (nullable NSString *)commitRevFromCARData:(NSData *)carData {
+    NSError *carError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    XCTAssertNil(carError);
+    XCTAssertNotNil(reader);
+    if (!reader) {
+        return nil;
+    }
+
+    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    XCTAssertNotNil(commitBlock);
+    if (!commitBlock) {
+        return nil;
+    }
+
+    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    XCTAssertNotNil(commitValue);
+    XCTAssertEqual(commitValue.type, CBORTypeMap);
+    if (!commitValue || commitValue.type != CBORTypeMap) {
+        return nil;
+    }
+
+    CBORValue *revValue = commitValue.map[[CBORValue textString:@"rev"]];
+    XCTAssertNotNil(revValue);
+    XCTAssertEqual(revValue.type, CBORTypeTextString);
+    return revValue.textString;
+}
+
+- (void)testApplicationSyncGetRepoReturnsCARWithoutAuth {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"application sync getRepo",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.application.legacyController createRecordForDid:self.userDid
+                                                                        collection:@"app.bsky.feed.post"
+                                                                            record:record
+                                                                    validationMode:PDSValidationModeOff
+                                                                             error:nil];
+    XCTAssertNotNil(created);
+
+    NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                              queryString:query
+                                              queryParams:@{@"did": self.userDid}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
+    XCTAssertNotNil(response.body);
+    XCTAssertTrue(response.body.length > 0);
+    if (response.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:response.bodyFilePath error:nil];
+    }
+}
+
+- (void)testApplicationSyncGetRepoSinceCurrentRevReturnsEmptyDelta {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"application sync since",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.application.legacyController createRecordForDid:self.userDid
+                                                                        collection:@"app.bsky.feed.post"
+                                                                            record:record
+                                                                    validationMode:PDSValidationModeOff
+                                                                             error:nil];
+    XCTAssertNotNil(created);
+
+    NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
+    HttpResponse *fullResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                  queryString:query
+                                                  queryParams:@{@"did": self.userDid}
+                                                      headers:@{}];
+    XCTAssertEqual(fullResponse.statusCode, 200);
+    NSString *rev = [self commitRevFromCARData:fullResponse.body];
+    XCTAssertNotNil(rev);
+    if (fullResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:fullResponse.bodyFilePath error:nil];
+    }
+
+    NSString *deltaQuery = [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, rev];
+    HttpResponse *deltaResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                   queryString:deltaQuery
+                                                   queryParams:@{@"did": self.userDid, @"since": rev}
+                                                       headers:@{}];
+    XCTAssertEqual(deltaResponse.statusCode, 200);
+    XCTAssertEqualObjects(deltaResponse.contentType, @"application/vnd.ipld.car");
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:deltaResponse.body error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.blocks.count, 0U);
+    if (deltaResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:deltaResponse.bodyFilePath error:nil];
+    }
+}
+
+- (void)testApplicationSyncGetRepoUnknownSinceFallsBackToFull {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"application unknown since",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.application.legacyController createRecordForDid:self.userDid
+                                                                        collection:@"app.bsky.feed.post"
+                                                                            record:record
+                                                                    validationMode:PDSValidationModeOff
+                                                                             error:nil];
+    XCTAssertNotNil(created);
+
+    NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
+    HttpResponse *fullResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                  queryString:query
+                                                  queryParams:@{@"did": self.userDid}
+                                                      headers:@{}];
+    XCTAssertEqual(fullResponse.statusCode, 200);
+
+    NSError *fullParseError = nil;
+    CARReader *fullReader = [CARReader readFromData:fullResponse.body error:&fullParseError];
+    XCTAssertNil(fullParseError);
+    XCTAssertNotNil(fullReader);
+    if (fullResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:fullResponse.bodyFilePath error:nil];
+    }
+
+    NSString *unknownSinceQuery = [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, @"3jzfcijpj2z2a"];
+    HttpResponse *unknownResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                     queryString:unknownSinceQuery
+                                                     queryParams:@{@"did": self.userDid, @"since": @"3jzfcijpj2z2a"}
+                                                         headers:@{}];
+    XCTAssertEqual(unknownResponse.statusCode, 200);
+    XCTAssertEqualObjects(unknownResponse.contentType, @"application/vnd.ipld.car");
+
+    NSError *unknownParseError = nil;
+    CARReader *unknownReader = [CARReader readFromData:unknownResponse.body error:&unknownParseError];
+    XCTAssertNil(unknownParseError);
+    XCTAssertNotNil(unknownReader);
+    XCTAssertEqual(unknownReader.blocks.count, fullReader.blocks.count);
+    if (unknownResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:unknownResponse.bodyFilePath error:nil];
+    }
+}
+
+- (void)testApplicationSyncGetRepoSinceApplyWritesCreateRevReturnsEmptyDelta {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    NSDictionary *createWrite = @{
+        @"action": @"create",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": @"applywrites-since-create",
+        @"value": @{
+            @"$type": @"app.bsky.feed.post",
+            @"text": @"applyWrites create rev baseline",
+            @"createdAt": [self iso8601String]
+        }
+    };
+
+    HttpResponse *applyResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                                                           body:@{@"writes": @[createWrite], @"validate": @NO}
+                                                        headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(applyResponse.statusCode, 200);
+    NSDictionary *applyCommit = applyResponse.jsonBody[@"commit"];
+    XCTAssertNotNil(applyCommit);
+    XCTAssertTrue([applyCommit[@"cid"] length] > 0);
+    XCTAssertTrue([applyCommit[@"rev"] length] > 0);
+
+    PDSActorStore *store = [self.application.userDatabasePool storeForDid:self.userDid error:nil];
+    XCTAssertNotNil(store);
+    NSString *commitRev = [store latestMutationRevisionWithError:nil];
+    XCTAssertNotNil(commitRev);
+    XCTAssertTrue(commitRev.length > 0);
+    XCTAssertEqualObjects(applyCommit[@"rev"], commitRev);
+
+    NSString *query = [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, commitRev];
+    HttpResponse *deltaResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                   queryString:query
+                                                   queryParams:@{@"did": self.userDid, @"since": commitRev}
+                                                       headers:@{}];
+    XCTAssertEqual(deltaResponse.statusCode, 200);
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:deltaResponse.body error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.blocks.count, 0U);
+    if (deltaResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:deltaResponse.bodyFilePath error:nil];
+    }
+}
+
+- (void)testApplicationSyncGetRepoSinceApplyWritesDeleteRevReturnsEmptyDelta {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    NSDictionary *createWrite = @{
+        @"action": @"create",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": @"applywrites-since-delete",
+        @"value": @{
+            @"$type": @"app.bsky.feed.post",
+            @"text": @"applyWrites delete rev baseline",
+            @"createdAt": [self iso8601String]
+        }
+    };
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                                                            body:@{@"writes": @[createWrite], @"validate": @NO}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(createResponse.statusCode, 200);
+    NSDictionary *createCommit = createResponse.jsonBody[@"commit"];
+    XCTAssertNotNil(createCommit);
+    XCTAssertTrue([createCommit[@"cid"] length] > 0);
+    XCTAssertTrue([createCommit[@"rev"] length] > 0);
+
+    NSDictionary *deleteWrite = @{
+        @"action": @"delete",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": @"applywrites-since-delete"
+    };
+    HttpResponse *deleteResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                                                            body:@{@"writes": @[deleteWrite], @"validate": @NO}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(deleteResponse.statusCode, 200);
+    NSDictionary *deleteCommit = deleteResponse.jsonBody[@"commit"];
+    XCTAssertNotNil(deleteCommit);
+    XCTAssertTrue([deleteCommit[@"cid"] length] > 0);
+    XCTAssertTrue([deleteCommit[@"rev"] length] > 0);
+
+    PDSActorStore *store = [self.application.userDatabasePool storeForDid:self.userDid error:nil];
+    XCTAssertNotNil(store);
+    NSString *deleteRev = [store latestMutationRevisionWithError:nil];
+    XCTAssertNotNil(deleteRev);
+    XCTAssertTrue(deleteRev.length > 0);
+    XCTAssertEqualObjects(deleteCommit[@"rev"], deleteRev);
+
+    NSString *query = [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, deleteRev];
+    HttpResponse *deltaResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                   queryString:query
+                                                   queryParams:@{@"did": self.userDid, @"since": deleteRev}
+                                                       headers:@{}];
+    XCTAssertEqual(deltaResponse.statusCode, 200);
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:deltaResponse.body error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.blocks.count, 0U);
+    if (deltaResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:deltaResponse.bodyFilePath error:nil];
+    }
 }
 
 @end
