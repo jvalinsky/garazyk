@@ -57,6 +57,8 @@ static const NSUInteger kHttpOutputQueueHighWaterMark = 10 * 1024 * 1024; // 10M
 static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
 static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
+static const NSUInteger kHttpGeneratedChunkSendSize = 64 * 1024;
+static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 @interface HttpQueuedResponse : NSObject
 @property (nonatomic, strong) NSData *headerData;
@@ -65,6 +67,8 @@ static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
 @property (nonatomic, assign) BOOL deleteBodyFileAfterSend;
 @property (nonatomic, copy, nullable) HttpResponseBodyChunkProducer bodyChunkProducer;
 @property (nonatomic, assign) BOOL chunkedTransferEncoding;
+@property (nonatomic, strong, nullable) NSData *pendingGeneratedChunk;
+@property (nonatomic, assign) NSUInteger pendingGeneratedChunkOffset;
 @property (nonatomic, assign) NSUInteger queueByteSize;
 @end
 
@@ -719,7 +723,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         queueItem.headerData = [response serializeHeadersForBodyLength:0];
         queueItem.bodyChunkProducer = [response.bodyChunkProducer copy];
         queueItem.chunkedTransferEncoding = response.chunkedTransferEncoding;
-        queueItem.queueByteSize = queueItem.headerData.length;
+        queueItem.queueByteSize = queueItem.headerData.length + kHttpGeneratedQueueBudget;
         return queueItem;
     }
 
@@ -804,42 +808,63 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         }
 
         @autoreleasepool {
-            NSError *produceError = nil;
-            NSData *chunk = queueItem.bodyChunkProducer ? queueItem.bodyChunkProducer(&produceError) : nil;
-            if (produceError) {
-                PDS_LOG_HTTP_ERROR(@"Failed to produce response body chunk: %@", produceError);
-                [connection cancel];
-                sendNextChunk = nil;
-                return;
-            }
-
-            if (chunk.length == 0) {
-                if (queueItem.chunkedTransferEncoding) {
-                    NSData *terminator = [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
-                    [connection sendData:terminator completion:^(NSError *error) {
-                        if (error) {
-                            PDS_LOG_HTTP_ERROR(@"Failed to stream chunked terminator: %@", error);
-                            [connection cancel];
-                            sendNextChunk = nil;
-                            return;
-                        }
-                        [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
-                        sendNextChunk = nil;
-                    }];
+            NSData *payloadChunk = nil;
+            NSData *pendingChunk = queueItem.pendingGeneratedChunk;
+            if (pendingChunk.length > 0 && queueItem.pendingGeneratedChunkOffset < pendingChunk.length) {
+                NSUInteger remaining = pendingChunk.length - queueItem.pendingGeneratedChunkOffset;
+                NSUInteger sendLength = MIN(remaining, kHttpGeneratedChunkSendSize);
+                payloadChunk = [pendingChunk subdataWithRange:NSMakeRange(queueItem.pendingGeneratedChunkOffset, sendLength)];
+                queueItem.pendingGeneratedChunkOffset += sendLength;
+                if (queueItem.pendingGeneratedChunkOffset >= pendingChunk.length) {
+                    queueItem.pendingGeneratedChunk = nil;
+                    queueItem.pendingGeneratedChunkOffset = 0;
+                }
+            } else {
+                NSError *produceError = nil;
+                NSData *producedChunk = queueItem.bodyChunkProducer ? queueItem.bodyChunkProducer(&produceError) : nil;
+                if (produceError) {
+                    PDS_LOG_HTTP_ERROR(@"Failed to produce response body chunk: %@", produceError);
+                    [connection cancel];
+                    sendNextChunk = nil;
                     return;
                 }
 
-                [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
-                sendNextChunk = nil;
-                return;
+                if (producedChunk.length == 0) {
+                    if (queueItem.chunkedTransferEncoding) {
+                        NSData *terminator = [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
+                        [connection sendData:terminator completion:^(NSError *error) {
+                            if (error) {
+                                PDS_LOG_HTTP_ERROR(@"Failed to stream chunked terminator: %@", error);
+                                [connection cancel];
+                                sendNextChunk = nil;
+                                return;
+                            }
+                            [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                            sendNextChunk = nil;
+                        }];
+                        return;
+                    }
+
+                    [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                    sendNextChunk = nil;
+                    return;
+                }
+
+                if (producedChunk.length > kHttpGeneratedChunkSendSize) {
+                    queueItem.pendingGeneratedChunk = producedChunk;
+                    queueItem.pendingGeneratedChunkOffset = kHttpGeneratedChunkSendSize;
+                    payloadChunk = [producedChunk subdataWithRange:NSMakeRange(0, kHttpGeneratedChunkSendSize)];
+                } else {
+                    payloadChunk = producedChunk;
+                }
             }
 
-            NSData *wireChunk = chunk;
+            NSData *wireChunk = payloadChunk;
             if (queueItem.chunkedTransferEncoding) {
-                NSString *sizeLine = [NSString stringWithFormat:@"%lx\r\n", (unsigned long)chunk.length];
-                NSMutableData *encoded = [NSMutableData dataWithCapacity:sizeLine.length + chunk.length + 2];
+                NSString *sizeLine = [NSString stringWithFormat:@"%lx\r\n", (unsigned long)payloadChunk.length];
+                NSMutableData *encoded = [NSMutableData dataWithCapacity:sizeLine.length + payloadChunk.length + 2];
                 [encoded appendData:[sizeLine dataUsingEncoding:NSUTF8StringEncoding]];
-                [encoded appendData:chunk];
+                [encoded appendData:payloadChunk];
                 [encoded appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
                 wireChunk = [encoded copy];
             }
