@@ -37,6 +37,10 @@ jobs:
           brew update
           brew install ninja cmake
 
+      - name: Check XRPC Registry Duplicates
+        run: |
+          node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates
+
       - name: Configure (CMake)
         run: |
           cmake -S . -B build \
@@ -77,7 +81,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./docker/Dockerfile.gnustep
           push: false
           tags: atprotopds:ci
           cache-from: type=gha
