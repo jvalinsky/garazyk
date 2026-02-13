@@ -45,6 +45,7 @@ NS_ASSUME_NONNULL_END
         _keepAlive = YES;
         _contentType = @"application/json; charset=utf-8";
         _deleteBodyFileAfterSend = NO;
+        _chunkedTransferEncoding = NO;
         [[self class] applySecurityHeaders:_headers];
     }
     return self;
@@ -83,6 +84,10 @@ NS_ASSUME_NONNULL_END
         _body = nil;
     }
     _bodyString = nil;
+    _bodyFilePath = nil;
+    _deleteBodyFileAfterSend = NO;
+    _bodyChunkProducer = nil;
+    _chunkedTransferEncoding = NO;
     self.contentType = @"application/json; charset=utf-8";
 }
 
@@ -90,6 +95,10 @@ NS_ASSUME_NONNULL_END
     _bodyString = [body copy];
     _body = [body dataUsingEncoding:NSUTF8StringEncoding];
     _jsonBody = nil; /*! Clear competing body representations */
+    _bodyFilePath = nil;
+    _deleteBodyFileAfterSend = NO;
+    _bodyChunkProducer = nil;
+    _chunkedTransferEncoding = NO;
 }
 
 - (void)setBodyData:(NSData *)data {
@@ -98,6 +107,8 @@ NS_ASSUME_NONNULL_END
     _jsonBody = nil;
     _bodyFilePath = nil;
     _deleteBodyFileAfterSend = NO;
+    _bodyChunkProducer = nil;
+    _chunkedTransferEncoding = NO;
 }
 
 - (void)setBodyFileAtPath:(NSString *)path deleteAfterSend:(BOOL)deleteAfterSend {
@@ -106,6 +117,19 @@ NS_ASSUME_NONNULL_END
     _body = nil;
     _bodyString = nil;
     _jsonBody = nil;
+    _bodyChunkProducer = nil;
+    _chunkedTransferEncoding = NO;
+}
+
+- (void)setBodyChunkProducer:(HttpResponseBodyChunkProducer)producer
+     chunkedTransferEncoding:(BOOL)chunkedTransferEncoding {
+    _bodyChunkProducer = [producer copy];
+    _chunkedTransferEncoding = chunkedTransferEncoding;
+    _body = nil;
+    _bodyString = nil;
+    _jsonBody = nil;
+    _bodyFilePath = nil;
+    _deleteBodyFileAfterSend = NO;
 }
 
 - (NSData *)resolveBodyData {
@@ -117,11 +141,30 @@ NS_ASSUME_NONNULL_END
         }
         return jsonData;
     }
-    if (self.body) {
-        return self.body;
+    if (_body) {
+        return _body;
     }
     if (self.bodyString) {
         return [self.bodyString dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    HttpResponseBodyChunkProducer producer = self.bodyChunkProducer;
+    if (producer) {
+        NSMutableData *collected = [NSMutableData data];
+        while (YES) {
+            NSError *chunkError = nil;
+            NSData *chunk = producer ? producer(&chunkError) : nil;
+            if (chunkError) {
+                return nil;
+            }
+            if (chunk.length == 0) {
+                break;
+            }
+            [collected appendData:chunk];
+        }
+        _body = [collected copy];
+        _bodyChunkProducer = nil;
+        _chunkedTransferEncoding = NO;
+        return _body;
     }
     if (self.bodyFilePath.length > 0) {
         return [NSData dataWithContentsOfFile:self.bodyFilePath];
@@ -136,6 +179,9 @@ NS_ASSUME_NONNULL_END
     if (_bodyFilePath.length > 0) {
         _body = [NSData dataWithContentsOfFile:_bodyFilePath];
         return _body;
+    }
+    if (_bodyChunkProducer) {
+        return [self resolveBodyData];
     }
     return nil;
 }
@@ -160,8 +206,14 @@ NS_ASSUME_NONNULL_END
         [self setHeader:self.contentType forKey:@"Content-Type"];
     }
 
-    NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyLength];
-    [self setHeader:contentLength forKey:@"Content-Length"];
+    if (self.chunkedTransferEncoding) {
+        [self.headers removeObjectForKey:@"Content-Length"];
+        [self setHeader:@"chunked" forKey:@"Transfer-Encoding"];
+    } else {
+        [self.headers removeObjectForKey:@"Transfer-Encoding"];
+        NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyLength];
+        [self setHeader:contentLength forKey:@"Content-Length"];
+    }
 
     /*! Add Date header */
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];

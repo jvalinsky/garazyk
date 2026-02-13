@@ -14,6 +14,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef NSData * _Nullable (^HttpResponseBodyChunkProducer)(NSError **error);
+
 /*!
  @enum HttpStatusCode
 
@@ -69,6 +71,12 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 /*! When YES and bodyFilePath is set, the file is removed after send completes. */
 @property (nonatomic, assign) BOOL deleteBodyFileAfterSend;
 
+/*! Optional pull-based producer for streaming response body chunks. */
+@property (nonatomic, copy, nullable) HttpResponseBodyChunkProducer bodyChunkProducer;
+
+/*! When YES, headers are emitted with Transfer-Encoding: chunked instead of Content-Length. */
+@property (nonatomic, assign) BOOL chunkedTransferEncoding;
+
 /*! The body as a JSON object (sets Content-Type to application/json). */
 @property (nonatomic, copy, nullable) id jsonBody;
 
@@ -114,6 +122,10 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 
 /*! Sets the body to stream from a file path. */
 - (void)setBodyFileAtPath:(NSString *)path deleteAfterSend:(BOOL)deleteAfterSend;
+
+/*! Sets a pull-based body producer and stream framing mode. */
+- (void)setBodyChunkProducer:(HttpResponseBodyChunkProducer)producer
+     chunkedTransferEncoding:(BOOL)chunkedTransferEncoding;
 
 /*! Serializes only the response headers with a known body length. */
 - (NSData *)serializeHeadersForBodyLength:(NSUInteger)bodyLength;

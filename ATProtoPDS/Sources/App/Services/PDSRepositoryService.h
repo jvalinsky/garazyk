@@ -14,6 +14,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
+
 @class PDSDatabasePool;
 
 @class MST;
@@ -128,6 +130,23 @@ NS_ASSUME_NONNULL_BEGIN
  @return YES on success, NO on failure.
  */
 - (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error;
+
+/*!
+ @method repoContentsChunkProducer:since:error:
+
+ @abstract Builds a pull-based CAR chunk producer for streaming repository contents.
+
+ @discussion The returned block emits the next CAR payload chunk on each call.
+ It returns nil with no error at end-of-stream.
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param error Error pointer for export preparation failures.
+ @return Chunk producer block or nil on failure.
+ */
+- (nullable PDSRepoChunkProducer)repoContentsChunkProducer:(NSString *)did
+                                                    since:(nullable NSString *)sinceRev
+                                                    error:(NSError **)error;
 
 /*!
  @method updateRepo:commit:error:

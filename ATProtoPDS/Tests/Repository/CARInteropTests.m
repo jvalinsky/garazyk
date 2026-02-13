@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
+#import "Repository/MST.h"
 #import "Core/CID.h"
 
 @interface CARInteropTests : XCTestCase
@@ -230,6 +231,59 @@ static NSData *HexToNSData(NSString *hex) {
 
     CARBlock *parsedBlock = reader.blocks.firstObject;
     XCTAssertEqualObjects(parsedBlock.cid, expectedBlockCID, @"Block CID should match computed CID");
+}
+
+- (void)testMSTEnumerateNodeBlocksMatchesExportCAR {
+    MST *mst = [[MST alloc] init];
+
+    NSData *value1 = [@"record-1" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *value2 = [@"record-2" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *cid1 = [CID cidWithDigest:[CID sha256Digest:value1] codec:0x71];
+    CID *cid2 = [CID cidWithDigest:[CID sha256Digest:value2] codec:0x71];
+    XCTAssertNotNil(cid1);
+    XCTAssertNotNil(cid2);
+
+    [mst put:@"app.bsky.feed.post/enum-1" valueCID:cid1];
+    [mst put:@"app.bsky.feed.post/enum-2" valueCID:cid2];
+
+    NSMutableDictionary<NSString *, NSData *> *enumeratedBlocks = [NSMutableDictionary dictionary];
+    NSError *enumerationError = nil;
+    BOOL enumerated = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+        (void)error;
+        NSString *cidString = cid.stringValue ?: @"";
+        if (cidString.length == 0) {
+            return YES;
+        }
+        enumeratedBlocks[cidString] = data;
+        return YES;
+    } error:&enumerationError];
+    XCTAssertTrue(enumerated);
+    XCTAssertNil(enumerationError);
+    XCTAssertTrue(enumeratedBlocks.count > 0);
+
+    NSData *carData = [mst exportCAR];
+    XCTAssertNotNil(carData);
+
+    NSError *carError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    XCTAssertNotNil(reader);
+    XCTAssertNil(carError);
+
+    NSMutableDictionary<NSString *, NSData *> *exportedBlocks = [NSMutableDictionary dictionary];
+    for (CARBlock *block in reader.blocks) {
+        NSString *cidString = block.cid.stringValue ?: @"";
+        if (cidString.length == 0) {
+            continue;
+        }
+        exportedBlocks[cidString] = block.data;
+    }
+
+    XCTAssertEqual(enumeratedBlocks.count, exportedBlocks.count);
+    for (NSString *cidString in exportedBlocks) {
+        NSData *enumeratedData = enumeratedBlocks[cidString];
+        XCTAssertNotNil(enumeratedData, @"Expected enumerated block for CID %@", cidString);
+        XCTAssertEqualObjects(enumeratedData, exportedBlocks[cidString], @"Block data mismatch for CID %@", cidString);
+    }
 }
 
 @end

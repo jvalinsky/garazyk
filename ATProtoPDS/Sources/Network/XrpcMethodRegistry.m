@@ -4051,11 +4051,11 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        NSString *tempFileName = [NSString stringWithFormat:@"objpds-getrepo-%@.car", [NSUUID UUID].UUIDString];
-        NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:tempFileName];
         NSError *exportError = nil;
-        if (![repositoryService writeRepoContents:did since:sinceRev toPath:tempPath error:&exportError]) {
-            [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+        PDSRepoChunkProducer producer = [repositoryService repoContentsChunkProducer:did
+                                                                               since:sinceRev
+                                                                               error:&exportError];
+        if (!producer) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RepoNotFound",
                                     @"message": exportError.localizedDescription ?: @"Repository not found"}];
@@ -4064,7 +4064,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         response.contentType = @"application/vnd.ipld.car";
-        [response setBodyFileAtPath:tempPath deleteAfterSend:YES];
+        [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
     }];
 
     [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request, HttpResponse *response) {

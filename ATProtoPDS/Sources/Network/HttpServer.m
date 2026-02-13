@@ -63,6 +63,8 @@ static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
 @property (nonatomic, strong, nullable) NSData *bodyData;
 @property (nonatomic, copy, nullable) NSString *bodyFilePath;
 @property (nonatomic, assign) BOOL deleteBodyFileAfterSend;
+@property (nonatomic, copy, nullable) HttpResponseBodyChunkProducer bodyChunkProducer;
+@property (nonatomic, assign) BOOL chunkedTransferEncoding;
 @property (nonatomic, assign) NSUInteger queueByteSize;
 @end
 
@@ -688,6 +690,10 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
             [strongSelf streamFileQueueItem:queueItem forState:state connection:connection];
             return;
         }
+        if (queueItem.bodyChunkProducer) {
+            [strongSelf streamGeneratedQueueItem:queueItem forState:state connection:connection];
+            return;
+        }
         [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
     }];
 }
@@ -702,6 +708,17 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         queueItem.headerData = [response serializeHeadersForBodyLength:bodyLength];
         queueItem.bodyFilePath = bodyFilePath;
         queueItem.deleteBodyFileAfterSend = response.deleteBodyFileAfterSend;
+        queueItem.queueByteSize = queueItem.headerData.length;
+        return queueItem;
+    }
+
+    if (response.bodyChunkProducer) {
+        if (!response.chunkedTransferEncoding) {
+            response.chunkedTransferEncoding = YES;
+        }
+        queueItem.headerData = [response serializeHeadersForBodyLength:0];
+        queueItem.bodyChunkProducer = [response.bodyChunkProducer copy];
+        queueItem.chunkedTransferEncoding = response.chunkedTransferEncoding;
         queueItem.queueByteSize = queueItem.headerData.length;
         return queueItem;
     }
@@ -759,6 +776,72 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                     if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
                         [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath error:nil];
                     }
+                    [connection cancel];
+                    return;
+                }
+                if (weakSendNextChunk) {
+                    weakSendNextChunk();
+                }
+            }];
+        }
+    };
+    weakSendNextChunk = sendNextChunk;
+
+    sendNextChunk();
+}
+
+- (void)streamGeneratedQueueItem:(HttpQueuedResponse *)queueItem
+                        forState:(HttpConnectionState *)state
+                      connection:(id<PDSNetworkConnection>)connection {
+    __weak typeof(self) weakSelf = self;
+    __block void (^sendNextChunk)(void) = nil;
+    __weak void (^weakSendNextChunk)(void) = nil;
+    sendNextChunk = ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+
+        @autoreleasepool {
+            NSError *produceError = nil;
+            NSData *chunk = queueItem.bodyChunkProducer ? queueItem.bodyChunkProducer(&produceError) : nil;
+            if (produceError) {
+                PDS_LOG_HTTP_ERROR(@"Failed to produce response body chunk: %@", produceError);
+                [connection cancel];
+                return;
+            }
+
+            if (chunk.length == 0) {
+                if (queueItem.chunkedTransferEncoding) {
+                    NSData *terminator = [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
+                    [connection sendData:terminator completion:^(NSError *error) {
+                        if (error) {
+                            PDS_LOG_HTTP_ERROR(@"Failed to stream chunked terminator: %@", error);
+                            [connection cancel];
+                            return;
+                        }
+                        [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                    }];
+                    return;
+                }
+
+                [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                return;
+            }
+
+            NSData *wireChunk = chunk;
+            if (queueItem.chunkedTransferEncoding) {
+                NSString *sizeLine = [NSString stringWithFormat:@"%lx\r\n", (unsigned long)chunk.length];
+                NSMutableData *encoded = [NSMutableData dataWithCapacity:sizeLine.length + chunk.length + 2];
+                [encoded appendData:[sizeLine dataUsingEncoding:NSUTF8StringEncoding]];
+                [encoded appendData:chunk];
+                [encoded appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+                wireChunk = [encoded copy];
+            }
+
+            [connection sendData:wireChunk completion:^(NSError *error) {
+                if (error) {
+                    PDS_LOG_HTTP_ERROR(@"Failed to stream generated response body: %@", error);
                     [connection cancel];
                     return;
                 }
