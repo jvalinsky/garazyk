@@ -227,6 +227,21 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 - (nullable NSData *)serializeNode:(MSTNode *)node;
 
 /*!
+ @method enumerateNodeCARBlocksUsingBlock:error:
+
+ @abstract Enumerates all MST node blocks in CAR-ready form.
+
+ @discussion Traverses the tree and invokes the callback once per unique node
+ CID with its serialized DAG-CBOR bytes.
+
+ @param block Callback invoked for each node block. Return NO to stop.
+ @param error Error pointer for traversal or callback failures.
+ @return YES if traversal completed, NO if aborted due to error.
+ */
+- (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                                   error:(NSError **)error;
+
+/*!
  @method toJSON
 
  @abstract Exports the complete tree structure as a JSON dictionary.
