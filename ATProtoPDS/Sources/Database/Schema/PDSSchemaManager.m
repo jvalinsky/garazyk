@@ -218,8 +218,6 @@
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);"];
     [sql appendString:@";\n"];
-    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_rev ON records(rev);"];
-    [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev);"];
