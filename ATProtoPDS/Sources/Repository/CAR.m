@@ -493,8 +493,62 @@ static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
 }
 
 - (BOOL)writeToPath:(NSString *)path error:(NSError **)error {
-    NSData *data = [self serialize];
-    return [data writeToFile:path options:NSDataWritingAtomic error:error];
+    if (![[NSFileManager defaultManager] createFileAtPath:path contents:nil attributes:nil]) {
+        if (error) {
+            *error = [NSError errorWithDomain:NSPOSIXErrorDomain
+                                         code:errno
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create CAR output file"}];
+        }
+        return NO;
+    }
+
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:path];
+    if (!fileHandle) {
+        if (error) {
+            *error = [NSError errorWithDomain:NSPOSIXErrorDomain
+                                         code:errno
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open CAR output file"}];
+        }
+        return NO;
+    }
+
+    @try {
+        CBORValue *rootsArray = [CBORValue array:@[
+            [CBORValue tag:42 value:[CBORValue byteString:[self.rootCID bytes]]]
+        ]];
+        CBORValue *headerMap = [CBORValue map:@{
+            [CBORValue textString:@"roots"]: rootsArray,
+            [CBORValue textString:@"version"]: [CBORValue unsignedInteger:1]
+        }];
+        NSData *headerCBOR = [headerMap encode];
+
+        uint8_t headerLenBuffer[16];
+        NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
+        [fileHandle writeData:[NSData dataWithBytes:headerLenBuffer length:headerLenSize]];
+        [fileHandle writeData:headerCBOR];
+
+        for (CARBlock *block in self.blocks) {
+            NSData *cidBytes = [block.cid bytes];
+            NSUInteger totalLength = cidBytes.length + block.data.length;
+
+            uint8_t blockLenBuffer[16];
+            NSUInteger blockLenSize = WriteVarint(totalLength, blockLenBuffer);
+            [fileHandle writeData:[NSData dataWithBytes:blockLenBuffer length:blockLenSize]];
+            [fileHandle writeData:cidBytes];
+            [fileHandle writeData:block.data];
+        }
+
+        [fileHandle closeFile];
+        return YES;
+    } @catch (NSException *exception) {
+        [fileHandle closeFile];
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-20
+                                     userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Failed to stream CAR to file"}];
+        }
+        return NO;
+    }
 }
 
 @end

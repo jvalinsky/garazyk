@@ -4028,14 +4028,15 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                                     PDSConfiguration *config,
                                     BOOL legacyMode) {
     [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
-        if (legacyMode) {
-            NSString *did = [request queryParamForKey:@"did"];
-            if (!did) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-                return;
-            }
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *sinceRev = [request queryParamForKey:@"since"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
 
+        if (legacyMode) {
             NSError *error = nil;
             NSData *repoData = [authController getRepoDataForDid:did error:&error];
             if (error) {
@@ -4045,30 +4046,25 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             }
 
             response.statusCode = HttpStatusOK;
-            response.contentType = @"application/car";
+            response.contentType = @"application/vnd.ipld.car";
             [response setBodyData:repoData];
             return;
         }
 
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSData *repoData = [repositoryService getRepoContents:did since:nil error:&error];
-        if (error || !repoData) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
+        NSString *tempFileName = [NSString stringWithFormat:@"objpds-getrepo-%@.car", [NSUUID UUID].UUIDString];
+        NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:tempFileName];
+        NSError *exportError = nil;
+        if (![repositoryService writeRepoContents:did since:sinceRev toPath:tempPath error:&exportError]) {
+            [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound",
+                                    @"message": exportError.localizedDescription ?: @"Repository not found"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        response.body = repoData;
-        [response setHeader:@"application/x-cbor" forKey:@"Content-Type"];
+        response.contentType = @"application/vnd.ipld.car";
+        [response setBodyFileAtPath:tempPath deleteAfterSend:YES];
     }];
 
     [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request, HttpResponse *response) {
