@@ -155,6 +155,25 @@
     return [self.controller.serviceDatabases getAccountByDid:did error:error];
 }
 
+- (nullable NSDictionary *)latestTakedownForSubjectType:(NSString *)subjectType
+                                              subjectID:(NSString *)subjectID
+                                                  error:(NSError **)error {
+    PDSDatabase *db = [self.controller serviceDatabaseWithError:error];
+    if (!db) {
+        return nil;
+    }
+
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:
+                                     @"SELECT subjectType, subjectId, takedownRef, applied FROM admin_takedowns WHERE subjectType = ? AND subjectId = ? ORDER BY createdAt DESC LIMIT 1"
+                                                              params:@[subjectType, subjectID]
+                                                               error:error];
+    [db close];
+    if (!rows || rows.count == 0) {
+        return nil;
+    }
+    return rows.firstObject;
+}
+
 - (NSString *)expectedIssuer {
     NSString *configuredIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"];
     if ([configuredIssuer isKindOfClass:[NSString class]] && configuredIssuer.length > 0) {
@@ -446,6 +465,55 @@
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testModerateAccountAdminSuccessPersistsStatus {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+                                                      body:@{
+                                                          @"did": self.userDid,
+                                                          @"action": @"takedown",
+                                                          @"reason": @"policy"
+                                                      }
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"status"], @"success");
+    XCTAssertEqualObjects(response.jsonBody[@"did"], self.userDid);
+    XCTAssertEqualObjects(response.jsonBody[@"action"], @"takedown");
+
+    NSError *error = nil;
+    NSDictionary *row = [self latestTakedownForSubjectType:@"account" subjectID:self.userDid error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(row);
+    XCTAssertEqualObjects(row[@"subjectType"], @"account");
+    XCTAssertEqualObjects(row[@"subjectId"], self.userDid);
+    XCTAssertEqualObjects(row[@"takedownRef"], @"takedown");
+    XCTAssertEqual([row[@"applied"] integerValue], 1);
+}
+
+- (void)testModerateRecordAdminSuccessPersistsStatus {
+    NSString *recordURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid];
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
+                                                      body:@{
+                                                          @"uri": recordURI,
+                                                          @"action": @"takedown",
+                                                          @"reason": @"policy"
+                                                      }
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"status"], @"success");
+    XCTAssertEqualObjects(response.jsonBody[@"uri"], recordURI);
+    XCTAssertEqualObjects(response.jsonBody[@"action"], @"takedown");
+
+    NSError *error = nil;
+    NSDictionary *row = [self latestTakedownForSubjectType:@"record" subjectID:recordURI error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(row);
+    XCTAssertEqualObjects(row[@"subjectType"], @"record");
+    XCTAssertEqualObjects(row[@"subjectId"], recordURI);
+    XCTAssertEqualObjects(row[@"takedownRef"], @"takedown");
+    XCTAssertEqual([row[@"applied"] integerValue], 1);
 }
 
 - (void)testTakeDownAccountRequiresAuth {

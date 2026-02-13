@@ -184,7 +184,13 @@ function createPlanMarkdown(payload) {
   lines.push(`- Unknown registry entries: ${payload.coverage.unknown_registry_entries}`);
   lines.push(`- Duplicate registry registrations: ${payload.coverage.duplicate_registry_registrations}`);
   if (typeof payload.coverage.duplicate_registry_registrations_cross_scope === "number") {
-    lines.push(`- Duplicate registry registrations (cross-scope): ${payload.coverage.duplicate_registry_registrations_cross_scope}`);
+    lines.push(`- Duplicate registry registrations (cross-scope, actionable): ${payload.coverage.duplicate_registry_registrations_cross_scope}`);
+  }
+  if (typeof payload.coverage.duplicate_registry_registrations_cross_scope_expected === "number") {
+    lines.push(`- Cross-scope overlap (expected controller/application dual-path): ${payload.coverage.duplicate_registry_registrations_cross_scope_expected}`);
+  }
+  if (typeof payload.coverage.duplicate_registry_registrations_cross_scope_raw === "number") {
+    lines.push(`- Cross-scope overlap (raw total): ${payload.coverage.duplicate_registry_registrations_cross_scope_raw}`);
   }
   lines.push("");
   lines.push("## Priority Rubric");
@@ -321,6 +327,8 @@ function main() {
       unknown_registry_entries: coverage.counts.unknown_registry_entries,
       duplicate_registry_registrations: coverage.counts.duplicate_registry_registrations,
       duplicate_registry_registrations_cross_scope: coverage.counts.duplicate_registry_registrations_cross_scope,
+      duplicate_registry_registrations_cross_scope_expected: coverage.counts.duplicate_registry_registrations_cross_scope_expected,
+      duplicate_registry_registrations_cross_scope_raw: coverage.counts.duplicate_registry_registrations_cross_scope_raw,
     },
     phases,
     top_candidates: scored,

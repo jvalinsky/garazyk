@@ -75,6 +75,20 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method disableInviteCodesWithCodes:accounts:error:
+
+ @abstract Disables invite codes by explicit code and/or owning account identifiers.
+
+ @param codes Invite code strings to disable.
+ @param accounts Account identifiers (DIDs or handles) whose invite codes should be disabled.
+ @param error On return, contains an error if the operation failed.
+ @return YES if successful, NO otherwise.
+ */
+- (BOOL)disableInviteCodesWithCodes:(nullable NSArray<NSString *> *)codes
+                           accounts:(nullable NSArray<NSString *> *)accounts
+                              error:(NSError **)error;
+
 #pragma mark - Moderation
 
 /*!
