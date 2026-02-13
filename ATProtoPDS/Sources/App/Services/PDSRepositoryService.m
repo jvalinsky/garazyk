@@ -30,9 +30,15 @@
                       commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
+                 includeFullMST:(BOOL *)includeFullMSTOut
+                 changedMSTKeys:(NSArray<NSString *> * _Nullable * _Nonnull)changedMSTKeysOut
                 recordCIDStrings:(NSArray<NSString *> * _Nullable * _Nonnull)recordCIDStringsOut
                      recordByCID:(NSDictionary<NSString *, PDSDatabaseRecord *> * _Nullable * _Nonnull)recordByCIDOut
                           error:(NSError **)error;
+- (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
+                                       includeAllMST:(BOOL)includeAllMST
+                                           proofKeys:(NSArray<NSString *> *)proofKeys
+                                                error:(NSError **)error;
 
 @end
 
@@ -110,6 +116,8 @@
     CID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
     NSArray<NSString *> *recordCIDStrings = nil;
     NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
     if (![self prepareRepoExportForDid:did
@@ -119,6 +127,8 @@
                              commitCID:&commitCID
                            commitBlock:&commitBlock
                         noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
                        recordCIDStrings:&recordCIDStrings
                             recordByCID:&recordByCID
                                  error:error]) {
@@ -163,24 +173,25 @@
         }
 
         NSMutableSet<NSString *> *addedBlockCIDs = [NSMutableSet setWithObject:commitCID.stringValue];
-        NSError *mstError = nil;
-        BOOL enumeratedMST = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
-            NSString *cidString = cid.stringValue ?: @"";
+
+        NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+                                                    includeAllMST:includeFullMST
+                                                        proofKeys:changedMSTKeys ?: @[]
+                                                            error:error];
+        if (!mstBlocks) {
+            [fileHandle closeFile];
+            return NO;
+        }
+        for (CARBlock *block in mstBlocks) {
+            NSString *cidString = block.cid.stringValue ?: @"";
             if (cidString.length == 0 || [addedBlockCIDs containsObject:cidString]) {
-                return YES;
+                continue;
             }
             [addedBlockCIDs addObject:cidString];
-            CARBlock *block = [CARBlock blockWithCID:cid data:data];
-            return [CARWriter writeBlock:block toFileHandle:fileHandle error:blockError];
-        } error:&mstError];
-        if (!enumeratedMST) {
-            [fileHandle closeFile];
-            if (error) {
-                *error = mstError ?: [NSError errorWithDomain:@"com.atproto.repo"
-                                                         code:5
-                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export MST CAR"}];
+            if (![CARWriter writeBlock:block toFileHandle:fileHandle error:error]) {
+                [fileHandle closeFile];
+                return NO;
             }
-            return NO;
         }
 
         for (NSString *cidString in recordCIDStrings) {
@@ -232,6 +243,8 @@
     CID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
     NSArray<NSString *> *recordCIDStrings = nil;
     NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
     if (![self prepareRepoExportForDid:did
@@ -241,6 +254,8 @@
                              commitCID:&commitCID
                            commitBlock:&commitBlock
                         noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
                        recordCIDStrings:&recordCIDStrings
                             recordByCID:&recordByCID
                                  error:error]) {
@@ -275,27 +290,26 @@
     }
 
     NSMutableArray<NSData *> *mstChunks = [NSMutableArray array];
-    NSError *mstError = nil;
-    BOOL enumeratedMST = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
-        NSString *cidString = cid.stringValue ?: @"";
+
+    NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+                                                includeAllMST:includeFullMST
+                                                    proofKeys:changedMSTKeys ?: @[]
+                                                        error:error];
+    if (!mstBlocks) {
+        return nil;
+    }
+    for (CARBlock *block in mstBlocks) {
+        NSString *cidString = block.cid.stringValue ?: @"";
         if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
-            return YES;
+            continue;
         }
-        NSData *encoded = [CARWriter encodedBlock:[CARBlock blockWithCID:cid data:data] error:blockError];
+
+        NSData *encoded = [CARWriter encodedBlock:block error:error];
         if (!encoded) {
-            return NO;
+            return nil;
         }
         [seenCIDs addObject:cidString];
         [mstChunks addObject:encoded];
-        return YES;
-    } error:&mstError];
-    if (!enumeratedMST) {
-        if (error) {
-            *error = mstError ?: [NSError errorWithDomain:@"com.atproto.repo"
-                                                     code:5
-                                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to export MST CAR"}];
-        }
-        return nil;
     }
 
     NSMutableArray<NSString *> *remainingRecordCIDs = [NSMutableArray array];
@@ -384,6 +398,8 @@
                       commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
+                 includeFullMST:(BOOL *)includeFullMSTOut
+                 changedMSTKeys:(NSArray<NSString *> * _Nullable * _Nonnull)changedMSTKeysOut
                 recordCIDStrings:(NSArray<NSString *> * _Nullable * _Nonnull)recordCIDStringsOut
                      recordByCID:(NSDictionary<NSString *, PDSDatabaseRecord *> * _Nullable * _Nonnull)recordByCIDOut
                           error:(NSError **)error {
@@ -439,6 +455,7 @@
     NSMutableArray<NSString *> *recordCIDStrings = [NSMutableArray array];
     NSMutableDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = [NSMutableDictionary dictionary];
     NSMutableSet<NSString *> *seenRecordCIDs = [NSMutableSet set];
+    NSMutableOrderedSet<NSString *> *changedMSTKeys = [NSMutableOrderedSet orderedSet];
 
     for (PDSDatabaseRecord *record in records) {
         if (record.rev.length == 0) {
@@ -446,7 +463,13 @@
             [recordsNeedingRevBackfill addObject:record];
         }
 
-        if (deltaMode && [record.rev compare:sinceRev] != NSOrderedDescending) {
+        BOOL recordChangedSince = (deltaMode && [record.rev compare:sinceRev] == NSOrderedDescending);
+        if (recordChangedSince && record.collection.length > 0 && record.rkey.length > 0) {
+            NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
+            [changedMSTKeys addObject:key];
+        }
+
+        if (deltaMode && !recordChangedSince) {
             continue;
         }
 
@@ -481,6 +504,30 @@
                 [recordCIDStrings addObject:cidString];
                 recordByCID[cidString] = record;
             }
+        }
+    }
+
+    if (deltaMode) {
+        NSError *tombstoneError = nil;
+        NSArray<NSDictionary<NSString *, id> *> *tombstones = [store listRecordTombstonesSinceRev:sinceRev
+                                                                                             limit:100000
+                                                                                             error:&tombstoneError];
+        if (!tombstones) {
+            if (error) {
+                *error = tombstoneError ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                                code:11
+                                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to list tombstones"}];
+            }
+            return NO;
+        }
+        for (NSDictionary<NSString *, id> *row in tombstones) {
+            NSString *collection = [row[@"collection"] isKindOfClass:[NSString class]] ? row[@"collection"] : nil;
+            NSString *rkey = [row[@"rkey"] isKindOfClass:[NSString class]] ? row[@"rkey"] : nil;
+            if (collection.length == 0 || rkey.length == 0) {
+                continue;
+            }
+            NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+            [changedMSTKeys addObject:key];
         }
     }
 
@@ -536,6 +583,8 @@
     if (commitCIDOut) *commitCIDOut = commitCID;
     if (commitBlockOut) *commitBlockOut = commitBlock;
     if (noChangesSinceOut) *noChangesSinceOut = noChangesSince;
+    if (includeFullMSTOut) *includeFullMSTOut = !deltaMode;
+    if (changedMSTKeysOut) *changedMSTKeysOut = [changedMSTKeys.array copy];
     if (recordCIDStringsOut) *recordCIDStringsOut = [recordCIDStrings copy];
     if (recordByCIDOut) *recordByCIDOut = [recordByCID copy];
     return YES;
@@ -544,142 +593,27 @@
 - (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
                                          since:(nullable NSString *)sinceRev
                                          error:(NSError **)error {
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
-    if (!store) return nil;
-
-    NSArray<PDSDatabaseRecord *> *records = [self loadAllRecordsForStore:store did:did error:error];
-    if (!records && error && *error) {
-        return nil;
-    }
-
-    MST *mst = [self mstFromRecords:records ?: @[]];
-    CID *mstRootCID = mst.rootCID;
-    if (!mstRootCID) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.repo"
-                                         code:2
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute MST root"}];
-        }
-        return nil;
-    }
-
-    NSData *storedRoot = [store getRepoRootForDid:did error:nil];
-    NSString *storedRev = [store getRepoRevisionForDid:did error:nil];
-    NSString *latestMutationRev = [store latestMutationRevisionWithError:nil];
-
-    NSData *newRootBytes = mstRootCID.bytes;
-    BOOL rootChanged = !storedRoot || ![storedRoot isEqualToData:newRootBytes];
-    BOOL revMissing = (storedRev.length == 0);
-    NSString *currentRev = storedRev;
-    if (rootChanged || revMissing) {
-        if (latestMutationRev.length > 0) {
-            currentRev = latestMutationRev;
-        } else if (currentRev.length == 0) {
-            currentRev = [TID tid].stringValue;
-        }
-    }
-    NSString *defaultRecordRev = (storedRev.length > 0) ? storedRev : currentRev;
-
-    BOOL hasSince = (sinceRev.length > 0);
-    BOOL knownSince = NO;
-    if (hasSince) {
-        knownSince = [store repoRevisionExists:sinceRev error:nil];
-        if (!knownSince) {
-            knownSince = [store mutationRevisionExists:sinceRev error:nil];
-        }
-    }
-    BOOL noChangesSince = (hasSince && [sinceRev isEqualToString:currentRev]);
-    BOOL deltaMode = (hasSince && knownSince && !noChangesSince);
-
-    NSMutableDictionary<NSString *, NSData *> *recordBlocksByCID = [NSMutableDictionary dictionary];
-    NSMutableArray<PDSDatabaseBlock *> *newRecordBlocks = [NSMutableArray array];
-    NSMutableArray<PDSDatabaseRecord *> *recordsNeedingRevBackfill = [NSMutableArray array];
-    NSMutableSet<NSString *> *seenRecordCIDs = [NSMutableSet set];
-
-    for (PDSDatabaseRecord *record in records) {
-        if (record.rev.length == 0) {
-            record.rev = defaultRecordRev;
-            [recordsNeedingRevBackfill addObject:record];
-        }
-
-        if (deltaMode && [record.rev compare:sinceRev] != NSOrderedDescending) {
-            continue;
-        }
-
-        if (record.cid.length == 0 || [seenRecordCIDs containsObject:record.cid]) {
-            continue;
-        }
-        [seenRecordCIDs addObject:record.cid];
-
-        CID *recordCID = [CID cidFromString:record.cid];
-        if (!recordCID) {
-            continue;
-        }
-
-        NSData *blockData = [store getBlockForCID:recordCID.bytes forDid:did error:nil];
-        if (!blockData) {
-            blockData = [self recordBlockDataForRecord:record];
-            if (blockData) {
-                PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
-                block.cid = recordCID.bytes;
-                block.repoDid = did;
-                block.blockData = blockData;
-                block.contentType = @"application/vnd.ipld.dag-cbor";
-                block.size = (NSInteger)blockData.length;
-                block.createdAt = [NSDate date];
-                [newRecordBlocks addObject:block];
-            }
-        }
-
-        if (blockData) {
-            recordBlocksByCID[recordCID.stringValue] = blockData;
-        }
-    }
-
-    if (rootChanged || revMissing || newRecordBlocks.count > 0 || recordsNeedingRevBackfill.count > 0) {
-        __block BOOL persisted = NO;
-        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-            if (![transactor updateRepoRoot:did rootCid:newRootBytes rev:currentRev error:blockError]) {
-                persisted = NO;
-                return;
-            }
-
-            if (newRecordBlocks.count > 0 && ![transactor putBlocks:newRecordBlocks forDid:did error:blockError]) {
-                persisted = NO;
-                return;
-            }
-
-            for (PDSDatabaseRecord *record in recordsNeedingRevBackfill) {
-                if (![transactor updateRecord:record forDid:did error:blockError]) {
-                    persisted = NO;
-                    return;
-                }
-            }
-            persisted = YES;
-        } error:error];
-
-        if (!persisted) {
-            return nil;
-        }
-    }
-
-    NSData *commitBlock = [self buildCommitBlockForDid:did rev:currentRev dataCID:mstRootCID];
-    if (!commitBlock) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.repo"
-                                         code:3
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to build commit block"}];
-        }
-        return nil;
-    }
-
-    CID *commitCID = [CID cidWithDigest:[CID sha256Digest:commitBlock] codec:0x71];
-    if (!commitCID) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.repo"
-                                         code:4
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute commit CID"}];
-        }
+    PDSActorStore *store = nil;
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
+    NSArray<NSString *> *recordCIDStrings = nil;
+    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    if (![self prepareRepoExportForDid:did
+                                 since:sinceRev
+                                 store:&store
+                                   mst:&mst
+                             commitCID:&commitCID
+                           commitBlock:&commitBlock
+                        noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
+                       recordCIDStrings:&recordCIDStrings
+                            recordByCID:&recordByCID
+                                 error:error]) {
         return nil;
     }
 
@@ -691,34 +625,38 @@
     [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
 
     NSMutableSet<NSString *> *addedBlockCIDs = [NSMutableSet setWithObject:commitCID.stringValue];
-    NSError *mstError = nil;
-    BOOL enumeratedMST = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
-        (void)blockError;
-        NSString *cidString = cid.stringValue ?: @"";
-        if (cidString.length == 0 || [addedBlockCIDs containsObject:cidString]) {
-            return YES;
-        }
-        [addedBlockCIDs addObject:cidString];
-        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
-        return YES;
-    } error:&mstError];
-    if (!enumeratedMST) {
-        if (error) {
-            *error = mstError ?: [NSError errorWithDomain:@"com.atproto.repo"
-                                                     code:5
-                                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to export MST CAR"}];
-        }
+    NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+                                                includeAllMST:includeFullMST
+                                                    proofKeys:changedMSTKeys ?: @[]
+                                                        error:error];
+    if (!mstBlocks) {
         return nil;
     }
+    for (CARBlock *block in mstBlocks) {
+        NSString *cidString = block.cid.stringValue ?: @"";
+        if (cidString.length == 0 || [addedBlockCIDs containsObject:cidString]) {
+            continue;
+        }
+        [addedBlockCIDs addObject:cidString];
+        [writer addBlock:block];
+    }
 
-    for (NSString *cidString in recordBlocksByCID) {
+    for (NSString *cidString in recordCIDStrings) {
         if ([addedBlockCIDs containsObject:cidString]) {
             continue;
         }
 
         CID *cid = [CID cidFromString:cidString];
-        NSData *data = recordBlocksByCID[cidString];
-        if (!cid || !data) {
+        if (!cid) {
+            continue;
+        }
+
+        NSData *data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+        if (!data) {
+            PDSDatabaseRecord *record = recordByCID[cidString];
+            data = record ? [self recordBlockDataForRecord:record] : nil;
+        }
+        if (!data) {
             continue;
         }
 
@@ -727,6 +665,80 @@
     }
 
     return writer;
+}
+
+- (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
+                                       includeAllMST:(BOOL)includeAllMST
+                                           proofKeys:(NSArray<NSString *> *)proofKeys
+                                                error:(NSError **)error {
+    if (!mst) {
+        return @[];
+    }
+
+    NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
+    NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
+
+    BOOL (^appendNode)(CID *, NSData *) = ^BOOL(CID *cid, NSData *data) {
+        NSString *cidString = cid.stringValue ?: @"";
+        if (cidString.length == 0 || [addedCIDs containsObject:cidString] || data.length == 0) {
+            return YES;
+        }
+        [addedCIDs addObject:cidString];
+        [blocks addObject:[CARBlock blockWithCID:cid data:data]];
+        return YES;
+    };
+
+    if (includeAllMST) {
+        NSError *mstError = nil;
+        BOOL enumerated = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
+            (void)blockError;
+            return appendNode(cid, data);
+        } error:&mstError];
+        if (!enumerated) {
+            if (error) {
+                *error = mstError ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                         code:5
+                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export MST CAR"}];
+            }
+            return nil;
+        }
+        return [blocks copy];
+    }
+
+    CID *rootCID = mst.rootCID;
+    NSData *rootData = [mst serializeToCBOR];
+    if (!rootCID || !rootData) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                         code:12
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize MST root"}];
+        }
+        return nil;
+    }
+    appendNode(rootCID, rootData);
+
+    for (NSString *key in proofKeys) {
+        if (key.length == 0) {
+            continue;
+        }
+        NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:key];
+        if (!proofNodes) {
+            continue;
+        }
+        for (MSTNode *node in proofNodes) {
+            NSData *nodeData = [mst serializeNode:node];
+            if (!nodeData) {
+                continue;
+            }
+            CID *nodeCID = [CID cidWithDigest:[CID sha256Digest:nodeData] codec:0x71];
+            if (!nodeCID) {
+                continue;
+            }
+            appendNode(nodeCID, nodeData);
+        }
+    }
+
+    return [blocks copy];
 }
 
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {

@@ -406,6 +406,18 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     });
 }
 
+- (NSUInteger)pendingSendCount {
+    __block NSUInteger count = 0;
+    if (!self.writeQueue) {
+        return 0;
+    }
+
+    dispatch_sync(self.writeQueue, ^{
+        count = self.messageQueue.count;
+    });
+    return count;
+}
+
 - (void)flushWriteBuffer {
     if (self.messageQueue.count == 0) return;
 
