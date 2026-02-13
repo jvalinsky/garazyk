@@ -165,4 +165,25 @@
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
 }
 
+- (void)testApplicationCreateLabelRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
+                                                      body:@{
+                                                          @"src": self.userDid,
+                                                          @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
+                                                          @"val": @"spam"
+                                                      }
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
+}
+
+- (void)testApplicationGetLabelsRequiresAuth {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.getLabels"
+                                              queryString:@"limit=10"
+                                              queryParams:@{@"limit": @"10"}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
+}
+
 @end
