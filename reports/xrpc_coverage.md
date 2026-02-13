@@ -1,6 +1,6 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-13T03:02:26.242Z
+Generated: 2026-02-13T03:52:48.520Z
 
 ## Summary
 
@@ -14,7 +14,9 @@ Generated: 2026-02-13T03:02:26.242Z
 - Missing in code (out of scope): 223
 - Unknown registry entries: 0
 - Duplicate registry registrations: 0
-- Duplicate registry registrations (cross-scope): 49
+- Duplicate registry registrations (cross-scope, actionable): 0
+- Cross-scope overlap (expected controller/application dual-path): 48
+- Cross-scope overlap (raw total): 48
 
 ## Namespace Coverage
 
@@ -118,4 +120,12 @@ Generated: 2026-02-13T03:02:26.242Z
 
 - Duplicate registrations: 0
 - Unknown registrations: 0
+
+## Cross-Scope Duplicate Methods (Actionable)
+
+- none
+
+## Cross-Scope Overlap (Expected)
+
+- Methods overlapping between controller/application registrations: 48
 

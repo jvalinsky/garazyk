@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-13T03:02:26.242Z",
+  "generated_at": "2026-02-13T03:52:48.520Z",
   "inputs": {
     "mode": "source-parsed",
     "methods_tsv": null,
@@ -39,7 +39,9 @@
     "coverage_pct": 100,
     "unknown_registry_entries": 0,
     "duplicate_registry_registrations": 0,
-    "duplicate_registry_registrations_cross_scope": 49
+    "duplicate_registry_registrations_cross_scope": 0,
+    "duplicate_registry_registrations_cross_scope_expected": 48,
+    "duplicate_registry_registrations_cross_scope_raw": 48
   },
   "namespace_coverage": [
     {
@@ -284,6 +286,14 @@
       "scope": "static.registerTempUtilityMethods",
       "registrations_total": 6,
       "registrations_unique": 6,
+      "methods": [
+        "com.atproto.temp.addReservedHandle",
+        "com.atproto.temp.checkHandleAvailability",
+        "com.atproto.temp.checkSignupQueue",
+        "com.atproto.temp.dereferenceScope",
+        "com.atproto.temp.fetchLabels",
+        "com.atproto.temp.requestPhoneVerification"
+      ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
       "duplicate_methods": [],
@@ -293,6 +303,14 @@
       "scope": "static.registerAdminAccountMaintenanceMethods",
       "registrations_total": 6,
       "registrations_unique": 6,
+      "methods": [
+        "com.atproto.admin.searchAccounts",
+        "com.atproto.admin.sendEmail",
+        "com.atproto.admin.updateAccountEmail",
+        "com.atproto.admin.updateAccountHandle",
+        "com.atproto.admin.updateAccountPassword",
+        "com.atproto.admin.updateAccountSigningKey"
+      ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
       "duplicate_methods": [],
@@ -300,8 +318,24 @@
     },
     {
       "scope": "static.registerPhase1IdentityAndAccountMethods",
-      "registrations_total": 15,
-      "registrations_unique": 15,
+      "registrations_total": 14,
+      "registrations_unique": 14,
+      "methods": [
+        "com.atproto.identity.refreshIdentity",
+        "com.atproto.identity.requestPlcOperationSignature",
+        "com.atproto.identity.signPlcOperation",
+        "com.atproto.identity.submitPlcOperation",
+        "com.atproto.identity.updateHandle",
+        "com.atproto.server.confirmEmail",
+        "com.atproto.server.getAccountInviteCodes",
+        "com.atproto.server.requestAccountDelete",
+        "com.atproto.server.requestEmailConfirmation",
+        "com.atproto.server.requestEmailUpdate",
+        "com.atproto.server.requestPasswordReset",
+        "com.atproto.server.reserveSigningKey",
+        "com.atproto.server.resetPassword",
+        "com.atproto.server.updateEmail"
+      ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
       "duplicate_methods": [],
@@ -311,6 +345,78 @@
       "scope": "class.registerMethodsWithDispatcher:controller",
       "registrations_total": 70,
       "registrations_unique": 70,
+      "methods": [
+        "app.bsky.actor.getPreferences",
+        "app.bsky.actor.getProfile",
+        "app.bsky.actor.getProfiles",
+        "app.bsky.actor.putPreferences",
+        "app.bsky.actor.searchActors",
+        "app.bsky.actor.searchActorsTypeahead",
+        "app.bsky.feed.getActorLikes",
+        "app.bsky.feed.getAuthorFeed",
+        "app.bsky.feed.getFeed",
+        "app.bsky.feed.getPostThread",
+        "app.bsky.feed.getTimeline",
+        "app.bsky.notification.registerPush",
+        "app.bsky.user.getUserStats",
+        "com.atproto.admin.deleteAccount",
+        "com.atproto.admin.disableAccountInvites",
+        "com.atproto.admin.disableInviteCodes",
+        "com.atproto.admin.enableAccountInvites",
+        "com.atproto.admin.getAccountInfo",
+        "com.atproto.admin.getAccountInfos",
+        "com.atproto.admin.getAccountTakedown",
+        "com.atproto.admin.getInviteCodes",
+        "com.atproto.admin.moderateAccount",
+        "com.atproto.admin.moderateRecord",
+        "com.atproto.admin.takeDownAccount",
+        "com.atproto.identity.getRecommendedDidCredentials",
+        "com.atproto.identity.resolveDid",
+        "com.atproto.identity.resolveHandle",
+        "com.atproto.identity.resolveIdentity",
+        "com.atproto.label.createLabel",
+        "com.atproto.label.getLabels",
+        "com.atproto.label.subscribeLabels",
+        "com.atproto.lexicon.resolveLexicon",
+        "com.atproto.repo.applyWrites",
+        "com.atproto.repo.createRecord",
+        "com.atproto.repo.deleteBlob",
+        "com.atproto.repo.deleteRecord",
+        "com.atproto.repo.describeRepo",
+        "com.atproto.repo.getRecord",
+        "com.atproto.repo.importRepo",
+        "com.atproto.repo.listMissingBlobs",
+        "com.atproto.repo.listRecords",
+        "com.atproto.repo.putRecord",
+        "com.atproto.repo.uploadBlob",
+        "com.atproto.server.createAccount",
+        "com.atproto.server.createAppPassword",
+        "com.atproto.server.createInviteCode",
+        "com.atproto.server.createInviteCodes",
+        "com.atproto.server.createSession",
+        "com.atproto.server.deleteSession",
+        "com.atproto.server.describeServer",
+        "com.atproto.server.getServiceAuth",
+        "com.atproto.server.getSession",
+        "com.atproto.server.listAppPasswords",
+        "com.atproto.server.refreshSession",
+        "com.atproto.server.revokeAppPassword",
+        "com.atproto.sync.getBlob",
+        "com.atproto.sync.getBlocks",
+        "com.atproto.sync.getCheckout",
+        "com.atproto.sync.getHead",
+        "com.atproto.sync.getHostStatus",
+        "com.atproto.sync.getLatestCommit",
+        "com.atproto.sync.getRecord",
+        "com.atproto.sync.getRepo",
+        "com.atproto.sync.getRepoStatus",
+        "com.atproto.sync.listBlobs",
+        "com.atproto.sync.listHosts",
+        "com.atproto.sync.listRepos",
+        "com.atproto.sync.listReposByCollection",
+        "com.atproto.sync.requestCrawl",
+        "com.atproto.sync.subscribeRepos"
+      ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
       "duplicate_methods": [],
@@ -318,14 +424,854 @@
     },
     {
       "scope": "class.registerMethodsWithDispatcher:application",
-      "registrations_total": 61,
-      "registrations_unique": 61,
+      "registrations_total": 60,
+      "registrations_unique": 60,
+      "methods": [
+        "com.atproto.admin.deleteAccount",
+        "com.atproto.admin.disableAccountInvites",
+        "com.atproto.admin.disableInviteCodes",
+        "com.atproto.admin.enableAccountInvites",
+        "com.atproto.admin.getAccountInfo",
+        "com.atproto.admin.getAccountInfos",
+        "com.atproto.admin.getInviteCodes",
+        "com.atproto.admin.getSubjectStatus",
+        "com.atproto.admin.moderateAccount",
+        "com.atproto.admin.moderateRecord",
+        "com.atproto.admin.updateSubjectStatus",
+        "com.atproto.label.createLabel",
+        "com.atproto.label.getLabels",
+        "com.atproto.label.queryLabels",
+        "com.atproto.label.subscribeLabels",
+        "com.atproto.lexicon.resolveLexicon",
+        "com.atproto.moderation.createReport",
+        "com.atproto.repo.applyWrites",
+        "com.atproto.repo.createRecord",
+        "com.atproto.repo.deleteBlob",
+        "com.atproto.repo.deleteRecord",
+        "com.atproto.repo.describeRepo",
+        "com.atproto.repo.getBlob",
+        "com.atproto.repo.getRecord",
+        "com.atproto.repo.importRepo",
+        "com.atproto.repo.listMissingBlobs",
+        "com.atproto.repo.listRecords",
+        "com.atproto.repo.putRecord",
+        "com.atproto.repo.updateRecord",
+        "com.atproto.repo.uploadBlob",
+        "com.atproto.server.activateAccount",
+        "com.atproto.server.checkAccountStatus",
+        "com.atproto.server.createAccount",
+        "com.atproto.server.createAppPassword",
+        "com.atproto.server.createInviteCode",
+        "com.atproto.server.createInviteCodes",
+        "com.atproto.server.createSession",
+        "com.atproto.server.deactivateAccount",
+        "com.atproto.server.deleteAccount",
+        "com.atproto.server.deleteSession",
+        "com.atproto.server.describeServer",
+        "com.atproto.server.getAccount",
+        "com.atproto.server.getServiceAuth",
+        "com.atproto.server.getSession",
+        "com.atproto.server.listAppPasswords",
+        "com.atproto.server.refreshSession",
+        "com.atproto.server.revokeAppPassword",
+        "com.atproto.sync.getCheckout",
+        "com.atproto.sync.getHead",
+        "com.atproto.sync.getHostStatus",
+        "com.atproto.sync.getRecord",
+        "com.atproto.sync.getRepo",
+        "com.atproto.sync.getRepoStatus",
+        "com.atproto.sync.listBlobs",
+        "com.atproto.sync.listHosts",
+        "com.atproto.sync.listRepos",
+        "com.atproto.sync.listReposByCollection",
+        "com.atproto.sync.notifyOfUpdate",
+        "com.atproto.sync.requestCrawl",
+        "com.atproto.sync.subscribeRepos"
+      ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
       "duplicate_methods": [],
       "unresolved_typed_registrations": []
     }
   ],
+  "cross_scope_duplicates": {
+    "raw_count": 48,
+    "expected_overlap_count": 48,
+    "unexpected_duplicate_count": 0,
+    "raw_methods": [
+      {
+        "method_id": "com.atproto.admin.deleteAccount",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.disableAccountInvites",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.disableInviteCodes",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.enableAccountInvites",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.getAccountInfo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.getAccountInfos",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.getInviteCodes",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.moderateAccount",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.moderateRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.label.createLabel",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.label.getLabels",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.label.subscribeLabels",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.lexicon.resolveLexicon",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.applyWrites",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.createRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.deleteBlob",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.deleteRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.describeRepo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.getRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.importRepo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.listMissingBlobs",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.listRecords",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.putRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.uploadBlob",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createAccount",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createAppPassword",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createInviteCode",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createInviteCodes",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.deleteSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.describeServer",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.getServiceAuth",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.getSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.listAppPasswords",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.refreshSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.revokeAppPassword",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getCheckout",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getHead",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getHostStatus",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getRepo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getRepoStatus",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listBlobs",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listHosts",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listRepos",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listReposByCollection",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.requestCrawl",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.subscribeRepos",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      }
+    ],
+    "expected_methods": [
+      {
+        "method_id": "com.atproto.admin.deleteAccount",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.disableAccountInvites",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.disableInviteCodes",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.enableAccountInvites",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.getAccountInfo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.getAccountInfos",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.getInviteCodes",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.moderateAccount",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.admin.moderateRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.label.createLabel",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.label.getLabels",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.label.subscribeLabels",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.lexicon.resolveLexicon",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.applyWrites",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.createRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.deleteBlob",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.deleteRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.describeRepo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.getRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.importRepo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.listMissingBlobs",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.listRecords",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.putRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.repo.uploadBlob",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createAccount",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createAppPassword",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createInviteCode",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createInviteCodes",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.createSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.deleteSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.describeServer",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.getServiceAuth",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.getSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.listAppPasswords",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.refreshSession",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.server.revokeAppPassword",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getCheckout",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getHead",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getHostStatus",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getRecord",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getRepo",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.getRepoStatus",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listBlobs",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listHosts",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listRepos",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.listReposByCollection",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.requestCrawl",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      },
+      {
+        "method_id": "com.atproto.sync.subscribeRepos",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      }
+    ],
+    "unexpected_methods": []
+  },
   "stub_scan": {
     "not_implemented_count": 0,
     "todo_fixme_count": 0,

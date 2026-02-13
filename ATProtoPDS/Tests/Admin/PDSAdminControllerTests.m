@@ -58,6 +58,41 @@
     [super tearDown];
 }
 
+- (void)createAccountWithDid:(NSString *)did handle:(NSString *)handle {
+    NSError *error = nil;
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&error];
+    XCTAssertNotNil(db);
+    XCTAssertNil(error);
+
+    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+    account.did = did;
+    account.handle = handle;
+    account.email = [NSString stringWithFormat:@"%@@example.com", handle];
+    account.createdAt = [[NSDate date] timeIntervalSince1970];
+    account.updatedAt = account.createdAt;
+    account.inviteEnabled = YES;
+
+    BOOL created = [db createAccount:account error:&error];
+    XCTAssertTrue(created);
+    XCTAssertNil(error);
+    [db close];
+}
+
+- (nullable NSDictionary *)latestTakedownForSubjectType:(NSString *)subjectType subjectID:(NSString *)subjectID {
+    NSError *error = nil;
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&error];
+    XCTAssertNotNil(db);
+    XCTAssertNil(error);
+
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:
+                                     @"SELECT subjectType, subjectId, takedownRef, applied FROM admin_takedowns WHERE subjectType = ? AND subjectId = ? ORDER BY createdAt DESC LIMIT 1"
+                                                              params:@[subjectType, subjectID]
+                                                               error:&error];
+    [db close];
+    XCTAssertNil(error);
+    return rows.count > 0 ? rows.firstObject : nil;
+}
+
 #pragma mark - Initialization Tests
 
 - (void)testInitWithServiceDatabases {
@@ -140,9 +175,13 @@
 #pragma mark - Moderation Tests
 
 - (void)testModerateAccountWithValidParams {
+    NSString *did = @"did:web:test123.example.com";
+    [self createAccountWithDid:did handle:@"test123.example.com"];
+
     NSDictionary *params = @{
-        @"did": @"did:plc:test123",
-        @"action": @"warn"
+        @"did": did,
+        @"action": @"takedown",
+        @"reason": @"policy"
     };
     
     NSError *error = nil;
@@ -150,9 +189,31 @@
     
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result[@"status"], @"success");
-    XCTAssertEqualObjects(result[@"did"], @"did:plc:test123");
-    XCTAssertEqualObjects(result[@"action"], @"warn");
+    XCTAssertEqualObjects(result[@"did"], did);
+    XCTAssertEqualObjects(result[@"action"], @"takedown");
     XCTAssertNotNil(result[@"timestamp"]);
+    XCTAssertNil(error);
+
+    NSDictionary *row = [self latestTakedownForSubjectType:@"account" subjectID:did];
+    XCTAssertNotNil(row);
+    XCTAssertEqualObjects(row[@"subjectType"], @"account");
+    XCTAssertEqualObjects(row[@"subjectId"], did);
+    XCTAssertEqualObjects(row[@"takedownRef"], @"takedown");
+    XCTAssertEqual([row[@"applied"] integerValue], 1);
+}
+
+- (void)testModerateAccountWithUnknownDid {
+    NSDictionary *params = @{
+        @"did": @"did:web:missing.example.com",
+        @"action": @"takedown"
+    };
+
+    NSError *error = nil;
+    NSDictionary *result = [self.adminController moderateAccount:params error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertEqualObjects(result[@"status"], @"error");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 404);
 }
 
 - (void)testModerateAccountWithMissingDid {
@@ -180,9 +241,10 @@
 }
 
 - (void)testModerateRecordWithValidParams {
+    NSString *recordURI = @"at://did:plc:test123/app.bsky.feed.post/abc";
     NSDictionary *params = @{
-        @"uri": @"at://did:plc:test123/app.bsky.feed.post/abc",
-        @"action": @"flag"
+        @"uri": recordURI,
+        @"action": @"takedown"
     };
     
     NSError *error = nil;
@@ -190,9 +252,17 @@
     
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result[@"status"], @"success");
-    XCTAssertEqualObjects(result[@"uri"], @"at://did:plc:test123/app.bsky.feed.post/abc");
-    XCTAssertEqualObjects(result[@"action"], @"flag");
+    XCTAssertEqualObjects(result[@"uri"], recordURI);
+    XCTAssertEqualObjects(result[@"action"], @"takedown");
     XCTAssertNotNil(result[@"timestamp"]);
+    XCTAssertNil(error);
+
+    NSDictionary *row = [self latestTakedownForSubjectType:@"record" subjectID:recordURI];
+    XCTAssertNotNil(row);
+    XCTAssertEqualObjects(row[@"subjectType"], @"record");
+    XCTAssertEqualObjects(row[@"subjectId"], recordURI);
+    XCTAssertEqualObjects(row[@"takedownRef"], @"takedown");
+    XCTAssertEqual([row[@"applied"] integerValue], 1);
 }
 
 - (void)testModerateRecordWithMissingUri {

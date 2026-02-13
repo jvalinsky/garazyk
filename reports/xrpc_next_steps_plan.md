@@ -1,6 +1,6 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-13T03:08:47.975Z
+Generated: 2026-02-13T03:52:53.566Z
 
 ## Baseline
 
@@ -8,7 +8,9 @@ Generated: 2026-02-13T03:08:47.975Z
 - Coverage: 100%
 - Unknown registry entries: 0
 - Duplicate registry registrations: 0
-- Duplicate registry registrations (cross-scope): 49
+- Duplicate registry registrations (cross-scope, actionable): 0
+- Cross-scope overlap (expected controller/application dual-path): 48
+- Cross-scope overlap (raw total): 48
 
 ## Priority Rubric
 
