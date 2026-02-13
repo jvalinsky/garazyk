@@ -193,6 +193,56 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (BOOL)writeToPath:(NSString *)path error:(NSError **)error;
 
+/*!
+ @method encodedHeaderWithRootCID:error:
+
+ @abstract Encodes a CAR v1 header for the given root CID.
+
+ @param rootCID The CAR root CID.
+ @param error On return, contains an error if encoding failed.
+ @return Encoded header bytes or nil on failure.
+ */
++ (nullable NSData *)encodedHeaderWithRootCID:(CID *)rootCID error:(NSError **)error;
+
+/*!
+ @method encodedBlock:error:
+
+ @abstract Encodes one CAR block entry (length varint + CID + block data).
+
+ @param block The block to encode.
+ @param error On return, contains an error if encoding failed.
+ @return Encoded block entry bytes or nil on failure.
+ */
++ (nullable NSData *)encodedBlock:(CARBlock *)block error:(NSError **)error;
+
+/*!
+ @method writeHeaderWithRootCID:toFileHandle:error:
+
+ @abstract Writes a CAR v1 header directly to an open file handle.
+
+ @param rootCID The CAR root CID.
+ @param fileHandle Destination file handle.
+ @param error On return, contains an error if writing failed.
+ @return YES on success, NO on failure.
+ */
++ (BOOL)writeHeaderWithRootCID:(CID *)rootCID
+                 toFileHandle:(NSFileHandle *)fileHandle
+                        error:(NSError **)error;
+
+/*!
+ @method writeBlock:toFileHandle:error:
+
+ @abstract Appends one CAR block entry directly to an open file handle.
+
+ @param block The block to append.
+ @param fileHandle Destination file handle.
+ @param error On return, contains an error if writing failed.
+ @return YES on success, NO on failure.
+ */
++ (BOOL)writeBlock:(CARBlock *)block
+      toFileHandle:(NSFileHandle *)fileHandle
+             error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

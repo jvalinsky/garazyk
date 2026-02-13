@@ -676,48 +676,79 @@
 
 - (NSData *)exportCAR {
     if (!self.root) return nil;
-    
-    // Cache for CIDs during traversal
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-    
-    // Compute root CID (ensures everything is hashed)
-    CID *rootCID = [self.root getCID:cache];
+
+    CID *rootCID = self.rootCID;
     if (!rootCID) return nil;
-    
+
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
-    
-    // Walk the tree and add blocks
-    // We need a way to walk ALL nodes (internal + leaves).
-    // The existing 'walk' method iterates entries, but we need the nodes themselves.
-    
+
+    BOOL traversed = [self enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+        (void)error;
+        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
+        return YES;
+    } error:nil];
+    if (!traversed) {
+        return nil;
+    }
+
+    return [writer serialize];
+}
+
+- (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                                   error:(NSError **)error {
+    if (!block || !self.root) {
+        return YES;
+    }
+
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
     NSMutableArray<MSTNode *> *queue = [NSMutableArray arrayWithObject:self.root];
-    NSMutableSet<CID *> *addedCIDs = [NSMutableSet set];
-    
+    NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
+
     while (queue.count > 0) {
         MSTNode *node = queue.firstObject;
         [queue removeObjectAtIndex:0];
-        
+
         CID *cid = [node getCID:cache];
-        if (!cid || [addedCIDs containsObject:cid]) continue;
-        
-        [addedCIDs addObject:cid];
-        
+        if (!cid) {
+            continue;
+        }
+
+        NSString *cidString = cid.stringValue ?: @"";
+        if ([addedCIDs containsObject:cidString]) {
+            continue;
+        }
+        [addedCIDs addObject:cidString];
+
         NSData *data = [node serializeToCBOR:cache];
-        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
-        
-        // Enqueue children
+        if (!data) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.mst"
+                                             code:1
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize MST node"}];
+            }
+            return NO;
+        }
+
+        NSError *callbackError = nil;
+        if (!block(cid, data, &callbackError)) {
+            if (error && callbackError) {
+                *error = callbackError;
+            }
+            return NO;
+        }
+
         if (node.internalLeft) {
             [queue addObject:node.internalLeft];
         }
-        
+
         for (MSTNodeEntry *entry in node.internalEntries) {
             if (entry.internalTree) {
                 [queue addObject:entry.internalTree];
             }
         }
     }
-    
-    return [writer serialize];
+
+    return YES;
 }
 - (NSData *)serializeToCBOR {
     return [self.root serializeToCBOR:[NSMapTable strongToStrongObjectsMapTable]];

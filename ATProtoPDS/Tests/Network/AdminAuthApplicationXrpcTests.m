@@ -247,6 +247,8 @@
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
+    XCTAssertEqual(response.bodyFilePath.length, 0U);
+    XCTAssertNotNil(response.bodyChunkProducer);
     XCTAssertNotNil(response.body);
     XCTAssertTrue(response.body.length > 0);
     if (response.bodyFilePath.length > 0) {

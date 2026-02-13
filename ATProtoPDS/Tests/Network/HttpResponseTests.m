@@ -76,4 +76,39 @@
     XCTAssertFalse([headerString containsString:@"streamed-body"]);
 }
 
+- (void)testBodyChunkProducerCanMaterializeBody {
+    HttpResponse *response = [[HttpResponse alloc] init];
+    NSArray<NSData *> *chunks = @[
+        [@"abc" dataUsingEncoding:NSUTF8StringEncoding],
+        [@"123" dataUsingEncoding:NSUTF8StringEncoding]
+    ];
+    __block NSUInteger index = 0;
+    [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
+        (void)error;
+        if (index >= chunks.count) {
+            return nil;
+        }
+        NSData *chunk = chunks[index];
+        index++;
+        return chunk;
+    } chunkedTransferEncoding:YES];
+
+    NSData *body = response.body;
+    XCTAssertEqualObjects(body, [@"abc123" dataUsingEncoding:NSUTF8StringEncoding]);
+}
+
+- (void)testChunkedTransferHeadersDoNotIncludeContentLength {
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
+        (void)error;
+        return nil;
+    } chunkedTransferEncoding:YES];
+    response.contentType = @"application/octet-stream";
+
+    NSData *headers = [response serializeHeadersForBodyLength:0];
+    NSString *headerString = [[NSString alloc] initWithData:headers encoding:NSUTF8StringEncoding];
+    XCTAssertTrue([headerString containsString:@"Transfer-Encoding: chunked"]);
+    XCTAssertFalse([headerString containsString:@"Content-Length"]);
+}
+
 @end
