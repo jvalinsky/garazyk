@@ -11,6 +11,10 @@
 @interface MockWebSocketConnection : WebSocketConnection
 @property (nonatomic, strong) NSMutableArray *sentMessages;
 @property (nonatomic, copy) NSDictionary *mockQueryParams;
+@property (nonatomic, assign) BOOL didClose;
+@property (nonatomic, assign) NSInteger closedCode;
+@property (nonatomic, copy) NSString *closedReason;
+@property (nonatomic, assign) NSUInteger simulatedPendingSendCount;
 @end
 
 @implementation MockWebSocketConnection
@@ -29,10 +33,23 @@
 - (NSDictionary *)queryParams {
     return _mockQueryParams;
 }
+- (void)close {
+    self.didClose = YES;
+}
+- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason {
+    self.didClose = YES;
+    self.closedCode = code;
+    self.closedReason = reason ?: @"";
+}
+- (NSUInteger)pendingSendCount {
+    return self.simulatedPendingSendCount;
+}
 @end
 
 @interface SubscribeReposHandler (TestAccess)
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor;
+@property (nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
+@property (nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
 @end
 
 @interface SubscribeReposHandlerTests : XCTestCase
@@ -183,6 +200,110 @@
         XCTAssertEqualObjects(msg1[@"info"], @"info2");
         XCTAssertEqualObjects(msg2[@"info"], @"info3");
     }
+}
+
+- (void)testReplayWithFutureCursorSendsFutureCursorError {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    [self.handler broadcastInfo:@"seed" message:@"seed"];
+
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Seed persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
+    [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"999999"];
+
+    XCTestExpectation *replayExp = [self expectationWithDescription:@"Future cursor handled"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [replayExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTAssertTrue(conn.didClose);
+    XCTAssertEqual(conn.sentMessages.count, 1U);
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSError *decodeError = nil;
+    NSDictionary *payload = [formatter decodeEventFromData:conn.sentMessages.firstObject
+                                                        op:&op
+                                                   msgType:&msgType
+                                                     error:&decodeError];
+    XCTAssertNil(decodeError);
+    XCTAssertEqual(op, -1);
+    XCTAssertEqualObjects(msgType, @"#error");
+    XCTAssertEqualObjects(payload[@"error"], @"FutureCursor");
+}
+
+- (void)testReplayWithLargeBacklogSendsConsumerTooSlowError {
+    self.handler.maxReplayEventsPerConnection = 1;
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+
+    [self.handler broadcastInfo:@"info1" message:@"msg1"];
+    [self.handler broadcastInfo:@"info2" message:@"msg2"];
+    [self.handler broadcastInfo:@"info3" message:@"msg3"];
+
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Events persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
+    [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
+
+    XCTestExpectation *replayExp = [self expectationWithDescription:@"Too slow handled"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [replayExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTAssertTrue(conn.didClose);
+    XCTAssertEqual(conn.sentMessages.count, 1U);
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSError *decodeError = nil;
+    NSDictionary *payload = [formatter decodeEventFromData:conn.sentMessages.firstObject
+                                                        op:&op
+                                                   msgType:&msgType
+                                                     error:&decodeError];
+    XCTAssertNil(decodeError);
+    XCTAssertEqual(op, -1);
+    XCTAssertEqualObjects(msgType, @"#error");
+    XCTAssertEqualObjects(payload[@"error"], @"ConsumerTooSlow");
+}
+
+- (void)testBroadcastDetachesConnectionWhenPendingQueueTooLarge {
+    self.handler.maxPendingSendsPerConnection = 0;
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+
+    MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
+    conn.simulatedPendingSendCount = 1;
+    NSMutableSet *attached = [self.handler valueForKey:@"attachedConnections"];
+    [attached addObject:conn];
+
+    [self.handler broadcastInfo:@"backpressure" message:@"test"];
+
+    XCTestExpectation *broadcastExp = [self expectationWithDescription:@"Broadcast finished"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [broadcastExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTAssertTrue(conn.didClose);
+    XCTAssertEqual(conn.sentMessages.count, 1U);
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSError *decodeError = nil;
+    NSDictionary *payload = [formatter decodeEventFromData:conn.sentMessages.firstObject
+                                                        op:&op
+                                                   msgType:&msgType
+                                                     error:&decodeError];
+    XCTAssertNil(decodeError);
+    XCTAssertEqual(op, -1);
+    XCTAssertEqualObjects(msgType, @"#error");
+    XCTAssertEqualObjects(payload[@"error"], @"ConsumerTooSlow");
 }
 
 - (void)testBroadcastIdentityChange {

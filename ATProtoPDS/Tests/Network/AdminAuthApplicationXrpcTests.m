@@ -496,6 +496,64 @@
     return revValue.textString;
 }
 
+- (nullable CID *)commitDataCIDFromCARData:(NSData *)carData {
+    NSError *carError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    XCTAssertNil(carError);
+    XCTAssertNotNil(reader);
+    if (!reader) {
+        return nil;
+    }
+
+    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    XCTAssertNotNil(commitBlock);
+    if (!commitBlock) {
+        return nil;
+    }
+
+    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    XCTAssertNotNil(commitValue);
+    XCTAssertEqual(commitValue.type, CBORTypeMap);
+    if (!commitValue || commitValue.type != CBORTypeMap) {
+        return nil;
+    }
+
+    CBORValue *dataValue = commitValue.map[[CBORValue textString:@"data"]];
+    XCTAssertNotNil(dataValue);
+    XCTAssertEqual(dataValue.type, CBORTypeTag);
+    if (!dataValue || dataValue.type != CBORTypeTag) {
+        return nil;
+    }
+
+    CBORValue *tagged = dataValue.tagValue;
+    XCTAssertEqual(tagged.type, CBORTypeByteString);
+    NSData *tagBytes = tagged.byteString;
+    XCTAssertTrue(tagBytes.length > 1);
+    if (tagged.type != CBORTypeByteString || tagBytes.length <= 1) {
+        return nil;
+    }
+
+    NSData *rawCID = [tagBytes subdataWithRange:NSMakeRange(1, tagBytes.length - 1)];
+    return [CID cidFromBytes:rawCID];
+}
+
+- (BOOL)carData:(NSData *)carData containsBlockWithCIDString:(NSString *)cidString {
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    if (!reader) {
+        return NO;
+    }
+
+    for (CARBlock *block in reader.blocks) {
+        if ([block.cid.stringValue isEqualToString:cidString]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (void)testApplicationSyncGetRepoReturnsCARWithoutAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
@@ -611,6 +669,136 @@
     XCTAssertEqual(unknownReader.blocks.count, fullReader.blocks.count);
     if (unknownResponse.bodyFilePath.length > 0) {
         [[NSFileManager defaultManager] removeItemAtPath:unknownResponse.bodyFilePath error:nil];
+    }
+}
+
+- (void)testApplicationSyncGetRepoOlderSinceReturnsSmallerDeltaThanFull {
+    for (NSUInteger i = 0; i < 30; i++) {
+        NSDictionary *record = @{
+            @"$type": @"app.bsky.feed.post",
+            @"text": [NSString stringWithFormat:@"bulk-%lu", (unsigned long)i],
+            @"createdAt": [self iso8601String]
+        };
+        NSDictionary *created = [self.application.legacyController createRecordForDid:self.userDid
+                                                                            collection:@"app.bsky.feed.post"
+                                                                                record:record
+                                                                        validationMode:PDSValidationModeOff
+                                                                                 error:nil];
+        XCTAssertNotNil(created);
+    }
+
+    NSString *baselineQuery = [NSString stringWithFormat:@"did=%@", self.userDid];
+    HttpResponse *baselineResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                      queryString:baselineQuery
+                                                      queryParams:@{@"did": self.userDid}
+                                                          headers:@{}];
+    XCTAssertEqual(baselineResponse.statusCode, 200);
+    NSString *baselineRev = [self commitRevFromCARData:baselineResponse.body];
+    XCTAssertNotNil(baselineRev);
+    if (baselineResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:baselineResponse.bodyFilePath error:nil];
+    }
+
+    NSDictionary *deltaRecord = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"single-delta-change",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *createdDelta = [self.application.legacyController createRecordForDid:self.userDid
+                                                                             collection:@"app.bsky.feed.post"
+                                                                                 record:deltaRecord
+                                                                         validationMode:PDSValidationModeOff
+                                                                                  error:nil];
+    XCTAssertNotNil(createdDelta);
+
+    NSString *deltaQuery = [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, baselineRev];
+    HttpResponse *deltaResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                   queryString:deltaQuery
+                                                   queryParams:@{@"did": self.userDid, @"since": baselineRev}
+                                                       headers:@{}];
+    XCTAssertEqual(deltaResponse.statusCode, 200);
+
+    HttpResponse *fullAfterResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                       queryString:baselineQuery
+                                                       queryParams:@{@"did": self.userDid}
+                                                           headers:@{}];
+    XCTAssertEqual(fullAfterResponse.statusCode, 200);
+
+    NSError *deltaParseError = nil;
+    CARReader *deltaReader = [CARReader readFromData:deltaResponse.body error:&deltaParseError];
+    XCTAssertNil(deltaParseError);
+    XCTAssertNotNil(deltaReader);
+
+    NSError *fullParseError = nil;
+    CARReader *fullReader = [CARReader readFromData:fullAfterResponse.body error:&fullParseError];
+    XCTAssertNil(fullParseError);
+    XCTAssertNotNil(fullReader);
+    XCTAssertLessThan(deltaReader.blocks.count, fullReader.blocks.count);
+
+    if (deltaResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:deltaResponse.bodyFilePath error:nil];
+    }
+    if (fullAfterResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:fullAfterResponse.bodyFilePath error:nil];
+    }
+}
+
+- (void)testApplicationSyncGetRepoSincePreDeleteRevOmitsDeletedRecordBlock {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"delete-delta-target",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.application.legacyController createRecordForDid:self.userDid
+                                                                        collection:@"app.bsky.feed.post"
+                                                                            record:record
+                                                                    validationMode:PDSValidationModeOff
+                                                                             error:nil];
+    XCTAssertNotNil(created);
+    NSString *deletedCID = created[@"cid"];
+    XCTAssertTrue(deletedCID.length > 0);
+
+    NSString *fullQuery = [NSString stringWithFormat:@"did=%@", self.userDid];
+    HttpResponse *beforeDeleteResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                          queryString:fullQuery
+                                                          queryParams:@{@"did": self.userDid}
+                                                              headers:@{}];
+    XCTAssertEqual(beforeDeleteResponse.statusCode, 200);
+    NSString *beforeDeleteRev = [self commitRevFromCARData:beforeDeleteResponse.body];
+    XCTAssertNotNil(beforeDeleteRev);
+    if (beforeDeleteResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:beforeDeleteResponse.bodyFilePath error:nil];
+    }
+
+    NSString *uri = created[@"uri"];
+    NSString *rkey = uri.pathComponents.lastObject;
+    XCTAssertTrue(rkey.length > 0);
+    BOOL deleted = [self.application.legacyController deleteRecordForDid:self.userDid
+                                                              collection:@"app.bsky.feed.post"
+                                                                    rkey:rkey
+                                                                   error:nil];
+    XCTAssertTrue(deleted);
+
+    NSString *deltaQuery = [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, beforeDeleteRev];
+    HttpResponse *deltaResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                                   queryString:deltaQuery
+                                                   queryParams:@{@"did": self.userDid, @"since": beforeDeleteRev}
+                                                       headers:@{}];
+    XCTAssertEqual(deltaResponse.statusCode, 200);
+    XCTAssertFalse([self carData:deltaResponse.body containsBlockWithCIDString:deletedCID]);
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:deltaResponse.body error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertGreaterThan(reader.blocks.count, 0U);
+
+    CID *dataCID = [self commitDataCIDFromCARData:deltaResponse.body];
+    XCTAssertNotNil(dataCID);
+    XCTAssertNotNil([reader blockWithCID:dataCID]);
+
+    if (deltaResponse.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:deltaResponse.bodyFilePath error:nil];
     }
 }
 
