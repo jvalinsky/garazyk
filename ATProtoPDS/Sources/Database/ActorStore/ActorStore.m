@@ -162,6 +162,113 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         return NO;
     }
 
+    // Backward-compatible schema evolution for repo revision tracking.
+    NSString *tableInfoSQL = @"PRAGMA table_info(repo_root)";
+    sqlite3_stmt *tableInfoStmt = NULL;
+    int tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
+    if (tableInfoResult != SQLITE_OK) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:@"Failed to inspect repo_root schema"
+                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
+        }
+        return NO;
+    }
+
+    BOOL hasRevColumn = NO;
+    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
+        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
+        if (columnName && strcmp(columnName, "rev") == 0) {
+            hasRevColumn = YES;
+            break;
+        }
+    }
+    sqlite3_finalize(tableInfoStmt);
+
+    if (!hasRevColumn) {
+        char *alterErrMsg = NULL;
+        int alterResult = sqlite3_exec(self.db,
+                                       "ALTER TABLE repo_root ADD COLUMN rev TEXT",
+                                       NULL,
+                                       NULL,
+                                       &alterErrMsg);
+        if (alterResult != SQLITE_OK) {
+            if (error) {
+                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add rev column";
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:msg
+                                          userInfo:@{@"sqlite_code": @(alterResult)}];
+            }
+            if (alterErrMsg) {
+                sqlite3_free(alterErrMsg);
+            }
+            return NO;
+        }
+    }
+
+    // Backward-compatible schema evolution for per-record revision tracking.
+    tableInfoSQL = @"PRAGMA table_info(records)";
+    tableInfoStmt = NULL;
+    tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
+    if (tableInfoResult != SQLITE_OK) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:@"Failed to inspect records schema"
+                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
+        }
+        return NO;
+    }
+
+    BOOL hasRecordRevColumn = NO;
+    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
+        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
+        if (columnName && strcmp(columnName, "rev") == 0) {
+            hasRecordRevColumn = YES;
+            break;
+        }
+    }
+    sqlite3_finalize(tableInfoStmt);
+
+    if (!hasRecordRevColumn) {
+        char *alterErrMsg = NULL;
+        int alterResult = sqlite3_exec(self.db,
+                                       "ALTER TABLE records ADD COLUMN rev TEXT",
+                                       NULL,
+                                       NULL,
+                                       &alterErrMsg);
+        if (alterResult != SQLITE_OK) {
+            if (error) {
+                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add records.rev column";
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:msg
+                                          userInfo:@{@"sqlite_code": @(alterResult)}];
+            }
+            if (alterErrMsg) {
+                sqlite3_free(alterErrMsg);
+            }
+            return NO;
+        }
+    }
+
+    char *indexErrMsg = NULL;
+    int indexResult = sqlite3_exec(self.db,
+                                   "CREATE INDEX IF NOT EXISTS idx_records_rev ON records(rev)",
+                                   NULL,
+                                   NULL,
+                                   &indexErrMsg);
+    if (indexResult != SQLITE_OK) {
+        if (error) {
+            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create records.rev index";
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:msg
+                                      userInfo:@{@"sqlite_code": @(indexResult)}];
+        }
+        if (indexErrMsg) {
+            sqlite3_free(indexErrMsg);
+        }
+        return NO;
+    }
+
     return YES;
 }
 
@@ -322,7 +429,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSError *blockError = nil;
 
     dispatch_sync(self.transactionQueue, ^{
-        NSString *sql = @"SELECT * FROM repo_root LIMIT 1";
+        NSString *sql = @"SELECT cid, updated_at, rev FROM repo_root ORDER BY updated_at DESC LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
@@ -351,7 +458,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSError *blockError = nil;
 
     dispatch_sync(self.transactionQueue, ^{
-        NSString *sql = @"SELECT cid FROM repo_root LIMIT 1";
+        NSString *sql = @"SELECT cid FROM repo_root ORDER BY updated_at DESC LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
@@ -371,32 +478,193 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     return rootCid;
 }
 
+- (nullable NSString *)getRepoRevisionForDid:(NSString *)did error:(NSError **)error {
+    __block NSString *revision = nil;
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        NSString *sql = @"SELECT rev FROM repo_root ORDER BY updated_at DESC LIMIT 1";
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *revText = (const char *)sqlite3_column_text(stmt, 0);
+            if (revText) {
+                revision = [NSString stringWithUTF8String:revText];
+            }
+        }
+    });
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return revision;
+}
+
+- (nullable NSString *)latestMutationRevisionWithError:(NSError **)error {
+    __block NSString *revision = nil;
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        NSString *sql = @"SELECT rev FROM ("
+                         @"  SELECT rev AS rev FROM records WHERE rev IS NOT NULL "
+                         @"  UNION ALL "
+                         @"  SELECT rev AS rev FROM record_tombstones"
+                         @") ORDER BY rev DESC LIMIT 1";
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *revText = (const char *)sqlite3_column_text(stmt, 0);
+            if (revText) {
+                revision = [NSString stringWithUTF8String:revText];
+            }
+        }
+    });
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return revision;
+}
+
+- (BOOL)repoRevisionExists:(NSString *)rev error:(NSError **)error {
+    if (rev.length == 0) {
+        return NO;
+    }
+
+    __block BOOL exists = NO;
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        NSString *sql = @"SELECT 1 FROM repo_root WHERE rev = ? LIMIT 1";
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        sqlite3_bind_text(stmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        exists = (sqlite3_step(stmt) == SQLITE_ROW);
+    });
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return exists;
+}
+
+- (BOOL)mutationRevisionExists:(NSString *)rev error:(NSError **)error {
+    if (rev.length == 0) {
+        return NO;
+    }
+
+    __block BOOL exists = NO;
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        NSString *recordsSQL = @"SELECT 1 FROM records WHERE rev = ? LIMIT 1";
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *recordsStmt = [self prepareStatement:recordsSQL error:&prepError];
+        if (!recordsStmt) {
+            blockError = prepError;
+            return;
+        }
+
+        sqlite3_bind_text(recordsStmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(recordsStmt) == SQLITE_ROW) {
+            exists = YES;
+            return;
+        }
+
+        NSString *tombstonesSQL = @"SELECT 1 FROM record_tombstones WHERE rev = ? LIMIT 1";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *tombstonesStmt = [self prepareStatement:tombstonesSQL error:&prepError];
+        if (!tombstonesStmt) {
+            blockError = prepError;
+            return;
+        }
+
+        sqlite3_bind_text(tombstonesStmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        exists = (sqlite3_step(tombstonesStmt) == SQLITE_ROW);
+    });
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return exists;
+}
+
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error {
-    NSString *sql = @"INSERT INTO repo_root (cid, updated_at) VALUES (?, ?)";
+    NSString *sql = @"INSERT INTO repo_root (cid, rev, updated_at) VALUES (?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
     if (repo.rootCid) {
         sqlite3_bind_blob(stmt, 1, repo.rootCid.bytes, (int)repo.rootCid.length, SQLITE_TRANSIENT);
     }
-    sqlite3_bind_double(stmt, 2, repo.updatedAt.timeIntervalSince1970);
+    sqlite3_bind_text(stmt, 2, "", -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 3, repo.updatedAt.timeIntervalSince1970);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
     return success;
 }
 
 - (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO repo_root (cid, updated_at) VALUES (?, ?)";
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
-    if (!stmt) return NO;
-    
-    if (rootCid) {
-        sqlite3_bind_blob(stmt, 1, rootCid.bytes, (int)rootCid.length, SQLITE_TRANSIENT);
+    return [self updateRepoRoot:did rootCid:rootCid rev:nil error:error];
+}
+
+- (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid rev:(nullable NSString *)rev error:(NSError **)error {
+    NSString *resolvedRev = rev;
+    if (!resolvedRev) {
+        NSString *existingRevSQL = @"SELECT rev FROM repo_root ORDER BY updated_at DESC LIMIT 1";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *existingStmt = [self prepareStatement:existingRevSQL error:error];
+        if (!existingStmt) {
+            return NO;
+        }
+
+        if (sqlite3_step(existingStmt) == SQLITE_ROW) {
+            const char *existingRevText = (const char *)sqlite3_column_text(existingStmt, 0);
+            if (existingRevText) {
+                resolvedRev = [NSString stringWithUTF8String:existingRevText];
+            }
+        }
     }
-    sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
-    
-    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    return success;
+
+    if (!resolvedRev) {
+        resolvedRev = @"";
+    }
+
+    // Keep historical repo roots keyed by CID; this preserves revision history needed for
+    // future `since` semantics while still updating the timestamp/rev for repeated heads.
+    NSString *insertSQL = @"INSERT OR REPLACE INTO repo_root (cid, rev, updated_at) VALUES (?, ?, ?)";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *insertStmt = [self prepareStatement:insertSQL error:error];
+    if (!insertStmt) return NO;
+
+    if (rootCid) {
+        sqlite3_bind_blob(insertStmt, 1, rootCid.bytes, (int)rootCid.length, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(insertStmt, 1);
+    }
+    sqlite3_bind_text(insertStmt, 2, resolvedRev.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(insertStmt, 3, [[NSDate date] timeIntervalSince1970]);
+
+    int stepResult = sqlite3_step(insertStmt);
+    if (stepResult != SQLITE_DONE) {
+        if (error) {
+            *error = [self errorWithSQLiteResult:stepResult message:@"Failed to store repo root"];
+        }
+        return NO;
+    }
+    return YES;
 }
 
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error {
@@ -415,7 +683,8 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSError *blockError = nil;
 
     dispatch_sync(self.transactionQueue, ^{
-        NSString *sql = @"SELECT * FROM records WHERE uri = ?";
+        NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
+                         @"FROM records WHERE uri = ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
@@ -434,6 +703,58 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         *error = blockError;
     }
     return record;
+}
+
+- (NSArray<NSDictionary<NSString *, id> *> *)listRecordTombstonesSinceRev:(nullable NSString *)rev
+                                                                     limit:(NSUInteger)limit
+                                                                     error:(NSError **)error {
+    __block NSMutableArray<NSDictionary<NSString *, id> *> *rows = [NSMutableArray array];
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        BOOL hasRevFilter = (rev.length > 0);
+        NSString *sql = hasRevFilter
+            ? @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
+              @"WHERE rev > ? ORDER BY rev LIMIT ?"
+            : @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
+              @"ORDER BY rev LIMIT ?";
+
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        int idx = 1;
+        if (hasRevFilter) {
+            sqlite3_bind_text(stmt, idx++, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        }
+        sqlite3_bind_int(stmt, idx++, (int)limit);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *uriText = (const char *)sqlite3_column_text(stmt, 0);
+            const char *didText = (const char *)sqlite3_column_text(stmt, 1);
+            const char *collectionText = (const char *)sqlite3_column_text(stmt, 2);
+            const char *rkeyText = (const char *)sqlite3_column_text(stmt, 3);
+            const char *revText = (const char *)sqlite3_column_text(stmt, 4);
+            double indexedAt = sqlite3_column_double(stmt, 5);
+
+            NSMutableDictionary<NSString *, id> *row = [NSMutableDictionary dictionary];
+            row[@"uri"] = uriText ? [NSString stringWithUTF8String:uriText] : @"";
+            row[@"did"] = didText ? [NSString stringWithUTF8String:didText] : @"";
+            row[@"collection"] = collectionText ? [NSString stringWithUTF8String:collectionText] : @"";
+            row[@"rkey"] = rkeyText ? [NSString stringWithUTF8String:rkeyText] : @"";
+            row[@"rev"] = revText ? [NSString stringWithUTF8String:revText] : @"";
+            row[@"indexedAt"] = @(indexedAt);
+            [rows addObject:row];
+        }
+    });
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return [rows copy];
 }
 
 - (PDSDatabaseRecord *)recordFromStatement:(sqlite3_stmt *)stmt {
@@ -463,7 +784,12 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     
     record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 6)];
     
-    const char *subjectDid = (const char *)sqlite3_column_text(stmt, 7);
+    const char *revText = (const char *)sqlite3_column_text(stmt, 7);
+    if (revText) {
+        record.rev = [NSString stringWithUTF8String:revText];
+    }
+
+    const char *subjectDid = (const char *)sqlite3_column_text(stmt, 8);
     if (subjectDid) {
         record.subjectDid = [NSString stringWithUTF8String:subjectDid];
     }
@@ -484,9 +810,11 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         
         NSString *sql;
         if (collection) {
-            sql = @"SELECT * FROM records WHERE collection = ? ORDER BY rkey LIMIT ? OFFSET ?";
+            sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
+                  @"FROM records WHERE collection = ? ORDER BY rkey LIMIT ? OFFSET ?";
         } else {
-            sql = @"SELECT * FROM records ORDER BY rkey LIMIT ? OFFSET ?";
+            sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
+                  @"FROM records ORDER BY rkey LIMIT ? OFFSET ?";
         }
         
         NSError *prepError = nil;
@@ -517,8 +845,8 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 }
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at, subject_did) "
-                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did) "
+                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
@@ -535,11 +863,17 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     }
     
     sqlite3_bind_double(stmt, 7, record.createdAt.timeIntervalSince1970);
-    
-    if (record.subjectDid) {
-        sqlite3_bind_text(stmt, 8, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+    if (record.rev) {
+        sqlite3_bind_text(stmt, 8, record.rev.UTF8String, -1, SQLITE_TRANSIENT);
     } else {
         sqlite3_bind_null(stmt, 8);
+    }
+    
+    if (record.subjectDid) {
+        sqlite3_bind_text(stmt, 9, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 9);
     }
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
@@ -547,8 +881,8 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 }
 
 - (BOOL)createRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, value, indexed_at, subject_did) "
-                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did) "
+                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
 
@@ -566,10 +900,16 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
     sqlite3_bind_double(stmt, 7, record.createdAt.timeIntervalSince1970);
 
-    if (record.subjectDid) {
-        sqlite3_bind_text(stmt, 8, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    if (record.rev) {
+        sqlite3_bind_text(stmt, 8, record.rev.UTF8String, -1, SQLITE_TRANSIENT);
     } else {
         sqlite3_bind_null(stmt, 8);
+    }
+
+    if (record.subjectDid) {
+        sqlite3_bind_text(stmt, 9, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 9);
     }
 
     int stepResult = sqlite3_step(stmt);
@@ -583,7 +923,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 }
 
 - (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"UPDATE records SET did = ?, collection = ?, rkey = ?, cid = ?, value = ?, indexed_at = ?, subject_did = ? "
+    NSString *sql = @"UPDATE records SET did = ?, collection = ?, rkey = ?, cid = ?, value = ?, indexed_at = ?, rev = ?, subject_did = ? "
                      @"WHERE uri = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
@@ -601,13 +941,19 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
     sqlite3_bind_double(stmt, 6, record.createdAt.timeIntervalSince1970);
 
-    if (record.subjectDid) {
-        sqlite3_bind_text(stmt, 7, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    if (record.rev) {
+        sqlite3_bind_text(stmt, 7, record.rev.UTF8String, -1, SQLITE_TRANSIENT);
     } else {
         sqlite3_bind_null(stmt, 7);
     }
 
-    sqlite3_bind_text(stmt, 8, record.uri.UTF8String, -1, SQLITE_TRANSIENT);
+    if (record.subjectDid) {
+        sqlite3_bind_text(stmt, 8, record.subjectDid.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 8);
+    }
+
+    sqlite3_bind_text(stmt, 9, record.uri.UTF8String, -1, SQLITE_TRANSIENT);
 
     int stepResult = sqlite3_step(stmt);
     if (stepResult != SQLITE_DONE) {
@@ -636,6 +982,34 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
     return success;
+}
+
+- (BOOL)addRecordTombstoneURI:(NSString *)uri
+                          did:(NSString *)did
+                    collection:(NSString *)collection
+                         rkey:(NSString *)rkey
+                           rev:(NSString *)rev
+                         error:(NSError **)error {
+    NSString *sql = @"INSERT INTO record_tombstones (uri, did, collection, rkey, rev, indexed_at) "
+                     @"VALUES (?, ?, ?, ?, ?, ?)";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
+    if (!stmt) return NO;
+
+    sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, collection.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, rkey.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, rev.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 6, [[NSDate date] timeIntervalSince1970]);
+
+    int stepResult = sqlite3_step(stmt);
+    if (stepResult != SQLITE_DONE) {
+        if (error) {
+            *error = [self errorWithSQLiteResult:stepResult message:@"Failed to add record tombstone"];
+        }
+        return NO;
+    }
+    return YES;
 }
 
 - (BOOL)putRecords:(NSArray<PDSDatabaseRecord *> *)records forDid:(NSString *)did error:(NSError **)error {

@@ -67,7 +67,14 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError **)error;
 - (nullable PDSDatabaseRepo *)getRepoForDid:(NSString *)did error:(NSError **)error;
 - (nullable NSData *)getRepoRootForDid:(NSString *)did error:(NSError **)error;
+- (nullable NSString *)getRepoRevisionForDid:(NSString *)did error:(NSError **)error;
+- (nullable NSString *)latestMutationRevisionWithError:(NSError **)error;
+- (BOOL)repoRevisionExists:(NSString *)rev error:(NSError **)error;
+- (BOOL)mutationRevisionExists:(NSString *)rev error:(NSError **)error;
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
+- (NSArray<NSDictionary<NSString *, id> *> *)listRecordTombstonesSinceRev:(nullable NSString *)rev
+                                                                     limit:(NSUInteger)limit
+                                                                     error:(NSError **)error;
 - (NSArray<PDSDatabaseRecord *> *)listRecordsForDid:(NSString *)did 
                                          collection:(nullable NSString *)collection 
                                                limit:(NSUInteger)limit
@@ -106,12 +113,19 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error;
 - (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid error:(NSError **)error;
+- (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid rev:(nullable NSString *)rev error:(NSError **)error;
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error;
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)createRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
+- (BOOL)addRecordTombstoneURI:(NSString *)uri
+                          did:(NSString *)did
+                    collection:(NSString *)collection
+                         rkey:(NSString *)rkey
+                           rev:(NSString *)rev
+                         error:(NSError **)error;
 - (BOOL)putRecords:(NSArray<PDSDatabaseRecord *> *)records forDid:(NSString *)did error:(NSError **)error;
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error;

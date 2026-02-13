@@ -104,14 +104,30 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Get repository contents, optionally since a commit.
 
  @discussion Returns CAR-encoded repository data containing all blocks.
- If sinceCid is provided, returns only changes since that commit.
+ If sinceRev is provided, returns only changes since that revision.
 
  @param did Decentralized identifier of repository owner.
- @param sinceCid Previous commit CID for incremental sync, or nil for full export.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
  @param error Error pointer for export failures.
  @return CAR-encoded repository blocks, or nil on failure.
  */
-- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSData *)sinceCid error:(NSError **)error;
+- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error;
+
+/*!
+ @method writeRepoContents:since:toPath:error:
+
+ @abstract Write repository contents directly to a CAR file.
+
+ @discussion Builds repository export and writes it to disk without building a
+ single concatenated response blob in memory.
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param path Output file path.
+ @param error Error pointer for export failures.
+ @return YES on success, NO on failure.
+ */
+- (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error;
 
 /*!
  @method updateRepo:commit:error:

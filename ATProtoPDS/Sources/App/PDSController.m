@@ -412,8 +412,8 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return [_repositoryService getRepoRoot:did error:error];
 }
 
-- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSData *)sinceCid error:(NSError **)error {
-    return [_repositoryService getRepoContents:did since:sinceCid error:error];
+- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error {
+    return [_repositoryService getRepoContents:did since:sinceRev error:error];
 }
 
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {

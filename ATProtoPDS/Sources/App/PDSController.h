@@ -160,7 +160,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
 
 /*! Gets repository contents, optionally since a specific commit. */
-- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSData *)sinceCid error:(NSError **)error;
+- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error;
 
 /*! Updates a repository with a new commit. */
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error;
@@ -266,9 +266,9 @@ NS_ASSUME_NONNULL_BEGIN
                                                     error:(NSError **)error
     DEPRECATED_MSG_ATTRIBUTE("Use refreshAccessToken:error: instead");
 
-/*! @deprecated Use getRepoContents:since:error: with nil sinceCid instead. */
+/*! @deprecated Use getRepoContents:since:error: with nil sinceRev instead. */
 - (nullable NSData *)getRepoDataForDid:(NSString *)did error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE("Use getRepoContents:since:error: with nil sinceCid instead");
+    DEPRECATED_MSG_ATTRIBUTE("Use getRepoContents:since:error: with nil sinceRev instead");
 
 /*! @deprecated Use getRepoRoot:error: instead. */
 - (nullable NSString *)getRepoHeadForDid:(NSString *)did error:(NSError **)error
