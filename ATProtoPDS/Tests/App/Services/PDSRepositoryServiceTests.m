@@ -70,6 +70,47 @@
     return revValue.textString;
 }
 
+- (nullable CID *)commitDataCIDFromCARData:(NSData *)carData {
+    NSError *carError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    XCTAssertNil(carError);
+    XCTAssertNotNil(reader);
+    if (!reader) {
+        return nil;
+    }
+
+    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    XCTAssertNotNil(commitBlock);
+    if (!commitBlock) {
+        return nil;
+    }
+
+    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    XCTAssertNotNil(commitValue);
+    XCTAssertEqual(commitValue.type, CBORTypeMap);
+    if (!commitValue || commitValue.type != CBORTypeMap) {
+        return nil;
+    }
+
+    CBORValue *dataValue = commitValue.map[[CBORValue textString:@"data"]];
+    XCTAssertNotNil(dataValue);
+    XCTAssertEqual(dataValue.type, CBORTypeTag);
+    if (!dataValue || dataValue.type != CBORTypeTag) {
+        return nil;
+    }
+
+    CBORValue *tagged = dataValue.tagValue;
+    XCTAssertEqual(tagged.type, CBORTypeByteString);
+    NSData *tagBytes = tagged.byteString;
+    XCTAssertTrue(tagBytes.length > 1);
+    if (tagged.type != CBORTypeByteString || tagBytes.length <= 1) {
+        return nil;
+    }
+
+    NSData *rawCID = [tagBytes subdataWithRange:NSMakeRange(1, tagBytes.length - 1)];
+    return [CID cidFromBytes:rawCID];
+}
+
 - (NSDictionary *)postRecordWithText:(NSString *)text {
     return @{
         @"$type": @"app.bsky.feed.post",
@@ -259,6 +300,122 @@
 
     XCTAssertTrue([self carData:deltaCAR containsBlockWithCIDString:secondCID]);
     XCTAssertFalse([self carData:deltaCAR containsBlockWithCIDString:firstCID]);
+}
+
+- (void)testGetRepoContentsDeltaIncludesCommitDataRootBlock {
+    BOOL firstWrite = [self.recordService putRecord:@"app.bsky.feed.post"
+                                               rkey:@"repo-test-rootproof-a"
+                                              value:[self postRecordWithText:@"root proof baseline"]
+                                             forDid:self.testDID
+                                     validationMode:PDSValidationModeOff
+                                              error:nil];
+    XCTAssertTrue(firstWrite);
+
+    NSData *firstCAR = [self.repositoryService getRepoContents:self.testDID since:nil error:nil];
+    NSString *firstRev = [self commitRevFromCARData:firstCAR];
+    XCTAssertNotNil(firstRev);
+
+    BOOL secondWrite = [self.recordService putRecord:@"app.bsky.feed.post"
+                                                rkey:@"repo-test-rootproof-b"
+                                               value:[self postRecordWithText:@"root proof delta"]
+                                              forDid:self.testDID
+                                      validationMode:PDSValidationModeOff
+                                               error:nil];
+    XCTAssertTrue(secondWrite);
+
+    NSData *deltaCAR = [self.repositoryService getRepoContents:self.testDID since:firstRev error:nil];
+    XCTAssertNotNil(deltaCAR);
+
+    CID *dataCID = [self commitDataCIDFromCARData:deltaCAR];
+    XCTAssertNotNil(dataCID);
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:deltaCAR error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertNotNil([reader blockWithCID:dataCID]);
+}
+
+- (void)testGetRepoContentsDeltaIsSmallerThanFullSnapshotAfterSingleChange {
+    for (NSUInteger i = 0; i < 40; i++) {
+        NSString *rkey = [NSString stringWithFormat:@"repo-test-many-%lu", (unsigned long)i];
+        NSString *text = [NSString stringWithFormat:@"seed %lu", (unsigned long)i];
+        BOOL wrote = [self.recordService putRecord:@"app.bsky.feed.post"
+                                              rkey:rkey
+                                             value:[self postRecordWithText:text]
+                                            forDid:self.testDID
+                                    validationMode:PDSValidationModeOff
+                                             error:nil];
+        XCTAssertTrue(wrote);
+    }
+
+    NSData *baselineCAR = [self.repositoryService getRepoContents:self.testDID since:nil error:nil];
+    NSString *baselineRev = [self commitRevFromCARData:baselineCAR];
+    XCTAssertNotNil(baselineRev);
+
+    BOOL wroteDelta = [self.recordService putRecord:@"app.bsky.feed.post"
+                                               rkey:@"repo-test-many-delta"
+                                              value:[self postRecordWithText:@"single delta mutation"]
+                                             forDid:self.testDID
+                                     validationMode:PDSValidationModeOff
+                                              error:nil];
+    XCTAssertTrue(wroteDelta);
+
+    NSData *deltaCAR = [self.repositoryService getRepoContents:self.testDID since:baselineRev error:nil];
+    NSData *fullAfterCAR = [self.repositoryService getRepoContents:self.testDID since:nil error:nil];
+    XCTAssertNotNil(deltaCAR);
+    XCTAssertNotNil(fullAfterCAR);
+
+    NSError *deltaParseError = nil;
+    CARReader *deltaReader = [CARReader readFromData:deltaCAR error:&deltaParseError];
+    XCTAssertNil(deltaParseError);
+    XCTAssertNotNil(deltaReader);
+
+    NSError *fullParseError = nil;
+    CARReader *fullReader = [CARReader readFromData:fullAfterCAR error:&fullParseError];
+    XCTAssertNil(fullParseError);
+    XCTAssertNotNil(fullReader);
+
+    XCTAssertLessThan(deltaReader.blocks.count, fullReader.blocks.count);
+}
+
+- (void)testGetRepoContentsSincePreDeleteRevIncludesDeltaWithoutDeletedRecordBlock {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"repo-test-delete-delta"
+                                           value:[self postRecordWithText:@"delete me"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", self.testDID, @"app.bsky.feed.post", @"repo-test-delete-delta"];
+    NSDictionary *record = [self.recordService getRecord:uri forDid:self.testDID error:nil];
+    NSString *deletedCID = record[@"cid"];
+    XCTAssertNotNil(deletedCID);
+
+    NSData *beforeDeleteCAR = [self.repositoryService getRepoContents:self.testDID since:nil error:nil];
+    NSString *beforeDeleteRev = [self commitRevFromCARData:beforeDeleteCAR];
+    XCTAssertNotNil(beforeDeleteRev);
+
+    BOOL deleteOK = [self.recordService deleteRecord:@"app.bsky.feed.post"
+                                                rkey:@"repo-test-delete-delta"
+                                              forDid:self.testDID
+                                               error:nil];
+    XCTAssertTrue(deleteOK);
+
+    NSData *deltaCAR = [self.repositoryService getRepoContents:self.testDID since:beforeDeleteRev error:nil];
+    XCTAssertNotNil(deltaCAR);
+    XCTAssertFalse([self carData:deltaCAR containsBlockWithCIDString:deletedCID]);
+
+    NSError *deltaParseError = nil;
+    CARReader *deltaReader = [CARReader readFromData:deltaCAR error:&deltaParseError];
+    XCTAssertNil(deltaParseError);
+    XCTAssertNotNil(deltaReader);
+    XCTAssertGreaterThan(deltaReader.blocks.count, 0U);
+
+    CID *dataCID = [self commitDataCIDFromCARData:deltaCAR];
+    XCTAssertNotNil(dataCID);
+    XCTAssertNotNil([deltaReader blockWithCID:dataCID]);
 }
 
 - (void)testGetRepoContentsSinceCreateMutationRevReturnsEmptyDelta {

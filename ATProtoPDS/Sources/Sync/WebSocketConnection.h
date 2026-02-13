@@ -108,6 +108,9 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! Close reason from close frame. */
 @property (nonatomic, copy, nullable) NSString *closeReason;
 
+/*! Number of queued outbound frames waiting to be flushed. */
+@property (nonatomic, readonly) NSUInteger pendingSendCount;
+
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path;
 - (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection;
 

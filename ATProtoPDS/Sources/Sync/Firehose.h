@@ -136,10 +136,14 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  */
 @interface FirehoseErrorEvent : NSObject
 
-/*! The error message. */
-@property (nonatomic, copy) NSString *message;
+/*! Machine-readable error code (for example, "FutureCursor"). */
+@property (nonatomic, copy) NSString *error;
+
+/*! Human-readable error message. */
+@property (nonatomic, copy, nullable) NSString *message;
 
 + (instancetype)eventWithMessage:(NSString *)message;
++ (instancetype)eventWithError:(NSString *)error message:(nullable NSString *)message;
 
 @end
 

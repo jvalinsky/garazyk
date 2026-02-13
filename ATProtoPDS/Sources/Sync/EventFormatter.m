@@ -66,7 +66,11 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event error:(NSError **)error {
     NSMutableDictionary *errorFrame = [NSMutableDictionary dictionary];
-    errorFrame[@"error"] = event.message;
+    NSString *errorCode = event.error.length > 0 ? event.error : event.message;
+    errorFrame[@"error"] = errorCode.length > 0 ? errorCode : @"UnknownError";
+    if (event.message.length > 0) {
+        errorFrame[@"message"] = event.message;
+    }
 
     NSMutableData *result = [NSMutableData data];
 
