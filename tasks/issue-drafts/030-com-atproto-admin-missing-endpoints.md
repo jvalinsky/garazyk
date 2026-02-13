@@ -11,7 +11,7 @@ This issue now tracks behavior hardening and operational follow-up work.
 - In-scope coverage: **100%**
 - In-scope duplicate registrations: **0**
 - Cross-scope duplicate registrations (actionable): **0**
-- Cross-scope overlap (expected controller/application dual-path): **23**
+- Cross-scope overlap (expected controller/application dual-path): **0**
 
 Source artifacts:
 - `reports/xrpc_coverage.md`

@@ -19,7 +19,7 @@ These numbers were generated from repository state on 2026-02-13 using repo-nati
 - Unknown registry entries: **0**
 - Duplicate registry registrations (in scope): **0**
 - Duplicate registry registrations (cross-scope, actionable): **0**
-- Cross-scope overlap (expected controller/application dual-path): **23**
+- Cross-scope overlap (expected controller/application dual-path): **0**
 
 Repro commands:
 

@@ -3370,206 +3370,326 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
     }];
 }
 
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                           controller:(PDSController *)controller {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
-    registerServerAccountAndSessionMethods(dispatcher,
-                                           controller,
-                                           controller.accountService,
-                                           controller.serviceDatabases,
-                                           controller.userDatabasePool,
-                                           config,
-                                           YES);
+static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
+                                    PDSController *authController,
+                                    id<PDSAccountService> accountService,
+                                    PDSRecordService *recordService,
+                                    PDSBlobService *blobService,
+                                    PDSRepositoryService *repositoryService,
+                                    BOOL legacyMode) {
+    [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
+        if (legacyMode) {
+            NSString *repo = [request queryParamForKey:@"repo"];
+            NSString *collection = [request queryParamForKey:@"collection"];
+            NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 50;
+            NSString *cursor = [request queryParamForKey:@"cursor"];
 
-    [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
-        PDS_LOG_HTTP_DEBUG(@"createRecord XRPC handler called");
-        NSDictionary *body = request.jsonBody;
-        NSString *repo = body[@"repo"];
-        NSString *collection = body[@"collection"];
-        NSDictionary *record = body[@"record"];
+            if (!repo || !collection) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo or collection"}];
+                return;
+            }
 
-        PDS_LOG_HTTP_DEBUG(@"createRecord params: repo=%@, collection=%@, record=%@", repo, collection, record);
+            NSError *error = nil;
+            NSArray *records = [authController listRecordsForDid:repo
+                                                      collection:collection
+                                                           limit:limit
+                                                          cursor:cursor
+                                                           error:&error];
+
+            if (error) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"records": records ?: @[]}];
+            return;
+        }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
-        if (!repo || !collection || !record) {
+        NSString *collection = [request queryParamForKey:@"collection"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        if (!collection) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or record"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection parameter"}];
             return;
         }
 
-        if (![repo isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
-            return;
-        }
+        NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit > 100) limit = 100;
 
         NSError *error = nil;
-        NSDictionary *result = [controller createRecordForDid:repo
-                                                     collection:collection
-                                                        record:record
-                                                validationMode:PDSValidationModeRequired
-                                                         error:&error];
+        NSArray *records = [recordService listRecords:collection forDid:did limit:limit cursor:cursor error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"ListRecordsFailed", @"message": error.localizedDescription}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:@{@"records": records ?: @[]}];
     }];
 
     [dispatcher registerComAtprotoRepoGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *repo = [request queryParamForKey:@"repo"];
+        if (legacyMode) {
+            NSString *repo = [request queryParamForKey:@"repo"];
+            NSString *collection = [request queryParamForKey:@"collection"];
+            NSString *rkey = [request queryParamForKey:@"rkey"];
+
+            if (!repo || !collection || !rkey) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
+                return;
+            }
+
+            NSError *error = nil;
+            NSDictionary *result = [authController getRecordForDid:repo
+                                                         collection:collection
+                                                               rkey:rkey
+                                                              error:&error];
+
+            if (error) {
+                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *rkey = [request queryParamForKey:@"rkey"];
 
-        if (!repo || !collection || !rkey) {
+        if (!collection || !rkey) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey parameter"}];
             return;
         }
 
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         NSError *error = nil;
-        NSDictionary *result = [controller getRecordForDid:repo
-                                                 collection:collection
-                                                      rkey:rkey
-                                                     error:&error];
+        NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
 
-        if (error) {
-            response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+        if (error || !record) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:record];
     }];
 
-    [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
-        NSString *repo = [request queryParamForKey:@"repo"];
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 50;
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-
-        if (!repo || !collection) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo or collection"}];
+    [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *collection = body[@"collection"];
+        NSDictionary *record = body[@"record"];
+
+        if (legacyMode) {
+            NSString *repo = body[@"repo"];
+            if (!repo || !collection || !record) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or record"}];
+                return;
+            }
+
+            if (![repo isEqualToString:did]) {
+                response.statusCode = HttpStatusForbidden;
+                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+                return;
+            }
+
+            NSError *error = nil;
+            NSDictionary *result = [authController createRecordForDid:repo
+                                                            collection:collection
+                                                                record:record
+                                                        validationMode:PDSValidationModeRequired
+                                                                 error:&error];
+
+            if (error) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
+            return;
+        }
+
+        NSString *rkey = body[@"rkey"];
+        BOOL validate = [body[@"validate"] boolValue];
+        if (!collection || !record) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or record"}];
+            return;
+        }
+
+        if (!rkey) {
+            rkey = [[TID tid] stringValue];
+        }
+
+        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
         NSError *error = nil;
-        NSArray *records = [controller listRecordsForDid:repo
-                                               collection:collection
-                                                   limit:limit
-                                                  cursor:cursor
-                                                   error:&error];
-
-        if (error) {
+        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
+        if (!success) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"RecordCreationFailed", @"message": error.localizedDescription ?: @"Failed to create record"}];
             return;
         }
+
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSDictionary *createdRecord = [recordService getRecord:uri forDid:did error:nil];
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"records": records}];
+        [response setJsonBody:createdRecord ?: @{@"uri": uri}];
     }];
 
     [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        NSString *repo = body[@"repo"];
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
-        if (!repo || !collection || !rkey) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *collection = body[@"collection"];
+        NSString *rkey = body[@"rkey"];
+
+        if (legacyMode) {
+            NSString *repo = body[@"repo"];
+            if (!repo || !collection || !rkey) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
+                return;
+            }
+
+            if (![repo isEqualToString:did]) {
+                response.statusCode = HttpStatusForbidden;
+                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+                return;
+            }
+
+            NSError *error = nil;
+            BOOL success = [authController deleteRecordForDid:repo
+                                                   collection:collection
+                                                         rkey:rkey
+                                                        error:&error];
+            if (!success) {
+                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
             return;
         }
 
-        if (![repo isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+        if (!collection || !rkey) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey"}];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [controller deleteRecordForDid:repo
-                                            collection:collection
-                                                 rkey:rkey
-                                                error:&error];
-
+        BOOL success = [recordService deleteRecord:collection rkey:rkey forDid:did error:&error];
         if (!success) {
-            response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"RecordDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete record"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
+        [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey]}];
     }];
 
-    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        if (!body) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
-            return;
-        }
-
+    [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
-
-        NSString *repo = body[@"repo"];
-        NSArray *writes = body[@"writes"];
-        NSNumber *validate = body[@"validate"];
-        NSString *swapCommit = body[@"swapCommit"];
-
-        if (!repo || !writes || writes.count == 0) {
+        NSData *blobData = request.body;
+        if (!blobData || blobData.length == 0) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing required fields: repo and writes"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob data"}];
             return;
         }
 
-        if (![repo isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+        if (legacyMode) {
+            if (blobData.length > 1 * 1024 * 1024) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob exceeds size limit (1MB)"}];
+                return;
+            }
+
+            NSString *mimeType = [request headerForKey:@"Content-Type"] ?: @"application/octet-stream";
+            if ([mimeType isEqualToString:@"application/x-msdownload"]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Disallowed MIME type"}];
+                return;
+            }
+
+            NSError *error = nil;
+            NSDictionary *result = [authController uploadBlob:blobData mimeType:mimeType did:did error:&error];
+            if (error) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BlobUploadFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
             return;
         }
 
+        NSString *contentType = [request headerForKey:@"Content-Type"];
         NSError *error = nil;
-        NSDictionary *result = [controller applyWrites:writes
-                                                 repo:repo
-                                             validate:validate.boolValue
-                                           swapCommit:swapCommit
-                                                error:&error];
-
+        NSDictionary *result = [blobService uploadBlob:blobData
+                                                forDid:did
+                                              mimeType:contentType ?: @"application/octet-stream"
+                                                 error:&error];
         if (error) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ApplyWritesFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"BlobUploadFailed", @"message": error.localizedDescription}];
             return;
         }
 
@@ -3577,76 +3697,59 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
-        NSString *repo = [request queryParamForKey:@"repo"];
-
-        if (!repo) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [controller describeRepo:repo error:&error];
-
-        if (error) {
-            response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoRepoPutRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        NSString *repo = body[@"repo"];
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-        NSDictionary *record = body[@"record"];
-
+    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
-        if (!repo || !collection || !rkey || !record) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, rkey, or record"}];
+        if (legacyMode) {
+            NSString *cid = [request queryParamForKey:@"cid"];
+            if (!cid) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid parameter"}];
+                return;
+            }
+
+            NSError *error = nil;
+            BOOL success = [authController deleteBlobWithCID:cid did:did error:&error];
+            if (!success) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"DeleteFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
             return;
         }
 
-        if (![repo isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *cid = body[@"blob"];
+        if (!cid) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob CID"}];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [controller putRecordForDid:repo
-                                          collection:collection
-                                               rkey:rkey
-                                              record:record
-                                       validationMode:PDSValidationModeRequired
-                                               error:&error];
-
+        BOOL success = [blobService deleteBlobWithCID:cid did:did error:&error];
         if (!success) {
-            response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"BlobDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete blob"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", repo, collection, rkey]}];
+        [response setJsonBody:@{@"success": @YES}];
     }];
 
     [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3668,7 +3771,6 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         if (cursor.length > 0) {
             result[@"cursor"] = cursor;
         }
-
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
     }];
@@ -3682,7 +3784,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3715,27 +3817,258 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
+    [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
+        if (legacyMode) {
+            NSString *repo = [request queryParamForKey:@"repo"];
+            if (!repo) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo parameter"}];
+                return;
+            }
 
+            NSError *error = nil;
+            NSDictionary *result = [authController describeRepo:repo error:&error];
+            if (error) {
+                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
         NSError *error = nil;
-        NSData *repoData = [controller getRepoDataForDid:did error:&error];
+        NSData *root = [repositoryService getRepoRoot:did error:&error];
+        NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
+        NSDictionary *account = [accountService getAccountForDid:did error:nil];
 
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"did"] = did;
+        if (root) {
+            result[@"root"] = [root base64EncodedStringWithOptions:0];
+        }
+        if (account[@"handle"]) {
+            result[@"handle"] = account[@"handle"];
+        }
+        if (stats[@"collections"]) {
+            NSMutableArray *colNames = [NSMutableArray array];
+            for (NSDictionary *col in stats[@"collections"]) {
+                if (col[@"collection"]) {
+                    [colNames addObject:col[@"collection"]];
+                }
+            }
+            result[@"collections"] = colNames;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    [dispatcher registerComAtprotoRepoPutRecord:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *collection = body[@"collection"];
+        NSString *rkey = body[@"rkey"];
+        NSDictionary *record = body[@"record"];
+        BOOL validate = [body[@"validate"] boolValue];
+
+        if (legacyMode) {
+            NSString *repo = body[@"repo"];
+            if (!repo || !collection || !rkey || !record) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, rkey, or record"}];
+                return;
+            }
+
+            if (![repo isEqualToString:did]) {
+                response.statusCode = HttpStatusForbidden;
+                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+                return;
+            }
+
+            NSError *error = nil;
+            BOOL success = [authController putRecordForDid:repo
+                                                 collection:collection
+                                                      rkey:rkey
+                                                     record:record
+                                              validationMode:PDSValidationModeRequired
+                                                      error:&error];
+            if (!success) {
+                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", repo, collection, rkey]}];
+            return;
+        }
+
+        if (!collection || !rkey || !record) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection, rkey, or record"}];
+            return;
+        }
+
+        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
+        NSError *error = nil;
+        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
+        if (!success) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"RecordUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update record"}];
+            return;
+        }
+
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"uri": uri}];
+    }];
+
+    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody;
+        if (!body) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        if (legacyMode) {
+            NSString *repo = body[@"repo"];
+            NSArray *writes = body[@"writes"];
+            NSNumber *validate = body[@"validate"];
+            NSString *swapCommit = body[@"swapCommit"];
+
+            if (!repo || !writes || writes.count == 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing required fields: repo and writes"}];
+                return;
+            }
+
+            if (![repo isEqualToString:did]) {
+                response.statusCode = HttpStatusForbidden;
+                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
+                return;
+            }
+
+            NSError *error = nil;
+            NSDictionary *result = [authController applyWrites:writes
+                                                          repo:repo
+                                                      validate:validate.boolValue
+                                                    swapCommit:swapCommit
+                                                         error:&error];
+            if (error) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"ApplyWritesFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:result];
+            return;
+        }
+
+        NSArray *writes = body[@"writes"];
+        BOOL validate = [body[@"validate"] boolValue];
+        NSString *swapCommit = body[@"swapCommit"];
+        if (!writes || ![writes isKindOfClass:[NSArray class]]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid writes array"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *result = [recordService applyWrites:writes
+                                                   forDid:did
+                                                 validate:validate
+                                               swapCommit:swapCommit
+                                                    error:&error];
+        if (!result) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to apply writes"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        response.contentType = @"application/car";
-        [response setBodyData:repoData];
+        [response setJsonBody:result];
+    }];
+}
+
+static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
+                                    PDSController *authController,
+                                    PDSServiceDatabases *serviceDatabases,
+                                    PDSDatabasePool *userDatabasePool,
+                                    PDSRecordService *recordService,
+                                    PDSBlobService *blobService,
+                                    PDSRepositoryService *repositoryService,
+                                    PDSConfiguration *config,
+                                    BOOL legacyMode) {
+    [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
+        if (legacyMode) {
+            NSString *did = [request queryParamForKey:@"did"];
+            if (!did) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+                return;
+            }
+
+            NSError *error = nil;
+            NSData *repoData = [authController getRepoDataForDid:did error:&error];
+            if (error) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            response.contentType = @"application/car";
+            [response setBodyData:repoData];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSData *repoData = [repositoryService getRepoContents:did since:nil error:&error];
+        if (error || !repoData) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        response.body = repoData;
+        [response setHeader:@"application/x-cbor" forKey:@"Content-Type"];
     }];
 
     [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request, HttpResponse *response) {
@@ -3747,7 +4080,9 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *error = nil;
-        NSData *repoData = [controller getRepoDataForDid:did error:&error];
+        NSData *repoData = legacyMode
+            ? [authController getRepoDataForDid:did error:&error]
+            : [repositoryService getRepoContents:did since:nil error:&error];
         if (!repoData || error) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RepoNotFound", @"message": error.localizedDescription ?: @"Repository not found"}];
@@ -3760,25 +4095,45 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
+        if (legacyMode) {
+            NSString *did = [request queryParamForKey:@"did"];
+            if (!did) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+                return;
+            }
 
+            NSError *error = nil;
+            NSString *head = [authController getRepoHeadForDid:did error:&error];
+            if (error) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"root": head ?: [NSNull null]}];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
         if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
         NSError *error = nil;
-        NSString *head = [controller getRepoHeadForDid:did error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
+        NSData *root = [repositoryService getRepoRoot:did error:&error];
+        if (error || !root) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"root": head ?: [NSNull null]}];
+        [response setJsonBody:@{@"root": [CID base32Encode:root]}];
     }];
 
     [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request, HttpResponse *response) {
@@ -3789,7 +4144,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        NSDictionary *hostEntry = localSyncHostEntry(controller.serviceDatabases, [PDSConfiguration sharedConfiguration]);
+        NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
         NSString *requested = normalizedHostnameString(hostnameParam);
         NSString *local = hostEntry[@"hostname"];
         if (![requested isEqualToString:local]) {
@@ -3823,7 +4178,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
             }
         }
 
-        NSDictionary *hostEntry = localSyncHostEntry(controller.serviceDatabases, [PDSConfiguration sharedConfiguration]);
+        NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
         NSMutableArray<NSDictionary *> *hosts = [NSMutableArray array];
         NSInteger totalHosts = 1;
         NSInteger scanIndex = MIN(startIndex, totalHosts);
@@ -3863,7 +4218,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *accountsError = nil;
-        NSArray<PDSDatabaseAccount *> *accounts = [controller.serviceDatabases getAllAccountsWithError:&accountsError];
+        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
         if (!accounts) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
@@ -3875,8 +4230,16 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
             PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
             if (account.did.length > 0) {
-                NSError *headError = nil;
-                NSString *head = [controller getRepoHeadForDid:account.did error:&headError];
+                NSString *head = nil;
+                if (legacyMode) {
+                    NSError *headError = nil;
+                    head = [authController getRepoHeadForDid:account.did error:&headError];
+                } else {
+                    NSError *rootError = nil;
+                    NSData *root = [repositoryService getRepoRoot:account.did error:&rootError];
+                    head = root ? [CID base32Encode:root] : nil;
+                }
+
                 if (head.length > 0) {
                     NSString *rev = [[TID tid] stringValue];
                     [repos addObject:@{
@@ -3915,7 +4278,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *accountError = nil;
-        PDSDatabaseAccount *account = [controller.serviceDatabases getAccountByDid:did error:&accountError];
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
         if (!account) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RepoNotFound", @"message": accountError.localizedDescription ?: @"Repository not found"}];
@@ -3962,7 +4325,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *accountsError = nil;
-        NSArray<PDSDatabaseAccount *> *accounts = [controller.serviceDatabases getAllAccountsWithError:&accountsError];
+        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
         if (!accounts) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
@@ -3975,7 +4338,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
             PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
             if (account.did.length > 0) {
                 NSError *storeError = nil;
-                PDSActorStore *store = [controller.userDatabasePool storeForDid:account.did error:&storeError];
+                PDSActorStore *store = [userDatabasePool storeForDid:account.did error:&storeError];
                 if (store) {
                     NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:account.did
                                                                            collection:collection
@@ -3998,6 +4361,155 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
     }];
+
+    [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
+        if (legacyMode) {
+            NSString *did = [request queryParamForKey:@"did"];
+            NSString *cursor = [request queryParamForKey:@"cursor"];
+            NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 100;
+            limit = MIN(limit, 1000);
+
+            if (!did) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+                return;
+            }
+
+            NSError *error = nil;
+            NSArray *blobs = [authController listBlobsForDID:did limit:limit cursor:cursor error:&error];
+            if (error) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"BlobListFailed", @"message": error.localizedDescription}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{
+                @"blobs": blobs,
+                @"cursor": cursor ?: [NSNull null]
+            }];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSUInteger limit = limitStr ? [limitStr integerValue] : 500;
+        if (limit > 1000) {
+            limit = 1000;
+        }
+
+        NSError *error = nil;
+        NSArray *blobs = [blobService listBlobsForDID:did limit:limit cursor:cursor error:&error];
+        if (error) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"ListBlobsFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"blobs": blobs ?: @[]}];
+    }];
+
+    [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
+        setSubscribeReposUpgradeRequired(request, response);
+    }];
+
+    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *collection = [request queryParamForKey:@"collection"];
+        NSString *rkey = [request queryParamForKey:@"rkey"];
+        if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
+            return;
+        }
+
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSError *recordError = nil;
+        NSDictionary *record = legacyMode
+            ? [authController getRecord:uri forDid:did error:&recordError]
+            : [recordService getRecord:uri forDid:did error:&recordError];
+        if (!record) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound",
+                                    @"message": recordError.localizedDescription ?: @"Record not found"}];
+            return;
+        }
+
+        NSError *repoError = nil;
+        NSData *carData = legacyMode
+            ? [authController getRepoContents:did since:nil error:&repoError]
+            : [repositoryService getRepoContents:did since:nil error:&repoError];
+        if (!carData || repoError) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound",
+                                    @"message": repoError.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"application/vnd.ipld.car";
+        [response setBodyData:carData];
+    }];
+
+    [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *hostname = body[@"hostname"];
+        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+}
+
++ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                           controller:(PDSController *)controller {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
+    registerServerAccountAndSessionMethods(dispatcher,
+                                           controller,
+                                           controller.accountService,
+                                           controller.serviceDatabases,
+                                           controller.userDatabasePool,
+                                           config,
+                                           YES);
+
+    registerRepoCoreMethods(dispatcher,
+                            controller,
+                            controller.accountService,
+                            controller.recordService,
+                            controller.blobService,
+                            controller.repositoryService,
+                            YES);
+
+    registerSyncCoreMethods(dispatcher,
+                            controller,
+                            controller.serviceDatabases,
+                            controller.userDatabasePool,
+                            controller.recordService,
+                            controller.blobService,
+                            controller.repositoryService,
+                            config,
+                            YES);
 
     [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
@@ -4089,144 +4601,6 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         [response setBodyData:carData];
     }];
 
-    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *rkey = [request queryParamForKey:@"rkey"];
-
-        if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSError *recordError = nil;
-        NSDictionary *record = [controller getRecord:uri forDid:did error:&recordError];
-        if (!record) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RecordNotFound",
-                                    @"message": recordError.localizedDescription ?: @"Record not found"}];
-            return;
-        }
-
-        NSError *repoError = nil;
-        NSData *carData = [controller getRepoContents:did since:nil error:&repoError];
-        if (!carData || repoError) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound",
-                                    @"message": repoError.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyData:carData];
-    }];
-
-    [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *hostname = body[@"hostname"];
-        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
-    [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
-        setSubscribeReposUpgradeRequired(request, response);
-    }];
-
-    [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
-        // Extract DID from Authorization header
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        // Get the blob data from request body
-        NSData *blobData = request.body;
-        if (!blobData || blobData.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob data"}];
-            return;
-        }
-
-        // Check size limit (1MB)
-        if (blobData.length > 1 * 1024 * 1024) {
-             response.statusCode = HttpStatusBadRequest; // Should be 413 technically but test expects 400
-             [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob exceeds size limit (1MB)"}];
-             return;
-        }
-
-        // Extract MIME type from Content-Type header
-        NSString *mimeType = [request headerForKey:@"Content-Type"] ?: @"application/octet-stream";
-        
-        // Validate MIME type
-        if ([mimeType isEqualToString:@"application/x-msdownload"]) {
-             response.statusCode = HttpStatusBadRequest;
-             [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Disallowed MIME type"}];
-             return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [controller uploadBlob:blobData mimeType:mimeType did:did error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"BlobUploadFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *cid = [request queryParamForKey:@"cid"];
-        if (!cid) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [controller deleteBlobWithCID:cid did:did error:&error];
-
-        if (!success) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"DeleteFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
     [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         NSString *cid = [request queryParamForKey:@"cid"];
@@ -4249,36 +4623,6 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         response.contentType = result[@"mimeType"] ?: @"application/octet-stream";
         [response setBodyData:result[@"blob"]];
-    }];
-
-    [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 100;
-        limit = MIN(limit, 1000); // Cap at 1000
-
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSArray *blobs = [controller listBlobsForDID:did limit:limit cursor:cursor error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"BlobListFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        NSDictionary *result = @{
-            @"blobs": blobs,
-            @"cursor": cursor ?: [NSNull null] // Would need proper cursor implementation
-        };
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
     }];
 
     [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
@@ -5126,118 +5470,13 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
                                             serviceDatabases,
                                             application.userDatabasePool,
                                             config);
-
-    [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-
-        if (!collection) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection parameter"}];
-            return;
-        }
-
-        NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
-        if (limit > 100) limit = 100;
-
-        NSError *error = nil;
-        NSArray *records = [recordService listRecords:collection forDid:did limit:limit cursor:cursor error:&error];
-
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"ListRecordsFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"records": records ?: @[]}];
-    }];
-
-    [dispatcher registerComAtprotoRepoGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *rkey = [request queryParamForKey:@"rkey"];
-
-        if (!collection || !rkey) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey parameter"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSError *error = nil;
-        NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
-
-        if (error || !record) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:record];
-    }];
-
-    [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *collection = body[@"collection"];
-        NSDictionary *record = body[@"record"];
-        NSString *rkey = body[@"rkey"];
-        BOOL validate = [body[@"validate"] boolValue];
-
-        if (!collection || !record) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or record"}];
-            return;
-        }
-
-        if (!rkey) {
-            rkey = [[TID tid] stringValue];
-        }
-
-        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
-        NSError *error = nil;
-        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"RecordCreationFailed", @"message": error.localizedDescription ?: @"Failed to create record"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSDictionary *createdRecord = [recordService getRecord:uri forDid:did error:nil];
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:createdRecord ?: @{@"uri": uri}];
-    }];
+    registerRepoCoreMethods(dispatcher,
+                            application.legacyController,
+                            accountService,
+                            recordService,
+                            blobService,
+                            repositoryService,
+                            NO);
 
     [dispatcher registerComAtprotoRepoUpdateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -5278,71 +5517,6 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:updatedRecord ?: @{@"uri": uri}];
     }];
 
-    [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-
-        if (!collection || !rkey) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [recordService deleteRecord:collection rkey:rkey forDid:did error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"RecordDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete record"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey]}];
-    }];
-
-    [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *contentType = [request headerForKey:@"Content-Type"];
-        NSData *blobData = request.body;
-
-        if (!blobData || blobData.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob data"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [blobService uploadBlob:blobData forDid:did mimeType:contentType ?: @"application/octet-stream" error:&error];
-
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"BlobUploadFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
     [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
@@ -5373,471 +5547,15 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:blobResult];
     }];
 
-    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *cid = body[@"blob"];
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-
-        if (!cid) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob CID"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [blobService deleteBlobWithCID:cid did:did error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"BlobDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete blob"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSInteger limit = 500;
-        if (limitStr.length > 0) {
-            if (!parseStrictIntegerString(limitStr, &limit) || limit < 1 || limit > 1000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
-                return;
-            }
-        }
-
-        NSMutableDictionary *result = [@{@"blobs": @[]} mutableCopy];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        if (cursor.length > 0) {
-            result[@"cursor"] = cursor;
-        }
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoRepoImportRepo:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *contentType = [request headerForKey:@"Content-Type"] ?: @"";
-        if (![contentType hasPrefix:@"application/vnd.ipld.car"]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Expected application/vnd.ipld.car content type"}];
-            return;
-        }
-
-        NSString *contentLengthHeader = [request headerForKey:@"Content-Length"];
-        NSInteger contentLength = 0;
-        if (contentLengthHeader.length == 0 || !parseStrictIntegerString(contentLengthHeader, &contentLength) || contentLength <= 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid Content-Length header"}];
-            return;
-        }
-
-        NSData *body = request.body;
-        if (body.length == 0 || body.length != (NSUInteger)contentLength) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Body length does not match Content-Length"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSData *repoData = [repositoryService getRepoContents:did since:nil error:&error];
-
-        if (error || !repoData) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.body = repoData;
-        [response setHeader:@"application/x-cbor" forKey:@"Content-Type"];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSData *repoData = [repositoryService getRepoContents:did since:nil error:&error];
-        if (!repoData || error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": error.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyData:repoData];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSData *root = [repositoryService getRepoRoot:did error:&error];
-
-        if (error || !root) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"root": [CID base32Encode:root]}];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request, HttpResponse *response) {
-        NSString *hostnameParam = [request queryParamForKey:@"hostname"];
-        if (hostnameParam.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
-            return;
-        }
-
-        NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
-        NSString *requested = normalizedHostnameString(hostnameParam);
-        NSString *local = hostEntry[@"hostname"];
-        if (![requested isEqualToString:local]) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"HostNotFound", @"message": @"Host not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:hostEntry];
-    }];
-
-    [dispatcher registerComAtprotoSyncListHosts:^(HttpRequest *request, HttpResponse *response) {
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        NSInteger limit = 200;
-        if (limitParam.length > 0) {
-            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 1000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
-                return;
-            }
-        }
-
-        NSString *cursorParam = [request queryParamForKey:@"cursor"];
-        NSInteger startIndex = 0;
-        if (cursorParam.length > 0) {
-            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
-                return;
-            }
-        }
-
-        NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
-        NSMutableArray<NSDictionary *> *hosts = [NSMutableArray array];
-        NSInteger totalHosts = 1;
-        NSInteger scanIndex = MIN(startIndex, totalHosts);
-        while (scanIndex < totalHosts && hosts.count < (NSUInteger)limit) {
-            [hosts addObject:hostEntry];
-            scanIndex += 1;
-        }
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:hosts forKey:@"hosts"];
-        if (scanIndex < totalHosts) {
-            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoSyncListRepos:^(HttpRequest *request, HttpResponse *response) {
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        NSInteger limit = 500;
-        if (limitParam.length > 0) {
-            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 1000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
-                return;
-            }
-        }
-
-        NSString *cursorParam = [request queryParamForKey:@"cursor"];
-        NSInteger startIndex = 0;
-        if (cursorParam.length > 0) {
-            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
-                return;
-            }
-        }
-
-        NSError *accountsError = nil;
-        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
-        if (!accounts) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
-            return;
-        }
-
-        NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-        NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
-        while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
-            PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-            if (account.did.length > 0) {
-                NSError *rootError = nil;
-                NSData *root = [repositoryService getRepoRoot:account.did error:&rootError];
-                NSString *head = root ? [CID base32Encode:root] : nil;
-                if (head.length > 0) {
-                    NSString *rev = [[TID tid] stringValue];
-                    [repos addObject:@{
-                        @"did": account.did,
-                        @"head": head,
-                        @"rev": rev ?: @"",
-                        @"active": @YES
-                    }];
-                }
-            }
-            scanIndex += 1;
-        }
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
-        if (scanIndex < (NSInteger)accounts.count) {
-            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-
-        NSError *validateError = nil;
-        if (![ATProtoValidator validateDID:did error:&validateError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": validateError.localizedDescription ?: @"Invalid did"}];
-            return;
-        }
-
-        NSError *accountError = nil;
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
-        if (!account) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": accountError.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"did": did, @"active": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoSyncListReposByCollection:^(HttpRequest *request, HttpResponse *response) {
-        NSString *collection = [request queryParamForKey:@"collection"];
-        if (collection.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection"}];
-            return;
-        }
-
-        NSError *nsidError = nil;
-        if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": nsidError.localizedDescription ?: @"Invalid collection"}];
-            return;
-        }
-
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        NSInteger limit = 500;
-        if (limitParam.length > 0) {
-            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 2000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 2000"}];
-                return;
-            }
-        }
-
-        NSString *cursorParam = [request queryParamForKey:@"cursor"];
-        NSInteger startIndex = 0;
-        if (cursorParam.length > 0) {
-            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
-                return;
-            }
-        }
-
-        NSError *accountsError = nil;
-        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
-        if (!accounts) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
-            return;
-        }
-
-        NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-        NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
-        while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
-            PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-            if (account.did.length > 0) {
-                NSError *storeError = nil;
-                PDSActorStore *store = [application.userDatabasePool storeForDid:account.did error:&storeError];
-                if (store) {
-                    NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:account.did
-                                                                           collection:collection
-                                                                                limit:1
-                                                                               offset:0
-                                                                                error:nil];
-                    if (records.count > 0) {
-                        [repos addObject:@{@"did": account.did}];
-                    }
-                }
-            }
-            scanIndex += 1;
-        }
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
-        if (scanIndex < (NSInteger)accounts.count) {
-            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-
-        NSUInteger limit = limitStr ? [limitStr integerValue] : 500;
-        if (limit > 1000) limit = 1000;
-
-        NSError *error = nil;
-        NSArray *blobs = [blobService listBlobsForDID:did limit:limit cursor:cursor error:&error];
-
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"ListBlobsFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"blobs": blobs ?: @[]}];
-    }];
-
-    [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
-        setSubscribeReposUpgradeRequired(request, response);
-    }];
-
-    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *rkey = [request queryParamForKey:@"rkey"];
-
-        if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSError *recordError = nil;
-        NSDictionary *record = [recordService getRecord:uri forDid:did error:&recordError];
-        if (!record) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RecordNotFound",
-                                    @"message": recordError.localizedDescription ?: @"Record not found"}];
-            return;
-        }
-
-        NSError *repoError = nil;
-        NSData *carData = [repositoryService getRepoContents:did since:nil error:&repoError];
-        if (!carData || repoError) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound",
-                                    @"message": repoError.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyData:carData];
-    }];
+    registerSyncCoreMethods(dispatcher,
+                            application.legacyController,
+                            serviceDatabases,
+                            application.userDatabasePool,
+                            recordService,
+                            blobService,
+                            repositoryService,
+                            config,
+                            NO);
 
     [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -5860,134 +5578,6 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *hostname = body[@"hostname"];
-        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
-    [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSData *root = [repositoryService getRepoRoot:did error:&error];
-
-        NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
-        NSDictionary *account = [accountService getAccountForDid:did error:nil];
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        result[@"did"] = did;
-        if (root) {
-            result[@"root"] = [root base64EncodedStringWithOptions:0];
-        }
-
-        if (account[@"handle"]) {
-            result[@"handle"] = account[@"handle"];
-        }
-
-        if (stats[@"collections"]) {
-            NSMutableArray *colNames = [NSMutableArray array];
-            for (NSDictionary *col in stats[@"collections"]) {
-                if (col[@"collection"]) {
-                    [colNames addObject:col[@"collection"]];
-                }
-            }
-            result[@"collections"] = colNames;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoRepoPutRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-        NSDictionary *record = body[@"record"];
-        BOOL validate = [body[@"validate"] boolValue];
-
-        if (!collection || !rkey || !record) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection, rkey, or record"}];
-            return;
-        }
-
-        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
-        NSError *error = nil;
-        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"RecordUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update record"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"uri": uri}];
-    }];
-
-    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSArray *writes = body[@"writes"];
-        BOOL validate = [body[@"validate"] boolValue];
-        NSString *swapCommit = body[@"swapCommit"];
-
-        if (!writes || ![writes isKindOfClass:[NSArray class]]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid writes array"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [recordService applyWrites:writes
-                                                   forDid:did
-                                                 validate:validate
-                                               swapCommit:swapCommit
-                                                    error:&error];
-
-        if (!result) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to apply writes"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
     }];
 
     [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {

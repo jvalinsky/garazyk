@@ -17,7 +17,7 @@ This issue now tracks remaining maintenance work.
 - Coverage (in scope): **100%**
 - Duplicate registry registrations (in scope): **0**
 - Duplicate registry registrations (cross-scope, actionable): **0**
-- Cross-scope overlap (expected controller/application dual-path): **23**
+- Cross-scope overlap (expected controller/application dual-path): **0**
 
 Primary sources:
 - `reports/xrpc_coverage.md`
@@ -41,7 +41,7 @@ Primary sources:
 - [ ] Decide and document policy for additional lexicon roots (vendor lexicons outside primary root).
 - [ ] Add optional CI gate for in-scope coverage regressions (not just duplicates).
 - [x] Classify controller/application dual-path overlap as expected and report actionable cross-scope duplicates separately.
-- [ ] Reduce expected controller/application overlap by migrating more methods to shared registration paths (optional cleanup).
+- [x] Reduce expected controller/application overlap by migrating more methods to shared registration paths (optional cleanup).
 - [ ] Ensure external helper-script docs no longer imply TSV-as-JSON outputs where repo tooling now emits JSON/Markdown.
 
 ## Definition of done
@@ -51,4 +51,4 @@ Primary sources:
 - [x] Actionable cross-scope duplicates are tracked separately from expected overlap.
 - [ ] Parser regression fixtures are present.
 - [ ] Lexicon-root policy is explicitly documented.
-- [ ] Expected controller/application overlap is reduced or explicitly accepted long-term.
+- [x] Expected controller/application overlap is reduced or explicitly accepted long-term.

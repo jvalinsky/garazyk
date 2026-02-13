@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-13T13:11:32.532Z",
+  "generated_at": "2026-02-13T13:33:13.749Z",
   "inputs": {
     "mode": "source-parsed",
     "methods_tsv": null,
@@ -40,8 +40,8 @@
     "unknown_registry_entries": 0,
     "duplicate_registry_registrations": 0,
     "duplicate_registry_registrations_cross_scope": 0,
-    "duplicate_registry_registrations_cross_scope_expected": 23,
-    "duplicate_registry_registrations_cross_scope_raw": 23
+    "duplicate_registry_registrations_cross_scope_expected": 0,
+    "duplicate_registry_registrations_cross_scope_raw": 0
   },
   "namespace_coverage": [
     {
@@ -343,8 +343,8 @@
     },
     {
       "scope": "class.registerMethodsWithDispatcher:controller",
-      "registrations_total": 45,
-      "registrations_unique": 45,
+      "registrations_total": 22,
+      "registrations_unique": 22,
       "methods": [
         "app.bsky.actor.getPreferences",
         "app.bsky.actor.getProfile",
@@ -365,32 +365,9 @@
         "com.atproto.identity.resolveDid",
         "com.atproto.identity.resolveHandle",
         "com.atproto.identity.resolveIdentity",
-        "com.atproto.repo.applyWrites",
-        "com.atproto.repo.createRecord",
-        "com.atproto.repo.deleteBlob",
-        "com.atproto.repo.deleteRecord",
-        "com.atproto.repo.describeRepo",
-        "com.atproto.repo.getRecord",
-        "com.atproto.repo.importRepo",
-        "com.atproto.repo.listMissingBlobs",
-        "com.atproto.repo.listRecords",
-        "com.atproto.repo.putRecord",
-        "com.atproto.repo.uploadBlob",
         "com.atproto.sync.getBlob",
         "com.atproto.sync.getBlocks",
-        "com.atproto.sync.getCheckout",
-        "com.atproto.sync.getHead",
-        "com.atproto.sync.getHostStatus",
-        "com.atproto.sync.getLatestCommit",
-        "com.atproto.sync.getRecord",
-        "com.atproto.sync.getRepo",
-        "com.atproto.sync.getRepoStatus",
-        "com.atproto.sync.listBlobs",
-        "com.atproto.sync.listHosts",
-        "com.atproto.sync.listRepos",
-        "com.atproto.sync.listReposByCollection",
-        "com.atproto.sync.requestCrawl",
-        "com.atproto.sync.subscribeRepos"
+        "com.atproto.sync.getLatestCommit"
       ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
@@ -399,44 +376,21 @@
     },
     {
       "scope": "class.registerMethodsWithDispatcher:application",
-      "registrations_total": 35,
-      "registrations_unique": 35,
+      "registrations_total": 12,
+      "registrations_unique": 12,
       "methods": [
         "com.atproto.admin.getSubjectStatus",
         "com.atproto.admin.updateSubjectStatus",
         "com.atproto.label.queryLabels",
         "com.atproto.moderation.createReport",
-        "com.atproto.repo.applyWrites",
-        "com.atproto.repo.createRecord",
-        "com.atproto.repo.deleteBlob",
-        "com.atproto.repo.deleteRecord",
-        "com.atproto.repo.describeRepo",
         "com.atproto.repo.getBlob",
-        "com.atproto.repo.getRecord",
-        "com.atproto.repo.importRepo",
-        "com.atproto.repo.listMissingBlobs",
-        "com.atproto.repo.listRecords",
-        "com.atproto.repo.putRecord",
         "com.atproto.repo.updateRecord",
-        "com.atproto.repo.uploadBlob",
         "com.atproto.server.activateAccount",
         "com.atproto.server.checkAccountStatus",
         "com.atproto.server.deactivateAccount",
         "com.atproto.server.deleteAccount",
         "com.atproto.server.getAccount",
-        "com.atproto.sync.getCheckout",
-        "com.atproto.sync.getHead",
-        "com.atproto.sync.getHostStatus",
-        "com.atproto.sync.getRecord",
-        "com.atproto.sync.getRepo",
-        "com.atproto.sync.getRepoStatus",
-        "com.atproto.sync.listBlobs",
-        "com.atproto.sync.listHosts",
-        "com.atproto.sync.listRepos",
-        "com.atproto.sync.listReposByCollection",
-        "com.atproto.sync.notifyOfUpdate",
-        "com.atproto.sync.requestCrawl",
-        "com.atproto.sync.subscribeRepos"
+        "com.atproto.sync.notifyOfUpdate"
       ],
       "unknown_registry_entries": 0,
       "duplicate_registrations": 0,
@@ -445,381 +399,11 @@
     }
   ],
   "cross_scope_duplicates": {
-    "raw_count": 23,
-    "expected_overlap_count": 23,
+    "raw_count": 0,
+    "expected_overlap_count": 0,
     "unexpected_duplicate_count": 0,
-    "raw_methods": [
-      {
-        "method_id": "com.atproto.repo.applyWrites",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.createRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.deleteBlob",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.deleteRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.describeRepo",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.getRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.importRepo",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.listMissingBlobs",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.listRecords",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.putRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.uploadBlob",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getCheckout",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getHead",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getHostStatus",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getRepo",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getRepoStatus",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listBlobs",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listHosts",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listRepos",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listReposByCollection",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.requestCrawl",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.subscribeRepos",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      }
-    ],
-    "expected_methods": [
-      {
-        "method_id": "com.atproto.repo.applyWrites",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.createRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.deleteBlob",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.deleteRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.describeRepo",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.getRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.importRepo",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.listMissingBlobs",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.listRecords",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.putRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.repo.uploadBlob",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getCheckout",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getHead",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getHostStatus",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getRecord",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getRepo",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.getRepoStatus",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listBlobs",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listHosts",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listRepos",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.listReposByCollection",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.requestCrawl",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      },
-      {
-        "method_id": "com.atproto.sync.subscribeRepos",
-        "count": 2,
-        "scopes": [
-          "class.registerMethodsWithDispatcher:application",
-          "class.registerMethodsWithDispatcher:controller"
-        ]
-      }
-    ],
+    "raw_methods": [],
+    "expected_methods": [],
     "unexpected_methods": []
   },
   "stub_scan": {
