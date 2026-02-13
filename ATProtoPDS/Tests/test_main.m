@@ -171,6 +171,8 @@ int main(int argc, char * argv[]) {
             @"EventFormatterTests",
             @"PDSBlobServiceTests",
             @"PDSRecordServiceTests",
+            @"PDSRecordTombstoneTests",
+            @"PDSRepositoryServiceTests",
             @"ActorServiceTests",
             @"FeedServiceTests",
             @"NotificationServiceTests",
