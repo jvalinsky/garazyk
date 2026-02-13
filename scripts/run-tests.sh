@@ -1,6 +1,10 @@
-#!/bin/bash
-set -e
-cd "/Users/jack/Software/objpds"
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+
+cd "$repo_root"
 echo "Running all tests..."
-/Users/jack/Software/objpds/build/tests/AllTests
+./build/tests/AllTests
 echo "Tests complete."

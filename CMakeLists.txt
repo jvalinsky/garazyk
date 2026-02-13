@@ -60,7 +60,7 @@ if(NOT APPLE)
     
     include_directories(/usr/include/GNUstep)
     if(NOT APPLE)
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
     endif()
 endif()
 
@@ -226,7 +226,7 @@ if(NOT APPLE)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCAccountCreator\\.m$")
 
   # Add Linux stub implementations
-  list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat/LinuxStubs.m")
+  list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxStubs.m")
 endif()
 
 # Add compat sources for Linux

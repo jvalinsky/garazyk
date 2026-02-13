@@ -10,7 +10,7 @@ Standards-compliant AT Protocol Personal Data Server (PDS) implementation writte
 - **Interactive Explorer** - Web-based UI for exploring AT Protocol data
 - **Auto-Generated API Docs** - OpenAPI 3.0 specification with interactive Swagger UI
 - **Unified Logging** - Structured JSON logging with component filtering and request correlation
-- **168 Unit Tests** - Comprehensive test coverage with 100% pass rate
+- **Comprehensive Test Suite** - 800+ tests across protocol, auth, repository, and integration layers
 
 ## Table of Contents
 
@@ -76,7 +76,7 @@ xcodebuild -scheme ATProtoPDS-CLI build
 # Build & Run Unit Tests
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-# Output: Tests run: 168, Failures: 0
+# Output: Tests run: <current suite count>, Failures: 0
 
 # Build Fuzzers
 xcodebuild -scheme Fuzzers build
@@ -167,7 +167,7 @@ Download the complete OpenAPI 3.0 specification:
 
 ### Authentication
 
-Currently read-only. Future versions will include authentication for write operations.
+Write and administrative endpoints require authenticated tokens (Bearer JWT). Public read endpoints remain available without auth where applicable.
 
 ## Architecture
 

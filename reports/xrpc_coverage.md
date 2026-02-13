@@ -1,6 +1,6 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-12T19:47:24.606Z
+Generated: 2026-02-13T03:02:26.242Z
 
 ## Summary
 
@@ -13,7 +13,8 @@ Generated: 2026-02-12T19:47:24.606Z
 - Coverage (in scope, implemented / lexicon): 100%
 - Missing in code (out of scope): 223
 - Unknown registry entries: 0
-- Duplicate registry registrations: 50
+- Duplicate registry registrations: 0
+- Duplicate registry registrations (cross-scope): 49
 
 ## Namespace Coverage
 
@@ -90,4 +91,31 @@ Generated: 2026-02-12T19:47:24.606Z
 - `/Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m`
 - `/Users/jack/Software/objpds/ATProtoPDS/Resources/lexicons`
 - `/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json`
+
+## Registration Scope Duplicates
+
+### static.registerTempUtilityMethods
+
+- Duplicate registrations: 0
+- Unknown registrations: 0
+
+### static.registerAdminAccountMaintenanceMethods
+
+- Duplicate registrations: 0
+- Unknown registrations: 0
+
+### static.registerPhase1IdentityAndAccountMethods
+
+- Duplicate registrations: 0
+- Unknown registrations: 0
+
+### class.registerMethodsWithDispatcher:controller
+
+- Duplicate registrations: 0
+- Unknown registrations: 0
+
+### class.registerMethodsWithDispatcher:application
+
+- Duplicate registrations: 0
+- Unknown registrations: 0
 

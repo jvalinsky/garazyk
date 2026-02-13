@@ -1,13 +1,14 @@
 # XRPC Next Steps Plan
 
-Generated: 2026-02-12T17:25:29.859Z
+Generated: 2026-02-13T03:08:47.975Z
 
 ## Baseline
 
-- Missing in code: 6
-- Coverage: 93.02%
+- Missing in code: 0
+- Coverage: 100%
 - Unknown registry entries: 0
-- Duplicate registry registrations: 50
+- Duplicate registry registrations: 0
+- Duplicate registry registrations (cross-scope): 49
 
 ## Priority Rubric
 
@@ -23,35 +24,32 @@ Generated: 2026-02-12T17:25:29.859Z
 - Endpoint count: 0
 - P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
+  - none
 
 ### Phase 2: Repository and Sync Completeness
 
 - Endpoint count: 0
 - P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
+  - none
 
 ### Phase 3: Admin, Label, and Temp APIs
 
-- Endpoint count: 6
-- P0: 0, P1: 0, P2: 6, P3: 0
+- Endpoint count: 0
+- P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
-  - P2 `com.atproto.temp.addReservedHandle`
-  - P2 `com.atproto.temp.checkHandleAvailability`
-  - P2 `com.atproto.temp.checkSignupQueue`
-  - P2 `com.atproto.temp.dereferenceScope`
-  - P2 `com.atproto.temp.fetchLabels`
-  - P2 `com.atproto.temp.requestPhoneVerification`
+  - none
 
 ### Phase 4: Non-core Namespaces
 
 - Endpoint count: 0
 - P0: 0, P1: 0, P2: 0, P3: 0
 - Next batch:
+  - none
 
 ## Recommended Work Order
 
-1. Implement all Phase 1 P0/P1 endpoints.
-2. Implement Phase 2 P0/P1 endpoints, then run interop/sync tests.
-3. Implement Phase 3 P1/P2 endpoints needed for moderation/admin workflows.
-4. Re-run `scripts/generate_xrpc_coverage_report.js` after each batch.
+1. No in-scope endpoint implementation backlog remains.
+2. Keep `scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates` in CI.
+3. Re-run coverage and next-steps generation after registry or lexicon changes.
 
