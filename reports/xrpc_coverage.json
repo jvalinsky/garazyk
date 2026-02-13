@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-13T19:03:15.202Z",
+  "generated_at": "2026-02-13T19:06:12.433Z",
   "inputs": {
     "mode": "source-parsed",
     "methods_tsv": null,
@@ -22,7 +22,7 @@
     "stubs_json": "/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json"
   },
   "scope": {
-    "source": "/Users/jack/Software/objpds/scripts/xrpc_coverage_scope.txt",
+    "source": "scripts/xrpc_coverage_scope.txt",
     "includes": [
       "com.atproto.*"
     ],

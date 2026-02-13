@@ -1,6 +1,6 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-13T19:03:15.202Z
+Generated: 2026-02-13T19:06:12.433Z
 
 ## Summary
 
@@ -75,7 +75,7 @@ Generated: 2026-02-13T19:03:15.202Z
 
 ## Scope
 
-- Scope config source: `/Users/jack/Software/objpds/scripts/xrpc_coverage_scope.txt`
+- Scope config source: `scripts/xrpc_coverage_scope.txt`
 - Include globs: `com.atproto.*`
 - Exclude globs: (none)
 
