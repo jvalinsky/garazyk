@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/Services/PDSRecordService.h"
+#import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 
@@ -169,6 +170,7 @@
                                          error:&error];
     XCTAssertTrue(result);
 }
+
 
 - (void)testListRecordsEmpty {
     NSError *error = nil;
@@ -372,6 +374,96 @@
                                         forDid:self.testDID error:nil];
     XCTAssertNotNil(r1);
     XCTAssertNotNil(r2);
+}
+
+- (void)testApplyWritesReturnsCommitMetadata {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"commit-meta",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"commit metadata",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+
+    NSDictionary *commit = result[@"commit"];
+    XCTAssertNotNil(commit);
+
+    NSString *commitCID = commit[@"cid"];
+    NSString *commitRev = commit[@"rev"];
+    XCTAssertNotNil(commitCID);
+    XCTAssertNotNil(commitRev);
+    XCTAssertTrue(commitCID.length > 0);
+    XCTAssertTrue(commitRev.length > 0);
+    XCTAssertTrue([commitCID hasPrefix:@"b"]);
+
+    PDSActorStore *store = [self.pool storeForDid:self.testDID error:nil];
+    XCTAssertNotNil(store);
+    NSString *latestMutationRev = [store latestMutationRevisionWithError:nil];
+    XCTAssertEqualObjects(commitRev, latestMutationRev);
+}
+
+- (void)testApplyWritesSwapCommitAcceptsReturnedCommitCID {
+    NSArray *initialWrites = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"swap-commit-1",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"swap baseline",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *firstError = nil;
+    NSDictionary *firstResult = [self.service applyWrites:initialWrites
+                                                   forDid:self.testDID
+                                                 validate:NO
+                                               swapCommit:nil
+                                                    error:&firstError];
+    XCTAssertNotNil(firstResult);
+    XCTAssertNil(firstError);
+
+    NSString *commitCID = firstResult[@"commit"][@"cid"];
+    XCTAssertNotNil(commitCID);
+    XCTAssertTrue(commitCID.length > 0);
+
+    NSArray *secondWrites = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"swap-commit-2",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"swap follow-up",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *secondError = nil;
+    NSDictionary *secondResult = [self.service applyWrites:secondWrites
+                                                    forDid:self.testDID
+                                                  validate:NO
+                                                swapCommit:commitCID
+                                                     error:&secondError];
+    XCTAssertNotNil(secondResult);
+    XCTAssertNil(secondError);
 }
 
 - (void)testApplyWritesAtomicRollbackOnFailure {

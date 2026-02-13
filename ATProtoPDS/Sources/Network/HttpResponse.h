@@ -63,6 +63,12 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 /*! The raw response body. */
 @property (nonatomic, copy, nullable) NSData *body;
 
+/*! Optional file path used for streaming large bodies. */
+@property (nonatomic, copy, nullable) NSString *bodyFilePath;
+
+/*! When YES and bodyFilePath is set, the file is removed after send completes. */
+@property (nonatomic, assign) BOOL deleteBodyFileAfterSend;
+
 /*! The body as a JSON object (sets Content-Type to application/json). */
 @property (nonatomic, copy, nullable) id jsonBody;
 
@@ -105,6 +111,12 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 
 /*! Sets the body as raw data. */
 - (void)setBodyData:(NSData *)data;
+
+/*! Sets the body to stream from a file path. */
+- (void)setBodyFileAtPath:(NSString *)path deleteAfterSend:(BOOL)deleteAfterSend;
+
+/*! Serializes only the response headers with a known body length. */
+- (NSData *)serializeHeadersForBodyLength:(NSUInteger)bodyLength;
 
 /*! Serializes the response to HTTP wire format. */
 - (NSData *)serialize;
