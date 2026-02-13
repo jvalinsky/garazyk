@@ -460,11 +460,13 @@ static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
     return bytesWritten;
 }
 
-- (NSData *)serialize {
-    NSMutableData *data = [NSMutableData data];
+static NSData *CARHeaderDataForRootCID(CID *rootCID) {
+    if (!rootCID) {
+        return nil;
+    }
 
     CBORValue *rootsArray = [CBORValue array:@[
-        [CBORValue tag:42 value:[CBORValue byteString:[self.rootCID bytes]]]
+        [CBORValue tag:42 value:[CBORValue byteString:[rootCID bytes]]]
     ]];
 
     CBORValue *headerMap = [CBORValue map:@{
@@ -475,21 +477,127 @@ static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
     NSData *headerCBOR = [headerMap encode];
     uint8_t headerLenBuffer[16];
     NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
-    [data appendBytes:headerLenBuffer length:headerLenSize];
-    [data appendData:headerCBOR];
+
+    NSMutableData *encodedHeader = [NSMutableData dataWithCapacity:headerLenSize + headerCBOR.length];
+    [encodedHeader appendBytes:headerLenBuffer length:headerLenSize];
+    [encodedHeader appendData:headerCBOR];
+    return [encodedHeader copy];
+}
+
+static NSData *CARBlockEntryData(CARBlock *block) {
+    if (!block || !block.cid || !block.data) {
+        return nil;
+    }
+
+    NSData *cidBytes = [block.cid bytes];
+    NSUInteger totalLength = cidBytes.length + block.data.length;
+
+    uint8_t blockLenBuffer[16];
+    NSUInteger blockLenSize = WriteVarint(totalLength, blockLenBuffer);
+
+    NSMutableData *entry = [NSMutableData dataWithCapacity:blockLenSize + totalLength];
+    [entry appendBytes:blockLenBuffer length:blockLenSize];
+    [entry appendData:cidBytes];
+    [entry appendData:block.data];
+    return [entry copy];
+}
+
+- (NSData *)serialize {
+    NSMutableData *data = [NSMutableData data];
+
+    NSData *headerData = CARHeaderDataForRootCID(self.rootCID);
+    if (!headerData) {
+        return nil;
+    }
+    [data appendData:headerData];
 
     for (CARBlock *block in self.blocks) {
-        NSData *cidBytes = [block.cid bytes];
-        NSUInteger totalLength = cidBytes.length + block.data.length;
-
-        uint8_t blockLenBuffer[16];
-        NSUInteger blockLenSize = WriteVarint(totalLength, blockLenBuffer);
-        [data appendBytes:blockLenBuffer length:blockLenSize];
-        [data appendData:cidBytes];
-        [data appendData:block.data];
+        NSData *entry = CARBlockEntryData(block);
+        if (!entry) {
+            continue;
+        }
+        [data appendData:entry];
     }
 
     return [data copy];
+}
+
++ (nullable NSData *)encodedHeaderWithRootCID:(CID *)rootCID error:(NSError **)error {
+    NSData *headerData = CARHeaderDataForRootCID(rootCID);
+    if (!headerData) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-25
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR header parameters"}];
+        }
+        return nil;
+    }
+    return headerData;
+}
+
++ (nullable NSData *)encodedBlock:(CARBlock *)block error:(NSError **)error {
+    NSData *entryData = CARBlockEntryData(block);
+    if (!entryData) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-26
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR block parameters"}];
+        }
+        return nil;
+    }
+    return entryData;
+}
+
++ (BOOL)writeHeaderWithRootCID:(CID *)rootCID
+                 toFileHandle:(NSFileHandle *)fileHandle
+                        error:(NSError **)error {
+    NSData *headerData = [[self class] encodedHeaderWithRootCID:rootCID error:error];
+    if (!headerData || !fileHandle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-21
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR header write parameters"}];
+        }
+        return NO;
+    }
+
+    @try {
+        [fileHandle writeData:headerData];
+        return YES;
+    } @catch (NSException *exception) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-22
+                                     userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Failed to write CAR header"}];
+        }
+        return NO;
+    }
+}
+
++ (BOOL)writeBlock:(CARBlock *)block
+      toFileHandle:(NSFileHandle *)fileHandle
+             error:(NSError **)error {
+    NSData *entryData = [[self class] encodedBlock:block error:error];
+    if (!entryData || !fileHandle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-23
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR block write parameters"}];
+        }
+        return NO;
+    }
+
+    @try {
+        [fileHandle writeData:entryData];
+        return YES;
+    } @catch (NSException *exception) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-24
+                                     userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Failed to write CAR block"}];
+        }
+        return NO;
+    }
 }
 
 - (BOOL)writeToPath:(NSString *)path error:(NSError **)error {
@@ -513,29 +621,19 @@ static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
     }
 
     @try {
-        CBORValue *rootsArray = [CBORValue array:@[
-            [CBORValue tag:42 value:[CBORValue byteString:[self.rootCID bytes]]]
-        ]];
-        CBORValue *headerMap = [CBORValue map:@{
-            [CBORValue textString:@"roots"]: rootsArray,
-            [CBORValue textString:@"version"]: [CBORValue unsignedInteger:1]
-        }];
-        NSData *headerCBOR = [headerMap encode];
-
-        uint8_t headerLenBuffer[16];
-        NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
-        [fileHandle writeData:[NSData dataWithBytes:headerLenBuffer length:headerLenSize]];
-        [fileHandle writeData:headerCBOR];
+        NSError *writeError = nil;
+        if (![[self class] writeHeaderWithRootCID:self.rootCID toFileHandle:fileHandle error:&writeError]) {
+            if (error) *error = writeError;
+            [fileHandle closeFile];
+            return NO;
+        }
 
         for (CARBlock *block in self.blocks) {
-            NSData *cidBytes = [block.cid bytes];
-            NSUInteger totalLength = cidBytes.length + block.data.length;
-
-            uint8_t blockLenBuffer[16];
-            NSUInteger blockLenSize = WriteVarint(totalLength, blockLenBuffer);
-            [fileHandle writeData:[NSData dataWithBytes:blockLenBuffer length:blockLenSize]];
-            [fileHandle writeData:cidBytes];
-            [fileHandle writeData:block.data];
+            if (![[self class] writeBlock:block toFileHandle:fileHandle error:&writeError]) {
+                if (error) *error = writeError;
+                [fileHandle closeFile];
+                return NO;
+            }
         }
 
         [fileHandle closeFile];
