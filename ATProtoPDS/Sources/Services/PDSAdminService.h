@@ -160,15 +160,18 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)disableInviteCode:(NSString *)code error:(NSError **)error;
 
 /*!
- @method disableInviteCodes:error:
+ @method disableInviteCodesWithCodes:accounts:error:
 
- @abstract Disables global invite code generation.
+ @abstract Disables invite codes by explicit code and/or owning account identifiers.
 
- @param disabled Whether to disable invite codes.
+ @param codes Invite code strings to disable.
+ @param accounts Account identifiers (DIDs or handles) whose invite codes should be disabled.
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
  */
-- (BOOL)disableInviteCodes:(BOOL)disabled error:(NSError **)error;
+- (BOOL)disableInviteCodesWithCodes:(nullable NSArray<NSString *> *)codes
+                           accounts:(nullable NSArray<NSString *> *)accounts
+                              error:(NSError **)error;
 
 #pragma mark - Moderation
 

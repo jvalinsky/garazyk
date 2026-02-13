@@ -4,6 +4,7 @@
 #if !defined(__APPLE__)
 #import <sys/socket.h>
 #import <unistd.h>
+#import <errno.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -174,6 +175,48 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(memcmp(buffer, "hello", 5), 0);
     
     [conn cancel];
+    close(fds[1]);
+}
+
+- (void)testCancelCompletesPendingReceiveWithCancelledError {
+    int fds[2];
+    XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.cancel.receive", DISPATCH_QUEUE_SERIAL);
+    [conn startWithQueue:queue];
+
+    XCTestExpectation *cancelled = [self expectationWithDescription:@"cancelled read"];
+    [conn receiveWithMinimumLength:64 maximumLength:128 completion:^(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error) {
+        XCTAssertNil(data);
+        XCTAssertFalse(isComplete);
+        XCTAssertNotNil(error);
+        XCTAssertEqual(error.code, ECANCELED);
+        [cancelled fulfill];
+    }];
+
+    [conn cancel];
+    [self waitForExpectations:@[cancelled] timeout:1.0];
+    close(fds[1]);
+}
+
+- (void)testSendDataAfterCancelReturnsCancelledError {
+    int fds[2];
+    XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.cancel.send", DISPATCH_QUEUE_SERIAL);
+    [conn startWithQueue:queue];
+    [conn cancel];
+
+    XCTestExpectation *completion = [self expectationWithDescription:@"send completion"];
+    [conn sendData:[@"data" dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSError * _Nullable error) {
+        XCTAssertNotNil(error);
+        XCTAssertEqual(error.code, ECANCELED);
+        [completion fulfill];
+    }];
+
+    [self waitForExpectations:@[completion] timeout:1.0];
     close(fds[1]);
 }
 

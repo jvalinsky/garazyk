@@ -321,24 +321,35 @@
 }
 
 - (void)testModerateAccountEndpoint {
-    NSDictionary *params = @{@"did": @"did:plc:test", @"action": @"spam"};
+    __autoreleasing NSError *createError = nil;
+    NSDictionary *account = [self.controller createAccountForEmail:@"moderation@example.com"
+                                                          password:@"password123"
+                                                            handle:@"moderation.example.com"
+                                                               did:nil
+                                                             error:&createError];
+    XCTAssertNotNil(account);
+    XCTAssertNil(createError);
+
+    NSDictionary *params = @{@"did": account[@"did"], @"action": @"takedown"};
 
     NSError *error = nil;
     NSDictionary *result = [self.controller moderateAccount:params error:&error];
 
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result[@"status"], @"success");
+    XCTAssertEqualObjects(result[@"action"], @"takedown");
     XCTAssertNil(error);
 }
 
 - (void)testModerateRecordEndpoint {
-    NSDictionary *params = @{@"uri": @"at://did:plc:test/app.bsky.feed.post/123", @"action": @"spam"};
+    NSDictionary *params = @{@"uri": @"at://did:plc:test/app.bsky.feed.post/123", @"action": @"takedown"};
 
     NSError *error = nil;
     NSDictionary *result = [self.controller moderateRecord:params error:&error];
 
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result[@"status"], @"success");
+    XCTAssertEqualObjects(result[@"action"], @"takedown");
     XCTAssertNil(error);
 }
 
