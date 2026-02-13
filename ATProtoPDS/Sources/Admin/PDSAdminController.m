@@ -89,6 +89,12 @@
     return [_adminService isAccountTakedownActive:did error:error];
 }
 
+- (BOOL)disableInviteCodesWithCodes:(nullable NSArray<NSString *> *)codes
+                           accounts:(nullable NSArray<NSString *> *)accounts
+                              error:(NSError **)error {
+    return [_adminService disableInviteCodesWithCodes:codes accounts:accounts error:error];
+}
+
 #pragma mark - Moderation
 
 - (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error {

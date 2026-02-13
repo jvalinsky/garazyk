@@ -23,7 +23,7 @@
   - ATProtoPDS-CLI: Builds without errors
   - AllTests: Builds without errors
   - Fuzzers: Available
-- **Test Suite**: All 168 tests passing (0 failures)
+- **Test Suite**: `./build/tests/AllTests` passing with 0 failures (suite count varies by build/config)
 - **Bug Fixes**:
   - Fixed HandleResolver.skipSSRFCheck property accessibility (ATProtoPDS/Sources/Identity/HandleResolver.h:23)
   - Fixed CBOR boolean encoding bug where all NSNumbers were treated as booleans (ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m:47-54)
@@ -36,7 +36,7 @@
 - **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
 - **Explore**: COMPLETED. Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
 
-- **Linux Client Connections**: COMPLETED. Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification (ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m:77-168).
+- **Linux Client Connections**: COMPLETED. Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification (`ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`).
 - **Handle Verification**: `resolveIdentity` validates the requested handle against the DID document `alsoKnownAs` list and returns a `HandleMismatch` error when they disagree (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:1069-1092).
 - **Follower Counts**: `ActorService` uses a SQL count query for followers; remaining work is correctness/perf hardening (ensuring `subject_did` is populated and indexed) (ATProtoPDS/Sources/AppView/ActorService.m:183-195).
 - **PLC `did:key` Parsing**: COMPLETED. `PLCDIDKey.parseFromString:` implements base58btc multibase decoding and multicodec parsing for secp256k1 + P-256 keys (ATProtoPDS/Sources/PLC/PLCDIDKey.m:27-141).
@@ -94,7 +94,7 @@ xcodebuild -scheme Fuzzers build
 **Unit Tests:**
 ```bash
 ./build/tests/AllTests
-# Expected output: Tests run: 168, Failures: 0
+# Expected output includes: Failures: 0
 ```
 
 **Fuzzers:**
@@ -143,7 +143,7 @@ The project uses GitHub Actions for continuous integration, defined in `.github/
 Before pushing, ensure:
 1. `xcodegen generate` succeeds
 2. `xcodebuild -scheme AllTests build` succeeds
-3. `./build/tests/AllTests` passes (168 tests, 0 failures)
+3. `./build/tests/AllTests` passes (0 failures)
 4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
 5. Fuzzers build successfully
 

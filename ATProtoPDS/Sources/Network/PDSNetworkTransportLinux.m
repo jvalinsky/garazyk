@@ -1,11 +1,11 @@
 #import "PDSNetworkTransportLinux.h"
 #import <Foundation/Foundation.h>
 
-#import "PDSNetworkTransportLinux.h"
 #import <sys/socket.h>
 #import <netinet/in.h>
 #import <arpa/inet.h>
 #import <netdb.h>
+#import <errno.h>
 #import <stdio.h>
 #import <unistd.h>
 #import <fcntl.h>
@@ -38,22 +38,41 @@
 @implementation PDSReadRequest
 @end
 
-	@implementation PDSNetworkConnectionLinux {
-	    int _sockfd;
-	    dispatch_source_t _connectSource;
-	    dispatch_source_t _readSource;
-	    dispatch_source_t _writeSource;
-	    dispatch_queue_t _queue;
-	    NSMutableData *_inputBuffer;
-	    NSMutableArray<PDSReadRequest *> *_readRequests;
-	    NSMutableData *_writeBuffer;
-	    NSUInteger _writeOffset;
-	    NSString *_host;
-	    NSUInteger _port;
-	    struct addrinfo *_connectAddrInfo;
-	    struct addrinfo *_connectAddrInfoCurrent;
-	    int _connectLastError;
-	}
+static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
+    NSString *raw = [[NSProcessInfo processInfo] environment][@"PDS_LINUX_CONNECT_TIMEOUT_MS"];
+    if (![raw isKindOfClass:[NSString class]] || raw.length == 0) {
+        return 5000;
+    }
+    NSInteger parsed = [raw integerValue];
+    if (parsed <= 0) {
+        return 5000;
+    }
+    return (NSUInteger)parsed;
+}
+
+@implementation PDSNetworkConnectionLinux {
+    int _sockfd;
+    dispatch_source_t _connectSource;
+    dispatch_source_t _connectTimeoutSource;
+    dispatch_source_t _readSource;
+    dispatch_source_t _writeSource;
+    dispatch_queue_t _queue;
+    NSMutableData *_inputBuffer;
+    NSMutableArray<PDSReadRequest *> *_readRequests;
+    NSMutableData *_writeBuffer;
+    NSUInteger _writeOffset;
+    NSString *_host;
+    NSUInteger _port;
+    struct addrinfo *_connectAddrInfo;
+    struct addrinfo *_connectAddrInfoCurrent;
+    NSMutableArray<NSDictionary *> *_connectFailures;
+    NSUInteger _connectCandidateIndex;
+    NSUInteger _connectCurrentCandidateIndex;
+    int _connectCurrentCandidateFamily;
+    int _connectLastError;
+    NSUInteger _connectTimeoutMilliseconds;
+    BOOL _isCancelled;
+}
 
 @synthesize stateChangedHandler = _stateChangedHandler;
 @synthesize remoteAddress = _remoteAddress;
@@ -62,13 +81,16 @@
     self = [super init];
     if (self) {
         _sockfd = -1;
+        _connectTimeoutMilliseconds = connectTimeoutMillisecondsFromEnvironment();
         _host = [host copy];
         _port = port;
         _remoteAddress = [NSString stringWithFormat:@"%@:%lu", host, (unsigned long)port];
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
         _writeBuffer = [NSMutableData data];
+        _connectFailures = [NSMutableArray array];
         _writeOffset = 0;
+        _isCancelled = NO;
     }
     return self;
 }
@@ -81,7 +103,10 @@
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
         _writeBuffer = [NSMutableData data];
+        _connectFailures = [NSMutableArray array];
         _writeOffset = 0;
+        _connectTimeoutMilliseconds = connectTimeoutMillisecondsFromEnvironment();
+        _isCancelled = NO;
         
         int flags = fcntl(_sockfd, F_GETFL, 0);
         fcntl(_sockfd, F_SETFL, flags | O_NONBLOCK);
@@ -91,6 +116,7 @@
 
 - (void)startWithQueue:(dispatch_queue_t)queue {
     _queue = queue;
+    _isCancelled = NO;
     
     if (_sockfd == -1) {
         dispatch_async(queue, ^{
@@ -106,11 +132,66 @@
     }
 }
 
-- (void)cleanupConnectState {
+- (void)recordConnectFailureWithErrno:(int)errorCode family:(int)family index:(NSUInteger)index {
+    if (errorCode == 0) {
+        return;
+    }
+    _connectLastError = errorCode;
+    [_connectFailures addObject:@{
+        @"errno": @(errorCode),
+        @"family": @(family),
+        @"index": @(index)
+    }];
+}
+
+- (int)bestConnectErrno {
+    NSArray<NSNumber *> *priority = @[
+        @(ECONNREFUSED),
+        @(ENETUNREACH),
+        @(EHOSTUNREACH),
+        @(ETIMEDOUT)
+    ];
+
+    for (NSNumber *candidate in priority) {
+        for (NSDictionary *entry in _connectFailures) {
+            if ([entry[@"errno"] integerValue] == candidate.integerValue) {
+                return candidate.intValue;
+            }
+        }
+    }
+
+    NSDictionary *last = _connectFailures.lastObject;
+    if (last) {
+        return [last[@"errno"] intValue];
+    }
+    return _connectLastError ?: errno;
+}
+
+- (NSError *)buildConnectFailureError {
+    int bestError = [self bestConnectErrno];
+    NSUInteger attempted = _connectCandidateIndex;
+    NSString *message = [NSString stringWithFormat:@"Failed to connect to %@:%lu after %lu candidate(s)",
+                                                    _host ?: @"",
+                                                    (unsigned long)_port,
+                                                    (unsigned long)attempted];
+    return [NSError errorWithDomain:NSPOSIXErrorDomain
+                               code:bestError
+                           userInfo:@{NSLocalizedDescriptionKey: message}];
+}
+
+- (void)cancelConnectWatchers {
     if (_connectSource) {
         dispatch_source_cancel(_connectSource);
         _connectSource = nil;
     }
+    if (_connectTimeoutSource) {
+        dispatch_source_cancel(_connectTimeoutSource);
+        _connectTimeoutSource = nil;
+    }
+}
+
+- (void)cleanupConnectState {
+    [self cancelConnectWatchers];
 
     if (_connectAddrInfo) {
         freeaddrinfo(_connectAddrInfo);
@@ -118,17 +199,19 @@
     }
 
     _connectAddrInfoCurrent = NULL;
+    _connectCandidateIndex = 0;
+    _connectCurrentCandidateIndex = 0;
+    _connectCurrentCandidateFamily = AF_UNSPEC;
+    [_connectFailures removeAllObjects];
     _connectLastError = 0;
 }
 
 - (void)beginOutboundConnect {
-    if (_queue == NULL) {
+    if (_queue == NULL || _isCancelled) {
         return;
     }
 
-    if (_connectAddrInfo) {
-        [self cleanupConnectState];
-    }
+    [self cleanupConnectState];
 
     char portString[16];
     snprintf(portString, sizeof(portString), "%lu", (unsigned long)_port);
@@ -154,23 +237,39 @@
 
     _connectAddrInfo = res;
     _connectAddrInfoCurrent = res;
+    _connectCandidateIndex = 0;
+    _connectCurrentCandidateIndex = 0;
+    _connectCurrentCandidateFamily = AF_UNSPEC;
+    [_connectFailures removeAllObjects];
 
     [self startConnectToNextCandidate];
 }
 
 - (void)startConnectToNextCandidate {
+    if (_isCancelled) {
+        return;
+    }
+
     while (_connectAddrInfoCurrent != NULL) {
         struct addrinfo *ai = _connectAddrInfoCurrent;
+        NSUInteger candidateIndex = _connectCandidateIndex;
+        _connectCurrentCandidateIndex = candidateIndex;
+        _connectCurrentCandidateFamily = ai->ai_family;
+        _connectCandidateIndex += 1;
         _connectAddrInfoCurrent = ai->ai_next;
 
         int fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (fd == -1) {
-            _connectLastError = errno;
+            [self recordConnectFailureWithErrno:errno family:ai->ai_family index:candidateIndex];
             continue;
         }
 
         int flags = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        if (flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+            [self recordConnectFailureWithErrno:errno family:ai->ai_family index:candidateIndex];
+            close(fd);
+            continue;
+        }
 
         int result = connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
         if (result == 0) {
@@ -191,33 +290,58 @@
                 [weakSelf handleConnectCompletion];
             });
             dispatch_resume(_connectSource);
+
+            _connectTimeoutSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _queue);
+            uint64_t timeoutNs = (uint64_t)_connectTimeoutMilliseconds * NSEC_PER_MSEC;
+            dispatch_source_set_timer(_connectTimeoutSource,
+                                      dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeoutNs),
+                                      DISPATCH_TIME_FOREVER,
+                                      timeoutNs / 10);
+            dispatch_source_set_event_handler(_connectTimeoutSource, ^{
+                [weakSelf handleConnectTimeout];
+            });
+            dispatch_resume(_connectTimeoutSource);
             return;
         }
 
-        _connectLastError = errno;
+        [self recordConnectFailureWithErrno:errno family:ai->ai_family index:candidateIndex];
         close(fd);
     }
 
-    NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:_connectLastError ?: errno userInfo:nil];
+    NSError *error = [self buildConnectFailureError];
     [self cleanupConnectState];
 
-    if (self.stateChangedHandler) {
+    if (self.stateChangedHandler && !_isCancelled) {
         self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
     }
 }
 
-- (void)handleConnectCompletion {
-    int error = 0;
-    socklen_t len = sizeof(error);
-    getsockopt(_sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
-
-    if (_connectSource) {
-        dispatch_source_cancel(_connectSource);
-        _connectSource = nil;
+- (void)handleConnectTimeout {
+    if (_isCancelled || _sockfd == -1) {
+        return;
     }
 
+    [self cancelConnectWatchers];
+    [self recordConnectFailureWithErrno:ETIMEDOUT family:_connectCurrentCandidateFamily index:_connectCurrentCandidateIndex];
+    close(_sockfd);
+    _sockfd = -1;
+    [self startConnectToNextCandidate];
+}
+
+- (void)handleConnectCompletion {
+    if (_isCancelled || _sockfd == -1) {
+        return;
+    }
+
+    int error = 0;
+    socklen_t len = sizeof(error);
+    if (getsockopt(_sockfd, SOL_SOCKET, SO_ERROR, &error, &len) != 0) {
+        error = errno;
+    }
+    [self cancelConnectWatchers];
+
     if (error != 0) {
-        _connectLastError = error;
+        [self recordConnectFailureWithErrno:error family:_connectCurrentCandidateFamily index:_connectCurrentCandidateIndex];
         if (_sockfd != -1) {
             close(_sockfd);
             _sockfd = -1;
@@ -306,9 +430,12 @@
 - (void)processReadRequests:(BOOL)isComplete error:(NSError *)error {
     while (_readRequests.count > 0) {
         PDSReadRequest *request = _readRequests.firstObject;
+        void (^completion)(NSData * _Nullable, BOOL, NSError * _Nullable) = request.completion;
         
         if (error) {
-            request.completion(nil, NO, error);
+            if (completion) {
+                completion(nil, NO, error);
+            }
             [_readRequests removeObjectAtIndex:0];
             continue;
         }
@@ -326,23 +453,45 @@
                 _inputBuffer = [remaining mutableCopy];
             }
             
-            request.completion(data, isComplete, nil);
+            if (completion) {
+                completion(data, isComplete, nil);
+            }
             [_readRequests removeObjectAtIndex:0];
         } else if (isComplete) {
-            // EOF and buffer empty (or less than minLength but minLength logic implies we should probably return what we have? 
-            // The protocol says "data has minLength bytes: Partial data available".
-            // If EOF, we might return less than minLength with isComplete=YES.
-            
-            request.completion([NSData data], YES, nil);
+            if (completion) {
+                completion([NSData data], YES, nil);
+            }
             [_readRequests removeObjectAtIndex:0];
         } else {
-            // Not enough data yet
             break;
         }
     }
 }
 
+- (NSError *)cancellationError {
+    return [NSError errorWithDomain:NSPOSIXErrorDomain
+                               code:ECANCELED
+                           userInfo:@{NSLocalizedDescriptionKey: @"Operation cancelled"}];
+}
+
+- (void)failPendingReadRequestsWithError:(NSError *)error {
+    while (_readRequests.count > 0) {
+        PDSReadRequest *request = _readRequests.firstObject;
+        void (^completion)(NSData * _Nullable, BOOL, NSError * _Nullable) = request.completion;
+        if (completion) {
+            completion(nil, NO, error);
+        }
+        [_readRequests removeObjectAtIndex:0];
+    }
+}
+
 - (void)cancel {
+    if (_isCancelled) {
+        return;
+    }
+    _isCancelled = YES;
+
+    [self failPendingReadRequestsWithError:[self cancellationError]];
     [self cleanupConnectState];
 
     if (_readSource) {
@@ -364,6 +513,21 @@
 }
 
 - (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
+    if (_isCancelled) {
+        if (completion) {
+            completion([self cancellationError]);
+        }
+        return;
+    }
+    if (_sockfd == -1) {
+        if (completion) {
+            completion([NSError errorWithDomain:NSPOSIXErrorDomain
+                                           code:ENOTCONN
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Socket is not connected"}]);
+        }
+        return;
+    }
+
     if (_writeBuffer.length > 0 || _writeOffset > 0) {
         [_writeBuffer appendData:data];
         return;
@@ -404,19 +568,17 @@
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+    if (_isCancelled) {
+        completion(nil, NO, [self cancellationError]);
+        return;
+    }
+
     PDSReadRequest *request = [[PDSReadRequest alloc] init];
     request.minLength = minLength;
     request.maxLength = maxLength;
     request.completion = completion;
-    
-    // We must access _readRequests on the queue to be thread-safe if called from outside?
-    // PDSNetworkTransport protocol doesn't enforce thread safety but it's good practice.
-    // However, usually these methods are called from the same queue or we should dispatch.
-    // Assuming single-threaded event loop for now or caller respects queue.
-    
+
     [_readRequests addObject:request];
-    
-    // Check if we can satisfy immediately
     [self processReadRequests:NO error:nil];
 }
 

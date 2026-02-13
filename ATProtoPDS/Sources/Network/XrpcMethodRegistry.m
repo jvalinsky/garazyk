@@ -710,17 +710,6 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     return values;
 }
 
-static NSString *sqlPlaceholders(NSUInteger count) {
-    if (count == 0) {
-        return @"";
-    }
-    NSMutableArray<NSString *> *placeholders = [NSMutableArray arrayWithCapacity:count];
-    for (NSUInteger i = 0; i < count; i++) {
-        [placeholders addObject:@"?"];
-    }
-    return [placeholders componentsJoinedByString:@", "];
-}
-
 static BOOL isNoSuchTableError(NSError *error) {
     if (!error) {
         return NO;
@@ -772,64 +761,6 @@ static BOOL setInviteEnabledForAccount(PDSServiceDatabases *serviceDatabases,
     BOOL updated = [db updateAccount:account error:error];
     [db close];
     return updated;
-}
-
-static BOOL disableInviteCodesForCriteria(PDSServiceDatabases *serviceDatabases,
-                                          NSArray<NSString *> *codes,
-                                          NSArray<NSString *> *accountIdentifiers,
-                                          NSError **error) {
-    if (codes.count == 0 && accountIdentifiers.count == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.admin"
-                                         code:400
-                                     userInfo:@{NSLocalizedDescriptionKey:
-                                                    @"At least one of codes or accounts must be provided"}];
-        }
-        return NO;
-    }
-
-    NSMutableArray<NSString *> *accountDids = [NSMutableArray array];
-    NSMutableSet<NSString *> *seenDids = [NSMutableSet set];
-    for (NSString *identifier in accountIdentifiers) {
-        NSString *resolvedDid = nil;
-        NSError *resolveError = nil;
-        if (!resolveAccountIdentifierToDid(serviceDatabases, identifier, &resolvedDid, &resolveError)) {
-            if (error) {
-                *error = resolveError ?: [NSError errorWithDomain:@"com.atproto.admin"
-                                                             code:400
-                                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid account identifier"}];
-            }
-            return NO;
-        }
-        if (resolvedDid.length > 0 && ![seenDids containsObject:resolvedDid]) {
-            [seenDids addObject:resolvedDid];
-            [accountDids addObject:resolvedDid];
-        }
-    }
-
-    PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:error];
-    if (!db) {
-        return NO;
-    }
-
-    BOOL success = YES;
-    NSError *updateError = nil;
-
-    if (codes.count > 0) {
-        NSString *codeSql = [NSString stringWithFormat:@"UPDATE invite_codes SET disabled = 1 WHERE code IN (%@)", sqlPlaceholders(codes.count)];
-        success = executeServiceUpdate(db, codeSql, codes, NO, &updateError);
-    }
-
-    if (success && accountDids.count > 0) {
-        NSString *accountSql = [NSString stringWithFormat:@"UPDATE invite_codes SET disabled = 1 WHERE account_did IN (%@)", sqlPlaceholders(accountDids.count)];
-        success = executeServiceUpdate(db, accountSql, accountDids, NO, &updateError);
-    }
-
-    [db close];
-    if (!success && error) {
-        *error = updateError;
-    }
-    return success;
 }
 
 static BOOL deleteAccountAsAdmin(PDSServiceDatabases *serviceDatabases,
@@ -1317,6 +1248,81 @@ static void registerTempUtilityMethods(XrpcDispatcher *dispatcher,
                 @"message": requestError.localizedDescription ?: @"Failed to request phone verification"
             }];
             return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+}
+
+static void registerTempRevokeAccountCredentialsMethod(XrpcDispatcher *dispatcher,
+                                                       PDSServiceDatabases *serviceDatabases,
+                                                       PDSController *authController) {
+    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *accountIdentifier = body[@"account"];
+        NSString *targetDid = nil;
+        NSError *resolveError = nil;
+        if (!resolveAccountIdentifierToDid(serviceDatabases, accountIdentifier, &targetDid, &resolveError)) {
+            if (resolveError.code == 404) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": resolveError.localizedDescription ?: @"Account not found"}];
+            } else {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": resolveError.localizedDescription ?: @"Invalid account identifier"}];
+            }
+            return;
+        }
+
+        if (![targetDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
+            return;
+        }
+
+        NSError *deleteError = nil;
+        if (![serviceDatabases deleteRefreshTokensForAccount:targetDid error:&deleteError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
+            return;
+        }
+
+        NSError *listError = nil;
+        NSArray<NSDictionary *> *appPasswords = [serviceDatabases listAppPasswordsForAccount:targetDid error:&listError];
+        if (listError) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": listError.localizedDescription ?: @"Failed to list app passwords"}];
+            return;
+        }
+
+        for (NSDictionary *entry in appPasswords) {
+            NSString *name = entry[@"name"];
+            if (name.length == 0) {
+                continue;
+            }
+
+            NSError *revokeError = nil;
+            BOOL revoked = [serviceDatabases revokeAppPasswordForAccount:targetDid name:name error:&revokeError];
+            if (!revoked && revokeError) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
+                return;
+            }
         }
 
         response.statusCode = HttpStatusOK;
@@ -2176,77 +2182,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     }];
 
     registerTempUtilityMethods(dispatcher, serviceDatabases, controller);
-
-    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *accountIdentifier = body[@"account"];
-        NSString *targetDid = nil;
-        NSError *resolveError = nil;
-        if (!resolveAccountIdentifierToDid(serviceDatabases, accountIdentifier, &targetDid, &resolveError)) {
-            if (resolveError.code == 404) {
-                response.statusCode = HttpStatusNotFound;
-                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": resolveError.localizedDescription ?: @"Account not found"}];
-            } else {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": resolveError.localizedDescription ?: @"Invalid account identifier"}];
-            }
-            return;
-        }
-
-        if (![targetDid isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
-            return;
-        }
-
-        NSError *deleteError = nil;
-        if (![serviceDatabases deleteRefreshTokensForAccount:targetDid error:&deleteError]) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
-            return;
-        }
-
-        NSError *listError = nil;
-        NSArray<NSDictionary *> *appPasswords = [serviceDatabases listAppPasswordsForAccount:targetDid error:&listError];
-        if (listError) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": listError.localizedDescription ?: @"Failed to list app passwords"}];
-            return;
-        }
-
-        for (NSDictionary *entry in appPasswords) {
-            NSString *name = entry[@"name"];
-            if (name.length == 0) {
-                continue;
-            }
-
-            NSError *revokeError = nil;
-            BOOL revoked = [serviceDatabases revokeAppPasswordForAccount:targetDid name:name error:&revokeError];
-            if (!revoked && revokeError) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
-                return;
-            }
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
+    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, controller);
 
     [dispatcher registerComAtprotoServerUpdateEmail:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -4319,7 +4255,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *disableError = nil;
-        if (!disableInviteCodesForCriteria(controller.serviceDatabases, codes, accounts, &disableError)) {
+        if (![controller.adminController disableInviteCodesWithCodes:codes accounts:accounts error:&disableError]) {
             if (disableError.code == 404) {
                 response.statusCode = HttpStatusNotFound;
                 [response setJsonBody:@{@"error": @"AccountNotFound", @"message": disableError.localizedDescription ?: @"Account not found"}];
@@ -5295,77 +5231,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
     }];
 
     registerTempUtilityMethods(dispatcher, serviceDatabases, application.legacyController);
-
-    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *accountIdentifier = body[@"account"];
-        NSString *targetDid = nil;
-        NSError *resolveError = nil;
-        if (!resolveAccountIdentifierToDid(serviceDatabases, accountIdentifier, &targetDid, &resolveError)) {
-            if (resolveError.code == 404) {
-                response.statusCode = HttpStatusNotFound;
-                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": resolveError.localizedDescription ?: @"Account not found"}];
-            } else {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": resolveError.localizedDescription ?: @"Invalid account identifier"}];
-            }
-            return;
-        }
-
-        if (![targetDid isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
-            return;
-        }
-
-        NSError *deleteError = nil;
-        if (![serviceDatabases deleteRefreshTokensForAccount:targetDid error:&deleteError]) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
-            return;
-        }
-
-        NSError *listError = nil;
-        NSArray<NSDictionary *> *appPasswords = [serviceDatabases listAppPasswordsForAccount:targetDid error:&listError];
-        if (listError) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": listError.localizedDescription ?: @"Failed to list app passwords"}];
-            return;
-        }
-
-        for (NSDictionary *entry in appPasswords) {
-            NSString *name = entry[@"name"];
-            if (name.length == 0) {
-                continue;
-            }
-
-            NSError *revokeError = nil;
-            BOOL revoked = [serviceDatabases revokeAppPasswordForAccount:targetDid name:name error:&revokeError];
-            if (!revoked && revokeError) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
-                return;
-            }
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
+    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, application.legacyController);
 
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -6860,7 +6726,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *disableError = nil;
-        if (!disableInviteCodesForCriteria(serviceDatabases, codes, accounts, &disableError)) {
+        if (![adminController disableInviteCodesWithCodes:codes accounts:accounts error:&disableError]) {
             if (disableError.code == 404) {
                 response.statusCode = HttpStatusNotFound;
                 [response setJsonBody:@{@"error": @"AccountNotFound", @"message": disableError.localizedDescription ?: @"Account not found"}];

@@ -58,6 +58,19 @@ NS_ASSUME_NONNULL_BEGIN
     return rows.firstObject[@"invite_enabled"];
 }
 
+- (NSNumber *)disabledFlagForInviteCode:(NSString *)code {
+    NSError *error = nil;
+    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT disabled FROM invite_codes WHERE code = ?"
+                                                     params:@[code]
+                                                      error:&error];
+    XCTAssertNil(error);
+    if (rows.count == 0) {
+        return nil;
+    }
+    id value = rows.firstObject[@"disabled"];
+    return [value respondsToSelector:@selector(integerValue)] ? @([value integerValue]) : nil;
+}
+
 - (void)testServiceInitialization {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.database, self.database);
@@ -159,14 +172,52 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual([rows.firstObject[@"disabled"] integerValue], 1);
 }
 
-- (void)testDisableInviteCodesGlobal {
+- (void)testDisableInviteCodesByCodesAndAccounts {
+    [self createAccountWithDid:@"did:plc:invite4" handle:@"invite4.example.com"];
+    [self createAccountWithDid:@"did:plc:invite5" handle:@"invite5.example.com"];
+
     NSError *error = nil;
-    BOOL result = [self.service disableInviteCodes:YES error:&error];
+    NSDictionary *first = [self.service createInviteCode:@{@"forAccount": @"did:plc:invite4"} error:&error];
+    XCTAssertNotNil(first);
+    XCTAssertNil(error);
+    NSDictionary *second = [self.service createInviteCode:@{@"forAccount": @"did:plc:invite4"} error:&error];
+    XCTAssertNotNil(second);
+    XCTAssertNil(error);
+    NSDictionary *third = [self.service createInviteCode:@{@"forAccount": @"did:plc:invite5"} error:&error];
+    XCTAssertNotNil(third);
+    XCTAssertNil(error);
+
+    NSString *targetedCode = first[@"code"];
+    NSString *untouchedCode = second[@"code"];
+    NSString *accountDisabledCode = third[@"code"];
+
+    BOOL result = [self.service disableInviteCodesWithCodes:@[targetedCode]
+                                                   accounts:@[@"invite5.example.com"]
+                                                      error:&error];
     XCTAssertTrue(result);
-    
-    error = nil;
-    result = [self.service disableInviteCodes:NO error:&error];
-    XCTAssertTrue(result);
+    XCTAssertNil(error);
+
+    XCTAssertEqualObjects([self disabledFlagForInviteCode:targetedCode], @1);
+    XCTAssertEqualObjects([self disabledFlagForInviteCode:untouchedCode], @0);
+    XCTAssertEqualObjects([self disabledFlagForInviteCode:accountDisabledCode], @1);
+}
+
+- (void)testDisableInviteCodesRequiresCriteria {
+    NSError *error = nil;
+    BOOL result = [self.service disableInviteCodesWithCodes:@[] accounts:@[] error:&error];
+    XCTAssertFalse(result);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+}
+
+- (void)testDisableInviteCodesUnknownAccountFails {
+    NSError *error = nil;
+    BOOL result = [self.service disableInviteCodesWithCodes:nil
+                                                   accounts:@[@"missing.example.com"]
+                                                      error:&error];
+    XCTAssertFalse(result);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 404);
 }
 
 - (void)testUpdateHandleNonexistentAccount {

@@ -300,6 +300,80 @@ function duplicateMethodsForList(methods) {
     .map((entry) => ({ method_id: entry[0], count: entry[1] }));
 }
 
+function normalizeScopePair(leftScope, rightScope) {
+  return [leftScope, rightScope].sort().join("|");
+}
+
+function computeCrossScopeDuplicateStats(scopeStats) {
+  const methodScopes = new Map();
+  for (const scopeStat of scopeStats) {
+    const scopeName = scopeStat.scope;
+    const methods = Array.isArray(scopeStat.methods) ? scopeStat.methods : [];
+    for (const methodId of methods) {
+      if (methodId === "unknown") {
+        continue;
+      }
+      if (!methodScopes.has(methodId)) {
+        methodScopes.set(methodId, new Set());
+      }
+      methodScopes.get(methodId).add(scopeName);
+    }
+  }
+
+  const expectedScopePairSet = new Set([
+    normalizeScopePair("class.registerMethodsWithDispatcher:controller", "class.registerMethodsWithDispatcher:application"),
+  ]);
+
+  const rawMethods = [];
+  const expectedMethods = [];
+  const unexpectedMethods = [];
+  let rawCount = 0;
+  let expectedCount = 0;
+  let unexpectedCount = 0;
+
+  for (const [methodId, scopesSet] of methodScopes.entries()) {
+    const scopes = Array.from(scopesSet).sort();
+    if (scopes.length <= 1) {
+      continue;
+    }
+
+    const registrations = scopes.length - 1;
+    const methodEntry = { method_id: methodId, count: scopes.length, scopes };
+    rawMethods.push(methodEntry);
+    rawCount += registrations;
+
+    const expectedPairOnly = scopes.length === 2
+      && expectedScopePairSet.has(normalizeScopePair(scopes[0], scopes[1]));
+    if (expectedPairOnly) {
+      expectedMethods.push(methodEntry);
+      expectedCount += registrations;
+    } else {
+      unexpectedMethods.push(methodEntry);
+      unexpectedCount += registrations;
+    }
+  }
+
+  const sortByCountThenMethod = (left, right) => {
+    if (right.count !== left.count) {
+      return right.count - left.count;
+    }
+    return left.method_id.localeCompare(right.method_id);
+  };
+
+  rawMethods.sort(sortByCountThenMethod);
+  expectedMethods.sort(sortByCountThenMethod);
+  unexpectedMethods.sort(sortByCountThenMethod);
+
+  return {
+    raw_count: rawCount,
+    expected_overlap_count: expectedCount,
+    unexpected_duplicate_count: unexpectedCount,
+    raw_methods: rawMethods,
+    expected_methods: expectedMethods,
+    unexpected_methods: unexpectedMethods,
+  };
+}
+
 function extractRegistrationScopeStats(registrySource, methodMap) {
   const scopePatterns = [
     {
@@ -345,13 +419,15 @@ function extractRegistrationScopeStats(registrySource, methodMap) {
     const snippet = registrySource.slice(openBraceIndex, closeBraceIndex + 1);
     const extracted = extractMethodIdsFromSourceSnippet(snippet, methodMap);
     const filteredMethods = extracted.methods.filter((methodId) => methodId !== "unknown");
+    const uniqueMethods = uniqueSorted(filteredMethods);
     const duplicateMethods = duplicateMethodsForList(extracted.methods);
     const duplicateRegistrations = duplicateMethods.reduce((sum, entry) => sum + (entry.count - 1), 0);
 
     scopes.push({
       scope: scopeDef.name,
       registrations_total: filteredMethods.length,
-      registrations_unique: uniqueSorted(filteredMethods).length,
+      registrations_unique: uniqueMethods.length,
+      methods: uniqueMethods,
       unknown_registry_entries: extracted.methods.filter((methodId) => methodId === "unknown").length,
       duplicate_registrations: duplicateRegistrations,
       duplicate_methods: duplicateMethods,
@@ -369,12 +445,14 @@ function extractImplementedMethodsFromSource(registryPath, handlerPath) {
   const extracted = extractMethodIdsFromSourceSnippet(source, methodMap);
   const scopeStats = extractRegistrationScopeStats(source, methodMap);
   const scopedDuplicateRegistrations = scopeStats.reduce((sum, scope) => sum + scope.duplicate_registrations, 0);
+  const crossScopeDuplicateStats = computeCrossScopeDuplicateStats(scopeStats);
 
   return {
     implementedRaw: extracted.methods,
     unresolvedTyped: extracted.unresolvedTyped,
     registrationScopeStats: scopeStats,
     scopedDuplicateRegistrations,
+    crossScopeDuplicateStats,
   };
 }
 
@@ -471,7 +549,13 @@ function createMarkdown(report) {
   lines.push(`- Unknown registry entries: ${report.counts.unknown_registry_entries}`);
   lines.push(`- Duplicate registry registrations: ${report.counts.duplicate_registry_registrations}`);
   if (typeof report.counts.duplicate_registry_registrations_cross_scope === "number") {
-    lines.push(`- Duplicate registry registrations (cross-scope): ${report.counts.duplicate_registry_registrations_cross_scope}`);
+    lines.push(`- Duplicate registry registrations (cross-scope, actionable): ${report.counts.duplicate_registry_registrations_cross_scope}`);
+  }
+  if (typeof report.counts.duplicate_registry_registrations_cross_scope_expected === "number") {
+    lines.push(`- Cross-scope overlap (expected controller/application dual-path): ${report.counts.duplicate_registry_registrations_cross_scope_expected}`);
+  }
+  if (typeof report.counts.duplicate_registry_registrations_cross_scope_raw === "number") {
+    lines.push(`- Cross-scope overlap (raw total): ${report.counts.duplicate_registry_registrations_cross_scope_raw}`);
   }
   lines.push("");
   lines.push("## Namespace Coverage");
@@ -565,6 +649,24 @@ function createMarkdown(report) {
       lines.push("");
     });
   }
+  if (report.cross_scope_duplicates && Array.isArray(report.cross_scope_duplicates.unexpected_methods)) {
+    lines.push("## Cross-Scope Duplicate Methods (Actionable)");
+    lines.push("");
+    if (report.cross_scope_duplicates.unexpected_methods.length === 0) {
+      lines.push("- none");
+    } else {
+      report.cross_scope_duplicates.unexpected_methods.slice(0, 20).forEach((entry) => {
+        lines.push(`- \`${entry.method_id}\` (${entry.count} scopes: ${entry.scopes.join(", ")})`);
+      });
+    }
+    lines.push("");
+  }
+  if (report.cross_scope_duplicates && Array.isArray(report.cross_scope_duplicates.expected_methods)) {
+    lines.push("## Cross-Scope Overlap (Expected)");
+    lines.push("");
+    lines.push(`- Methods overlapping between controller/application registrations: ${report.cross_scope_duplicates.expected_methods.length}`);
+    lines.push("");
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -581,6 +683,7 @@ function main() {
   let unresolvedTypedRegistrations = [];
   let registrationScopeStats = [];
   let scopedDuplicateRegistrations = null;
+  let crossScopeDuplicateStats = null;
   const lexiconParseErrors = [];
   let methodsTsvUsed = methodsTsv;
   let lexiconsTsvUsed = lexiconsTsv;
@@ -607,6 +710,7 @@ function main() {
     unresolvedTypedRegistrations = extracted.unresolvedTyped;
     registrationScopeStats = extracted.registrationScopeStats;
     scopedDuplicateRegistrations = extracted.scopedDuplicateRegistrations;
+    crossScopeDuplicateStats = extracted.crossScopeDuplicateStats;
 
     const lexiconExtract = extractLexiconMethodsFromRoots(args.lexiconRoots);
     lexiconUniqueAll = uniqueSorted(lexiconExtract.methodIds);
@@ -622,10 +726,16 @@ function main() {
   const unknownRegistryEntries = implementedRaw.filter((methodId) => methodId === "unknown").length;
   const implementedFiltered = implementedRaw.filter((methodId) => methodId !== "unknown");
   const implementedUnique = uniqueSorted(implementedFiltered);
-  const duplicateRegistrationsCrossScope = implementedFiltered.length - implementedUnique.length;
+  const duplicateRegistrationsCrossScopeRaw = implementedFiltered.length - implementedUnique.length;
+  const duplicateRegistrationsCrossScopeExpected = crossScopeDuplicateStats
+    ? crossScopeDuplicateStats.expected_overlap_count
+    : null;
+  const duplicateRegistrationsCrossScope = crossScopeDuplicateStats
+    ? crossScopeDuplicateStats.unexpected_duplicate_count
+    : duplicateRegistrationsCrossScopeRaw;
   const duplicateRegistrations = typeof scopedDuplicateRegistrations === "number"
     ? scopedDuplicateRegistrations
-    : duplicateRegistrationsCrossScope;
+    : duplicateRegistrationsCrossScopeRaw;
   const implementedInScope = uniqueSorted(implementedUnique.filter(inScope));
   const lexiconUniqueInScope = uniqueSorted(lexiconUniqueAll.filter(inScope));
 
@@ -681,12 +791,15 @@ function main() {
       unknown_registry_entries: unknownRegistryEntries,
       duplicate_registry_registrations: duplicateRegistrations,
       duplicate_registry_registrations_cross_scope: duplicateRegistrationsCrossScope,
+      duplicate_registry_registrations_cross_scope_expected: duplicateRegistrationsCrossScopeExpected,
+      duplicate_registry_registrations_cross_scope_raw: duplicateRegistrationsCrossScopeRaw,
     },
     namespace_coverage: makeNamespaceCoverage(new Set(implementedInScope), new Set(lexiconUniqueInScope)),
     missing_in_code: missingInCode,
     missing_in_code_out_of_scope: missingInCodeOutOfScope,
     missing_in_lexicons: missingInLexicons,
     registration_scope_stats: registrationScopeStats,
+    cross_scope_duplicates: crossScopeDuplicateStats,
     stub_scan: {
       not_implemented_count: Array.isArray(stubs.not_implemented) ? stubs.not_implemented.length : 0,
       todo_fixme_count: Array.isArray(stubs.todo_fixme) ? stubs.todo_fixme.length : 0,
