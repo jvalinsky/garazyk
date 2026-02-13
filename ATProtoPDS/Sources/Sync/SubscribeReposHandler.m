@@ -17,6 +17,13 @@
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
 NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 
+static const NSUInteger kSubscribeReposReplayBatchSize = 100;
+static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
+static const NSUInteger kSubscribeReposMaxPendingSendsDefault = 512;
+static NSString * const kSubscribeReposErrorFutureCursor = @"FutureCursor";
+static NSString * const kSubscribeReposErrorConsumerTooSlow = @"ConsumerTooSlow";
+static NSString * const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
+
 @interface SubscribeReposHandler () <WebSocketServerDelegate, WebSocketConnectionDelegate>
 
 @property (nonatomic, strong) WebSocketServer *webSocketServer;
@@ -32,8 +39,14 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 @property (nonatomic, assign) BOOL sequenceInitialized;
 @property (nonatomic, assign) BOOL stopping;
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
+@property (nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
+@property (nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
 
 - (void)ensureSequenceInitialized;
+- (BOOL)parseCursorString:(nullable NSString *)cursor outValue:(NSUInteger *)outValue;
+- (void)sendErrorFrameWithCode:(NSString *)code message:(NSString *)message toConnection:(WebSocketConnection *)connection;
+- (void)detachConnection:(WebSocketConnection *)connection;
+- (BOOL)sendEventData:(NSData *)eventData toConnectionWithBackpressureCheck:(WebSocketConnection *)connection;
 
 @end
 
@@ -53,6 +66,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         _sequenceInitialized = NO;
         _stopping = NO;
         _attachedConnections = [NSMutableSet set];
+        _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
+        _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
 
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(handleRecordChange:)
@@ -165,9 +180,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
     os_log_info(self.log, "Main-port WebSocket connection closed (code=%ld, reason=%@)", (long)code, reason ?: @"");
-    @synchronized (self.attachedConnections) {
-        [self.attachedConnections removeObject:connection];
-    }
+    [self detachConnection:connection];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
         [self.delegate subscribeReposHandler:self didCloseConnection:connection];
     }
@@ -175,9 +188,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
     os_log_error(self.log, "Main-port WebSocket connection failed: %@", error);
-    @synchronized (self.attachedConnections) {
-        [self.attachedConnections removeObject:connection];
-    }
+    [self detachConnection:connection];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
         [self.delegate subscribeReposHandler:self didCloseConnection:connection];
     }
@@ -348,7 +359,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         attachedSnapshot = [self.attachedConnections copy];
     }
     for (WebSocketConnection *connection in attachedSnapshot) {
-        [connection sendMessage:eventData];
+        [self sendEventData:eventData toConnectionWithBackpressureCheck:connection];
     }
 }
 
@@ -356,15 +367,49 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     os_log_info(self.log, "Sending initial repository state to new connection");
 
     if (!cursor) {
-        cursor = connection.queryParams[@"cursor"];
+        id cursorParam = connection.queryParams[@"cursor"];
+        if ([cursorParam isKindOfClass:[NSString class]]) {
+            cursor = cursorParam;
+        } else if ([cursorParam isKindOfClass:[NSArray class]] && [(NSArray *)cursorParam count] > 0) {
+            id firstValue = [(NSArray *)cursorParam firstObject];
+            if ([firstValue isKindOfClass:[NSString class]]) {
+                cursor = firstValue;
+            }
+        }
     }
-    NSUInteger cursorSeq = 0;
-    if (cursor) {
-        cursorSeq = [cursor integerValue];
-        os_log_info(self.log, "Client requested resumption from cursor %@ (seq %lu)", cursor, (unsigned long)cursorSeq);
+
+    __block BOOL hasCursor = (cursor.length > 0);
+    __block NSUInteger parsedCursor = 0;
+    __block BOOL cursorValid = YES;
+    if (hasCursor) {
+        cursorValid = [self parseCursorString:cursor outValue:&parsedCursor];
+        if (cursorValid) {
+            os_log_info(self.log, "Client requested resumption from cursor %@ (seq %lu)", cursor, (unsigned long)parsedCursor);
+        }
     }
 
     dispatch_async(self.eventQueue, ^{
+        [self ensureSequenceInitialized];
+
+        if (hasCursor && !cursorValid) {
+            [self sendErrorFrameWithCode:kSubscribeReposErrorInvalidCursor
+                                 message:@"cursor must be a non-negative integer"
+                            toConnection:connection];
+            [self detachConnection:connection];
+            [connection closeWithCode:1008 reason:kSubscribeReposErrorInvalidCursor];
+            return;
+        }
+
+        if (hasCursor && parsedCursor > self.sequenceNumber) {
+            [self sendErrorFrameWithCode:kSubscribeReposErrorFutureCursor
+                                 message:@"requested cursor is ahead of server sequence"
+                            toConnection:connection];
+            [self detachConnection:connection];
+            [connection closeWithCode:1008 reason:kSubscribeReposErrorFutureCursor];
+            return;
+        }
+
+        NSUInteger cursorSeq = hasCursor ? parsedCursor : 0;
         if (cursorSeq == 0) {
             NSError *error = nil;
             NSArray<PDSDatabaseRepo *> *repos = [self.controller.userDatabasePool getAllReposWithError:&error];
@@ -388,7 +433,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                     NSData *eventData = [self.eventFormatter encodeIdentityEvent:event error:&encodeError];
 
                     if (eventData) {
-                        [connection sendMessage:eventData];
+                        if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
+                            return;
+                        }
                         os_log_debug(self.log, "Sent identity event for repo %@ (root: %@)", repo.ownerDid, cidString);
                     } else {
                         os_log_error(self.log, "Failed to encode identity event for repo %@: %@", repo.ownerDid, encodeError);
@@ -399,6 +446,15 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         }
 
         if (cursorSeq > 0) {
+            NSUInteger backlog = self.sequenceNumber - cursorSeq;
+            if (backlog > self.maxReplayEventsPerConnection) {
+                [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
+                                     message:@"cursor backlog exceeds replay window"
+                                toConnection:connection];
+                [self detachConnection:connection];
+                [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
+                return;
+            }
             [self replayEventsAfterCursor:cursorSeq toConnection:connection];
         }
     });
@@ -409,11 +465,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [self ensureSequenceInitialized];
     
     NSUInteger fetchCursor = cursor;
+    NSUInteger replayedCount = 0;
     BOOL hasMore = YES;
     
     while (hasMore) {
         NSError *error = nil;
-        NSArray *events = [self.controller.serviceDatabases getEventsSince:fetchCursor limit:100 error:&error];
+        NSArray *events = [self.controller.serviceDatabases getEventsSince:fetchCursor limit:kSubscribeReposReplayBatchSize error:&error];
         if (error || !events) {
             os_log_error(self.log, "Failed to fetch events for replay: %@", error);
             break;
@@ -427,12 +484,24 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         for (NSDictionary *event in events) {
             NSNumber *seq = event[@"seq"];
             NSData *data = event[@"data"];
-            
-            [connection sendMessage:data];
+
+            replayedCount++;
+            if (replayedCount > self.maxReplayEventsPerConnection) {
+                [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
+                                     message:@"replay window exceeded while backfilling"
+                                toConnection:connection];
+                [self detachConnection:connection];
+                [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
+                return;
+            }
+
+            if (![self sendEventData:data toConnectionWithBackpressureCheck:connection]) {
+                return;
+            }
             fetchCursor = [seq unsignedIntegerValue];
         }
         
-        if (events.count < 100) {
+        if (events.count < kSubscribeReposReplayBatchSize) {
             hasMore = NO;
         }
         
@@ -458,6 +527,65 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     } else {
         os_log_error(self.log, "Failed to encode info event: %@", error);
     }
+}
+
+- (BOOL)parseCursorString:(nullable NSString *)cursor outValue:(NSUInteger *)outValue {
+    if (cursor.length == 0) {
+        if (outValue) *outValue = 0;
+        return YES;
+    }
+
+    NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    if ([cursor rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
+        return NO;
+    }
+
+    NSScanner *scanner = [NSScanner scannerWithString:cursor];
+    unsigned long long parsed = 0;
+    if (![scanner scanUnsignedLongLong:&parsed] || ![scanner isAtEnd]) {
+        return NO;
+    }
+    if (parsed > (unsigned long long)NSUIntegerMax) {
+        return NO;
+    }
+
+    if (outValue) *outValue = (NSUInteger)parsed;
+    return YES;
+}
+
+- (void)sendErrorFrameWithCode:(NSString *)code message:(NSString *)message toConnection:(WebSocketConnection *)connection {
+    FirehoseErrorEvent *event = [FirehoseErrorEvent eventWithError:code message:message];
+    NSError *error = nil;
+    NSData *eventData = [self.eventFormatter encodeErrorEvent:event error:&error];
+    if (eventData) {
+        [connection sendMessage:eventData];
+    } else {
+        os_log_error(self.log, "Failed to encode error event (%@): %@", code, error);
+    }
+}
+
+- (void)detachConnection:(WebSocketConnection *)connection {
+    @synchronized (self.attachedConnections) {
+        [self.attachedConnections removeObject:connection];
+    }
+}
+
+- (BOOL)sendEventData:(NSData *)eventData toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
+    if (!eventData || !connection) {
+        return NO;
+    }
+
+    if (connection.pendingSendCount >= self.maxPendingSendsPerConnection) {
+        [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
+                             message:@"connection output queue exceeded server limit"
+                        toConnection:connection];
+        [self detachConnection:connection];
+        [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
+        return NO;
+    }
+
+    [connection sendMessage:eventData];
+    return YES;
 }
 
 - (void)ensureSequenceInitialized {
