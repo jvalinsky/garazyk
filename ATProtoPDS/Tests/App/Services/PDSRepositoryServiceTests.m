@@ -317,4 +317,49 @@
     XCTAssertEqual(reader.blocks.count, 0U);
 }
 
+- (void)testWriteRepoContentsToPathRoundTripsCAR {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"repo-test-writepath"
+                                           value:[self postRecordWithText:@"write to path"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    NSString *fullPath = [self.testDirectory stringByAppendingPathComponent:@"repo-full.car"];
+    NSError *fullWriteError = nil;
+    BOOL fullExported = [self.repositoryService writeRepoContents:self.testDID
+                                                            since:nil
+                                                           toPath:fullPath
+                                                            error:&fullWriteError];
+    XCTAssertTrue(fullExported);
+    XCTAssertNil(fullWriteError);
+
+    NSError *fullReadError = nil;
+    CARReader *fullReader = [CARReader readFromPath:fullPath error:&fullReadError];
+    XCTAssertNotNil(fullReader);
+    XCTAssertNil(fullReadError);
+    XCTAssertNotNil(fullReader.rootCID);
+    XCTAssertTrue(fullReader.blocks.count > 0);
+
+    NSString *currentRev = [self commitRevFromCARData:[self.repositoryService getRepoContents:self.testDID since:nil error:nil]];
+    XCTAssertNotNil(currentRev);
+
+    NSString *deltaPath = [self.testDirectory stringByAppendingPathComponent:@"repo-delta-empty.car"];
+    NSError *deltaWriteError = nil;
+    BOOL deltaExported = [self.repositoryService writeRepoContents:self.testDID
+                                                             since:currentRev
+                                                            toPath:deltaPath
+                                                             error:&deltaWriteError];
+    XCTAssertTrue(deltaExported);
+    XCTAssertNil(deltaWriteError);
+
+    NSError *deltaReadError = nil;
+    CARReader *deltaReader = [CARReader readFromPath:deltaPath error:&deltaReadError];
+    XCTAssertNotNil(deltaReader);
+    XCTAssertNil(deltaReadError);
+    XCTAssertEqual(deltaReader.blocks.count, 0U);
+    XCTAssertNotNil(deltaReader.rootCID);
+}
+
 @end
