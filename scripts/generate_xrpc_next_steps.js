@@ -183,6 +183,9 @@ function createPlanMarkdown(payload) {
   lines.push(`- Coverage: ${payload.coverage.coverage_pct}%`);
   lines.push(`- Unknown registry entries: ${payload.coverage.unknown_registry_entries}`);
   lines.push(`- Duplicate registry registrations: ${payload.coverage.duplicate_registry_registrations}`);
+  if (typeof payload.coverage.duplicate_registry_registrations_cross_scope === "number") {
+    lines.push(`- Duplicate registry registrations (cross-scope): ${payload.coverage.duplicate_registry_registrations_cross_scope}`);
+  }
   lines.push("");
   lines.push("## Priority Rubric");
   lines.push("");
@@ -200,18 +203,28 @@ function createPlanMarkdown(payload) {
     lines.push(`- Endpoint count: ${phase.count}`);
     lines.push(`- P0: ${phase.by_priority.P0}, P1: ${phase.by_priority.P1}, P2: ${phase.by_priority.P2}, P3: ${phase.by_priority.P3}`);
     lines.push("- Next batch:");
-    for (const method of phase.next_batch) {
-      lines.push(`  - ${method.priority} \`${method.method_id}\``);
+    if (phase.next_batch.length === 0) {
+      lines.push("  - none");
+    } else {
+      for (const method of phase.next_batch) {
+        lines.push(`  - ${method.priority} \`${method.method_id}\``);
+      }
     }
     lines.push("");
   }
 
   lines.push("## Recommended Work Order");
   lines.push("");
-  lines.push("1. Implement all Phase 1 P0/P1 endpoints.");
-  lines.push("2. Implement Phase 2 P0/P1 endpoints, then run interop/sync tests.");
-  lines.push("3. Implement Phase 3 P1/P2 endpoints needed for moderation/admin workflows.");
-  lines.push("4. Re-run `scripts/generate_xrpc_coverage_report.js` after each batch.");
+  if (payload.coverage.missing_in_code === 0) {
+    lines.push("1. No in-scope endpoint implementation backlog remains.");
+    lines.push("2. Keep `scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates` in CI.");
+    lines.push("3. Re-run coverage and next-steps generation after registry or lexicon changes.");
+  } else {
+    lines.push("1. Implement all Phase 1 P0/P1 endpoints.");
+    lines.push("2. Implement Phase 2 P0/P1 endpoints, then run interop/sync tests.");
+    lines.push("3. Implement Phase 3 P1/P2 endpoints needed for moderation/admin workflows.");
+    lines.push("4. Re-run `scripts/generate_xrpc_coverage_report.js` after each batch.");
+  }
   lines.push("");
   return `${lines.join("\n")}\n`;
 }
@@ -222,6 +235,14 @@ function createIssueMarkdown(payload, topN) {
   lines.push("");
   lines.push(`Generated: ${payload.generated_at}`);
   lines.push("");
+  if (payload.top_candidates.length === 0) {
+    lines.push("No in-scope missing endpoints.");
+    lines.push("");
+    lines.push("- Coverage is currently 100% for configured scope.");
+    lines.push("- Track maintenance work separately (duplicate registration checks, schema drift, and test hardening).");
+    lines.push("");
+    return `${lines.join("\n")}\n`;
+  }
   lines.push(`Top ${topN} missing endpoints by priority score.`);
   lines.push("");
 
@@ -299,6 +320,7 @@ function main() {
       coverage_pct: coverage.counts.coverage_pct,
       unknown_registry_entries: coverage.counts.unknown_registry_entries,
       duplicate_registry_registrations: coverage.counts.duplicate_registry_registrations,
+      duplicate_registry_registrations_cross_scope: coverage.counts.duplicate_registry_registrations_cross_scope,
     },
     phases,
     top_candidates: scored,
