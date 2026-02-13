@@ -44,6 +44,7 @@ NS_ASSUME_NONNULL_END
         _headers = [NSMutableDictionary dictionary];
         _keepAlive = YES;
         _contentType = @"application/json; charset=utf-8";
+        _deleteBodyFileAfterSend = NO;
         [[self class] applySecurityHeaders:_headers];
     }
     return self;
@@ -95,19 +96,51 @@ NS_ASSUME_NONNULL_END
     _body = [data copy];
     _bodyString = nil; /*! Clear competing body representations */
     _jsonBody = nil;
+    _bodyFilePath = nil;
+    _deleteBodyFileAfterSend = NO;
 }
 
-- (NSData *)serialize {
-    NSMutableData *result = [NSMutableData data];
+- (void)setBodyFileAtPath:(NSString *)path deleteAfterSend:(BOOL)deleteAfterSend {
+    _bodyFilePath = [path copy];
+    _deleteBodyFileAfterSend = deleteAfterSend;
+    _body = nil;
+    _bodyString = nil;
+    _jsonBody = nil;
+}
 
-    /*! Build status line: HTTP/1.1 CODE MESSAGE\r\n */
-    NSString *statusLine = [NSString stringWithFormat:@"HTTP/1.1 %ld %@\r\n", (long)self.statusCode, self.statusMessage];
-    [result appendData:[statusLine dataUsingEncoding:NSUTF8StringEncoding]];
-
-    if (self.statusCode == 302 || self.statusCode == 429) {
-        NSLog(@"[HTTP RESPONSE] Status: %ld, Headers: %@", (long)self.statusCode, self.headers);
+- (NSData *)resolveBodyData {
+    if (self.jsonBody) {
+        NSError *error = nil;
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:self.jsonBody options:0 error:&error];
+        if (error) {
+            return nil;
+        }
+        return jsonData;
     }
+    if (self.body) {
+        return self.body;
+    }
+    if (self.bodyString) {
+        return [self.bodyString dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    if (self.bodyFilePath.length > 0) {
+        return [NSData dataWithContentsOfFile:self.bodyFilePath];
+    }
+    return nil;
+}
 
+- (NSData *)body {
+    if (_body) {
+        return _body;
+    }
+    if (_bodyFilePath.length > 0) {
+        _body = [NSData dataWithContentsOfFile:_bodyFilePath];
+        return _body;
+    }
+    return nil;
+}
+
+- (void)prepareCommonHeadersForBodyLength:(NSUInteger)bodyLength {
     /*! Handle Connection header based on keepAlive setting */
     if (!self.headers[@"Connection"]) {
         if (self.keepAlive) {
@@ -127,27 +160,8 @@ NS_ASSUME_NONNULL_END
         [self setHeader:self.contentType forKey:@"Content-Type"];
     }
 
-    /*! Determine body data from highest-priority source */
-    NSData *bodyData = nil;
-    if (self.jsonBody) {
-        NSError *error = nil;
-        bodyData = [NSJSONSerialization dataWithJSONObject:self.jsonBody options:0 error:&error];
-        if (error) {
-            bodyData = nil; /*! Fail-safe: don't send malformed JSON */
-        }
-    } else if (self.body) {
-        bodyData = self.body;
-    } else if (self.bodyString) {
-        bodyData = [self.bodyString dataUsingEncoding:NSUTF8StringEncoding];
-    }
-
-    /*! Add Content-Length header (0 when body is empty) */
-    if (bodyData) {
-        NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyData.length];
-        [self setHeader:contentLength forKey:@"Content-Length"];
-    } else {
-        [self setHeader:@"0" forKey:@"Content-Length"];
-    }
+    NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyLength];
+    [self setHeader:contentLength forKey:@"Content-Length"];
 
     /*! Add Date header */
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
@@ -155,6 +169,20 @@ NS_ASSUME_NONNULL_END
     dateFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT"];
     dateFormatter.dateFormat = @"EEE, dd MMM yyyy HH:mm:ss 'GMT'";
     [self setHeader:[dateFormatter stringFromDate:[NSDate date]] forKey:@"Date"];
+}
+
+- (NSData *)serializeHeadersForBodyLength:(NSUInteger)bodyLength {
+    NSMutableData *result = [NSMutableData data];
+
+    /*! Build status line: HTTP/1.1 CODE MESSAGE\r\n */
+    NSString *statusLine = [NSString stringWithFormat:@"HTTP/1.1 %ld %@\r\n", (long)self.statusCode, self.statusMessage];
+    [result appendData:[statusLine dataUsingEncoding:NSUTF8StringEncoding]];
+
+    if (self.statusCode == 302 || self.statusCode == 429) {
+        NSLog(@"[HTTP RESPONSE] Status: %ld, Headers: %@", (long)self.statusCode, self.headers);
+    }
+
+    [self prepareCommonHeadersForBodyLength:bodyLength];
 
     /*! Append all headers in HTTP format */
     for (NSString *key in self.headers) {
@@ -164,8 +192,14 @@ NS_ASSUME_NONNULL_END
 
     /*! End headers section with blank line */
     [result appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    return [result copy];
+}
 
-    /*! Append body if present */
+- (NSData *)serialize {
+    NSData *bodyData = [self resolveBodyData];
+    NSData *headerData = [self serializeHeadersForBodyLength:bodyData ? bodyData.length : 0];
+    NSMutableData *result = [NSMutableData dataWithData:headerData];
+
     if (bodyData) {
         [result appendData:bodyData];
     }

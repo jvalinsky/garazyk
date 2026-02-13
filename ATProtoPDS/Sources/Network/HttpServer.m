@@ -56,6 +56,18 @@ static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
 static const NSUInteger kHttpOutputQueueHighWaterMark = 10 * 1024 * 1024; // 10MB
 static const NSTimeInterval kHttpHeaderTimeout = 5.0;
 static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
+static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
+
+@interface HttpQueuedResponse : NSObject
+@property (nonatomic, strong) NSData *headerData;
+@property (nonatomic, strong, nullable) NSData *bodyData;
+@property (nonatomic, copy, nullable) NSString *bodyFilePath;
+@property (nonatomic, assign) BOOL deleteBodyFileAfterSend;
+@property (nonatomic, assign) NSUInteger queueByteSize;
+@end
+
+@implementation HttpQueuedResponse
+@end
 
 @interface HttpConnectionState : NSObject
 
@@ -66,7 +78,7 @@ static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
 @property (nonatomic, assign) NSTimeInterval headerStartTime;
 @property (nonatomic, assign) BOOL requestInFlight;
 @property (nonatomic, assign) NSUInteger headerEndOffset;
-@property (nonatomic, strong) NSMutableArray<NSData *> *outputQueue;
+@property (nonatomic, strong) NSMutableArray<HttpQueuedResponse *> *outputQueue;
 @property (nonatomic, assign) BOOL readingPaused;
 @property (nonatomic, assign) NSUInteger outputQueueSize;
 @property (nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
@@ -580,13 +592,16 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 }
 
 - (void)queueResponse:(HttpResponse *)response forState:(HttpConnectionState *)state connection:(id<PDSNetworkConnection>)connection {
-    NSData *responseData = [response serialize];
-    [state.outputQueue addObject:responseData];
-    state.outputQueueSize += responseData.length;
+    HttpQueuedResponse *queueItem = [self queueItemForResponse:response];
+    [state.outputQueue addObject:queueItem];
+    state.outputQueueSize += queueItem.queueByteSize;
 
     while (state.outputQueueSize > kHttpOutputQueueHighWaterMark) {
-        NSData *oldest = state.outputQueue[0];
-        state.outputQueueSize -= oldest.length;
+        HttpQueuedResponse *oldest = state.outputQueue[0];
+        state.outputQueueSize -= oldest.queueByteSize;
+        if (oldest.deleteBodyFileAfterSend && oldest.bodyFilePath.length > 0) {
+            [[NSFileManager defaultManager] removeItemAtPath:oldest.bodyFilePath error:nil];
+        }
         [state.outputQueue removeObjectAtIndex:0];
     }
 
@@ -630,14 +645,17 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
 - (void)enqueueResponse:(HttpResponse *)response forConnection:(id<PDSNetworkConnection>)connection {
     HttpConnectionState *state = [self connectionStateForConnection:connection];
-    NSData *responseData = [response serialize];
+    HttpQueuedResponse *queueItem = [self queueItemForResponse:response];
 
-    [state.outputQueue addObject:responseData];
-    state.outputQueueSize += responseData.length;
+    [state.outputQueue addObject:queueItem];
+    state.outputQueueSize += queueItem.queueByteSize;
 
     while (state.outputQueueSize > kHttpOutputQueueHighWaterMark && state.outputQueue.count > 0) {
-        NSData *oldest = state.outputQueue[0];
-        state.outputQueueSize -= oldest.length;
+        HttpQueuedResponse *oldest = state.outputQueue[0];
+        state.outputQueueSize -= oldest.queueByteSize;
+        if (oldest.deleteBodyFileAfterSend && oldest.bodyFilePath.length > 0) {
+            [[NSFileManager defaultManager] removeItemAtPath:oldest.bodyFilePath error:nil];
+        }
         [state.outputQueue removeObjectAtIndex:0];
     }
 
@@ -650,32 +668,134 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     }
 
     state.sendingActive = YES;
-    NSData *responseData = state.outputQueue[0];
+    HttpQueuedResponse *queueItem = state.outputQueue[0];
 
     __weak typeof(self) weakSelf = self;
-    [connection sendData:responseData completion:^(NSError *error) {
+    [connection sendData:queueItem.headerData completion:^(NSError *error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
 
         if (error) {
             PDS_LOG_HTTP_ERROR(@"Failed to send pipelined response: %@", error);
+            if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
+                [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath error:nil];
+            }
             [connection cancel];
             return;
         }
 
-        [state.outputQueue removeObjectAtIndex:0];
-        state.outputQueueSize -= responseData.length;
-        if (state.pendingDispatchCount > 0) {
-            state.pendingDispatchCount--;
+        if (queueItem.bodyFilePath.length > 0) {
+            [strongSelf streamFileQueueItem:queueItem forState:state connection:connection];
+            return;
         }
-        state.sendingActive = NO;
-
-        if (state.outputQueue.count > 0) {
-            [strongSelf sendNextQueuedResponseForState:state connection:connection];
-        } else {
-            [strongSelf continueConnection:connection withState:state];
-        }
+        [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
     }];
+}
+
+- (HttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response {
+    HttpQueuedResponse *queueItem = [[HttpQueuedResponse alloc] init];
+    NSString *bodyFilePath = response.bodyFilePath;
+    if (bodyFilePath.length > 0) {
+        NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:bodyFilePath error:nil];
+        NSNumber *fileSize = attributes[NSFileSize];
+        NSUInteger bodyLength = fileSize ? (NSUInteger)fileSize.unsignedLongLongValue : 0;
+        queueItem.headerData = [response serializeHeadersForBodyLength:bodyLength];
+        queueItem.bodyFilePath = bodyFilePath;
+        queueItem.deleteBodyFileAfterSend = response.deleteBodyFileAfterSend;
+        queueItem.queueByteSize = queueItem.headerData.length;
+        return queueItem;
+    }
+
+    NSData *serialized = [response serialize];
+    queueItem.headerData = serialized;
+    queueItem.queueByteSize = serialized.length;
+    return queueItem;
+}
+
+- (void)streamFileQueueItem:(HttpQueuedResponse *)queueItem
+                   forState:(HttpConnectionState *)state
+                 connection:(id<PDSNetworkConnection>)connection {
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForReadingAtPath:queueItem.bodyFilePath];
+    if (!fileHandle) {
+        PDS_LOG_HTTP_ERROR(@"Failed to open response body file at path %@", queueItem.bodyFilePath);
+        if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
+            [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath error:nil];
+        }
+        [connection cancel];
+        return;
+    }
+
+    __weak typeof(self) weakSelf = self;
+    __block void (^sendNextChunk)(void) = nil;
+    __weak void (^weakSendNextChunk)(void) = nil;
+    sendNextChunk = ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            @try {
+                [fileHandle closeFile];
+            } @catch (__unused NSException *exception) {
+            }
+            return;
+        }
+
+        @autoreleasepool {
+            NSData *chunk = [fileHandle readDataOfLength:kHttpFileSendChunkSize];
+            if (chunk.length == 0) {
+                @try {
+                    [fileHandle closeFile];
+                } @catch (__unused NSException *exception) {
+                }
+                [strongSelf finalizeQueuedResponseSend:queueItem forState:state connection:connection];
+                return;
+            }
+
+            [connection sendData:chunk completion:^(NSError *error) {
+                if (error) {
+                    PDS_LOG_HTTP_ERROR(@"Failed to stream response body file: %@", error);
+                    @try {
+                        [fileHandle closeFile];
+                    } @catch (__unused NSException *exception) {
+                    }
+                    if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
+                        [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath error:nil];
+                    }
+                    [connection cancel];
+                    return;
+                }
+                if (weakSendNextChunk) {
+                    weakSendNextChunk();
+                }
+            }];
+        }
+    };
+    weakSendNextChunk = sendNextChunk;
+
+    sendNextChunk();
+}
+
+- (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
+                          forState:(HttpConnectionState *)state
+                        connection:(id<PDSNetworkConnection>)connection {
+    if (state.outputQueue.count > 0) {
+        [state.outputQueue removeObjectAtIndex:0];
+    }
+    state.outputQueueSize = (state.outputQueueSize > queueItem.queueByteSize)
+        ? (state.outputQueueSize - queueItem.queueByteSize)
+        : 0;
+    if (state.pendingDispatchCount > 0) {
+        state.pendingDispatchCount--;
+    }
+    state.sendingActive = NO;
+
+    if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath error:nil];
+    }
+
+    if (state.outputQueue.count > 0) {
+        [self sendNextQueuedResponseForState:state connection:connection];
+    } else {
+        [self continueConnection:connection withState:state];
+    }
 }
 
 - (void)continueConnection:(id<PDSNetworkConnection>)connection withState:(HttpConnectionState *)state {
