@@ -298,7 +298,7 @@ make test
 # Build and run unit tests with xcodebuild
 xcodebuild -scheme AllTests -project ATProtoPDS.xcodeproj build
 ./build/tests/AllTests
-# Expected: Tests run: 168, Failures: 0
+# Expected: Failures: 0
 
 # Run specific test suite
 xcodebuild -project ATProtoPDS.xcodeproj -scheme AllTests test
@@ -307,8 +307,8 @@ xcodebuild -project ATProtoPDS.xcodeproj -scheme AllTests test
 ./scripts/test_server.sh
 ```
 
-**Test Status (2026-01-13):**
-- All 168 unit tests passing
+**Test Status:**
+- `./build/tests/AllTests` passing (suite count varies by build/config)
 - CLI functionality verified
 - Integration tests passing
 
