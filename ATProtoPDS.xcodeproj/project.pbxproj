@@ -155,7 +155,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-				shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\n# CMake does not allow changing compilers in an existing build directory.\n# If this build dir was configured via ~/.swiftly/bin/cc, reset it.\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build fuzzers\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=ON\nmake -j$(sysctl -n hw.ncpu) fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth\n";
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build fuzzers\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=ON\nmake -j$(sysctl -n hw.ncpu) fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth\n";
 		};
 		2B198A56150AAB61D5D9F5DD /* Build Tests with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -173,7 +173,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-				shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build tests\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=ON \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) AllTests\n";
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build tests\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=ON \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) AllTests\n";
 		};
 		6515BC5414536A367A6BB6DC /* Build PLC with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -191,7 +191,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-				shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) atproto-plc\n";
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) atproto-plc\n";
 		};
 		EABC4FE21AF478FF825078E3 /* Build with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -209,7 +209,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-				shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) september\n";
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\n# CMake does not allow changing compilers in an existing build directory.\n# If this build dir was configured via ~/.swiftly/bin/cc, reset it.\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\nmake -j$(sysctl -n hw.ncpu) september\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
