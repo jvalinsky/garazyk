@@ -171,6 +171,46 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     return data;
 }
 
+- (nullable NSString *)blobFilePathWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error {
+    if (did) {
+        NSError *dbError = nil;
+        PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
+        if (store) {
+            PDSDatabaseBlob *blobMeta = [store getBlobForCID:[cid bytes] error:&dbError];
+            if (!blobMeta) {
+                if (error) {
+                    *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                 code:BlobStorageErrorBlobNotFound
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Blob metadata not found for user"}];
+                }
+                return nil;
+            }
+        }
+    }
+
+    if (![_provider hasBlobDataForCID:cid]) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorBlobNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob data not found"}];
+        }
+        return nil;
+    }
+
+    if ([_provider respondsToSelector:@selector(blobFileURLForCID:error:)]) {
+        NSError *providerError = nil;
+        NSURL *fileURL = [_provider blobFileURLForCID:cid error:&providerError];
+        if (fileURL.path.length > 0) {
+            return fileURL.path;
+        }
+        if (providerError && error) {
+            *error = providerError;
+        }
+    }
+
+    return nil;
+}
+
 - (NSArray<PDSDatabaseBlob *> *)listBlobsForDID:(NSString *)did
                                           limit:(NSInteger)limit
                                          cursor:(nullable NSString *)cursor

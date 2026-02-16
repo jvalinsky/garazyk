@@ -28,6 +28,20 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*!
+ @typedef XrpcRequestInterceptor
+
+ @abstract Optional pre-dispatch interceptor for XRPC requests.
+
+ @discussion Invoked after method extraction and handler lookup, but before
+ normal dispatch/default handling. Return YES to indicate the interceptor
+ handled the request and no further dispatch should occur.
+ */
+typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
+                                       HttpResponse *response,
+                                       NSString *methodId,
+                                       BOOL hasLocalHandler);
+
+/*!
  @class XrpcDispatcher
  
  @abstract Dispatches XRPC method calls to handlers.
@@ -50,6 +64,9 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*! Default handler for unrecognized methods. */
 @property (nonatomic, copy) void (^defaultHandler)(HttpRequest *, HttpResponse *);
+
+/*! Optional pre-dispatch interceptor for proxying/fallback behavior. */
+@property (nonatomic, copy, nullable) XrpcRequestInterceptor requestInterceptor;
 
 /*!
  @method sharedDispatcher
