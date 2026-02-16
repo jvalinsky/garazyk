@@ -40,6 +40,39 @@
     [super tearDown];
 }
 
+- (nullable NSString *)uploadBlobAndReturnCIDForData:(NSData *)blobData
+                                             mimeType:(NSString *)mimeType
+                                                error:(NSError **)error {
+    NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social"
+                                                     password:@"password"
+                                                        error:error];
+    if (!session) {
+        return nil;
+    }
+
+    NSString *accessJwt = session[@"accessJwt"];
+    HttpRequest *uploadRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/xrpc/com.atproto.repo.uploadBlob"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"content-type": mimeType ?: @"application/octet-stream",
+                                                                  @"authorization": [NSString stringWithFormat:@"Bearer %@", accessJwt]
+                                                              }
+                                                                 body:blobData
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *uploadResponse = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:uploadRequest response:uploadResponse];
+    if (uploadResponse.statusCode != 200) {
+        return nil;
+    }
+
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:uploadResponse.body options:0 error:error];
+    return json[@"blob"][@"ref"][@"$link"];
+}
+
 - (void)testUploadBlobEndpointSuccess {
     NSError *error = nil;
     NSString *blobContent = @"Hello XRPC Blob";
@@ -214,6 +247,67 @@
     [self.dispatcher handleRequest:getRequest response:getResponse];
     
     XCTAssertEqual(getResponse.statusCode, 404, @"Should return 404 for non-existent blob");
+}
+
+- (void)testGetBlobRangeReturnsPartialContentWithStreamingProducer {
+    NSError *error = nil;
+    NSData *blobData = [@"RangeBlobPayload" dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *cid = [self uploadBlobAndReturnCIDForData:blobData mimeType:@"text/plain" error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(cid);
+    if (!cid) {
+        return;
+    }
+
+    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/xrpc/com.atproto.sync.getBlob"
+                                                      queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
+                                                      queryParams:@{@"did": self.did, @"cid": cid}
+                                                          version:@"1.1"
+                                                          headers:@{@"range": @"bytes=0-4"}
+                                                             body:[NSData data]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:getRequest response:getResponse];
+
+    XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)206);
+    XCTAssertEqualObjects(getResponse.headers[@"Accept-Ranges"], @"bytes");
+    NSString *expectedContentRange = [NSString stringWithFormat:@"bytes 0-4/%lu",
+                                      (unsigned long)blobData.length];
+    XCTAssertEqualObjects(getResponse.headers[@"Content-Range"],
+                          expectedContentRange);
+    XCTAssertNotNil(getResponse.bodyChunkProducer);
+    XCTAssertEqualObjects(getResponse.body, [blobData subdataWithRange:NSMakeRange(0, 5)]);
+}
+
+- (void)testGetBlobRangeUnsatisfiableReturns416 {
+    NSError *error = nil;
+    NSData *blobData = [@"TinyBlob" dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *cid = [self uploadBlobAndReturnCIDForData:blobData mimeType:@"text/plain" error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(cid);
+    if (!cid) {
+        return;
+    }
+
+    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/xrpc/com.atproto.sync.getBlob"
+                                                      queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
+                                                      queryParams:@{@"did": self.did, @"cid": cid}
+                                                          version:@"1.1"
+                                                          headers:@{@"range": @"bytes=999-1000"}
+                                                             body:[NSData data]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:getRequest response:getResponse];
+
+    XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)416);
+    NSString *expectedContentRange = [NSString stringWithFormat:@"bytes */%lu",
+                                      (unsigned long)blobData.length];
+    XCTAssertEqualObjects(getResponse.headers[@"Content-Range"],
+                          expectedContentRange);
 }
 
 @end

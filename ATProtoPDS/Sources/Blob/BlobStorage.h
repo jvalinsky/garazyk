@@ -69,6 +69,13 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 /// @return The blob data, or nil if not found
 - (nullable NSData *)getBlobWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error;
 
+/// Retrieve a local blob file path when available from the configured provider
+/// @param cid The CID of the blob to locate
+/// @param did The DID that owns the blob (optional, for verification/access control)
+/// @param error Error pointer for failure details
+/// @return Absolute file path if available, or nil if the provider is not file-backed
+- (nullable NSString *)blobFilePathWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error;
+
 /// Retrieve blob metadata by its CID string
 /// @param cidString The CID string of the blob to retrieve metadata for
 /// @param did The DID that owns the blob (optional, for verification/access control)
