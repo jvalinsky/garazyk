@@ -1203,10 +1203,11 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
 static NSString * const kSigningKeyService = @"com.atproto.pds.signing";
 static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
+// X9.63 P-256 private key encoding: 0x04 || x || y || d.
 static NSString * const kFallbackECPrivateKeyBase64 =
-@"MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgEWHQ/ocH8Atl3zOY"
-@"QYcfBRNRUrps+GZIuA62/FH2dt2hRANCAAQ9hiv8igbi5vaOYHzXt6gDxbocoWAX"
-@"V6jBppig8YRtvlHJe/LXyvTzAZmWXq2CeUTyE8kyAG9N5qn975sNXg0V";
+@"BCLF1qlRjtsuPYfNw8R+ExANbrNPsBa+4JlOQqCdQlcnXZl5PjeYFJPGH57gY0PM"
+@"3Ptx636G0WIFLejhGrKpYAoE/F12gBONWWb+CzfpKu3Q47gF81ghbJ1kW4fMU3v7"
+@"ag==";
 
 - (NSString *)keychainAccountForDid:(NSString *)did {
     return [kSigningKeyAccountPrefix stringByAppendingString:did];
