@@ -118,8 +118,15 @@
 
     XCTAssertNotNil(accountResult, @"Account should be created: %@", error);
     XCTAssertNil(error, @"No error should occur: %@", error);
+    if (!accountResult || error) {
+        return;
+    }
+
     NSString *did = accountResult[@"did"];
     XCTAssertTrue([did hasPrefix:@"did:plc:"], @"DID should be a PLC DID, got %@", did);
+    if (![did hasPrefix:@"did:plc:"]) {
+        return;
+    }
 
     // Verify DID can be resolved via PLC server directly
     NSURL *resolveURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", self.controller.plcServerURL, did]];
@@ -139,6 +146,7 @@
     if (httpResponse.statusCode != 200) {
         NSString *errorBody = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
         XCTFail(@"PLC resolution failed with status %ld: %@", (long)httpResponse.statusCode, errorBody);
+        return;
     }
     XCTAssertEqual(httpResponse.statusCode, 200, @"PLC resolution should succeed");
     
@@ -166,6 +174,9 @@
     NSArray *ops = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
     XCTAssertNotNil(ops);
     XCTAssertGreaterThan(ops.count, 0);
+    if (ops.count == 0) {
+        return;
+    }
     
     NSDictionary *genesisOp = ops[0];
     XCTAssertEqualObjects(genesisOp[@"type"], @"plc_operation");

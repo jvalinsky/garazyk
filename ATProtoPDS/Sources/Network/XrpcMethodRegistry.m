@@ -15,6 +15,7 @@
 #import "Auth/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/Secp256k1.h"
+#import "Auth/CryptoUtils.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -2986,7 +2987,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         NSMutableDictionary *operation = [operationData mutableCopy];
         operation[@"did"] = did;
-        operation[@"sig"] = [sig base64EncodedStringWithOptions:0];
+        operation[@"sig"] = [CryptoUtils base64URLEncode:sig];
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"operation": operation}];
@@ -6185,6 +6186,33 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                             repositoryService,
                             config,
                             NO);
+
+    NSError *appViewDbError = nil;
+    PDSDatabase *appViewDatabase = [serviceDatabases serviceDatabaseWithError:&appViewDbError];
+    if (!appViewDatabase && appViewDbError) {
+        PDS_LOG_WARN(@"Failed to open service database for app.bsky handlers: %@",
+                     appViewDbError.localizedDescription ?: @"unknown error");
+    }
+    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+    [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *profile = [actorService getProfileForActor:actor error:&error];
+        if (error) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"ProfileNotFound", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:profile];
+    }];
 
     [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
