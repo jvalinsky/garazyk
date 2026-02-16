@@ -181,11 +181,12 @@
                                                       headers:@{}
                                                          body:nil];
 
-    XCTAssertNotEqual(response.statusCode, (HttpStatusCode)200);
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
     NSDictionary *json = response.body.length > 0
         ? [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil]
         : nil;
-    XCTAssertFalse([json[@"proxied"] boolValue]);
+    XCTAssertEqualObjects(json[@"error"], @"InvalidRequest");
+    XCTAssertNil(json[@"proxied"]);
 }
 
 @end
