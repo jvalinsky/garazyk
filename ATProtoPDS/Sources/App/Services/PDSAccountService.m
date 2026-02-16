@@ -459,7 +459,7 @@
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
     op.data = plcData;
-    op.sig = [sig base64EncodedStringWithOptions:0];
+    op.sig = [CryptoUtils base64URLEncode:sig];
     op.prev = nil;
     
     NSDictionary *opDict = [op toDictionary];

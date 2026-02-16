@@ -804,7 +804,11 @@
     NSDictionary *operation = signResponse.jsonBody[@"operation"];
     XCTAssertNotNil(operation);
     XCTAssertEqualObjects(operation[@"did"], self.did1);
-    XCTAssertNotNil(operation[@"sig"]);
+    NSString *sig = operation[@"sig"];
+    XCTAssertNotNil(sig);
+    XCTAssertFalse([sig containsString:@"="]);
+    XCTAssertFalse([sig containsString:@"+"]);
+    XCTAssertFalse([sig containsString:@"/"]);
 
     HttpResponse *submitResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.submitPlcOperation"
                                                             body:@{@"operation": operation}
