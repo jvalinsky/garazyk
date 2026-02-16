@@ -74,11 +74,42 @@
 
     PDSDatabaseBlob *metadata = [self.blobStorage getBlobMetadataWithCID:cid.stringValue did:did error:nil];
     NSString *mimeType = metadata.mimeType ?: @"application/octet-stream";
+    NSNumber *blobSize = metadata ? @(metadata.size) : nil;
 
     return @{
         @"blob": blobData,
         @"mimeType": mimeType,
-        @"size": @(blobData.length)
+        @"size": blobSize ?: @(blobData.length)
+    };
+}
+
+- (nullable NSDictionary *)getBlobStreamWithCID:(NSString *)cidString
+                                            did:(NSString *)did
+                                          error:(NSError **)error {
+    CID *cid = [CID cidFromString:cidString];
+    if (!cid) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSController"
+                                         code:1003
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
+        }
+        return nil;
+    }
+
+    PDSDatabaseBlob *metadata = [self.blobStorage getBlobMetadataWithCID:cid.stringValue did:did error:error];
+    if (!metadata) {
+        return nil;
+    }
+
+    NSString *filePath = [self.blobStorage blobFilePathWithCID:cid did:did error:error];
+    if (filePath.length == 0) {
+        return nil;
+    }
+
+    return @{
+        @"filePath": filePath,
+        @"mimeType": metadata.mimeType ?: @"application/octet-stream",
+        @"size": @(metadata.size)
     };
 }
 

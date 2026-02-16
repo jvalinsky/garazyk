@@ -134,6 +134,16 @@
 - (nullable NSData *)rawHTTPResponseForPath:(NSString *)path
                                        port:(uint16_t)port
                                       error:(NSError **)error {
+    return [self rawHTTPResponseForPath:path
+                                    port:port
+                       additionalHeaders:nil
+                                   error:error];
+}
+
+- (nullable NSData *)rawHTTPResponseForPath:(NSString *)path
+                                       port:(uint16_t)port
+                          additionalHeaders:(NSDictionary<NSString *, NSString *> *)additionalHeaders
+                                      error:(NSError **)error {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
         if (error) {
@@ -175,10 +185,18 @@
         return nil;
     }
 
-    NSString *requestString = [NSString stringWithFormat:
-                               @"GET %@ HTTP/1.1\r\nHost: 127.0.0.1:%hu\r\nConnection: close\r\nAccept: */*\r\n\r\n",
-                               path,
-                               port];
+    NSMutableString *requestString = [NSMutableString stringWithFormat:
+                                      @"GET %@ HTTP/1.1\r\nHost: 127.0.0.1:%hu\r\nConnection: close\r\nAccept: */*\r\n",
+                                      path,
+                                      port];
+    for (NSString *headerKey in additionalHeaders) {
+        NSString *headerValue = additionalHeaders[headerKey];
+        if (![headerValue isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        [requestString appendFormat:@"%@: %@\r\n", headerKey, headerValue];
+    }
+    [requestString appendString:@"\r\n"];
     NSData *requestData = [requestString dataUsingEncoding:NSUTF8StringEncoding];
     ssize_t writeResult = send(fd, requestData.bytes, requestData.length, 0);
     if (writeResult < 0 || (NSUInteger)writeResult != requestData.length) {
@@ -972,6 +990,76 @@
     XCTAssertNotNil(reader);
     XCTAssertNotNil(reader.rootCID);
     XCTAssertTrue(reader.blocks.count > 0);
+}
+
+- (void)testApplicationSyncGetBlobSocketRangeUsesChunkedPartialContent {
+    NSData *blobData = [@"socket-range-blob" dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *uploadError = nil;
+    NSDictionary *uploadResult = [self.application.legacyController uploadBlob:blobData
+                                                                         forDid:self.userDid
+                                                                       mimeType:@"text/plain"
+                                                                          error:&uploadError];
+    XCTAssertNil(uploadError);
+    XCTAssertNotNil(uploadResult);
+    NSString *cid = uploadResult[@"blob"][@"ref"][@"$link"];
+    XCTAssertTrue(cid.length > 0);
+    if (cid.length == 0) {
+        return;
+    }
+
+    NSError *startError = nil;
+    HttpServer *server = [self startSocketServerWithError:&startError];
+    if (!server) {
+        XCTSkip(@"Socket listener unavailable in this environment: %@",
+                startError.localizedDescription ?: @"unknown error");
+        return;
+    }
+
+    NSString *encodedDid = [self.userDid stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *encodedCID = [cid stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *path = [NSString stringWithFormat:@"/xrpc/com.atproto.sync.getBlob?did=%@&cid=%@",
+                      encodedDid ?: self.userDid,
+                      encodedCID ?: cid];
+
+    NSError *requestError = nil;
+    NSData *rawResponse = [self rawHTTPResponseForPath:path
+                                                   port:(uint16_t)server.port
+                                      additionalHeaders:@{@"Range": @"bytes=1-5"}
+                                                  error:&requestError];
+    [server stop];
+    XCTAssertNil(requestError);
+    XCTAssertNotNil(rawResponse);
+    if (!rawResponse) {
+        return;
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *parsed = [self parseRawHTTPResponse:rawResponse error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(parsed);
+    if (!parsed) {
+        return;
+    }
+
+    XCTAssertEqual([parsed[@"statusCode"] integerValue], (NSInteger)206);
+    NSDictionary<NSString *, NSString *> *headers = parsed[@"headers"];
+    XCTAssertEqualObjects([headers[@"accept-ranges"] lowercaseString], @"bytes");
+    XCTAssertEqualObjects([headers[@"transfer-encoding"] lowercaseString], @"chunked");
+    NSString *expectedContentRange = [NSString stringWithFormat:@"bytes 1-5/%lu",
+                                      (unsigned long)blobData.length];
+    XCTAssertEqualObjects([headers[@"content-range"] lowercaseString],
+                          [expectedContentRange lowercaseString]);
+
+    NSDictionary *chunked = [self decodeChunkedBody:parsed[@"body"] error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(chunked);
+    if (!chunked) {
+        return;
+    }
+
+    NSData *payload = chunked[@"payload"];
+    NSData *expected = [blobData subdataWithRange:NSMakeRange(1, 5)];
+    XCTAssertEqualObjects(payload, expected);
 }
 
 @end
