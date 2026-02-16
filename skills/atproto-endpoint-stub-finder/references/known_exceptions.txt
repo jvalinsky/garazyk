@@ -1,0 +1,5 @@
+# Paths to ignore in stub scans (one per line).
+# CLI stubs are test helpers, not server endpoints.
+ATProtoPDS/Sources/CLI/
+# Test fixtures.
+ATProtoPDS/Tests/

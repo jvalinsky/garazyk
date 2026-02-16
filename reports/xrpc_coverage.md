@@ -1,6 +1,6 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-13T19:06:12.433Z
+Generated: 2026-02-13T19:24:18.248Z
 
 ## Summary
 
