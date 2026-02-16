@@ -42,7 +42,7 @@
 - **PLC `did:key` Parsing**: COMPLETED. `PLCDIDKey.parseFromString:` implements base58btc multibase decoding and multicodec parsing for secp256k1 + P-256 keys (ATProtoPDS/Sources/PLC/PLCDIDKey.m:27-141).
 
 ### Phase 6: Professional Script Development - COMPLETED
-- **Professional Bash Scripting Skill**: Created comprehensive skill (`skills/professional-bash-scripting/SKILL.md`) documenting industry best practices from Google, Greg's Wiki, and authoritative sources for writing maintainable, secure, and efficient bash scripts.
+- **Professional Bash Scripting Standards**: Core repository scripts follow structured error handling, input validation, and maintainable shell scripting practices.
 - **Script Quality Improvements**: Upgraded core shell scripts following professional bash scripting standards:
   - `simple_test.sh`: Complete overhaul with proper error handling, structured logging, input validation, and dependency checking
   - `start_server.sh`: Enhanced with comprehensive initialization, cleanup, and process management
@@ -115,8 +115,9 @@ clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 
 ## Repository Skills
 
-- `skills/stub-finder/SKILL.md` documents the repository-level stub-finder skill that uses `scripts/stub_find.sh` to scan for `TODO`/`FIXME`/`not implemented` markers. Run `./scripts/stub_find.sh .` before code reviews to catch placeholder logic and report/find follow-up work.
-- `skills/professional-bash-scripting/SKILL.md` documents the comprehensive bash scripting skill for writing maintainable, secure, and efficient shell scripts following industry best practices from Google's Bash Style Guide, Greg's Wiki, and other authoritative sources.
+- `scripts/stub_find.sh` provides the repository-level stub scan for `TODO`/`FIXME`/`not implemented` markers. Run `./scripts/stub_find.sh .` before code reviews to catch placeholder logic and follow-up work.
+- `skills/atproto-endpoint-stub-finder/SKILL.md` documents endpoint-stub auditing with repo-native XRPC coverage integration and endpoint mapping that supports both typed registrations and `registerMethod:@"<nsid>"` string registrations.
+- `skills/xrpc-schema-sync/SKILL.md` documents schema-sync and coverage drift checks using repo-native generators (`scripts/generate_xrpc_coverage_report.js` and `scripts/generate_xrpc_next_steps.js`) with parser fallback tooling.
 
 ## CI/CD Pipeline
 
