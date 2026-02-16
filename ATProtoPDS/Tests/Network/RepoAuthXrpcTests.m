@@ -5,6 +5,9 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Repository/CAR.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/Pool/DatabasePool.h"
 
 @interface RepoAuthXrpcTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
@@ -168,6 +171,29 @@
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
+}
+
+- (nullable NSData *)drainResponseBody:(HttpResponse *)response error:(NSError **)error {
+    if (response.bodyChunkProducer) {
+        NSMutableData *buffer = [NSMutableData data];
+        while (YES) {
+            NSError *chunkError = nil;
+            NSData *chunk = response.bodyChunkProducer(&chunkError);
+            if (chunkError) {
+                if (error) {
+                    *error = chunkError;
+                }
+                return nil;
+            }
+            if (!chunk) {
+                break;
+            }
+            [buffer appendData:chunk];
+        }
+        return [buffer copy];
+    }
+
+    return response.body;
 }
 
 - (void)testDeleteRecordRequiresAuth {
@@ -933,6 +959,84 @@
     XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
     XCTAssertNotNil(response.body);
     XCTAssertTrue(response.body.length > 0);
+}
+
+- (void)testSyncGetRepoUsesStreamingChunkProducer {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"streaming repo export",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                         record:record
+                                                 validationMode:PDSValidationModeRequired
+                                                          error:nil];
+    XCTAssertNotNil(created);
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                               queryParams:@{@"did": self.did1}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
+    XCTAssertTrue(response.chunkedTransferEncoding);
+    XCTAssertNotNil(response.bodyChunkProducer);
+
+    NSError *drainError = nil;
+    NSData *carData = [self drainResponseBody:response error:&drainError];
+    XCTAssertNil(drainError);
+    XCTAssertNotNil(carData);
+    XCTAssertTrue(carData.length > 0);
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertNotNil(reader.rootCID);
+    XCTAssertTrue(reader.blocks.count > 0);
+}
+
+- (void)testSyncGetRepoSinceCurrentRevisionReturnsHeaderOnlyCAR {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"since semantics",
+        @"createdAt": [self iso8601String]
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                         record:record
+                                                 validationMode:PDSValidationModeRequired
+                                                          error:nil];
+    XCTAssertNotNil(created);
+
+    NSError *storeError = nil;
+    PDSActorStore *store = [self.controller.userDatabasePool storeForDid:self.did1 error:&storeError];
+    XCTAssertNil(storeError);
+    XCTAssertNotNil(store);
+    NSString *currentRev = [store getRepoRevisionForDid:self.did1 error:nil];
+    XCTAssertTrue(currentRev.length > 0);
+    if (currentRev.length == 0) {
+        return;
+    }
+
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                                               queryParams:@{@"did": self.did1, @"since": currentRev}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"application/vnd.ipld.car");
+    XCTAssertTrue(response.chunkedTransferEncoding);
+    XCTAssertNotNil(response.bodyChunkProducer);
+
+    NSError *drainError = nil;
+    NSData *carData = [self drainResponseBody:response error:&drainError];
+    XCTAssertNil(drainError);
+    XCTAssertNotNil(carData);
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.blocks.count, 0U);
 }
 
 - (void)testSyncListHostsReturnsHosts {
