@@ -82,6 +82,19 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [_fileManager fileExistsAtPath:blobURL.path];
 }
 
+- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error {
+    NSURL *blobURL = [self blobURLForCID:cid];
+    if (![_fileManager fileExistsAtPath:blobURL.path]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDiskBlobProviderErrorDomain
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob file not found on disk"}];
+        }
+        return nil;
+    }
+    return blobURL;
+}
+
 #pragma mark - Helper
 
 - (NSURL *)blobURLForCID:(CID *)cid {

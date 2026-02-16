@@ -31,6 +31,7 @@
 #import "Database/PDSDatabase.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
+#include <errno.h>
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
 static NSString *const kLexiconResolveErrorDomain = @"XrpcLexiconResolve";
@@ -221,6 +222,571 @@ static NSDictionary *resolveLexiconResponseForNSID(NSString *nsid,
         @"uri": uri,
         @"cid": schemaCID.stringValue ?: @"",
         @"schema": schema
+    };
+}
+
+static NSString *trimmedNonEmptyString(NSString *value) {
+    if (![value isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    NSString *trimmed = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return trimmed.length > 0 ? trimmed : nil;
+}
+
+static BOOL parseUnsignedLongLongString(NSString *value, unsigned long long *result) {
+    NSString *trimmed = trimmedNonEmptyString(value);
+    if (trimmed.length == 0) {
+        return NO;
+    }
+
+    errno = 0;
+    char *end = NULL;
+    unsigned long long parsed = strtoull(trimmed.UTF8String, &end, 10);
+    if (errno != 0 || !end || end == trimmed.UTF8String || *end != '\0') {
+        return NO;
+    }
+
+    if (result) {
+        *result = parsed;
+    }
+    return YES;
+}
+
+static BOOL isProxyHopByHopHeader(NSString *headerKey) {
+    static NSSet<NSString *> *blocked = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        blocked = [NSSet setWithArray:@[
+            @"connection",
+            @"keep-alive",
+            @"proxy-authenticate",
+            @"proxy-authorization",
+            @"te",
+            @"trailer",
+            @"transfer-encoding",
+            @"upgrade",
+            @"host",
+            @"content-length",
+            @"atproto-proxy"
+        ]];
+    });
+    return [blocked containsObject:headerKey.lowercaseString];
+}
+
+static BOOL serviceIdentifierMatchesFragment(NSString *serviceIdentifier,
+                                             NSString *did,
+                                             NSString *fragment) {
+    NSString *normalizedIdentifier = serviceIdentifier.lowercaseString;
+    NSString *normalizedFragment = fragment.lowercaseString;
+    if (![normalizedFragment hasPrefix:@"#"]) {
+        normalizedFragment = [@"#" stringByAppendingString:normalizedFragment];
+    }
+
+    if ([normalizedIdentifier isEqualToString:normalizedFragment]) {
+        return YES;
+    }
+    if ([normalizedIdentifier hasSuffix:normalizedFragment]) {
+        return YES;
+    }
+
+    NSString *fullyQualified = [[did.lowercaseString stringByAppendingString:normalizedFragment] lowercaseString];
+    return [normalizedIdentifier isEqualToString:fullyQualified];
+}
+
+static NSDictionary *proxyServiceEntryFromDocument(DIDDocument *document,
+                                                   NSString *did,
+                                                   NSString *serviceFragment) {
+    NSArray<NSDictionary *> *services = document.service ?: @[];
+    if (services.count == 0) {
+        return nil;
+    }
+
+    if (serviceFragment.length > 0) {
+        for (NSDictionary *entry in services) {
+            NSString *identifier = entry[@"id"];
+            if ([identifier isKindOfClass:[NSString class]] &&
+                serviceIdentifierMatchesFragment(identifier, did, serviceFragment)) {
+                return entry;
+            }
+        }
+        return nil;
+    }
+
+    for (NSDictionary *entry in services) {
+        NSString *type = [entry[@"type"] lowercaseString];
+        NSString *identifier = [entry[@"id"] lowercaseString];
+        if (([type containsString:@"appview"] || [identifier containsString:@"appview"]) &&
+            [entry[@"serviceEndpoint"] isKindOfClass:[NSString class]]) {
+            return entry;
+        }
+    }
+
+    for (NSDictionary *entry in services) {
+        if ([entry[@"serviceEndpoint"] isKindOfClass:[NSString class]]) {
+            return entry;
+        }
+    }
+
+    return nil;
+}
+
+static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
+                                         PDSConfiguration *config,
+                                         NSError **error) {
+    NSString *trimmedDescriptor = trimmedNonEmptyString(descriptor);
+    if (trimmedDescriptor.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"XrpcProxy"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Proxy target is empty"}];
+        }
+        return nil;
+    }
+
+    NSURL *directURL = [NSURL URLWithString:trimmedDescriptor];
+    if (directURL.scheme.length > 0 && directURL.host.length > 0) {
+        return directURL;
+    }
+
+    NSString *did = trimmedDescriptor;
+    NSString *serviceFragment = nil;
+    NSRange fragmentRange = [trimmedDescriptor rangeOfString:@"#"];
+    if (fragmentRange.location != NSNotFound) {
+        did = [trimmedDescriptor substringToIndex:fragmentRange.location];
+        serviceFragment = [trimmedDescriptor substringFromIndex:fragmentRange.location + 1];
+    }
+
+    if (![did hasPrefix:@"did:"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"XrpcProxy"
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Proxy target must be an absolute URL or DID reference"}];
+        }
+        return nil;
+    }
+
+    DIDResolver *resolver = [[DIDResolver alloc] init];
+    if (config.plcURL.length > 0) {
+        resolver.plcURL = config.plcURL;
+    }
+
+    NSError *resolveError = nil;
+    DIDDocument *document = [resolver resolveDIDSync:did error:&resolveError];
+    if (!document) {
+        if (error) {
+            *error = resolveError ?: [NSError errorWithDomain:@"XrpcProxy"
+                                                         code:3
+                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to resolve proxy DID"}];
+        }
+        return nil;
+    }
+
+    NSDictionary *serviceEntry = proxyServiceEntryFromDocument(document, did, serviceFragment);
+    if (!serviceEntry) {
+        if (error) {
+            NSString *message = serviceFragment.length > 0
+                ? [NSString stringWithFormat:@"Service '#%@' was not found in DID document", serviceFragment]
+                : @"No service endpoint found in DID document";
+            *error = [NSError errorWithDomain:@"XrpcProxy"
+                                         code:4
+                                     userInfo:@{NSLocalizedDescriptionKey: message}];
+        }
+        return nil;
+    }
+
+    NSString *endpoint = trimmedNonEmptyString(serviceEntry[@"serviceEndpoint"]);
+    NSURL *endpointURL = endpoint.length > 0 ? [NSURL URLWithString:endpoint] : nil;
+    if (endpointURL.scheme.length == 0 || endpointURL.host.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"XrpcProxy"
+                                         code:5
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Resolved service endpoint is not a valid absolute URL"}];
+        }
+        return nil;
+    }
+    return endpointURL;
+}
+
+static NSURL *proxyURLForMethodAndQuery(NSURL *baseURL,
+                                        NSString *methodId,
+                                        NSString *queryString) {
+    NSURLComponents *components = [NSURLComponents componentsWithURL:baseURL resolvingAgainstBaseURL:NO];
+    if (!components) {
+        return nil;
+    }
+
+    NSString *path = components.path ?: @"";
+    while (path.length > 1 && [path hasSuffix:@"/"]) {
+        path = [path substringToIndex:path.length - 1];
+    }
+
+    NSString *methodPath = [NSString stringWithFormat:@"/xrpc/%@", methodId];
+    if ([path hasSuffix:methodPath]) {
+        // already points to this method path
+    } else if ([path hasSuffix:@"/xrpc"]) {
+        path = [path stringByAppendingFormat:@"/%@", methodId];
+    } else if (path.length == 0 || [path isEqualToString:@"/"]) {
+        path = methodPath;
+    } else {
+        path = [path stringByAppendingString:methodPath];
+    }
+
+    components.path = path;
+    components.percentEncodedQuery = queryString.length > 0 ? queryString : nil;
+    return components.URL;
+}
+
+static NSString *configuredAppViewProxyTarget(PDSConfiguration *config) {
+    NSString *envTarget = trimmedNonEmptyString([[NSProcessInfo processInfo] environment][@"PDS_APPVIEW_URL"]);
+    if (envTarget.length > 0) {
+        return envTarget;
+    }
+
+    NSString *configTarget = trimmedNonEmptyString([config stringForKey:@"appview.url"]);
+    if (configTarget.length > 0) {
+        return configTarget;
+    }
+
+    return trimmedNonEmptyString([config stringForKey:@"app_view.url"]);
+}
+
+static BOOL proxyXrpcRequest(HttpRequest *request,
+                             HttpResponse *response,
+                             NSString *methodId,
+                             NSString *proxyDescriptor,
+                             PDSConfiguration *config,
+                             BOOL explicitProxyHeader) {
+    NSError *targetError = nil;
+    NSURL *baseURL = proxyBaseURLFromDescriptor(proxyDescriptor, config, &targetError);
+    if (!baseURL) {
+        response.statusCode = explicitProxyHeader ? HttpStatusBadRequest : 502;
+        [response setJsonBody:@{
+            @"error": explicitProxyHeader ? @"InvalidAtprotoProxy" : @"AppViewProxyUnavailable",
+            @"message": targetError.localizedDescription ?: @"Failed to resolve proxy target"
+        }];
+        return YES;
+    }
+
+    NSURL *targetURL = proxyURLForMethodAndQuery(baseURL, methodId, request.queryString ?: @"");
+    if (!targetURL) {
+        response.statusCode = explicitProxyHeader ? HttpStatusBadRequest : 502;
+        [response setJsonBody:@{
+            @"error": @"ProxyTargetInvalid",
+            @"message": @"Failed to construct upstream URL"
+        }];
+        return YES;
+    }
+
+    NSInteger hopCount = [[request headerForKey:@"x-objpds-proxy-hop"] integerValue];
+    if (hopCount >= 4) {
+        response.statusCode = 502;
+        [response setJsonBody:@{
+            @"error": @"ProxyLoopDetected",
+            @"message": @"Rejected proxy request after too many proxy hops"
+        }];
+        return YES;
+    }
+
+    NSMutableURLRequest *upstreamRequest = [NSMutableURLRequest requestWithURL:targetURL
+                                                                    cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                                timeoutInterval:30.0];
+    upstreamRequest.HTTPMethod = request.methodString ?: @"GET";
+    if (request.body.length > 0 && request.method != HttpMethodGET && request.method != HttpMethodHEAD) {
+        upstreamRequest.HTTPBody = request.body;
+    }
+
+    for (NSString *key in request.headers) {
+        NSString *lowercaseKey = key.lowercaseString;
+        if (isProxyHopByHopHeader(lowercaseKey)) {
+            continue;
+        }
+        NSString *value = request.headers[key];
+        if (![value isKindOfClass:[NSString class]] || value.length == 0) {
+            continue;
+        }
+        [upstreamRequest setValue:value forHTTPHeaderField:key];
+    }
+    [upstreamRequest setValue:[NSString stringWithFormat:@"%ld", (long)(hopCount + 1)]
+           forHTTPHeaderField:@"x-objpds-proxy-hop"];
+
+    NSError *proxyError = nil;
+    NSHTTPURLResponse *upstreamResponse = nil;
+    NSData *upstreamBody = [NSURLConnection sendSynchronousRequest:upstreamRequest
+                                                 returningResponse:&upstreamResponse
+                                                             error:&proxyError];
+    if (!upstreamResponse) {
+        response.statusCode = 502;
+        [response setJsonBody:@{
+            @"error": @"ProxyRequestFailed",
+            @"message": proxyError.localizedDescription ?: @"Upstream request failed"
+        }];
+        return YES;
+    }
+
+    response.statusCode = (HttpStatusCode)upstreamResponse.statusCode;
+    response.contentType = nil;
+
+    NSDictionary *upstreamHeaders = upstreamResponse.allHeaderFields ?: @{};
+    for (id rawKey in upstreamHeaders) {
+        NSString *key = [rawKey isKindOfClass:[NSString class]] ? (NSString *)rawKey : [rawKey description];
+        NSString *value = [upstreamHeaders[rawKey] isKindOfClass:[NSString class]] ? upstreamHeaders[rawKey] : [upstreamHeaders[rawKey] description];
+        if (key.length == 0 || value.length == 0) {
+            continue;
+        }
+
+        NSString *lowercaseKey = key.lowercaseString;
+        if ([lowercaseKey isEqualToString:@"content-type"]) {
+            response.contentType = value;
+            continue;
+        }
+        if (isProxyHopByHopHeader(lowercaseKey)) {
+            continue;
+        }
+        [response setHeader:value forKey:key];
+    }
+
+    if (request.method != HttpMethodHEAD && upstreamBody.length > 0) {
+        [response setBodyData:upstreamBody];
+    } else if (request.method != HttpMethodHEAD && upstreamBody && upstreamBody.length == 0) {
+        [response setBodyData:[NSData data]];
+    }
+
+    return YES;
+}
+
+static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
+                                        PDSConfiguration *config) {
+    dispatcher.requestInterceptor = ^BOOL(HttpRequest *request,
+                                          HttpResponse *response,
+                                          NSString *methodId,
+                                          BOOL hasLocalHandler) {
+        NSString *explicitProxyTarget = trimmedNonEmptyString([request headerForKey:@"atproto-proxy"]);
+        if (explicitProxyTarget.length > 0) {
+            return proxyXrpcRequest(request, response, methodId, explicitProxyTarget, config, YES);
+        }
+
+        if (hasLocalHandler || ![methodId hasPrefix:@"app.bsky."]) {
+            return NO;
+        }
+
+        if ([[request headerForKey:@"x-objpds-proxy-hop"] integerValue] > 0) {
+            return NO;
+        }
+
+        NSString *fallbackTarget = configuredAppViewProxyTarget(config);
+        if (fallbackTarget.length == 0) {
+            return NO;
+        }
+
+        return proxyXrpcRequest(request, response, methodId, fallbackTarget, config, NO);
+    };
+}
+
+static BOOL parseByteRangeHeader(NSString *rangeHeader,
+                                 unsigned long long totalLength,
+                                 BOOL *hasRange,
+                                 BOOL *satisfiable,
+                                 unsigned long long *start,
+                                 unsigned long long *end,
+                                 NSString **failureReason) {
+    if (hasRange) {
+        *hasRange = NO;
+    }
+    if (satisfiable) {
+        *satisfiable = YES;
+    }
+    if (start) {
+        *start = 0;
+    }
+    if (end) {
+        *end = totalLength > 0 ? (totalLength - 1) : 0;
+    }
+    if (failureReason) {
+        *failureReason = nil;
+    }
+
+    NSString *trimmedRange = trimmedNonEmptyString(rangeHeader);
+    if (trimmedRange.length == 0) {
+        return YES;
+    }
+
+    if (hasRange) {
+        *hasRange = YES;
+    }
+
+    if (![trimmedRange.lowercaseString hasPrefix:@"bytes="]) {
+        if (failureReason) {
+            *failureReason = @"Range header must use bytes units";
+        }
+        return NO;
+    }
+
+    NSString *spec = [trimmedRange substringFromIndex:6];
+    if ([spec containsString:@","]) {
+        if (failureReason) {
+            *failureReason = @"Multiple ranges are not supported";
+        }
+        return NO;
+    }
+
+    NSRange dashRange = [spec rangeOfString:@"-"];
+    if (dashRange.location == NSNotFound) {
+        if (failureReason) {
+            *failureReason = @"Range header is malformed";
+        }
+        return NO;
+    }
+
+    NSString *startPart = [spec substringToIndex:dashRange.location];
+    NSString *endPart = [spec substringFromIndex:dashRange.location + 1];
+    if (startPart.length == 0 && endPart.length == 0) {
+        if (failureReason) {
+            *failureReason = @"Range header is malformed";
+        }
+        return NO;
+    }
+
+    if (totalLength == 0) {
+        if (satisfiable) {
+            *satisfiable = NO;
+        }
+        return YES;
+    }
+
+    if (startPart.length > 0) {
+        unsigned long long parsedStart = 0;
+        if (!parseUnsignedLongLongString(startPart, &parsedStart)) {
+            if (failureReason) {
+                *failureReason = @"Range start is invalid";
+            }
+            return NO;
+        }
+
+        unsigned long long parsedEnd = totalLength - 1;
+        if (endPart.length > 0) {
+            if (!parseUnsignedLongLongString(endPart, &parsedEnd)) {
+                if (failureReason) {
+                    *failureReason = @"Range end is invalid";
+                }
+                return NO;
+            }
+        }
+
+        if (parsedStart >= totalLength) {
+            if (satisfiable) {
+                *satisfiable = NO;
+            }
+            return YES;
+        }
+        if (parsedEnd < parsedStart) {
+            if (satisfiable) {
+                *satisfiable = NO;
+            }
+            return YES;
+        }
+        if (parsedEnd >= totalLength) {
+            parsedEnd = totalLength - 1;
+        }
+
+        if (start) {
+            *start = parsedStart;
+        }
+        if (end) {
+            *end = parsedEnd;
+        }
+        return YES;
+    }
+
+    unsigned long long suffixLength = 0;
+    if (!parseUnsignedLongLongString(endPart, &suffixLength) || suffixLength == 0) {
+        if (satisfiable) {
+            *satisfiable = NO;
+        }
+        return YES;
+    }
+
+    unsigned long long parsedStart = (suffixLength >= totalLength) ? 0 : (totalLength - suffixLength);
+    if (start) {
+        *start = parsedStart;
+    }
+    if (end) {
+        *end = totalLength - 1;
+    }
+    return YES;
+}
+
+static HttpResponseBodyChunkProducer blobFileChunkProducer(NSString *path,
+                                                           unsigned long long startOffset,
+                                                           unsigned long long endOffset,
+                                                           NSError **error) {
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForReadingAtPath:path];
+    if (!fileHandle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"XrpcBlobStream"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open blob file for streaming"}];
+        }
+        return nil;
+    }
+
+    @try {
+        [fileHandle seekToFileOffset:startOffset];
+    } @catch (NSException *exception) {
+        @try {
+            [fileHandle closeFile];
+        } @catch (__unused NSException *closeException) {
+        }
+        if (error) {
+            *error = [NSError errorWithDomain:@"XrpcBlobStream"
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Failed to seek blob file"}];
+        }
+        return nil;
+    }
+
+    __block NSFileHandle *capturedHandle = fileHandle;
+    __block unsigned long long bytesRemaining = (endOffset >= startOffset) ? (endOffset - startOffset + 1) : 0;
+    static const NSUInteger kBlobChunkSize = 64 * 1024;
+
+    return ^NSData * _Nullable (NSError **producerError) {
+        if (!capturedHandle || bytesRemaining == 0) {
+            if (capturedHandle) {
+                @try {
+                    [capturedHandle closeFile];
+                } @catch (__unused NSException *closeException) {
+                }
+                capturedHandle = nil;
+            }
+            return nil;
+        }
+
+        NSUInteger readLength = (NSUInteger)MIN((unsigned long long)kBlobChunkSize, bytesRemaining);
+        NSData *chunk = [capturedHandle readDataOfLength:readLength];
+        if (chunk.length == 0) {
+            @try {
+                [capturedHandle closeFile];
+            } @catch (__unused NSException *closeException) {
+            }
+            capturedHandle = nil;
+            if (producerError && bytesRemaining > 0) {
+                *producerError = [NSError errorWithDomain:@"XrpcBlobStream"
+                                                     code:3
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"Unexpected end-of-file while streaming blob"}];
+            }
+            bytesRemaining = 0;
+            return nil;
+        }
+
+        bytesRemaining -= (unsigned long long)chunk.length;
+        if (bytesRemaining == 0) {
+            @try {
+                [capturedHandle closeFile];
+            } @catch (__unused NSException *closeException) {
+            }
+            capturedHandle = nil;
+        }
+
+        return chunk;
     };
 }
 
@@ -4036,21 +4602,6 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        if (legacyMode) {
-            NSError *error = nil;
-            NSData *repoData = [authController getRepoDataForDid:did error:&error];
-            if (error) {
-                response.statusCode = HttpStatusNotFound;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            response.contentType = @"application/vnd.ipld.car";
-            [response setBodyData:repoData];
-            return;
-        }
-
         NSError *exportError = nil;
         PDSRepoChunkProducer producer = [repositoryService repoContentsChunkProducer:did
                                                                                since:sinceRev
@@ -4414,6 +4965,109 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{@"blobs": blobs ?: @[]}];
     }];
 
+    [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *cid = [request queryParamForKey:@"cid"];
+        if (did.length == 0 || cid.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or cid"}];
+            return;
+        }
+
+        NSError *blobError = nil;
+        NSDictionary *result = [blobService getBlobStreamWithCID:cid did:did error:&blobError];
+        if (!result && !blobError) {
+            result = legacyMode
+                ? [authController getBlobWithCID:cid did:did error:&blobError]
+                : [blobService getBlobWithCID:cid did:did error:&blobError];
+        }
+        if (!result) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"BlobRetrievalFailed",
+                                    @"message": blobError.localizedDescription ?: @"Blob not found"}];
+            return;
+        }
+
+        NSString *mimeType = result[@"mimeType"] ?: @"application/octet-stream";
+        NSString *filePath = result[@"filePath"];
+        NSData *blobData = result[@"blob"];
+        unsigned long long totalLength = [result[@"size"] unsignedLongLongValue];
+
+        if (totalLength == 0 && [filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
+            NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil];
+            totalLength = [attributes[NSFileSize] unsignedLongLongValue];
+        }
+        if (totalLength == 0 && [blobData isKindOfClass:[NSData class]]) {
+            totalLength = blobData.length;
+        }
+
+        response.contentType = mimeType;
+        [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
+
+        BOOL hasRange = NO;
+        BOOL satisfiable = YES;
+        unsigned long long start = 0;
+        unsigned long long end = totalLength > 0 ? (totalLength - 1) : 0;
+        NSString *rangeFailureReason = nil;
+        BOOL validRange = parseByteRangeHeader([request headerForKey:@"Range"],
+                                               totalLength,
+                                               &hasRange,
+                                               &satisfiable,
+                                               &start,
+                                               &end,
+                                               &rangeFailureReason);
+        if (!validRange) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRange",
+                                    @"message": rangeFailureReason ?: @"Range header is invalid"}];
+            return;
+        }
+
+        if (hasRange && !satisfiable) {
+            response.statusCode = 416;
+            response.statusMessage = @"Range Not Satisfiable";
+            [response setHeader:[NSString stringWithFormat:@"bytes */%llu", totalLength] forKey:@"Content-Range"];
+            return;
+        }
+
+        if (hasRange) {
+            response.statusCode = 206;
+            response.statusMessage = @"Partial Content";
+            [response setHeader:[NSString stringWithFormat:@"bytes %llu-%llu/%llu", start, end, totalLength]
+                         forKey:@"Content-Range"];
+        } else {
+            response.statusCode = HttpStatusOK;
+        }
+
+        if ([filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
+            NSError *streamError = nil;
+            HttpResponseBodyChunkProducer producer = blobFileChunkProducer(filePath, start, end, &streamError);
+            if (!producer) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"BlobReadFailed",
+                                        @"message": streamError.localizedDescription ?: @"Failed to stream blob"}];
+                return;
+            }
+            [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+            return;
+        }
+
+        if (![blobData isKindOfClass:[NSData class]]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"BlobReadFailed", @"message": @"Blob payload unavailable"}];
+            return;
+        }
+
+        if (hasRange) {
+            NSUInteger offset = (NSUInteger)start;
+            NSUInteger length = (NSUInteger)(end - start + 1);
+            [response setBodyData:[blobData subdataWithRange:NSMakeRange(offset, length)]];
+            return;
+        }
+
+        [response setBodyData:blobData];
+    }];
+
     [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
         setSubscribeReposUpgradeRequired(request, response);
     }];
@@ -4480,6 +5134,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller {
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    installXrpcProxyInterceptor(dispatcher, config);
     registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
     registerServerAccountAndSessionMethods(dispatcher,
                                            controller,
@@ -4595,30 +5250,6 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         response.contentType = @"application/vnd.ipld.car";
         [response setBodyData:carData];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *cid = [request queryParamForKey:@"cid"];
-
-        if (!did || !cid) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or cid"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [controller getBlobWithCID:cid did:did error:&error];
-
-        if (error || !result) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"BlobRetrievalFailed", @"message": error.localizedDescription ?: @"Blob not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.contentType = result[@"mimeType"] ?: @"application/octet-stream";
-        [response setBodyData:result[@"blob"]];
     }];
 
     [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
@@ -5324,6 +5955,8 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     id<PDSAdminController> adminController = application.adminController;
     PDSServiceDatabases *serviceDatabases = application.serviceDatabases;
     PDSConfiguration *config = application.configuration;
+
+    installXrpcProxyInterceptor(dispatcher, config);
 
     registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
     registerServerAccountAndSessionMethods(dispatcher,

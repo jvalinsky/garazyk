@@ -47,6 +47,11 @@ NS_ASSUME_NONNULL_BEGIN
                                        did:(NSString *)did
                                     error:(NSError **)error;
 
+/*! Gets file-backed streaming metadata for a blob when available. */
+- (nullable NSDictionary *)getBlobStreamWithCID:(NSString *)cid
+                                            did:(NSString *)did
+                                          error:(NSError **)error;
+
 /*! Lists blobs for a DID with pagination. */
 - (nullable NSArray *)listBlobsForDID:(NSString *)did
                                 limit:(NSUInteger)limit
