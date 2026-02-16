@@ -75,6 +75,13 @@
 
     XrpcMethodHandler handler = self.methodHandlers[methodId];
 
+    if (self.requestInterceptor) {
+        BOOL handled = self.requestInterceptor(request, response, methodId, handler != nil);
+        if (handled) {
+            return;
+        }
+    }
+
     if (!handler && self.defaultHandler) {
         self.defaultHandler(request, response);
         return;

@@ -42,6 +42,16 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (BOOL)hasBlobDataForCID:(CID *)cid;
 
+@optional
+
+/**
+ * Returns a local file URL for blob data when the provider can expose one.
+ * @param cid The CID to locate
+ * @param error Output error if operation fails
+ * @return File URL if available, nil otherwise
+ */
+- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
