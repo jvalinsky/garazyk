@@ -302,6 +302,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
     NSData *signingInputData = [[NSString stringWithFormat:@"%@.%@", headerB64, payloadB64] dataUsingEncoding:NSUTF8StringEncoding];
     NSData *signatureData = [self base64URLDecode:signatureB64];
+    NSData *signatureForVerification = signatureData;
     
     if (!publicKey) {
         // If no public key provided, we can't verify functionality, but we can verify structure.
@@ -309,10 +310,23 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         return YES; 
     }
 
+    // DPoP JWT signatures are raw (r || s). Security expects ASN.1 DER for X9.62 verification.
+    if (signatureData.length == 64) {
+        signatureForVerification = [self derSignatureFromRaw:signatureData];
+        if (!signatureForVerification) {
+            if (error) {
+                *error = [NSError errorWithDomain:DPoPErrorDomain
+                                             code:-14
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid signature"}];
+            }
+            return NO;
+        }
+    }
+
     BOOL valid = SecKeyVerifySignature(publicKey,
                                      kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
                                      (__bridge CFDataRef)signingInputData,
-                                     (__bridge CFDataRef)signatureData,
+                                     (__bridge CFDataRef)signatureForVerification,
                                      NULL);
     
     if (!valid) {
@@ -344,6 +358,53 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
     [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
     return [[NSData alloc] initWithBase64EncodedData:[base64 dataUsingEncoding:NSUTF8StringEncoding] options:0];
+}
+
++ (nullable NSData *)derSignatureFromRaw:(NSData *)rawSignature {
+    if (!rawSignature || rawSignature.length != 64) {
+        return nil;
+    }
+
+    NSMutableData *r = [[rawSignature subdataWithRange:NSMakeRange(0, 32)] mutableCopy];
+    NSMutableData *s = [[rawSignature subdataWithRange:NSMakeRange(32, 32)] mutableCopy];
+
+    while (r.length > 0 && ((const uint8_t *)r.bytes)[0] == 0x00) {
+        [r replaceBytesInRange:NSMakeRange(0, 1) withBytes:NULL length:0];
+    }
+    while (s.length > 0 && ((const uint8_t *)s.bytes)[0] == 0x00) {
+        [s replaceBytesInRange:NSMakeRange(0, 1) withBytes:NULL length:0];
+    }
+
+    if (r.length == 0 || (((const uint8_t *)r.bytes)[0] & 0x80)) {
+        uint8_t zero = 0x00;
+        [r replaceBytesInRange:NSMakeRange(0, 0) withBytes:&zero length:1];
+    }
+    if (s.length == 0 || (((const uint8_t *)s.bytes)[0] & 0x80)) {
+        uint8_t zero = 0x00;
+        [s replaceBytesInRange:NSMakeRange(0, 0) withBytes:&zero length:1];
+    }
+
+    NSUInteger contentLength = 2 + r.length + 2 + s.length;
+    if (contentLength > UINT8_MAX) {
+        return nil;
+    }
+
+    NSMutableData *der = [NSMutableData dataWithCapacity:2 + contentLength];
+    uint8_t sequenceTag = 0x30;
+    uint8_t sequenceLength = (uint8_t)contentLength;
+    uint8_t integerTag = 0x02;
+    uint8_t rLength = (uint8_t)r.length;
+    uint8_t sLength = (uint8_t)s.length;
+
+    [der appendBytes:&sequenceTag length:1];
+    [der appendBytes:&sequenceLength length:1];
+    [der appendBytes:&integerTag length:1];
+    [der appendBytes:&rLength length:1];
+    [der appendData:r];
+    [der appendBytes:&integerTag length:1];
+    [der appendBytes:&sLength length:1];
+    [der appendData:s];
+    return der;
 }
 
 + (nullable NSData *)extractRawSignatureFromDER:(NSData *)derSignature {
