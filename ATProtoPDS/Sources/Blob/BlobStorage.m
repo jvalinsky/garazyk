@@ -242,9 +242,13 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
         return NO;
     }
 
-    // Optionally delete from provider if we implement ref-counting or garbage collection later.
-    // For now, consistent with keeping datasafe.
-    
+    NSError *providerError = nil;
+    if (![self.provider deleteBlobDataForCID:cid error:&providerError]) {
+        PDS_LOG_ERROR_C(PDSLogComponentBlob,
+            @"Failed to delete blob data from provider for CID %@: %@",
+            cid.stringValue, providerError);
+    }
+
     return YES;
 }
 

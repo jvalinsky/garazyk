@@ -14,6 +14,7 @@
 
 @class Firehose;
 @class FirehoseSubscription;
+@class CID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -48,25 +49,52 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  @class FirehoseCommitEvent
 
  @abstract Represents a repository commit event.
+ 
+ Per com.atproto.sync.subscribeRepos#commit lexicon.
  */
 @interface FirehoseCommitEvent : NSObject
 
-/*! The DID of the repository. */
+// Required fields
+
+/*! The stream sequence number of this message. */
+@property (nonatomic, assign) int64_t seq;
+
+/*! DEPRECATED -- unused. Always false. */
+@property (nonatomic, assign) BOOL rebase;
+
+/*! DEPRECATED -- replaced by #sync event. Always false. */
+@property (nonatomic, assign) BOOL tooBig;
+
+/*! The repo this event comes from (DID). */
 @property (nonatomic, copy) NSString *repo;
 
-/*! The commit CID. */
-@property (nonatomic, copy) NSString *commit;
+/*! Repo commit object CID. */
+@property (nonatomic, strong) CID *commit;
 
-/*! The previous commit CID (for chain verification). */
-@property (nonatomic, copy, nullable) NSString *previous;
+/*! The rev of the emitted commit (TID). */
+@property (nonatomic, copy) NSString *rev;
 
-/*! Array of record operations in the commit. */
+/*! The rev of the last emitted commit from this repo (nullable). */
+@property (nonatomic, copy, nullable) NSString *since;
+
+/*! CAR file containing relevant blocks as a diff. */
+@property (nonatomic, strong) NSData *blocks;
+
+/*! List of repo mutation operations in this commit. */
 @property (nonatomic, strong) NSArray<NSDictionary *> *ops;
 
-/*! CIDs of blobs referenced in the commit. */
-@property (nonatomic, copy, nullable) NSArray<NSString *> *blobs;
+/*! DEPRECATED -- will soon always be empty. List of new blobs. */
+@property (nonatomic, copy) NSArray<CID *> *blobs;
 
-+ (instancetype)eventWithRepo:(NSString *)repo commit:(NSString *)commit ops:(NSArray<NSDictionary *> *)ops;
+/*! Timestamp of when this message was originally broadcast (RFC-3339). */
+@property (nonatomic, copy) NSString *time;
+
+// Optional fields
+
+/*! The root CID of the MST tree for the previous commit. */
+@property (nonatomic, strong, nullable) CID *prevData;
+
++ (instancetype)eventWithRepo:(NSString *)repo commit:(CID *)commit ops:(NSArray<NSDictionary *> *)ops;
 
 @end
 
@@ -172,7 +200,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @property (nonatomic, weak, nullable, readonly) id<FirehoseSubscriptionDelegate> delegate;
 
 /*! Cursor position for resuming the stream. */
-@property (nonatomic, copy, nullable, readonly) NSString *cursor;
+@property (nonatomic, assign, readonly) int64_t cursor;
 
 /*! Collections to filter events for. */
 @property (nonatomic, copy, nullable, readonly) NSArray<NSString *> *collections;
@@ -180,7 +208,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! Whether the subscription is currently active. */
 @property (nonatomic, readonly) BOOL isActive;
 
-- (instancetype)initWithCursor:(nullable NSString *)cursor collections:(nullable NSArray<NSString *> *)collections;
+- (instancetype)initWithCursor:(int64_t)cursor collections:(nullable NSArray<NSString *> *)collections;
 - (void)cancel;
 
 @end
@@ -204,7 +232,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 - (instancetype)initWithServerURL:(NSURL *)serverURL;
 
 /*! Creates a new subscription with optional cursor and collection filter. */
-- (FirehoseSubscription *)subscribeWithCursor:(nullable NSString *)cursor
+- (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
                                    collections:(nullable NSArray<NSString *> *)collections
                                      delegate:(nullable id<FirehoseSubscriptionDelegate>)delegate;
 /*! Connects to the Firehose server. */

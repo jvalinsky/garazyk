@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Sync/Firehose.h"
 #import "Sync/WebSocketConnection.h"
+#import "Core/ATProtoDagCBOR.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -46,24 +47,24 @@ NS_ASSUME_NONNULL_BEGIN
     Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.commitExpectation = [self expectationWithDescription:@"commit"];
-    [firehose subscribeWithCursor:nil collections:nil delegate:delegate];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
     NSDictionary *message = @{
         @"kind": @"commit",
+        @"seq": @(1),
         @"repo": @"did:plc:alice",
         @"commit": @"bafycommit",
-        @"previous": @"bafyprev",
         @"ops": @[@{@"action": @"create"}],
         @"blobs": @[@"bafyblob"]
     };
-    NSData *data = [NSJSONSerialization dataWithJSONObject:message options:0 error:nil];
+    NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
 
     [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.commitEvent.repo, @"did:plc:alice");
     XCTAssertEqualObjects(delegate.commitEvent.commit, @"bafycommit");
-    XCTAssertEqualObjects(delegate.commitEvent.previous, @"bafyprev");
+    // XCTAssertEqualObjects(delegate.commitEvent.previous, @"bafyprev");  // Removed: 'previous' field no longer exists
     XCTAssertEqual(delegate.commitEvent.ops.count, 1);
 }
 
@@ -71,13 +72,13 @@ NS_ASSUME_NONNULL_BEGIN
     Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.identityExpectation = [self expectationWithDescription:@"identity"];
-    [firehose subscribeWithCursor:nil collections:nil delegate:delegate];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
     NSDictionary *message = @{
         @"kind": @"identity",
         @"did": @"did:plc:bob"
     };
-    NSData *data = [NSJSONSerialization dataWithJSONObject:message options:0 error:nil];
+    NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
 
@@ -89,13 +90,13 @@ NS_ASSUME_NONNULL_BEGIN
     Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.errorExpectation = [self expectationWithDescription:@"error"];
-    [firehose subscribeWithCursor:nil collections:nil delegate:delegate];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
     NSDictionary *message = @{
         @"kind": @"error",
         @"message": @"oops"
     };
-    NSData *data = [NSJSONSerialization dataWithJSONObject:message options:0 error:nil];
+    NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
 

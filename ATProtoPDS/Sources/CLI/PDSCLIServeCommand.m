@@ -146,7 +146,7 @@
         return 0;
     }
 
-    SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:controller];
+    SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:controller.serviceDatabases];
 
     PDSHttpServerBuilder *serverBuilder = [[PDSHttpServerBuilder alloc] initWithConfiguration:[PDSConfiguration sharedConfiguration]];
     serverBuilder.port = (NSUInteger)port;

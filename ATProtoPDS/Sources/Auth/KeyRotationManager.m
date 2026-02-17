@@ -109,4 +109,14 @@ NSString * const KeyRotationManagerErrorDomain = @"com.atproto.pds.keyrotation";
     return NO;
 }
 
+- (NSDictionary *)toJWKS {
+    __block NSDictionary *jwks = nil;
+    
+    dispatch_sync(self.accessQueue, ^{
+        jwks = [self.keyStore toJWKS];
+    });
+    
+    return jwks;
+}
+
 @end

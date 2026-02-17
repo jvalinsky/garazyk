@@ -42,8 +42,19 @@ static NSString * const kSelectHistorySinceSQL =
 static NSString * const kCountOperationsSQL = 
     @"SELECT COUNT(*) FROM plc_operations WHERE did = ?;";
 
-static NSString * const kDeleteOperationsSQL = 
+static NSString * const kDeleteOperationsSQL =
     @"DELETE FROM plc_operations WHERE did = ?;";
+
+static NSString * const kSelectLatestOperationSQL =
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"WHERE did = ? AND nullified = 0 ORDER BY id DESC LIMIT 1;";
+
+static NSString * const kSelectExportOperationsSQL =
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"WHERE created_at > ? ORDER BY created_at ASC, id ASC LIMIT ?;";
+
+static NSString * const kSelectAllDIDsSQL =
+    @"SELECT DISTINCT did FROM plc_operations ORDER BY did ASC;";
 
 @interface PLCPersistentStore ()
 
@@ -613,6 +624,127 @@ static NSString * const kDeleteOperationsSQL =
     }
     
     return success;
+}
+
+- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
+    if (!self.open) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:PLCPersistentStoreErrorDatabaseClosed
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
+        }
+        return nil;
+    }
+
+    __block PLCOperation *operation = nil;
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        sqlite3_stmt *stmt = [self prepareStatement:kSelectLatestOperationSQL error:&blockError];
+        if (!stmt) {
+            return;
+        }
+
+        sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            operation = [self operationFromStatement:stmt];
+        }
+
+        sqlite3_reset(stmt);
+    });
+
+    if (blockError && error) {
+        *error = blockError;
+    }
+
+    return operation;
+}
+
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+                                                      count:(NSUInteger)count
+                                                      error:(NSError **)error {
+    if (!self.open) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:PLCPersistentStoreErrorDatabaseClosed
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
+        }
+        return nil;
+    }
+
+    __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        sqlite3_stmt *stmt = [self prepareStatement:kSelectExportOperationsSQL error:&blockError];
+        if (!stmt) {
+            return;
+        }
+
+        NSString *dateString = @"1970-01-01 00:00:00";
+        if (after) {
+            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+            formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+            formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+            formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
+            dateString = [formatter stringFromDate:after];
+        }
+
+        sqlite3_bind_text(stmt, 1, dateString.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 2, (int)count);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            PLCOperation *op = [self operationFromStatement:stmt];
+            if (op) {
+                [operations addObject:op];
+            }
+        }
+
+        sqlite3_reset(stmt);
+    });
+
+    if (blockError && error) {
+        *error = blockError;
+    }
+
+    return operations;
+}
+
+- (nullable NSArray<NSString *> *)getAllDIDsWithError:(NSError **)error {
+    if (!self.open) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:PLCPersistentStoreErrorDatabaseClosed
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
+        }
+        return nil;
+    }
+
+    __block NSMutableArray<NSString *> *dids = [NSMutableArray array];
+    __block NSError *blockError = nil;
+
+    dispatch_sync(self.transactionQueue, ^{
+        sqlite3_stmt *stmt = [self prepareStatement:kSelectAllDIDsSQL error:&blockError];
+        if (!stmt) {
+            return;
+        }
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char *didText = sqlite3_column_text(stmt, 0);
+            if (didText) {
+                [dids addObject:[NSString stringWithUTF8String:(const char *)didText]];
+            }
+        }
+
+        sqlite3_reset(stmt);
+    });
+
+    if (blockError && error) {
+        *error = blockError;
+    }
+
+    return dids;
 }
 
 @end

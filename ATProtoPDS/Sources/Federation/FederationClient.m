@@ -1,8 +1,46 @@
 #import "Federation/FederationClient.h"
 #import "Core/DID.h"
 #import "Debug/PDSLogger.h"
+#import "Lexicon/ATProtoLexiconRegistry.h"
+#import "Lexicon/ATProtoLexiconSchema.h"
+#import "Lexicon/ATProtoLexiconDef.h"
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
+
+static BOOL pds_isPrivateIPv4Address(uint32_t ip) {
+    if ((ip & 0xFF000000) == 0x0A000000) return YES;      // 10.0.0.0/8
+    if ((ip & 0xFFF00000) == 0xAC100000) return YES;      // 172.16.0.0/12
+    if ((ip & 0xFFFF0000) == 0xC0A80000) return YES;      // 192.168.0.0/16
+    if ((ip & 0xFF000000) == 0x7F000000) return YES;      // 127.0.0.0/8
+    if ((ip & 0xFFFF0000) == 0xA9FE0000) return YES;      // 169.254.0.0/16
+    if ((ip & 0xFF000000) == 0x00000000) return YES;      // 0.0.0.0/8
+    if ((ip & 0xFFC00000) == 0x64400000) return YES;      // 100.64.0.0/10
+    if ((ip & 0xFFFFFF00) == 0xC0000000) return YES;      // 192.0.0.0/24
+    if ((ip & 0xFFFFFF00) == 0xC0000200) return YES;      // 192.0.2.0/24
+    if ((ip & 0xFFFFFF00) == 0xC6336400) return YES;      // 198.51.100.0/24
+    if ((ip & 0xFFFFFF00) == 0xCB007100) return YES;      // 203.0.113.0/24
+    if ((ip & 0xF0000000) == 0xE0000000) return YES;      // 224.0.0.0/4
+    if ((ip & 0xF0000000) == 0xF0000000) return YES;      // 240.0.0.0/4
+    return NO;
+}
+
+static BOOL pds_isPrivateIPv6Address(struct in6_addr ip6) {
+    const uint8_t *bytes = ip6.s6_addr;
+    if (memcmp(&ip6, &in6addr_loopback, sizeof(struct in6_addr)) == 0) return YES;
+    if ((bytes[0] & 0xFE) == 0xFC) return YES;            // fc00::/7
+    if (bytes[0] == 0xFE && (bytes[1] & 0xC0) == 0x80) return YES; // fe80::/10
+    if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF}, 12) == 0) {
+        uint32_t ipv4;
+        memcpy(&ipv4, bytes + 12, sizeof(ipv4));
+        ipv4 = ntohl(ipv4);
+        return pds_isPrivateIPv4Address(ipv4);
+    }
+    return NO;
+}
 
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
@@ -51,6 +89,15 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     NSString *pdsEndpoint = atprotoData[@"pds"];
     if (![pdsEndpoint hasPrefix:@"http"]) {
         pdsEndpoint = [NSString stringWithFormat:@"https://%@", pdsEndpoint];
+    }
+
+    // SSRF protection: validate PDS endpoint resolves to public IP
+    NSURL *pdsURL = [NSURL URLWithString:pdsEndpoint];
+    NSString *pdsHost = pdsURL.host;
+    NSError *ssrfError = nil;
+    if (![self validateHostResolvesToPublicIP:pdsHost error:&ssrfError]) {
+        completion(nil, ssrfError);
+        return;
     }
 
     // Construct the XRPC URL
@@ -203,6 +250,14 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         pdsEndpoint = [NSString stringWithFormat:@"https://%@", pdsEndpoint];
     }
 
+    // SSRF protection: validate PDS endpoint resolves to public IP
+    NSURL *binaryPdsURL = [NSURL URLWithString:pdsEndpoint];
+    NSError *ssrfError = nil;
+    if (![self validateHostResolvesToPublicIP:binaryPdsURL.host error:&ssrfError]) {
+        completion(nil, ssrfError);
+        return;
+    }
+
     // Construct the XRPC URL
     NSString *xrpcPath = [NSString stringWithFormat:@"/xrpc/%@", method];
     NSString *urlString = [NSString stringWithFormat:@"%@%@", pdsEndpoint, xrpcPath];
@@ -278,19 +333,108 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
 #pragma mark - Helper Methods
 
-- (BOOL)isGetMethod:(NSString *)method {
-    // Methods that typically use GET
-    NSArray<NSString *> *getMethods = @[
-        @"com.atproto.repo.getRecord",
-        @"com.atproto.repo.listRecords",
-        @"com.atproto.repo.describeRepo",
-        @"com.atproto.sync.getRepo",
-        @"com.atproto.sync.getHead",
-        @"com.atproto.sync.getBlob",
-        @"com.atproto.sync.listBlobs"
-    ];
+- (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
+    if (!hostname || hostname.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:FederationErrorDomain
+                                         code:FederationErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty hostname"}];
+        }
+        return NO;
+    }
 
-    return [getMethods containsObject:method];
+    CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)hostname);
+    if (!hostRef) {
+        if (error) {
+            *error = [NSError errorWithDomain:FederationErrorDomain
+                                         code:FederationErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create host reference"}];
+        }
+        return NO;
+    }
+
+    CFStreamError streamError;
+    if (!CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError)) {
+        CFRelease(hostRef);
+        if (error) {
+            *error = [NSError errorWithDomain:FederationErrorDomain
+                                         code:FederationErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution failed"}];
+        }
+        return NO;
+    }
+
+    CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
+    if (!addresses || CFArrayGetCount(addresses) == 0) {
+        CFRelease(hostRef);
+        if (error) {
+            *error = [NSError errorWithDomain:FederationErrorDomain
+                                         code:FederationErrorNetworkError
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No IP addresses found for hostname"}];
+        }
+        return NO;
+    }
+
+    for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
+        struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
+
+        if (addr->sa_family == AF_INET) {
+            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+            uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
+            if (pds_isPrivateIPv4Address(ip)) {
+                CFRelease(hostRef);
+                if (error) {
+                    *error = [NSError errorWithDomain:FederationErrorDomain
+                                                 code:FederationErrorNetworkError
+                                             userInfo:@{NSLocalizedDescriptionKey: @"PDS endpoint resolves to private IP address (SSRF protection)"}];
+                }
+                return NO;
+            }
+        } else if (addr->sa_family == AF_INET6) {
+            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+            struct in6_addr ip6 = addr_in6->sin6_addr;
+            if (pds_isPrivateIPv6Address(ip6)) {
+                CFRelease(hostRef);
+                if (error) {
+                    *error = [NSError errorWithDomain:FederationErrorDomain
+                                                 code:FederationErrorNetworkError
+                                             userInfo:@{NSLocalizedDescriptionKey: @"PDS endpoint resolves to private IPv6 address (SSRF protection)"}];
+                }
+                return NO;
+            }
+        }
+    }
+
+    CFRelease(hostRef);
+    return YES;
+}
+
+- (BOOL)isGetMethod:(NSString *)method {
+    // Check the lexicon registry first
+    ATProtoLexiconSchema *schema = [[ATProtoLexiconRegistry sharedRegistry] schemaForNSID:method];
+    if (schema) {
+        ATProtoLexiconDef *mainDef = [schema mainDefinition];
+        if (mainDef) {
+            return mainDef.type == ATProtoLexiconDefTypeQuery;
+        }
+    }
+
+    // Fallback for unregistered lexicons
+    static NSSet<NSString *> *getFallbacks = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        getFallbacks = [NSSet setWithArray:@[
+            @"com.atproto.repo.getRecord",
+            @"com.atproto.repo.listRecords",
+            @"com.atproto.repo.describeRepo",
+            @"com.atproto.sync.getRepo",
+            @"com.atproto.sync.getHead",
+            @"com.atproto.sync.getBlob",
+            @"com.atproto.sync.listBlobs"
+        ]];
+    });
+
+    return [getFallbacks containsObject:method];
 }
 
 @end

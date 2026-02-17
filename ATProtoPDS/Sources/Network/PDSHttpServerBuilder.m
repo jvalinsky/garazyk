@@ -148,60 +148,52 @@
     PDSController *controller = self.controller;
     PDSApplication *application = self.application;
     XrpcDispatcher *dispatcher = self.xrpcDispatcher;
-    
-    // Prefer application over controller for new code
+
     if (!controller && !application) {
         PDS_LOG_WARN(@"PDSHttpServerBuilder: XRPC routes not registered - missing controller or application");
         return;
     }
-    
+
     if (!dispatcher) {
         dispatcher = [XrpcDispatcher sharedDispatcher];
     }
-    
+
     // Register XRPC methods with the dispatcher
-    // Prefer application-based registration when available
     if (application) {
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:application];
-        // Use the legacy controller from application for route handlers
-        if (!controller) {
-            controller = application.legacyController;
-        }
     } else {
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
     }
-    
-    // Create weak reference for blocks
-    __weak PDSController *weakController = controller;
+
     __weak XrpcDispatcher *weakDispatcher = dispatcher;
     __weak SubscribeReposHandler *weakSubscribeReposHandler = self.subscribeReposHandler;
-    
+
     // Handler for /xrpc
     [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         XrpcDispatcher *strongDispatcher = weakDispatcher;
-        if (strongDispatcher && weakController) {
+        if (strongDispatcher) {
             [strongDispatcher handleRequest:request response:response];
         } else {
             response.statusCode = 503;
             [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
         }
     }];
-    
+
     // Handler for /xrpc/
     [server addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
         XrpcDispatcher *strongDispatcher = weakDispatcher;
-        if (strongDispatcher && weakController) {
+        if (strongDispatcher) {
             [strongDispatcher handleRequest:request response:response];
         } else {
             response.statusCode = 503;
             [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
         }
     }];
-    
+
     // Handler for /xrpc/:method
     [server addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
         XrpcDispatcher *strongDispatcher = weakDispatcher;
-        if (strongDispatcher && weakController) {
+        if (strongDispatcher) {
             [strongDispatcher handleRequest:request response:response];
         } else {
             response.statusCode = 503;
@@ -247,13 +239,19 @@
 - (void)registerOAuthDemoRoutesWithServer:(HttpServer *)server {
     PDSController *controller = self.controller;
     
-    if (!controller) {
-        PDS_LOG_WARN(@"PDSHttpServerBuilder: OAuth Demo routes not registered - missing controller");
+    if (!self.dataDirectory && !controller) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: OAuth Demo routes not registered - missing dataDirectory and controller");
         return;
     }
     
     OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
-    [oauthDemoHandler setController:controller];
+    
+    // Prefer direct data directory injection, fall back to controller
+    if (self.dataDirectory) {
+        [oauthDemoHandler setDataDirectory:self.dataDirectory];
+    } else {
+        [oauthDemoHandler setController:controller];
+    }
     
     [server addHandlerForPath:@"/oauth-demo" handler:^(HttpRequest *request, HttpResponse *response) {
         [oauthDemoHandler handleRequest:request response:response];
@@ -289,25 +287,18 @@
 }
 
 - (void)registerNodeInfoRoutesWithServer:(HttpServer *)server {
-    PDSController *controller = self.controller;
-    
-    if (!controller) {
-        PDS_LOG_WARN(@"PDSHttpServerBuilder: NodeInfo routes not registered - missing controller");
-        return;
-    }
-    
     NodeInfoHandler *nodeInfoHandler = [NodeInfoHandler sharedHandler];
-    
+
     // Use configured issuer or generate from port
     NSString *issuer = self.issuer;
     if (!issuer) {
         issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.port];
     }
-    
+
     [nodeInfoHandler setIssuer:issuer];
-    [nodeInfoHandler setController:controller];
+    [nodeInfoHandler setConfigured];
     [nodeInfoHandler registerRoutesWithServer:server];
-    
+
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: NodeInfo routes registered");
 }
 

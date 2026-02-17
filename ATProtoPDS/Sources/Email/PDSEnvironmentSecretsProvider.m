@@ -25,7 +25,7 @@ NSString *const PDSEnvironmentSecretsProviderErrorDomain = @"PDSEnvironmentSecre
     if (key.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSEnvironmentSecretsProviderErrorDomain
-                                         code:1
+                                         code:PDSEnvironmentSecretsProviderErrorInvalidKey
                                      userInfo:@{NSLocalizedDescriptionKey: @"Key cannot be empty"}];
         }
         return nil;
@@ -37,7 +37,7 @@ NSString *const PDSEnvironmentSecretsProviderErrorDomain = @"PDSEnvironmentSecre
     if (value == nil) {
         if (error) {
             *error = [NSError errorWithDomain:PDSEnvironmentSecretsProviderErrorDomain
-                                         code:2
+                                         code:PDSEnvironmentSecretsProviderErrorKeyNotFound
                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Environment variable not found: %@", fullKey]}];
         }
         return nil;
