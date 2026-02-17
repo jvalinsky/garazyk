@@ -194,7 +194,7 @@
 #else
     if (self.useKeychainSigningKey) {
         NSError *keyError = nil;
-        if (![self generateSigningKeyWithError:&keyError]) {
+        if (![self generateSigningKeyForDid:account.did error:&keyError]) {
             NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
         } else {
             NSLog(@"[ActorStore] Generated signing key for %@", account.did);
@@ -268,4 +268,3 @@
 @end
 
 #pragma clang diagnostic pop
-
