@@ -206,7 +206,8 @@ int main(int argc, char * argv[]) {
             @"CommitChainTests",
             @"FirehoseIntegrationTests",
             @"PDSReplayCacheTests",
-            @"PDSEmailHTTPClientTests"
+            @"PDSEmailHTTPClientTests",
+            @"PDSResendEmailProviderTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
