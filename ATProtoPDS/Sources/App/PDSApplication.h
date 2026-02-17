@@ -32,6 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol PDSAccountService;
 @protocol PDSAdminController;
+@protocol PDSEmailProvider;
 
 /*!
  @class PDSApplication
@@ -214,6 +215,13 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract The HTTP server instance (available after start).
  */
 @property (nonatomic, strong, readonly, nullable) HttpServer *httpServer;
+
+/*!
+ @property emailProvider
+ 
+ @abstract The pluggable email provider for sending notifications.
+ */
+@property (nonatomic, strong, readonly, nullable) id<PDSEmailProvider> emailProvider;
 
 #pragma mark - Services
 
