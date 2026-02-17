@@ -120,6 +120,24 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether to use TLS for SMTP. */
 @property (nonatomic, readonly) BOOL emailSmtpUseTLS;
 
+/*! Resend API Key Source (env or keychain). */
+@property (nonatomic, readonly) NSString *resendAPIKeySource;
+
+/*! Resend API Key Environment Variable Name. */
+@property (nonatomic, readonly) NSString *resendAPIKeyEnvVar;
+
+/*! Resend Keychain Service Name. */
+@property (nonatomic, readonly) NSString *resendKeychainService;
+
+/*! Resend Keychain Account Name. */
+@property (nonatomic, readonly) NSString *resendKeychainAccount;
+
+/*! Resend From Address. */
+@property (nonatomic, readonly, nullable) NSString *resendFromAddress;
+
+/*! Resend API Endpoint (optional override). */
+@property (nonatomic, readonly, nullable) NSString *resendAPIEndpoint;
+
 /*! Whether rate limiting is enabled. */
 @property (nonatomic, readonly) BOOL rateLimitEnabled;
 
