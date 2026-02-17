@@ -1,5 +1,6 @@
 #import "PDSResendEmailProvider.h"
 #import "PDSEmailHTTPClient.h"
+#import "Debug/PDSLogger.h"
 
 static NSString *const kDefaultResendEndpoint = @"https://api.resend.com";
 static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
@@ -68,8 +69,13 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
             subject:(NSString *)subject
                body:(NSString *)body
               error:(NSError **)error {
+    PDS_LOG_INFO(@"[Resend] Sending email to: %@ subject: %@", to, subject);
+
     PDSEmailHTTPClient *client = [self httpClientWithError:error];
     if (!client) {
+        if (error && *error) {
+            PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", *error);
+        }
         return NO;
     }
 
@@ -80,7 +86,16 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
         @"text": body
     };
 
-    return [client postPath:@"/emails" body:payload error:error] != nil;
+    NSDictionary *response = [client postPath:@"/emails" body:payload error:error];
+    if (response) {
+        PDS_LOG_INFO(@"[Resend] Successfully sent email to: %@ (ID: %@)", to, response[@"id"]);
+        return YES;
+    } else {
+        if (error && *error) {
+            PDS_LOG_ERROR(@"[Resend] Failed to send email to: %@ error: %@", to, *error);
+        }
+        return NO;
+    }
 }
 
 - (BOOL)sendHtmlEmailTo:(NSString *)to
@@ -88,8 +103,13 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
                htmlBody:(NSString *)htmlBody
                textBody:(NSString *)textBody
                   error:(NSError **)error {
+    PDS_LOG_INFO(@"[Resend] Sending HTML email to: %@ subject: %@", to, subject);
+
     PDSEmailHTTPClient *client = [self httpClientWithError:error];
     if (!client) {
+        if (error && *error) {
+            PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", *error);
+        }
         return NO;
     }
 
@@ -104,7 +124,16 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
         payload[@"text"] = textBody;
     }
 
-    return [client postPath:@"/emails" body:payload error:error] != nil;
+    NSDictionary *response = [client postPath:@"/emails" body:payload error:error];
+    if (response) {
+        PDS_LOG_INFO(@"[Resend] Successfully sent HTML email to: %@ (ID: %@)", to, response[@"id"]);
+        return YES;
+    } else {
+        if (error && *error) {
+            PDS_LOG_ERROR(@"[Resend] Failed to send HTML email to: %@ error: %@", to, *error);
+        }
+        return NO;
+    }
 }
 
 @end
