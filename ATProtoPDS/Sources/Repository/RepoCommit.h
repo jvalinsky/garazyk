@@ -101,6 +101,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData *)serialize;
 
 /*!
+ @method serializeSigned
+ @abstract Serialize signed commit to DAG-CBOR.
+ 
+ @discussion Produces DAG-CBOR encoding of the commit map including the signature.
+ This is the format stored in the database and included in CAR files.
+ 
+ @return DAG-CBOR encoded signed commit data, or nil if signature is missing or serialization fails.
+ */
+- (nullable NSData *)serializeSigned;
+
+/*!
  @method exportCAR
  @abstract Export the signed commit as a CAR v1 file.
  

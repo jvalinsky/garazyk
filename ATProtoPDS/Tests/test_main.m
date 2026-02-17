@@ -79,6 +79,11 @@ int main(int argc, char * argv[]) {
         RateLimiterSetDisabledGlobally(YES);
         [RateLimiter sharedLimiter].enabled = NO;
 
+        // Disable biometric protection for tests
+        [PDSConfiguration sharedConfiguration].useBiometricProtection = NO;
+        // Disable keychain usage for tests (use in-memory/ephemeral keys)
+        [PDSConfiguration sharedConfiguration].useKeychain = NO;
+
         // Ensure listeners bind to loopback by default in tests to avoid macOS Local Network permission prompts.
         if (getenv("PDS_LISTEN_HOST") == NULL) {
             setenv("PDS_LISTEN_HOST", "127.0.0.1", 1);
@@ -196,7 +201,11 @@ int main(int argc, char * argv[]) {
             @"Base58Tests",
             @"WebSocketFrameParsingTests",
             @"AdminModerationAuthTests",
-            @"OAuthIntegrationTests"
+            @"OAuthIntegrationTests",
+            @"OAuthDemoHandlerConfigurationTests",
+            @"CommitChainTests",
+            @"FirehoseIntegrationTests",
+            @"PDSReplayCacheTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

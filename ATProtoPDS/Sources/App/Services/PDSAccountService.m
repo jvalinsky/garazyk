@@ -17,6 +17,9 @@
 #import "Core/Repositories/PDSAccountRepository.h"
 #import "Core/Repositories/PDSSessionRepository.h"
 #import "Database/PDSRepositoryFactory.h"
+#import "Database/ActorStore/ActorStore.h"
+
+#import "Email/PDSEmailProvider.h"
 
 #ifndef kCCSuccess
 #define kCCSuccess 0
@@ -44,13 +47,24 @@
 
 - (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
                         sessionRepository:(id<PDSSessionRepository>)sessionRepository
-                                  minter:(nullable JWTMinter *)minter {
+                                   minter:(nullable JWTMinter *)minter
+                            emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
     if (self = [super init]) {
         _accountRepository = accountRepository;
         _sessionRepository = sessionRepository;
         _minter = minter;
+        _emailProvider = emailProvider;
     }
     return self;
+}
+
+- (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
+                        sessionRepository:(id<PDSSessionRepository>)sessionRepository
+                                   minter:(nullable JWTMinter *)minter {
+    return [self initWithAccountRepository:accountRepository
+                           sessionRepository:sessionRepository
+                                      minter:minter
+                               emailProvider:nil];
 }
 
 #pragma mark - Account Operations
@@ -127,12 +141,38 @@
     } else {
         accessToken = [[NSUUID UUID] UUIDString];
     }
+
+    // Import signing key into ActorStore (ensures it is available for signing commits)
+    if (self.databasePool) {
+        NSError *storeError = nil;
+        PDSActorStore *store = [self.databasePool storeForDid:resolvedDid error:&storeError];
+        if (store) {
+            if (![store importSigningKey:userKeyPair.privateKey error:&storeError]) {
+                PDS_LOG_ERROR(@"Failed to import signing key for DID %@: %@", resolvedDid, storeError);
+            }
+        } else {
+             PDS_LOG_ERROR(@"Failed to get store for DID %@ to import key: %@", resolvedDid, storeError);
+        }
+    }
     NSString *refreshToken = [[NSUUID UUID] UUIDString];
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
     [_sessionRepository storeRefreshToken:refreshToken forAccountDid:resolvedDid error:nil];
+
+    // Send Welcome Email
+    if (self.emailProvider) {
+        NSString *welcomeSubject = @"Welcome to the ATProto Network!";
+        NSString *welcomeBody = [NSString stringWithFormat:@"Hello %@,\n\nWelcome to the ATProto network! Your account with handle %@ has been successfully created.", handle, handle];
+        NSError *emailError = nil;
+        if (![self.emailProvider sendEmailTo:email
+                                     subject:welcomeSubject
+                                        body:welcomeBody
+                                       error:&emailError]) {
+            PDS_LOG_ERROR(@"Failed to send welcome email to %@: %@", email, emailError);
+        }
+    }
 
     return @{
         @"did": resolvedDid,

@@ -12,6 +12,7 @@
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"
 #import "PDSActorStore+Blob.h"
+#import "App/PDSConfiguration.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
@@ -57,8 +58,8 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
         _blobCache = [NSMutableDictionary dictionary];
         _signingKey = NULL;
-        _useKeychainSigningKey = YES;
-        _useBiometricProtection = YES;
+        _useKeychainSigningKey = [PDSConfiguration sharedConfiguration].useKeychain;
+        _useBiometricProtection = [PDSConfiguration sharedConfiguration].useBiometricProtection;
         _useSecureEnclave = NO;
         _keychainNeedsUpgrade = NO;
         _biometricKeychain = [PDSBiometricKeychain sharedInstance];
@@ -1041,6 +1042,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             blockData = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                        length:sqlite3_column_bytes(stmt, 0)];
+            NSLog(@"[ActorStore] getBlockForCID SUCCESS: %@, data length: %lu", [cid description], (unsigned long)blockData.length);
+        } else {
+            NSLog(@"[ActorStore] getBlockForCID FAILED: %@ (not found)", [cid description]);
         }
     });
 
@@ -1099,6 +1103,11 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     sqlite3_bind_int64(stmt, 3, block.size);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
+    if (success) {
+        NSLog(@"[ActorStore] putBlock SUCCESS: %@, size: %lld", [block.cid description], (long long)block.size);
+    } else {
+        NSLog(@"[ActorStore] putBlock FAILED: %@, error: %s", [block.cid description], sqlite3_errmsg(self.db));
+    }
     return success;
 }
 
@@ -1516,6 +1525,29 @@ static BOOL PDSShouldFallbackFromKeychain(OSStatus status) {
     return [self generateSigningKeyForDid:self.did error:error];
 }
 
+- (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error {
+    if (privateKey.length != 32) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyInvalid
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Imported key must be 32 bytes"}];
+        }
+        return NO;
+    }
+    
+    // Explicit import should respect the current store configuration
+    // If we rely on storeSigningKeyData, it will use keychain unless unavailable.
+    // If useKeychainSigningKey is NO, we should force fallback storage.
+    
+    if (!self.useKeychainSigningKey) {
+        // Force store into fallback memory storage
+        PDSStoreFallbackSigningKey(self.did, privateKey);
+        return YES;
+    }
+    
+    return [self storeSigningKeyData:privateKey forDid:self.did error:error];
+}
+
 - (BOOL)generateSigningKeyForDid:(NSString *)targetDid error:(NSError **)error {
     // Generate secp256k1 key pair using the Secp256k1 wrapper
     NSError *genError = nil;
@@ -1549,6 +1581,12 @@ static BOOL PDSShouldFallbackFromKeychain(OSStatus status) {
 #else
 - (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
     if (!self.useKeychainSigningKey) {
+        // Try to load from fallback memory store first
+        NSData *fallbackKey = PDSLoadFallbackSigningKey(self.did);
+        if (fallbackKey.length == 32) {
+            return fallbackKey;
+        }
+
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                          code:PDSActorStoreErrorSigningKeyNotFound

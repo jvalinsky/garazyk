@@ -388,6 +388,18 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [weakSelf handleGetLog:req response:resp includeNullified:YES includeMetadata:YES];
     }];
     
+    [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf handleExport:req response:resp];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/:did/log/last" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf handleGetLatestLog:req response:resp];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf handleGetData:req response:resp];
+    }];
+
     [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
         [weakSelf handlePostDID:req response:resp];
@@ -577,6 +589,99 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     
     resp.statusCode = HttpStatusOK;
     [resp setJsonBody:@{@"status": @"ok"}];
+}
+
+- (void)handleGetLatestLog:(HttpRequest *)req response:(HttpResponse *)resp {
+    NSString *did = req.pathParameters[@"did"];
+    if (!did) {
+        resp.statusCode = HttpStatusBadRequest;
+        [resp setJsonBody:@{@"error": @"Missing DID"}];
+        return;
+    }
+
+    NSError *error = nil;
+    PLCOperation *op = [self.store getLatestOperationForDID:did error:&error];
+    if (error) {
+        [[PLCMetrics sharedMetrics] recordError];
+        resp.statusCode = HttpStatusInternalServerError;
+        [resp setJsonBody:@{@"error": error.localizedDescription}];
+        return;
+    }
+
+    if (!op) {
+        resp.statusCode = HttpStatusNotFound;
+        [resp setJsonBody:@{@"error": @"DID not found"}];
+        return;
+    }
+
+    resp.statusCode = HttpStatusOK;
+    [resp setJsonBody:[op toDictionary]];
+}
+
+- (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp {
+    // Spec says "basically just an op". Reusing getLatestLog logic.
+    [self handleGetLatestLog:req response:resp];
+}
+
+- (void)handleExport:(HttpRequest *)req response:(HttpResponse *)resp {
+    [[PLCMetrics sharedMetrics] recordRequest];
+    
+    NSString *countStr = req.queryParams[@"count"];
+    NSInteger count = 10;
+    if (countStr) {
+        count = [countStr integerValue];
+        if (count < 1) count = 10;
+        if (count > 1000) count = 1000;
+    }
+    
+    NSString *afterStr = req.queryParams[@"after"];
+    NSDate *afterDate = nil;
+    if (afterStr) {
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"; // Try ms precision first
+        afterDate = [formatter dateFromString:afterStr];
+        if (!afterDate) {
+            formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'"; // Try seconds precision
+            afterDate = [formatter dateFromString:afterStr];
+        }
+    }
+    
+    NSError *error = nil;
+    NSArray<PLCOperation *> *ops = [self.store exportOperationsAfter:afterDate count:count error:&error];
+    if (error) {
+        [[PLCMetrics sharedMetrics] recordError];
+        resp.statusCode = HttpStatusInternalServerError;
+        [resp setJsonBody:@{@"error": error.localizedDescription}];
+        return;
+    }
+    
+    NSMutableString *jsonLines = [NSMutableString string];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    
+    for (PLCOperation *op in ops) {
+        NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+        entry[@"did"] = op.did;
+        entry[@"operation"] = [op toDictionary];
+        entry[@"cid"] = op.cid;
+        entry[@"nullified"] = @(op.nullified);
+        entry[@"createdAt"] = [formatter stringFromDate:op.createdAt ?: [NSDate date]];
+        
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
+        if (jsonData) {
+            NSString *jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            [jsonLines appendString:jsonStr];
+            [jsonLines appendString:@"\n"];
+        }
+    }
+    
+    resp.statusCode = HttpStatusOK;
+    resp.contentType = @"application/jsonlines; charset=utf-8";
+    [resp setBodyString:jsonLines];
 }
 
 - (BOOL)startWithError:(NSError **)error {

@@ -39,7 +39,7 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event;
 - (void)relayClientDidConnect:(RelayClient *)client;
 - (void)relayClient:(RelayClient *)client didDisconnectWithError:(nullable NSError *)error;
-- (void)relayClient:(RelayClient *)client didReceiveCursor:(NSString *)cursor;
+- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor;
 @end
 
 /*!
@@ -60,8 +60,8 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 /*! Whether connected to the server. */
 @property (nonatomic, readonly) BOOL isConnected;
 
-/*! Current cursor position. */
-@property (nonatomic, copy, nullable, readonly) NSString *currentCursor;
+/*! Current cursor position (sequence number). */
+@property (nonatomic, readonly) int64_t currentSeq;
 
 /*! Interval between reconnect attempts. */
 @property (nonatomic, assign, readonly) NSTimeInterval reconnectInterval;
@@ -82,10 +82,10 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 - (void)setAccessToken:(NSString *)accessToken;
 
 /*! Gets stored cursor for a repo. */
-- (nullable NSString *)getStoredCursorForRepo:(NSString *)repo;
+- (int64_t)getStoredCursorForRepo:(NSString *)repo;
 
 /*! Stores a cursor for a repo. */
-- (void)storeCursor:(NSString *)cursor forRepo:(NSString *)repo;
+- (void)storeCursor:(int64_t)cursor forRepo:(NSString *)repo;
 
 @end
 
