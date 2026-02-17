@@ -1,6 +1,45 @@
 #import <XCTest/XCTest.h>
 #import "Email/PDSResendEmailProvider.h"
 #import "Email/PDSSecretsProvider.h"
+#import "Email/PDSEmailHTTPClient.h"
+
+// Expose private property for testing
+@interface PDSResendEmailProvider (Testing)
+@property (nonatomic, strong) PDSEmailHTTPClient *httpClient;
+@end
+
+// Mock HTTP Client
+@interface MockEmailHTTPClient : PDSEmailHTTPClient
+@property (nonatomic, copy) NSDictionary *mockResponse;
+@property (nonatomic, strong) NSError *mockError;
+@property (nonatomic, copy) NSString *lastPath;
+@property (nonatomic, copy) NSDictionary *lastBody;
+@end
+
+@implementation MockEmailHTTPClient
+
+- (instancetype)init {
+    // Call super init with dummy values to satisfy designated initializer
+    return [super initWithBaseURL:[NSURL URLWithString:@"http://mock.com"] apiKey:@"mock-key"];
+}
+
+- (nullable NSDictionary *)postPath:(NSString *)path
+                               body:(NSDictionary *)body
+                              error:(NSError * _Nullable *)error {
+    self.lastPath = path;
+    self.lastBody = body;
+    
+    if (self.mockError) {
+        if (error) {
+            *error = self.mockError;
+        }
+        return nil;
+    }
+    
+    return self.mockResponse;
+}
+
+@end
 
 // Simple mock for PDSSecretsProvider
 @interface MockSecretsProvider : NSObject <PDSSecretsProvider>
@@ -79,6 +118,75 @@
     XCTAssertNotNil(error, @"Error should be populated");
     XCTAssertEqualObjects(error.domain, @"PDSResendEmailProviderErrorDomain");
     XCTAssertEqual(error.code, 1); // We used code 1 for missing API key
+}
+
+- (void)testSendEmailSuccess {
+    MockEmailHTTPClient *mockClient = [[MockEmailHTTPClient alloc] init];
+    mockClient.mockResponse = @{@"id": @"email_123"};
+    
+    self.provider.httpClient = mockClient;
+    
+    NSError *error = nil;
+    BOOL success = [self.provider sendEmailTo:@"recipient@example.com"
+                                      subject:@"Test Subject"
+                                         body:@"Test Body"
+                                        error:&error];
+    
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(mockClient.lastPath, @"/emails");
+    
+    NSDictionary *expectedBody = @{
+        @"from": @"test@example.com",
+        @"to": @[@"recipient@example.com"],
+        @"subject": @"Test Subject",
+        @"text": @"Test Body"
+    };
+    XCTAssertEqualObjects(mockClient.lastBody, expectedBody);
+}
+
+- (void)testSendEmailFailure {
+    MockEmailHTTPClient *mockClient = [[MockEmailHTTPClient alloc] init];
+    mockClient.mockError = [NSError errorWithDomain:@"TestDomain" code:123 userInfo:nil];
+    
+    self.provider.httpClient = mockClient;
+    
+    NSError *error = nil;
+    BOOL success = [self.provider sendEmailTo:@"recipient@example.com"
+                                      subject:@"Test Subject"
+                                         body:@"Test Body"
+                                        error:&error];
+    
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, @"TestDomain");
+    XCTAssertEqual(error.code, 123);
+}
+
+- (void)testSendHtmlEmailSuccess {
+    MockEmailHTTPClient *mockClient = [[MockEmailHTTPClient alloc] init];
+    mockClient.mockResponse = @{@"id": @"email_456"};
+    
+    self.provider.httpClient = mockClient;
+    
+    NSError *error = nil;
+    BOOL success = [self.provider sendHtmlEmailTo:@"recipient@example.com"
+                                          subject:@"HTML Subject"
+                                         htmlBody:@"<p>HTML Body</p>"
+                                         textBody:@"Text Body"
+                                            error:&error];
+    
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+    
+    NSDictionary *expectedBody = @{
+        @"from": @"test@example.com",
+        @"to": @[@"recipient@example.com"],
+        @"subject": @"HTML Subject",
+        @"html": @"<p>HTML Body</p>",
+        @"text": @"Text Body"
+    };
+    XCTAssertEqualObjects(mockClient.lastBody, expectedBody);
 }
 
 @end
