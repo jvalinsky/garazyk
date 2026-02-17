@@ -11,7 +11,6 @@
 #import "Auth/CryptoUtils.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
-#import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import "Core/ATProtoError.h"
@@ -24,13 +23,6 @@
 #endif
 
 @interface PDSAccountService ()
-
-#if defined(GNUSTEP)
-@property (nonatomic, assign) os_log_t log;
-#else
-@property (nonatomic, strong) os_log_t log;
-#endif
-
 @end
 
 @implementation PDSAccountService
@@ -38,7 +30,6 @@
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
         _databasePool = databasePool;
-        _log = os_log_create("com.atproto.pds", "account");
     }
     return self;
 }
@@ -58,7 +49,6 @@
         _accountRepository = accountRepository;
         _sessionRepository = sessionRepository;
         _minter = minter;
-        _log = os_log_create("com.atproto.pds", "account");
     }
     return self;
 }
@@ -208,7 +198,7 @@
         if ([legacyHash isEqualToData:account.passwordHash]) {
             isPasswordCorrect = YES;
             usedLegacyHash = YES;
-            os_log_info(self.log, "Account %@ using legacy password hash, will upgrade", account.did);
+            PDS_LOG_AUTH_INFO(@"Account %@ using legacy password hash, will upgrade", account.did);
         }
     }
 
@@ -368,7 +358,7 @@
     );
 
     if (result != kCCSuccess) {
-        os_log_error(self.log, "PBKDF2 derivation failed with error: %d", result);
+        PDS_LOG_AUTH_ERROR(@"PBKDF2 derivation failed with error: %d", result);
         return nil;
     }
 
@@ -404,7 +394,7 @@
     account.passwordHash = newHash;
     BOOL success = [_accountRepository saveAccount:account error:error];
     if (success) {
-        os_log_info(self.log, "Upgraded password hash for account: %@", account.did);
+        PDS_LOG_AUTH_INFO(@"Upgraded password hash for account: %@", account.did);
     }
     return success;
 }

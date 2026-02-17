@@ -39,7 +39,6 @@
 #import "App/Explore/ExploreHandler.h"
 #import "App/MSTViewer/MSTViewerHandler.h"
 #import "App/NodeInfo/NodeInfoHandler.h"
-#import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import "Lexicon/ATProtoLexiconRegistry.h"
@@ -52,7 +51,6 @@
 NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 @implementation PDSController {
-    os_log_t _log;
     PDSApplication *_backingApplication;  // When initialized via initWithApplication:
     PDSServiceDatabases *_serviceDatabases;
     PDSDatabasePool *_userDatabasePool;
@@ -100,7 +98,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 - (instancetype)initWithApplication:(PDSApplication *)application {
     self = [super init];
     if (self) {
-        _log = os_log_create("com.atproto.pds", "PDSController");
         _backingApplication = application;
         
         // Reference application's components
@@ -123,7 +120,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _controllerQueue = dispatch_queue_create("com.atproto.pds.controller", DISPATCH_QUEUE_SERIAL);
         _running = NO;
         
-        os_log_info(_log, "PDSController initialized as facade over PDSApplication");
+        PDS_LOG_CORE_INFO(@"PDSController initialized as facade over PDSApplication");
     }
     return self;
 }
@@ -255,8 +252,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
             PDS_LOG_WARN(@"No lexicons loaded. Set PDS_LEXICON_PATH or install lexicons under ATProtoPDS/Resources/lexicons.");
         }
 
-        _log = os_log_create("com.atproto.pds", "PDSController");
-        os_log_info(_log, "PDS Controller initialized with single-tenant architecture");
+        PDS_LOG_CORE_INFO(@"PDS Controller initialized with single-tenant architecture");
     }
     return self;
 }
@@ -266,7 +262,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 - (BOOL)startServerWithError:(NSError **)error {
     // If backed by PDSApplication, delegate to it
     if (_backingApplication) {
-        os_log_info(_log, "Starting server via PDSApplication...");
+        PDS_LOG_CORE_INFO(@"Starting server via PDSApplication...");
         BOOL result = [_backingApplication startWithError:error];
         if (result) {
             _httpPort = _backingApplication.httpPort;
@@ -277,7 +273,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }
     
     // Legacy path: initialize everything ourselves
-    os_log_info(_log, "Starting ATProto PDS server with single-tenant architecture...");
+    PDS_LOG_CORE_INFO(@"Starting ATProto PDS server with single-tenant architecture...");
     
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
@@ -306,20 +302,20 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     NSError *buildError = nil;
     _httpServer = [builder buildWithError:&buildError];
     if (!_httpServer) {
-        os_log_error(_log, "Failed to build HTTP server: %@", buildError);
+        PDS_LOG_CORE_ERROR(@"Failed to build HTTP server: %@", buildError);
         if (error) *error = buildError;
         return NO;
     }
     
     NSError *httpError = nil;
     if (![_httpServer startWithError:&httpError]) {
-        os_log_error(_log, "Failed to start HTTP server: %@", httpError);
+        PDS_LOG_CORE_ERROR(@"Failed to start HTTP server: %@", httpError);
         if (error) *error = httpError;
         return NO;
     }
     _httpPort = _httpServer.port;
-    os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpPort);
-    os_log_info(_log, "subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
+    PDS_LOG_CORE_INFO(@"HTTP server started on port %lu", (unsigned long)_httpPort);
+    PDS_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
     _running = YES;
     return YES;

@@ -12,7 +12,7 @@
 
 #import "Core/DID.h"
 #import "Core/CID.h"
-#import <os/log.h>
+#import "Debug/PDSLogger.h"
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
@@ -86,7 +86,6 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 @end
 
 @implementation DIDResolver {
-    os_log_t _log;
     NSURLSession *_session;
     // _staleTTL and _maxTTL are synthesized properties
     // _cacheTimestamps is synthesized property
@@ -100,8 +99,6 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _log = os_log_create("com.atproto.did", "DIDResolver");
-
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
         config.timeoutIntervalForRequest = 30.0;
         config.timeoutIntervalForResource = 60.0;
@@ -122,11 +119,13 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
     DIDCacheStatus status;
     NSDictionary *entry = [self cachedEntryForDID:did status:&status];
     if (entry && status == DIDCacheStatusFresh) {
+        PDS_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
         DIDDocument *doc = entry[@"document"];
         completion(doc.jsonDictionary, nil);
         return;
     }
     if (entry && status == DIDCacheStatusStale) {
+        PDS_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
         DIDDocument *doc = entry[@"document"];
         completion(doc.jsonDictionary, nil);
         [self refreshCacheForDID:did];
@@ -188,12 +187,12 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         DIDCacheStatus status;
         NSDictionary *entry = [self cachedEntryForDID:did status:&status];
         if (entry && status == DIDCacheStatusFresh) {
-            os_log_info(_log, "Returning fresh cached DID document for %@", did);
+            PDS_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
             completion(entry[@"document"], nil);
             return;
         }
         if (entry && status == DIDCacheStatusStale) {
-            os_log_info(_log, "Returning stale cached DID document for %@ and refreshing", did);
+            PDS_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
             completion(entry[@"document"], nil);
             [self refreshCacheForDID:did];
             return;
@@ -446,7 +445,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         return;
     }
     
-    os_log_info(_log, "Resolving did:web at URL: %@", urlString);
+    PDS_LOG_CORE_DEBUG(@"Resolving did:web URL: %@", urlString ?: @"");
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
@@ -521,7 +520,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         return;
     }
 
-    os_log_info(_log, "Resolving did:plc at URL: %@", urlString);
+    PDS_LOG_CORE_DEBUG(@"Resolving did:plc URL: %@", urlString ?: @"");
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
