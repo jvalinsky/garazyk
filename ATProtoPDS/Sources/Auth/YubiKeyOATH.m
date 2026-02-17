@@ -1,6 +1,6 @@
 #import "Auth/YubiKeyOATH.h"
 #import "Auth/TOTPGenerator.h"
-#import <os/log.h>
+#import "Debug/PDSLogger.h"
 
 NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 
@@ -8,11 +8,6 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 
 @property (nonatomic, assign, readwrite) YubiKeyConnectionState connectionState;
 @property (nonatomic, copy, readwrite, nullable) NSString *connectedKeySerial;
-#if defined(GNUSTEP)
-@property (nonatomic, assign) os_log_t log;
-#else
-@property (nonatomic, strong) os_log_t log;
-#endif
 
 @end
 
@@ -22,7 +17,6 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
     self = [super init];
     if (self) {
         _connectionState = YubiKeyConnectionStateDisconnected;
-        _log = os_log_create("com.atproto.pds", "yubikey");
     }
     return self;
 }
@@ -34,18 +28,18 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 #pragma mark - Connection Management
 
 - (void)startScanning {
-    os_log_info(_log, "YubiKey OATH scanning started (software-only mode)");
+    PDS_LOG_AUTH_INFO(@"YubiKey OATH scanning started (software-only mode)");
     self.connectionState = YubiKeyConnectionStateDisconnected;
 }
 
 - (void)stopScanning {
-    os_log_info(_log, "YubiKey OATH scanning stopped");
+    PDS_LOG_AUTH_INFO(@"YubiKey OATH scanning stopped");
     self.connectionState = YubiKeyConnectionStateDisconnected;
     self.connectedKeySerial = nil;
 }
 
 - (void)refreshConnection {
-    os_log_info(_log, "YubiKey OATH connection refresh requested (software-only mode)");
+    PDS_LOG_AUTH_INFO(@"YubiKey OATH connection refresh requested (software-only mode)");
     self.connectionState = YubiKeyConnectionStateDisconnected;
     self.connectedKeySerial = nil;
 }
@@ -53,12 +47,12 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 #pragma mark - YubiKeyOATH Protocol
 
 - (nullable NSString *)generateTOTPForSecret:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
-    os_log_debug(_log, "Generating TOTP (software fallback)");
+    PDS_LOG_AUTH_DEBUG(@"Generating TOTP (software fallback)");
     return [self generateSoftwareTOTPToken:secret counter:counter error:error];
 }
 
 - (BOOL)setOATHSecret:(NSData *)secret name:(NSString *)name error:(NSError **)error {
-    os_log_info(_log, "Set OATH secret requested for '%{public}@' (software-only mode)", name);
+    PDS_LOG_AUTH_INFO(@"Set OATH secret requested (software-only mode, name=%@)", name ?: @"");
     if (error) {
         *error = [NSError errorWithDomain:YubiKeyOATHErrorDomain
                                     code:YubiKeyOATHErrorNotImplemented
@@ -70,12 +64,12 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 #pragma mark - Credential Management
 
 - (nullable NSArray<NSDictionary *> *)listCredentialsWithError:(NSError **)error {
-    os_log_debug(_log, "List credentials requested (software-only mode)");
+    PDS_LOG_AUTH_DEBUG(@"List credentials requested (software-only mode)");
     return @[];
 }
 
 - (BOOL)deleteCredentialWithName:(NSString *)name error:(NSError **)error {
-    os_log_info(_log, "Delete credential '%{public}@' requested (software-only mode)", name);
+    PDS_LOG_AUTH_INFO(@"Delete credential requested (software-only mode, name=%@)", name ?: @"");
     if (error) {
         *error = [NSError errorWithDomain:YubiKeyOATHErrorDomain
                                     code:YubiKeyOATHErrorNotImplemented
@@ -85,7 +79,7 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 }
 
 - (BOOL)resetAllCredentialsWithError:(NSError **)error {
-    os_log_info(_log, "Reset all credentials requested (software-only mode)");
+    PDS_LOG_AUTH_INFO(@"Reset all credentials requested (software-only mode)");
     if (error) {
         *error = [NSError errorWithDomain:YubiKeyOATHErrorDomain
                                     code:YubiKeyOATHErrorNotImplemented

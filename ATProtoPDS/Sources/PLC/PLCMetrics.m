@@ -1,11 +1,10 @@
 #import "PLC/PLCMetrics.h"
-#import <os/log.h>
+#import "Debug/PDSLogger.h"
 #import <libkern/OSAtomic.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface PLCMetrics ()
-@property (nonatomic, strong) os_log_t log;
 @property (nonatomic, assign) int64_t cacheHits;
 @property (nonatomic, assign) int64_t cacheMisses;
 @property (nonatomic, assign) int64_t memcacheHits;
@@ -32,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _log = os_log_create("com.atproto.plc", "metrics");
         _cacheHits = 0;
         _cacheMisses = 0;
         _memcacheHits = 0;
@@ -49,22 +47,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)recordCacheHit {
     OSAtomicIncrement64(&_cacheHits);
-    os_log_debug(_log, "PLC cache hit");
+    PDS_LOG_CORE_DEBUG(@"PLC cache hit");
 }
 
 - (void)recordCacheMiss {
     OSAtomicIncrement64(&_cacheMisses);
-    os_log_debug(_log, "PLC cache miss");
+    PDS_LOG_CORE_DEBUG(@"PLC cache miss");
 }
 
 - (void)recordMemcacheHit {
     OSAtomicIncrement64(&_memcacheHits);
-    os_log_debug(_log, "PLC memcache hit");
+    PDS_LOG_CORE_DEBUG(@"PLC memcache hit");
 }
 
 - (void)recordMemcacheMiss {
     OSAtomicIncrement64(&_memcacheMisses);
-    os_log_debug(_log, "PLC memcache miss");
+    PDS_LOG_CORE_DEBUG(@"PLC memcache miss");
 }
 
 - (void)recordRequest {
@@ -73,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)recordError {
     OSAtomicIncrement64(&_totalErrors);
-    os_log_debug(_log, "PLC error recorded");
+    PDS_LOG_CORE_DEBUG(@"PLC error recorded");
 }
 
 - (void)recordOperation:(NSString *)operationType {
@@ -82,27 +80,27 @@ NS_ASSUME_NONNULL_BEGIN
         int64_t newValue = current.longLongValue + 1;
         self.operationCounts[operationType] = @(newValue);
     }
-    os_log_debug(_log, "PLC operation: %{public}@", operationType);
+    PDS_LOG_CORE_DEBUG(@"PLC operation: %@", operationType ?: @"");
 }
 
 - (void)recordVerificationSuccess {
     OSAtomicIncrement64(&_verificationSuccesses);
-    os_log_debug(_log, "PLC verification success");
+    PDS_LOG_CORE_DEBUG(@"PLC verification success");
 }
 
 - (void)recordVerificationFailure {
     OSAtomicIncrement64(&_verificationFailures);
-    os_log_debug(_log, "PLC verification failure");
+    PDS_LOG_CORE_DEBUG(@"PLC verification failure");
 }
 
 - (void)recordResolutionLatency:(NSTimeInterval)latencyMs {
     @synchronized(self.latencySamples) {
         [self.latencySamples addObject:@(latencyMs)];
-        if (self.latencySamples.count > 1000) {
-            [self.latencySamples removeObjectAtIndex:0];
-        }
+    if (self.latencySamples.count > 1000) {
+        [self.latencySamples removeObjectAtIndex:0];
     }
-    os_log_debug(_log, "PLC resolution latency: %.2fms", latencyMs);
+    }
+    PDS_LOG_CORE_DEBUG(@"PLC resolution latency: %.2fms", latencyMs);
 }
 
 - (int64_t)cacheHits {

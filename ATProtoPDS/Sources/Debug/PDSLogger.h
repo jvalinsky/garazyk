@@ -356,6 +356,22 @@ extern NSString * const PDSLogComponentCLI;
 #define PDS_LOG_ADMIN_DEBUG(FORMAT, ...) \
     PDS_LOG_DEBUG_C(PDSLogComponentAdmin, FORMAT, ##__VA_ARGS__)
 
+/* Shorthand macro for Service error logging. */
+#define PDS_LOG_SERVICE_ERROR(FORMAT, ...) \
+    PDS_LOG_ERROR_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+
+/* Shorthand macro for Service warning logging. */
+#define PDS_LOG_SERVICE_WARN(FORMAT, ...) \
+    PDS_LOG_WARN_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+
+/* Shorthand macro for Service info logging. */
+#define PDS_LOG_SERVICE_INFO(FORMAT, ...) \
+    PDS_LOG_INFO_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+
+/* Shorthand macro for Service debug logging. */
+#define PDS_LOG_SERVICE_DEBUG(FORMAT, ...) \
+    PDS_LOG_DEBUG_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+
 /* Shorthand macro for Sync error logging. */
 #define PDS_LOG_SYNC_ERROR(FORMAT, ...) \
     PDS_LOG_ERROR_C(PDSLogComponentSync, FORMAT, ##__VA_ARGS__)

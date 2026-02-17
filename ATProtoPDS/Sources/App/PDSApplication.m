@@ -30,7 +30,6 @@
 #import "Core/PDSServiceContainer.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
-#import <os/log.h>
 
 @interface PDSApplication ()
 
@@ -51,7 +50,6 @@
 @end
 
 @implementation PDSApplication {
-    os_log_t _log;
     SubscribeReposHandler *_subscribeReposHandler;
     XrpcDispatcher *_xrpcDispatcher;
 }
@@ -76,8 +74,6 @@
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
     self = [super init];
     if (self) {
-        _log = os_log_create("com.atproto.pds", "PDSApplication");
-        
         _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
         _dataDirectory = _configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory];
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
@@ -104,7 +100,7 @@
         // This allows PDSController.sharedController to work
         _legacyController = [[PDSController alloc] initWithApplication:self];
         
-        os_log_info(_log, "PDSApplication initialized successfully");
+        PDS_LOG_CORE_INFO(@"PDSApplication initialized successfully");
     }
     return self;
 }
@@ -115,8 +111,6 @@
     // So we do manual initialization here instead of calling the designated initializer.
     self = [super init];
     if (self) {
-        _log = os_log_create("com.atproto.pds", "PDSApplication");
-        
         _configuration = [PDSConfiguration sharedConfiguration];
         _dataDirectory = [dataDirectory copy];
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
@@ -145,7 +139,7 @@
         // Create legacy controller for backward compatibility
         _legacyController = [[PDSController alloc] initWithApplication:self];
         
-        os_log_info(_log, "PDSApplication initialized successfully");
+        PDS_LOG_CORE_INFO(@"PDSApplication initialized successfully");
     }
     return self;
 }
@@ -328,7 +322,7 @@
 #pragma mark - Lifecycle
 
 - (BOOL)startWithError:(NSError **)error {
-    os_log_info(_log, "Starting PDSApplication...");
+    PDS_LOG_CORE_INFO(@"Starting PDSApplication...");
     
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
@@ -350,7 +344,7 @@
     NSError *buildError = nil;
     _httpServer = [builder buildWithError:&buildError];
     if (!_httpServer) {
-        os_log_error(_log, "Failed to build HTTP server: %@", buildError);
+        PDS_LOG_CORE_ERROR(@"Failed to build HTTP server: %@", buildError);
         if (error) *error = buildError;
         return NO;
     }
@@ -358,21 +352,21 @@
     // Start HTTP server
     NSError *httpError = nil;
     if (![_httpServer startWithError:&httpError]) {
-        os_log_error(_log, "Failed to start HTTP server: %@", httpError);
+        PDS_LOG_CORE_ERROR(@"Failed to start HTTP server: %@", httpError);
         if (error) *error = httpError;
         return NO;
     }
     _httpPort = _httpServer.port;
-    os_log_info(_log, "HTTP server started on port %lu", (unsigned long)_httpPort);
-    os_log_info(_log, "subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
+    PDS_LOG_CORE_INFO(@"HTTP server started on port %lu", (unsigned long)_httpPort);
+    PDS_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
     _running = YES;
-    os_log_info(_log, "PDSApplication started successfully");
+    PDS_LOG_CORE_INFO(@"PDSApplication started successfully");
     return YES;
 }
 
 - (void)stop {
-    os_log_info(_log, "Stopping PDSApplication...");
+    PDS_LOG_CORE_INFO(@"Stopping PDSApplication...");
     
     // Stop servers
     [_httpServer stop];
@@ -390,7 +384,7 @@
     [[PDSLogger sharedLogger] closeLogFile];
     
     _running = NO;
-    os_log_info(_log, "PDSApplication stopped");
+    PDS_LOG_CORE_INFO(@"PDSApplication stopped");
 }
 
 @end
