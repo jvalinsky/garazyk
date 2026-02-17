@@ -1,0 +1,46 @@
+# ATProto PDS Caddy Reverse Proxy Configuration
+# Caddy automatically provisions and renews TLS certificates.
+#
+# Usage:
+#   1. Replace pds.example.com with your domain
+#   2. Place this file at /etc/caddy/Caddyfile
+#   3. sudo systemctl reload caddy
+
+pds.example.com {
+    # Reverse proxy to PDS
+    reverse_proxy localhost:8080 {
+        # Health checks
+        health_uri /xrpc/_health
+        health_interval 30s
+        health_timeout 5s
+
+        # Connection pooling
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 32
+        }
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Frame-Options DENY
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    # Request size limit (5MB for blob uploads)
+    request_body {
+        max_size 5MB
+    }
+
+    # Structured logging
+    log {
+        output file /var/log/caddy/atprotopds-access.log {
+            roll_size 50MiB
+            roll_keep 10
+        }
+        format json
+    }
+}

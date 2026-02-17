@@ -2,7 +2,6 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "App/PDSController.h"
 #import "App/PDSConfiguration.h"
 #import "NodeInfoProvider.h"
 #import "NodeInfoSchemas.h"
@@ -11,7 +10,7 @@
 @interface NodeInfoHandler ()
 @property (nonatomic, strong) NodeInfoProvider *provider;
 @property (nonatomic, copy) NSString *issuer;
-@property (nonatomic, weak) PDSController *controller;
+@property (nonatomic, assign) BOOL configured;
 @end
 
 @implementation NodeInfoHandler
@@ -30,7 +29,7 @@
     if (self) {
         _provider = nil;
         _issuer = nil;
-        _controller = nil;
+        _configured = NO;
     }
     return self;
 }
@@ -40,13 +39,18 @@
     [self updateProvider];
 }
 
-- (void)setController:(PDSController *)controller {
-    _controller = controller;
+- (void)setConfigured {
+    _configured = YES;
+    [self updateProvider];
+}
+
+- (void)setController:(id)controller {
+    _configured = (controller != nil);
     [self updateProvider];
 }
 
 - (void)updateProvider {
-    if (!_issuer || !_controller) {
+    if (!_issuer || !_configured) {
         return;
     }
 

@@ -5,7 +5,7 @@
 #import "Debug/PDSLogger.h"
 
 @interface OAuthDemoHandler ()
-@property (nonatomic, weak) PDSController *controller;
+@property (nonatomic, copy) NSString *dataDirectory;
 @end
 
 @implementation OAuthDemoHandler
@@ -19,8 +19,12 @@
     return instance;
 }
 
+- (void)setDataDirectory:(NSString *)dataDirectory {
+    _dataDirectory = [dataDirectory copy];
+}
+
 - (void)setController:(PDSController *)controller {
-    _controller = controller;
+    _dataDirectory = [controller.dataDirectory copy];
 }
 
 - (BOOL)canHandleRequest:(HttpRequest *)request {
@@ -43,8 +47,8 @@
         }
     }
 
-    if (!assetsPath && self.controller.dataDirectory) {
-        NSString *dataDir = self.controller.dataDirectory;
+    if (!assetsPath && self.dataDirectory) {
+        NSString *dataDir = self.dataDirectory;
         NSString *projectAssets = [[fm currentDirectoryPath] stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/OAuthDemo/Assets"];
         if ([fm fileExistsAtPath:projectAssets]) {
             assetsPath = projectAssets;

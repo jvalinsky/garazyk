@@ -61,6 +61,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.did = dictionary[@"did"];
     payload.handle = dictionary[@"handle"];
     payload.scope = dictionary[@"scope"];
+    payload.cnf = dictionary[@"cnf"];
 
     id expValue = dictionary[@"exp"];
     if ([expValue isKindOfClass:[NSNumber class]]) {
@@ -89,6 +90,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (self.did) dict[@"did"] = self.did;
     if (self.handle) dict[@"handle"] = self.handle;
     if (self.scope) dict[@"scope"] = self.scope;
+    if (self.cnf) dict[@"cnf"] = self.cnf;
     if (self.exp) dict[@"exp"] = @([self.exp timeIntervalSince1970]);
     if (self.iat) dict[@"iat"] = @([self.iat timeIntervalSince1970]);
     if (self.nbf) dict[@"nbf"] = @([self.nbf timeIntervalSince1970]);
@@ -428,7 +430,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
-                          error:(NSError **)error {
+             dpopKeyThumbprint:(nullable NSString *)jkt
+                           error:(NSError **)error {
     JWTPayload *payload = [[JWTPayload alloc] init];
     payload.iss = self.issuer;
     payload.sub = did;
@@ -438,6 +441,10 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.iat = [NSDate date];
     payload.exp = [NSDate dateWithTimeIntervalSinceNow:self.defaultExpiration];
     payload.jti = [[NSUUID UUID] UUIDString];
+    
+    if (jkt) {
+        payload.cnf = @{@"jkt": jkt};
+    }
 
     JWTHeader *header = [[JWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
@@ -447,6 +454,13 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
 
     return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
+}
+
+- (JWT *)mintAccessTokenForDID:(NSString *)did
+                        handle:(NSString *)handle
+                        scopes:(NSArray<NSString *> *)scopes
+                           error:(NSError **)error {
+    return [self mintAccessTokenForDID:did handle:handle scopes:scopes dpopKeyThumbprint:nil error:error];
 }
 
 - (JWT *)mintRefreshTokenForDID:(NSString *)did

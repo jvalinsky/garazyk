@@ -14,8 +14,6 @@
 @class HttpServer;
 @class HttpRequest;
 @class HttpResponse;
-@class PDSController;
-
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
@@ -41,11 +39,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setIssuer:(NSString *)issuer;
 
 /*!
+ @brief Mark handler as configured.
+
+ @discussion Call after setIssuer: to enable the handler.
+ */
+- (void)setConfigured;
+
+/*!
  @brief Set the PDS controller for configuration access.
 
  @param controller The PDS controller instance.
+ @deprecated Use setIssuer: and setConfigured instead.
  */
-- (void)setController:(PDSController *)controller;
+- (void)setController:(id)controller
+    DEPRECATED_MSG_ATTRIBUTE("Use setIssuer: and setConfigured instead");
 
 /*!
  @brief Register NodeInfo routes with the HTTP server.

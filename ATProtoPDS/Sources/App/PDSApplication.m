@@ -30,6 +30,9 @@
 #import "Core/PDSServiceContainer.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
+#import "Email/PDSEmailProvider.h"
+#import "Email/PDSMockEmailProvider.h"
+#import "Email/PDSSMTPEmailProvider.h"
 
 @interface PDSApplication ()
 
@@ -43,6 +46,7 @@
 @property (nonatomic, strong, readwrite) PDSRecordService *recordService;
 @property (nonatomic, strong, readwrite) PDSBlobService *blobService;
 @property (nonatomic, strong, readwrite) PDSRepositoryService *repositoryService;
+@property (nonatomic, strong, readwrite, nullable) id<PDSEmailProvider> emailProvider;
 @property (nonatomic, strong, readwrite) id<PDSAdminController> adminController;
 @property (nonatomic, strong, readwrite) PDSController *legacyController;
 @property (nonatomic, assign, readwrite, getter=isRunning) BOOL running;
@@ -222,7 +226,28 @@
     [container reset];
     
     // Initialize Account Service
-    PDSAccountService *accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
+    id<PDSEmailProvider> emailProvider = nil;
+    if (_configuration) {
+        if ([_configuration.emailProviderType isEqualToString:@"mock"]) {
+            emailProvider = [[PDSMockEmailProvider alloc] init];
+        } else if ([_configuration.emailProviderType isEqualToString:@"smtp"]) {
+            emailProvider = [[PDSSMTPEmailProvider alloc] initWithHost:_configuration.emailSmtpHost ?: @"localhost"
+                                                                  port:_configuration.emailSmtpPort
+                                                              username:_configuration.emailSmtpUsername
+                                                              password:_configuration.emailSmtpPassword
+                                                                useTLS:_configuration.emailSmtpUseTLS];
+        }
+    }
+    _emailProvider = emailProvider;
+    if (emailProvider) {
+        [container registerInstance:emailProvider forProtocol:@protocol(PDSEmailProvider)];
+    }
+
+    PDSAccountService *accountService = [[PDSAccountService alloc] initWithAccountRepository:nil
+                                                                            sessionRepository:nil
+                                                                                       minter:nil
+                                                                                emailProvider:emailProvider];
+    accountService.databasePool = _userDatabasePool;
     accountService.serviceDatabases = _serviceDatabases;
     accountService.minter = _jwtMinter;
     [container registerInstance:accountService forProtocol:@protocol(PDSAccountService)];
@@ -327,12 +352,15 @@
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
     if (!_subscribeReposHandler) {
-        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:_legacyController];
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
+        // Inject the PDS signing key for firehose commit signatures
+        _subscribeReposHandler.signingKey = _jwtMinter.privateKey;
     }
     
     // Build and configure HTTP server
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:_configuration];
     builder.port = self.httpPort;
+    builder.dataDirectory = _dataDirectory;
     builder.application = self;  // Prefer application for service-based registration
     builder.controller = _legacyController;  // Still needed for handlers that use controller
     builder.jwtMinter = _jwtMinter;

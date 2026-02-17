@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(recover)",
+      "Bash(deciduous nodes)",
+      "Bash(deciduous edges)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcodegen generate:*)",
+      "Bash(ls:*)",
+      "Bash(./build/tests/AllTests:*)",
+      "Bash(cmake:*)"
+    ]
+  }
+}

@@ -311,4 +311,44 @@
     XCTAssertNotNil(response[@"refresh_token"], @"Response should have refresh_token");
 }
 
+
+- (void)testSessionPersistsAcrossStoreInstances {
+    NSString *tempDir = NSTemporaryDirectory();
+    NSString *dbPath = [tempDir stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    dbPath = [dbPath stringByAppendingPathExtension:@"sqlite"];
+    
+    // 1. Create store with path
+    SessionStore *store1 = [[SessionStore alloc] initWithDatabasePath:dbPath];
+    store1.minter = self.minter;
+    // Set clock skew to match setUp
+    store1.clockSkew = 0;
+    
+    // 2. Create session
+    Session *session = [store1 createSessionForDID:@"did:example:123"
+                                            handle:@"user.bsky.social"
+                                             scope:@"com.atproto.access"
+                                           dpopJWK:nil
+                                             error:nil];
+    XCTAssertNotNil(session, @"Failed to create session in store1");
+    NSString *accessToken = session.accessToken;
+    
+    // 3. Create NEW store with same path
+    SessionStore *store2 = [[SessionStore alloc] initWithDatabasePath:dbPath];
+    store2.minter = self.minter;
+    store2.clockSkew = 0;
+    
+    // 4. Retrieve session
+    NSError *error = nil;
+    Session *retrieved = [store2 getSessionByAccessToken:accessToken error:&error];
+    
+    XCTAssertNotNil(retrieved, @"Session should persist across store instances");
+    XCTAssertNil(error, @"Should not have error retrieving session");
+    XCTAssertEqualObjects(retrieved.did, @"did:example:123", @"DID should match");
+    XCTAssertEqualObjects(retrieved.handle, @"user.bsky.social", @"Handle should match");
+    XCTAssertEqualObjects(retrieved.scope, @"com.atproto.access", @"Scope should match");
+    
+    // Cleanup
+    [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
+}
+
 @end

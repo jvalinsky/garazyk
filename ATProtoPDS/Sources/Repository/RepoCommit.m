@@ -4,6 +4,7 @@
 #import "Core/TID.h"
 #import "Repository/CAR.h"
 #import "Auth/Secp256k1.h"
+#import "Core/ATProtoDagCBOR.h"
 
 NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
@@ -23,30 +24,35 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 }
 
 - (NSData *)serialize {
-    // Create CBOR map for unsigned commit (without signature)
-    NSMutableDictionary<CBORValue *, CBORValue *> *commitMap = [NSMutableDictionary dictionary];
+    // Create map for unsigned commit (without signature)
+    NSMutableDictionary *commitDict = [NSMutableDictionary dictionary];
 
     // did (required)
-    commitMap[[CBORValue textString:@"did"]] = [CBORValue textString:self.did];
+    commitDict[@"did"] = self.did;
 
     // version (required)
-    commitMap[[CBORValue textString:@"version"]] = [CBORValue unsignedInteger:self.version];
+    commitDict[@"version"] = @(self.version);
 
-    // data (optional)
+    // data (optional) - CID-link (tag 42)
     if (self.dataCID) {
-        commitMap[[CBORValue textString:@"data"]] = [CBORValue textString:self.dataCID.stringValue];
+        commitDict[@"data"] = self.dataCID;
     }
 
     // rev (required)
-    commitMap[[CBORValue textString:@"rev"]] = [CBORValue textString:self.rev];
+    commitDict[@"rev"] = self.rev;
 
-    // prev (optional)
+    // prev (optional) - CID-link (tag 42)
     if (self.prevCID) {
-        commitMap[[CBORValue textString:@"prev"]] = [CBORValue textString:self.prevCID.stringValue];
+        commitDict[@"prev"] = self.prevCID;
     }
 
-    CBORValue *commitValue = [CBORValue map:commitMap];
-    return [CBOREncoder encode:commitValue];
+    NSError *error = nil;
+    NSData *encoded = [ATProtoDagCBOR encodeObject:commitDict error:&error];
+    if (!encoded) {
+        NSLog(@"Failed to encode commit: %@", error);
+        return nil;
+    }
+    return encoded;
 }
 
 - (nullable NSData *)computeHash {
@@ -55,41 +61,48 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 }
 
 - (NSData *)serializeSigned {
-    NSMutableDictionary<CBORValue *, CBORValue *> *commitMap = [NSMutableDictionary dictionary];
+    NSMutableDictionary *commitDict = [NSMutableDictionary dictionary];
 
     // did
-    commitMap[[CBORValue textString:@"did"]] = [CBORValue textString:self.did];
+    commitDict[@"did"] = self.did;
 
     // version
-    commitMap[[CBORValue textString:@"version"]] = [CBORValue unsignedInteger:self.version];
+    commitDict[@"version"] = @(self.version);
 
-    // data (optional)
+    // data (optional) - CID-link (tag 42)
     if (self.dataCID) {
-        commitMap[[CBORValue textString:@"data"]] = [CBORValue textString:self.dataCID.stringValue];
+        commitDict[@"data"] = self.dataCID;
     }
 
     // rev
-    commitMap[[CBORValue textString:@"rev"]] = [CBORValue textString:self.rev];
+    commitDict[@"rev"] = self.rev;
 
-    // prev (optional)
+    // prev (optional) - CID-link (tag 42)
     if (self.prevCID) {
-        commitMap[[CBORValue textString:@"prev"]] = [CBORValue textString:self.prevCID.stringValue];
+        commitDict[@"prev"] = self.prevCID;
     }
 
     // sig (required for signed commit)
     if (self.signature) {
-        commitMap[[CBORValue textString:@"sig"]] = [CBORValue byteString:self.signature];
+        commitDict[@"sig"] = self.signature;
     }
 
-    CBORValue *commitValue = [CBORValue map:commitMap];
-    return [CBOREncoder encode:commitValue];
+    NSError *error = nil;
+    NSData *encoded = [ATProtoDagCBOR encodeObject:commitDict error:&error];
+    if (!encoded) {
+        NSLog(@"Failed to encode signed commit: %@", error);
+        return nil;
+    }
+    return encoded;
 }
 
 - (CID *)computeCID {
     NSData *serialized = [self serializeSigned];
     // Compute SHA-256 hash and create CID with DAG-CBOR codec (0x71)
     NSData *hash = [CID sha256Digest:serialized];
-    return [CID cidWithDigest:hash codec:0x71]; // DAG-CBOR codec
+    CID *cid = [CID cidWithDigest:hash codec:0x71]; // DAG-CBOR codec
+    NSLog(@"[RepoCommit] computeCID: %@ (hash: %@, signed data length: %lu)", cid.stringValue, [hash description], (unsigned long)serialized.length);
+    return cid;
 }
 
 - (nullable NSData *)exportCAR {
@@ -168,34 +181,22 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return nil;
     }
 
-    // Decode the CBOR data
-    CBORValue *decoded = [CBORDecoder decode:commitBlock.data];
-    if (!decoded || decoded.type != CBORTypeMap) {
+    // Decode using the spec-compliant DAG-CBOR parser
+    id decoded = [ATProtoDagCBOR decodeData:commitBlock.data error:error];
+    if (![decoded isKindOfClass:[NSDictionary class]]) {
         if (error) {
             *error = [NSError errorWithDomain:RepoCommitErrorDomain
                                          code:-4
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid commit CBOR data"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid commit CBOR data: not a map"}];
         }
         return nil;
     }
 
-    NSDictionary<CBORValue *, CBORValue *> *commitMap = decoded.map;
-    if (!commitMap) {
-        if (error) {
-            *error = [NSError errorWithDomain:RepoCommitErrorDomain
-                                         code:-4
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid commit structure"}];
-        }
-        return nil;
-    }
-
-    // Extract fields
+    NSDictionary *commitMap = (NSDictionary *)decoded;
     RepoCommit *commit = [[self alloc] init];
 
     // did (required)
-    CBORValue *didKey = [CBORValue textString:@"did"];
-    CBORValue *didValue = commitMap[didKey];
-    if (!didValue || didValue.type != CBORTypeTextString) {
+    if (![commitMap[@"did"] isKindOfClass:[NSString class]]) {
         if (error) {
             *error = [NSError errorWithDomain:RepoCommitErrorDomain
                                          code:-4
@@ -203,32 +204,29 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         }
         return nil;
     }
-    commit.did = didValue.textString;
+    commit.did = commitMap[@"did"];
 
     // version (required)
-    CBORValue *versionKey = [CBORValue textString:@"version"];
-    CBORValue *versionValue = commitMap[versionKey];
-    if (!versionValue || versionValue.type != CBORTypeUnsignedInteger) {
+    if (!commitMap[@"version"]) {
         if (error) {
             *error = [NSError errorWithDomain:RepoCommitErrorDomain
                                          code:-4
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing or invalid 'version' field"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing 'version' field"}];
         }
         return nil;
     }
-    commit.version = versionValue.unsignedInteger.integerValue;
+    commit.version = [commitMap[@"version"] integerValue];
 
-    // data (optional)
-    CBORValue *dataKey = [CBORValue textString:@"data"];
-    CBORValue *dataValue = commitMap[dataKey];
-    if (dataValue && dataValue.type == CBORTypeTextString) {
-        commit.dataCID = [CID cidFromString:dataValue.textString];
+    // data (optional) - CID-link
+    id dataValue = commitMap[@"data"];
+    if ([dataValue isKindOfClass:[CID class]]) {
+        commit.dataCID = (CID *)dataValue;
+    } else if ([dataValue isKindOfClass:[NSString class]]) {
+        commit.dataCID = [CID cidFromString:(NSString *)dataValue];
     }
 
     // rev (required)
-    CBORValue *revKey = [CBORValue textString:@"rev"];
-    CBORValue *revValue = commitMap[revKey];
-    if (!revValue || revValue.type != CBORTypeTextString) {
+    if (![commitMap[@"rev"] isKindOfClass:[NSString class]]) {
         if (error) {
             *error = [NSError errorWithDomain:RepoCommitErrorDomain
                                          code:-4
@@ -236,20 +234,20 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         }
         return nil;
     }
-    commit.rev = revValue.textString;
+    commit.rev = commitMap[@"rev"];
 
-    // prev (optional)
-    CBORValue *prevKey = [CBORValue textString:@"prev"];
-    CBORValue *prevValue = commitMap[prevKey];
-    if (prevValue && prevValue.type == CBORTypeTextString) {
-        commit.prevCID = [CID cidFromString:prevValue.textString];
+    // prev (optional) - CID-link
+    id prevValue = commitMap[@"prev"];
+    if ([prevValue isKindOfClass:[CID class]]) {
+        commit.prevCID = (CID *)prevValue;
+    } else if ([prevValue isKindOfClass:[NSString class]]) {
+        commit.prevCID = [CID cidFromString:(NSString *)prevValue];
     }
 
     // sig (optional, for signed commits)
-    CBORValue *sigKey = [CBORValue textString:@"sig"];
-    CBORValue *sigValue = commitMap[sigKey];
-    if (sigValue && sigValue.type == CBORTypeByteString) {
-        commit.signature = sigValue.byteString;
+    id sigValue = commitMap[@"sig"];
+    if ([sigValue isKindOfClass:[NSData class]]) {
+        commit.signature = (NSData *)sigValue;
     }
 
     return commit;

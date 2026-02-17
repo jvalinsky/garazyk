@@ -376,11 +376,19 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @return YES if the proof is valid, NO otherwise.
  */
 + (BOOL)verifyProof:(NSString *)dpopJwt
-             method:(NSString *)method
-                url:(NSURL *)url
-              nonce:(nullable NSString *)nonce
-      outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
-              error:(NSError **)error;
+              method:(NSString *)method
+                 url:(NSURL *)url
+               nonce:(nullable NSString *)nonce
+        requireNonce:(BOOL)requireNonce
+       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+               error:(NSError **)error;
+
++ (BOOL)verifyProof:(NSString *)dpopJwt
+              method:(NSString *)method
+                 url:(NSURL *)url
+               nonce:(nullable NSString *)nonce
+       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+               error:(NSError **)error;
 
 @end
 

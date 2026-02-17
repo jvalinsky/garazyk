@@ -8,8 +8,12 @@ PDS_LOG="${LOG_DIR}/pds.log"
 PLC_LOG="${LOG_DIR}/plc.log"
 
 cat > "${CONFIG_PATH}" <<EOF
-{"server":{"data_dir":"${DATA_DIR}","host":"localhost"},"plc":{"url":"http://localhost:2582"}}
+{"server":{"data_dir":"${DATA_DIR}","host":"localhost"},"plc":{"url":"http://localhost:2582"},"debug":{"skip_plc_operations":false}}
 EOF
+
+# Disable biometric/keychain for headless tests
+export PDS_USE_BIOMETRIC_PROTECTION=false
+export PDS_USE_KEYCHAIN=false
 
 # Ensure cleanup on exit
 cleanup() {
@@ -83,5 +87,8 @@ echo "[E2E] Creating test accounts..."
         exit 1
     }
 
-echo "[E2E] Running Puppeteer tests..."
-npm --prefix Tests/e2e test
+echo "[E2E] Running integration tests..."
+export PDS_URL="http://localhost:2583"
+export PLC_URL="http://localhost:2582"
+chmod +x ./ATProtoPDS/Tests/plc_e2e/run-integration-tests.sh
+./ATProtoPDS/Tests/plc_e2e/run-integration-tests.sh
