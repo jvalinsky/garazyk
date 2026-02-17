@@ -12,7 +12,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import <os/log.h>
+#import "Debug/PDSLogger.h"
 
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
 NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
@@ -29,11 +29,6 @@ static NSString * const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 @property (nonatomic, strong) WebSocketServer *webSocketServer;
 @property (nonatomic, strong) EventFormatter *eventFormatter;
 @property (nonatomic, strong) PDSController *controller;
-#if defined(GNUSTEP)
-@property (nonatomic, assign) os_log_t log;
-#else
-@property (nonatomic, strong) os_log_t log;
-#endif
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger sequenceNumber;
 @property (nonatomic, assign) BOOL sequenceInitialized;
@@ -59,7 +54,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (self) {
         _controller = controller;
         _eventFormatter = [[EventFormatter alloc] init];
-        _log = os_log_create("com.atproto.pds.subscribeRepos", "SubscribeReposHandler");
         _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events", DISPATCH_QUEUE_SERIAL);
         dispatch_queue_set_specific(_eventQueue, kSubscribeReposEventQueueKey, kSubscribeReposEventQueueKey, NULL);
         _sequenceNumber = 0;
@@ -82,7 +76,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
-    os_log_info(self.log, "Starting subscribeRepos WebSocket handler on port %d", port);
+    PDS_LOG_SYNC_INFO(@"Starting subscribeRepos WebSocket handler on port %d", port);
 
     [self ensureSequenceInitialized];
 
@@ -91,7 +85,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     self.webSocketServer.subprotocol = @"com.atproto.sync.subscribeRepos";
 
     if (![self.webSocketServer start:error]) {
-        os_log_error(self.log, "Failed to start WebSocket server: %@", *error);
+        PDS_LOG_SYNC_ERROR(@"Failed to start WebSocket server: %@", *error);
         return NO;
     }
 
@@ -99,12 +93,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         [self.delegate subscribeReposHandlerDidStart:self];
     }
 
-    os_log_info(self.log, "SubscribeRepos WebSocket handler started successfully");
+    PDS_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler started successfully");
     return YES;
 }
 
 - (void)stop {
-    os_log_info(self.log, "Stopping subscribeRepos WebSocket handler");
+    PDS_LOG_SYNC_INFO(@"Stopping subscribeRepos WebSocket handler");
 
     self.stopping = YES;
     if (dispatch_get_specific(kSubscribeReposEventQueueKey) == NULL) {
@@ -128,7 +122,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         [self.delegate subscribeReposHandlerDidStop:self];
     }
 
-    os_log_info(self.log, "SubscribeRepos WebSocket handler stopped");
+    PDS_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler stopped");
 }
 
 - (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection request:(HttpRequest *)request {
@@ -151,7 +145,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 #pragma mark - WebSocketServerDelegate
 
 - (void)webSocketServer:(WebSocketServer *)server didAcceptConnection:(WebSocketConnection *)connection {
-    os_log_info(self.log, "Accepted new WebSocket connection for subscribeRepos");
+    PDS_LOG_SYNC_INFO(@"Accepted new WebSocket connection for subscribeRepos");
 
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didAcceptConnection:)]) {
         [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
@@ -161,7 +155,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)webSocketServer:(WebSocketServer *)server didCloseConnection:(WebSocketConnection *)connection {
-    os_log_info(self.log, "Closed WebSocket connection for subscribeRepos");
+    PDS_LOG_SYNC_INFO(@"Closed WebSocket connection for subscribeRepos");
 
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
         [self.delegate subscribeReposHandler:self didCloseConnection:connection];
@@ -169,17 +163,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)webSocketServer:(WebSocketServer *)server didFailWithError:(NSError *)error {
-    os_log_error(self.log, "WebSocket server failed: %@", error);
+    PDS_LOG_SYNC_ERROR(@"WebSocket server failed: %@", error);
 }
 
 - (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state {
-    os_log_info(self.log, "WebSocket server state changed to: %ld", (long)state);
+    PDS_LOG_SYNC_INFO(@"WebSocket server state changed to: %ld", (long)state);
 }
 
 #pragma mark - WebSocketConnectionDelegate
 
 - (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
-    os_log_info(self.log, "Main-port WebSocket connection closed (code=%ld, reason=%@)", (long)code, reason ?: @"");
+    PDS_LOG_SYNC_INFO(@"Main-port WebSocket connection closed (code=%ld, reason=%@)", (long)code, reason ?: @"");
     [self detachConnection:connection];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
         [self.delegate subscribeReposHandler:self didCloseConnection:connection];
@@ -187,7 +181,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
-    os_log_error(self.log, "Main-port WebSocket connection failed: %@", error);
+    PDS_LOG_SYNC_ERROR(@"Main-port WebSocket connection failed: %@", error);
     [self detachConnection:connection];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
         [self.delegate subscribeReposHandler:self didCloseConnection:connection];
@@ -244,17 +238,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSData *eventData = [self.eventFormatter encodeCommitEvent:event error:&error];
 
         if (!eventData) {
-            os_log_error(self.log, "Failed to encode commit event: %@", error);
+            PDS_LOG_SYNC_ERROR(@"Failed to encode commit event: %@", error);
             return;
         }
 
         NSError *persistError = nil;
         if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"commit" data:eventData error:&persistError]) {
-            os_log_error(self.log, "Failed to persist commit event: %@", persistError);
+            PDS_LOG_SYNC_ERROR(@"Failed to persist commit event: %@", persistError);
         }
 
         [self broadcastEventData:eventData];
-        os_log_info(self.log, "Broadcast commit event for repo %@, seq %lu", repoDid, (unsigned long)self.sequenceNumber);
+        PDS_LOG_SYNC_INFO(@"Broadcast commit event for repo %@, seq %lu", repoDid, (unsigned long)self.sequenceNumber);
     });
 }
 
@@ -274,17 +268,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSData *eventData = [self.eventFormatter encodeIdentityEvent:event error:&error];
 
         if (!eventData) {
-            os_log_error(self.log, "Failed to encode identity event: %@", error);
+            PDS_LOG_SYNC_ERROR(@"Failed to encode identity event: %@", error);
             return;
         }
 
         NSError *persistError = nil;
         if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"identity" data:eventData error:&persistError]) {
-            os_log_error(self.log, "Failed to persist identity event: %@", persistError);
+            PDS_LOG_SYNC_ERROR(@"Failed to persist identity event: %@", persistError);
         }
 
         [self broadcastEventData:eventData];
-        os_log_info(self.log, "Broadcast identity event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
+        PDS_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
     });
 }
 
@@ -306,17 +300,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSData *eventData = [self.eventFormatter encodeAccountEvent:event error:&error];
 
         if (!eventData) {
-            os_log_error(self.log, "Failed to encode account event: %@", error);
+            PDS_LOG_SYNC_ERROR(@"Failed to encode account event: %@", error);
             return;
         }
 
         NSError *persistError = nil;
         if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"account" data:eventData error:&persistError]) {
-            os_log_error(self.log, "Failed to persist account event: %@", persistError);
+            PDS_LOG_SYNC_ERROR(@"Failed to persist account event: %@", persistError);
         }
 
         [self broadcastEventData:eventData];
-        os_log_info(self.log, "Broadcast account takedown event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
+        PDS_LOG_SYNC_INFO(@"Broadcast account takedown event for DID %@, seq %lu", did, (unsigned long)self.sequenceNumber);
     });
 }
 
@@ -336,17 +330,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSData *eventData = [self.eventFormatter encodeInfoEvent:event error:&error];
 
         if (!eventData) {
-            os_log_error(self.log, "Failed to encode info event: %@", error);
+            PDS_LOG_SYNC_ERROR(@"Failed to encode info event: %@", error);
             return;
         }
 
         NSError *persistError = nil;
         if (![self.controller.serviceDatabases persistEvent:self.sequenceNumber type:@"info" data:eventData error:&persistError]) {
-            os_log_error(self.log, "Failed to persist info event: %@", persistError);
+            PDS_LOG_SYNC_ERROR(@"Failed to persist info event: %@", persistError);
         }
 
         [self broadcastEventData:eventData];
-        os_log_info(self.log, "Broadcast info event (%@), seq %lu", kind, (unsigned long)self.sequenceNumber);
+        PDS_LOG_SYNC_INFO(@"Broadcast info event (%@), seq %lu", kind, (unsigned long)self.sequenceNumber);
     });
 }
 
@@ -364,7 +358,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor {
-    os_log_info(self.log, "Sending initial repository state to new connection");
+    PDS_LOG_SYNC_INFO(@"Sending initial repository state to new connection");
 
     if (!cursor) {
         id cursorParam = connection.queryParams[@"cursor"];
@@ -384,7 +378,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (hasCursor) {
         cursorValid = [self parseCursorString:cursor outValue:&parsedCursor];
         if (cursorValid) {
-            os_log_info(self.log, "Client requested resumption from cursor %@ (seq %lu)", cursor, (unsigned long)parsedCursor);
+            PDS_LOG_SYNC_INFO(@"Client requested resumption from cursor %@ (seq %lu)", cursor, (unsigned long)parsedCursor);
         }
     }
 
@@ -415,7 +409,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
             NSArray<PDSDatabaseRepo *> *repos = [self.controller.userDatabasePool getAllReposWithError:&error];
 
             if (error) {
-                os_log_error(self.log, "Failed to get all repos: %@", error);
+                PDS_LOG_SYNC_ERROR(@"Failed to get all repos: %@", error);
                 [self sendInfoEvent:@"OutdatedCursor" message:@"Unable to retrieve repository state" toConnection:connection];
                 return;
             }
@@ -436,13 +430,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                         if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
                             return;
                         }
-                        os_log_debug(self.log, "Sent identity event for repo %@ (root: %@)", repo.ownerDid, cidString);
+                        PDS_LOG_SYNC_DEBUG(@"Sent identity event for repo %@ (root: %@)", repo.ownerDid, cidString);
                     } else {
-                        os_log_error(self.log, "Failed to encode identity event for repo %@: %@", repo.ownerDid, encodeError);
+                        PDS_LOG_SYNC_ERROR(@"Failed to encode identity event for repo %@: %@", repo.ownerDid, encodeError);
                     }
                 }
             }
-            os_log_info(self.log, "Completed sending initial state for %lu repos to new connection", (unsigned long)repos.count);
+            PDS_LOG_SYNC_INFO(@"Completed sending initial state for %lu repos to new connection", (unsigned long)repos.count);
         }
 
         if (cursorSeq > 0) {
@@ -461,7 +455,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor toConnection:(WebSocketConnection *)connection {
-    os_log_info(self.log, "Replaying events after cursor %lu", (unsigned long)cursor);
+    PDS_LOG_SYNC_INFO(@"Replaying events after cursor %lu", (unsigned long)cursor);
     [self ensureSequenceInitialized];
     
     NSUInteger fetchCursor = cursor;
@@ -472,7 +466,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSError *error = nil;
         NSArray *events = [self.controller.serviceDatabases getEventsSince:fetchCursor limit:kSubscribeReposReplayBatchSize error:&error];
         if (error || !events) {
-            os_log_error(self.log, "Failed to fetch events for replay: %@", error);
+            PDS_LOG_SYNC_ERROR(@"Failed to fetch events for replay: %@", error);
             break;
         }
         
@@ -510,7 +504,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         }
     }
     
-    os_log_info(self.log, "Replay completed. Last cursor: %lu", (unsigned long)fetchCursor);
+    PDS_LOG_SYNC_INFO(@"Replay completed. Last cursor: %lu", (unsigned long)fetchCursor);
 }
 
 - (void)sendInfoEvent:(NSString *)kind message:(NSString *)message toConnection:(WebSocketConnection *)connection {
@@ -523,9 +517,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     if (eventData) {
         [connection sendMessage:eventData];
-        os_log_debug(self.log, "Sent info event (%@) to connection", kind);
+        PDS_LOG_SYNC_DEBUG(@"Sent info event (%@) to connection", kind);
     } else {
-        os_log_error(self.log, "Failed to encode info event: %@", error);
+        PDS_LOG_SYNC_ERROR(@"Failed to encode info event: %@", error);
     }
 }
 
@@ -560,7 +554,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (eventData) {
         [connection sendMessage:eventData];
     } else {
-        os_log_error(self.log, "Failed to encode error event (%@): %@", code, error);
+        PDS_LOG_SYNC_ERROR(@"Failed to encode error event (%@): %@", code, error);
     }
 }
 
@@ -597,13 +591,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSError *dbError = nil;
         int64_t maxSequence = [self.controller.serviceDatabases getMaxEventSequence:&dbError];
         if (dbError) {
-            os_log_error(self.log, "Failed to get max event sequence: %@", dbError);
+            PDS_LOG_SYNC_ERROR(@"Failed to get max event sequence: %@", dbError);
             return;
         }
 
         self.sequenceNumber = (NSUInteger)MAX((int64_t)0, maxSequence);
         self.sequenceInitialized = YES;
-        os_log_info(self.log, "Initialized sequence number to %lu", (unsigned long)self.sequenceNumber);
+        PDS_LOG_SYNC_INFO(@"Initialized sequence number to %lu", (unsigned long)self.sequenceNumber);
     }
 }
 
