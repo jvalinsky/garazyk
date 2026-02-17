@@ -35,32 +35,34 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 }
 
 - (PDSEmailHTTPClient *)httpClientWithError:(NSError **)error {
-    if (_httpClient) {
+    @synchronized (self) {
+        if (_httpClient) {
+            return _httpClient;
+        }
+
+        NSString *apiKey = [self.secretsProvider secretForKey:kResendAPIKeySecretName error:error];
+        if (!apiKey) {
+            if (error && !*error) {
+                *error = [NSError errorWithDomain:@"PDSResendEmailProviderErrorDomain"
+                                             code:1
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing Resend API Key"}];
+            }
+            return nil;
+        }
+
+        NSURL *baseURL = [NSURL URLWithString:self.apiEndpoint];
+        if (!baseURL) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PDSResendEmailProviderErrorDomain"
+                                             code:2
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid API Endpoint URL"}];
+            }
+            return nil;
+        }
+
+        _httpClient = [[PDSEmailHTTPClient alloc] initWithBaseURL:baseURL apiKey:apiKey];
         return _httpClient;
     }
-
-    NSString *apiKey = [self.secretsProvider secretForKey:kResendAPIKeySecretName error:error];
-    if (!apiKey) {
-        if (error && !*error) {
-            *error = [NSError errorWithDomain:@"PDSResendEmailProviderErrorDomain"
-                                         code:1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing Resend API Key"}];
-        }
-        return nil;
-    }
-
-    NSURL *baseURL = [NSURL URLWithString:self.apiEndpoint];
-    if (!baseURL) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"PDSResendEmailProviderErrorDomain"
-                                         code:2
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid API Endpoint URL"}];
-        }
-        return nil;
-    }
-
-    _httpClient = [[PDSEmailHTTPClient alloc] initWithBaseURL:baseURL apiKey:apiKey];
-    return _httpClient;
 }
 
 #pragma mark - PDSEmailProvider
@@ -71,10 +73,12 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
               error:(NSError **)error {
     PDS_LOG_INFO(@"[Resend] Sending email to: %@ subject: %@", to, subject);
 
-    PDSEmailHTTPClient *client = [self httpClientWithError:error];
+    NSError *localError = nil;
+    PDSEmailHTTPClient *client = [self httpClientWithError:&localError];
     if (!client) {
-        if (error && *error) {
-            PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", *error);
+        PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", localError);
+        if (error) {
+            *error = localError;
         }
         return NO;
     }
@@ -86,13 +90,14 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
         @"text": body
     };
 
-    NSDictionary *response = [client postPath:@"/emails" body:payload error:error];
+    NSDictionary *response = [client postPath:@"/emails" body:payload error:&localError];
     if (response) {
         PDS_LOG_INFO(@"[Resend] Successfully sent email to: %@ (ID: %@)", to, response[@"id"]);
         return YES;
     } else {
-        if (error && *error) {
-            PDS_LOG_ERROR(@"[Resend] Failed to send email to: %@ error: %@", to, *error);
+        PDS_LOG_ERROR(@"[Resend] Failed to send email to: %@ error: %@", to, localError);
+        if (error) {
+            *error = localError;
         }
         return NO;
     }
@@ -105,10 +110,12 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
                   error:(NSError **)error {
     PDS_LOG_INFO(@"[Resend] Sending HTML email to: %@ subject: %@", to, subject);
 
-    PDSEmailHTTPClient *client = [self httpClientWithError:error];
+    NSError *localError = nil;
+    PDSEmailHTTPClient *client = [self httpClientWithError:&localError];
     if (!client) {
-        if (error && *error) {
-            PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", *error);
+        PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", localError);
+        if (error) {
+            *error = localError;
         }
         return NO;
     }
@@ -124,13 +131,14 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
         payload[@"text"] = textBody;
     }
 
-    NSDictionary *response = [client postPath:@"/emails" body:payload error:error];
+    NSDictionary *response = [client postPath:@"/emails" body:payload error:&localError];
     if (response) {
         PDS_LOG_INFO(@"[Resend] Successfully sent HTML email to: %@ (ID: %@)", to, response[@"id"]);
         return YES;
     } else {
-        if (error && *error) {
-            PDS_LOG_ERROR(@"[Resend] Failed to send HTML email to: %@ error: %@", to, *error);
+        PDS_LOG_ERROR(@"[Resend] Failed to send HTML email to: %@ error: %@", to, localError);
+        if (error) {
+            *error = localError;
         }
         return NO;
     }
