@@ -179,6 +179,11 @@ typedef NS_ENUM(NSInteger, SessionError) {
  */
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
+                                  scope:(NSString *)scope
+                      dpopKeyThumbprint:(nullable NSString *)jkt;
+
++ (nullable instancetype)sessionWithDID:(NSString *)did
+                                 handle:(NSString *)handle
                                   scope:(NSString *)scope;
 
 /*!
@@ -195,6 +200,12 @@ typedef NS_ENUM(NSInteger, SessionError) {
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
+                                 minter:(nullable JWTMinter *)minter
+                      dpopKeyThumbprint:(nullable NSString *)jkt;
+
++ (nullable instancetype)sessionWithDID:(NSString *)did
+                                 handle:(NSString *)handle
+                                  scope:(NSString *)scope
                                  minter:(nullable JWTMinter *)minter;
 
 /*!
@@ -205,11 +216,17 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param did The user's DID.
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
+ @param jkt The DPoP key thumbprint.
  @return An initialized Session instance.
  */
 - (instancetype)initWithDID:(NSString *)did
                     handle:(NSString *)handle
-                     scope:(NSString *)scope;
+                     scope:(NSString *)scope
+         dpopKeyThumbprint:(nullable NSString *)jkt;
+
+- (instancetype)initWithDID:(NSString *)did
+                     handle:(NSString *)handle
+                      scope:(NSString *)scope;
 
 /*!
  @method initWithDID:handle:scope:minter:
@@ -220,12 +237,19 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
  @param minter The JWT minter to use for access tokens.
+ @param jkt The DPoP key thumbprint.
  @return An initialized Session instance.
  */
 - (instancetype)initWithDID:(NSString *)did
                     handle:(NSString *)handle
                      scope:(NSString *)scope
-                    minter:(nullable JWTMinter *)minter;
+                    minter:(nullable JWTMinter *)minter
+         dpopKeyThumbprint:(nullable NSString *)jkt;
+
+- (instancetype)initWithDID:(NSString *)did
+                     handle:(NSString *)handle
+                      scope:(NSString *)scope
+                     minter:(nullable JWTMinter *)minter;
 
 /*!
  @method toTokenResponse
@@ -273,26 +297,40 @@ typedef NS_ENUM(NSInteger, SessionError) {
 
  @end
 
+
+
+/*!
+ @protocol PDSSessionStorage
+ @abstract Protocol for session storage backends.
+ */
+@protocol PDSSessionStorage <NSObject>
+- (BOOL)saveSession:(Session *)session error:(NSError **)error;
+- (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error;
+- (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error;
+- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
+- (BOOL)revokeSessionByID:(NSString *)sessionID error:(NSError **)error;
+- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
+- (NSArray<Session *> *)allActiveSessions:(NSError **)error;
+@end
+
+/*!
+ @class PDSMemorySessionStorage
+ @abstract In-memory implementation of session storage.
+ */
+@interface PDSMemorySessionStorage : NSObject <PDSSessionStorage>
+@end
+
+/*!
+ @class PDSSQLiteSessionStorage
+ @abstract SQLite-backed implementation of session storage.
+ */
+@interface PDSSQLiteSessionStorage : NSObject <PDSSessionStorage>
+- (instancetype)initWithPath:(NSString *)path;
+@end
+
 /*!
  @class SessionStore
- 
  @abstract Manages storage and lifecycle of sessions.
- 
- @discussion SessionStore provides persistent storage for sessions and
- handles creation, retrieval, refresh, and revocation of sessions.
- It implements token minting and validation logic.
- 
- @code
- // Create a session for a user
- SessionStore *store = [SessionStore sharedStore];
- Session *session = [store createSessionForDID:@"did:plc:..."
-                                       handle:@"user.bsky.social"
-                                        scope:@"atproto"
-                                      dpopJWK:jwkDict];
- 
- // Look up by access token
- Session *found = [store getSessionByAccessToken:token error:nil];
- @endcode
  */
 @interface SessionStore : NSObject
 
@@ -316,6 +354,19 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return The singleton SessionStore instance.
  */
 + (instancetype)sharedStore;
+
+/*!
+ @method initWithDatabasePath:
+ 
+ @abstract Creates a session store backed by a SQLite database at the given path.
+ 
+ @discussion Sessions are persisted to disk and survive process restarts.
+ Pass nil or use init for an in-memory store (legacy behavior).
+ 
+ @param path File path for the SQLite database, or nil for in-memory.
+ @return An initialized SessionStore instance.
+ */
+- (instancetype)initWithDatabasePath:(nullable NSString *)path;
 
 /*!
  @method createSessionForDID:handle:scope:dpopJWK:

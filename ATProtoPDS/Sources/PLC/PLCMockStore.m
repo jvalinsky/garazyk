@@ -89,4 +89,53 @@
     return keys ?: @[];
 }
 
+- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
+    __block PLCOperation *op = nil;
+    dispatch_sync(self.queue, ^{
+        NSArray<PLCOperation *> *history = self.storage[did];
+        if (history && history.count > 0) {
+            // Find last non-nullified operation? Spec says "latest operation", usually implies valid chain tip.
+            // But log/last usually returns just the last entry.
+            // Let's return the absolute last entry regardless of nullification status for now,
+            // as that's what "log" implies (append-only).
+            op = history.lastObject;
+        }
+    });
+    return op;
+}
+
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+                                                      count:(NSUInteger)count
+                                                      error:(NSError **)error {
+    __block NSArray<PLCOperation *> *result = nil;
+    dispatch_sync(self.queue, ^{
+        NSMutableArray<PLCOperation *> *allOps = [NSMutableArray array];
+        for (NSArray<PLCOperation *> *didOps in self.storage.allValues) {
+            [allOps addObjectsFromArray:didOps];
+        }
+        
+        if (after) {
+            NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(PLCOperation *op, NSDictionary *bindings) {
+                return [op.createdAt compare:after] == NSOrderedDescending;
+            }];
+            [allOps filterUsingPredicate:predicate];
+        }
+        
+        [allOps sortUsingComparator:^NSComparisonResult(PLCOperation *op1, PLCOperation *op2) {
+            NSComparisonResult timeResult = [op1.createdAt compare:op2.createdAt];
+            if (timeResult == NSOrderedSame) {
+                return [op1.cid compare:op2.cid]; // Fallback sort
+            }
+            return timeResult;
+        }];
+        
+        if (allOps.count > count) {
+            result = [allOps subarrayWithRange:NSMakeRange(0, count)];
+        } else {
+            result = [allOps copy];
+        }
+    });
+    return result ?: @[];
+}
+
 @end

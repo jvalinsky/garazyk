@@ -74,15 +74,9 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
 
 /*! Decodes an event from CBOR data, returning header and body separately. */
 - (nullable NSDictionary *)decodeEventFromData:(NSData *)data
-                                           op:(NSInteger *)op
-                                      msgType:(NSString **)msgType
+                                           op:(nullable NSInteger *)op
+                                      msgType:(NSString * _Nullable * _Nullable)msgType
                                          error:(NSError **)error;
-
-/*! Encodes any object to CBOR. */
-- (nullable NSData *)encodeCBORObject:(id)object error:(NSError **)error;
-
-/*! Decodes CBOR data to an object. */
-- (nullable id)decodeCBORData:(NSData *)data error:(NSError **)error;
 
 @end
 

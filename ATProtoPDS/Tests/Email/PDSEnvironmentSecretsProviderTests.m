@@ -24,6 +24,9 @@
     NSString *testValue = @"test_secret_value_12345";
     
     setenv([testKey UTF8String], [testValue UTF8String], 1);
+    [self addTeardownBlock:^{
+        unsetenv([testKey UTF8String]);
+    }];
     
     PDSEnvironmentSecretsProvider *provider = [[PDSEnvironmentSecretsProvider alloc] init];
     NSError *error = nil;
@@ -32,8 +35,6 @@
     XCTAssertNotNil(value);
     XCTAssertNil(error);
     XCTAssertEqualObjects(value, testValue);
-    
-    unsetenv([testKey UTF8String]);
 }
 
 - (void)testSecretForKeyWithPrefix {
@@ -42,6 +43,9 @@
     NSString *fullKey = @"MYAPP_API_KEY";
     
     setenv([fullKey UTF8String], [testValue UTF8String], 1);
+    [self addTeardownBlock:^{
+        unsetenv([fullKey UTF8String]);
+    }];
     
     PDSEnvironmentSecretsProvider *provider = [[PDSEnvironmentSecretsProvider alloc] initWithPrefix:@"MYAPP_"];
     NSError *error = nil;
@@ -50,8 +54,6 @@
     XCTAssertNotNil(value);
     XCTAssertNil(error);
     XCTAssertEqualObjects(value, testValue);
-    
-    unsetenv([fullKey UTF8String]);
 }
 
 - (void)testSecretForKeyWithMissingVariable {
@@ -65,7 +67,7 @@
     
     XCTAssertNil(value);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, 2);
+    XCTAssertEqual(error.code, PDSEnvironmentSecretsProviderErrorKeyNotFound);
 }
 
 - (void)testSecretForKeyWithEmptyKey {
@@ -75,7 +77,7 @@
     
     XCTAssertNil(value);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, 1);
+    XCTAssertEqual(error.code, PDSEnvironmentSecretsProviderErrorInvalidKey);
 }
 
 @end

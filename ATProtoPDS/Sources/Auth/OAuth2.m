@@ -23,6 +23,8 @@
 #import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
+#import "Auth/PDSReplayCache.h"
+#import "Auth/PDSNonceManager.h"
 
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
 NSString * const OAuth2ScopeSignIn = @"atproto:signin";
@@ -712,6 +714,16 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
               nonce:(nullable NSString *)nonce
       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
               error:(NSError **)error {
+    return [self verifyProof:dpopJwt method:method url:url nonce:nil requireNonce:NO outThumbprint:thumbprint error:error];
+}
+
++ (BOOL)verifyProof:(NSString *)dpopJwt
+              method:(NSString *)method
+                 url:(NSURL *)url
+               nonce:(nullable NSString *)nonce
+        requireNonce:(BOOL)requireNonce
+     outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+               error:(NSError **)error {
     NSArray<NSString *> *parts = [dpopJwt componentsSeparatedByString:@"."];
     if (parts.count != 3) {
         if (error) {
@@ -793,13 +805,28 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         }
     }
 
-    if (nonce && ![nonce isEqualToString:payload[@"nonce"]]) {
+    // DPoP nonce check
+    NSString *proofNonce = payload[@"nonce"];
+    if (requireNonce && !proofNonce) {
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorInvalidDPoPProof
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP nonce mismatch"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof missing required nonce",
+                                                @"use_dpop_nonce": @YES}];
         }
         return NO;
+    }
+    
+    if (proofNonce) {
+        if (![[PDSNonceManager sharedManager] validateNonce:proofNonce]) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidDPoPProof
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP nonce mismatch or expired",
+                                                    @"use_dpop_nonce": @YES}];
+            }
+            return NO;
+        }
     }
 
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
@@ -818,6 +845,26 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorInvalidDPoPProof
                                      userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof expired"}];
+        }
+        return NO;
+    }
+
+    if (now - iat.doubleValue > 300) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP iat too old"}];
+        }
+        return NO;
+    }
+
+    // Check jti replay
+    NSDate *jtiExpiration = [NSDate dateWithTimeIntervalSince1970:iat.doubleValue + 300];
+    if (![[PDSReplayCache sharedCache] checkAndAddJTI:jti expiration:jtiExpiration]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP jti reuse detected"}];
         }
         return NO;
     }
@@ -1198,11 +1245,8 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     Session *session = [[Session alloc] initWithDID:did
                                              handle:handle
                                               scope:scope
-                                             minter:self.jwtMinter];
-
-    if (dpopKeyThumbprint) {
-        session.dpopKeyThumbprint = dpopKeyThumbprint;
-    }
+                                             minter:self.jwtMinter
+                                  dpopKeyThumbprint:dpopKeyThumbprint];
 
     self.activeSessions[session.sessionID] = session;
 

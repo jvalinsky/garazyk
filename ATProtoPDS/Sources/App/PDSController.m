@@ -9,7 +9,6 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "Repository/MST.h"
-#import "Repository/MSTPersistence.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Core/CID.h"
@@ -49,6 +48,10 @@
 
 
 NSString *const kDefaultPlcServerURL = @"https://plc.directory";
+
+#import "Email/PDSEmailProvider.h"
+#import "Email/PDSMockEmailProvider.h"
+#import "Email/PDSSMTPEmailProvider.h"
 
 @implementation PDSController {
     PDSApplication *_backingApplication;  // When initialized via initWithApplication:
@@ -181,9 +184,30 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
         [container reset];
         
-        PDSAccountService *accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
+        id<PDSEmailProvider> emailProvider = nil;
+        if (config) {
+            if ([config.emailProviderType isEqualToString:@"mock"]) {
+                emailProvider = [[PDSMockEmailProvider alloc] init];
+            } else if ([config.emailProviderType isEqualToString:@"smtp"]) {
+                emailProvider = [[PDSSMTPEmailProvider alloc] initWithHost:config.emailSmtpHost ?: @"localhost"
+                                                                      port:config.emailSmtpPort
+                                                                  username:config.emailSmtpUsername
+                                                                  password:config.emailSmtpPassword
+                                                                    useTLS:config.emailSmtpUseTLS];
+            }
+        }
+        
+        PDSAccountService *accountService = [[PDSAccountService alloc] initWithAccountRepository:nil
+                                                                                sessionRepository:nil
+                                                                                           minter:nil
+                                                                                    emailProvider:emailProvider];
+        accountService.databasePool = _userDatabasePool;
         accountService.serviceDatabases = _serviceDatabases;
         [container registerInstance:accountService forProtocol:@protocol(PDSAccountService)];
+        
+        if (emailProvider) {
+            [container registerInstance:emailProvider forProtocol:@protocol(PDSEmailProvider)];
+        }
         
         _accountService = [container resolveProtocol:@protocol(PDSAccountService)];
         
@@ -278,7 +302,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
     if (!_subscribeReposHandler) {
-        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:self];
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases];
+        // Inject the PDS signing key for firehose commit signatures
+        _subscribeReposHandler.signingKey = _jwtMinter.privateKey;
     }
     
     // Build and configure HTTP server using builder
@@ -484,32 +510,14 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
             forDid:(NSString *)did
     validationMode:(PDSValidationMode)mode
              error:(NSError **)error {
-    if (![_recordService putRecord:collection rkey:rkey value:value forDid:did validationMode:mode error:error]) {
-        return NO;
-    }
-    
-    // Update MST
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    NSDictionary *record = [_recordService getRecord:uri forDid:did error:nil];
-    if (record && record[@"cid"]) {
-        CID *cid = [CID cidFromString:record[@"cid"]];
-        NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
-        return [_repositoryService updateMSTForDid:did key:key cid:cid error:error];
-    }
-    return YES;
+    return [_recordService putRecord:collection rkey:rkey value:value forDid:did validationMode:mode error:error];
 }
 
 - (BOOL)deleteRecord:(NSString *)collection
                   rkey:(NSString *)rkey
                 forDid:(NSString *)did
                  error:(NSError **)error {
-    if (![_recordService deleteRecord:collection rkey:rkey forDid:did error:error]) {
-        return NO;
-    }
-    
-    // Update MST (remove)
-    NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
-    return [_repositoryService updateMSTForDid:did key:key cid:nil error:error];
+    return [_recordService deleteRecord:collection rkey:rkey forDid:did error:error];
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {

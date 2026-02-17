@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "PLC/PLCServer.h"
 #import "PLC/PLCMockStore.h"
+#import "PLC/PLCPersistentStore.h"
 #import "PLC/PLCAuditor.h"
 #import "Debug/PDSLogger.h"
 
@@ -34,9 +35,19 @@ int main(int argc, const char * argv[]) {
             }
         }
 
-        // For now, we only have PLCMockStore.
-        // If SQLiteStore is implemented later, we can use it here if dbPath is provided.
-        id<PLCStore> store = [[PLCMockStore alloc] init];
+        id<PLCStore> store = nil;
+        if (dbPath) {
+            NSError *storeError = nil;
+            store = [PLCPersistentStore storeWithPath:dbPath error:&storeError];
+            if (!store) {
+                PDS_LOG_CORE_ERROR(@"Failed to open persistent store at %@: %@", dbPath, storeError.localizedDescription);
+                return 1;
+            }
+            printf("Using persistent store at %s\n", [dbPath UTF8String]);
+        } else {
+            store = [[PLCMockStore alloc] init];
+            printf("Using in-memory mock store\n");
+        }
         PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:store];
         PLCServer *server = [[PLCServer alloc] initWithStore:store auditor:auditor port:port];
 

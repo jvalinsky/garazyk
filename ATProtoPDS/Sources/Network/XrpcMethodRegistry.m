@@ -14,6 +14,7 @@
 #import "AppView/NotificationService.h"
 #import "Auth/JWT.h"
 #import "Auth/OAuth2.h"
+#import "Auth/PDSNonceManager.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -27,6 +28,7 @@
 #import "Services/PDSPhoneVerificationProvider.h"
 #import "Repository/CAR.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/PLCOperation.h"
 #import "Database/PDSDatabase.h"
@@ -62,12 +64,22 @@ static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
 }
 
 @interface XrpcMethodRegistry (AuthHelpers)
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                             jwtMinter:(JWTMinter *)jwtMinter
+                       adminController:(id<PDSAdminController>)adminController
+                               request:(HttpRequest *)request;
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request;
 @end
 
-static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response, PDSController *controller) {
+static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response,
+                                   PDSServiceDatabases *serviceDatabases,
+                                   JWTMinter *jwtMinter,
+                                   id<PDSAdminController> adminController) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+    NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader
+                                                      jwtMinter:jwtMinter
+                                                adminController:adminController
+                                                        request:request];
     if (!did) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -75,7 +87,7 @@ static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response, 
     }
 
     NSError *dbError = nil;
-    PDSDatabase *db = [controller serviceDatabaseWithError:&dbError];
+    PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
     if (!db) {
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": dbError.localizedDescription ?: @"Failed to open service database"}];
@@ -1157,32 +1169,12 @@ static void setSubscribeLabelsUpgradeRequired(HttpRequest *request, HttpResponse
 }
 
 static NSString *currentISO8601String(void) {
-    if (@available(macOS 10.12, iOS 10.0, *)) {
-        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
-        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
-        return [formatter stringFromDate:[NSDate date]];
-    }
-
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    return [formatter stringFromDate:[NSDate date]];
+    return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
 static NSString *iso8601StringFromUnixTimestamp(NSTimeInterval timestamp) {
     NSDate *date = timestamp > 0 ? [NSDate dateWithTimeIntervalSince1970:timestamp] : [NSDate date];
-    if (@available(macOS 10.12, iOS 10.0, *)) {
-        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
-        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
-        return [formatter stringFromDate:date];
-    }
-
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    return [formatter stringFromDate:date];
+    return [NSDateFormatter atproto_stringFromDate:date];
 }
 
 static NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account) {
@@ -1645,9 +1637,10 @@ static BOOL updateAccountSigningKey(PDSServiceDatabases *serviceDatabases,
 
 static void registerTempUtilityMethods(XrpcDispatcher *dispatcher,
                                        PDSServiceDatabases *serviceDatabases,
-                                       PDSController *authController) {
+                                       JWTMinter *jwtMinter,
+                                       id<PDSAdminController> adminController) {
     [dispatcher registerMethod:@"com.atproto.temp.addReservedHandle" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -1886,7 +1879,8 @@ static void registerTempUtilityMethods(XrpcDispatcher *dispatcher,
 
 static void registerTempRevokeAccountCredentialsMethod(XrpcDispatcher *dispatcher,
                                                        PDSServiceDatabases *serviceDatabases,
-                                                       PDSController *authController) {
+                                                       JWTMinter *jwtMinter,
+                                                       id<PDSAdminController> adminController) {
     [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
@@ -1896,7 +1890,7 @@ static void registerTempRevokeAccountCredentialsMethod(XrpcDispatcher *dispatche
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -1961,9 +1955,10 @@ static void registerTempRevokeAccountCredentialsMethod(XrpcDispatcher *dispatche
 
 static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
                                                    PDSServiceDatabases *serviceDatabases,
-                                                   PDSController *authController) {
+                                                   JWTMinter *jwtMinter,
+                                                   id<PDSAdminController> adminController) {
     [dispatcher registerComAtprotoAdminSearchAccounts:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodGET) {
@@ -2026,7 +2021,7 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminSendEmail:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2074,7 +2069,7 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminUpdateAccountEmail:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2131,7 +2126,7 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminUpdateAccountHandle:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2185,7 +2180,7 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminUpdateAccountPassword:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2228,7 +2223,7 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminUpdateAccountSigningKey:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2275,11 +2270,11 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
 }
 
 static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
-                                                 PDSController *authController,
                                                  PDSServiceDatabases *serviceDatabases,
+                                                 JWTMinter *jwtMinter,
                                                  id<PDSAdminController> adminController) {
     [dispatcher registerComAtprotoAdminGetAccountInfo:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodGET) {
@@ -2316,7 +2311,7 @@ static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminGetAccountInfos:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodGET) {
@@ -2353,7 +2348,7 @@ static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminGetInviteCodes:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodGET) {
@@ -2404,7 +2399,7 @@ static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2446,7 +2441,7 @@ static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminDisableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2488,7 +2483,7 @@ static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminEnableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2530,7 +2525,7 @@ static void registerAdminAccountAndInviteMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminDisableInviteCodes:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -2613,11 +2608,12 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
 }
 
 static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
-                                                   PDSController *authController,
+                                                   PDSServiceDatabases *serviceDatabases,
+                                                   JWTMinter *jwtMinter,
                                                    id<PDSAdminController> adminController,
                                                    BOOL enforceMethodChecks) {
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (enforceMethodChecks && request.method != HttpMethodPOST) {
@@ -2651,7 +2647,7 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (enforceMethodChecks && request.method != HttpMethodPOST) {
@@ -2685,7 +2681,7 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoLabelCreateLabel:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (enforceMethodChecks && request.method != HttpMethodPOST) {
@@ -2719,7 +2715,7 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoLabelGetLabels:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, authController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (enforceMethodChecks && request.method != HttpMethodGET) {
@@ -2846,7 +2842,8 @@ static NSDictionary *resolveIdentityInfoForIdentifier(NSString *identifier,
 }
 
 static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
-                                                     PDSController *controller,
+                                                     JWTMinter *jwtMinter,
+                                                     id<PDSAdminController> adminController,
                                                      PDSServiceDatabases *serviceDatabases,
                                                      PDSDatabasePool *userDatabasePool,
                                                      PDSConfiguration *config) {
@@ -2877,7 +2874,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -2890,7 +2887,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -2995,7 +2992,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoIdentitySubmitPlcOperation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3030,7 +3027,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3066,7 +3063,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerGetAccountInviteCodes:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3100,7 +3097,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3113,7 +3110,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerRequestEmailUpdate:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3126,7 +3123,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerConfirmEmail:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3143,7 +3140,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *accountError = nil;
-        PDSDatabaseAccount *account = [controller.serviceDatabases getAccountByDid:did error:&accountError];
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
         if (!account) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"AccountNotFound", @"message": accountError.localizedDescription ?: @"Account not found"}];
@@ -3162,7 +3159,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerRequestAccountDelete:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3294,12 +3291,12 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{}];
     }];
 
-    registerTempUtilityMethods(dispatcher, serviceDatabases, controller);
-    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, controller);
+    registerTempUtilityMethods(dispatcher, serviceDatabases, jwtMinter, adminController);
+    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, jwtMinter, adminController);
 
     [dispatcher registerComAtprotoServerUpdateEmail:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3477,7 +3474,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
-                                                   PDSController *authController,
+                                                   JWTMinter *jwtMinter,
+                                                   id<PDSAdminController> adminController,
                                                    id<PDSAccountService> accountService,
                                                    PDSServiceDatabases *serviceDatabases,
                                                    PDSDatabasePool *userDatabasePool,
@@ -3547,7 +3545,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerGetSession:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -3599,7 +3597,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3620,7 +3618,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3653,7 +3651,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerCreateInviteCodes:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3715,7 +3713,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3757,7 +3755,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3785,7 +3783,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -3856,7 +3854,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Missing or invalid authorization token"}];
@@ -3938,45 +3936,15 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
 }
 
 static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
-                                    PDSController *authController,
+                                    JWTMinter *jwtMinter,
+                                    id<PDSAdminController> adminController,
                                     id<PDSAccountService> accountService,
                                     PDSRecordService *recordService,
                                     PDSBlobService *blobService,
-                                    PDSRepositoryService *repositoryService,
-                                    BOOL legacyMode) {
+                                    PDSRepositoryService *repositoryService) {
     [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
-        if (legacyMode) {
-            NSString *repo = [request queryParamForKey:@"repo"];
-            NSString *collection = [request queryParamForKey:@"collection"];
-            NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 50;
-            NSString *cursor = [request queryParamForKey:@"cursor"];
-
-            if (!repo || !collection) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo or collection"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSArray *records = [authController listRecordsForDid:repo
-                                                      collection:collection
-                                                           limit:limit
-                                                          cursor:cursor
-                                                           error:&error];
-
-            if (error) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{@"records": records ?: @[]}];
-            return;
-        }
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -4011,36 +3979,8 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoRepoGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (legacyMode) {
-            NSString *repo = [request queryParamForKey:@"repo"];
-            NSString *collection = [request queryParamForKey:@"collection"];
-            NSString *rkey = [request queryParamForKey:@"rkey"];
-
-            if (!repo || !collection || !rkey) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSDictionary *result = [authController getRecordForDid:repo
-                                                         collection:collection
-                                                               rkey:rkey
-                                                              error:&error];
-
-            if (error) {
-                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
-            return;
-        }
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -4073,7 +4013,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4083,41 +4023,16 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *collection = body[@"collection"];
         NSDictionary *record = body[@"record"];
+        NSString *rkey = body[@"rkey"];
+        NSString *repo = body[@"repo"];
+        BOOL validate = [body[@"validate"] boolValue];
 
-        if (legacyMode) {
-            NSString *repo = body[@"repo"];
-            if (!repo || !collection || !record) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or record"}];
-                return;
-            }
-
-            if (![repo isEqualToString:did]) {
-                response.statusCode = HttpStatusForbidden;
-                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSDictionary *result = [authController createRecordForDid:repo
-                                                            collection:collection
-                                                                record:record
-                                                        validationMode:PDSValidationModeRequired
-                                                                 error:&error];
-
-            if (error) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
+        if (repo && ![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot create record for another user"}];
             return;
         }
 
-        NSString *rkey = body[@"rkey"];
-        BOOL validate = [body[@"validate"] boolValue];
         if (!collection || !record) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or record"}];
@@ -4146,7 +4061,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4156,34 +4071,11 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *collection = body[@"collection"];
         NSString *rkey = body[@"rkey"];
+        NSString *repo = body[@"repo"];
 
-        if (legacyMode) {
-            NSString *repo = body[@"repo"];
-            if (!repo || !collection || !rkey) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, or rkey"}];
-                return;
-            }
-
-            if (![repo isEqualToString:did]) {
-                response.statusCode = HttpStatusForbidden;
-                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
-                return;
-            }
-
-            NSError *error = nil;
-            BOOL success = [authController deleteRecordForDid:repo
-                                                   collection:collection
-                                                         rkey:rkey
-                                                        error:&error];
-            if (!success) {
-                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{}];
+        if (repo && ![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot delete record for another user"}];
             return;
         }
 
@@ -4207,7 +4099,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4221,34 +4113,18 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        if (legacyMode) {
-            if (blobData.length > 1 * 1024 * 1024) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob exceeds size limit (1MB)"}];
-                return;
-            }
-
-            NSString *mimeType = [request headerForKey:@"Content-Type"] ?: @"application/octet-stream";
-            if ([mimeType isEqualToString:@"application/x-msdownload"]) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Disallowed MIME type"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSDictionary *result = [authController uploadBlob:blobData mimeType:mimeType did:did error:&error];
-            if (error) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"BlobUploadFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
+        if (blobData.length > 1 * 1024 * 1024) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob too large"}];
             return;
         }
 
         NSString *contentType = [request headerForKey:@"Content-Type"];
+        if (contentType && [contentType isEqualToString:@"application/x-msdownload"]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Forbidden MIME type"}];
+            return;
+        }
         NSError *error = nil;
         NSDictionary *result = [blobService uploadBlob:blobData
                                                 forDid:did
@@ -4266,31 +4142,10 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        if (legacyMode) {
-            NSString *cid = [request queryParamForKey:@"cid"];
-            if (!cid) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid parameter"}];
-                return;
-            }
-
-            NSError *error = nil;
-            BOOL success = [authController deleteBlobWithCID:cid did:did error:&error];
-            if (!success) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"DeleteFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{}];
             return;
         }
 
@@ -4316,7 +4171,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4351,7 +4206,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4385,29 +4240,8 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
-        if (legacyMode) {
-            NSString *repo = [request queryParamForKey:@"repo"];
-            if (!repo) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo parameter"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSDictionary *result = [authController describeRepo:repo error:&error];
-            if (error) {
-                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
-            return;
-        }
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4443,7 +4277,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoPutRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4454,37 +4288,12 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         NSString *collection = body[@"collection"];
         NSString *rkey = body[@"rkey"];
         NSDictionary *record = body[@"record"];
+        NSString *repo = body[@"repo"];
         BOOL validate = [body[@"validate"] boolValue];
 
-        if (legacyMode) {
-            NSString *repo = body[@"repo"];
-            if (!repo || !collection || !rkey || !record) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo, collection, rkey, or record"}];
-                return;
-            }
-
-            if (![repo isEqualToString:did]) {
-                response.statusCode = HttpStatusForbidden;
-                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
-                return;
-            }
-
-            NSError *error = nil;
-            BOOL success = [authController putRecordForDid:repo
-                                                 collection:collection
-                                                      rkey:rkey
-                                                     record:record
-                                              validationMode:PDSValidationModeRequired
-                                                      error:&error];
-            if (!success) {
-                response.statusCode = error.code == 404 ? HttpStatusNotFound : HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", repo, collection, rkey]}];
+        if (repo && ![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot update record for another user"}];
             return;
         }
 
@@ -4517,51 +4326,24 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             return;
         }
 
-        if (legacyMode) {
-            NSString *repo = body[@"repo"];
-            NSArray *writes = body[@"writes"];
-            NSNumber *validate = body[@"validate"];
-            NSString *swapCommit = body[@"swapCommit"];
+        NSArray *writes = body[@"writes"];
+        NSString *repo = body[@"repo"];
+        BOOL validate = [body[@"validate"] boolValue];
+        NSString *swapCommit = body[@"swapCommit"];
 
-            if (!repo || !writes || writes.count == 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing required fields: repo and writes"}];
-                return;
-            }
-
-            if (![repo isEqualToString:did]) {
-                response.statusCode = HttpStatusForbidden;
-                [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Repo does not match authenticated DID"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSDictionary *result = [authController applyWrites:writes
-                                                          repo:repo
-                                                      validate:validate.boolValue
-                                                    swapCommit:swapCommit
-                                                         error:&error];
-            if (error) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"ApplyWritesFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
+        if (repo && ![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot apply writes for another user"}];
             return;
         }
 
-        NSArray *writes = body[@"writes"];
-        BOOL validate = [body[@"validate"] boolValue];
-        NSString *swapCommit = body[@"swapCommit"];
         if (!writes || ![writes isKindOfClass:[NSArray class]]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid writes array"}];
@@ -4586,14 +4368,14 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 }
 
 static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
-                                    PDSController *authController,
+                                    JWTMinter *jwtMinter,
+                                    id<PDSAdminController> adminController,
                                     PDSServiceDatabases *serviceDatabases,
                                     PDSDatabasePool *userDatabasePool,
                                     PDSRecordService *recordService,
                                     PDSBlobService *blobService,
                                     PDSRepositoryService *repositoryService,
-                                    PDSConfiguration *config,
-                                    BOOL legacyMode) {
+                                    PDSConfiguration *config) {
     [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         NSString *sinceRev = [request queryParamForKey:@"since"];
@@ -4628,9 +4410,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *error = nil;
-        NSData *repoData = legacyMode
-            ? [authController getRepoDataForDid:did error:&error]
-            : [repositoryService getRepoContents:did since:nil error:&error];
+        NSData *repoData = [repositoryService getRepoContents:did since:nil error:&error];
         if (!repoData || error) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RepoNotFound", @"message": error.localizedDescription ?: @"Repository not found"}];
@@ -4643,29 +4423,8 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request, HttpResponse *response) {
-        if (legacyMode) {
-            NSString *did = [request queryParamForKey:@"did"];
-            if (!did) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSString *head = [authController getRepoHeadForDid:did error:&error];
-            if (error) {
-                response.statusCode = HttpStatusNotFound;
-                [response setJsonBody:@{@"error": @"OperationFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{@"root": head ?: [NSNull null]}];
-            return;
-        }
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4778,15 +4537,9 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
             PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
             if (account.did.length > 0) {
-                NSString *head = nil;
-                if (legacyMode) {
-                    NSError *headError = nil;
-                    head = [authController getRepoHeadForDid:account.did error:&headError];
-                } else {
-                    NSError *rootError = nil;
-                    NSData *root = [repositoryService getRepoRoot:account.did error:&rootError];
-                    head = root ? [CID base32Encode:root] : nil;
-                }
+                NSError *rootError = nil;
+                NSData *root = [repositoryService getRepoRoot:account.did error:&rootError];
+                NSString *head = root ? [CID base32Encode:root] : nil;
 
                 if (head.length > 0) {
                     NSString *rev = [[TID tid] stringValue];
@@ -4911,36 +4664,8 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
-        if (legacyMode) {
-            NSString *did = [request queryParamForKey:@"did"];
-            NSString *cursor = [request queryParamForKey:@"cursor"];
-            NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 100;
-            limit = MIN(limit, 1000);
-
-            if (!did) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-                return;
-            }
-
-            NSError *error = nil;
-            NSArray *blobs = [authController listBlobsForDID:did limit:limit cursor:cursor error:&error];
-            if (error) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"BlobListFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"blobs": blobs,
-                @"cursor": cursor ?: [NSNull null]
-            }];
-            return;
-        }
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:authController request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -4978,9 +4703,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         NSError *blobError = nil;
         NSDictionary *result = [blobService getBlobStreamWithCID:cid did:did error:&blobError];
         if (!result && !blobError) {
-            result = legacyMode
-                ? [authController getBlobWithCID:cid did:did error:&blobError]
-                : [blobService getBlobWithCID:cid did:did error:&blobError];
+            result = [blobService getBlobWithCID:cid did:did error:&blobError];
         }
         if (!result) {
             response.statusCode = HttpStatusNotFound;
@@ -5092,9 +4815,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         NSError *recordError = nil;
-        NSDictionary *record = legacyMode
-            ? [authController getRecord:uri forDid:did error:&recordError]
-            : [recordService getRecord:uri forDid:did error:&recordError];
+        NSDictionary *record = [recordService getRecord:uri forDid:did error:&recordError];
         if (!record) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RecordNotFound",
@@ -5103,9 +4824,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *repoError = nil;
-        NSData *carData = legacyMode
-            ? [authController getRepoContents:did since:nil error:&repoError]
-            : [repositoryService getRepoContents:did since:nil error:&repoError];
+        NSData *carData = [repositoryService getRepoContents:did since:nil error:&repoError];
         if (!carData || repoError) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RepoNotFound",
@@ -5134,34 +4853,38 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller {
+    JWTMinter *jwtMinter = controller.jwtMinter;
+    id<PDSAdminController> adminController = controller.adminController;
+    PDSServiceDatabases *serviceDatabases = controller.serviceDatabases;
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     installXrpcProxyInterceptor(dispatcher, config);
     registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
     registerServerAccountAndSessionMethods(dispatcher,
-                                           controller,
+                                           jwtMinter,
+                                           adminController,
                                            controller.accountService,
-                                           controller.serviceDatabases,
+                                           serviceDatabases,
                                            controller.userDatabasePool,
                                            config,
                                            YES);
 
     registerRepoCoreMethods(dispatcher,
-                            controller,
+                            jwtMinter,
+                            adminController,
                             controller.accountService,
                             controller.recordService,
                             controller.blobService,
-                            controller.repositoryService,
-                            YES);
+                            controller.repositoryService);
 
     registerSyncCoreMethods(dispatcher,
-                            controller,
-                            controller.serviceDatabases,
+                            jwtMinter,
+                            adminController,
+                            serviceDatabases,
                             controller.userDatabasePool,
                             controller.recordService,
                             controller.blobService,
                             controller.repositoryService,
-                            config,
-                            YES);
+                            config);
 
     [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
@@ -5407,7 +5130,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader controller:controller request:request];
+        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5446,24 +5169,27 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     registerPhase1IdentityAndAccountMethods(dispatcher,
-                                            controller,
-                                            controller.serviceDatabases,
+                                            jwtMinter,
+                                            adminController,
+                                            serviceDatabases,
                                             controller.userDatabasePool,
                                             [PDSConfiguration sharedConfiguration]);
     registerAdminAccountMaintenanceMethods(dispatcher,
-                                           controller.serviceDatabases,
-                                           controller);
+                                           serviceDatabases,
+                                           jwtMinter,
+                                           adminController);
     registerAdminAccountAndInviteMethods(dispatcher,
-                                         controller,
-                                         controller.serviceDatabases,
-                                         controller.adminController);
+                                         serviceDatabases,
+                                         jwtMinter,
+                                         adminController);
     registerAdminModerationAndLabelMethods(dispatcher,
-                                           controller,
-                                           controller.adminController,
+                                           serviceDatabases,
+                                           jwtMinter,
+                                           adminController,
                                            NO);
 
     [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, controller)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         NSDictionary *body = request.jsonBody;
@@ -5476,7 +5202,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *error = nil;
-        if (![controller takeDownAccount:did reason:reason error:&error]) {
+        if (![adminController takeDownAccount:did reason:reason error:&error]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"TakedownFailed", @"message": error.localizedDescription ?: @"Takedown failed"}];
             return;
@@ -5487,7 +5213,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerMethod:@"com.atproto.admin.getAccountTakedown" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, controller)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         NSDictionary *body = request.jsonBody;
@@ -5499,7 +5225,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *error = nil;
-        BOOL applied = [controller isAccountTakedownActive:did error:&error];
+        BOOL applied = [adminController isAccountTakedownActive:did error:&error];
         if (error) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"TakedownStatusFailed", @"message": error.localizedDescription ?: @"Unable to fetch takedown status"}];
@@ -5837,7 +5563,10 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 }
 
-+ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request {
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                             jwtMinter:(JWTMinter *)jwtMinter
+                       adminController:(id<PDSAdminController>)adminController
+                               request:(HttpRequest *)request {
     if (!authHeader) return nil;
     NSString *token = nil;
     BOOL isDPoP = NO;
@@ -5850,6 +5579,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         return nil;
     }
 
+    NSString *dpopThumbprint = nil;
     if (isDPoP) {
         NSString *dpopProof = [request headerForKey:@"DPoP"];
         if (dpopProof.length == 0) {
@@ -5890,7 +5620,8 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                                    method:request.methodString
                                       url:dpopURL
                                     nonce:nil
-                            outThumbprint:nil
+                             requireNonce:YES
+                            outThumbprint:&dpopThumbprint
                                     error:&dpopError]) {
             PDS_LOG_AUTH_WARN(@"Invalid DPoP proof: %@", dpopError.localizedDescription ?: @"unknown error");
             return nil;
@@ -5907,22 +5638,38 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     // Create verifier and set expected issuer
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
-    if (controller.jwtMinter) {
-        verifier.keyRotationManager = controller.jwtMinter.keyRotationManager;
-        verifier.publicKey = controller.jwtMinter.publicKey;
+    if (jwtMinter) {
+        verifier.keyRotationManager = jwtMinter.keyRotationManager;
+        verifier.publicKey = jwtMinter.publicKey;
     }
 
     // Use configurable issuer from environment, default to localhost
     NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
-    verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(controller.jwtMinter);
+    verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(jwtMinter);
 
     // Verify the JWT
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
         PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
+        return nil;
+    }
+
+    // Phase 4: Enforce DPoP binding
+    NSString *tokenJkt = jwt.payload.cnf[@"jkt"];
+    if (isDPoP) {
+        if (!tokenJkt) {
+            PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
+            return nil;
+        }
+        if (![tokenJkt isEqualToString:dpopThumbprint]) {
+            PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch: token=%@, proof=%@", tokenJkt, dpopThumbprint);
+            return nil;
+        }
+    } else if (tokenJkt) {
+        PDS_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
         return nil;
     }
 
@@ -5934,7 +5681,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }
 
     NSError *takedownError = nil;
-    BOOL isTakedown = [controller isAccountTakedownActive:did error:&takedownError];
+    BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
     if (takedownError) {
         PDS_LOG_AUTH_WARN(@"Failed to check takedown status for %@: %@", did, takedownError.localizedDescription);
         return nil;
@@ -5947,6 +5694,13 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     return did;
 }
 
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request {
+    return [self extractDIDFromAuthHeader:authHeader
+                               jwtMinter:controller.jwtMinter
+                         adminController:controller.adminController
+                                 request:request];
+}
+
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                           application:(PDSApplication *)application {
     id<PDSAccountService> accountService = application.accountService;
@@ -5955,25 +5709,27 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     PDSRepositoryService *repositoryService = application.repositoryService;
     id<PDSAdminController> adminController = application.adminController;
     PDSServiceDatabases *serviceDatabases = application.serviceDatabases;
+    JWTMinter *jwtMinter = application.jwtMinter;
     PDSConfiguration *config = application.configuration;
 
     installXrpcProxyInterceptor(dispatcher, config);
 
     registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
     registerServerAccountAndSessionMethods(dispatcher,
-                                           application.legacyController,
+                                           jwtMinter,
+                                           adminController,
                                            accountService,
                                            serviceDatabases,
                                            application.userDatabasePool,
                                            config,
                                            NO);
 
-    registerTempUtilityMethods(dispatcher, serviceDatabases, application.legacyController);
-    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, application.legacyController);
+    registerTempUtilityMethods(dispatcher, serviceDatabases, jwtMinter, adminController);
+    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, jwtMinter, adminController);
 
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6020,7 +5776,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerCheckAccountStatus:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6048,7 +5804,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerActivateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6071,7 +5827,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6096,21 +5852,22 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     registerPhase1IdentityAndAccountMethods(dispatcher,
-                                            application.legacyController,
+                                            jwtMinter,
+                                            adminController,
                                             serviceDatabases,
                                             application.userDatabasePool,
                                             config);
     registerRepoCoreMethods(dispatcher,
-                            application.legacyController,
+                            jwtMinter,
+                            adminController,
                             accountService,
                             recordService,
                             blobService,
-                            repositoryService,
-                            NO);
+                            repositoryService);
 
     [dispatcher registerComAtprotoRepoUpdateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6149,7 +5906,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6178,14 +5935,14 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     registerSyncCoreMethods(dispatcher,
-                            application.legacyController,
+                            jwtMinter,
+                            adminController,
                             serviceDatabases,
                             application.userDatabasePool,
                             recordService,
                             blobService,
                             repositoryService,
-                            config,
-                            NO);
+                            config);
 
     NSError *appViewDbError = nil;
     PDSDatabase *appViewDatabase = [serviceDatabases serviceDatabaseWithError:&appViewDbError];
@@ -6216,7 +5973,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader controller:application.legacyController request:request];
+        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6259,7 +6016,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodPOST) {
@@ -6299,7 +6056,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoAdminGetSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, application.legacyController)) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
         }
         if (request.method != HttpMethodGET) {
@@ -6333,13 +6090,15 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
     registerAdminAccountMaintenanceMethods(dispatcher,
                                            serviceDatabases,
-                                           application.legacyController);
+                                           jwtMinter,
+                                           adminController);
     registerAdminAccountAndInviteMethods(dispatcher,
-                                         application.legacyController,
                                          serviceDatabases,
+                                         jwtMinter,
                                          adminController);
     registerAdminModerationAndLabelMethods(dispatcher,
-                                           application.legacyController,
+                                           serviceDatabases,
+                                           jwtMinter,
                                            adminController,
                                            YES);
 

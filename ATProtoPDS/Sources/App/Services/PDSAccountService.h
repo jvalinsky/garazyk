@@ -58,6 +58,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@protocol PDSEmailProvider;
+
 /*!
  @class PDSAccountService
 
@@ -76,12 +78,16 @@ NS_ASSUME_NONNULL_BEGIN
 /*! JWT minter for token generation. */
 @property (nonatomic, strong, nullable) JWTMinter *minter;
 
+/*! Pluggable email provider for sending verification codes and alerts. */
+@property (nonatomic, strong, nullable) id<PDSEmailProvider> emailProvider;
+
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
 /*! New DI initializer. */
 - (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
                         sessionRepository:(id<PDSSessionRepository>)sessionRepository
-                                  minter:(nullable JWTMinter *)minter;
+                                   minter:(nullable JWTMinter *)minter
+                            emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
 
 #pragma mark - Account Operations
 

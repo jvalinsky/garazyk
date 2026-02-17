@@ -15,6 +15,8 @@
 #import "Auth/KeyManager.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
+#import "Database/Utils/PDSSQLiteUtils.h"
+#import <sqlite3.h>
 
 NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
@@ -68,41 +70,72 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
+                                  scope:(NSString *)scope
+                      dpopKeyThumbprint:(nullable NSString *)jkt {
+    return [[Session alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:jkt];
+}
+
++ (nullable instancetype)sessionWithDID:(NSString *)did
+                                 handle:(NSString *)handle
                                   scope:(NSString *)scope {
-    return [[Session alloc] initWithDID:did handle:handle scope:scope];
+    return [[Session alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:nil];
+}
+
++ (nullable instancetype)sessionWithDID:(NSString *)did
+                                 handle:(NSString *)handle
+                                  scope:(NSString *)scope
+                                 minter:(nullable JWTMinter *)minter
+                      dpopKeyThumbprint:(nullable NSString *)jkt {
+    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:jkt];
 }
 
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
                                  minter:(nullable JWTMinter *)minter {
-    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter];
-}
-
-- (instancetype)initWithDID:(NSString *)did
-                     handle:(NSString *)handle
-                      scope:(NSString *)scope {
-    return [self initWithDID:did handle:handle scope:scope minter:nil];
+    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
 }
 
 - (instancetype)initWithDID:(NSString *)did
                      handle:(NSString *)handle
                       scope:(NSString *)scope
-                     minter:(nullable JWTMinter *)minter {
+          dpopKeyThumbprint:(nullable NSString *)jkt {
+    return [self initWithDID:did handle:handle scope:scope minter:nil dpopKeyThumbprint:jkt];
+}
+
+- (instancetype)initWithDID:(NSString *)did
+                     handle:(NSString *)handle
+                      scope:(NSString *)scope {
+    return [self initWithDID:did handle:handle scope:scope minter:nil dpopKeyThumbprint:nil];
+}
+
+- (instancetype)initWithDID:(NSString *)did
+                     handle:(NSString *)handle
+                      scope:(NSString *)scope
+                     minter:(nullable JWTMinter *)minter
+          dpopKeyThumbprint:(nullable NSString *)jkt {
     self = [super init];
     if (self) {
         _sessionID = [[NSUUID UUID] UUIDString];
         _did = [did copy];
         _handle = [handle copy];
         _scope = [scope copy];
-        _tokenType = @"Bearer";
+        _tokenType = jkt ? @"DPoP" : @"Bearer";
         _createdAt = [NSDate date];
         _keyManager = [[KeyManager alloc] init];
         _minter = minter;
+        _dpopKeyThumbprint = [jkt copy];
 
         [self mintTokens];
     }
     return self;
+}
+
+- (instancetype)initWithDID:(NSString *)did
+                     handle:(NSString *)handle
+                      scope:(NSString *)scope
+                     minter:(nullable JWTMinter *)minter {
+    return [self initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
 }
 
 - (void)mintTokens {
@@ -115,6 +148,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         JWT *jwt = [self.minter mintAccessTokenForDID:self.did
                                                handle:self.handle
                                                scopes:scopes
+                                    dpopKeyThumbprint:self.dpopKeyThumbprint
                                                  error:&error];
         if (jwt) {
             accessTokenValue = [jwt encodedToken];
@@ -231,11 +265,323 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 @end
 
-@interface SessionStore ()
+
+
+#pragma mark - Storage Implementations
+
+@interface PDSMemorySessionStorage ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByAccessToken;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByRefreshToken;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<Session *> *> *sessionsByDID;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
+@end
+
+@implementation PDSMemorySessionStorage
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _sessionsByAccessToken = [NSMutableDictionary dictionary];
+        _sessionsByRefreshToken = [NSMutableDictionary dictionary];
+        _sessionsByDID = [NSMutableDictionary dictionary];
+        _accessQueue = dispatch_queue_create("com.atproto.pds.memorystorage", DISPATCH_QUEUE_SERIAL);
+    }
+    return self;
+}
+
+- (BOOL)saveSession:(Session *)session error:(NSError **)error {
+    dispatch_sync(self.accessQueue, ^{
+        self.sessionsByAccessToken[session.accessToken] = session;
+        if (session.refreshToken) {
+            self.sessionsByRefreshToken[session.refreshToken] = session;
+        }
+        
+        // Remove existing session with same ID if present (update)
+        NSMutableArray *userSessions = self.sessionsByDID[session.did];
+        if (!userSessions) {
+            userSessions = [NSMutableArray array];
+            self.sessionsByDID[session.did] = userSessions;
+        } else {
+            // Check for duplicate by ID and remove if found
+            for (NSInteger i = 0; i < userSessions.count; i++) {
+                Session *existing = userSessions[i];
+                if ([existing.sessionID isEqualToString:session.sessionID]) {
+                    [userSessions removeObjectAtIndex:i];
+                    break;
+                }
+            }
+        }
+        [userSessions addObject:session];
+    });
+    return YES;
+}
+
+- (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error {
+    __block Session *session = nil;
+    dispatch_sync(self.accessQueue, ^{
+        session = self.sessionsByAccessToken[token];
+    });
+    return session;
+}
+
+- (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error {
+    __block Session *session = nil;
+    dispatch_sync(self.accessQueue, ^{
+        session = self.sessionsByRefreshToken[token];
+    });
+    return session;
+}
+
+- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
+    __block Session *session = nil;
+    dispatch_sync(self.accessQueue, ^{
+        for (Session *s in self.sessionsByAccessToken.allValues) {
+            if ([s.sessionID isEqualToString:sessionID]) {
+                session = s;
+                break;
+            }
+        }
+    });
+    return session;
+}
+
+- (BOOL)revokeSessionByID:(NSString *)sessionID error:(NSError **)error {
+    __block BOOL found = NO;
+    dispatch_sync(self.accessQueue, ^{
+        Session *session = nil;
+        for (Session *s in self.sessionsByAccessToken.allValues) {
+            if ([s.sessionID isEqualToString:sessionID]) {
+                session = s;
+                break;
+            }
+        }
+        
+        if (session) {
+            [self.sessionsByAccessToken removeObjectForKey:session.accessToken];
+            if (session.refreshToken) {
+                [self.sessionsByRefreshToken removeObjectForKey:session.refreshToken];
+            }
+            [self.sessionsByDID[session.did] removeObject:session];
+            found = YES;
+        }
+    });
+    return found;
+}
+
+- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
+    __block NSArray *sessions = nil;
+    dispatch_sync(self.accessQueue, ^{
+        sessions = [self.sessionsByDID[did] copy] ?: @[];
+    });
+    return sessions;
+}
+
+- (NSArray<Session *> *)allActiveSessions:(NSError **)error {
+    __block NSMutableArray *sessions = [NSMutableArray array];
+    dispatch_sync(self.accessQueue, ^{
+        for (Session *s in self.sessionsByAccessToken.allValues) {
+            if ([s isAccessTokenValid]) {
+                [sessions addObject:s];
+            }
+        }
+    });
+    return sessions;
+}
+
+@end
+
+@interface PDSSQLiteSessionStorage ()
+@property (nonatomic, assign) sqlite3 *db;
+@end
+
+@implementation PDSSQLiteSessionStorage
+
+- (instancetype)initWithPath:(NSString *)path {
+    self = [super init];
+    if (self) {
+        int rc = sqlite3_open(path.UTF8String, &_db);
+        if (rc != SQLITE_OK) {
+            PDS_LOG_AUTH_ERROR(@"Failed to open session database: %s", sqlite3_errmsg(_db));
+            return nil;
+        }
+        sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
+        
+        const char *createSQL =
+            "CREATE TABLE IF NOT EXISTS sessions ("
+            "  session_id TEXT PRIMARY KEY,"
+            "  did TEXT NOT NULL,"
+            "  handle TEXT NOT NULL,"
+            "  scope TEXT NOT NULL,"
+            "  access_token TEXT UNIQUE NOT NULL,"
+            "  refresh_token TEXT UNIQUE,"
+            "  access_token_expires_at REAL NOT NULL,"
+            "  refresh_token_expires_at REAL,"
+            "  dpop_key_thumbprint TEXT,"
+            "  token_type TEXT DEFAULT 'Bearer',"
+            "  created_at REAL NOT NULL"
+            ");"
+            "CREATE INDEX IF NOT EXISTS idx_sessions_did ON sessions(did);"
+            "CREATE INDEX IF NOT EXISTS idx_sessions_access_token ON sessions(access_token);"
+            "CREATE INDEX IF NOT EXISTS idx_sessions_refresh_token ON sessions(refresh_token);";
+            
+        char *errMsg = NULL;
+        if (sqlite3_exec(_db, createSQL, NULL, NULL, &errMsg) != SQLITE_OK) {
+            PDS_LOG_AUTH_ERROR(@"Failed to create sessions table: %s", errMsg);
+            sqlite3_free(errMsg);
+            sqlite3_close(_db);
+            return nil;
+        }
+    }
+    return self;
+}
+
+- (void)dealloc {
+    if (_db) {
+        sqlite3_close(_db);
+        _db = NULL;
+    }
+}
+
+- (BOOL)saveSession:(Session *)session error:(NSError **)error {
+    const char *sql = "INSERT OR REPLACE INTO sessions (session_id, did, handle, scope, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, dpop_key_thumbprint, token_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return NO;
+    
+    sqlite3_bind_text(stmt, 1, session.sessionID.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, session.did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, session.handle.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, session.scope.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, session.accessToken.UTF8String, -1, SQLITE_TRANSIENT);
+    
+    if (session.refreshToken) sqlite3_bind_text(stmt, 6, session.refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
+    else sqlite3_bind_null(stmt, 6);
+    
+    sqlite3_bind_double(stmt, 7, session.accessTokenExpiresAt.timeIntervalSince1970);
+    
+    if (session.refreshTokenExpiresAt) sqlite3_bind_double(stmt, 8, session.refreshTokenExpiresAt.timeIntervalSince1970);
+    else sqlite3_bind_null(stmt, 8);
+    
+    if (session.dpopKeyThumbprint) sqlite3_bind_text(stmt, 9, session.dpopKeyThumbprint.UTF8String, -1, SQLITE_TRANSIENT);
+    else sqlite3_bind_null(stmt, 9);
+    
+    sqlite3_bind_text(stmt, 10, session.tokenType.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 11, session.createdAt.timeIntervalSince1970);
+    
+    return sqlite3_step(stmt) == SQLITE_DONE;
+}
+
+- (Session *)sessionFromStatement:(sqlite3_stmt *)stmt {
+    const char *did = (const char *)sqlite3_column_text(stmt, 1);
+    const char *handle = (const char *)sqlite3_column_text(stmt, 2);
+    const char *scope = (const char *)sqlite3_column_text(stmt, 3);
+    const char *accessToken = (const char *)sqlite3_column_text(stmt, 4);
+    const char *refreshToken = (const char *)sqlite3_column_text(stmt, 5);
+    
+    if (!did || !handle || !scope || !accessToken) return nil;
+    
+    NSDate *accessExpiry = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 6)];
+    NSDate *refreshExpiry = sqlite3_column_type(stmt, 7) != SQLITE_NULL ? [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 7)] : nil;
+    
+    Session *session = [[Session alloc] initWithDID:[NSString stringWithUTF8String:did]
+                                             handle:[NSString stringWithUTF8String:handle]
+                                              scope:[NSString stringWithUTF8String:scope]
+                                        accessToken:[NSString stringWithUTF8String:accessToken]
+                                       refreshToken:refreshToken ? [NSString stringWithUTF8String:refreshToken] : nil
+                                   accessTokenExpiry:accessExpiry
+                                  refreshTokenExpiry:refreshExpiry];
+                                  
+    session.sessionID = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+    
+    const char *dpop = (const char *)sqlite3_column_text(stmt, 8);
+    if (dpop) session.dpopKeyThumbprint = [NSString stringWithUTF8String:dpop];
+    
+    const char *type = (const char *)sqlite3_column_text(stmt, 9);
+    if (type) session.tokenType = [NSString stringWithUTF8String:type];
+    
+    return session;
+}
+
+- (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error {
+    const char *sql = "SELECT * FROM sessions WHERE access_token = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
+    
+    sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        return [self sessionFromStatement:stmt];
+    }
+    return nil;
+}
+
+- (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error {
+    const char *sql = "SELECT * FROM sessions WHERE refresh_token = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
+    
+    sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        return [self sessionFromStatement:stmt];
+    }
+    return nil;
+}
+
+- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
+    const char *sql = "SELECT * FROM sessions WHERE session_id = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
+    
+    sqlite3_bind_text(stmt, 1, sessionID.UTF8String, -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        return [self sessionFromStatement:stmt];
+    }
+    return nil;
+}
+
+- (BOOL)revokeSessionByID:(NSString *)sessionID error:(NSError **)error {
+    const char *sql = "DELETE FROM sessions WHERE session_id = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return NO;
+    
+    sqlite3_bind_text(stmt, 1, sessionID.UTF8String, -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        return sqlite3_changes(_db) > 0;
+    }
+    return NO;
+}
+
+- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
+    const char *sql = "SELECT * FROM sessions WHERE did = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return @[];
+    
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+    NSMutableArray *sessions = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        Session *s = [self sessionFromStatement:stmt];
+        if (s) [sessions addObject:s];
+    }
+    return sessions;
+}
+
+- (NSArray<Session *> *)allActiveSessions:(NSError **)error {
+    const char *sql = "SELECT * FROM sessions WHERE access_token_expires_at > ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return @[];
+    
+    sqlite3_bind_double(stmt, 1, [[NSDate date] timeIntervalSince1970]);
+    NSMutableArray *sessions = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        Session *s = [self sessionFromStatement:stmt];
+        if (s) [sessions addObject:s];
+    }
+    return sessions;
+}
+
+@end
+
+@interface SessionStore ()
+@property (nonatomic, strong) id<PDSSessionStorage> storage;
 @property (nonatomic, assign) NSTimeInterval clockSkew;
 @end
 
@@ -254,12 +600,22 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (instancetype)init {
+    return [self initWithDatabasePath:nil];
+}
+
+- (instancetype)initWithDatabasePath:(nullable NSString *)path {
     self = [super init];
     if (self) {
-        _sessionsByAccessToken = [NSMutableDictionary dictionary];
-        _sessionsByRefreshToken = [NSMutableDictionary dictionary];
-        _sessionsByDID = [NSMutableDictionary dictionary];
-        _accessQueue = dispatch_queue_create("com.atproto.pds.sessionstore", DISPATCH_QUEUE_SERIAL);
+        if (path) {
+            _storage = [[PDSSQLiteSessionStorage alloc] initWithPath:path];
+        } else {
+            _storage = [[PDSMemorySessionStorage alloc] init];
+        }
+        
+        if (!_storage) {
+            return nil;
+        }
+        
         _accessTokenLifetime = 3600;
         _refreshTokenLifetime = 86400 * 30;
         _clockSkew = 0;
@@ -278,16 +634,14 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         session.dpopKeyThumbprint = dpopJWK[@"kid"];
     }
 
-    dispatch_sync(self.accessQueue, ^{
-        self.sessionsByAccessToken[session.accessToken] = session;
-        if (session.refreshToken) {
-            self.sessionsByRefreshToken[session.refreshToken] = session;
+    if (![self.storage saveSession:session error:error]) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:SessionErrorDomain
+                                         code:SessionErrorInvalidSession
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to persist session"}];
         }
-
-        NSMutableArray *userSessions = self.sessionsByDID[did] ?: [NSMutableArray array];
-        [userSessions addObject:session];
-        self.sessionsByDID[did] = userSessions;
-    });
+        return nil;
+    }
 
     return session;
 }
@@ -300,22 +654,21 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (nullable Session *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error {
-    __block Session *session = nil;
-
-    dispatch_sync(self.accessQueue, ^{
-        session = self.sessionsByAccessToken[accessToken];
-    });
+    Session *session = [self.storage getSessionByAccessToken:accessToken error:error];
 
     if (!session) {
-        if (error) {
+        if (error && !*error) {
             *error = [NSError errorWithDomain:SessionErrorDomain
                                          code:SessionErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired access token"}];
         }
         return nil;
     }
+    
+    session.minter = self.minter;
 
     if ([session.accessTokenExpiresAt timeIntervalSinceNow] < -self.clockSkew) {
+        // ... unchanged ...
         if (error) {
             *error = [NSError errorWithDomain:SessionErrorDomain
                                          code:SessionErrorTokenExpired
@@ -328,22 +681,21 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (nullable Session *)getSessionByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
-    __block Session *session = nil;
-
-    dispatch_sync(self.accessQueue, ^{
-        session = self.sessionsByRefreshToken[refreshToken];
-    });
+    Session *session = [self.storage getSessionByRefreshToken:refreshToken error:error];
 
     if (!session) {
-        if (error) {
+        if (error && !*error) {
             *error = [NSError errorWithDomain:SessionErrorDomain
                                          code:SessionErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];
         }
         return nil;
     }
+    
+    session.minter = self.minter;
 
     if (![session isRefreshTokenValid]) {
+        // ... unchanged ...
         if (error) {
             *error = [NSError errorWithDomain:SessionErrorDomain
                                          code:SessionErrorTokenExpired
@@ -356,55 +708,39 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
-    __block Session *session = nil;
-
-    dispatch_sync(self.accessQueue, ^{
-        for (Session *s in self.sessionsByAccessToken.allValues) {
-            if ([s.sessionID isEqualToString:sessionID]) {
-                session = s;
-                break;
-            }
+    Session *session = [self.storage getSessionByID:sessionID error:error];
+    
+    if (!session) {
+        if (error && !*error) {
+           *error = [NSError errorWithDomain:SessionErrorDomain
+                                        code:SessionErrorSessionNotFound
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Session not found"}];
         }
-    });
-
-    if (!session && error) {
-        *error = [NSError errorWithDomain:SessionErrorDomain
-                                     code:SessionErrorSessionNotFound
-                                 userInfo:@{NSLocalizedDescriptionKey: @"Session not found"}];
+        return nil;
     }
+    
+    session.minter = self.minter;
 
     return session;
 }
 
 - (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error {
-    Session *session = [self getSessionByID:sessionID error:nil];
-    if (!session) {
-        if (error) {
+    if (![self.storage revokeSessionByID:sessionID error:error]) {
+        if (error && !*error) {
             *error = [NSError errorWithDomain:SessionErrorDomain
                                          code:SessionErrorSessionNotFound
                                      userInfo:@{NSLocalizedDescriptionKey: @"Session not found"}];
         }
         return NO;
     }
-
-    dispatch_sync(self.accessQueue, ^{
-        [self.sessionsByAccessToken removeObjectForKey:session.accessToken];
-        if (session.refreshToken) {
-            [self.sessionsByRefreshToken removeObjectForKey:session.refreshToken];
-        }
-
-        NSMutableArray *userSessions = self.sessionsByDID[session.did];
-        [userSessions removeObject:session];
-    });
-
     return YES;
 }
 
 - (BOOL)refreshSession:(NSString *)sessionID
-                 scope:(nullable NSString *)newScope
-               dpopJWK:(nullable NSDictionary *)dpopJWK
-           newSession:(Session **)newSession
-                 error:(NSError **)error {
+                  scope:(nullable NSString *)newScope
+                dpopJWK:(nullable NSDictionary *)dpopJWK
+            newSession:(Session **)newSession
+                  error:(NSError **)error {
     Session *existingSession = [self getSessionByID:sessionID error:error];
     if (!existingSession) return NO;
 
@@ -419,13 +755,10 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
     NSString *finalScope = newScope ?: existingSession.scope;
 
-    dispatch_sync(self.accessQueue, ^{
-        [self.sessionsByAccessToken removeObjectForKey:existingSession.accessToken];
-        if (existingSession.refreshToken) {
-            [self.sessionsByRefreshToken removeObjectForKey:existingSession.refreshToken];
-        }
-    });
+    // Delete old session
+    [self.storage revokeSessionByID:sessionID error:nil];
 
+    // Create new session
     Session *refreshedSession = [self createSessionForDID:existingSession.did
                                                    handle:existingSession.handle
                                                     scope:finalScope
@@ -435,33 +768,22 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         *newSession = refreshedSession;
     }
 
-    return YES;
+    return (refreshedSession != nil);
 }
 
 - (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
-    __block NSArray *sessions = @[];
-
-    dispatch_sync(self.accessQueue, ^{
-        NSArray *userSessions = self.sessionsByDID[did];
-        sessions = [userSessions ?: @[] copy];
-    });
-
+    NSArray<Session *> *sessions = [self.storage getSessionsForDID:did error:error];
+    for (Session *session in sessions) {
+        session.minter = self.minter;
+    }
     return sessions;
 }
 
 - (NSArray<Session *> *)allActiveSessions:(NSError **)error {
-    __block NSArray *sessions = @[];
-
-    dispatch_sync(self.accessQueue, ^{
-        NSMutableArray *active = [NSMutableArray array];
-        for (Session *session in self.sessionsByAccessToken.allValues) {
-            if ([session isAccessTokenValid]) {
-                [active addObject:session];
-            }
-        }
-        sessions = [active copy];
-    });
-
+    NSArray<Session *> *sessions = [self.storage allActiveSessions:error];
+    for (Session *session in sessions) {
+        session.minter = self.minter;
+    }
     return sessions;
 }
 

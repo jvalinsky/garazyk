@@ -15,11 +15,13 @@
 @class WebSocketServer;
 @class WebSocketConnection;
 @class PDSController;
+@class PDSServiceDatabases;
 @class EventFormatter;
 @class RepoCommit;
 @class CID;
 @class HttpRequest;
 @protocol PDSNetworkConnection;
+@class PDSDatabasePool;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -54,6 +56,10 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Delegate for lifecycle events. */
 @property (nonatomic, weak, nullable) id<SubscribeReposHandlerDelegate> delegate;
 
+/*! The 32-byte secp256k1 private key used to sign firehose commits.
+    Must be set before broadcasting events. If nil, commits will not be broadcast. */
+@property (nonatomic, strong, nullable) NSData *signingKey;
+
 /*! Legacy standalone WebSocket server (compatibility/test use only). */
 @property (nonatomic, readonly) WebSocketServer *webSocketServer
     DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; use acceptUpgradedConnection:request:");
@@ -61,10 +67,18 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Formats events for transmission. */
 @property (nonatomic, readonly) EventFormatter *eventFormatter;
 
-/*! The PDS controller. */
-@property (nonatomic, readonly) PDSController *controller;
+/*! The service databases for event persistence. */
+@property (nonatomic, readonly) PDSServiceDatabases *serviceDatabases;
 
-- (instancetype)initWithController:(PDSController *)controller;
+
+- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
+
+- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
+                        userDatabasePool:(nullable PDSDatabasePool *)userDatabasePool;
+
+/*! @deprecated Use initWithServiceDatabases: instead. */
+- (instancetype)initWithController:(PDSController *)controller
+    DEPRECATED_MSG_ATTRIBUTE("Use initWithServiceDatabases: instead");
 
 /*! Starts a legacy standalone listener (compatibility/test use only). */
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error
