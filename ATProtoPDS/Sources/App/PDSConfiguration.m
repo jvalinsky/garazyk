@@ -71,6 +71,13 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _emailSmtpUsername = nil;
         _emailSmtpPassword = nil;
         _emailSmtpUseTLS = YES;
+        
+        _resendAPIKeySource = @"env";
+        _resendAPIKeyEnvVar = @"RESEND_API_KEY";
+        _resendKeychainService = @"com.atproto.pds";
+        _resendKeychainAccount = @"resend_api_key";
+        _resendFromAddress = nil;
+        _resendAPIEndpoint = nil;
 
         _rateLimitEnabled = YES;
         _rateLimitRequestsPerMinute = 1000;
@@ -234,6 +241,13 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (email[@"smtp_username"]) _emailSmtpUsername = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_USERNAME" default:email[@"smtp_username"]];
         if (email[@"smtp_password"]) _emailSmtpPassword = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_PASSWORD" default:email[@"smtp_password"]];
         if (email[@"smtp_use_tls"]) _emailSmtpUseTLS = [self boolFromEnv:@"PDS_EMAIL_SMTP_USE_TLS" default:[email[@"smtp_use_tls"] boolValue]];
+        
+        _resendAPIKeySource = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEY_SOURCE" default:email[@"resend_api_key_source"] ?: _resendAPIKeySource];
+        _resendAPIKeyEnvVar = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEY_ENV_VAR" default:email[@"resend_api_key_env_var"] ?: _resendAPIKeyEnvVar];
+        _resendKeychainService = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEYCHAIN_SERVICE" default:email[@"resend_keychain_service"] ?: _resendKeychainService];
+        _resendKeychainAccount = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEYCHAIN_ACCOUNT" default:email[@"resend_keychain_account"] ?: _resendKeychainAccount];
+        _resendFromAddress = [self resolveEnvOverrideForKey:@"PDS_RESEND_FROM_ADDRESS" default:email[@"resend_from_address"] ?: _resendFromAddress];
+        _resendAPIEndpoint = [self resolveEnvOverrideForKey:@"PDS_RESEND_API_ENDPOINT" default:email[@"resend_api_endpoint"] ?: _resendAPIEndpoint];
     } else {
         // Check environment variables even if config section is missing
         _emailProviderType = [self resolveEnvOverrideForKey:@"PDS_EMAIL_PROVIDER" default:_emailProviderType].lowercaseString;
@@ -242,6 +256,13 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _emailSmtpUsername = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_USERNAME" default:_emailSmtpUsername];
         _emailSmtpPassword = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_PASSWORD" default:_emailSmtpPassword];
         if ([self envVarExists:@"PDS_EMAIL_SMTP_USE_TLS"]) _emailSmtpUseTLS = [self boolFromEnv:@"PDS_EMAIL_SMTP_USE_TLS" default:_emailSmtpUseTLS];
+
+        _resendAPIKeySource = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEY_SOURCE" default:_resendAPIKeySource];
+        _resendAPIKeyEnvVar = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEY_ENV_VAR" default:_resendAPIKeyEnvVar];
+        _resendKeychainService = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEYCHAIN_SERVICE" default:_resendKeychainService];
+        _resendKeychainAccount = [self resolveEnvOverrideForKey:@"PDS_RESEND_KEYCHAIN_ACCOUNT" default:_resendKeychainAccount];
+        _resendFromAddress = [self resolveEnvOverrideForKey:@"PDS_RESEND_FROM_ADDRESS" default:_resendFromAddress];
+        _resendAPIEndpoint = [self resolveEnvOverrideForKey:@"PDS_RESEND_API_ENDPOINT" default:_resendAPIEndpoint];
     }
 
     NSDictionary *rateLimit = config[@"rate_limit"];
