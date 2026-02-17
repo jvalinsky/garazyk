@@ -102,6 +102,24 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Phone verification provider name (`none`, `mock`, or provider key). */
 @property (nonatomic, readonly) NSString *phoneVerificationProvider;
 
+/*! Email provider name (`none`, `mock`, or `smtp`). */
+@property (nonatomic, readonly) NSString *emailProviderType;
+
+/*! SMTP server host. */
+@property (nonatomic, readonly, nullable) NSString *emailSmtpHost;
+
+/*! SMTP server port. */
+@property (nonatomic, readonly) NSUInteger emailSmtpPort;
+
+/*! SMTP username. */
+@property (nonatomic, readonly, nullable) NSString *emailSmtpUsername;
+
+/*! SMTP password. */
+@property (nonatomic, readonly, nullable) NSString *emailSmtpPassword;
+
+/*! Whether to use TLS for SMTP. */
+@property (nonatomic, readonly) BOOL emailSmtpUseTLS;
+
 /*! Whether rate limiting is enabled. */
 @property (nonatomic, readonly) BOOL rateLimitEnabled;
 
@@ -171,6 +189,12 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 
 /*! Whether NodeInfo open registrations field is enabled. */
 @property (nonatomic, readonly) BOOL nodeinfoOpenRegistrations;
+
+/*! Whether biometric protection is enabled for signing keys (default: YES). */
+@property (nonatomic, assign) BOOL useBiometricProtection;
+
+/*! Whether to use the system Keychain for storing keys (default: YES). */
+@property (nonatomic, assign) BOOL useKeychain;
 
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;

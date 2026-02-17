@@ -144,6 +144,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! The OAuth scope granted (ATProto-specific). */
 @property (nonatomic, copy, nullable) NSString *scope;
 
+/*! Confirmation claim (e.g., for DPoP jkt). */
+@property (nonatomic, copy, nullable) NSDictionary *cnf;
+
 /*!
  @method payloadFromDictionary:error:
  
@@ -384,7 +387,13 @@ typedef NS_ENUM(NSInteger, JWTError) {
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
-                          error:(NSError **)error;
+             dpopKeyThumbprint:(nullable NSString *)jkt
+                           error:(NSError **)error;
+
+- (JWT *)mintAccessTokenForDID:(NSString *)did
+                        handle:(NSString *)handle
+                        scopes:(NSArray<NSString *> *)scopes
+                           error:(NSError **)error;
 
 /*!
  @method mintRefreshTokenForDID:handle:scopes:error:

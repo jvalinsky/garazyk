@@ -4,13 +4,15 @@ Standards-compliant AT Protocol Personal Data Server (PDS) implementation writte
 
 ## Features
 
-- **AT Protocol Compliant** - Full implementation of AT Protocol specifications
+- **AT Protocol Compliant** - Full implementation of AT Protocol specifications (DAG-CBOR, CAR v1, Firehose)
+- **Secure Authentication** - OAuth 2.0, DPoP (Demonstrating Proof-of-Possession), and JTI replay protection
+- **Biometric Security** - Hardware-backed cryptographic key storage using Secure Enclave & Keychain
 - **Client-Side Caching** - 5-10 minute TTL reduces repeat loads from 600ms to 250ms
 - **Parallel API Calls** - Promise.all reduces page loads by 58%
 - **Interactive Explorer** - Web-based UI for exploring AT Protocol data
 - **Auto-Generated API Docs** - OpenAPI 3.0 specification with interactive Swagger UI
 - **Unified Logging** - Structured JSON logging with component filtering and request correlation
-- **Comprehensive Test Suite** - 800+ tests across protocol, auth, repository, and integration layers
+- **Comprehensive Test Suite** - 900+ tests across protocol, auth, repository, and integration layers
 
 ## Table of Contents
 
@@ -80,6 +82,9 @@ xcodebuild -scheme AllTests build
 
 # Build Fuzzers
 xcodebuild -scheme Fuzzers build
+
+# Wipe and Rebuild (Fresh Start)
+./scripts/wipe_and_rebuild.sh
 ```
 
 ### Using Make (Legacy Support)
@@ -387,6 +392,8 @@ tail -f server.log | grep "handleApi"
 - **SQL Injection Protection**: Parameterized queries
 - **Rate Limiting Ready**: Cache prevents abuse
 - **HTTPS Ready**: TLS termination can be added
+- **OAuth 2.0 & DPoP**: Full implementation of ATProto OAuth profile with DPoP binding
+- **Biometric Keys**: Private keys stored in Secure Enclave/Keychain with biometric access control
 
 ### Security Testing
 
@@ -441,11 +448,11 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Changelog
 
-### v1.0.0 (Current)
-- Complete AT Protocol PDS implementation
-- Interactive web explorer
-- Auto-generated OpenAPI documentation
-- Client-side caching and performance optimizations
-- Comprehensive security testing
+### v1.1.0 (Current)
+- **Full ATProto Compliance**: Canonical DAG-CBOR encoding, CAR v1 emission, correct CID-link framing
+- **Firehose V2**: Spec-compliant `subscribeRepos` stream with real back-fill and cursor support
+- **Advanced Security**: OAuth 2.0 Request Object signing, DPoP, and Biometric Keychain integration
+- **Performance**: Optimized MST rebuilding and parallel request handling
+- **Testing**: Expanded suite to 901+ tests covering all edge cases
 
 See [SESSION_SUMMARY.md](docs/SESSION_SUMMARY.md) for detailed implementation notes.

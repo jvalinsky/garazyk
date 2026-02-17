@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.atproto.pds</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/atprotopds-cli</string>
+        <string>serve</string>
+        <string>--config</string>
+        <string>/etc/atprotopds/production.json</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/usr/local/share/atprotopds</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PDS_LOG_LEVEL</key>
+        <string>info</string>
+        <key>PDS_LOG_FORMAT</key>
+        <string>json</string>
+        <key>PDS_USE_KEYCHAIN</key>
+        <string>true</string>
+        <key>PDS_USE_BIOMETRIC_PROTECTION</key>
+        <string>true</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/atprotopds/pds.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/atprotopds/pds-error.log</string>
+
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65536</integer>
+    </dict>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65536</integer>
+    </dict>
+</dict>
+</plist>
