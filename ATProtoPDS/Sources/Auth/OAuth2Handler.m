@@ -340,9 +340,7 @@
 }
 
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response {
-    fprintf(stderr, "[OAuth2] handleTokenRequest called\n");
     NSString *body = [[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding];
-    fprintf(stderr, "[OAuth2] Request body: %s\n", body.UTF8String);
     if (!body) {
         response.statusCode = 400;
         [response setJsonBody:@{
@@ -354,8 +352,11 @@
     
     NSDictionary *params = [self parseFormUrlEncodedString:body];
 
+    NSString *grantType = params[@"grant_type"];
+
     // Validate client from database
     NSString *clientID = params[@"client_id"];
+    PDS_LOG_AUTH_INFO(@"Token request received (grant_type=%@, client_id=%@)", grantType ?: @"", clientID ?: @"");
     NSError *clientError = nil;
     NSDictionary *client = [self validateClient:clientID error:&clientError];
     if (!client) {
@@ -366,7 +367,7 @@
         }];
         return;
     }
-    fprintf(stderr, "[OAuth2] Client validation PASSED\n");
+    PDS_LOG_AUTH_DEBUG(@"Token request client validation passed (client_id=%@)", clientID ?: @"");
 
     // Validate client secret (optional for DPoP-based clients)
     // In ATProto, client authentication can use DPoP binding instead of client_secret
@@ -396,7 +397,6 @@
     }
 
     // Validate redirect URI for authorization_code grant type
-    NSString *grantType = params[@"grant_type"];
     if ([grantType isEqualToString:@"authorization_code"]) {
         NSString *redirectURI = params[@"redirect_uri"];
         // URL-decode the redirect_uri since browsers send it encoded in form data
@@ -406,10 +406,11 @@
                 redirectURI = decodedRedirectURI;
             }
         }
-        fprintf(stderr, "[OAuth2] Token request redirect_uri: '%s'\n", redirectURI.UTF8String ?: "(nil)");
         NSError *redirectError = nil;
         if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
-            fprintf(stderr, "[OAuth2] Redirect URI validation failed: %s\n", redirectError.localizedDescription.UTF8String ?: "unknown");
+            PDS_LOG_AUTH_WARN(@"Token request redirect_uri validation failed (client_id=%@): %@",
+                              clientID ?: @"",
+                              redirectError.localizedDescription ?: @"Invalid redirect_uri");
             response.statusCode = 400;
             [response setJsonBody:@{
                 @"error": @"invalid_request",
@@ -417,7 +418,7 @@
             }];
             return;
         }
-        fprintf(stderr, "[OAuth2] Redirect URI validation PASSED\n");
+        PDS_LOG_AUTH_DEBUG(@"Token request redirect_uri validation passed (client_id=%@)", clientID ?: @"");
     }
     
     if (!dpopProof || dpopProof.length == 0) {
@@ -481,7 +482,12 @@
         }];
         return;
     }
-    fprintf(stderr, "[OAuth2] DPoP verification PASSED, thumbprint: %s\n", dpopThumbprint.UTF8String);
+    if (dpopThumbprint.length > 0) {
+        NSString *prefix = dpopThumbprint.length > 8 ? [dpopThumbprint substringToIndex:8] : dpopThumbprint;
+        PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint_prefix=%@)", prefix);
+    } else {
+        PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint unavailable)");
+    }
 
     OAuth2TokenRequest *tokenRequest = [[OAuth2TokenRequest alloc] init];
     tokenRequest.grantType = params[@"grant_type"];

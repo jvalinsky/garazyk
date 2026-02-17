@@ -21,7 +21,6 @@
 #import "Auth/TOTPService.h"
 #import "Auth/Base32Utils.h"
 #import "Debug/PDSLogger.h"
-#import <os/log.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
 
@@ -970,18 +969,20 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         if (did) {
             codeData[@"login_hint_did"] = did;
         } else {
-            fprintf(stderr, "[OAuth2Server] Warning: Failed to resolve login_hint: %s, error: %s\n", 
-                    request.loginHint.UTF8String, resolveError.localizedDescription.UTF8String ?: "unknown");
+            PDS_LOG_AUTH_WARN(@"Failed to resolve login_hint for authorization request (client_id=%@): %@",
+                              request.clientID ?: @"",
+                              resolveError.localizedDescription ?: @"unknown error");
         }
     }
     codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
 
     [self storeAuthorizationCode:code data:codeData];
 
-    fprintf(stderr, "[OAuth2Server] Stored code: %s, challenge: %s, method: %s, did: %s\n",
-            code.UTF8String, request.codeChallenge.UTF8String ?: "(nil)",
-            request.codeChallengeMethod.UTF8String ?: "(nil)",
-            [codeData[@"login_hint_did"] UTF8String] ?: "(nil)");
+    PDS_LOG_AUTH_DEBUG(@"Stored authorization code (client_id=%@, has_pkce=%@, has_dpop_jwk=%@, has_login_hint=%@)",
+                       request.clientID ?: @"",
+                       @(request.codeChallenge.length > 0),
+                       @(request.dpopJWK != nil),
+                       @(request.loginHint.length > 0));
 
     NSMutableString *authURL = [request.authorizationURL.absoluteString mutableCopy];
     NSString *separator = [authURL containsString:@"?"] ? @"&" : @"?";
@@ -1010,7 +1011,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
                           completion:(OAuth2TokenCompletion)completion {
     NSDictionary *codeData = [self getAuthorizationCodeData:request.code];
     if (!codeData) {
-        fprintf(stderr, "[OAuth2Server] Code NOT found: %s\n", request.code.UTF8String);
+        PDS_LOG_AUTH_WARN(@"Authorization code not found or expired (client_id=%@)", request.clientID ?: @"");
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired authorization code"}];
@@ -1018,11 +1019,11 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         return;
     }
 
-    fprintf(stderr, "[OAuth2Server] Processing token request: code=%s, code_verifier=%s, stored_challenge=%s, stored_method=%s\n",
-            request.code.UTF8String,
-            request.codeVerifier.UTF8String ?: "(nil)",
-            [codeData[@"code_challenge"] UTF8String] ?: "(nil)",
-            [codeData[@"code_challenge_method"] UTF8String] ?: "(nil)");
+    PDS_LOG_AUTH_DEBUG(@"Processing token request (grant_type=%@, client_id=%@, has_code=%@, has_code_verifier=%@)",
+                       request.grantType ?: @"",
+                       request.clientID ?: @"",
+                       @(request.code.length > 0),
+                       @(request.codeVerifier.length > 0));
 
     NSTimeInterval codeAge = [[NSDate date] timeIntervalSince1970] - [codeData[@"created_at"] doubleValue];
     if (codeAge > 600) {
@@ -1052,37 +1053,27 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
             codeVerifier = request.codeVerifier;
         }
 
-        fprintf(stderr, "[OAuth2] PKCE: code_verifier=%s (decoded), expected_challenge=%s, method=%s\n",
-                codeVerifier.UTF8String ?: "(nil)",
-                expectedChallenge.UTF8String ?: "(nil)",
-                method.UTF8String ?: "(nil)");
+        PDS_LOG_AUTH_DEBUG(@"Verifying PKCE (client_id=%@, method=%@, verifier_len=%lu, challenge_len=%lu)",
+                           request.clientID ?: @"",
+                           method ?: @"plain",
+                           (unsigned long)codeVerifier.length,
+                           (unsigned long)expectedChallenge.length);
 
         if (![self verifyCodeVerifier:codeVerifier challenge:expectedChallenge method:method]) {
-            // Debug: compute what the hash should be
-            if ([method isEqualToString:@"S256"]) {
-                NSData *verifierData = [codeVerifier dataUsingEncoding:NSUTF8StringEncoding];
-                unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-                CC_SHA256(verifierData.bytes, (CC_LONG)verifierData.length, hash);
-                NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-                NSString *computed = [self base64URLEncodeData:hashData];
-                fprintf(stderr, "[OAuth2] PKCE: computed_hash=%s\n", computed.UTF8String ?: "(nil)");
-            }
-
             NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                  code:OAuth2ErrorInvalidGrant
                                              userInfo:@{NSLocalizedDescriptionKey: @"Invalid code verifier"}];
             completion(nil, error);
             return;
         }
-        fprintf(stderr, "[OAuth2] PKCE verification PASSED\n");
+        PDS_LOG_AUTH_DEBUG(@"PKCE verification passed (client_id=%@)", request.clientID ?: @"");
     }
 
     [self removeAuthorizationCode:request.code];
 
     NSString *did = codeData[@"login_hint_did"];
     if (!did) {
-        fprintf(stderr, "[OAuth2Server] Missing login_hint_did for code: %s, codeData: %s\n",
-                request.code.UTF8String, codeData.description.UTF8String ?: "(nil)");
+        PDS_LOG_AUTH_ERROR(@"Authorization code missing login_hint_did (client_id=%@)", request.clientID ?: @"");
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
                                          userInfo:@{NSLocalizedDescriptionKey: @"Missing user identity in authorization code"}];
@@ -1294,11 +1285,13 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 
     // Trim potential trailing '+' or spaces (common URL encoding artifacts)
     identity = [identity stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@" +"]];
-    os_log_info(OS_LOG_DEFAULT, "OAuth2: Resolving identity: %{public}@", identity);
+    BOOL isDID = [identity hasPrefix:@"did:"];
+    BOOL looksLikeEmail = [identity containsString:@"@"];
+    PDS_LOG_AUTH_DEBUG(@"Resolving identity (is_did=%@, looks_like_email=%@)", @(isDID), @(looksLikeEmail));
 
     // Check database is valid
     if (!self.database) {
-        os_log_error(OS_LOG_DEFAULT, "OAuth2: Database is nil during identity resolution");
+        PDS_LOG_AUTH_ERROR(@"Database is nil during identity resolution");
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorServerError
@@ -1312,14 +1305,13 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         NSError *dbError = nil;
         PDSDatabaseAccount *account = [self.database getAccountByHandle:identity error:&dbError];
         if (dbError) {
-            os_log_error(OS_LOG_DEFAULT, "OAuth2: Database error looking up handle %{public}@: %{public}@",
-                        identity, dbError.localizedDescription);
+            PDS_LOG_AUTH_ERROR(@"Database error looking up handle: %@", dbError.localizedDescription ?: @"unknown error");
         }
         if (account) {
-            os_log_info(OS_LOG_DEFAULT, "OAuth2: Found local account for handle %{public}@ -> %{public}@", identity, account.did);
+            PDS_LOG_AUTH_DEBUG(@"Found local account for handle (did=%@)", account.did ?: @"");
             return account.did;
         }
-        os_log_info(OS_LOG_DEFAULT, "OAuth2: Account not found for handle %{public}@ in local database", identity);
+        PDS_LOG_AUTH_DEBUG(@"Account not found for handle in local database");
     }
 
     // Check if it's already a DID
@@ -1332,7 +1324,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         __block NSString *resolvedDID = nil;
         __block NSError *resolveError = nil;
 
-        os_log_info(OS_LOG_DEFAULT, "OAuth2: Resolving handle %{public}@ via HandleResolver...", identity);
+        PDS_LOG_AUTH_DEBUG(@"Resolving handle via HandleResolver");
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
         [self.handleResolver resolveHandle:identity completion:^(NSString * _Nullable did, NSError * _Nullable err) {
@@ -1342,12 +1334,12 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         }];
 
         if (dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)) != 0) {
-            os_log_error(OS_LOG_DEFAULT, "OAuth2: Handle resolution TIMEOUT for %{public}@", identity);
+            PDS_LOG_AUTH_ERROR(@"Handle resolution timeout");
             if (error) *error = [NSError errorWithDomain:OAuth2ErrorDomain code:OAuth2ErrorServerError userInfo:@{NSLocalizedDescriptionKey: @"Identity resolution timeout"}];
             return nil;
         }
 
-        os_log_info(OS_LOG_DEFAULT, "OAuth2: Handle resolution COMPLETED for %{public}@ -> %{public}@", identity, resolvedDID);
+        PDS_LOG_AUTH_DEBUG(@"Handle resolution completed (resolved_did_present=%@)", @(resolvedDID.length > 0));
 
         if (resolveError) {
             if (error) *error = resolveError;
@@ -1360,7 +1352,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
             NSString *verifiedHandle = atprotoData[@"handle"];
 
             if (verifiedHandle && ![verifiedHandle isEqualToString:identity]) {
-                os_log_error(OS_LOG_DEFAULT, "OAuth2: Handle verification failed - provided %{public}@, resolved %{public}@", identity, verifiedHandle);
+                PDS_LOG_AUTH_ERROR(@"Handle verification failed (mismatch)");
                 if (error) {
                     *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                  code:OAuth2ErrorInvalidRequest
