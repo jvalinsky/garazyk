@@ -1203,11 +1203,55 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
 static NSString * const kSigningKeyService = @"com.atproto.pds.signing";
 static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
-// X9.63 P-256 private key encoding: 0x04 || x || y || d.
-static NSString * const kFallbackECPrivateKeyBase64 =
-@"BCLF1qlRjtsuPYfNw8R+ExANbrNPsBa+4JlOQqCdQlcnXZl5PjeYFJPGH57gY0PM"
-@"3Ptx636G0WIFLejhGrKpYAoE/F12gBONWWb+CzfpKu3Q47gF81ghbJ1kW4fMU3v7"
-@"ag==";
+
+static NSMutableDictionary<NSString *, NSData *> *PDSProcessFallbackSigningKeyStore(void) {
+    static NSMutableDictionary<NSString *, NSData *> *store = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        store = [NSMutableDictionary dictionary];
+    });
+    return store;
+}
+
+static BOOL PDSProcessKeychainUnavailable = NO;
+
+static void PDSStoreFallbackSigningKey(NSString *did, NSData *keyData) {
+    @synchronized([PDSActorStore class]) {
+        PDSProcessFallbackSigningKeyStore()[did] = [keyData copy];
+    }
+}
+
+static NSData *PDSLoadFallbackSigningKey(NSString *did) {
+    @synchronized([PDSActorStore class]) {
+        return [PDSProcessFallbackSigningKeyStore()[did] copy];
+    }
+}
+
+static BOOL PDSIsKeychainUnavailableForProcess(void) {
+    @synchronized([PDSActorStore class]) {
+        return PDSProcessKeychainUnavailable;
+    }
+}
+
+static void PDSMarkKeychainUnavailableForProcess(void) {
+    @synchronized([PDSActorStore class]) {
+        PDSProcessKeychainUnavailable = YES;
+    }
+}
+
+#if !defined(GNUSTEP)
+static NSDictionary *PDSKeychainQueryWithRuntimeOptions(NSDictionary *baseQuery) {
+    NSMutableDictionary *query = [baseQuery mutableCopy];
+    if (@available(macOS 10.15, *)) {
+        query[(__bridge id)kSecUseDataProtectionKeychain] = @YES;
+    }
+    return query;
+}
+
+static BOOL PDSShouldFallbackFromKeychain(OSStatus status) {
+    return status == errSecNotAvailable || status == errSecNoSuchKeychain;
+}
+#endif
 
 - (NSString *)keychainAccountForDid:(NSString *)did {
     return [kSigningKeyAccountPrefix stringByAppendingString:did];
@@ -1294,6 +1338,10 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     }
     
     if (!self.useKeychainSigningKey) {
+        if (self.signingKey) {
+            CFRetain(self.signingKey);
+            return self.signingKey;
+        }
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                          code:PDSActorStoreErrorSigningKeyNotFound
@@ -1304,13 +1352,14 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     
     NSString *account = [self keychainAccountForDid:self.did];
     
-    NSDictionary *query = @{
+    NSDictionary *baseQuery = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
         (__bridge id)kSecReturnRef: @YES,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
+    NSDictionary *query = PDSKeychainQueryWithRuntimeOptions(baseQuery);
     
     CFTypeRef keyRef = NULL;
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &keyRef);
@@ -1353,35 +1402,71 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return NO;
     }
 
+#if !defined(GNUSTEP)
+    if (PDSIsKeychainUnavailableForProcess()) {
+        PDSStoreFallbackSigningKey(targetDid, keyData);
+        return YES;
+    }
+#endif
+
     NSString *account = [self keychainAccountForDid:targetDid];
 
     if (self.useBiometricProtection && self.biometricKeychain) {
-        return [self.biometricKeychain storeKey:keyData forAccount:account error:error];
+        NSError *biometricError = nil;
+        if ([self.biometricKeychain storeKey:keyData forAccount:account error:&biometricError]) {
+            return YES;
+        }
+
+        BOOL canFallbackToStandardKeychain =
+            [biometricError.domain isEqualToString:PDSBiometricKeychainErrorDomain] &&
+            (biometricError.code == PDSBiometricKeychainErrorBiometryNotAvailable ||
+             biometricError.code == PDSBiometricKeychainErrorBiometryNotEnrolled);
+        if (!canFallbackToStandardKeychain) {
+            if (error) {
+                *error = biometricError;
+            }
+            return NO;
+        }
+
+        // Biometry isn't available in this runtime; degrade gracefully to the
+        // non-biometric keychain path for this store instance.
+        self.useBiometricProtection = NO;
     }
 
-    NSDictionary *query = @{
+    NSDictionary *baseQuery = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account
     };
-
+    NSDictionary *query = PDSKeychainQueryWithRuntimeOptions(baseQuery);
     SecItemDelete((__bridge CFDictionaryRef)query);
 
-    NSDictionary *attributes = @{
+    NSDictionary *baseAttributes = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
         (__bridge id)kSecValueData: keyData,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
+    NSDictionary *attributes = PDSKeychainQueryWithRuntimeOptions(baseAttributes);
 
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
 
     if (status != errSecSuccess) {
+#if !defined(GNUSTEP)
+        if (PDSShouldFallbackFromKeychain(status)) {
+            PDSMarkKeychainUnavailableForProcess();
+            PDSStoreFallbackSigningKey(targetDid, keyData);
+            return YES;
+        }
+#endif
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store signing key in Keychain"}];
+                                         code:status
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to store signing key in Keychain (OSStatus=%d)", (int)status],
+                                         @"osstatus": @(status)
+                                     }];
         }
         return NO;
     }
@@ -1395,7 +1480,39 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 }
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
-#if defined(GNUSTEP)
+#if !defined(GNUSTEP)
+    if (!self.useKeychainSigningKey) {
+        NSDictionary *attributes = @{
+            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+            (__bridge id)kSecAttrKeySizeInBits: @(256),
+            (__bridge id)kSecPrivateKeyAttrs: @{
+                (__bridge id)kSecAttrIsPermanent: @NO
+            }
+        };
+
+        CFErrorRef cfError = NULL;
+        SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &cfError);
+
+        if (!privateKey) {
+            if (error) {
+                if (cfError) {
+                    *error = CFBridgingRelease(cfError);
+                } else {
+                    *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                                 code:-1
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate in-memory signing key"}];
+                }
+            } else if (cfError) {
+                CFRelease(cfError);
+            }
+            return NO;
+        }
+
+        _setSigningKeyUnsafe(&_signingKey, privateKey);
+        CFRelease(privateKey);
+        return YES;
+    }
+#endif
     return [self generateSigningKeyForDid:self.did error:error];
 }
 
@@ -1414,69 +1531,15 @@ static NSString * const kFallbackECPrivateKeyBase64 =
     }
     
     // Store the 32-byte private key for the target DID
-    return [self storeSigningKeyData:keyPair.privateKey forDid:targetDid error:error];
-}
-#else
-	    NSDictionary *attributes = @{
-	        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-	        (__bridge id)kSecAttrKeySizeInBits: @(2048),
-	        (__bridge id)kSecPrivateKeyAttrs: @{
-	            (__bridge id)kSecAttrIsPermanent: (__bridge id)kCFBooleanFalse
-	        }
-	    };
-    CFErrorRef cfError = NULL;
-    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &cfError);
-
-    if (!privateKey && !self.useKeychainSigningKey) {
-        if (cfError) {
-            CFRelease(cfError);
-            cfError = NULL;
-        }
-        NSDictionary *fallbackAttributes = @{
-            (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
-            (__bridge id)kSecAttrKeySizeInBits: @(256)
-        };
-        privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)fallbackAttributes, &cfError);
+    BOOL stored = [self storeSigningKeyData:keyPair.privateKey forDid:targetDid error:error];
+#if !defined(GNUSTEP)
+    if (stored) {
+        // Stored secp256k1 bytes are authoritative; clear any stale SecKey cache.
+        _setSigningKeyUnsafe(&_signingKey, NULL);
     }
-
-    if (!privateKey && !self.useKeychainSigningKey) {
-        if (cfError) {
-            CFRelease(cfError);
-            cfError = NULL;
-        }
-        NSData *fallbackData = [[NSData alloc] initWithBase64EncodedString:kFallbackECPrivateKeyBase64
-                                                                   options:0];
-        if (fallbackData) {
-            NSDictionary *importAttributes = @{
-                (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
-                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
-                (__bridge id)kSecAttrKeySizeInBits: @(256)
-            };
-            privateKey = SecKeyCreateWithData((__bridge CFDataRef)fallbackData,
-                                              (__bridge CFDictionaryRef)importAttributes,
-                                              &cfError);
-        }
-    }
-    
-    if (!privateKey) {
-        if (error) {
-            if (cfError) {
-                *error = CFBridgingRelease(cfError);
-            } else {
-                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                            code:-1
-                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate signing key"}];
-            }
-        } else if (cfError) {
-            CFRelease(cfError);
-        }
-        return NO;
-    }
-    
-    _setSigningKeyUnsafe(&_signingKey, privateKey);
-    return YES;
-}
 #endif
+    return stored;
+}
 
 #if defined(GNUSTEP)
 - (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error {
@@ -1493,6 +1556,22 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         }
         return nil;
     }
+
+    NSData *fallbackKey = PDSLoadFallbackSigningKey(self.did);
+    if (fallbackKey.length == 32) {
+        return fallbackKey;
+    }
+
+#if !defined(GNUSTEP)
+    if (PDSIsKeychainUnavailableForProcess()) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:PDSActorStoreErrorSigningKeyNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signing key not found in process fallback store"}];
+        }
+        return nil;
+    }
+#endif
 
     NSString *account = [self keychainAccountForDid:self.did];
 
@@ -1512,13 +1591,14 @@ static NSString * const kFallbackECPrivateKeyBase64 =
         return nil;
     }
 
-    NSDictionary *query = @{
+    NSDictionary *baseQuery = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
         (__bridge id)kSecReturnData: @YES,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
+    NSDictionary *query = PDSKeychainQueryWithRuntimeOptions(baseQuery);
 
     CFDataRef keyData = NULL;
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyData);
@@ -1570,13 +1650,14 @@ static NSString * const kFallbackECPrivateKeyBase64 =
 
     NSString *account = [self keychainAccountForDid:self.did];
 
-    NSDictionary *query = @{
+    NSDictionary *baseQuery = @{
         (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: kSigningKeyService,
         (__bridge id)kSecAttrAccount: account,
         (__bridge id)kSecReturnData: @YES,
         (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
     };
+    NSDictionary *query = PDSKeychainQueryWithRuntimeOptions(baseQuery);
 
     CFDataRef keyData = NULL;
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&keyData);

@@ -42,11 +42,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt;
 - (NSError *)errorWithSQLiteResult:(int)result message:(NSString *)message;
 
-#if defined(GNUSTEP)
 - (BOOL)generateSigningKeyForDid:(NSString *)did error:(NSError **)error;
-#else
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
-#endif
 
 @end
 
