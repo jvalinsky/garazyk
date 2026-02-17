@@ -25,6 +25,12 @@
     
     self.testDID = @"did:web:test.recordservice.example.com";
     
+    // Seed signing key for test DID
+    uint8_t priv[32] = {0};
+    memset(priv, 1, 32); 
+    PDSActorStore *store = [self.pool storeForDid:self.testDID error:nil];
+    [store importSigningKey:[NSData dataWithBytes:priv length:32] error:nil];
+
     self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
 }
 

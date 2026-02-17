@@ -25,11 +25,20 @@
     self.plcTask = [[NSTask alloc] init];
     // Find the binary path
     NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSString *binaryPath = [cwd stringByAppendingPathComponent:@"build/bin/atproto-plc"];
-    
-    if (![[NSFileManager defaultManager] fileExistsAtPath:binaryPath]) {
-        // Try alternate location
-        binaryPath = [cwd stringByAppendingPathComponent:@"build/Debug/atproto-plc"];
+    NSArray *candidates = @[
+        @"build/bin/atproto-plc",
+        @"bin/atproto-plc",
+        @"../build/bin/atproto-plc",
+        @"build/Debug/atproto-plc"
+    ];
+
+    NSString *binaryPath = nil;
+    for (NSString *candidate in candidates) {
+        NSString *path = [cwd stringByAppendingPathComponent:candidate];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            binaryPath = path;
+            break;
+        }
     }
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:binaryPath]) {

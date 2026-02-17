@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-13T19:24:18.248Z",
+  "generated_at": "2026-02-17T06:33:15.610Z",
   "inputs": {
     "mode": "source-parsed",
     "methods_tsv": null,
@@ -22,7 +22,7 @@
     "stubs_json": "/Users/jack/Software/objpds/reports/stub_scan_raw/stubs.json"
   },
   "scope": {
-    "source": "scripts/xrpc_coverage_scope.txt",
+    "source": "/Users/jack/Software/objpds/scripts/xrpc_coverage_scope.txt",
     "includes": [
       "com.atproto.*"
     ],
@@ -40,8 +40,8 @@
     "unknown_registry_entries": 0,
     "duplicate_registry_registrations": 0,
     "duplicate_registry_registrations_cross_scope": 0,
-    "duplicate_registry_registrations_cross_scope_expected": 0,
-    "duplicate_registry_registrations_cross_scope_raw": 0
+    "duplicate_registry_registrations_cross_scope_expected": 1,
+    "duplicate_registry_registrations_cross_scope_raw": 1
   },
   "namespace_coverage": [
     {
@@ -343,8 +343,8 @@
     },
     {
       "scope": "class.registerMethodsWithDispatcher:controller",
-      "registrations_total": 22,
-      "registrations_unique": 22,
+      "registrations_total": 21,
+      "registrations_unique": 21,
       "methods": [
         "app.bsky.actor.getPreferences",
         "app.bsky.actor.getProfile",
@@ -365,7 +365,6 @@
         "com.atproto.identity.resolveDid",
         "com.atproto.identity.resolveHandle",
         "com.atproto.identity.resolveIdentity",
-        "com.atproto.sync.getBlob",
         "com.atproto.sync.getBlocks",
         "com.atproto.sync.getLatestCommit"
       ],
@@ -376,9 +375,10 @@
     },
     {
       "scope": "class.registerMethodsWithDispatcher:application",
-      "registrations_total": 12,
-      "registrations_unique": 12,
+      "registrations_total": 13,
+      "registrations_unique": 13,
       "methods": [
+        "app.bsky.actor.getProfile",
         "com.atproto.admin.getSubjectStatus",
         "com.atproto.admin.updateSubjectStatus",
         "com.atproto.label.queryLabels",
@@ -399,11 +399,29 @@
     }
   ],
   "cross_scope_duplicates": {
-    "raw_count": 0,
-    "expected_overlap_count": 0,
+    "raw_count": 1,
+    "expected_overlap_count": 1,
     "unexpected_duplicate_count": 0,
-    "raw_methods": [],
-    "expected_methods": [],
+    "raw_methods": [
+      {
+        "method_id": "app.bsky.actor.getProfile",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      }
+    ],
+    "expected_methods": [
+      {
+        "method_id": "app.bsky.actor.getProfile",
+        "count": 2,
+        "scopes": [
+          "class.registerMethodsWithDispatcher:application",
+          "class.registerMethodsWithDispatcher:controller"
+        ]
+      }
+    ],
     "unexpected_methods": []
   },
   "stub_scan": {

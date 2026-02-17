@@ -4,8 +4,10 @@
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
 #import "Repository/CAR.h"
+#import "Repository/RepoCommit.h"
 #import "Repository/CBOR.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Core/TID.h"
 
@@ -15,9 +17,6 @@
                                                       did:(NSString *)did
                                                     error:(NSError **)error;
 - (MST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records;
-- (nullable NSData *)buildCommitBlockForDid:(NSString *)did
-                                        rev:(NSString *)rev
-                                    dataCID:(CID *)dataCID;
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
 - (CBORValue *)cidLinkValueForCID:(CID *)cid;
 - (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
@@ -558,24 +557,82 @@
         }
     }
 
-    NSData *commitBlock = [self buildCommitBlockForDid:did rev:currentRev dataCID:mstRootCID];
-    if (!commitBlock) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.repo"
-                                         code:3
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to build commit block"}];
+    // Try to load existing commit from repo_root
+    // We expect repo_root to be the head Commit CID.
+    NSData *rootBytes = [store getRepoRootForDid:did error:nil];
+    CID *storedCommitCID = rootBytes ? [CID cidFromBytes:rootBytes] : nil;
+    NSData *storedCommitBlock = nil;
+
+    if (storedCommitCID) {
+        // Fetch the block
+        storedCommitBlock = [store getBlockForCID:[storedCommitCID bytes] forDid:did error:nil];
+        if (storedCommitBlock) {
+             // Decode and verify data CID matches our computed MST
+             NSError *decodeError = nil;
+             id decoded = [ATProtoDagCBOR decodeData:storedCommitBlock error:&decodeError];
+             if ([decoded isKindOfClass:[NSDictionary class]]) {
+                 NSDictionary *map = (NSDictionary *)decoded;
+                 id dataVal = map[@"data"];
+                 CID *storedDataCID = nil;
+                 if ([dataVal isKindOfClass:[CID class]]) {
+                     storedDataCID = (CID *)dataVal;
+                 } else if ([dataVal isKindOfClass:[NSString class]]) {
+                     storedDataCID = [CID cidFromString:(NSString *)dataVal];
+                 }
+                 
+                 // If the stored commit's MST matches our computed MST, use the stored commit
+                 if ((!storedDataCID && !mstRootCID) || [storedDataCID isEqual:mstRootCID]) {
+                     // Match! Keep storedCommitBlock.
+                 } else {
+                     // Mismatch - likely concurrent update or non-deterministic MST.
+                     // Fallback to creating a new commit.
+                     storedCommitBlock = nil;
+                 }
+             } else {
+                 storedCommitBlock = nil; // Invalid block
+             }
         }
-        return NO;
     }
 
-    CID *commitCID = [CID cidWithDigest:[CID sha256Digest:commitBlock] codec:0x71];
-    if (!commitCID) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.repo"
-                                         code:4
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute commit CID"}];
+    RepoCommit *commit = nil;
+    NSData *commitBlock = nil;
+    CID *commitCID = nil;
+
+    if (storedCommitBlock && storedCommitCID) {
+        commitBlock = storedCommitBlock;
+        commitCID = storedCommitCID;
+    } else {
+        // Fallback: Create new commit
+        commit = [RepoCommit createCommitWithDid:did
+                                            data:mstRootCID
+                                             rev:currentRev
+                                            prev:storedCommitCID]; // Use stored ID (even if data mismatch) as prev
+        
+        // Attempt to sign with store key
+        NSData *key = [store signingKeyPrivateBytesWithError:nil];
+        if (key) {
+             [commit signWithPrivateKey:key error:nil];
         }
-        return NO;
+        
+        commitBlock = [commit serialize];
+        if (!commitBlock) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                             code:3
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to build commit block"}];
+            }
+            return NO;
+        }
+
+        commitCID = [commit computeCID];
+        if (!commitCID) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                             code:4
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute commit CID"}];
+            }
+            return NO;
+        }
     }
 
     if (storeOut) *storeOut = store;
@@ -795,16 +852,7 @@
     return mst;
 }
 
-- (nullable NSData *)buildCommitBlockForDid:(NSString *)did
-                                        rev:(NSString *)rev
-                                    dataCID:(CID *)dataCID {
-    NSMutableDictionary<CBORValue *, CBORValue *> *commitMap = [NSMutableDictionary dictionary];
-    commitMap[[CBORValue textString:@"did"]] = [CBORValue textString:did];
-    commitMap[[CBORValue textString:@"version"]] = [CBORValue unsignedInteger:3];
-    commitMap[[CBORValue textString:@"rev"]] = [CBORValue textString:rev];
-    commitMap[[CBORValue textString:@"data"]] = [self cidLinkValueForCID:dataCID];
-    return [[CBORValue map:commitMap] encode];
-}
+
 
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record {
     if (record.value.length == 0) {
@@ -823,7 +871,7 @@
     }
 
     NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObject error:&cborError];
+    NSData *cborData = [ATProtoDagCBOR encodeJSONObject:jsonObject error:&cborError];
     if (!cborData || cborError) {
         return nil;
     }

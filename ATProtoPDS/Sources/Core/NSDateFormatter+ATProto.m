@@ -22,17 +22,31 @@
     return formatter;
 }
 
++ (NSISO8601DateFormatter *)atproto_iso8601FormatterInternal {
+    static NSISO8601DateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSISO8601DateFormatter alloc] init];
+        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime | NSISO8601DateFormatWithFractionalSeconds;
+    });
+    return formatter;
+}
+
 + (NSString *)atproto_stringFromDate:(NSDate *)date {
     if (!date) {
         return nil;
     }
-    return [[self atproto_iso8601Formatter] stringFromDate:date];
+    return [[self atproto_iso8601FormatterInternal] stringFromDate:date];
 }
 
 + (nullable NSDate *)atproto_dateFromString:(NSString *)string {
     if (!string || string.length == 0) {
         return nil;
     }
+    // Try the precise NSISO8601DateFormatter first
+    NSDate *date = [[self atproto_iso8601FormatterInternal] dateFromString:string];
+    if (date) return date;
+    // Fall back to the legacy formatter for non-Z suffixed strings
     return [[self atproto_iso8601Formatter] dateFromString:string];
 }
 

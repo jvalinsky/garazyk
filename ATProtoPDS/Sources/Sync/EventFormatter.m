@@ -1,5 +1,6 @@
 #import "Sync/EventFormatter.h"
 #import "Sync/Firehose.h"
+#import "Core/ATProtoDagCBOR.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const EventFormatterErrorDomain = @"com.atproto.pds.eventformatter";
@@ -13,17 +14,26 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    
+    // Required fields per com.atproto.sync.subscribeRepos#commit
+    payload[@"seq"] = @(event.seq);
+    payload[@"rebase"] = @(event.rebase);
+    payload[@"tooBig"] = @(event.tooBig);
     payload[@"repo"] = event.repo;
-    payload[@"commit"] = event.commit;
-
-    if (event.previous) {
-        payload[@"previous"] = event.previous;
+    payload[@"commit"] = event.commit;  // CID object - will encode as tag 42
+    payload[@"rev"] = event.rev;
+    
+    if (event.since) {
+        payload[@"since"] = event.since;
     }
-
+    
+    payload[@"blocks"] = event.blocks ?: [NSData data];  // Required CAR bytes
     payload[@"ops"] = event.ops ?: @[];
-
-    if (event.blobs.count > 0) {
-        payload[@"blobs"] = event.blobs;
+    payload[@"blobs"] = event.blobs ?: @[];  // Array of CIDs
+    payload[@"time"] = event.time ?: @"";  // RFC-3339 timestamp
+    
+    if (event.prevData) {
+        payload[@"prevData"] = event.prevData;  // CID object - will encode as tag 42
     }
 
     return [self encodeStreamEventWithType:@"#commit" payload:payload error:error];
@@ -65,6 +75,9 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 }
 
 - (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event error:(NSError **)error {
+    NSMutableDictionary *header = [NSMutableDictionary dictionary];
+    header[@"op"] = @(-1);
+
     NSMutableDictionary *errorFrame = [NSMutableDictionary dictionary];
     NSString *errorCode = event.error.length > 0 ? event.error : event.message;
     errorFrame[@"error"] = errorCode.length > 0 ? errorCode : @"UnknownError";
@@ -73,14 +86,13 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
     }
 
     NSMutableData *result = [NSMutableData data];
+    
+    NSData *headerData = [ATProtoDagCBOR encodeObject:header error:error];
+    if (!headerData) return nil;
+    [result appendData:headerData];
 
-    uint8_t header[] = { kXRPCStreamOpErrorFrame };
-    [result appendBytes:header length:1];
-
-    NSData *cborData = [self encodeCBORObject:errorFrame error:error];
-    if (!cborData) {
-        return nil;
-    }
+    NSData *cborData = [ATProtoDagCBOR encodeObject:errorFrame error:error];
+    if (!cborData) return nil;
     [result appendData:cborData];
 
     return result;
@@ -93,13 +105,13 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
     header[@"op"] = @(kXRPCStreamOpMessage);
     header[@"t"] = msgType;
 
-    NSData *headerData = [self encodeCBORObject:header error:error];
+    NSData *headerData = [ATProtoDagCBOR encodeObject:header error:error];
     if (!headerData) {
         return nil;
     }
     [result appendData:headerData];
 
-    NSData *payloadData = [self encodeCBORObject:payload error:error];
+    NSData *payloadData = [ATProtoDagCBOR encodeObject:payload error:error];
     if (!payloadData) {
         return nil;
     }
@@ -118,264 +130,35 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         return nil;
     }
 
+    // XRPC stream frames are two concatenated CBOR objects: Header and Payload
     NSUInteger index = 0;
-    const uint8_t *bytes = data.bytes;
-    uint8_t firstByte = bytes[0];
-
-    // Handle error frames which are just a single byte header followed by a map
-    if (firstByte == kXRPCStreamOpErrorFrame) {
-        index = 1;
-        if (op) *op = -1;
-        if (msgType) *msgType = @"#error";
-    } else {
-        // Handle normal message frames which are two concatenated CBOR objects
-        NSDictionary *decodedHeader = [self decodeCBORFromBytes:data.bytes
-                                                         length:data.length
-                                                          index:&index
-                                                           error:error];
-        if (!decodedHeader) {
-            return nil;
-        }
-
-        if (op) {
-            *op = [decodedHeader[@"op"] integerValue];
-        }
-        if (msgType) {
-            *msgType = decodedHeader[@"t"];
-        }
-    }
-
-    if (index >= data.length) {
+    id decodedHeader = [self decodeCBORFromBytes:data.bytes length:data.length index:&index error:error];
+    if (![decodedHeader isKindOfClass:[NSDictionary class]]) {
         if (error) {
             *error = [NSError errorWithDomain:EventFormatterErrorDomain
                                          code:EventFormatterErrorCodeDecodingFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing event body"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid XRPC frame header"}];
         }
         return nil;
     }
-
+    
+    NSDictionary *header = (NSDictionary *)decodedHeader;
+    NSInteger opValue = [header[@"op"] integerValue];
+    if (op) *op = opValue;
+    
+    if (opValue == -1) {
+        if (msgType) *msgType = @"#error";
+    } else {
+        if (msgType) *msgType = header[@"t"];
+    }
+    
+    if (index >= data.length) return nil;
+    
     NSData *bodyData = [data subdataWithRange:NSMakeRange(index, data.length - index)];
-    id body = [self decodeCBORData:bodyData error:error];
-    if (!body) {
-        return nil;
-    }
-
-    if ([body isKindOfClass:[NSDictionary class]]) {
-        return (NSDictionary *)body;
-    }
-
-    return @{@"body": body};
+    return [ATProtoDagCBOR decodeData:bodyData error:error];
 }
 
-- (NSData *)encodeCBORObject:(id)object error:(NSError **)error {
-    NSMutableData *data = [NSMutableData data];
-
-    if ([object isKindOfClass:[NSString class]]) {
-        [self encodeString:object toData:data];
-    } else if ([object isKindOfClass:[NSNumber class]]) {
-        [self encodeNumber:object toData:data];
-    } else if ([object isKindOfClass:[NSArray class]]) {
-        [self encodeArray:object toData:data];
-    } else if ([object isKindOfClass:[NSDictionary class]]) {
-        [self encodeDictionary:object toData:data];
-    } else if ([object isKindOfClass:[NSData class]]) {
-        [self encodeBytes:object toData:data];
-    } else if ([object isKindOfClass:[NSNull class]]) {
-        [data appendBytes:(uint8_t[]){0xF6} length:1];
-    } else {
-        if (error) {
-            *error = [NSError errorWithDomain:EventFormatterErrorDomain
-                                         code:EventFormatterErrorCodeEncodingFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported type for CBOR encoding"}];
-        }
-        return nil;
-    }
-
-    return data;
-}
-
-- (void)encodeString:(NSString *)string toData:(NSMutableData *)data {
-    NSData *utf8Data = [string dataUsingEncoding:NSUTF8StringEncoding];
-    NSUInteger length = utf8Data.length;
-
-    uint8_t initialByte;
-    if (length < 24) {
-        initialByte = 0x60 | (uint8_t)length;
-        [data appendBytes:&initialByte length:1];
-    } else if (length < 256) {
-        initialByte = 0x78;
-        [data appendBytes:&initialByte length:1];
-        uint8_t lenByte = (uint8_t)length;
-        [data appendBytes:&lenByte length:1];
-    } else if (length < 65536) {
-        initialByte = 0x79;
-        [data appendBytes:&initialByte length:1];
-        uint8_t lenBytes[2] = { (length >> 8) & 0xFF, length & 0xFF };
-        [data appendBytes:lenBytes length:2];
-    } else {
-        initialByte = 0x7A;
-        [data appendBytes:&initialByte length:1];
-        uint8_t lenBytes[4] = { (length >> 24) & 0xFF, (length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF };
-        [data appendBytes:lenBytes length:4];
-    }
-
-    [data appendData:utf8Data];
-}
-
-- (void)encodeNumber:(NSNumber *)number toData:(NSMutableData *)data {
-    CFNumberType type = CFNumberGetType((CFNumberRef)number);
-    if (CFGetTypeID((CFNumberRef)number) == CFBooleanGetTypeID()) {
-        uint8_t byte = number.boolValue ? 0xF5 : 0xF4;
-        [data appendBytes:&byte length:1];
-        return;
-    }
-
-    if (type == kCFNumberCharType || type == kCFNumberSInt8Type || type == kCFNumberSInt16Type || type == kCFNumberSInt32Type || type == kCFNumberSInt64Type || type == kCFNumberShortType || type == kCFNumberIntType || type == kCFNumberLongType || type == kCFNumberLongLongType || type == kCFNumberNSIntegerType) {
-        NSInteger intValue = number.integerValue;
-        if (intValue < 0) {
-            uint8_t bytes[9] = { 0x3B };
-            int64_t val = -intValue - 1;
-            for (int i = 7; i >= 0; i--) {
-                bytes[i + 1] = val & 0xFF;
-                val >>= 8;
-            }
-            [data appendBytes:bytes length:9];
-            return;
-        }
-        uint64_t uvalue = (uint64_t)intValue;
-        if (uvalue < 24) {
-            uint8_t byte = (uint8_t)uvalue;
-            [data appendBytes:&byte length:1];
-        } else if (uvalue < 256) {
-            uint8_t bytes[2] = { 0x18, (uint8_t)uvalue };
-            [data appendBytes:bytes length:2];
-        } else if (uvalue < 65536) {
-            uint8_t bytes[3] = { 0x19, (uvalue >> 8) & 0xFF, uvalue & 0xFF };
-            [data appendBytes:bytes length:3];
-        } else if (uvalue < 4294967296ULL) {
-            uint8_t bytes[5] = { 0x1A, (uvalue >> 24) & 0xFF, (uvalue >> 16) & 0xFF, (uvalue >> 8) & 0xFF, uvalue & 0xFF };
-            [data appendBytes:bytes length:5];
-        } else {
-            uint8_t bytes[9] = { 0x1B };
-            for (int i = 7; i >= 0; i--) {
-                bytes[i + 1] = uvalue & 0xFF;
-                uvalue >>= 8;
-            }
-            [data appendBytes:bytes length:9];
-        }
-    } else if (type == kCFNumberFloat32Type || type == kCFNumberFloat64Type || type == kCFNumberFloatType || kCFNumberDoubleType) {
-        double doubleValue = number.doubleValue;
-        uint8_t bytes[9] = { 0xFB };
-        uint64_t val;
-        memcpy(&val, &doubleValue, sizeof(double));
-        for (int i = 7; i >= 0; i--) {
-            bytes[i + 1] = val & 0xFF;
-            val >>= 8;
-        }
-        [data appendBytes:bytes length:9];
-    }
-}
-
-- (void)encodeArray:(NSArray *)array toData:(NSMutableData *)data {
-    NSUInteger count = array.count;
-
-    uint8_t initialByte;
-    if (count < 16) {
-        initialByte = 0x80 | (uint8_t)count;
-        [data appendBytes:&initialByte length:1];
-    } else if (count < 256) {
-        uint8_t bytes[2] = { 0x98, (uint8_t)count };
-        [data appendBytes:bytes length:2];
-    } else if (count < 65536) {
-        uint8_t bytes[3] = { 0x99, (count >> 8) & 0xFF, count & 0xFF };
-        [data appendBytes:bytes length:3];
-    } else {
-        uint8_t bytes[5] = { 0x9A, (count >> 24) & 0xFF, (count >> 16) & 0xFF, (count >> 8) & 0xFF, count & 0xFF };
-        [data appendBytes:bytes length:5];
-    }
-
-    for (id item in array) {
-        NSError *error = nil;
-        NSData *itemData = [self encodeCBORObject:item error:&error];
-        if (itemData) {
-            [data appendData:itemData];
-        }
-    }
-}
-
-- (void)encodeDictionary:(NSDictionary *)dict toData:(NSMutableData *)data {
-    NSUInteger count = dict.count;
-
-    uint8_t initialByte;
-    if (count < 16) {
-        initialByte = 0xA0 | (uint8_t)count;
-        [data appendBytes:&initialByte length:1];
-    } else if (count < 256) {
-        uint8_t bytes[2] = { 0xB8, (uint8_t)count };
-        [data appendBytes:bytes length:2];
-    } else if (count < 65536) {
-        uint8_t bytes[3] = { 0xB9, (count >> 8) & 0xFF, count & 0xFF };
-        [data appendBytes:bytes length:3];
-    } else {
-        uint8_t bytes[5] = { 0xBA, (count >> 24) & 0xFF, (count >> 16) & 0xFF, (count >> 8) & 0xFF, count & 0xFF };
-        [data appendBytes:bytes length:5];
-    }
-
-    NSArray *sortedKeys = [dict.allKeys sortedArrayUsingSelector:@selector(compare:)];
-    for (id key in sortedKeys) {
-        NSError *error = nil;
-        NSData *keyData = [self encodeCBORObject:key error:&error];
-        if (keyData) {
-            [data appendData:keyData];
-        }
-
-        id value = dict[key];
-        NSData *valueData = [self encodeCBORObject:value error:&error];
-        if (valueData) {
-            [data appendData:valueData];
-        }
-    }
-}
-
-- (void)encodeBytes:(NSData *)bytes toData:(NSMutableData *)data {
-    NSUInteger length = bytes.length;
-
-    uint8_t initialByte;
-    if (length < 32) {
-        initialByte = 0x40 | (uint8_t)length;
-        [data appendBytes:&initialByte length:1];
-    } else if (length < 256) {
-        uint8_t bytes[2] = { 0x58, (uint8_t)length };
-        [data appendBytes:bytes length:2];
-    } else if (length < 65536) {
-        uint8_t bytes[3] = { 0x59, (length >> 8) & 0xFF, length & 0xFF };
-        [data appendBytes:bytes length:3];
-    } else if (length < 4294967296) {
-        uint8_t bytes[5] = { 0x5A, (length >> 24) & 0xFF, (length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF };
-        [data appendBytes:bytes length:5];
-    } else {
-        uint8_t bytes[9] = { 0x5B };
-        uint64_t len = length;
-        for (int i = 7; i >= 0; i--) {
-            bytes[i + 1] = len & 0xFF;
-            len >>= 8;
-        }
-        [data appendBytes:bytes length:9];
-    }
-
-    [data appendData:bytes];
-}
-
-- (id)decodeCBORData:(NSData *)data error:(NSError **)error {
-    if (data.length == 0) {
-        return nil;
-    }
-
-    const uint8_t *bytes = data.bytes;
-    NSUInteger index = 0;
-
-    return [self decodeCBORFromBytes:bytes length:data.length index:&index error:error];
-}
+#pragma mark - Minimal CBOR Decoding helpers (for splitting concatenated frames)
 
 - (id)decodeCBORFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
     if (*index >= length) {
@@ -398,31 +181,24 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         case 0:
             decoded = [self decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index];
             break;
-
         case 1:
             decoded = [self decodeNegativeInteger:additionalInfo bytes:bytes length:length index:index];
             break;
-
         case 2:
             decoded = [self decodeByteString:additionalInfo bytes:bytes length:length index:index];
             break;
-
         case 3:
             decoded = [self decodeTextString:additionalInfo bytes:bytes length:length index:index];
             break;
-
         case 4:
             decoded = [self decodeArray:additionalInfo bytes:bytes length:length index:index error:error];
             break;
-
         case 5:
             decoded = [self decodeMap:additionalInfo bytes:bytes length:length index:index error:error];
             break;
-
         case 7:
             decoded = [self decodeSpecial:additionalInfo bytes:bytes length:length index:index];
             break;
-
         default:
             if (error) {
                 *error = [NSError errorWithDomain:EventFormatterErrorDomain
@@ -432,18 +208,11 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
             return nil;
     }
 
-    if (!decoded && error && !*error) {
-        *error = [NSError errorWithDomain:EventFormatterErrorDomain
-                                     code:EventFormatterErrorCodeDecodingFailed
-                                 userInfo:@{NSLocalizedDescriptionKey: @"Unexpected end of CBOR data"}];
-    }
-
     return decoded;
 }
 
 - (NSNumber *)decodeUnsignedInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {
     uint64_t value = 0;
-
     if (additionalInfo < 24) {
         value = additionalInfo;
     } else if (additionalInfo == 24) {
@@ -467,7 +236,6 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         }
         *index += 8;
     }
-
     return @(value);
 }
 
@@ -479,7 +247,6 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSData *)decodeByteString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {
     uint64_t byteLength = 0;
-
     if (additionalInfo < 24) {
         byteLength = additionalInfo;
     } else if (additionalInfo == 24) {
@@ -503,12 +270,9 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         }
         *index += 8;
     }
-
     if (*index > length || *index + byteLength > length) return nil;
-
     NSData *result = [NSData dataWithBytes:bytes + *index length:byteLength];
     *index += byteLength;
-
     return result;
 }
 
@@ -520,7 +284,6 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSArray *)decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
     uint64_t arrayLength = 0;
-
     if (additionalInfo < 24) {
         arrayLength = additionalInfo;
     } else if (additionalInfo == 24) {
@@ -546,7 +309,6 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
             *index += 8;
         }
     }
-
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:arrayLength];
     for (uint64_t i = 0; i < arrayLength; i++) {
         id item = [self decodeCBORFromBytes:bytes length:length index:index error:error];
@@ -556,14 +318,12 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
             break;
         }
     }
-
     return array;
 }
 
 - (NSDictionary *)decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
     uint64_t mapLength = 0;
-
-    if (additionalInfo < 16) {
+    if (additionalInfo < 24) {
         mapLength = additionalInfo;
     } else if (additionalInfo == 24) {
         if (*index < length) mapLength = bytes[*index];
@@ -588,33 +348,24 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
             *index += 8;
         }
     }
-
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
     for (uint64_t i = 0; i < mapLength; i++) {
         id key = [self decodeCBORFromBytes:bytes length:length index:index error:error];
         if (!key) break;
-
         id value = [self decodeCBORFromBytes:bytes length:length index:index error:error];
         if (!value) break;
-
         dict[key] = value;
     }
-
     return dict;
 }
 
 - (id)decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {
     switch (additionalInfo) {
-        case 20:
-            return @NO;
-        case 21:
-            return @YES;
-        case 22:
-            return [NSNull null];
-        case 23:
-            return nil;
-        default:
-            return nil;
+        case 20: return @NO;
+        case 21: return @YES;
+        case 22: return [NSNull null];
+        case 23: return nil;
+        default: return nil;
     }
 }
 

@@ -13,6 +13,7 @@
 #import "Lexicon/ATProtoLexiconError.h"
 #import "Repository/MST.h"
 #import <CommonCrypto/CommonDigest.h>
+#import "Repository/RepoCommit.h"
 
 NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNotification";
 
@@ -200,13 +201,28 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     } error:error];
 
     if (success) {
+        // Fetch previous root and refresh metadata to get new commit info
+        NSError *storeError = nil;
+        PDSActorStore *store = [_databasePool storeForDid:did error:&storeError];
+        NSData *prevRootData = [store getRepoRootForDid:did error:nil];
+        CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
+
+        NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did preferredRev:writeRev error:nil];
+        NSString *newRootCID = newRootMeta[@"cid"];
+        NSString *newRev = newRootMeta[@"rev"];
+
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
                                                           userInfo:@{
             @"did": did,
             @"collection": collection,
             @"rkey": rkey,
-            @"action": @"create"
+            @"action": @"create",
+            @"cid": cidString,
+            @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],
+            @"commit": newRootCID ?: [NSNull null],
+            @"rev": newRev ?: [NSNull null],
+            @"recordCBOR": cborData ?: [NSNull null]
         }];
     }
 
@@ -256,13 +272,28 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     } error:error];
 
     if (success) {
+        // Fetch previous root and refresh metadata
+        NSError *storeError = nil;
+        PDSActorStore *store = [_databasePool storeForDid:did error:&storeError];
+        NSData *prevRootData = [store getRepoRootForDid:did error:nil];
+        CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
+
+        NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did preferredRev:writeRev error:nil];
+        NSString *newRootCID = newRootMeta[@"cid"];
+        NSString *newRev = newRootMeta[@"rev"];
+
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
                                                           userInfo:@{
             @"did": did,
             @"collection": collection,
             @"rkey": rkey,
-            @"action": @"delete"
+            @"action": @"delete",
+            @"cid": [NSNull null],
+            @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],
+            @"commit": newRootCID ?: [NSNull null],
+            @"rev": newRev ?: [NSNull null],
+            @"recordCBOR": [NSNull null]
         }];
     }
 
@@ -583,21 +614,75 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         return nil;
     }
 
+    // Validates success, then fetch prev/new root commit info
+    
+    NSError *storeError = nil;
+    PDSActorStore *store = [_databasePool storeForDid:did error:&storeError];
+    NSData *prevRootData = [store getRepoRootForDid:did error:nil];
+    CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
+
+    NSDictionary<NSString *, NSString *> *commitMeta = [self refreshRepoRootMetadataForDid:did
+                                                                               preferredRev:batchRev
+                                                                                      error:nil];
+    NSString *commitCID = commitMeta[@"cid"];
+    NSString *commitRev = commitMeta[@"rev"];
+
     // Notify firehose of all writes in the batch
     for (NSDictionary *write in writes) {
         NSString *action = write[@"action"];
         NSString *collection = write[@"collection"];
         NSString *rkey = write[@"rkey"];
+        
+        // Find result CID for create/update
+        NSString *resultCID = nil;
+        
+        // Calculate URI to find matching result
+        if (collection && rkey) {
+           NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+           for (NSDictionary *res in resultOps) {
+               if ([res[@"uri"] isEqualToString:uri]) {
+                   resultCID = res[@"cid"];
+                   break;
+               }
+           }
+        }
 
         NSString *normalizedAction = ([action isEqualToString:@"update"]) ? @"update"
                                    : ([action isEqualToString:@"delete"] ? @"delete" : @"create");
+
+        // Find matching record CBOR for create/update ops
+        NSData *recordCBOR = nil;
+        if (![normalizedAction isEqualToString:@"delete"] && collection && rkey) {
+            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            for (NSDictionary *op in preparedOps) {
+                PDSDatabaseRecord *rec = op[@"record"];
+                if (rec && [rec.uri isEqualToString:uri]) {
+                    // Re-encode the record value to DAG-CBOR for the firehose CAR
+                    NSString *jsonStr = rec.value;
+                    if (jsonStr) {
+                        NSData *jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
+                        NSDictionary *value = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+                        if (value) {
+                            recordCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:nil];
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
                                                           userInfo:@{
             @"did": did,
             @"collection": collection ?: @"",
             @"rkey": rkey ?: @"",
-            @"action": normalizedAction
+            @"action": normalizedAction,
+            @"cid": resultCID ?: [NSNull null],
+            @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],
+            @"commit": commitCID ?: [NSNull null],
+            @"rev": commitRev ?: [NSNull null],
+            @"recordCBOR": recordCBOR ?: [NSNull null]
         }];
     }
 
@@ -617,11 +702,6 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     NSMutableDictionary *response = [NSMutableDictionary dictionaryWithObject:results forKey:@"results"];
-    NSDictionary<NSString *, NSString *> *commitMeta = [self refreshRepoRootMetadataForDid:did
-                                                                               preferredRev:batchRev
-                                                                                      error:nil];
-    NSString *commitCID = commitMeta[@"cid"];
-    NSString *commitRev = commitMeta[@"rev"];
     if (commitCID.length > 0 && commitRev.length > 0) {
         response[@"commit"] = @{
             @"cid": commitCID,
@@ -686,34 +766,80 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                                                                             error:(NSError **)error {
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) {
+        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to get store for DID %@", did);
         return nil;
     }
 
-    CID *rootCID = [self computeRepoRootCIDForDid:did store:store error:error];
-    if (!rootCID) {
+    // 1. Compute MST Root (Data CID)
+    CID *dataCID = [self computeRepoRootCIDForDid:did store:store error:error];
+    if (!dataCID) {
+        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to compute repo root for DID %@", did);
         return nil;
     }
 
-    NSString *resolvedRev = [store latestMutationRevisionWithError:nil];
-    if (resolvedRev.length == 0) {
-        resolvedRev = preferredRev;
+    // 2. Resolve Revision
+    NSString *rev = [store latestMutationRevisionWithError:nil];
+    if (rev.length == 0) {
+        rev = preferredRev;
     }
-    if (resolvedRev.length == 0) {
-        resolvedRev = [TID tid].stringValue;
+    if (rev.length == 0) {
+        rev = [TID tid].stringValue;
     }
 
+    // 3. Get Previous Commit CID (Head)
+    NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
+    CID *prevCommitCID = prevCommitBytes ? [CID cidFromBytes:prevCommitBytes] : nil;
+
+    // 4. Create Commit Object
+    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                    data:dataCID
+                                                     rev:rev
+                                                    prev:prevCommitCID];
+    
+    // 5. Sign Commit
+    NSData *signingKey = [store signingKeyPrivateBytesWithError:error];
+    if (!signingKey) {
+        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to get signing key for DID %@", did);
+        return nil;
+    }
+    
+    NSError *signError = nil;
+    if (![commit signWithPrivateKey:signingKey error:&signError]) {
+        if (error) *error = signError;
+        return nil;
+    }
+    
+    // 6. Store Commit Block
+    CID *commitCID = [commit computeCID];
+    NSData *commitData = [commit serializeSigned];
+    if (!commitData) {
+        if (error) *error = [NSError errorWithDomain:@"PDSRecordService" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize commit"}];
+        return nil;
+    }
+
+    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    block.cid = [commitCID bytes];
+    block.blockData = commitData;
+    block.size = commitData.length;
+
+    // 7. Update Repo Root and Store Block in Transaction
     __block BOOL updated = NO;
     [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        updated = [transactor updateRepoRoot:did rootCid:rootCID.bytes rev:resolvedRev error:blockError];
+        if (![transactor putBlock:block forDid:did error:blockError]) {
+             return;
+        }
+        updated = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
     } error:error];
 
     if (!updated) {
+        NSLog(@"[PDSRecordService] refreshRepoRootMetadata: FAILED to update database for DID %@", did);
         return nil;
     }
 
+    NSLog(@"[PDSRecordService] refreshRepoRootMetadata: SUCCESS for DID %@, CID: %@", did, commitCID.stringValue);
     return @{
-        @"cid": rootCID.stringValue ?: @"",
-        @"rev": resolvedRev ?: @""
+        @"cid": commitCID.stringValue ?: @"",
+        @"rev": rev ?: @""
     };
 }
 

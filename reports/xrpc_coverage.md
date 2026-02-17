@@ -1,6 +1,6 @@
 # XRPC Coverage Report
 
-Generated: 2026-02-13T19:24:18.248Z
+Generated: 2026-02-17T06:33:15.610Z
 
 ## Summary
 
@@ -15,8 +15,8 @@ Generated: 2026-02-13T19:24:18.248Z
 - Unknown registry entries: 0
 - Duplicate registry registrations: 0
 - Duplicate registry registrations (cross-scope, actionable): 0
-- Cross-scope overlap (expected controller/application dual-path): 0
-- Cross-scope overlap (raw total): 0
+- Cross-scope overlap (expected controller/application dual-path): 1
+- Cross-scope overlap (raw total): 1
 
 ## Namespace Coverage
 
@@ -75,7 +75,7 @@ Generated: 2026-02-13T19:24:18.248Z
 
 ## Scope
 
-- Scope config source: `scripts/xrpc_coverage_scope.txt`
+- Scope config source: `/Users/jack/Software/objpds/scripts/xrpc_coverage_scope.txt`
 - Include globs: `com.atproto.*`
 - Exclude globs: (none)
 
@@ -127,5 +127,5 @@ Generated: 2026-02-13T19:24:18.248Z
 
 ## Cross-Scope Overlap (Expected)
 
-- Methods overlapping between controller/application registrations: 0
+- Methods overlapping between controller/application registrations: 1
 

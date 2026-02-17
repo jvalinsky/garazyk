@@ -64,6 +64,9 @@ typedef NS_ENUM(NSInteger, KeyRotationManagerError) {
 /*! Verify signature with any valid public key (current + grace period). */
 - (BOOL)verifySignature:(NSData *)signature forData:(NSData *)data error:(NSError **)error;
 
+/*! Export all public keys as JWKS. */
+- (NSDictionary *)toJWKS;
+
 @end
 
 NS_ASSUME_NONNULL_END

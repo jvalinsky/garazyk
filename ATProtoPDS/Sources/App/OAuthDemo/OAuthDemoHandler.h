@@ -2,15 +2,18 @@
 
 @class HttpRequest;
 @class HttpResponse;
-@class PDSController;
-
 NS_ASSUME_NONNULL_BEGIN
+
+@class PDSController;
 
 @interface OAuthDemoHandler : NSObject
 
 + (instancetype)sharedHandler;
 
-- (void)setController:(PDSController *)controller;
+- (void)setDataDirectory:(NSString *)dataDirectory;
+
+- (void)setController:(PDSController *)controller
+    DEPRECATED_MSG_ATTRIBUTE("Use setDataDirectory: instead");
 
 - (BOOL)canHandleRequest:(HttpRequest *)request;
 

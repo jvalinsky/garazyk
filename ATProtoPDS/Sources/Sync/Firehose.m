@@ -1,6 +1,8 @@
 #import "Sync/Firehose.h"
 #import "Sync/WebSocketConnection.h"
 #import "Sync/EventFormatter.h"
+#import "Core/CID.h"
+#import "Core/ATProtoDagCBOR.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const FirehoseErrorDomain = @"com.atproto.pds.firehose";
@@ -10,11 +12,14 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 
 @implementation FirehoseCommitEvent
 
-+ (instancetype)eventWithRepo:(NSString *)repo commit:(NSString *)commit ops:(NSArray<NSDictionary *> *)ops {
++ (instancetype)eventWithRepo:(NSString *)repo commit:(CID *)commit ops:(NSArray<NSDictionary *> *)ops {
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = repo;
     event.commit = commit;
     event.ops = ops;
+    event.blobs = @[];  // Default to empty array
+    event.rebase = NO;  // Deprecated, always false
+    event.tooBig = NO;  // Deprecated, always false
     return event;
 }
 
@@ -72,7 +77,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 
 @interface FirehoseSubscription ()
 
-@property (nonatomic, copy, readwrite, nullable) NSString *cursor;
+@property (nonatomic, assign, readwrite) int64_t cursor;
 @property (nonatomic, copy, readwrite, nullable) NSArray<NSString *> *collections;
 @property (nonatomic, assign, readwrite) BOOL isActive;
 @property (nonatomic, weak, readwrite, nullable) id<FirehoseSubscriptionDelegate> delegate;
@@ -82,7 +87,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 
 @implementation FirehoseSubscription
 
-- (instancetype)initWithCursor:(NSString *)cursor collections:(NSArray<NSString *> *)collections {
+- (instancetype)initWithCursor:(int64_t)cursor collections:(NSArray<NSString *> *)collections {
     self = [super init];
     if (self) {
         _cursor = cursor;
@@ -124,7 +129,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
     return self;
 }
 
-- (FirehoseSubscription *)subscribeWithCursor:(NSString *)cursor
+- (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
                                    collections:(NSArray<NSString *> *)collections
                                      delegate:(id<FirehoseSubscriptionDelegate>)delegate {
     FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:cursor
@@ -134,8 +139,8 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 
     [self.subscriptions addObject:subscription];
 
-    if (cursor) {
-        self.subscriptionsByCursor[cursor] = subscription;
+    if (cursor > 0) {
+        self.subscriptionsByCursor[@(cursor).stringValue] = subscription;
     }
 
     if (self.isConnected) {
@@ -166,9 +171,8 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 
     NSMutableArray<NSString *> *queryParams = [NSMutableArray array];
     for (FirehoseSubscription *subscription in self.subscriptions) {
-        if (subscription.cursor) {
-            NSString *escapedCursor = [subscription.cursor stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-            [queryParams addObject:[NSString stringWithFormat:@"cursor=%@", escapedCursor]];
+        if (subscription.cursor > 0) {
+            [queryParams addObject:[NSString stringWithFormat:@"cursor=%lld", subscription.cursor]];
         }
         if (subscription.collections.count > 0) {
             for (NSString *collection in subscription.collections) {
@@ -214,25 +218,33 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 }
 
 - (void)handleMessage:(NSData *)data {
+    // Phase 5: Server now sends DAG-CBOR frames instead of JSON
     NSError *error = nil;
-    id message = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    id message = [ATProtoDagCBOR decodeData:data error:&error];
 
     if (error || ![message isKindOfClass:[NSDictionary class]]) {
+        NSLog(@"Failed to decode DAG-CBOR frame: %@", error);
         return;
     }
 
     NSString *kind = message[@"kind"];
 
     if ([kind isEqualToString:@"commit"]) {
-        NSArray *ops = message[@"ops"];
-        NSArray *blobs = message[@"blobs"];
-
         FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+        
+        // Parse all spec-required fields
+        event.seq = [message[@"seq"] longLongValue];
+        event.rebase = [message[@"rebase"] boolValue];
+        event.tooBig = [message[@"tooBig"] boolValue];
         event.repo = message[@"repo"];
-        event.commit = message[@"commit"];
-        event.previous = message[@"previous"];
-        event.ops = ops ?: @[];
-        event.blobs = blobs;
+        event.commit = message[@"commit"];  // CID object from decoder
+        event.rev = message[@"rev"];
+        event.since = message[@"since"];
+        event.blocks = message[@"blocks"];  // NSData
+        event.ops = message[@"ops"] ?: @[];
+        event.blobs = message[@"blobs"] ?: @[];  // Array of CIDs
+        event.time = message[@"time"];
+        event.prevData = message[@"prevData"];  // CID object or nil
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindCommit];
 

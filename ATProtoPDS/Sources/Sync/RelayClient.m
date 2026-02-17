@@ -13,13 +13,13 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 @property (nonatomic, copy, readwrite, nullable) NSString *accessToken;
 @property (nonatomic, assign, readwrite) BOOL isConnected;
 @property (nonatomic, weak, readwrite, nullable) id<RelayClientDelegate> delegate;
-@property (nonatomic, copy, readwrite, nullable) NSString *currentCursor;
 @property (nonatomic, assign, readwrite) NSTimeInterval reconnectInterval;
 @property (nonatomic, assign, readwrite) NSInteger maxReconnectAttempts;
 @property (nonatomic, assign, readwrite) NSInteger reconnectAttempts;
 @property (nonatomic, strong, readwrite, nullable) Firehose *firehose;
 @property (nonatomic, strong, readwrite, nullable) FirehoseSubscription *subscription;
-@property (nonatomic, strong, readwrite) NSMutableDictionary<NSString *, NSString *> *cursorStorage;
+@property (nonatomic, assign, readwrite) int64_t currentSeq;
+@property (nonatomic, strong, readwrite) NSMutableDictionary<NSString *, NSNumber *> *cursorStorage;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readwrite) dispatch_queue_t storageQueue;
 
 @end
@@ -61,7 +61,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     }
 
     self.firehose = [[Firehose alloc] initWithServerURL:wsURL];
-    self.subscription = [self.firehose subscribeWithCursor:self.currentCursor
+    self.subscription = [self.firehose subscribeWithCursor:self.currentSeq
                                                 collections:nil
                                                   delegate:self];
     [self.firehose connect];
@@ -84,9 +84,8 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     components.port = @(port);
     components.path = path;
 
-    if (self.currentCursor) {
-        NSString *encodedCursor = [self.currentCursor stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-        components.query = [NSString stringWithFormat:@"cursor=%@", encodedCursor];
+    if (self.currentSeq > 0) {
+        components.query = [NSString stringWithFormat:@"cursor=%lld", self.currentSeq];
     }
 
     return components.URL;
@@ -109,17 +108,17 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     }
 }
 
-- (NSString *)getStoredCursorForRepo:(NSString *)repo {
-    __block NSString *cursor = nil;
+- (int64_t)getStoredCursorForRepo:(NSString *)repo {
+    __block int64_t cursor = 0;
     dispatch_sync(self.storageQueue, ^{
-        cursor = self.cursorStorage[repo];
+        cursor = [self.cursorStorage[repo] longLongValue];
     });
     return cursor;
 }
 
-- (void)storeCursor:(NSString *)cursor forRepo:(NSString *)repo {
+- (void)storeCursor:(int64_t)cursor forRepo:(NSString *)repo {
     dispatch_async(self.storageQueue, ^{
-        self.cursorStorage[repo] = cursor;
+        self.cursorStorage[repo] = @(cursor);
     });
 }
 
@@ -162,8 +161,9 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event {
-    [self storeCursor:event.commit forRepo:event.repo];
-    self.currentCursor = event.commit;
+    // Phase 5: Use seq as cursor per ATProto spec
+    [self storeCursor:event.seq forRepo:event.repo];
+    self.currentSeq = event.seq;
 
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate relayClient:self didReceiveCommitEvent:event];
@@ -186,7 +186,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     self.isConnected = NO;
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClient:self didReceiveCursor:self.currentCursor ?: @""];
+        [self.delegate relayClient:self didReceiveCursor:self.currentSeq];
     });
 
     if (error) {

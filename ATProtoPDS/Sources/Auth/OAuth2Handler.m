@@ -1,11 +1,13 @@
 #import "Auth/OAuth2Handler.h"
 #import "Network/HttpServer.h"
 #import "Auth/OAuth2.h"
+#import "Auth/PDSNonceManager.h"
 #import "Auth/Session.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuthServerMetadata.h"
+#import "Auth/KeyRotationManager.h"
 #import "Debug/PDSLogger.h"
 
 @interface OAuth2Handler ()
@@ -39,7 +41,7 @@
         // Build other endpoints relative to issuer
         self.oauthServer.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
         self.oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
-        self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/.well-known/jwks.json", issuer];
+        self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/oauth/jwks", issuer];
 
         #ifdef DEBUG
         // Seed test client for development only
@@ -171,6 +173,12 @@
         __strong typeof(weakSelf) strongSelf = weakSelf;
         [strongSelf handleProtectedResourceMetadata:request response:response];
     }];
+
+    // Phase 4: Add /oauth/jwks endpoint for publishing public keys
+    [httpServer addRoute:@"GET" path:@"/oauth/jwks" handler:^(HttpRequest *request, HttpResponse *response) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handleJWKS:request response:response];
+    }];
 }
 
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response {
@@ -214,7 +222,7 @@
                 @"resource": issuer,
                 @"resource_scopes": @[@"atproto"],
                 @"bearer_methods_supported": @[@"header"],
-                @"access_token_types_supported": @[@"Bearer"]
+                @"access_token_types_supported": @[@"Bearer", @"DPoP"]
             }
         ]
     };
@@ -401,7 +409,7 @@
         NSString *redirectURI = params[@"redirect_uri"];
         // URL-decode the redirect_uri since browsers send it encoded in form data
         if (redirectURI) {
-            NSString *decodedRedirectURI = [redirectURI stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+            NSString *decodedRedirectURI = [redirectURI stringByRemovingPercentEncoding];
             if (decodedRedirectURI) {
                 redirectURI = decodedRedirectURI;
             }
@@ -473,11 +481,15 @@
                                method:request.methodString
                                   url:dpopURL
                                 nonce:nil
+                         requireNonce:NO
                         outThumbprint:&dpopThumbprint
                                 error:&dpopError]) {
+        if (dpopError.userInfo[@"use_dpop_nonce"]) {
+            [response setHeader:[[PDSNonceManager sharedManager] generateNonce] forKey:@"DPoP-Nonce"];
+        }
         response.statusCode = 400;
         [response setJsonBody:@{
-            @"error": @"invalid_dpop_proof",
+            @"error": @"use_dpop_nonce",
             @"error_description": dpopError.localizedDescription ?: @"Invalid DPoP proof"
         }];
         return;
@@ -595,6 +607,28 @@
     
     response.statusCode = 200;
     [response setJsonBody:@{}];
+}
+
+- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response {
+    // Get JWKS from key rotation manager's key store
+    KeyRotationManager *keyManager = self.minter.keyRotationManager;
+    if (!keyManager) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Server configuration error: key manager not configured"}];
+        return;
+    }
+
+    // Access the KeyManager's JWKS via toJWKS method
+    NSDictionary *jwks = [keyManager toJWKS];
+    if (!jwks) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Failed to export JWKS"}];
+        return;
+    }
+
+    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    [response setJsonBody:jwks];
+    response.statusCode = 200;
 }
 
 @end

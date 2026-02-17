@@ -53,6 +53,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Port for the HTTP server (default: 2583). */
 @property (nonatomic, assign) NSUInteger port;
 
+/*! Data directory for storing and retrieving files. */
+@property (nonatomic, copy, nullable) NSString *dataDirectory;
+
 /*! The PDS controller for handler callbacks (legacy). */
 @property (nonatomic, weak, nullable) PDSController *controller;
 

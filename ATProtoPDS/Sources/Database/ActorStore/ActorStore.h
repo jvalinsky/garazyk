@@ -186,6 +186,9 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Generates a new signing key. */
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
 
+/*! Imports an existing signing key (raw private bytes). */
+- (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error;
+
 /*! Whether signing keys should be persisted via the Keychain. Defaults to YES. */
 @property (nonatomic, assign) BOOL useKeychainSigningKey;
 

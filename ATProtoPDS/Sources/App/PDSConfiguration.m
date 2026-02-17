@@ -65,6 +65,12 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _refreshTokenTtlSeconds = 604800;
         _inviteCodeRequired = NO;
         _phoneVerificationProvider = @"none";
+        _emailProviderType = @"none";
+        _emailSmtpHost = nil;
+        _emailSmtpPort = 587;
+        _emailSmtpUsername = nil;
+        _emailSmtpPassword = nil;
+        _emailSmtpUseTLS = YES;
 
         _rateLimitEnabled = YES;
         _rateLimitRequestsPerMinute = 1000;
@@ -93,6 +99,17 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _nodeinfoRepositoryURL = @"https://github.com/jvalinsky/NSPds";
         _nodeinfoHomepageURL = @"https://github.com/jvalinsky/NSPds";
         _nodeinfoOpenRegistrations = YES;
+        
+        // Security defaults
+        _useBiometricProtection = YES;
+        if ([self envVarExists:@"PDS_USE_BIOMETRIC_PROTECTION"]) {
+            _useBiometricProtection = [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION" default:YES];
+        }
+
+        _useKeychain = YES;
+        if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
+            _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN" default:YES];
+        }
         
         // Apply environment overrides and empty config defaults
         [self applyConfig:_config];
@@ -203,6 +220,28 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
                 _phoneVerificationProvider = trimmed.lowercaseString;
             }
         }
+    }
+
+    NSDictionary *email = config[@"email"];
+    if (email) {
+        NSString *provider = email[@"provider"];
+        if ([provider isKindOfClass:[NSString class]]) {
+            _emailProviderType = [self resolveEnvOverrideForKey:@"PDS_EMAIL_PROVIDER" default:provider].lowercaseString;
+        }
+        
+        if (email[@"smtp_host"]) _emailSmtpHost = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_HOST" default:email[@"smtp_host"]];
+        if (email[@"smtp_port"]) _emailSmtpPort = [email[@"smtp_port"] unsignedIntegerValue];
+        if (email[@"smtp_username"]) _emailSmtpUsername = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_USERNAME" default:email[@"smtp_username"]];
+        if (email[@"smtp_password"]) _emailSmtpPassword = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_PASSWORD" default:email[@"smtp_password"]];
+        if (email[@"smtp_use_tls"]) _emailSmtpUseTLS = [self boolFromEnv:@"PDS_EMAIL_SMTP_USE_TLS" default:[email[@"smtp_use_tls"] boolValue]];
+    } else {
+        // Check environment variables even if config section is missing
+        _emailProviderType = [self resolveEnvOverrideForKey:@"PDS_EMAIL_PROVIDER" default:_emailProviderType].lowercaseString;
+        _emailSmtpHost = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_HOST" default:_emailSmtpHost];
+        if ([self envVarExists:@"PDS_EMAIL_SMTP_PORT"]) _emailSmtpPort = [[self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_PORT" default:nil] integerValue];
+        _emailSmtpUsername = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_USERNAME" default:_emailSmtpUsername];
+        _emailSmtpPassword = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_PASSWORD" default:_emailSmtpPassword];
+        if ([self envVarExists:@"PDS_EMAIL_SMTP_USE_TLS"]) _emailSmtpUseTLS = [self boolFromEnv:@"PDS_EMAIL_SMTP_USE_TLS" default:_emailSmtpUseTLS];
     }
 
     NSDictionary *rateLimit = config[@"rate_limit"];
