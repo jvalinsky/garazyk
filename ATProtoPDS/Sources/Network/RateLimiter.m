@@ -54,7 +54,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[RateLimiter alloc] initWithDatabasePath:nil];
-        NSLog(@"[RATE LIMITER] Singleton created, enabled=%d", sharedInstance.isEnabled);
+        PDS_LOG_HTTP_DEBUG(@"RateLimiter singleton created (enabled=%@)", @(sharedInstance.isEnabled));
     });
     return sharedInstance;
 }
@@ -73,7 +73,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         _blobLimit = 50;
         _blobWindowSeconds = 3600;
         _enabled = !_rateLimiterDisabledGlobally;
-        NSLog(@"[RATE LIMITER] Init called, enabled=%d (global=%d)", _enabled, _rateLimiterDisabledGlobally);
+        PDS_LOG_HTTP_DEBUG(@"RateLimiter init (enabled=%@, global_disabled=%@)",
+                           @(_enabled),
+                           @(_rateLimiterDisabledGlobally));
         
         _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
         
