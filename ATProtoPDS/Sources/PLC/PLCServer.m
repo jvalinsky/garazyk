@@ -5,6 +5,7 @@
 #import "PLC/PLCMetrics.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
+#import "Debug/PDSLogger.h"
 
 static const NSUInteger kPLCMaxOperationBytes = 4000;
 static const NSUInteger kPLCMaxAlsoKnownAsEntries = 10;
@@ -636,7 +637,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [resp setBody:data];
     
     // Debug logging
-    fprintf(stderr, "[PLCServer] Serving %s with Content-Type: %s\n", path.UTF8String, contentType.UTF8String);
+    PDS_LOG_CORE_DEBUG(@"PLCServer serving %@ (Content-Type: %@)", path ?: @"", contentType ?: @"");
 }
 
 - (NSString *)assetsPath {

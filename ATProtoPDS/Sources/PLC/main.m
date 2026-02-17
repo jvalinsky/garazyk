@@ -2,6 +2,7 @@
 #import "PLC/PLCServer.h"
 #import "PLC/PLCMockStore.h"
 #import "PLC/PLCAuditor.h"
+#import "Debug/PDSLogger.h"
 
 void print_usage(const char *executable_name) {
     printf("Usage: %s [options]\n\n", executable_name);
@@ -41,7 +42,7 @@ int main(int argc, const char * argv[]) {
 
         NSError *error = nil;
         if (![server startWithError:&error]) {
-            fprintf(stderr, "Failed to start PLC server: %s\n", [error.localizedDescription UTF8String]);
+            PDS_LOG_CORE_ERROR(@"Failed to start PLC server: %@", error.localizedDescription ?: @"unknown error");
             return 1;
         }
 
