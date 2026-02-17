@@ -1,20 +1,26 @@
 #import "Federation/FederationClient.h"
 #import "Core/DID.h"
-#import <os/log.h>
+#import "Debug/PDSLogger.h"
 
 NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
 @implementation FederationClient {
-    os_log_t _log;
+}
+
+static NSString *PDSSanitizedURLString(NSURL *url) {
+    if (!url) return @"";
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    if (!components) return url.absoluteString ?: @"";
+    components.query = nil;
+    components.fragment = nil;
+    return components.string ?: (url.absoluteString ?: @"");
 }
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _log = os_log_create("com.atproto.federation", "FederationClient");
-
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
         config.timeoutIntervalForRequest = 30.0;
         config.timeoutIntervalForResource = 60.0;
@@ -76,7 +82,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         return;
     }
 
-    os_log_info(_log, "Forwarding XRPC request to: %@", urlString);
+    PDS_LOG_SERVICE_INFO(@"Forwarding XRPC request (method=%@, did=%@) to %@", method ?: @"", did ?: @"", PDSSanitizedURLString(url));
 
     // Prepare the request
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
@@ -155,7 +161,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
     if (!completion) return;
 
-    os_log_info(_log, "Forwarding HTTP request to: %@", url.absoluteString);
+    PDS_LOG_SERVICE_INFO(@"Forwarding HTTP request (method=%@) to %@", method ?: @"", PDSSanitizedURLString(url));
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = method;
@@ -226,7 +232,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         return;
     }
 
-    os_log_info(_log, "Forwarding binary XRPC request to: %@", urlString);
+    PDS_LOG_SERVICE_INFO(@"Forwarding binary XRPC request (method=%@, did=%@) to %@", method ?: @"", did ?: @"", PDSSanitizedURLString(url));
 
     // Prepare the request
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];

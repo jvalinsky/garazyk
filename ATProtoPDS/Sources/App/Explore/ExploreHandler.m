@@ -312,7 +312,7 @@
         }
     }
     
-    fprintf(stderr, "ExploreHandler assetsPath: %s\n", [assetsPath UTF8String] ?: "NULL");
+    PDS_LOG_EXPLORE_DEBUG(@"ExploreHandler assetsPath: %@", assetsPath ?: @"(nil)");
     return assetsPath;
 }
 
@@ -325,7 +325,6 @@
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
     PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"ExploreHandler handleRequest: %@", path);
-    fprintf(stderr, "ExploreHandler handleRequest: %s\n", [path UTF8String]);
 
     
     if ([path isEqualToString:@"/"] || [path isEqualToString:@""]) {
