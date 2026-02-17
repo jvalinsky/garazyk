@@ -52,6 +52,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #import "Email/PDSEmailProvider.h"
 #import "Email/PDSMockEmailProvider.h"
 #import "Email/PDSSMTPEmailProvider.h"
+#import "Email/PDSResendEmailProvider.h"
+#import "Email/PDSKeychainSecretsProvider.h"
+#import "Email/PDSEnvironmentSecretsProvider.h"
 
 @implementation PDSController {
     PDSApplication *_backingApplication;  // When initialized via initWithApplication:
@@ -194,6 +197,26 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                                                   username:config.emailSmtpUsername
                                                                   password:config.emailSmtpPassword
                                                                     useTLS:config.emailSmtpUseTLS];
+            } else if ([config.emailProviderType isEqualToString:@"resend"]) {
+                if (config.resendFromAddress.length > 0) {
+                    id<PDSSecretsProvider> secretsProvider = nil;
+                    NSString *source = config.resendAPIKeySource ?: @"env";
+                    
+                    if ([source isEqualToString:@"keychain"]) {
+                        secretsProvider = [[PDSKeychainSecretsProvider alloc] initWithService:config.resendKeychainService ?: @"com.atproto.pds.resend"];
+                    } else {
+                        // Default to environment variables
+                        secretsProvider = [[PDSEnvironmentSecretsProvider alloc] init];
+                    }
+                    
+                    emailProvider = [[PDSResendEmailProvider alloc] initWithSecretsProvider:secretsProvider
+                                                                                fromAddress:config.resendFromAddress
+                                                                                apiEndpoint:config.resendAPIEndpoint];
+                    
+                    PDS_LOG_INFO(@"Initialized Resend email provider (source: %@, from: %@)", source, config.resendFromAddress);
+                } else {
+                    PDS_LOG_WARN(@"Resend email provider requested but no from address configured.");
+                }
             }
         }
         
