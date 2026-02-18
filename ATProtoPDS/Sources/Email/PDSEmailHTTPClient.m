@@ -90,8 +90,27 @@
                     if (responseString) {
                         userInfo[@"responseBody"] = responseString;
                     }
+                    // Parse Resend error JSON: {"statusCode":N,"name":"...","message":"..."}
+                    id errorBody = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    if ([errorBody isKindOfClass:[NSDictionary class]]) {
+                        NSString *resendName = errorBody[@"name"];
+                        NSString *resendMessage = errorBody[@"message"];
+                        if (resendName.length > 0) userInfo[@"resendErrorName"] = resendName;
+                        if (resendMessage.length > 0) {
+                            userInfo[@"resendErrorMessage"] = resendMessage;
+                            userInfo[NSLocalizedDescriptionKey] = resendMessage;
+                        }
+                        PDS_LOG_HTTP_ERROR(@"Resend API error HTTP %ld — %@: %@",
+                                           (long)httpResponse.statusCode,
+                                           resendName ?: @"unknown",
+                                           resendMessage ?: @"no message");
+                    } else {
+                        PDS_LOG_HTTP_ERROR(@"HTTP error %ld: %@", (long)httpResponse.statusCode, responseString);
+                    }
+                } else {
+                    PDS_LOG_HTTP_ERROR(@"HTTP error %ld (no response body)", (long)httpResponse.statusCode);
                 }
-                
+
                 requestError = [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain"
                                                    code:httpResponse.statusCode
                                                userInfo:userInfo];
@@ -121,7 +140,7 @@
         // Check if we should stop retrying based on the error code
         if (requestError && [requestError.domain isEqualToString:@"PDSEmailHTTPClientErrorDomain"]) {
             NSInteger code = requestError.code;
-            if (code >= 400 && code < 500 && code != 429) {
+            if (code >= 400 && code < 500 && code != 429 && code != 409) {
                 PDS_LOG_HTTP_ERROR(@"Client error (%ld), not retrying: %@", (long)code, requestError);
                 break;
             }

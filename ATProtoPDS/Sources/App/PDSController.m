@@ -241,8 +241,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
         _jwtMinter.signingAlgorithm = @"ES256K";
         
-        // Use a generated server key for now
-        // In production, this should be loaded from secure storage or config
         NSError *serverKeyError = nil;
         Secp256k1KeyPair *serverKey = [JWTSigningKeyStore loadOrCreateKeyPairForDataDirectory:_dataDirectory error:&serverKeyError];
         if (serverKeyError) {

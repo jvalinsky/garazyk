@@ -196,6 +196,18 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
 
+/*!
+ @method getAccountsWithLimit:cursor:error:
+
+ @abstract Retrieve a page of accounts ordered by creation date descending.
+
+ @param limit Maximum number of accounts to return.
+ @param cursor Opaque pagination cursor from a previous call, or nil for the first page.
+ @param error Error pointer for retrieval failures.
+ @return Array of account objects for this page (may be empty).
+ */
+- (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
+
 #pragma mark - Refresh Tokens
 
 /*!
@@ -209,6 +221,17 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @return YES if stored successfully, NO on failure.
  */
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error;
+
+/*!
+ @method deleteRefreshToken:error:
+
+ @abstract Delete a single refresh token by value.
+
+ @param token Refresh token string to revoke.
+ @param error Error pointer for deletion failures.
+ @return YES if deleted successfully, NO on failure.
+ */
+- (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error;
 
 /*!
  @method deleteRefreshTokensForAccount:error:

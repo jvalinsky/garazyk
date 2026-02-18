@@ -33,6 +33,10 @@
 #import "Email/PDSEmailProvider.h"
 #import "Email/PDSMockEmailProvider.h"
 #import "Email/PDSSMTPEmailProvider.h"
+#import "Email/PDSResendEmailProvider.h"
+#import "Email/PDSKeychainSecretsProvider.h"
+#import "Email/PDSEnvironmentSecretsProvider.h"
+#import "Admin/PDSAdminAuth.h"
 
 @interface PDSApplication ()
 
@@ -52,6 +56,14 @@
 @property (nonatomic, assign, readwrite, getter=isRunning) BOOL running;
 
 @end
+
+static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
+    PDS_LOG_ERROR(@"Core", @"Uncaught exception: %@ — %@\n%@",
+                  exception.name,
+                  exception.reason,
+                  exception.callStackSymbols);
+    exit(1);
+}
 
 @implementation PDSApplication {
     SubscribeReposHandler *_subscribeReposHandler;
@@ -82,7 +94,10 @@
         _dataDirectory = _configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory];
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
         _running = NO;
-        
+
+        // M2: Catch unhandled ObjC exceptions before they silently crash the process
+        NSSetUncaughtExceptionHandler(&PDSApplicationUncaughtExceptionHandler);
+
         // Configure logging from configuration
         [self configureLogging];
         
@@ -207,7 +222,16 @@
     
     // Initialize JWT Minter
     _jwtMinter = [[JWTMinter alloc] init];
-    _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+    NSDictionary *pdsEnv = [[NSProcessInfo processInfo] environment];
+    NSString *configuredIssuer = pdsEnv[@"PDS_ISSUER"];
+    BOOL isProduction = [[pdsEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
+                        [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
+                        [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
+    if (isProduction && (configuredIssuer.length == 0 || [configuredIssuer containsString:@"pds.local"])) {
+        PDS_LOG_ERROR(@"Core", @"PDS_ISSUER must be set to your public HTTPS domain in production (e.g. PDS_ISSUER=https://pds.example.com). Refusing to start.");
+        exit(1);
+    }
+    _jwtMinter.issuer = configuredIssuer ?: @"https://pds.local:8443";
     _jwtMinter.signingAlgorithm = @"ES256K";
     
     // Generate server signing key
@@ -236,6 +260,24 @@
                                                               username:_configuration.emailSmtpUsername
                                                               password:_configuration.emailSmtpPassword
                                                                 useTLS:_configuration.emailSmtpUseTLS];
+        } else if ([_configuration.emailProviderType isEqualToString:@"resend"]) {
+            if (_configuration.resendFromAddress.length > 0) {
+                id<PDSSecretsProvider> secretsProvider = nil;
+                NSString *source = _configuration.resendAPIKeySource ?: @"env";
+                if ([source isEqualToString:@"keychain"]) {
+                    secretsProvider = [[PDSKeychainSecretsProvider alloc]
+                        initWithService:_configuration.resendKeychainService ?: @"com.atproto.pds.resend"];
+                } else {
+                    secretsProvider = [[PDSEnvironmentSecretsProvider alloc] init];
+                }
+                emailProvider = [[PDSResendEmailProvider alloc]
+                    initWithSecretsProvider:secretsProvider
+                                fromAddress:_configuration.resendFromAddress
+                                apiEndpoint:_configuration.resendAPIEndpoint];
+                PDS_LOG_INFO(@"Initialized Resend email provider (source: %@, from: %@)", source, _configuration.resendFromAddress);
+            } else {
+                PDS_LOG_WARN(@"Resend email provider requested but no from address configured (set PDS_EMAIL_RESEND_FROM).");
+            }
         }
     }
     _emailProvider = emailProvider;
@@ -275,6 +317,24 @@
     _adminController = [[PDSAdminController alloc] initWithServiceDatabases:_serviceDatabases
                                                              accountService:_accountService];
     [container registerInstance:_adminController forProtocol:@protocol(PDSAdminController)];
+
+    // H3: Give PDSAdminAuth access to data directory so logout survives restarts
+    [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
+
+    // H4: Warn if admin password is stored as plain text
+    NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
+    NSString *adminPassword = startupEnv[@"PDS_ADMIN_PASSWORD"];
+    if (adminPassword.length > 0 && ![adminPassword hasPrefix:@"pbkdf2:"]) {
+        PDS_LOG_WARN(@"Auth", @"PDS_ADMIN_PASSWORD is stored as plain text. Hash it with PBKDF2 (pbkdf2:<iterations>:<salt>:<hash>) for production use.");
+    }
+
+    // H5: Warn if X-Admin-Token legacy header is active in production
+    BOOL isProductionEnv = [[startupEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"];
+    BOOL xAdminTokenDisabled = [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"1"] ||
+                                [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"true"];
+    if (isProductionEnv && !xAdminTokenDisabled) {
+        PDS_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is active in production. Set PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1 to disable it.");
+    }
 }
 
 - (void)loadLexicons {
