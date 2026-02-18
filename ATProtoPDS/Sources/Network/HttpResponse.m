@@ -12,6 +12,8 @@ NS_ASSUME_NONNULL_END
 
 @implementation HttpResponse
 
+@synthesize headers = _headers;
+
 + (instancetype)response {
     return [[self alloc] init];
 }
@@ -73,7 +75,9 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)setHeader:(NSString *)value forKey:(NSString *)key {
-    self.headers[key] = value;
+    if (value && key) {
+        [_headers setObject:value forKey:key];
+    }
 }
 
 - (void)setJsonBody:(id)json {
@@ -188,7 +192,7 @@ NS_ASSUME_NONNULL_END
 
 - (void)prepareCommonHeadersForBodyLength:(NSUInteger)bodyLength {
     /*! Handle Connection header based on keepAlive setting */
-    if (!self.headers[@"Connection"]) {
+    if (!_headers[@"Connection"]) {
         if (self.keepAlive) {
             [self setHeader:@"keep-alive" forKey:@"Connection"];
         } else {
@@ -207,10 +211,10 @@ NS_ASSUME_NONNULL_END
     }
 
     if (self.chunkedTransferEncoding) {
-        [self.headers removeObjectForKey:@"Content-Length"];
+        [_headers removeObjectForKey:@"Content-Length"];
         [self setHeader:@"chunked" forKey:@"Transfer-Encoding"];
     } else {
-        [self.headers removeObjectForKey:@"Transfer-Encoding"];
+        [_headers removeObjectForKey:@"Transfer-Encoding"];
         NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)bodyLength];
         [self setHeader:contentLength forKey:@"Content-Length"];
     }
@@ -237,8 +241,8 @@ NS_ASSUME_NONNULL_END
     [self prepareCommonHeadersForBodyLength:bodyLength];
 
     /*! Append all headers in HTTP format */
-    for (NSString *key in self.headers) {
-        NSString *headerLine = [NSString stringWithFormat:@"%@: %@\r\n", key, self.headers[key]];
+    for (NSString *key in _headers) {
+        NSString *headerLine = [NSString stringWithFormat:@"%@: %@\r\n", key, _headers[key]];
         [result appendData:[headerLine dataUsingEncoding:NSUTF8StringEncoding]];
     }
 

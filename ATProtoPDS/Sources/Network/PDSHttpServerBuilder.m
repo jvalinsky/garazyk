@@ -296,6 +296,12 @@
     }
 
     [nodeInfoHandler setIssuer:issuer];
+    if (self.controller) {
+        [nodeInfoHandler setController:self.controller];
+    } else if (self.application) {
+        // NodeInfoHandler expects controller, but we can pass application if it has a controller facade
+        [nodeInfoHandler setController:self.application];
+    }
     [nodeInfoHandler setConfigured];
     [nodeInfoHandler registerRoutesWithServer:server];
 

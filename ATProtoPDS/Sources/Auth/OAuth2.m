@@ -1297,8 +1297,9 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         return;
     }
     
-    // Check if refresh token is expired (assuming 30 days for now)
-    if ([foundSession.createdAt timeIntervalSinceNow] < -30 * 24 * 60 * 60) {
+    NSString *ttlEnv = [[NSProcessInfo processInfo] environment][@"PDS_REFRESH_TOKEN_TTL_DAYS"];
+    NSTimeInterval refreshTokenTTL = ttlEnv ? ttlEnv.doubleValue * 24 * 60 * 60 : 30 * 24 * 60 * 60;
+    if ([foundSession.createdAt timeIntervalSinceNow] < -refreshTokenTTL) {
         [self.activeSessions removeObjectForKey:foundSession.sessionID];
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
