@@ -4,6 +4,8 @@
 #import "PLC/PLCOperation.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
+#import "Core/CID.h"
+#import <Security/Security.h>
 
 @interface PLCAuditorTests : XCTestCase
 @property (nonatomic, strong) PLCMockStore *store;
@@ -226,6 +228,155 @@
     NSError *error = nil;
     BOOL success = [self.auditor verifyDID:op1.did error:&error];
     XCTAssertTrue(success, @"Auditor should accept valid handle update. Error: %@", error);
+}
+
+#pragma mark - P-256 Helpers
+
+- (void)testAuditorVerifiesP256Signature {
+    // 1. Import a fixed P-256 keypair (SecKeyCreateRandomKey can be unavailable in some sandboxes)
+    NSData *xData = [self dataFromHexString:@"44073c1c6da8c2c9736c011ff13a2b3602a1d819e687582bdf87262ad1b12f50" expectedLength:32];
+    NSData *yData = [self dataFromHexString:@"79720e75ce2eaae05079972dd065b2eb437d9af5c9a974d3ce186525494bdc3c" expectedLength:32];
+    NSData *dData = [self dataFromHexString:@"8d12e99fb324f3c1bafed77fa91968a36c252590f0e55fef10f9bfb027b59504" expectedLength:32];
+    XCTAssertNotNil(xData);
+    XCTAssertNotNil(yData);
+    XCTAssertNotNil(dData);
+
+    NSMutableData *privateKeyData = [NSMutableData dataWithCapacity:97];
+    uint8_t prefix = 0x04;
+    [privateKeyData appendBytes:&prefix length:1];
+    [privateKeyData appendData:xData];
+    [privateKeyData appendData:yData];
+    [privateKeyData appendData:dData];
+
+    NSDictionary *attrs = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+        (__bridge id)kSecAttrKeySizeInBits: @256
+    };
+
+    CFErrorRef errorRef = NULL;
+    SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData, (__bridge CFDictionaryRef)attrs, &errorRef);
+    if (!privateKey) {
+        NSError *nsError = errorRef ? CFBridgingRelease(errorRef) : nil;
+        XCTSkip(@"Skipping PLC P-256 signature test: key import unavailable (%@)", nsError);
+        return;
+    }
+    if (errorRef) CFRelease(errorRef);
+
+    // 2. Derive compressed public key from (x,y): 02/03 || x
+    NSMutableData *compressedPub = [NSMutableData dataWithCapacity:33];
+    const uint8_t *yBytes = yData.bytes;
+    uint8_t compressedPrefix = (yBytes[31] & 1) ? 0x03 : 0x02;
+    [compressedPub appendBytes:&compressedPrefix length:1];
+    [compressedPub appendData:xData];
+    
+    // 3. Create DID Key String (did:key:zDn...)
+    // Prefix 0x80 0x24 (p256-pub varint)
+    uint8_t codec[] = {0x80, 0x24};
+    NSMutableData *prefixed = [NSMutableData dataWithBytes:codec length:2];
+    [prefixed appendData:compressedPub];
+    NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:prefixed]];
+    
+    // 4. Create Operation
+    NSDictionary *opData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://p256.test"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+    
+    // 5. Sign Operation Hash
+    NSData *opHash = [self.auditor hashForOperationData:opData];
+    
+    NSData *derSig = (__bridge_transfer NSData *)SecKeyCreateSignature(privateKey,
+                                                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+                                                                       (__bridge CFDataRef)opHash,
+                                                                       &errorRef);
+    XCTAssertNotNil(derSig);
+    CFRelease(privateKey);
+    
+    // Convert DER to Raw (r||s)
+    NSData *rawSig = [self rawSignatureFromDER:derSig];
+    XCTAssertNotNil(rawSig);
+    
+    PLCOperation *op = [[PLCOperation alloc] init];
+    op.did = [PLCOperation calculateDIDForData:opData];
+    op.sig = [self base64URLEncode:rawSig];
+    op.data = opData;
+    op.prev = nil;
+    
+    [self.store appendOperation:op nullifyCIDs:@[] error:nil];
+    
+    // 6. Verify
+    NSError *verifyError = nil;
+    BOOL success = [self.auditor verifyDID:op.did error:&verifyError];
+    XCTAssertTrue(success, @"Auditor should verify P-256 signed operation. Error: %@", verifyError);
+}
+
+- (NSData *)dataFromHexString:(NSString *)hex expectedLength:(NSUInteger)expectedLength {
+    if (![hex isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+
+    NSString *normalized = [[hex stringByReplacingOccurrencesOfString:@":" withString:@""] lowercaseString];
+    if (normalized.length != expectedLength * 2) {
+        return nil;
+    }
+
+    NSMutableData *data = [NSMutableData dataWithCapacity:expectedLength];
+    for (NSUInteger i = 0; i < normalized.length; i += 2) {
+        unsigned int value = 0;
+        NSScanner *scanner = [NSScanner scannerWithString:[normalized substringWithRange:NSMakeRange(i, 2)]];
+        if (![scanner scanHexInt:&value]) {
+            return nil;
+        }
+        uint8_t byte = (uint8_t)value;
+        [data appendBytes:&byte length:1];
+    }
+    return data.length == expectedLength ? data : nil;
+}
+
+- (NSData *)rawSignatureFromDER:(NSData *)derSig {
+    const uint8_t *bytes = derSig.bytes;
+    if (derSig.length < 8) return nil; // minimal sanity check
+    
+    NSUInteger offset = 2; // skip SEQ tag and length (assuming < 128 bytes total)
+    if (bytes[1] & 0x80) { // long form length
+         offset += (bytes[1] & 0x7F);
+    }
+    
+    // r
+    offset++; // tag 0x02
+    NSUInteger rLen = bytes[offset++];
+    const uint8_t *rBytes = bytes + offset;
+    // Remove leading zero
+    if (rLen > 0 && rBytes[0] == 0x00) {
+        rBytes++;
+        rLen--;
+    }
+    offset += (bytes[offset - 1]); // use original length for offset
+    
+    // s
+    offset++; // tag 0x02
+    NSUInteger sLen = bytes[offset++];
+    const uint8_t *sBytes = bytes + offset;
+    // Remove leading zero
+    if (sLen > 0 && sBytes[0] == 0x00) {
+        sBytes++;
+        sLen--;
+    }
+    
+    NSMutableData *raw = [NSMutableData dataWithLength:64];
+    uint8_t *rawPtr = raw.mutableBytes;
+    
+    if (rLen > 32 || sLen > 32) return nil;
+    
+    memcpy(rawPtr + (32 - rLen), rBytes, rLen);
+    memcpy(rawPtr + 32 + (32 - sLen), sBytes, sLen);
+    
+    return raw;
 }
 
 @end
