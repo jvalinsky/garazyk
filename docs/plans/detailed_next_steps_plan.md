@@ -1,77 +1,168 @@
-# Detailed Next Steps Plan
+# Detailed Next Steps Plan (Post Re-Review, 2026-02-18)
 
-## Overview
+## Objective
 
-This plan details the execution steps for **Phase 12 (Architecture Refinement)** and **Phase 11 (Production Hardening)**. These phases address technical debt and prepare the PDS for real-world usage.
-
----
-
-## Phase 12: Architecture Refinement (Priority: High)
-
-**Goal**: Complete the transition from the monolithic `PDSController` to the modular `PDSApplication` architecture. Eliminate "God Object" anti-patterns.
-
-### 12.1. Dependency Injection Cleanup (`XrpcMethodRegistry`)
-The `XrpcMethodRegistry` currently accepts `PDSApplication` but still extracts `legacyController` to pass to helper functions. This enforces a dependency on the legacy controller.
-
-- [ ] **Refactor `registerServerAccountAndSessionMethods`**
-  - Change signature to accept `PDSAccountService` and `PDSConfiguration` directly instead of `PDSController`.
-  - Update implementations to use extraction logic from services.
-- [ ] **Refactor `extractDIDFromAuthHeader`**
-  - Currently takes `PDSController` to access `serverHost` or `jwtMinter`.
-  - Update to accept `PDSConfiguration` or `JWTMinter` directly.
-- [ ] **Remove `application.legacyController` usage**
-  - Identify all call sites in `registerMethodsWithDispatcher:application:`.
-  - Replace with specific service properties from `PDSApplication` (e.g., `adminController`, `repoService`).
-
-### 12.2. PDSController as Pure Facade
-Once `XrpcMethodRegistry` no longer needs `PDSController` for logic, we can gut `PDSController`.
-
-- [ ] **Deprecate Legacy Init**
-  - Mark `initWithDirectory:serviceMaxSize:...` as deprecated.
-  - Ensure it internally creates a `PDSApplication` if used.
-- [ ] **Remove Internal State**
-  - Remove ivars like `_repoQueue`, `_repos` from `PDSController` if they are now owned by `PDSRepositoryService`.
-  - `PDSController` should have *zero* logic, only forwarding calls to `_backingApplication`.
-
-### 12.3. Service Boundaries
-- [ ] **Audit `PDSAccountService`**: Ensure it doesn't call back into `PDSController`.
-- [ ] **Audit `PDSRepositoryService`**: Ensure MST persistence is fully encapsulated.
+Close production blockers for small selfhosters in the shortest safe sequence, then move to broader architecture cleanup.
 
 ---
 
-## Phase 11: Production Hardening (Priority: High)
+## Phase 0 — Stabilize Security Test Signal (P0)
 
-**Goal**: Verify the PDS works with real-world clients and workloads.
+**Goal:** Make admin auth suites reflect the current admin JWT model.
 
-### 11.1. Manual Verification with Bluesky Client
-Connect the official Bluesky iOS/Web app to your local PDS.
+### Tasks
+- [ ] Update `AdminAuthXrpcTests` to mint/use admin-scope JWTs instead of account `accessJwt`.
+- [ ] Update `AdminAuthApplicationXrpcTests` similarly.
+- [ ] Keep existing negative coverage for issuer/audience/scope mismatch.
 
-- [ ] **Network Exposure**
-  - Set up `ngrok` or similar tunnel to expose local port 2583.
-  - Update `PDS_PUBLIC_URL` environment variable.
-- [ ] **Client Connection**
-  - Use "Sign In" -> "Other Server" in Bluesky client.
-  - Enter PDS URL (e.g., `https://your-ngrok.io`).
-  - Attempt login / account creation.
-- [ ] **Feature Verification**
-  - Create Post (text, image).
-  - Like/Repost.
-  - Update Profile.
-  - Verify data persists in local PDS.
+### Acceptance Criteria
+- [ ] `AdminAuthXrpcTests` passes without bulk 403 regressions.
+- [ ] `AdminAuthApplicationXrpcTests` admin-success paths use valid admin token flow.
 
-### 11.2. Performance Profiling
-- [ ] **Profile MST Rebuilds**
-  - The current implementation performs a full O(N) rebuild of the Merkle Search Tree on every write.
-  - **Task**: Instrument `MST.m` to measure rebuild time vs repo size.
-  - **Optimization**: Implement delta updates or partial path rebuilding.
-- [ ] **SQLite Concurrency**
-  - Review `PDSDatabasePool` settings.
-  - Ensure WAL mode is enabled for high concurrency.
+### Evidence Targets
+- `ATProtoPDS/Tests/Network/AdminAuthXrpcTests.m`
+- `ATProtoPDS/Tests/Network/AdminAuthApplicationXrpcTests.m`
+- `ATProtoPDS/Sources/Admin/PDSAdminAuth.m`
 
 ---
 
-## Execution Order
-1.  **Phase 12.1**: Unblock clean DI in XRPC Registry.
-2.  **Phase 12.2**: Finalize PDSController refactor.
-3.  **Phase 11.1**: Manual Verification (can be done in parallel).
-4.  **Phase 11.2**: Performance optimization (based on findings from 11.1).
+## Phase 1 — Firehose Conformance Fix (P0)
+
+**Goal:** Make stream frames lexicon-conformant and pass conformance tests.
+
+### Tasks
+- [ ] `EventFormatter`: include `blocks` in commit payload.
+- [ ] `EventFormatter`: always emit `since` key (nullable behavior).
+- [ ] `EventFormatter`: identity payload emits `seq`, `did`, `time` (+ optional `handle`).
+- [ ] `EventFormatter`: account payload emits required `seq`, `did`, `time`, `active`.
+- [ ] `EventFormatter`: info payload uses `name` (not `info`).
+- [ ] `SubscribeReposHandler`: populate required fields for identity/account/info events before encoding.
+
+### Acceptance Criteria
+- [ ] `FirehoseConformanceTests` green.
+- [ ] Replay/backfill still works for existing persisted events.
+
+### Evidence Targets
+- `ATProtoPDS/Sources/Sync/EventFormatter.m`
+- `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
+- `ATProtoPDS/Tests/Sync/FirehoseConformanceTests.m`
+- `ATProtoPDS/Resources/lexicons/com/atproto/sync/subscribeRepos.json`
+
+---
+
+## Phase 2 — Close Remaining Core XRPC Gaps (P1)
+
+**Goal:** Reach 100% `com.atproto.*` endpoint registration coverage for current in-scope set.
+
+### Tasks
+- [ ] Implement `com.atproto.identity.resolveHandle`.
+- [ ] Implement `com.atproto.identity.resolveIdentity`.
+- [ ] Implement `com.atproto.identity.getRecommendedDidCredentials`.
+- [ ] Implement `com.atproto.sync.notifyOfUpdate` (or explicit no-op/deprecation response per policy).
+- [ ] Implement/register `com.atproto.admin.getAccountTakedown`.
+- [ ] Keep compatibility route strategy explicit for `takeDownAccount` naming drift.
+
+### Acceptance Criteria
+- [ ] Coverage report shows 0 missing in-scope methods for `com.atproto.*`.
+- [ ] Add/adjust tests for each new endpoint path.
+
+### Evidence Targets
+- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- `ATProtoPDS/Resources/lexicons/com/atproto/**`
+- `/tmp/objpds_xrpc_coverage_*.md`
+
+---
+
+## Phase 3 — OAuth/Session Protocol Correctness (P1)
+
+**Goal:** Remove known auth interop gaps before external client onboarding.
+
+### Tasks
+- [ ] Align `com.atproto.server.refreshSession` request handling to refresh JWT auth semantics.
+- [ ] Implement XRPC DPoP nonce challenge behavior (`DPoP-Nonce` on nonce-required failures).
+- [ ] Add tests for nonce-required + retry-with-nonce success flow.
+
+### Acceptance Criteria
+- [ ] Refresh flow matches lexicon contract.
+- [ ] DPoP nonce dance is test-covered and deterministic.
+
+### Evidence Targets
+- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- `ATProtoPDS/Sources/Auth/OAuth2.m`
+- `ATProtoPDS/Resources/lexicons/com/atproto/server/refreshSession.json`
+
+---
+
+## Phase 4 — Public URL and Issuer Consistency (P1)
+
+**Goal:** Ensure one canonical external identity/issuer source across auth and identity outputs.
+
+### Tasks
+- [ ] Use `config.issuer`/`PDS_ISSUER` consistently for JWT mint/verify.
+- [ ] Remove localhost fallback from runtime builder path when issuer is configured.
+- [ ] Update PLC service endpoint defaults to HTTPS/public issuer semantics.
+
+### Acceptance Criteria
+- [ ] Issuer values are consistent in JWT claims, NodeInfo, and identity service descriptors.
+
+### Evidence Targets
+- `ATProtoPDS/Sources/App/PDSApplication.m`
+- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
+- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+
+---
+
+## Phase 5 — Operations Hardening for Selfhosters (P1)
+
+**Goal:** Ensure backup/restore and startup docs/scripts match current runtime layout.
+
+### Tasks
+- [ ] Fix `scripts/backup_pds.sh` duplicated body and stale DB filenames.
+- [ ] Update backup restore instructions in `README.md`.
+- [ ] Update deployment backup examples in `docs/guides/DEPLOYMENT.md`.
+- [ ] Update `scripts/start_server.sh` default binary (`atprotopds-cli` vs `september`) or document explicit override.
+
+### Acceptance Criteria
+- [ ] Backup script dry-run works against real local data layout.
+- [ ] Restore doc steps match actual database file locations.
+
+### Evidence Targets
+- `scripts/backup_pds.sh`
+- `README.md`
+- `docs/guides/DEPLOYMENT.md`
+- `scripts/start_server.sh`
+
+---
+
+## Phase 6 — Hygiene and Reliability (P2)
+
+**Goal:** Remove avoidable operational noise and reduce long-run failure risk.
+
+### Tasks
+- [ ] Remove tracked build/test artifacts (`build-dd`, `test_output*.txt`).
+- [ ] Extend `.gitignore` to prevent recurrence.
+- [ ] Add graceful test skip/failure handling when network bind is unavailable (for sandbox/CI portability).
+- [ ] Wire optional firehose event retention policy to config (if enabled).
+
+### Acceptance Criteria
+- [ ] Clean repo status without generated artifacts.
+- [ ] Test suites do not crash on environment network restrictions.
+
+### Evidence Targets
+- `.gitignore`
+- `ATProtoPDS/Tests/Services/CoverageGapTests.m`
+- `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m`
+
+---
+
+## Recommended Execution Order
+
+1. Phase 0 (test signal)
+2. Phase 1 (firehose conformance)
+3. Phase 2 (endpoint coverage closure)
+4. Phase 3 (auth protocol correctness)
+5. Phase 4 (issuer/public URL consistency)
+6. Phase 5 (operations/scripts/docs)
+7. Phase 6 (hygiene/reliability)
+
+This order minimizes risk by first restoring trustworthy security/conformance signal, then closing external interoperability blockers, then polishing operations.
