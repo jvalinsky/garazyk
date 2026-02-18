@@ -1,5 +1,7 @@
+#import <CommonCrypto/CommonKeyDerivation.h>
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
+#import "PDSCLIInputHelper.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
 #import "App/PDSConfiguration.h"
@@ -670,6 +672,8 @@
     NSString *handle = @"";
     NSString *password = @"";
 
+    BOOL passwordProvided = NO;
+
     for (NSUInteger i = 0; i < args.count; i++) {
         NSString *arg = args[i];
         if ([arg isEqualToString:@"--email"] || [arg isEqualToString:@"-e"]) {
@@ -677,21 +681,44 @@
         } else if ([arg isEqualToString:@"--handle"] || [arg isEqualToString:@"-h"]) {
             if (i + 1 < args.count) handle = args[++i];
         } else if ([arg isEqualToString:@"--password"] || [arg isEqualToString:@"-p"]) {
-            if (i + 1 < args.count) password = args[++i];
+            if (i + 1 < args.count) {
+                password = args[++i];
+                passwordProvided = YES;
+            }
         } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
             context.verbose = YES;
             [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
         }
     }
     
-    if (email.length == 0 || handle.length == 0) {
-        [context printError:@"Missing required arguments: --email and --handle"];
-        NSString *hostname = [PDSCLIAccountManager pdsHostnameForContext:context];
-        [context printInfo:@"\nUsage: pds account create --email <email> --handle <handle> [--password <pw>]"];
-        [context printInfo:[NSString stringWithFormat:@"\nExamples:"]];
-        [context printInfo:[NSString stringWithFormat:@"  pds account create --email alice@example.com --handle alice.%@", hostname]];
-        [context printInfo:@"  pds account create -e bob@test.com -h bob.test -p secret123"];
-        return 1;
+    if (email.length == 0 || handle.length == 0 || !passwordProvided) {
+        if ([PDSCLIInputHelper isInteractiveTTY]) {
+            if (email.length == 0) {
+                email = [PDSCLIInputHelper promptForInput:@"Email address" defaultValue:nil];
+                if (email.length == 0) return 1;
+            }
+            if (handle.length == 0) {
+                NSString *hostname = [PDSCLIAccountManager pdsHostnameForContext:context];
+                NSString *prompt = [NSString stringWithFormat:@"Handle (e.g. user.%@)", hostname];
+                handle = [PDSCLIInputHelper promptForInput:prompt defaultValue:nil];
+                if (handle.length == 0) return 1;
+            }
+            if (!passwordProvided) {
+                password = [PDSCLIInputHelper promptForPasswordWithConfirmation:@"Password"
+                                                                   confirmPrompt:@"Confirm Password"
+                                                                       minLength:8
+                                                                     maxAttempts:3];
+                if (password.length == 0) return 1;
+            }
+        } else if (email.length == 0 || handle.length == 0 || !passwordProvided) {
+            [context printError:@"Missing required arguments: --email and --handle"];
+            NSString *hostname = [PDSCLIAccountManager pdsHostnameForContext:context];
+            [context printInfo:@"\nUsage: pds account create --email <email> --handle <handle> [--password <pw>]"];
+            [context printInfo:[NSString stringWithFormat:@"\nExamples:"]];
+            [context printInfo:[NSString stringWithFormat:@"  pds account create --email alice@example.com --handle alice.%@", hostname]];
+            [context printInfo:@"  pds account create -e bob@test.com -h bob.test -p secret123"];
+            return 1;
+        }
     }
 
     NSError *emailError = nil;
