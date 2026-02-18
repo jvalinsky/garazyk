@@ -27,8 +27,20 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         payload[@"since"] = event.since;
     }
     
-    payload[@"blocks"] = event.blocks ?: [NSData data];  // Required CAR bytes
-    payload[@"ops"] = event.ops ?: @[];
+    // Sanitize ops to remove recordCBOR which is internal-only and huge
+    // Per ATProto spec, the record data is in the blocks (CAR), not in the ops metadata
+    NSMutableArray *sanitizedOps = [NSMutableArray arrayWithCapacity:event.ops.count];
+    for (NSDictionary *op in event.ops) {
+        if (op[@"recordCBOR"]) {
+            NSMutableDictionary *cleanOp = [op mutableCopy];
+            [cleanOp removeObjectForKey:@"recordCBOR"];
+            [sanitizedOps addObject:cleanOp];
+        } else {
+            [sanitizedOps addObject:op];
+        }
+    }
+    payload[@"ops"] = sanitizedOps;
+    
     payload[@"blobs"] = event.blobs ?: @[];  // Array of CIDs
     payload[@"time"] = event.time ?: @"";  // RFC-3339 timestamp
     
@@ -113,9 +125,22 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
     NSData *payloadData = [ATProtoDagCBOR encodeObject:payload error:error];
     if (!payloadData) {
+        if (error) {
+             // Retain original error if set
+        }
         return nil;
     }
     [result appendData:payloadData];
+    
+    // Enforce 1MB size limit (1024 * 1024 bytes)
+    if (result.length > 1024 * 1024) {
+        if (error) {
+            *error = [NSError errorWithDomain:EventFormatterErrorDomain
+                                         code:EventFormatterErrorCodeEncodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Event size %lu exceeds 1MB limit", (unsigned long)result.length]}];
+        }
+        return nil;
+    }
 
     return result;
 }

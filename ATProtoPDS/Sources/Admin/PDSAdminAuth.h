@@ -79,6 +79,12 @@ NS_ASSUME_NONNULL_BEGIN
  * the minimumTokenIssuedAt timestamp is written to a file in this directory.
  */
 @property (nonatomic, copy, nullable) NSString *dataDirectory;
+/**
+ * @brief The controller used for JWT signing and verification.
+ *
+ * If nil, falls back to [PDSController sharedController].
+ */
+@property (nonatomic, strong, nullable) id controller;
 
 @end
 

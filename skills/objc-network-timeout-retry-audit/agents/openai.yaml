@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC Network Retry Audit"
+  short_description: "Audit network timeout and retry behavior"

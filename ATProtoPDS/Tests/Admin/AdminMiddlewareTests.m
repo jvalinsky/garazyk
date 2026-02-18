@@ -85,7 +85,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testAdminDidAllowed {
     Session *session = [self.sessionStore createSessionForDID:@"did:plc:admin123"
-                                                       handle:@"admin.example.com"
+                                                       handle:@"administrator.example.com"
                                                         scope:@"atproto"
                                                       dpopJWK:nil
                                                         error:nil];

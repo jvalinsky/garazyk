@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC Re-entrancy Audit"
+  short_description: "Find Objective-C re-entrancy bug patterns"

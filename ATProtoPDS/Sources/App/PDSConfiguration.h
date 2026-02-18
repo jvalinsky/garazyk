@@ -54,6 +54,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Path to data directory. */
 @property (nonatomic, readonly) NSString *dataDirectory;
 
+/*! The public issuer URL (PDS_ISSUER). */
+@property (nonatomic, copy, nullable) NSString *issuer;
+
 /*! PLC directory server URL. */
 @property (nonatomic, copy) NSString *plcURL;
 
