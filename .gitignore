@@ -36,10 +36,29 @@ xcuserdata/
 .opencode/
 .deciduous/deciduous.db
 
-# Data and Logs
+# Data, Logs and State
 data/
+demo_data/
+reports/
 *.log
+*.pid
+config.json
+:memory:
+:memory:-shm
+:memory:-wal
+*.db-shm
+*.db-wal
 docs/tutorial-site.tar.gz
+
+# IDE and AI
+.DS_Store
+.idea/
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+.claude/settings.local.json
 
 # Research and Reference (local copies)
 reference/
@@ -47,7 +66,3 @@ reference/
 ATProtoPDS/Tests/Blob/debug_blob_test.txt
 
 com.apple.DeveloperTools/
-:memory:
-:memory:-shm
-:memory:-wal
-.worktrees/

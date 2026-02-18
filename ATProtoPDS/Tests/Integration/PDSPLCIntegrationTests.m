@@ -42,7 +42,9 @@
     }
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:binaryPath]) {
-        XCTFail(@"atproto-plc binary not found at %@", binaryPath);
+        self.plcTask = nil;
+        XCTSkip(@"atproto-plc binary not found (searched: %@); build the atproto-plc target to run this test",
+                [candidates componentsJoinedByString:@", "]);
         return;
     }
 
@@ -59,7 +61,8 @@
     NSError *error = nil;
     if (@available(macOS 10.13, *)) {
         if (![self.plcTask launchAndReturnError:&error]) {
-            XCTFail(@"Failed to launch atproto-plc: %@", error);
+            self.plcTask = nil;
+            XCTSkip(@"Failed to launch atproto-plc: %@", error);
             return;
         }
     } else {
@@ -106,7 +109,9 @@
 }
 
 - (void)tearDown {
-    [self.plcTask terminate];
+    if (self.plcTask && self.plcTask.isRunning) {
+        [self.plcTask terminate];
+    }
     [self.database close];
     
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
