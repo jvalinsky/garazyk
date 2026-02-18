@@ -923,6 +923,35 @@ static NSDateFormatter * iso8601Formatter(void) {
     return accounts;
 }
 
+- (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit afterDid:(nullable NSString *)afterDid error:(NSError **)error {
+    NSString *sql = afterDid
+        ? @"SELECT * FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?"
+        : @"SELECT * FROM accounts ORDER BY did ASC LIMIT ?";
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return @[];
+    }
+
+    int idx = 1;
+    if (afterDid) {
+        sqlite3_bind_text(stmt, idx++, afterDid.UTF8String, -1, SQLITE_TRANSIENT);
+    }
+    sqlite3_bind_int64(stmt, idx, (sqlite3_int64)limit);
+
+    NSMutableArray *accounts = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseAccount *account = [self accountFromStatement:stmt];
+        if (account) {
+            [accounts addObject:account];
+        }
+    }
+
+    return accounts;
+}
+
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM accounts WHERE did = ?";
 

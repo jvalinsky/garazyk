@@ -460,10 +460,22 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
 
 /*!
+ @method getAccountsWithLimit:afterDid:error:
+
+ @abstract Retrieves a page of accounts ordered by DID ascending (keyset pagination).
+
+ @param limit Maximum number of accounts to return.
+ @param afterDid Exclusive lower bound on DID for the next page, or nil for the first page.
+ @param error On return, contains an error if the operation failed.
+ @return An array of account objects.
+ */
+- (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit afterDid:(nullable NSString *)afterDid error:(NSError **)error;
+
+/*!
  @method deleteAccount:error:
- 
+
  @abstract Deletes an account and all associated data.
- 
+
  @param did The DID of the account to delete.
  @param error On return, contains an error if the operation failed.
  @return YES if the account was deleted successfully, NO otherwise.
