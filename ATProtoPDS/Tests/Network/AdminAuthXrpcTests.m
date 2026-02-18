@@ -7,6 +7,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
+#import "Admin/PDSAdminAuth.h"
 
 @interface AdminAuthXrpcTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
@@ -41,8 +42,16 @@
                                                                   error:&error];
     XCTAssertNil(error);
     self.adminDid = adminAccount[@"did"];
-    self.adminJwt = adminAccount[@"accessJwt"];
+
+    setenv("PDS_ADMIN_PASSWORD", "password", 1);
+    NSError *adminAuthError = nil;
+    BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&adminAuthError];
+    XCTAssertTrue(adminAuthSuccess);
+    XCTAssertNil(adminAuthError);
+    self.adminJwt = [PDSAdminAuth sharedAuth].adminToken;
     XCTAssertNotNil(self.adminJwt);
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    XCTAssertTrue([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:@{@"authorization": adminAuthHeader}]);
 
     NSDictionary *userAccount = [self.controller createAccountForEmail:@"user@example.com"
                                                               password:@"password"
