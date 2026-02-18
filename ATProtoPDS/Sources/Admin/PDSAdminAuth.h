@@ -59,6 +59,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, copy, nullable) NSString *adminToken;
 
+/**
+ * @brief The data directory path used to persist token invalidation state.
+ *
+ * Set this at startup so that logout survives process restarts. When set,
+ * the minimumTokenIssuedAt timestamp is written to a file in this directory.
+ */
+@property (nonatomic, copy, nullable) NSString *dataDirectory;
+
 @end
 
 NS_ASSUME_NONNULL_END

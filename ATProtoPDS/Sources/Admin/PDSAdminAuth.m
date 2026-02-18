@@ -151,6 +151,28 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
 @property (nonatomic, strong, nullable) NSDate *minimumTokenIssuedAt;
 @end
 
+static NSString *PDSAdminAuthMinIATFilePath(NSString *dataDirectory) {
+    if (dataDirectory.length == 0) return nil;
+    return [dataDirectory stringByAppendingPathComponent:@".admin_min_iat"];
+}
+
+static void PDSAdminAuthPersistMinIAT(NSString *dataDirectory, NSDate *date) {
+    NSString *path = PDSAdminAuthMinIATFilePath(dataDirectory);
+    if (!path) return;
+    NSString *value = [NSString stringWithFormat:@"%.6f", date.timeIntervalSince1970];
+    [value writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+}
+
+static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
+    NSString *path = PDSAdminAuthMinIATFilePath(dataDirectory);
+    if (!path) return nil;
+    NSString *value = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+    if (value.length == 0) return nil;
+    NSTimeInterval ts = value.doubleValue;
+    if (ts <= 0) return nil;
+    return [NSDate dateWithTimeIntervalSince1970:ts];
+}
+
 @implementation PDSAdminAuth
 
 + (instancetype)sharedAuth {
@@ -169,6 +191,15 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
         _minimumTokenIssuedAt = nil;
     }
     return self;
+}
+
+- (void)setDataDirectory:(NSString *)dataDirectory {
+    _dataDirectory = [dataDirectory copy];
+    // Load persisted minimum token issued-at on first assignment
+    NSDate *persisted = PDSAdminAuthLoadMinIAT(_dataDirectory);
+    if (persisted) {
+        _minimumTokenIssuedAt = persisted;
+    }
 }
 
 - (BOOL)isAuthenticatedWithRequest:(NSObject *)request {
@@ -380,7 +411,9 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
 
 - (void)logout {
     self.adminToken = nil;
-    self.minimumTokenIssuedAt = [NSDate date];
+    NSDate *now = [NSDate date];
+    self.minimumTokenIssuedAt = now;
+    PDSAdminAuthPersistMinIAT(self.dataDirectory, now);
 }
 
 @end
