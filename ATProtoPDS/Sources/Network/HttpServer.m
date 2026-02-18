@@ -1023,7 +1023,6 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     PDS_LOG_HTTP_INFO(@"%@ %@", request.methodString, request.path);
     HttpResponse *response = [HttpResponse response];
 
-    /* Force disabled for now to fix user block
     if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() && [RateLimiter sharedLimiter].isEnabled) {
         RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
         if (!result.allowed) {
@@ -1032,7 +1031,6 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
             return response;
         }
     }
-    */
 
     if (self.requestHandler) {
         self.requestHandler(request, response);

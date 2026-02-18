@@ -84,7 +84,7 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 @property (nonatomic, copy, nullable) NSString *bodyString;
 
 /*! Response headers. */
-@property (nonatomic, copy) NSMutableDictionary<NSString *, NSString *> *headers;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *headers;
 
 /*! Whether to use keep-alive connection. */
 @property (nonatomic, assign) BOOL keepAlive;
