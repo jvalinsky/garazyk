@@ -9,11 +9,6 @@
     NSDictionary *_nodeInfo21;
     NSDictionary *_discoveryDocument20;
     NSDictionary *_discoveryDocument21;
-    NSUInteger _totalUsers;
-    NSUInteger _activeUsersMonth;
-    NSUInteger _activeUsersHalfyear;
-    NSUInteger _localPosts;
-    NSUInteger _localComments;
 }
 
 - (nullable instancetype)initWithBaseURL:(NSString *)baseURL
@@ -87,6 +82,13 @@
         @"outbound": @[]
     };
 
+    NSMutableDictionary *metadata = [NSMutableDictionary dictionary];
+    metadata[@"supportedLexicons"] = @[
+        @"com.atproto.*",
+        @"app.bsky.*"
+    ];
+    metadata[@"plcUrl"] = _configuration.plcURL ?: @"https://plc.directory";
+
     _nodeInfo20 = @{
         @"version": NodeInfoVersion20,
         @"software": software20,
@@ -94,7 +96,7 @@
         @"services": services,
         @"openRegistrations": @(_configuration.nodeinfoOpenRegistrations),
         @"usage": usage,
-        @"metadata": @{}
+        @"metadata": metadata
     };
 
     _nodeInfo21 = @{
@@ -104,7 +106,7 @@
         @"services": services,
         @"openRegistrations": @(_configuration.nodeinfoOpenRegistrations),
         @"usage": usage,
-        @"metadata": @{}
+        @"metadata": metadata
     };
 
     _discoveryDocument20 = @{
@@ -128,26 +130,6 @@
 
 - (void)refreshUsageStatistics {
     [self buildDocuments];
-}
-
-- (NSUInteger)totalUsers {
-    return _totalUsers;
-}
-
-- (NSUInteger)activeUsersMonth {
-    return _activeUsersMonth;
-}
-
-- (NSUInteger)activeUsersHalfyear {
-    return _activeUsersHalfyear;
-}
-
-- (NSUInteger)localPosts {
-    return _localPosts;
-}
-
-- (NSUInteger)localComments {
-    return _localComments;
 }
 
 @end
