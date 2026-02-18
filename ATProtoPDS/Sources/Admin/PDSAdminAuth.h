@@ -32,6 +32,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isAuthenticatedWithRequest:(NSObject *)request;
 
 /**
+ * @brief Validates admin authentication for a set of HTTP headers.
+ *
+ * This is the lower-level entrypoint used by both the admin HTTP routes and
+ * XRPC admin endpoints. It extracts the bearer/admin token, verifies claims and
+ * signature, and enforces logout invalidation state.
+ *
+ * @param headers HTTP headers to validate (case-insensitive keys).
+ * @param error On return, contains an error describing why authorization failed.
+ * @return YES if authorized for admin operations, NO otherwise.
+ */
+- (BOOL)authenticateHeaders:(NSDictionary<NSString *, NSString *> *)headers error:(NSError **)error;
+
+/**
  * @brief Authenticates an admin user with a password.
  *
  * This method validates the provided password against the configured admin
