@@ -9,6 +9,7 @@
 #import "Network/HttpServer.h"
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
+#import "Admin/PDSAdminAuth.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -47,8 +48,16 @@
                                                                                        did:nil
                                                                                      error:&error];
     XCTAssertNil(error);
-    self.adminJwt = adminAccount[@"accessJwt"];
+
+    setenv("PDS_ADMIN_PASSWORD", "password", 1);
+    NSError *adminAuthError = nil;
+    BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&adminAuthError];
+    XCTAssertTrue(adminAuthSuccess);
+    XCTAssertNil(adminAuthError);
+    self.adminJwt = [PDSAdminAuth sharedAuth].adminToken;
     XCTAssertTrue(self.adminJwt.length > 0);
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    XCTAssertTrue([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:@{@"authorization": adminAuthHeader}]);
 
     NSDictionary *userAccount = [self.application.legacyController createAccountForEmail:@"user-app@example.com"
                                                                                  password:@"password"
