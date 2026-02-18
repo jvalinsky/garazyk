@@ -9,4 +9,8 @@ mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus
 /Users/jack/Software/objpds/build/fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo "Auth fuzzer completed"
 /Users/jack/Software/objpds/build/fuzzing/fuzz_blob /dev/null -max_len=65536 -jobs=8 -runs=1000 || echo "Blob fuzzer completed"
 /Users/jack/Software/objpds/build/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=8 -runs=1000 || echo "SQL fuzzer completed"
+echo "Running Lexicon fuzzer..."
+/Users/jack/Software/objpds/build/fuzzing/fuzz_lexicon fuzzing/corpus_lexicon/ -max_len=65536 -jobs=8 -runs=1000 || echo "Lexicon fuzzer completed"
+echo "Running MST fuzzer..."
+/Users/jack/Software/objpds/build/fuzzing/fuzz_mst fuzzing/corpus_mst/ -max_len=65536 -jobs=8 -runs=1000 || echo "MST fuzzer completed"
 echo "Fuzzing session complete."

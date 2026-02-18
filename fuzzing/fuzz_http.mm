@@ -22,7 +22,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     @autoreleasepool {
-        NSData *inputData = [NSData dataWithBytes:data length:size];
+                NSData *inputData = [NSData dataWithBytes:data length:size];
 
         // Test 1: Basic HTTP request parsing
         HttpRequest *request = [HttpRequest requestWithData:inputData];
@@ -43,20 +43,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         (void)queryParams;
         (void)jsonBody;
 
-        // Test 2: HTTP response serialization
+                // Test 2: HTTP response serialization
         HttpResponse *response = [[HttpResponse alloc] init];
         response.statusCode = HttpStatusOK;
         response.statusMessage = @"OK";
         response.contentType = @"application/json";
-        response.headers = [NSMutableDictionary dictionary];
-        [response.headers setValue:@"application/json" forKey:@"Content-Type"];
-        [response.headers setValue:@"fuzz-test" forKey:@"X-Request-ID"];
+        [response setHeader:@"application/json" forKey:@"Content-Type"];
+        [response setHeader:@"fuzz-test" forKey:@"X-Request-ID"];
         response.body = body;
 
         NSData *serialized = [response serialize];
         (void)serialized;
 
-        // Test 3: Various status codes
+                // Test 3: Various status codes
         NSArray *statusCodes = @[
             @(HttpStatusOK),
             @(HttpStatusCreated),
@@ -78,7 +77,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             (void)statusSerialized;
         }
 
-        // Test 4: Header access methods
+                // Test 4: Header access methods
         if (headers.count > 0) {
             for (NSString *key in headers) {
                 NSString *value = [request headerForKey:key];
@@ -86,7 +85,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
         }
 
-        // Test 5: Query parameter access
+                // Test 5: Query parameter access
         if (queryParams.count > 0) {
             for (NSString *key in queryParams) {
                 NSString *value = [request queryParamForKey:key];
@@ -94,7 +93,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
         }
 
-        // Test 6: Partial request parsing
+                // Test 6: Partial request parsing
         if (size > 0) {
             NSUInteger partialLength = MIN(size, 50);
             NSData *partialData = [NSData dataWithBytes:data length:partialLength];
@@ -102,7 +101,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             (void)partialRequest;
         }
 
-        // Test 7: Different encoding attempts
+                // Test 7: Different encoding attempts
         NSString *rawRequest = [[NSString alloc] initWithData:inputData
                                                     encoding:NSUTF8StringEncoding];
         if (!rawRequest) {
@@ -118,7 +117,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
         }
 
-        // Test 8: Malformed JSON body handling
+                // Test 8: Malformed JSON body handling
         if (body.length > 0) {
             HttpRequest *jsonRequest = [[HttpRequest alloc] initWithMethod:method
                                                               methodString:methodString
@@ -127,11 +126,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                                                               queryParams:queryParams
                                                                   version:version
                                                                   headers:headers
-                                                                     body:body];
+                                                                     body:body
+                                                            remoteAddress:nil];
             (void)jsonRequest;
         }
 
-        // Test 9: Empty and minimal requests
+                // Test 9: Empty and minimal requests
         NSData *emptyData = [NSData data];
         HttpRequest *emptyRequest = [HttpRequest requestWithData:emptyData];
         (void)emptyRequest;
@@ -140,7 +140,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         HttpRequest *minimalRequest = [HttpRequest requestWithData:minimalData];
         (void)minimalRequest;
 
-        // Test 10: Large body handling
+                // Test 10: Large body handling
         if (size > 1000 && size < 50000) {
             HttpRequest *largeRequest = [HttpRequest requestWithData:inputData];
             if (largeRequest.body.length > 0) {
@@ -149,7 +149,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
         }
 
-        // Test 11: Various Content-Types
+                // Test 11: Various Content-Types
         NSArray *contentTypes = @[
             @"application/json",
             @"application/cbor",
@@ -167,12 +167,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             (void)typeSerialized;
         }
 
-        // Test 12: Header injection attempts (should be sanitized)
+                // Test 12: Header injection attempts (should be sanitized)
         NSString *injectionHeader = @"Header-Value\r\nInject: test\r\n";
         HttpResponse *injectResponse = [[HttpResponse alloc] init];
         injectResponse.statusCode = HttpStatusOK;
-        injectResponse.headers = [NSMutableDictionary dictionary];
-        [injectResponse.headers setValue:injectionHeader forKey:@"X-Custom"];
+        [injectResponse setHeader:injectionHeader forKey:@"X-Custom"];
         NSData *injectSerialized = [injectResponse serialize];
         (void)injectSerialized;
 
@@ -180,30 +179,3 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 }
 
-#ifndef LIBFUZZER
-int main(int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
-        return 1;
-    }
-
-    FILE *f = fopen(argv[1], "rb");
-    if (!f) {
-        fprintf(stderr, "Cannot open file: %s\n", argv[0]);
-        return 1;
-    }
-
-    fseek(f, 0, SEEK_END);
-    long fileSize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    uint8_t *data = (uint8_t *)malloc(fileSize);
-    size_t readSize = fread(data, 1, fileSize, f);
-    fclose(f);
-
-    int result = LLVMFuzzerTestOneInput(data, readSize);
-    free(data);
-
-    return result;
-}
-#endif

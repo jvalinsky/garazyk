@@ -231,30 +231,3 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 }
 
-#ifndef LIBFUZZER
-int main(int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
-        return 1;
-    }
-
-    FILE *f = fopen(argv[1], "rb");
-    if (!f) {
-        fprintf(stderr, "Cannot open file: %s\n", argv[0]);
-        return 1;
-    }
-
-    fseek(f, 0, SEEK_END);
-    long fileSize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    uint8_t *data = (uint8_t *)malloc(fileSize);
-    size_t readSize = fread(data, 1, fileSize, f);
-    fclose(f);
-
-    int result = LLVMFuzzerTestOneInput(data, readSize);
-    free(data);
-
-    return result;
-}
-#endif

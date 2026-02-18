@@ -308,7 +308,7 @@ if(BUILD_FUZZERS)
     message(STATUS "libFuzzer not found, using internal main")
     set(FUZZER_CFLAGS -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined)
     set(FUZZER_LDFLAGS -fsanitize=address,undefined)
-    set(FUZZER_DRIVER "")
+    set(FUZZER_DRIVER "fuzzing/standalone_driver.cpp")
   endif()
 
   set(FUZZER_SOURCES ${ATProtoPDS_SOURCES})
@@ -331,6 +331,8 @@ if(BUILD_FUZZERS)
   add_pds_fuzzer(fuzz_auth "fuzzing/fuzz_auth.mm")
   add_pds_fuzzer(fuzz_blob "fuzzing/fuzz_blob.mm")
   add_pds_fuzzer(fuzz_sqlite "fuzzing/fuzz_sqlite.mm")
+  add_pds_fuzzer(fuzz_lexicon "fuzzing/fuzz_lexicon.mm")
+  add_pds_fuzzer(fuzz_mst "fuzzing/fuzz_mst.mm")
 
 endif()
 
@@ -449,6 +451,10 @@ ${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=
 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo \"Auth fuzzer completed\"
 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_blob /dev/null -max_len=65536 -jobs=8 -runs=1000 || echo \"Blob fuzzer completed\"
 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=8 -runs=1000 || echo \"SQL fuzzer completed\"
+echo \"Running Lexicon fuzzer...\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_lexicon fuzzing/corpus_lexicon/ -max_len=65536 -jobs=8 -runs=1000 || echo \"Lexicon fuzzer completed\"
+echo \"Running MST fuzzer...\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_mst fuzzing/corpus_mst/ -max_len=65536 -jobs=8 -runs=1000 || echo \"MST fuzzer completed\"
 echo \"Fuzzing session complete.\"
 ")
 
@@ -456,7 +462,7 @@ file(WRITE "${CMAKE_BINARY_DIR}/run-fuzzers-extended.sh" "#!/bin/bash
 set -e
 cd \"${CMAKE_SOURCE_DIR}\"
 echo \"Running comprehensive fuzzing session...\"
-mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql
+mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql fuzzing/corpus_lexicon fuzzing/corpus_mst
 echo \"Running XRPC fuzzer (30 seconds)...\"
 timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
 echo \"Running CBOR fuzzer (30 seconds)...\"
@@ -469,6 +475,10 @@ echo \"Running Blob fuzzer (30 seconds)...\"
 timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_blob /dev/null -max_len=50000000 -jobs=4 -timeout=10 || true
 echo \"Running SQL fuzzer (30 seconds)...\"
 timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=4 -timeout=10 || true
+echo \"Running Lexicon fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_lexicon fuzzing/corpus_lexicon/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running MST fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_mst fuzzing/corpus_mst/ -max_len=65536 -jobs=8 -timeout=10 || true
 echo \"Comprehensive fuzzing session complete.\"
 ls -la fuzzing/crashers/ 2>/dev/null || echo \"No crashes detected\"
 ")
@@ -555,13 +565,15 @@ add_custom_target(run-tests COMMAND "${CMAKE_SOURCE_DIR}/scripts/run-tests.sh"
 
 if(BUILD_FUZZERS)
   # Alias targets matching old Makefile names
-  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite)
+  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite fuzz_lexicon fuzz_mst)
   add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
   add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
   add_custom_target(fuzz-http DEPENDS fuzz_http)
   add_custom_target(fuzz-auth DEPENDS fuzz_auth)
   add_custom_target(fuzz-blob DEPENDS fuzz_blob)
   add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
+  add_custom_target(fuzz-lexicon DEPENDS fuzz_lexicon)
+  add_custom_target(fuzz-mst DEPENDS fuzz_mst)
 endif()
 
 # Print build instructions
