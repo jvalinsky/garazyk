@@ -103,6 +103,19 @@
         } else {
             printf("Loaded config from: %s\n", [context.configPath UTF8String]);
             printf("Server host: %s\n", [config.serverHost UTF8String]);
+            // Update port from config if not overridden by CLI later
+            if (config.serverPort > 0) {
+                port = config.serverPort;
+            }
+        }
+    }
+
+    // Apply CLI overrides again to Ensure they take precedence over config
+    for (NSUInteger i = 0; i < args.count; i++) {
+        if ([args[i] isEqualToString:@"--port"] || [args[i] isEqualToString:@"-p"]) {
+            if (i + 1 < args.count) {
+                port = [args[++i] integerValue];
+            }
         }
     }
 

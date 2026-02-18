@@ -1,5 +1,6 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
+#import "PDSCLIInputHelper.h"
 
 #pragma mark - Nuke Command
 
@@ -51,15 +52,30 @@
     }
 
     if (!confirmed) {
-        printf("\n");
-        printf("⚠️  DANGER ZONE ⚠️\n");
-        printf("================\n\n");
-        printf("This command will DELETE ALL PDS DATA.\n");
-        printf("This action is IRREVERSIBLE!\n\n");
-        printf("To proceed, run:\n");
-        printf("  atprotopds-cli nuke-data --confirm\n\n");
-        printf("Data directory: %s\n", [context.dataDir UTF8String]);
-        return 0;
+        if ([PDSCLIInputHelper isInteractiveTTY]) {
+            printf("\n");
+            printf("⚠️  DANGER ZONE ⚠️\n");
+            printf("================\n\n");
+            printf("This command will DELETE ALL PDS DATA.\n");
+            printf("This action is IRREVERSIBLE!\n\n");
+            printf("Data directory: %s\n\n", [context.dataDir UTF8String]);
+            
+            if (![PDSCLIInputHelper promptForConfirmation:@"Permanently delete all data?" defaultYes:NO]) {
+                printf("\nAborted.\n");
+                return 0;
+            }
+            confirmed = YES;
+        } else {
+            printf("\n");
+            printf("⚠️  DANGER ZONE ⚠️\n");
+            printf("================\n\n");
+            printf("This command will DELETE ALL PDS DATA.\n");
+            printf("This action is IRREVERSIBLE!\n\n");
+            printf("To proceed, run:\n");
+            printf("  atprotopds-cli nuke-data --confirm\n\n");
+            printf("Data directory: %s\n", [context.dataDir UTF8String]);
+            return 0;
+        }
     }
 
     printf("\n");
