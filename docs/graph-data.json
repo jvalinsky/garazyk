@@ -131,6 +131,116 @@
       "created_at": "2026-01-17T23:48:16.663266-05:00",
       "updated_at": "2026-01-17T23:48:16.663266-05:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
+    },
+    {
+      "id": 13,
+      "change_id": "3e0545f7-8fad-43b7-b975-c0a4e273b386",
+      "node_type": "goal",
+      "title": "Phase 12.1: Refactor XrpcMethodRegistry DI cleanup",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T01:51:06.378460-05:00",
+      "updated_at": "2026-02-17T01:51:06.378460-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"# Detailed Next Steps Plan\\n\\n## Phase 12: Architecture Refinement (Priority: High)\\n\\n### 12.1. Dependency Injection Cleanup (`XrpcMethodRegistry`)\\nThe `XrpcMethodRegistry` currently accepts `PDSApplication` but still extracts `legacyController` to pass to helper functions. This enforces a dependency on the legacy controller.\\n\\n- [ ] **Refactor `registerServerAccountAndSessionMethods`**\\n  - Change signature to accept `PDSAccountService` and `PDSConfiguration` directly instead of `PDSController`.\\n  - Update implementations to use extraction logic from services.\\n- [ ] **Refactor `extractDIDFromAuthHeader`**\\n  - Currently takes `PDSController` to access `serverHost` or `jwtMinter`.\\n  - Update to accept `PDSConfiguration` or `JWTMinter` directly.\\n- [ ] **Remove `application.legacyController` usage**\\n  - Identify all call sites in `registerMethodsWithDispatcher:application:`.\\n  - Replace with specific service properties from `PDSApplication` (e.g., `adminController`, `repoService`).\\n\\ngo\"}"
+    },
+    {
+      "id": 14,
+      "change_id": "ce302e89-0c06-4942-977c-4ef8df3f3164",
+      "node_type": "goal",
+      "title": "Production readiness: fix C1-C3, H1-H5, M1-M3 for small self-hoster",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T18:13:31.838354-05:00",
+      "updated_at": "2026-02-17T18:13:31.838354-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Implement the following plan:\\n\\n# Production Readiness Review — ATProtoPDS (Small Self-Hoster)\\n\\n## Context\\n\\nProduction readiness assessment and remediation plan for self-hosting the Objective-C ATProtoPDS implementation. The codebase is substantially complete (96/96 core AT Protocol methods, OAuth/DPoP, SQLite persistence, logging) but has several gaps. Scope: **single-machine small self-hoster**, not distributed deployment.\\n\\n[Full plan omitted for brevity — see conversation transcript]\\n\\nFixes implemented:\\nC1: Wire Resend email provider into PDSApplication.m\\nC2: Enforce JWT issuer at startup (exit(1) if production + pds.local)\\nC3: Reverse proxy / HTTPS deployment documentation\\nH1: Content-Type header (was already present)\\nH2: Parse Resend error JSON body (name/message fields)\\nH3: Persist token invalidation to file (survives restarts)\\nH4: Warn on plain-text admin password at startup\\nH5: Warn on X-Admin-Token in production at startup\\nM1: Add 409 to retryable HTTP status codes\\nM2: Register NSUncaughtExceptionHandler (C function, not block)\\nM3: Apply WAL + performance PRAGMAs to service DB pools\"}"
+    },
+    {
+      "id": 15,
+      "change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
+      "node_type": "action",
+      "title": "Implement all production readiness fixes (C1-C3, H1-H5, M1-M3)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T18:13:38.050714-05:00",
+      "updated_at": "2026-02-17T18:13:38.050714-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":95}"
+    },
+    {
+      "id": 16,
+      "change_id": "6a730870-5e89-4684-b1b3-f4821d31fec3",
+      "node_type": "goal",
+      "title": "MST diff plumbing in SubscribeReposHandler.m:704,747",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T18:16:25.689507-05:00",
+      "updated_at": "2026-02-17T18:16:25.689507-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"now work on: MST diff plumbing (SubscribeReposHandler.m:704,747)\"}"
+    },
+    {
+      "id": 17,
+      "change_id": "f6f7708a-04c0-4421-bd3a-16952d03a99a",
+      "node_type": "goal",
+      "title": "MST diff plumbing in SubscribeReposHandler.m",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T18:20:03.320574-05:00",
+      "updated_at": "2026-02-17T18:20:03.320574-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"now work on: MST diff plumbing (SubscribeReposHandler.m:704,747)\"}"
+    },
+    {
+      "id": 18,
+      "change_id": "41898536-f4ad-495e-89bc-099d7b051833",
+      "node_type": "action",
+      "title": "Add MST node block enumeration to buildCARBlocksForCommit",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T18:22:44.252962-05:00",
+      "updated_at": "2026-02-17T18:22:44.252962-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"ATProtoPDS/Sources/Sync/SubscribeReposHandler.m\"]}"
+    },
+    {
+      "id": 19,
+      "change_id": "580a3733-8ef4-4a46-a155-acf2ef507ac3",
+      "node_type": "outcome",
+      "title": "MST node blocks now enumerated and added to firehose CAR via BFS from commit.dataCID",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-17T18:23:56.283509-05:00",
+      "updated_at": "2026-02-17T18:23:56.283509-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":95}"
+    },
+    {
+      "id": 20,
+      "change_id": "9c799f9d-96fa-4be0-b219-a055561259ab",
+      "node_type": "outcome",
+      "title": "CLI UX improvements shipped",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-18T10:09:24.832307-05:00",
+      "updated_at": "2026-02-18T10:09:24.832307-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"dd8b7a0\",\"confidence\":95}"
+    },
+    {
+      "id": 21,
+      "change_id": "b9ac482c-e256-44e1-b857-490a674dcf96",
+      "node_type": "goal",
+      "title": "Better CLI UX for september (PDS CLI)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-18T10:09:33.792638-05:00",
+      "updated_at": "2026-02-18T10:09:33.792638-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Implement the following plan: # Plan: Better CLI UX for `september` (PDS CLI)\"}"
+    },
+    {
+      "id": 22,
+      "change_id": "2cc64e11-805e-4b41-b368-a1ba982578dd",
+      "node_type": "outcome",
+      "title": "All production readiness fixes verified in codebase (C1-C3, H1-H5, M1-M3)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-18T10:13:45.762553-05:00",
+      "updated_at": "2026-02-18T10:13:45.762553-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":98}"
     }
   ],
   "edges": [
@@ -243,6 +353,61 @@
       "weight": 1.0,
       "rationale": "Verification expects raw format, DER causes signature mismatch",
       "created_at": "2026-01-17T23:48:19.863833-05:00"
+    },
+    {
+      "id": 11,
+      "from_node_id": 14,
+      "to_node_id": 15,
+      "from_change_id": "ce302e89-0c06-4942-977c-4ef8df3f3164",
+      "to_change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of production readiness plan",
+      "created_at": "2026-02-17T18:14:13.223554-05:00"
+    },
+    {
+      "id": 12,
+      "from_node_id": 17,
+      "to_node_id": 18,
+      "from_change_id": "f6f7708a-04c0-4421-bd3a-16952d03a99a",
+      "to_change_id": "41898536-f4ad-495e-89bc-099d7b051833",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step for MST diff plumbing",
+      "created_at": "2026-02-17T18:22:44.259719-05:00"
+    },
+    {
+      "id": 13,
+      "from_node_id": 18,
+      "to_node_id": 19,
+      "from_change_id": "41898536-f4ad-495e-89bc-099d7b051833",
+      "to_change_id": "580a3733-8ef4-4a46-a155-acf2ef507ac3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-02-17T18:23:56.289875-05:00"
+    },
+    {
+      "id": 14,
+      "from_node_id": 21,
+      "to_node_id": 20,
+      "from_change_id": "b9ac482c-e256-44e1-b857-490a674dcf96",
+      "to_change_id": "9c799f9d-96fa-4be0-b219-a055561259ab",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-02-18T10:09:33.801001-05:00"
+    },
+    {
+      "id": 15,
+      "from_node_id": 15,
+      "to_node_id": 22,
+      "from_change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
+      "to_change_id": "2cc64e11-805e-4b41-b368-a1ba982578dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "All fixes confirmed present",
+      "created_at": "2026-02-18T10:13:45.771169-05:00"
     }
   ]
 }
