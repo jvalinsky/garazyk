@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #include <stdlib.h>
+#import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Network/XrpcMethodRegistry.h"
@@ -29,9 +30,10 @@
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:self.tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
-    self.controller = [[PDSController alloc] initWithDirectory:self.tempURL.path serviceMaxSize:10 userDatabaseSize:10];
+    PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
+    self.controller = app.legacyController;
     self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
+    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 
     NSError *error = nil;
     NSDictionary *account1 = [self.controller createAccountForEmail:@"repoauth1@example.com"
@@ -796,9 +798,11 @@
                                                               body:@{}
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(requestSignature.statusCode, 200);
+    NSString *token = requestSignature.jsonBody[@"token"];
+    XCTAssertNotNil(token);
 
     HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
-                                                          body:@{}
+                                                          body:@{@"token": token}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(signResponse.statusCode, 200);
     NSDictionary *operation = signResponse.jsonBody[@"operation"];

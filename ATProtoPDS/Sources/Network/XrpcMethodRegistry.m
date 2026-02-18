@@ -1,6 +1,8 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "App/PDSApplication.h"
+#import "App/PDSController.h"
 #import "App/Services/PDSAccountService.h"
+#import "App/Services/PDSRecordService.h"
 #import "Admin/PDSAdminController.h"
 #import "Blob/BlobStorage.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -69,6 +71,8 @@ static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
                        adminController:(id<PDSAdminController>)adminController
                                request:(HttpRequest *)request;
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request;
++ (void)storePlcOperationToken:(NSString *)token forDid:(NSString *)did;
++ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
 @end
 
 static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response,
@@ -2612,6 +2616,45 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
                                                    JWTMinter *jwtMinter,
                                                    id<PDSAdminController> adminController,
                                                    BOOL enforceMethodChecks) {
+    [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
+            return;
+        }
+        if (enforceMethodChecks && request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *did = body[@"did"];
+        NSString *reason = body[@"reason"];
+        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+
+        NSError *didError = nil;
+        if (![ATProtoValidator validateDID:did error:&didError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [adminController takeDownAccount:did reason:[reason isKindOfClass:[NSString class]] ? reason : @"User deactivation" error:&error];
+        if (!success) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"TakedownFailed", @"message": error.localizedDescription ?: @"Failed to take down account"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
@@ -2881,8 +2924,16 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
+        NSString *alphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        NSMutableString *token = [NSMutableString stringWithCapacity:8];
+        for (int i = 0; i < 8; i++) {
+            [token appendFormat:@"%C", [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)]];
+        }
+        [XrpcMethodRegistry storePlcOperationToken:token forDid:did];
+        PDS_LOG_INFO(@"Generated PLC operation token for DID %@", did);
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
+        [response setJsonBody:@{@"token": token}];
     }];
 
     [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
@@ -2895,6 +2946,18 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
+        NSString *token = body[@"token"];
+        if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing token"}];
+            return;
+        }
+        if (![XrpcMethodRegistry validatePlcOperationToken:token forDid:did]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid or expired token"}];
+            return;
+        }
+
         id rotationKeysValue = body[@"rotationKeys"];
         id alsoKnownAsValue = body[@"alsoKnownAs"];
         id verificationMethodsValue = body[@"verificationMethods"];
@@ -3324,6 +3387,63 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 }
 
 @implementation XrpcMethodRegistry
+
+static NSTimeInterval const kPlcOperationTokenTTLSeconds = 15.0 * 60.0;
+
+static NSCache<NSString *, NSDictionary *> *plcOperationTokenCache(void) {
+    static NSCache<NSString *, NSDictionary *> *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 1024;
+    });
+    return cache;
+}
+
++ (void)storePlcOperationToken:(NSString *)token forDid:(NSString *)did {
+    if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+        return;
+    }
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+        return;
+    }
+
+    NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:kPlcOperationTokenTTLSeconds];
+    NSDictionary *entry = @{@"token": token, @"expiresAt": expiresAt};
+    [plcOperationTokenCache() setObject:entry forKey:did];
+}
+
++ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did {
+    if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+        return NO;
+    }
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+        return NO;
+    }
+
+    NSCache<NSString *, NSDictionary *> *cache = plcOperationTokenCache();
+    NSDictionary *entry = [cache objectForKey:did];
+    if (![entry isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSString *expected = entry[@"token"];
+    NSDate *expiresAt = entry[@"expiresAt"];
+    if (![expected isKindOfClass:[NSString class]] || ![expiresAt isKindOfClass:[NSDate class]]) {
+        [cache removeObjectForKey:did];
+        return NO;
+    }
+    if ([expiresAt timeIntervalSinceNow] <= 0) {
+        [cache removeObjectForKey:did];
+        return NO;
+    }
+    if (![expected isEqualToString:token]) {
+        return NO;
+    }
+
+    [cache removeObjectForKey:did];
+    return YES;
+}
 
 /**
  @brief Decode a DID publicKeyMultibase value into raw key bytes.
@@ -4851,717 +4971,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 }
 
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                           controller:(PDSController *)controller {
-    JWTMinter *jwtMinter = controller.jwtMinter;
-    id<PDSAdminController> adminController = controller.adminController;
-    PDSServiceDatabases *serviceDatabases = controller.serviceDatabases;
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    installXrpcProxyInterceptor(dispatcher, config);
-    registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
-    registerServerAccountAndSessionMethods(dispatcher,
-                                           jwtMinter,
-                                           adminController,
-                                           controller.accountService,
-                                           serviceDatabases,
-                                           controller.userDatabasePool,
-                                           config,
-                                           YES);
 
-    registerRepoCoreMethods(dispatcher,
-                            jwtMinter,
-                            adminController,
-                            controller.accountService,
-                            controller.recordService,
-                            controller.blobService,
-                            controller.repositoryService);
-
-    registerSyncCoreMethods(dispatcher,
-                            jwtMinter,
-                            adminController,
-                            serviceDatabases,
-                            controller.userDatabasePool,
-                            controller.recordService,
-                            controller.blobService,
-                            controller.repositoryService,
-                            config);
-
-    [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSData *rootData = [controller getRepoRoot:did error:&error];
-
-        if (!rootData || error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound",
-                                    @"message": error.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        NSString *cidStr = [CID base32Encode:rootData];
-        NSString *rev = [[TID tid] stringValue];
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"cid": cidStr ?: [NSNull null], @"rev": rev}];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *cidsParam = [request queryParamForKey:@"cids"];
-
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        if (!cidsParam) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cids parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        PDSActorStore *store = [controller.userDatabasePool storeForDid:did error:&error];
-        if (!store) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound",
-                                    @"message": error.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        NSArray *cidStrings = [cidsParam componentsSeparatedByString:@","];
-
-        // Use the first requested CID as the CAR root
-        CID *rootCID = nil;
-        for (NSString *s in cidStrings) {
-            NSString *trimmed = [s stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-            if (trimmed.length > 0) {
-                rootCID = [CID cidFromString:trimmed];
-                if (rootCID) break;
-            }
-        }
-
-        if (!rootCID) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"No valid CIDs provided"}];
-            return;
-        }
-
-        CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
-
-        for (NSString *cidStr in cidStrings) {
-            NSString *trimmed = [cidStr stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-            if (trimmed.length == 0) continue;
-
-            CID *cid = [CID cidFromString:trimmed];
-            if (!cid) continue;
-
-            NSData *blockData = [store getBlockForCID:cid.bytes forDid:did error:&error];
-            if (blockData) {
-                [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
-            }
-        }
-
-        NSData *carData = [writer serialize];
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyData:carData];
-    }];
-
-    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        NSString *forceRefreshStr = [request queryParamForKey:@"forceRefresh"];
-        BOOL forceRefresh = [forceRefreshStr isEqualToString:@"true"] || [forceRefreshStr isEqualToString:@"1"];
-
-        DIDResolver *resolver = [[DIDResolver alloc] init];
-        resolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
-        NSError *error = nil;
-        DIDDocument *doc = [resolver resolveDIDSync:did forceRefresh:forceRefresh error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:doc.jsonDictionary];
-    }];
-
-    [dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
-        NSString *identifier = [request queryParamForKey:@"identifier"];
-
-        if (!identifier) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing identifier parameter"}];
-            return;
-        }
-
-        DIDResolver *didResolver = [[DIDResolver alloc] init];
-        didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
-        HandleResolver *handleResolver = [[HandleResolver alloc] init];
-
-        if ([identifier hasPrefix:@"did:"]) {
-            // It's a DID, resolve directly
-            NSError *error = nil;
-            DIDDocument *doc = [didResolver resolveDIDSync:identifier error:&error];
-
-            if (error) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": error.localizedDescription}];
-                return;
-            }
-
-            NSDictionary *result = @{
-                @"did": identifier,
-                @"didDoc": doc.jsonDictionary
-            };
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
-        } else {
-            // It's a handle, resolve to DID then to document
-            // For simplicity, resolve handle to DID, then DID to doc
-            NSError *handleError = nil;
-            __block NSString *did = nil;
-            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-            [handleResolver resolveHandle:identifier completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable error) {
-                did = resolvedDid;
-                dispatch_semaphore_signal(semaphore);
-            }];
-
-            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-
-            if (!did) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": @"Handle resolution failed"}];
-                return;
-            }
-
-            NSError *docError = nil;
-            DIDDocument *doc = [didResolver resolveDIDSync:did error:&docError];
-
-            if (docError) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": docError.localizedDescription}];
-                return;
-            }
-
-            BOOL handleMatches = NO;
-            NSString *normalizedHandle = [identifier lowercaseString];
-            for (id entry in doc.alsoKnownAs ?: @[]) {
-                if (![entry isKindOfClass:[NSString class]]) {
-                    continue;
-                }
-                NSString *value = [(NSString *)entry lowercaseString];
-                if ([value hasPrefix:@"at://"]) {
-                    value = [value substringFromIndex:5];
-                }
-                if ([value hasSuffix:@"/"]) {
-                    value = [value substringToIndex:value.length - 1];
-                }
-                if ([value isEqualToString:normalizedHandle]) {
-                    handleMatches = YES;
-                    break;
-                }
-            }
-
-            if (!handleMatches) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"HandleMismatch", @"message": @"Handle does not match DID document alsoKnownAs"}];
-                return;
-            }
-
-            NSDictionary *result = @{
-                @"did": did,
-                @"handle": identifier,
-                @"didDoc": doc.jsonDictionary
-            };
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
-        }
-    }];
-
-    [dispatcher registerComAtprotoIdentityResolveHandle:^(HttpRequest *request, HttpResponse *response) {
-        NSString *handle = [request queryParamForKey:@"handle"];
-
-        if (!handle) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle parameter"}];
-            return;
-        }
-
-        HandleResolver *handleResolver = [[HandleResolver alloc] init];
-        NSError *error = nil;
-        __block NSString *did = nil;
-        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-        [handleResolver resolveHandle:handle completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable resolveError) {
-            did = resolvedDid;
-            dispatch_semaphore_signal(semaphore);
-        }];
-
-        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": @"Handle resolution failed"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"did": did}];
-    }];
-
-    [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        DIDResolver *resolver = [[DIDResolver alloc] init];
-        resolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
-        NSError *resolveError = nil;
-        NSDictionary *atprotoData = [resolver resolveAtprotoDataForDID:did error:&resolveError];
-        if (!atprotoData) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ResolutionFailed", @"message": resolveError.localizedDescription ?: @"DID resolution failed"}];
-            return;
-        }
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        NSString *handle = atprotoData[@"handle"];
-        if (handle) {
-            result[@"alsoKnownAs"] = @[handle];
-        }
-
-        NSString *signingKey = atprotoData[@"signingKey"];
-        if (signingKey) {
-            result[@"verificationMethods"] = @{@"atproto": [NSString stringWithFormat:@"did:key:%@", signingKey]};
-        }
-
-        NSString *pds = atprotoData[@"pds"];
-        if (pds) {
-            result[@"services"] = @{@"atproto_pds": pds};
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    registerPhase1IdentityAndAccountMethods(dispatcher,
-                                            jwtMinter,
-                                            adminController,
-                                            serviceDatabases,
-                                            controller.userDatabasePool,
-                                            [PDSConfiguration sharedConfiguration]);
-    registerAdminAccountMaintenanceMethods(dispatcher,
-                                           serviceDatabases,
-                                           jwtMinter,
-                                           adminController);
-    registerAdminAccountAndInviteMethods(dispatcher,
-                                         serviceDatabases,
-                                         jwtMinter,
-                                         adminController);
-    registerAdminModerationAndLabelMethods(dispatcher,
-                                           serviceDatabases,
-                                           jwtMinter,
-                                           adminController,
-                                           NO);
-
-    [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
-        NSString *reason = body[@"reason"] ?: @"Policy violation";
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-
-        NSError *error = nil;
-        if (![adminController takeDownAccount:did reason:reason error:&error]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"TakedownFailed", @"message": error.localizedDescription ?: @"Takedown failed"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"did": did, @"applied": @YES}];
-    }];
-
-    [dispatcher registerMethod:@"com.atproto.admin.getAccountTakedown" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL applied = [adminController isAccountTakedownActive:did error:&error];
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"TakedownStatusFailed", @"message": error.localizedDescription ?: @"Unable to fetch takedown status"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"did": did, @"applied": @(applied)}];
-    }];
-    
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:controller.database];
-    FeedService *feedService = [[FeedService alloc] initWithDatabase:controller.database];
-    NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:controller.database];
-    
-    [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *profile = [actorService getProfileForActor:actor error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"ProfileNotFound", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:profile];
-    }];
-    
-    [dispatcher registerAppBskyActorGetProfiles:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorsParam = [request queryParamForKey:@"actors"];
-        
-        if (!actorsParam || actorsParam.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actors parameter"}];
-            return;
-        }
-        
-        NSArray *actors = [actorsParam componentsSeparatedByString:@","];
-        NSError *error = nil;
-        NSArray *profiles = [actorService getProfilesForActors:actors error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ProfilesQueryFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"profiles": profiles}];
-    }];
-    
-    [dispatcher registerAppBskyActorGetPreferences:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *preferences = [actorService getPreferencesForActor:actor error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"PreferencesNotFound", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:preferences];
-    }];
-    
-    [dispatcher registerAppBskyActorPutPreferences:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        NSDictionary *body = request.jsonBody;
-        NSDictionary *preferences = body[@"preferences"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        if (!preferences) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing preferences in body"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        BOOL success = [actorService putPreferencesForActor:actor preferences:preferences error:&error];
-        
-        if (!success) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"PreferencesUpdateFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-    
-    [dispatcher registerAppBskyFeedGetTimeline:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 30;
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *timeline = [feedService getTimelineForActor:actor limit:limit cursor:cursor error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"TimelineFetchFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:timeline];
-    }];
-    
-    [dispatcher registerAppBskyFeedGetAuthorFeed:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 30;
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSString *filter = [request queryParamForKey:@"filter"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *feed = [feedService getAuthorFeedForActor:actor limit:limit cursor:cursor filter:filter error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"FeedFetchFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:feed];
-    }];
-    
-    [dispatcher registerAppBskyFeedGetPostThread:^(HttpRequest *request, HttpResponse *response) {
-        NSString *uri = [request queryParamForKey:@"uri"];
-        NSInteger depth = [[request queryParamForKey:@"depth"] integerValue] ?: 6;
-        
-        if (!uri) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing uri parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *thread = [feedService getPostThread:uri depth:depth error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"ThreadNotFound", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:thread];
-    }];
-    
-    [dispatcher registerAppBskyFeedGetFeed:^(HttpRequest *request, HttpResponse *response) {
-        NSString *feed = [request queryParamForKey:@"feed"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 30;
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        
-        if (!feed) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing feed parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *feedResult = [feedService getFeed:feed limit:limit cursor:cursor error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"FeedFetchFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:feedResult];
-    }];
-    
-    [dispatcher registerAppBskyFeedGetActorLikes:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 30;
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *likes = [feedService getActorLikes:actor limit:limit cursor:cursor error:&error];
-        
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"LikesFetchFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:likes];
-    }];
-    
-    [dispatcher registerAppBskyNotificationRegisterPush:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        NSDictionary *body = request.jsonBody;
-        NSString *token = body[@"token"];
-        NSString *platformToken = body[@"platformToken"];
-        NSString *serviceEndpoint = body[@"serviceEndpoint"];
-        
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-        
-        if (!token) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing token in body"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        BOOL success = [notificationService registerPushForActor:actor
-                                                      deviceToken:token
-                                                    platformToken:platformToken
-                                                    serviceEndpoint:serviceEndpoint ?: @""
-                                                            error:&error];
-        
-        if (!success) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"PushRegistrationFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-    
-    [dispatcher registerAppBskyUserGetUserStats:^(HttpRequest *request, HttpResponse *response) {
-        NSString *user = [request queryParamForKey:@"user"];
-        
-        if (!user) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing user parameter"}];
-            return;
-        }
-        
-        // Return hardcoded demo data as requested
-        NSDictionary *stats = @{
-            @"followers": @150,
-            @"following": @75,
-            @"posts": @42
-        };
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:stats];
-    }];
-
-    // app.bsky.actor.searchActors
-    [dispatcher registerAppBskyActorSearchActors:^(HttpRequest *request, HttpResponse *response) {
-        NSString *term = [request queryParamForKey:@"term"] ?: [request queryParamForKey:@"q"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 25;
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-
-        if (!term || term.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing search term"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [actorService searchActors:term limit:limit cursor:cursor error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"SearchFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    // app.bsky.actor.searchActorsTypeahead
-    [dispatcher registerAppBskyActorSearchActorsTypeahead:^(HttpRequest *request, HttpResponse *response) {
-        NSString *term = [request queryParamForKey:@"term"] ?: [request queryParamForKey:@"q"];
-        NSInteger limit = [[request queryParamForKey:@"limit"] integerValue] ?: 10;
-
-        if (!term || term.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing search term"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSArray *results = [actorService searchActorsTypeahead:term limit:limit error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"SearchFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"actors": results}];
-    }];
-}
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                              jwtMinter:(JWTMinter *)jwtMinter
@@ -5701,16 +5111,17 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                                  request:request];
 }
 
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                          application:(PDSApplication *)application {
-    id<PDSAccountService> accountService = application.accountService;
-    PDSRecordService *recordService = application.recordService;
-    PDSBlobService *blobService = application.blobService;
-    PDSRepositoryService *repositoryService = application.repositoryService;
-    id<PDSAdminController> adminController = application.adminController;
-    PDSServiceDatabases *serviceDatabases = application.serviceDatabases;
-    JWTMinter *jwtMinter = application.jwtMinter;
-    PDSConfiguration *config = application.configuration;
+static void registerMethodsWithDispatcherUsingServices(Class registryClass,
+                                                       XrpcDispatcher *dispatcher,
+                                                       id<PDSAccountService> accountService,
+                                                       PDSRecordService *recordService,
+                                                       PDSBlobService *blobService,
+                                                       PDSRepositoryService *repositoryService,
+                                                       id<PDSAdminController> adminController,
+                                                       PDSServiceDatabases *serviceDatabases,
+                                                       PDSDatabasePool *userDatabasePool,
+                                                       JWTMinter *jwtMinter,
+                                                       PDSConfiguration *config) {
 
     installXrpcProxyInterceptor(dispatcher, config);
 
@@ -5720,7 +5131,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                                            adminController,
                                            accountService,
                                            serviceDatabases,
-                                           application.userDatabasePool,
+                                           userDatabasePool,
                                            config,
                                            NO);
 
@@ -5729,7 +5140,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5776,7 +5187,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerCheckAccountStatus:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5804,7 +5215,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerActivateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5827,7 +5238,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5855,7 +5266,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                                             jwtMinter,
                                             adminController,
                                             serviceDatabases,
-                                            application.userDatabasePool,
+                                            userDatabasePool,
                                             config);
     registerRepoCoreMethods(dispatcher,
                             jwtMinter,
@@ -5867,7 +5278,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoUpdateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5906,7 +5317,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -5938,7 +5349,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                             jwtMinter,
                             adminController,
                             serviceDatabases,
-                            application.userDatabasePool,
+                            userDatabasePool,
                             recordService,
                             blobService,
                             repositoryService,
@@ -5973,7 +5384,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [self extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
+        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -6128,6 +5539,43 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
     }];
+}
+
++ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                           controller:(PDSController *)controller {
+    if (!dispatcher || !controller) {
+        return;
+    }
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    registerMethodsWithDispatcherUsingServices(self,
+                                               dispatcher,
+                                               controller.accountService,
+                                               controller.recordService,
+                                               controller.blobService,
+                                               controller.repositoryService,
+                                               controller.adminController,
+                                               controller.serviceDatabases,
+                                               controller.userDatabasePool,
+                                               controller.jwtMinter,
+                                               config);
+}
+
++ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                          application:(PDSApplication *)application {
+    if (!dispatcher || !application) {
+        return;
+    }
+    registerMethodsWithDispatcherUsingServices(self,
+                                               dispatcher,
+                                               application.accountService,
+                                               application.recordService,
+                                               application.blobService,
+                                               application.repositoryService,
+                                               application.adminController,
+                                               application.serviceDatabases,
+                                               application.userDatabasePool,
+                                               application.jwtMinter,
+                                               application.configuration);
 }
 
 @end

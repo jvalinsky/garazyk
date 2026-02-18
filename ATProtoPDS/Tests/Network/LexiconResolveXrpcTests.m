@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
+#import "App/PDSApplication.h"
 #import "Core/CID.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -23,11 +24,10 @@
                                               attributes:nil
                                                    error:nil];
 
-    self.controller = [[PDSController alloc] initWithDirectory:self.tempURL.path
-                                                 serviceMaxSize:10
-                                              userDatabaseSize:10];
+    PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
+    self.controller = app.legacyController;
     self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
+    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 }
 
 - (void)tearDown {

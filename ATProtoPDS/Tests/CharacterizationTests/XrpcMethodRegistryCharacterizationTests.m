@@ -5,6 +5,7 @@
 #import "Network/HttpResponse.h"
 #import "Auth/Secp256k1.h"
 #import "Core/CID.h"
+#import "App/PDSApplication.h"
 
 @interface XrpcMethodRegistryCharacterizationTests : CharacterizationTestBase
 
@@ -32,11 +33,20 @@
 - (void)testCharacterization_Class_registerMethodsWithDispatcher {
     /* Target Method:
      + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                           controller:(PDSController *)controller;
+                           application:(PDSApplication *)application;
     */
     
     XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:nil];
+    NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+    tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
+
+    @try {
+        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+    } @finally {
+        [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+    }
 
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
