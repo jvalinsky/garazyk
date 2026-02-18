@@ -72,8 +72,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 
 /*! Repositories for data access. */
-@property (nonatomic, strong) id<PDSAccountRepository> accountRepository;
-@property (nonatomic, strong) id<PDSSessionRepository> sessionRepository;
+@property (nonatomic, strong, nullable) id<PDSAccountRepository> accountRepository;
+@property (nonatomic, strong, nullable) id<PDSSessionRepository> sessionRepository;
 
 /*! JWT minter for token generation. */
 @property (nonatomic, strong, nullable) JWTMinter *minter;
@@ -84,8 +84,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
 /*! New DI initializer. */
-- (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
-                        sessionRepository:(id<PDSSessionRepository>)sessionRepository
+- (instancetype)initWithAccountRepository:(nullable id<PDSAccountRepository>)accountRepository
+                        sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
                                    minter:(nullable JWTMinter *)minter
                             emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
 

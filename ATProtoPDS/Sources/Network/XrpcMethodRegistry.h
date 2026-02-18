@@ -1,14 +1,14 @@
 #import <Foundation/Foundation.h>
 #import "Network/XrpcHandler.h"
-#import "App/PDSController.h"
-#import "Admin/PDSAdminController.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSApplication;
+@class PDSController;
 @class JWTMinter;
+@protocol PDSAdminController;
 
 /**
  @header XrpcMethodRegistry.h

@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
+#import "App/PDSApplication.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Network/XrpcMethodRegistry.h"
@@ -27,9 +28,10 @@
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:self.tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
-    self.controller = [[PDSController alloc] initWithDirectory:self.tempURL.path serviceMaxSize:10 userDatabaseSize:10];
+    PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
+    self.controller = app.legacyController;
     self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
+    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 
     NSError *error = nil;
     NSDictionary *adminAccount = [self.controller createAccountForEmail:@"admin@example.com"

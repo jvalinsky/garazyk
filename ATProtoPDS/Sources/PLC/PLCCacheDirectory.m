@@ -48,6 +48,20 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
 
 #pragma mark - PLCStore Protocol
 
+- (nullable NSArray<NSString *> *)getAllDIDsWithError:(NSError **)error {
+    return [self.innerStore getAllDIDsWithError:error];
+}
+
+- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
+    return [self.innerStore getLatestOperationForDID:did error:error];
+}
+
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+                                                      count:(NSUInteger)count
+                                                      error:(NSError **)error {
+    return [self.innerStore exportOperationsAfter:after count:count error:error];
+}
+
 - (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
                                       includeNullified:(BOOL)includeNullified
                                                  error:(NSError **)error {
