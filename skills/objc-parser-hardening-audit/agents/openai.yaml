@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC Parser Hardening Audit"
+  short_description: "Audit parser bounds and overflow safety"

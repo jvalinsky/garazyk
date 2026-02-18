@@ -29,6 +29,8 @@
             @"authorization_endpoint": [[url URLByAppendingPathComponent:@"oauth/authorize"] absoluteString],
             @"token_endpoint": [[url URLByAppendingPathComponent:@"oauth/token"] absoluteString],
             @"jwks_uri": [[url URLByAppendingPathComponent:@"oauth/jwks"] absoluteString],
+            @"pushed_authorization_request_endpoint": [[url URLByAppendingPathComponent:@"oauth/par"] absoluteString],
+            @"require_pushed_authorization_requests": @NO,
             @"response_types_supported": @[@"code"],
             @"grant_types_supported": @[@"authorization_code", @"refresh_token"],
             @"token_endpoint_auth_methods_supported": @[@"client_secret_basic"],

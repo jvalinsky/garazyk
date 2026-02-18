@@ -44,14 +44,18 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     return store;
 }
 
+const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
+
 - (instancetype)initWithDid:(NSString *)did dbPath:(NSString *)dbPath {
     self = [super init];
     if (self) {
+        _did = [did copy];
         _did = [did copy];
         _dbPath = [dbPath copy];
         _db = NULL;
         _open = NO;
         _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_transactionQueue, kPDSActorStoreQueueKey, (void *)kPDSActorStoreQueueKey, NULL);
 #if defined(GNUSTEP)
         _signingKeyData = nil;
 #else
@@ -320,20 +324,31 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
 #pragma mark - Transaction Support
 
+- (void)safeExecuteSync:(void(^)(void))block {
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
+        block();
+    } else {
+        dispatch_sync(self.transactionQueue, block);
+    }
+}
+
 - (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                     error:(NSError **)error {
-    __block NSError *localError = nil;
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         if (!self.open) {
-            localError = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                         message:@"Database is closed"];
+            if (error) {
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                             message:@"Database is closed"];
+            }
             return;
         }
         
         char *errMsg = NULL;
         int result = sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
-            localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+            if (error) {
+                *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+            }
             sqlite3_free(errMsg);
             return;
         }
@@ -355,38 +370,44 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         if (success) {
             result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
             if (result != SQLITE_OK) {
-                localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+                if (error) {
+                    *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+                }
                 sqlite3_free(errMsg);
                 sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
             }
         } else {
             sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
-            localError = blockError;
+            if (error) {
+                *error = blockError;
+            }
         }
 
         [self.stmtCache removeAllObjects];
-    });
+    };
 
-    if (localError && error) {
-        *error = localError;
-    }
+    [self safeExecuteSync:workBlock];
 }
 
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
                 error:(NSError **)error {
-    if (!self.open) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:@"Database is closed"];
+    void (^workBlock)(void) = ^{
+        if (!self.open) {
+            if (error) {
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:@"Database is closed"];
+            }
+            return;
         }
-        return;
-    }
-    
-    NSError *blockError = nil;
-    block(self, &blockError);
-    if (blockError && error) {
-        *error = blockError;
-    }
+        
+        NSError *blockError = nil;
+        block(self, &blockError);
+        if (blockError && error) {
+            *error = blockError;
+        }
+    };
+
+    [self safeExecuteSync:workBlock];
 }
 
 #pragma mark - Statement Management
@@ -429,7 +450,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block PDSDatabaseRepo *repo = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT cid, updated_at, rev FROM repo_root ORDER BY updated_at DESC LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -446,7 +467,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
             repo.createdAt = [NSDate date];
             repo.updatedAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 1)];
         }
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -458,7 +481,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSData *rootCid = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT cid FROM repo_root ORDER BY updated_at DESC LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -471,7 +494,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
             rootCid = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                      length:sqlite3_column_bytes(stmt, 0)];
         }
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -483,7 +508,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSString *revision = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT rev FROM repo_root ORDER BY updated_at DESC LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -491,14 +516,15 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
             blockError = prepError;
             return;
         }
-
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             const char *revText = (const char *)sqlite3_column_text(stmt, 0);
             if (revText) {
                 revision = [NSString stringWithUTF8String:revText];
             }
         }
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -510,7 +536,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSString *revision = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT rev FROM ("
                          @"  SELECT rev AS rev FROM records WHERE rev IS NOT NULL "
                          @"  UNION ALL "
@@ -529,7 +555,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
                 revision = [NSString stringWithUTF8String:revText];
             }
         }
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -545,7 +573,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block BOOL exists = NO;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT 1 FROM repo_root WHERE rev = ? LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -556,7 +584,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
         sqlite3_bind_text(stmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
         exists = (sqlite3_step(stmt) == SQLITE_ROW);
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -572,7 +602,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block BOOL exists = NO;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *recordsSQL = @"SELECT 1 FROM records WHERE rev = ? LIMIT 1";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *recordsStmt = [self prepareStatement:recordsSQL error:&prepError];
@@ -596,7 +626,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
 
         sqlite3_bind_text(tombstonesStmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
         exists = (sqlite3_step(tombstonesStmt) == SQLITE_ROW);
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -683,7 +715,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block PDSDatabaseRecord *record = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
                          @"FROM records WHERE uri = ?";
         NSError *prepError = nil;
@@ -698,7 +730,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             record = [self recordFromStatement:stmt];
         }
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -712,7 +746,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSMutableArray<NSDictionary<NSString *, id> *> *rows = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         BOOL hasRevFilter = (rev.length > 0);
         NSString *sql = hasRevFilter
             ? @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
@@ -750,7 +784,9 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
             row[@"indexedAt"] = @(indexedAt);
             [rows addObject:row];
         }
-    });
+    };
+
+    [self safeExecuteSync:workBlock];
 
     if (error && blockError) {
         *error = blockError;
@@ -806,7 +842,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSArray<PDSDatabaseRecord *> *result = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    [self safeExecuteSync:^{
         NSMutableArray<PDSDatabaseRecord *> *records = [NSMutableArray array];
         
         NSString *sql;
@@ -837,7 +873,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         }
         
         result = records;
-    });
+    }];
 
     if (error && blockError) {
         *error = blockError;
@@ -1028,7 +1064,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSData *blockData = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    [self safeExecuteSync:^{
         NSString *sql = @"SELECT block FROM ipld_blocks WHERE cid = ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -1046,7 +1082,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         } else {
             NSLog(@"[ActorStore] getBlockForCID FAILED: %@ (not found)", [cid description]);
         }
-    });
+    }];
 
     if (error && blockError) {
         *error = blockError;
@@ -1061,7 +1097,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray array];
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    [self safeExecuteSync:^{
         NSString *sql = @"SELECT cid, size FROM ipld_blocks LIMIT ? OFFSET ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -1081,7 +1117,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
             block.repoDid = did;
             [blocks addObject:block];
         }
-    });
+    }];
 
     if (error && blockError) {
         *error = blockError;
@@ -1154,7 +1190,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSInteger count = 0;
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    [self safeExecuteSync:^{
         NSString *sql;
         if (collection) {
             sql = @"SELECT COUNT(*) FROM records WHERE collection = ?";
@@ -1176,7 +1212,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             count = sqlite3_column_int64(stmt, 0);
         }
-    });
+    }];
 
     if (error && blockError) {
         *error = blockError;
@@ -1188,7 +1224,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
     __block NSInteger count = 0;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    [self safeExecuteSync:^{
         NSString *sql = @"SELECT COUNT(*) FROM ipld_blocks";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -1200,7 +1236,7 @@ static void _setSigningKeyUnsafe(SecKeyRef *ptr, SecKeyRef newKey) {
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             count = sqlite3_column_int64(stmt, 0);
         }
-    });
+    }];
 
     if (error && blockError) {
         *error = blockError;

@@ -22,7 +22,7 @@
     __block PDSDatabaseAccount *account = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -36,7 +36,13 @@
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             account = [self accountFromStatement:stmt];
         }
-    });
+    };
+
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
+        workBlock();
+    } else {
+        dispatch_sync(self.transactionQueue, workBlock);
+    }
 
     if (error && blockError) {
         *error = blockError;
@@ -48,7 +54,7 @@
     __block NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -63,7 +69,13 @@
                 [accounts addObject:account];
             }
         }
-    });
+    };
+
+    if (dispatch_get_specific("com.atproto.pds.actorstore.queue_key")) {
+        workBlock();
+    } else {
+        dispatch_sync(self.transactionQueue, workBlock);
+    }
 
     if (error && blockError) {
         *error = blockError;

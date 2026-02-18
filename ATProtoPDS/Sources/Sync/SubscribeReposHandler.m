@@ -77,10 +77,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
         _lastCommitRevByDID = [NSMutableDictionary dictionary];
 
+/*
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(handleRecordChange:)
                                                      name:PDSRecordDidChangeNotification
                                                    object:nil];
+*/
     }
     return self;
 }

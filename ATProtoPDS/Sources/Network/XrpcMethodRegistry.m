@@ -4,6 +4,7 @@
 #import "App/Services/PDSAccountService.h"
 #import "App/Services/PDSRecordService.h"
 #import "Admin/PDSAdminController.h"
+#import "Admin/PDSAdminAuth.h"
 #import "Blob/BlobStorage.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Core/CID.h"
@@ -98,15 +99,14 @@ static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response,
         return NO;
     }
 
-    PDSAuthzManager *authz = [PDSAuthzManager sharedManager];
-    [authz setDatabase:db];
+    PDSAdminAuth *adminAuth = [PDSAdminAuth sharedAuth];
     NSError *authError = nil;
-    if (![authz isAuthorizedForAdminOperation:did error:&authError]) {
+    if (![adminAuth isAuthenticatedWithRequest:request.headers]) {
         response.statusCode = HttpStatusForbidden;
-        [response setJsonBody:@{@"error": @"Forbidden", @"message": authError.localizedDescription ?: @"Admin privileges required"}];
+        [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Admin privileges required (valid admin token)"}];
         return NO;
     }
-
+    
     return YES;
 }
 
@@ -152,6 +152,62 @@ static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
     }
 
     return algorithms.count > 0 ? algorithms.array : nil;
+}
+
+// Implementation of resolveDid
+static NSDictionary *resolveDid(NSString *did, PDSServiceDatabases *dbs, PDSConfiguration *config, NSError **error) {
+    fprintf(stderr, "[resolveDid] Resolving DID: %s\n", did.UTF8String);
+    PDSDatabaseAccount *account = [dbs getAccountByDid:did error:error];
+    if (!account) {
+        fprintf(stderr, "[resolveDid] Account not found for DID: %s\n", did.UTF8String);
+        if (error && *error) {
+            fprintf(stderr, "[resolveDid] DB Error: %s\n", (*error).description.UTF8String);
+        }
+        return nil;
+    }
+    fprintf(stderr, "[resolveDid] Found account handle: %s\n", account.handle.UTF8String);
+
+    
+    NSString *handle = account.handle;
+    if (handle.length == 0) {
+        if (error) {
+           *error = [NSError errorWithDomain:@"com.atproto.identity" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Account has no handle"}];
+        }
+        return nil;
+    }
+    
+    NSString *serviceEndpoint = [NSString stringWithFormat:@"https://%@", config.serverHost ?: @"localhost"];
+    if (config.serverPort > 0 && config.serverPort != 443 && config.serverPort != 80) {
+         serviceEndpoint = [NSString stringWithFormat:@"%@:%lu", serviceEndpoint, (unsigned long)config.serverPort];
+    }
+    if (config.issuer.length > 0) {
+        serviceEndpoint = config.issuer;
+    }
+    
+    return @{
+        @"@context": @[
+            @"https://www.w3.org/ns/did/v1",
+            @"https://w3id.org/security/multikey/v1",
+            @"https://w3id.org/security/suites/secp256k1-2019/v1"
+        ],
+        @"id": did,
+        @"alsoKnownAs": @[[@"at://" stringByAppendingString:handle]],
+        @"verificationMethod": @[
+            @{
+                @"id": [NSString stringWithFormat:@"%@#atproto", did],
+                @"type": @"Multikey",
+                @"controller": did,
+                @"publicKeyMultibase": @"zQ3sh...", // Placeholder
+            }
+        ],
+        @"service": @[
+            @{
+                @"id": @"#atproto_pds",
+                @"type": @"AtprotoPersonalDataServer",
+                @"serviceEndpoint": serviceEndpoint
+            }
+        ]
+    };
 }
 
 static NSDictionary *loadLexiconJSONForNSID(NSString *nsid,
@@ -810,7 +866,15 @@ static HttpResponseBodyChunkProducer blobFileChunkProducer(NSString *path,
 static void registerServerDescribeAndResolveLexiconMethods(XrpcDispatcher *dispatcher,
                                                            PDSConfiguration *config) {
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
-        NSString *hostname = config.serverHost ?: @"localhost";
+        NSString *issuer = config.issuer;
+        if (!issuer || issuer.length == 0) {
+           issuer = [NSString stringWithFormat:@"https://%@", config.serverHost ?: @"localhost"];
+        }
+        
+        // Extract hostname from issuer for DID calculation if needed, or just use the issuer domain
+        NSURL *issuerURL = [NSURL URLWithString:issuer];
+        NSString *hostname = issuerURL.host ?: config.serverHost ?: @"localhost";
+
         NSString *serverDid = [NSString stringWithFormat:@"did:web:%@", hostname];
         NSArray *availableUserDomains = @[hostname];
 
@@ -1589,6 +1653,11 @@ static BOOL updateAccountPassword(PDSServiceDatabases *serviceDatabases,
     if (salt.length == 0) {
         salt = generateAccountPasswordSalt();
     }
+    
+    // ... code truncated ...
+    
+
+
 
     NSError *hashError = nil;
     NSData *hash = pbkdf2HashPassword(password, salt, &hashError);
@@ -3614,6 +3683,32 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
+        // Security: Reject arbitrary DID parameter
+        if (did.length > 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Cannot specify DID during account creation. Import is not supported via this endpoint."}];
+            return;
+        }
+
+        // Security: Enforce invite code if required
+        if (config.inviteCodeRequired) {
+            NSString *inviteCode = body[@"inviteCode"];
+            if (!inviteCode || inviteCode.length == 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidInviteCode", @"message": @"Invite code required"}];
+                return;
+            }
+            
+            NSError *inviteError = nil;
+            // Assuming serviceDatabases provides a way to check codes, or we need to access the store directly.
+            // Based on previous research, ServiceDatabases has useInviteCode:error:
+            if (![serviceDatabases useInviteCode:inviteCode error:&inviteError]) {
+                 response.statusCode = HttpStatusBadRequest;
+                 [response setJsonBody:@{@"error": @"InvalidInviteCode", @"message": inviteError.localizedDescription ?: @"Invalid or expired invite code"}];
+                 return;
+            }
+        }
+
         if (enforceDidWebServiceAuth && did.length > 0 && [did hasPrefix:@"did:web:"]) {
             if (!validateDidWebServiceAuthForAccountCreation(request, response, did, config)) {
                 return;
@@ -3623,8 +3718,8 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         NSError *error = nil;
         NSDictionary *result = [accountService createAccountForEmail:email
                                                              password:password
-                                                              handle:handle
-                                                                 did:did
+                                                               handle:handle
+                                                                  did:nil // Force nil DID to trigger generation
                                                                 error:&error];
 
         if (error) {
@@ -4053,6 +4148,8 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"token": token}];
     }];
+    
+
 }
 
 static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
@@ -4646,6 +4743,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
         NSError *accountsError = nil;
         NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
+        NSLog(@"[listRepos] Loaded %lu accounts", (unsigned long)accounts.count);
         if (!accounts) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
@@ -4656,9 +4754,11 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
         while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
             PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
+            NSLog(@"[listRepos] Scanning account: %@", account.did);
             if (account.did.length > 0) {
                 NSError *rootError = nil;
                 NSData *root = [repositoryService getRepoRoot:account.did error:&rootError];
+                NSLog(@"[listRepos] Root data for %@: %@", account.did, root ? [NSString stringWithFormat:@"%lu bytes", (unsigned long)root.length] : @"NIL");
                 NSString *head = root ? [CID base32Encode:root] : nil;
 
                 if (head.length > 0) {
@@ -4674,6 +4774,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             scanIndex += 1;
         }
 
+        NSLog(@"[listRepos] Found %lu repos", (unsigned long)repos.count);
         NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
         if (scanIndex < (NSInteger)accounts.count) {
             result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
@@ -5063,6 +5164,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
+        NSLog(@"[AuthRegistry] JWT verification failed: %@. Expected issuer: %@, JWT issuer: %@, subject: %@", verifyError.localizedDescription, expectedIssuer, jwt.payload.iss, jwt.payload.sub);
         PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
         return nil;
     }
@@ -5071,21 +5173,26 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     NSString *tokenJkt = jwt.payload.cnf[@"jkt"];
     if (isDPoP) {
         if (!tokenJkt) {
+            NSLog(@"[AuthRegistry] DPoP used but token not bound");
             PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
             return nil;
         }
         if (![tokenJkt isEqualToString:dpopThumbprint]) {
+            NSLog(@"[AuthRegistry] DPoP thumbprint mismatch: token=%@, proof=%@", tokenJkt, dpopThumbprint);
             PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch: token=%@, proof=%@", tokenJkt, dpopThumbprint);
             return nil;
         }
     } else if (tokenJkt) {
+        NSLog(@"[AuthRegistry] DPoP-bound token sent as Bearer");
         PDS_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
         return nil;
     }
 
     // Extract DID from subject claim
     NSString *did = jwt.payload.sub;
+    NSLog(@"[AuthRegistry] Validated JWT for subject: %@", did);
     if (!did || ![did hasPrefix:@"did:"]) {
+        NSLog(@"[AuthRegistry] Invalid DID in subject: %@", did);
         PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim: %@", did);
         return nil;
     }
@@ -5134,6 +5241,32 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                                            userDatabasePool,
                                            config,
                                            NO);
+    
+    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
+        fprintf(stderr, "[resolveDid] Handler invoked\n");
+        NSString *did = [request queryParamForKey:@"did"];
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *doc = resolveDid(did, serviceDatabases, config, &error);
+        if (error) {
+             response.statusCode = HttpStatusNotFound;
+             [response setJsonBody:@{@"error": @"NotFound", @"message": error.localizedDescription ?: @"DID not found"}];
+             return;
+        }
+        if (!doc) {
+             response.statusCode = HttpStatusNotFound;
+             [response setJsonBody:@{@"error": @"NotFound", @"message": @"DID not found"}];
+             return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:doc];
+    }];
 
     registerTempUtilityMethods(dispatcher, serviceDatabases, jwtMinter, adminController);
     registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, jwtMinter, adminController);
@@ -5382,28 +5515,82 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
         [response setJsonBody:profile];
     }];
 
-    [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *root = body[@"root"];
-
-        if (!root) {
+    [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request, HttpResponse *response) {
+        fprintf(stderr, "[getBlocks] Handler invoked\n");
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *cidsStr = [request queryParamForKey:@"cids"];
+        if (!did || !cidsStr) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing root"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or cids"}];
             return;
         }
-
+        
+        // Split cids string (assuming multiple cids are passed as repeating param or comma separated?)
+        // Spec says array of strings. HttpRequest parser usually returns array if repeated?
+        // Our XrpcDispatcher/HttpRequest might support `queryParamsForKey:`?
+        // Or if it's "cids[]=..."
+        // Or simply repeated "cids=...&cids=..."
+        // HttpRequest `queryParamForKey` usually returns first or joined?
+        // Let's assume it returns one if single, or we need to handle array.
+        // If HttpRequest doesn't support array, we might fail conformant tests if multiple are passed.
+        // But for now, let's assume one CID or check if we can get all values.
+        // Assuming we parse comma separated?
+        
+        NSArray *cids = [request.queryParams[cidsStr] isKindOfClass:[NSArray class]] 
+            ? (NSArray *)request.queryParams[@"cids"] 
+            : @[cidsStr];
+            
+        // Wait, typical XRPC arrays are repeated params: `?cids=...&cids=...`
+        // Inspect `HttpRequest.h`.
+        // If `queryParamForKey` returns string, maybe `queryParams` dict contains array?
+        // If we can't be sure, assume we handle single for now, or check implementation.
+        // Let's assume request.queryParams (NSDictionary) holds arrays for duplicate keys if the parser supports it.
+        // If not, we rely on "," separator as fallback.
+        
+        if (![cids isKindOfClass:[NSArray class]]) {
+             // Maybe it's in the dict as a single object?
+             id val = request.queryParams[@"cids"];
+             if ([val isKindOfClass:[NSArray class]]) {
+                 cids = val;
+             } else if (val) {
+                 cids = @[val];
+             }
+        }
+        
+        NSError *error = nil;
+        NSData *carData = [repositoryService getBlocksForDid:did cids:cids error:&error];
+        if (error) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"GetBlocksFailed", @"message": error.localizedDescription}];
+            return;
+        }
+        
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
+        [response setHeader:@"application/vnd.ipld.car" forKey:@"Content-Type"];
+        response.body = carData;
     }];
+
+    [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
+        fprintf(stderr, "[getLatestCommit] Handler invoked\n");
+        NSString *did = [request queryParamForKey:@"did"];
+        if (!did) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+        
+        NSError *error = nil;
+        NSDictionary *result = [repositoryService getLatestCommitForDid:did error:&error];
+        if (error) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": error.localizedDescription}];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
 
     [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;

@@ -9,6 +9,7 @@
 #import "Repository/CAR.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
+#import "Admin/PDSAdminAuth.h"
 
 @interface RepoAuthXrpcTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
@@ -61,15 +62,23 @@
 
     NSDictionary *adminAccount = [self.controller createAccountForEmail:@"adminrepo@example.com"
                                                                password:@"password"
-                                                                 handle:@"admin.repoauth.test"
+                                                                 handle:@"administrator.repoauth.test"
                                                                     did:nil
                                                                   error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(adminAccount[@"did"]);
 
-    NSDictionary *adminSession = [self.controller loginWithHandle:@"admin.repoauth.test" password:@"password" error:&error];
+    NSDictionary *adminSession = [self.controller loginWithHandle:@"administrator.repoauth.test" password:@"password" error:&error];
     XCTAssertNil(error);
-    self.adminAccessJwt = adminSession[@"accessJwt"];
+    // Note: self.adminAccessJwt from login is NOT an admin token anymore after security hardening.
+    // We must use the dedicated admin auth flow to get a JWT with 'admin' scope.
+    setenv("PDS_ADMIN_PASSWORD", "password", 1);
+    [PDSAdminAuth sharedAuth].dataDirectory = self.tempURL.path;
+    [PDSAdminAuth sharedAuth].controller = self.controller;
+    NSError *authError = nil;
+    BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&authError];
+    XCTAssertTrue(adminAuthSuccess, @"Admin authentication failed: %@", authError);
+    self.adminAccessJwt = [PDSAdminAuth sharedAuth].adminToken;
     XCTAssertNotNil(self.adminAccessJwt);
 }
 
