@@ -145,39 +145,21 @@
 }
 
 - (void)registerXrpcRoutesWithServer:(HttpServer *)server {
-    PDSController *controller = self.controller;
-    PDSApplication *application = self.application;
     XrpcDispatcher *dispatcher = self.xrpcDispatcher;
-
-    if (!controller && !application) {
-        PDS_LOG_WARN(@"PDSHttpServerBuilder: XRPC routes not registered - missing controller or application");
-        return;
-    }
-
     if (!dispatcher) {
-        dispatcher = [XrpcDispatcher sharedDispatcher];
+        dispatcher = [[XrpcDispatcher alloc] init];
     }
 
-    // Register XRPC methods with the dispatcher
-    if (application) {
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:application];
+    if (self.application) {
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:self.application];
+    } else if (self.controller) {
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:self.controller];
     } else {
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:controller];
+        PDS_LOG_ERROR(@"No application provided to PDSHttpServerBuilder for XRPC registration");
     }
 
     __weak XrpcDispatcher *weakDispatcher = dispatcher;
     __weak SubscribeReposHandler *weakSubscribeReposHandler = self.subscribeReposHandler;
-
-    // Handler for /xrpc
-    [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        XrpcDispatcher *strongDispatcher = weakDispatcher;
-        if (strongDispatcher) {
-            [strongDispatcher handleRequest:request response:response];
-        } else {
-            response.statusCode = 503;
-            [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
-        }
-    }];
 
     // Handler for /xrpc/
     [server addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {

@@ -1,10 +1,12 @@
 #import "PLC/PLCAuditor.h"
+#import "PLC/PLCDIDKey.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
 #import "PLC/PLCMetrics.h"
+#import <Security/Security.h>
 
 static NSTimeInterval const kPLCRecoveryWindowSeconds = 72 * 60 * 60;
 static NSUInteger const kPLCHourLimit = 10;
@@ -489,10 +491,31 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return nil;
     }
     for (NSString *keyString in allowedKeys) {
-        NSData *pubKey = [self dataFromKeyString:keyString];
-        NSData *normalizedKey = [[Secp256k1 shared] normalizedPublicKey:pubKey error:nil];
-        if (normalizedKey && [[Secp256k1 shared] verifySignature:sigData forHash:opDataHash withPublicKey:normalizedKey error:nil]) {
-            return keyString;
+        PLCDIDKey *parsedKey = [PLCDIDKey parseFromString:keyString error:nil];
+        NSData *pubKey = nil;
+        BOOL isP256 = NO;
+
+        if (parsedKey) {
+            pubKey = parsedKey.publicKeyBytes;
+            if (parsedKey.type == PLCDIDKeyTypeP256) {
+                isP256 = YES;
+            }
+        } else {
+            // Fallback for hex string
+            pubKey = [self dataFromKeyString:keyString];
+        }
+
+        if (!pubKey) continue;
+
+        if (isP256) {
+            if ([self verifyP256Signature:sigData hash:opDataHash compressedPublicKey:pubKey]) {
+                return keyString;
+            }
+        } else {
+            NSData *normalizedKey = [[Secp256k1 shared] normalizedPublicKey:pubKey error:nil];
+            if (normalizedKey && [[Secp256k1 shared] verifySignature:sigData forHash:opDataHash withPublicKey:normalizedKey error:nil]) {
+                return keyString;
+            }
         }
     }
     if (error) {
@@ -567,19 +590,340 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
 - (NSData *)dataFromKeyString:(NSString *)keyString {
     if (!keyString || ![keyString isKindOfClass:[NSString class]]) return nil;
-    if ([keyString hasPrefix:@"did:key:z"]) {
-        NSString *base58 = [keyString substringFromIndex:9];
-        NSData *decoded = [CID base58btcDecode:base58];
-        if (decoded.length > 2) {
-            const uint8_t *bytes = decoded.bytes;
-            // Skip 0xe7 0x01 prefix for secp256k1
-            if (bytes[0] == 0xe7 && bytes[1] == 0x01) {
-                return [decoded subdataWithRange:NSMakeRange(2, decoded.length - 2)];
-            }
-        }
-        return decoded;
+    if ([keyString hasPrefix:@"did:key:"]) {
+        // PLCDIDKey handles varint multicodec decoding for both secp256k1 (0xe7) and P-256 (0x1200)
+        PLCDIDKey *parsed = [PLCDIDKey parseFromString:keyString error:nil];
+        if (parsed) return parsed.publicKeyBytes;
     }
     return [self dataFromHexString:keyString];
+}
+
+// Convert raw r||s (64 bytes) to DER-encoded ECDSA signature for SecKey APIs.
+static NSData *PLCDEREncodeRawSignature(NSData *rawSig) {
+    if (rawSig.length != 64) return nil;
+    const uint8_t *bytes = rawSig.bytes;
+
+    // r and s are the two 32-byte halves
+    const uint8_t *rBytes = bytes;
+    const uint8_t *sBytes = bytes + 32;
+
+    // Strip leading zeros (DER INTEGER must be minimal), but keep at least one byte
+    NSUInteger rStart = 0, sStart = 0;
+    while (rStart < 31 && rBytes[rStart] == 0x00) rStart++;
+    while (sStart < 31 && sBytes[sStart] == 0x00) sStart++;
+
+    NSUInteger rLen = 32 - rStart;
+    NSUInteger sLen = 32 - sStart;
+
+    // If high bit set, prepend 0x00 to keep integer positive
+    BOOL rPad = (rBytes[rStart] & 0x80) != 0;
+    BOOL sPad = (sBytes[sStart] & 0x80) != 0;
+
+    NSUInteger rTotalLen = rLen + (rPad ? 1 : 0);
+    NSUInteger sTotalLen = sLen + (sPad ? 1 : 0);
+    NSUInteger seqBodyLen = 2 + rTotalLen + 2 + sTotalLen;
+
+    NSMutableData *der = [NSMutableData dataWithCapacity:2 + seqBodyLen];
+    uint8_t b;
+
+    b = 0x30; [der appendBytes:&b length:1];            // SEQUENCE
+    b = (uint8_t)seqBodyLen; [der appendBytes:&b length:1];
+
+    b = 0x02; [der appendBytes:&b length:1];            // INTEGER r
+    b = (uint8_t)rTotalLen; [der appendBytes:&b length:1];
+    if (rPad) { b = 0x00; [der appendBytes:&b length:1]; }
+    [der appendBytes:rBytes + rStart length:rLen];
+
+    b = 0x02; [der appendBytes:&b length:1];            // INTEGER s
+    b = (uint8_t)sTotalLen; [der appendBytes:&b length:1];
+    if (sPad) { b = 0x00; [der appendBytes:&b length:1]; }
+    [der appendBytes:sBytes + sStart length:sLen];
+
+    return [der copy];
+}
+
+typedef struct {
+    uint32_t w[8]; // Little-endian 32-bit words
+} PLCP256Field;
+
+static const PLCP256Field kPLCP256Prime = { .w = { 0xffffffffu, 0xffffffffu, 0xffffffffu, 0x00000000u, 0x00000000u, 0x00000000u, 0x00000001u, 0xffffffffu } };
+static const PLCP256Field kPLCP256B = { .w = { 0x27d2604bu, 0x3bce3c3eu, 0xcc53b0f6u, 0x651d06b0u, 0x769886bcu, 0xb3ebbd55u, 0xaa3a93e7u, 0x5ac635d8u } };
+static const PLCP256Field kPLCP256TwoPow256ModP = { .w = { 0x00000001u, 0x00000000u, 0x00000000u, 0xffffffffu, 0xffffffffu, 0xffffffffu, 0xfffffffeu, 0x00000000u } }; // 2^256 mod p
+static const uint32_t kPLCP256SqrtExp[(8)] = { 0x00000000u, 0x00000000u, 0x40000000u, 0x00000000u, 0x00000000u, 0x40000000u, 0xc0000000u, 0x3fffffffu }; // (p+1)/4
+
+static int PLCP256Cmp(const PLCP256Field *a, const PLCP256Field *b) {
+    for (int i = 7; i >= 0; i--) {
+        if (a->w[i] < b->w[i]) return -1;
+        if (a->w[i] > b->w[i]) return 1;
+    }
+    return 0;
+}
+
+static BOOL PLCP256IsZero(const PLCP256Field *a) {
+    uint32_t acc = 0;
+    for (int i = 0; i < 8; i++) acc |= a->w[i];
+    return acc == 0;
+}
+
+static BOOL PLCP256Equal(const PLCP256Field *a, const PLCP256Field *b) {
+    uint32_t acc = 0;
+    for (int i = 0; i < 8; i++) acc |= (a->w[i] ^ b->w[i]);
+    return acc == 0;
+}
+
+static PLCP256Field PLCP256AddMod(const PLCP256Field *a, const PLCP256Field *b) {
+    PLCP256Field r;
+    uint64_t carry = 0;
+    for (int i = 0; i < 8; i++) {
+        uint64_t sum = (uint64_t)a->w[i] + (uint64_t)b->w[i] + carry;
+        r.w[i] = (uint32_t)sum;
+        carry = sum >> 32;
+    }
+    if (carry) {
+        // Fold the implicit +2^256 using 2^256 ≡ (2^256 mod p)
+        carry = 0;
+        for (int i = 0; i < 8; i++) {
+            uint64_t sum = (uint64_t)r.w[i] + (uint64_t)kPLCP256TwoPow256ModP.w[i] + carry;
+            r.w[i] = (uint32_t)sum;
+            carry = sum >> 32;
+        }
+    } else if (PLCP256Cmp(&r, &kPLCP256Prime) >= 0) {
+        // r -= p
+        uint64_t borrow = 0;
+        for (int i = 0; i < 8; i++) {
+            uint64_t ai = (uint64_t)r.w[i];
+            uint64_t bi = (uint64_t)kPLCP256Prime.w[i];
+            uint64_t tmp = ai - bi - borrow;
+            r.w[i] = (uint32_t)tmp;
+            borrow = borrow ? (ai <= bi) : (ai < bi);
+        }
+    }
+    return r;
+}
+
+static PLCP256Field PLCP256SubMod(const PLCP256Field *a, const PLCP256Field *b) {
+    PLCP256Field r;
+    uint64_t borrow = 0;
+    for (int i = 0; i < 8; i++) {
+        uint64_t ai = (uint64_t)a->w[i];
+        uint64_t bi = (uint64_t)b->w[i];
+        uint64_t tmp = ai - bi - borrow;
+        r.w[i] = (uint32_t)tmp;
+        borrow = borrow ? (ai <= bi) : (ai < bi);
+    }
+    if (borrow) {
+        // We computed (a - b + 2^256). Convert to (a - b + p) by subtracting 2^256 mod p.
+        borrow = 0;
+        for (int i = 0; i < 8; i++) {
+            uint64_t ai = (uint64_t)r.w[i];
+            uint64_t bi = (uint64_t)kPLCP256TwoPow256ModP.w[i];
+            uint64_t tmp = ai - bi - borrow;
+            r.w[i] = (uint32_t)tmp;
+            borrow = borrow ? (ai <= bi) : (ai < bi);
+        }
+    }
+    return r;
+}
+
+static PLCP256Field PLCP256NegMod(const PLCP256Field *a) {
+    if (PLCP256IsZero(a)) {
+        return *a;
+    }
+    return PLCP256SubMod(&kPLCP256Prime, a);
+}
+
+static PLCP256Field PLCP256Reduce512(const uint32_t in[16]) {
+    __int128 r[16];
+    for (int i = 0; i < 16; i++) {
+        r[i] = (__int128)in[i];
+    }
+
+    // Reduce using b^8 ≡ b^7 - b^6 - b^3 + 1 (mod p), where b = 2^32.
+    for (int i = 15; i >= 8; i--) {
+        __int128 c = r[i];
+        if (c == 0) continue;
+        r[i] = 0;
+        r[i - 8] += c;
+        r[i - 1] += c;
+        r[i - 2] -= c;
+        r[i - 5] -= c;
+    }
+
+    // Normalize words and fold any remaining carry from the implicit word 8.
+    for (int iter = 0; iter < 3; iter++) {
+        __int128 carry = 0;
+        for (int i = 0; i < 8; i++) {
+            __int128 val = r[i] + carry;
+            uint32_t digit = (uint32_t)val;
+            r[i] = digit;
+            carry = val >> 32;
+        }
+
+        if (carry == 0) {
+            break;
+        }
+
+        // Fold carry as coefficient of b^8.
+        r[0] += carry;
+        r[7] += carry;
+        r[6] -= carry;
+        r[3] -= carry;
+    }
+
+    PLCP256Field out;
+    for (int i = 0; i < 8; i++) {
+        out.w[i] = (uint32_t)r[i];
+    }
+
+    while (PLCP256Cmp(&out, &kPLCP256Prime) >= 0) {
+        out = PLCP256SubMod(&out, &kPLCP256Prime);
+    }
+    return out;
+}
+
+static PLCP256Field PLCP256MulMod(const PLCP256Field *a, const PLCP256Field *b) {
+    unsigned __int128 accum[16] = {0};
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            accum[i + j] += (unsigned __int128)a->w[i] * (unsigned __int128)b->w[j];
+        }
+    }
+
+    uint32_t product[16];
+    unsigned __int128 carry = 0;
+    for (int i = 0; i < 16; i++) {
+        unsigned __int128 val = accum[i] + carry;
+        product[i] = (uint32_t)val;
+        carry = val >> 32;
+    }
+
+    return PLCP256Reduce512(product);
+}
+
+static PLCP256Field PLCP256PowMod(const PLCP256Field *base, const uint32_t expWords[8]) {
+    PLCP256Field result = { .w = { 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u } };
+    PLCP256Field power = *base;
+
+    for (int word = 7; word >= 0; word--) {
+        uint32_t w = expWords[word];
+        for (int bit = 31; bit >= 0; bit--) {
+            result = PLCP256MulMod(&result, &result);
+            if ((w >> bit) & 1u) {
+                result = PLCP256MulMod(&result, &power);
+            }
+        }
+    }
+
+    return result;
+}
+
+static void PLCP256WriteBE32(uint8_t *out, uint32_t value) {
+    out[0] = (uint8_t)((value >> 24) & 0xff);
+    out[1] = (uint8_t)((value >> 16) & 0xff);
+    out[2] = (uint8_t)((value >> 8) & 0xff);
+    out[3] = (uint8_t)(value & 0xff);
+}
+
+static PLCP256Field PLCP256FromBytesBE(const uint8_t bytes[32]) {
+    PLCP256Field out;
+    for (int i = 0; i < 8; i++) {
+        const uint8_t *p = bytes + (7 - i) * 4;
+        out.w[i] = ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+    }
+    return out;
+}
+
+static void PLCP256ToBytesBE(const PLCP256Field *value, uint8_t out[32]) {
+    for (int i = 0; i < 8; i++) {
+        PLCP256WriteBE32(out + (7 - i) * 4, value->w[i]);
+    }
+}
+
+static BOOL PLCP256UncompressPublicKey(const uint8_t compressed[33], uint8_t outUncompressed[65]) {
+    const uint8_t prefix = compressed[0];
+    if (prefix != 0x02 && prefix != 0x03) {
+        return NO;
+    }
+
+    PLCP256Field x = PLCP256FromBytesBE(compressed + 1);
+    if (PLCP256Cmp(&x, &kPLCP256Prime) >= 0) {
+        return NO;
+    }
+
+    // rhs = x^3 - 3x + b  (mod p), where a = -3 for P-256.
+    PLCP256Field x2 = PLCP256MulMod(&x, &x);
+    PLCP256Field x3 = PLCP256MulMod(&x2, &x);
+
+    PLCP256Field twoX = PLCP256AddMod(&x, &x);
+    PLCP256Field threeX = PLCP256AddMod(&twoX, &x);
+    PLCP256Field rhs = PLCP256SubMod(&x3, &threeX);
+    rhs = PLCP256AddMod(&rhs, &kPLCP256B);
+
+    PLCP256Field y = PLCP256PowMod(&rhs, kPLCP256SqrtExp);
+    PLCP256Field y2 = PLCP256MulMod(&y, &y);
+    if (!PLCP256Equal(&y2, &rhs)) {
+        return NO;
+    }
+
+    BOOL shouldBeOdd = (prefix == 0x03);
+    BOOL isOdd = (y.w[0] & 1u) != 0;
+    if (isOdd != shouldBeOdd) {
+        y = PLCP256NegMod(&y);
+    }
+
+    outUncompressed[0] = 0x04;
+    memcpy(outUncompressed + 1, compressed + 1, 32);
+    uint8_t yBytes[32];
+    PLCP256ToBytesBE(&y, yBytes);
+    memcpy(outUncompressed + 33, yBytes, 32);
+    return YES;
+}
+
+- (BOOL)verifyP256Signature:(NSData *)rawSig hash:(NSData *)hash compressedPublicKey:(NSData *)pubKey {
+    NSData *derSig = PLCDEREncodeRawSignature(rawSig);
+    if (!derSig) return NO;
+
+    NSDictionary *attrs = @{
+        (__bridge id)kSecAttrKeyType:       (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecAttrKeyClass:      (__bridge id)kSecAttrKeyClassPublic,
+        (__bridge id)kSecAttrKeySizeInBits: @256,
+    };
+    CFErrorRef cfErr = NULL;
+    SecKeyRef secKey = SecKeyCreateWithData((__bridge CFDataRef)pubKey,
+                                            (__bridge CFDictionaryRef)attrs,
+                                            &cfErr);
+    if (!secKey) {
+        if (cfErr) {
+            CFRelease(cfErr);
+            cfErr = NULL;
+        }
+
+        if (pubKey.length == 33) {
+            uint8_t uncompressed[65];
+            if (PLCP256UncompressPublicKey(pubKey.bytes, uncompressed)) {
+                NSData *uncompressedData = [NSData dataWithBytes:uncompressed length:sizeof(uncompressed)];
+                secKey = SecKeyCreateWithData((__bridge CFDataRef)uncompressedData,
+                                              (__bridge CFDictionaryRef)attrs,
+                                              &cfErr);
+            }
+        }
+
+        if (!secKey) {
+            if (cfErr) CFRelease(cfErr);
+            return NO;
+        }
+    }
+    if (cfErr) CFRelease(cfErr);
+
+    CFErrorRef verifyErr = NULL;
+    BOOL ok = SecKeyVerifySignature(secKey,
+                                    kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+                                    (__bridge CFDataRef)hash,
+                                    (__bridge CFDataRef)derSig,
+                                    &verifyErr);
+    CFRelease(secKey);
+    if (verifyErr) CFRelease(verifyErr);
+    return ok;
 }
 
 - (NSData *)dataFromHexString:(NSString *)hex {
