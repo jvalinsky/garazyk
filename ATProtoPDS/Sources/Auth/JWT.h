@@ -411,6 +411,15 @@ typedef NS_ENUM(NSInteger, JWTError) {
                          scopes:(NSArray<NSString *> *)scopes
                            error:(NSError **)error;
 
+/*!
+ @method toJWKS
+ 
+ @abstract Exports the configured keys as a JWK Set.
+ 
+ @return A dictionary representing the JWKS.
+ */
+- (NSDictionary *)toJWKS;
+
 @end
 
 NS_ASSUME_NONNULL_END

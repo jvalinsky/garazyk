@@ -901,6 +901,33 @@ static NSString *appPasswordGenerateSecret(void) {
     return maxSeq;
 }
 
+- (BOOL)pruneEventsBefore:(NSDate *)date error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+    
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @"DELETE FROM events WHERE created_at < ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) { success = NO; return; }
+        
+        sqlite3_bind_double(stmt, 1, date.timeIntervalSince1970);
+        
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            success = YES;
+            int changes = sqlite3_changes(store.db);
+            // We could log this if logger was available here
+            (void)changes; 
+        }
+    } error:&localError];
+    
+    if (!success && localError) {
+        if (error) *error = localError;
+    }
+    
+    return success;
+}
+
 #pragma mark - Cleanup
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {

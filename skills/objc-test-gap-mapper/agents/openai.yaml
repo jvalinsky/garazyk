@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC Test Gap Mapper"
+  short_description: "Map source files to likely test gaps"

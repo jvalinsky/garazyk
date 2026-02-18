@@ -7,6 +7,9 @@
 #import "Sync/EventFormatter.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
+#import <sqlite3.h>
 
 @interface MockWebSocketConnection : WebSocketConnection
 @property (nonatomic, strong) NSMutableArray *sentMessages;
@@ -321,6 +324,114 @@
 - (void)testBroadcastInfoEvent {
     XCTAssertNoThrow([self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"],
                      @"Should handle info event broadcast");
+}
+
+- (void)testReplayWithPrunedEventsHandlesGap {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    
+    // 1. Broadcast two events (Seq 1, 2)
+    [self.handler broadcastInfo:@"info1" message:@"msg1"];
+    [self.handler broadcastInfo:@"info2" message:@"msg2"];
+    
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Events 1&2 persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    // 2. Backdate events 1 & 2 in DB to allow pruning
+    // We use the service pool directly to execute raw SQL update
+    PDSDatabasePool *pool = self.controller.serviceDatabases.servicePool;
+    [pool transactWithDid:@"__service__" block:^(id transactor, NSError **err) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        // Backdate to 2 hours ago
+        NSTimeInterval oldTime = [[NSDate dateWithTimeIntervalSinceNow:-7200] timeIntervalSince1970];
+        NSString *sql = [NSString stringWithFormat:@"UPDATE events SET created_at = %f WHERE seq <= 2", oldTime];
+        sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, NULL);
+    } error:nil];
+    
+    // 3. Prune events older than 1 hour ago
+    NSError *error = nil;
+    BOOL pruned = [self.controller.serviceDatabases pruneEventsBefore:[NSDate dateWithTimeIntervalSinceNow:-3600] error:&error];
+    XCTAssertTrue(pruned, @"Pruning failed: %@", error);
+    
+    // Verify count is 0
+    NSArray *events = [self.controller.serviceDatabases getEventsSince:0 limit:10 error:nil];
+    XCTAssertEqual(events.count, 0, @"Events should be pruned");
+    
+    // 4. Broadcast Event 3
+    [self.handler broadcastInfo:@"info3" message:@"msg3"];
+    
+    XCTestExpectation *persistExp2 = [self expectationWithDescription:@"Event 3 persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [persistExp2 fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    // 5. Connect with cursor 1 (which refers to a pruned event)
+    MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
+    // backlog = (Current Seq 3) - (Cursor 1) = 2. Should be fine.
+    [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
+    
+    XCTestExpectation *replayExp = [self expectationWithDescription:@"Replay finished"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [replayExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:2.0 handler:nil];
+    
+    // 6. Verify we receive Event 3 (the gap is skipped)
+    XCTAssertEqual(conn.sentMessages.count, 1U);
+    if (conn.sentMessages.count > 0) {
+        NSInteger op = 0;
+        NSString *type = nil;
+        NSDictionary *msg = [formatter decodeEventFromData:conn.sentMessages[0] op:&op msgType:&type error:nil];
+        XCTAssertEqualObjects(type, @"#info");
+        XCTAssertEqualObjects(msg[@"info"], @"info3");
+        XCTAssertEqualObjects(msg[@"seq"], @3); 
+        // Note: EventFormatter might verify payload seq matches? No, it just encodes what we put.
+        // SubscribeReposHandler sets seq.
+    }
+}
+
+- (void)testSequenceInitializationFromDisk {
+    // 1. Broadcast an event with current handler
+    [self.handler broadcastInfo:@"init1" message:@"msg1"];
+    
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Init persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    // Verify seq is 1
+    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:nil];
+    XCTAssertEqual(maxSeq, 1);
+    
+    // 2. Stop handler
+    [self.handler stop];
+    self.handler = nil;
+    
+    // 3. Create NEW handler with SAME controller (same DB)
+    SubscribeReposHandler *newHandler = [[SubscribeReposHandler alloc] initWithController:self.controller];
+    
+    // 4. Broadcast new event
+    [newHandler broadcastInfo:@"init2" message:@"msg2"];
+    
+    XCTestExpectation *persistExp2 = [self expectationWithDescription:@"Init2 persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [persistExp2 fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    // 5. Verify seq incremented to 2 (not reset to 1)
+    maxSeq = [self.controller.serviceDatabases getMaxEventSequence:nil];
+    XCTAssertEqual(maxSeq, 2);
+    
+    NSArray *events = [self.controller.serviceDatabases getEventsSince:0 limit:10 error:nil];
+    XCTAssertEqual(events.count, 2);
+    XCTAssertEqualObjects(events[1][@"seq"], @2);
+    
+    [newHandler stop];
 }
 
 @end

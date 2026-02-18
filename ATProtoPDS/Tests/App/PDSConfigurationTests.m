@@ -183,4 +183,29 @@
     [[NSFileManager defaultManager] removeItemAtPath:configPath error:nil];
 }
 
+- (void)testIssuerConfiguration {
+    // 1. Default should be nil
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    XCTAssertNil(config.issuer, @"Default issuer should be nil");
+
+    // 2. Mock environment
+    NSDictionary *env = @{@"PDS_ISSUER": @"https://pds.example.com"};
+    config = [[TestablePDSConfiguration alloc] initWithEnvironment:env];
+    XCTAssertEqualObjects(config.issuer, @"https://pds.example.com", @"Issuer should be loaded from env");
+
+    // 3. Config file
+    NSString *tempDir = NSTemporaryDirectory();
+    NSString *configPath = [tempDir stringByAppendingPathComponent:@"test_issuer_config.json"];
+    NSDictionary *jsonConfig = @{@"issuer": @"https://config.example.com"};
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonConfig options:0 error:nil];
+    [jsonData writeToFile:configPath atomically:YES];
+
+    config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    [config loadFromPath:configPath error:nil];
+    XCTAssertEqualObjects(config.issuer, @"https://config.example.com", @"Issuer should be loaded from config file");
+    
+    // Clean up
+    [[NSFileManager defaultManager] removeItemAtPath:configPath error:nil];
+}
+
 @end

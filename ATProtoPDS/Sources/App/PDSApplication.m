@@ -115,9 +115,8 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
         // Load lexicons
         [self loadLexicons];
         
-        // Create legacy controller for backward compatibility
-        // This allows PDSController.sharedController to work
         _legacyController = [[PDSController alloc] initWithApplication:self];
+        [PDSAdminAuth sharedAuth].controller = _legacyController;
         
         PDS_LOG_CORE_INFO(@"PDSApplication initialized successfully");
     }
@@ -155,8 +154,8 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
         // Load lexicons
         [self loadLexicons];
         
-        // Create legacy controller for backward compatibility
         _legacyController = [[PDSController alloc] initWithApplication:self];
+        [PDSAdminAuth sharedAuth].controller = _legacyController;
         
         PDS_LOG_CORE_INFO(@"PDSApplication initialized successfully");
     }

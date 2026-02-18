@@ -43,7 +43,7 @@
     NSError *error = nil;
     NSDictionary *adminAccount = [self.application.legacyController createAccountForEmail:@"admin-app@example.com"
                                                                                   password:@"password"
-                                                                                    handle:@"admin.app.test"
+                                                                                    handle:@"administrator.app.test"
                                                                                        did:nil
                                                                                      error:&error];
     XCTAssertNil(error);

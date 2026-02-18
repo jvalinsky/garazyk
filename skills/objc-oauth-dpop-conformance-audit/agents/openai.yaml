@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC OAuth DPoP Audit"
+  short_description: "Audit OAuth2 and DPoP conformance"

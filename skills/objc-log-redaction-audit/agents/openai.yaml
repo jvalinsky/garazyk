@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC Log Redaction Audit"
+  short_description: "Find sensitive logging and redaction gaps"

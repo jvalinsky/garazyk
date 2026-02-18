@@ -59,7 +59,7 @@
     __block PDSDatabaseBlob *blob = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE cid = ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -73,7 +73,13 @@
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             blob = [self blobFromStatement:stmt];
         }
-    });
+    };
+
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
+        workBlock();
+    } else {
+        dispatch_sync(self.transactionQueue, workBlock);
+    }
 
     if (error && blockError) {
         *error = blockError;
@@ -88,7 +94,7 @@
     __block NSMutableArray<PDSDatabaseBlob *> *blobs = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    void (^workBlock)(void) = ^{
         NSString *sql;
         if (cursor) {
             sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? AND cid > ? ORDER BY cid LIMIT ?";
@@ -118,7 +124,13 @@
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             [blobs addObject:[self blobFromStatement:stmt]];
         }
-    });
+    };
+
+    if (dispatch_get_specific("com.atproto.pds.actorstore.queue_key")) {
+        workBlock();
+    } else {
+        dispatch_sync(self.transactionQueue, workBlock);
+    }
 
     if (error && blockError) {
         *error = blockError;

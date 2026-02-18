@@ -244,8 +244,8 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
         return NO;
     }
 
-    PDSController *controller = [PDSController sharedController];
-    if (!controller || !controller.jwtMinter) {
+    PDSController *controller = self.controller ?: [PDSController sharedController];
+    if (![controller isKindOfClass:[PDSController class]] || !controller.jwtMinter) {
         return NO;
     }
 
@@ -358,8 +358,8 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
         return NO;
     }
 
-    PDSController *controller = [PDSController sharedController];
-    if (!controller || !controller.jwtMinter) {
+    PDSController *controller = self.controller ?: [PDSController sharedController];
+    if (![controller isKindOfClass:[PDSController class]] || !controller.jwtMinter) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain
                                          code:500

@@ -436,6 +436,17 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (int64_t)getMaxEventSequence:(NSError **)error;
 
+/*!
+ @method pruneEventsBefore:error:
+
+ @abstract Delete events created before the specified date.
+
+ @param date Cutoff date. Events older than this will be deleted.
+ @param error Error pointer.
+ @return YES if operation successful (even if 0 deleted).
+ */
+- (BOOL)pruneEventsBefore:(NSDate *)date error:(NSError **)error;
+
 #pragma mark - Lifecycle
 
 /*!

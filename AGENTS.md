@@ -118,6 +118,19 @@ clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 - `scripts/stub_find.sh` provides the repository-level stub scan for `TODO`/`FIXME`/`not implemented` markers. Run `./scripts/stub_find.sh .` before code reviews to catch placeholder logic and follow-up work.
 - `skills/atproto-endpoint-stub-finder/SKILL.md` documents endpoint-stub auditing with repo-native XRPC coverage integration and endpoint mapping that supports both typed registrations and `registerMethod:@"<nsid>"` string registrations.
 - `skills/xrpc-schema-sync/SKILL.md` documents schema-sync and coverage drift checks using repo-native generators (`scripts/generate_xrpc_coverage_report.js` and `scripts/generate_xrpc_next_steps.js`) with parser fallback tooling.
+- `skills/objc-reentrancy-audit/SKILL.md` audits Objective-C re-entrancy hazards (callbacks under lock, recursive notification/KVO paths, sync queue re-entry).
+- `skills/objc-concurrency-bug-audit/SKILL.md` audits Objective-C concurrency defects (race conditions, deadlock signals, shared mutable state without clear synchronization).
+- `skills/objc-locking-queue-audit/SKILL.md` audits lock and dispatch queue contracts (lock/unlock imbalance, queue assertions, lock plus sync-dispatch risk).
+- `skills/objc-sqlite-invariant-audit/SKILL.md` audits SQLite invariants in Objective-C persistence code (transaction correctness, statement lifecycle, pragma assumptions).
+- `skills/objc-xrpc-contract-audit/SKILL.md` audits XRPC contract conformance (registration, auth enforcement signals, validation and error-shape consistency).
+- `skills/objc-firehose-ordering-backpressure-audit/SKILL.md` audits firehose and WebSocket flow-control correctness (ordering, cursor monotonicity, buffering/backpressure behavior).
+- `skills/objc-oauth-dpop-conformance-audit/SKILL.md` audits OAuth2 and DPoP conformance/security paths (proof validation, nonce/replay, token lifecycle, key handling).
+- `skills/objc-gnustep-regression-audit/SKILL.md` audits Linux/GNUstep portability regressions (platform-sensitive APIs, missing guards, compat-layer bypasses).
+- `skills/objc-network-timeout-retry-audit/SKILL.md` audits network timeout/retry/cancellation reliability in transport code.
+- `skills/objc-parser-hardening-audit/SKILL.md` audits parser hardening needs (bounds checks, risky memory operations, integer conversion safety).
+- `skills/objc-log-redaction-audit/SKILL.md` audits sensitive logging and redaction gaps (tokens, auth headers, secrets).
+- `skills/objc-test-gap-mapper/SKILL.md` maps Objective-C source files to likely test coverage gaps and module risk hotspots.
+- `skills/objc-service-boundary-audit/SKILL.md` audits service-layer authorization and trust-boundary enforcement for privileged operations.
 
 ## CI/CD Pipeline
 

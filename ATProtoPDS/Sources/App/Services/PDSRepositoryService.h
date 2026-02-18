@@ -163,6 +163,29 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  */
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error;
 
+/*!
+ @method getBlocksForDid:cids:error:
+ 
+ @abstract Get CAR file containing specific blocks.
+ 
+ @param did Repository DID.
+ @param cids Array of CID strings to fetch.
+ @param error Error pointer.
+ @return CAR data with requested blocks.
+ */
+- (nullable NSData *)getBlocksForDid:(NSString *)did cids:(NSArray<NSString *> *)cids error:(NSError **)error;
+
+/*!
+ @method getLatestCommitForDid:error:
+ 
+ @abstract Get the latest commit CID and revision.
+ 
+ @param did Repository DID.
+ @param error Error pointer.
+ @return Dictionary with @"cid" (string) and @"rev" (string).
+ */
+- (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
