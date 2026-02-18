@@ -1,90 +1,61 @@
-# Detailed Next Steps Plan (Post Re-Review, 2026-02-18)
+# Detailed Next Steps Plan (Updated 2026-02-18)
 
 ## Objective
 
-Close production blockers for small selfhosters in the shortest safe sequence, then move to broader architecture cleanup.
+Close remaining production blockers for small selfhosters while preserving the security hardening that has already landed.
 
 ---
 
-## Phase 0 — Stabilize Security Test Signal (P0)
+## Completed Since Last Plan Revision
 
-**Goal:** Make admin auth suites reflect the current admin JWT model.
+### Phase 0 — Security Signal Stabilization (Done)
 
-### Tasks
-- [ ] Update `AdminAuthXrpcTests` to mint/use admin-scope JWTs instead of account `accessJwt`.
-- [ ] Update `AdminAuthApplicationXrpcTests` similarly.
-- [ ] Keep existing negative coverage for issuer/audience/scope mismatch.
+Completed:
+- Admin auth test setup now mints real admin JWTs via `PDSAdminAuth`.
+- `AdminAuthXrpcTests` is green.
+- `AdminAuthApplicationXrpcTests` is green except environment-specific socket skips.
 
-### Acceptance Criteria
-- [ ] `AdminAuthXrpcTests` passes without bulk 403 regressions.
-- [ ] `AdminAuthApplicationXrpcTests` admin-success paths use valid admin token flow.
-
-### Evidence Targets
+Evidence:
 - `ATProtoPDS/Tests/Network/AdminAuthXrpcTests.m`
 - `ATProtoPDS/Tests/Network/AdminAuthApplicationXrpcTests.m`
-- `ATProtoPDS/Sources/Admin/PDSAdminAuth.m`
 
 ---
 
-## Phase 1 — Firehose Conformance Fix (P0)
+## Phase 1 — Firehose Lexicon Conformance (P0)
 
-**Goal:** Make stream frames lexicon-conformant and pass conformance tests.
+**Goal:** Make emitted `subscribeRepos` frames strictly conformant.
 
 ### Tasks
-- [ ] `EventFormatter`: include `blocks` in commit payload.
-- [ ] `EventFormatter`: always emit `since` key (nullable behavior).
-- [ ] `EventFormatter`: identity payload emits `seq`, `did`, `time` (+ optional `handle`).
-- [ ] `EventFormatter`: account payload emits required `seq`, `did`, `time`, `active`.
-- [ ] `EventFormatter`: info payload uses `name` (not `info`).
-- [ ] `SubscribeReposHandler`: populate required fields for identity/account/info events before encoding.
+- [ ] Add required `blocks` to commit payload emission in `EventFormatter`.
+- [ ] Always emit `since` key for commits (nullable semantics).
+- [ ] Emit required `seq/time` for identity/account events.
+- [ ] Rename info payload key from `info` to `name`.
+- [ ] Ensure `SubscribeReposHandler` populates all required fields before encoding.
 
 ### Acceptance Criteria
-- [ ] `FirehoseConformanceTests` green.
-- [ ] Replay/backfill still works for existing persisted events.
+- [ ] `./build/tests/AllTests -XCTest FirehoseConformanceTests` passes.
+- [ ] Replay/backfill behavior remains functional (no regressions in subscribe flow).
 
 ### Evidence Targets
 - `ATProtoPDS/Sources/Sync/EventFormatter.m`
 - `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
 - `ATProtoPDS/Tests/Sync/FirehoseConformanceTests.m`
-- `ATProtoPDS/Resources/lexicons/com/atproto/sync/subscribeRepos.json`
 
 ---
 
-## Phase 2 — Close Remaining Core XRPC Gaps (P1)
+## Phase 2 — XRPC OAuth/Session Protocol Correctness (P0/P1)
 
-**Goal:** Reach 100% `com.atproto.*` endpoint registration coverage for current in-scope set.
-
-### Tasks
-- [ ] Implement `com.atproto.identity.resolveHandle`.
-- [ ] Implement `com.atproto.identity.resolveIdentity`.
-- [ ] Implement `com.atproto.identity.getRecommendedDidCredentials`.
-- [ ] Implement `com.atproto.sync.notifyOfUpdate` (or explicit no-op/deprecation response per policy).
-- [ ] Implement/register `com.atproto.admin.getAccountTakedown`.
-- [ ] Keep compatibility route strategy explicit for `takeDownAccount` naming drift.
-
-### Acceptance Criteria
-- [ ] Coverage report shows 0 missing in-scope methods for `com.atproto.*`.
-- [ ] Add/adjust tests for each new endpoint path.
-
-### Evidence Targets
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-- `ATProtoPDS/Resources/lexicons/com/atproto/**`
-- `/tmp/objpds_xrpc_coverage_*.md`
-
----
-
-## Phase 3 — OAuth/Session Protocol Correctness (P1)
-
-**Goal:** Remove known auth interop gaps before external client onboarding.
+**Goal:** Fix interoperability gaps for standards-compliant OAuth clients.
 
 ### Tasks
-- [ ] Align `com.atproto.server.refreshSession` request handling to refresh JWT auth semantics.
-- [ ] Implement XRPC DPoP nonce challenge behavior (`DPoP-Nonce` on nonce-required failures).
-- [ ] Add tests for nonce-required + retry-with-nonce success flow.
+- [ ] Implement XRPC DPoP nonce challenge handling with `DPoP-Nonce` response header.
+- [ ] Thread nonce issuance/validation through XRPC auth path (not just OAuth token endpoint).
+- [ ] Align `com.atproto.server.refreshSession` with lexicon (refresh JWT auth, no body `refreshToken` dependency).
+- [ ] Add focused tests for nonce retry dance and refreshSession contract.
 
 ### Acceptance Criteria
-- [ ] Refresh flow matches lexicon contract.
-- [ ] DPoP nonce dance is test-covered and deterministic.
+- [ ] DPoP nonce-required failure returns recoverable challenge semantics.
+- [ ] Refresh session request/response is lexicon-compliant.
 
 ### Evidence Targets
 - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
@@ -93,38 +64,40 @@ Close production blockers for small selfhosters in the shortest safe sequence, t
 
 ---
 
-## Phase 4 — Public URL and Issuer Consistency (P1)
+## Phase 3 — Close Remaining `com.atproto.*` Coverage Gaps (P1)
 
-**Goal:** Ensure one canonical external identity/issuer source across auth and identity outputs.
+**Goal:** Raise in-scope coverage from 94.79% to 100%.
 
 ### Tasks
-- [ ] Use `config.issuer`/`PDS_ISSUER` consistently for JWT mint/verify.
-- [ ] Remove localhost fallback from runtime builder path when issuer is configured.
-- [ ] Update PLC service endpoint defaults to HTTPS/public issuer semantics.
+- [ ] Implement/register `com.atproto.identity.resolveHandle`.
+- [ ] Implement/register `com.atproto.identity.resolveIdentity`.
+- [ ] Implement/register `com.atproto.identity.getRecommendedDidCredentials`.
+- [ ] Implement/register `com.atproto.sync.notifyOfUpdate`.
+- [ ] Implement/register `com.atproto.admin.getAccountTakedown`.
 
 ### Acceptance Criteria
-- [ ] Issuer values are consistent in JWT claims, NodeInfo, and identity service descriptors.
+- [ ] Coverage report shows 0 in-scope missing endpoints.
+- [ ] New endpoints have happy/error-path tests.
 
 ### Evidence Targets
-- `ATProtoPDS/Sources/App/PDSApplication.m`
-- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
 - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- `/tmp/objpds_xrpc_coverage_*.md`
 
 ---
 
-## Phase 5 — Operations Hardening for Selfhosters (P1)
+## Phase 4 — Selfhoster Operations Alignment (P1)
 
-**Goal:** Ensure backup/restore and startup docs/scripts match current runtime layout.
+**Goal:** Make backup/restore/startup workflows match real runtime layout.
 
 ### Tasks
-- [ ] Fix `scripts/backup_pds.sh` duplicated body and stale DB filenames.
-- [ ] Update backup restore instructions in `README.md`.
-- [ ] Update deployment backup examples in `docs/guides/DEPLOYMENT.md`.
-- [ ] Update `scripts/start_server.sh` default binary (`atprotopds-cli` vs `september`) or document explicit override.
+- [ ] Remove duplicated second body in `scripts/backup_pds.sh`.
+- [ ] Update backup script to actual DB paths (`service/service.db`, DID-keyed user DB files).
+- [ ] Update restore instructions in `README.md` and `docs/guides/DEPLOYMENT.md`.
+- [ ] Update `scripts/start_server.sh` default binary to current executable.
 
 ### Acceptance Criteria
-- [ ] Backup script dry-run works against real local data layout.
-- [ ] Restore doc steps match actual database file locations.
+- [ ] Backup script succeeds on real local layout.
+- [ ] Restore docs are executable as written.
 
 ### Evidence Targets
 - `scripts/backup_pds.sh`
@@ -134,35 +107,55 @@ Close production blockers for small selfhosters in the shortest safe sequence, t
 
 ---
 
-## Phase 6 — Hygiene and Reliability (P2)
+## Phase 5 — Issuer/Public URL Consistency (P1)
 
-**Goal:** Remove avoidable operational noise and reduce long-run failure risk.
+**Goal:** Ensure one canonical public issuer/base URL across outputs and metadata.
 
 ### Tasks
-- [ ] Remove tracked build/test artifacts (`build-dd`, `test_output*.txt`).
-- [ ] Extend `.gitignore` to prevent recurrence.
-- [ ] Add graceful test skip/failure handling when network bind is unavailable (for sandbox/CI portability).
-- [ ] Wire optional firehose event retention policy to config (if enabled).
+- [ ] Use configured issuer for builder/nodeinfo instead of localhost fallback.
+- [ ] Remove `http://host:port` fallback for PLC endpoint when issuer exists.
+- [ ] Ensure any service-auth audience derivation uses public issuer host semantics.
 
 ### Acceptance Criteria
-- [ ] Clean repo status without generated artifacts.
-- [ ] Test suites do not crash on environment network restrictions.
+- [ ] JWT issuer, NodeInfo issuer, and PLC endpoint resolve to same public origin.
 
 ### Evidence Targets
-- `.gitignore`
+- `ATProtoPDS/Sources/App/PDSApplication.m`
+- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
+- `ATProtoPDS/Sources/App/Services/PDSAccountService.m`
+- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+
+---
+
+## Phase 6 — Reliability and Hygiene (P2)
+
+**Goal:** Reduce avoidable operational/test noise.
+
+### Tasks
+- [ ] Harden network-dependent tests to skip/fail gracefully when bind is unavailable (avoid crash).
+- [ ] Remove tracked generated artifacts (for example `build-dd/*`) and add ignore coverage.
+- [ ] Wire event retention (`pruneEventsBefore`) to a configurable runtime policy.
+
+### Acceptance Criteria
+- [ ] `CoverageGapTests` no longer crashes in restricted environments.
+- [ ] Repository stays clean after normal build/test loops.
+- [ ] Event storage growth can be bounded by configuration.
+
+### Evidence Targets
 - `ATProtoPDS/Tests/Services/CoverageGapTests.m`
+- `.gitignore`
 - `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m`
+- `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
 
 ---
 
 ## Recommended Execution Order
 
-1. Phase 0 (test signal)
-2. Phase 1 (firehose conformance)
-3. Phase 2 (endpoint coverage closure)
-4. Phase 3 (auth protocol correctness)
-5. Phase 4 (issuer/public URL consistency)
-6. Phase 5 (operations/scripts/docs)
-7. Phase 6 (hygiene/reliability)
+1. Phase 1 — Firehose conformance
+2. Phase 2 — OAuth/session correctness
+3. Phase 3 — Endpoint coverage closure
+4. Phase 4 — Ops/script/doc alignment
+5. Phase 5 — Issuer consistency cleanup
+6. Phase 6 — Reliability/hygiene
 
-This order minimizes risk by first restoring trustworthy security/conformance signal, then closing external interoperability blockers, then polishing operations.
+This keeps external protocol correctness first, then closes remaining interoperability and operability gaps.
