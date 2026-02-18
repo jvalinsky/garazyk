@@ -1,5 +1,6 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
+#import "PDSCLIInputHelper.h"
 
 @interface PDSInviteInfo : NSObject
 @property (nonatomic, copy) NSString *code;
@@ -224,15 +225,22 @@
     NSInteger uses = 1;
     BOOL disabled = NO;
 
+    BOOL usesProvided = NO;
     for (NSUInteger i = 0; i < args.count; i++) {
         NSString *arg = args[i];
         if ([arg isEqualToString:@"--uses"] || [arg isEqualToString:@"-u"]) {
             if (i + 1 < args.count) {
                 uses = [args[++i] integerValue];
+                usesProvided = YES;
             }
         } else if ([arg isEqualToString:@"--disabled"]) {
             disabled = YES;
         }
+    }
+
+    if (!usesProvided && [PDSCLIInputHelper isInteractiveTTY]) {
+        NSString *input = [PDSCLIInputHelper promptForInput:@"Max uses" defaultValue:@"1"];
+        uses = [input integerValue];
     }
 
     NSString *code = [PDSInviteManager createInviteWithContext:context uses:uses disabled:disabled];
