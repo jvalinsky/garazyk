@@ -560,23 +560,39 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                     validationMode:mode
                              error:error];
     if (!success) return nil;
+    NSLog(@"[PDSController] Service call success, calculating record CID...");
 
     // Use DAG-CBOR for record CID calculation
     NSError *cborError = nil;
+    NSLog(@"[PDSController] Encoding record with CBOR...");
     NSData *recordData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cborError];
     
     if (!recordData) {
+        NSLog(@"[PDSController] CBOR encoding failed, falling back to JSON...");
         // Fallback to JSON if CBOR fails (shouldn't happen for valid JSON types)
         recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
     }
     
+    if (!recordData) {
+        NSLog(@"[PDSController] CRITICAL: Record data is NIL after fallback!");
+    } else {
+        NSLog(@"[PDSController] Record data length: %lu", (unsigned long)recordData.length);
+    }
+
+    NSLog(@"[PDSController] Calculating SHA-256 digest...");
     NSData *digest = [CID sha256Digest:recordData];
+    NSLog(@"[PDSController] Digest calculated: %@", digest ? [digest description] : @"NIL");
+
+    NSLog(@"[PDSController] Creating CID object...");
     CID *cid = [CID cidWithMultihash:digest codec:0x71]; // Use dag-cbor codec
+    NSLog(@"[PDSController] CID string value: %@", cid.stringValue);
     
-    return @{
+    NSDictionary *result = @{
         @"uri": [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey],
         @"cid": cid.stringValue ?: @"bafkreiplaceholder"
     };
+    NSLog(@"[PDSController] Returning result: %@", result);
+    return result;
 }
 
 - (nullable NSDictionary *)getRecordForDid:(NSString *)did

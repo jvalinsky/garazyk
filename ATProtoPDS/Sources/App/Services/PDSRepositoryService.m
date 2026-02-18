@@ -98,7 +98,81 @@
 }
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
-    return [_databasePool getRepoRoot:did error:error];
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+    
+    __block NSData *rootData = nil;
+    [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
+        if (rootCidBytes) {
+            NSData *blockData = [reader getBlockForCID:rootCidBytes forDid:did error:blockError];
+            if (blockData) {
+                rootData = blockData;
+            }
+        }
+    } error:error];
+    
+    return rootData;
+}
+
+- (nullable NSData *)getBlocksForDid:(NSString *)did cids:(NSArray<NSString *> *)cids error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+    
+    // Use first CID as root, or nil if none. CARWriter requires a root.
+    CID *rootCid = nil;
+    if (cids.count > 0) {
+        rootCid = [CID cidFromString:cids.firstObject];
+    }
+    
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCid];
+    
+    __block BOOL success = YES;
+    
+    [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        for (NSString *cidStr in cids) {
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            
+            NSData *blockData = [reader getBlockForCID:cid.bytes forDid:did error:nil];
+            if (blockData) {
+                [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
+            }
+        }
+    } error:error];
+    
+    if (!success) return nil;
+    return [writer serialize];
+}
+
+- (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) {
+        if (error && !*error) {
+             *error = [NSError errorWithDomain:@"com.atproto.sync" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Repo not found"}];
+        }
+        return nil;
+    }
+    
+    __block NSString *cidStr = nil;
+    __block NSString *rev = nil;
+    
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        id<PDSActorStoreReader> reader = (id<PDSActorStoreReader>)transactor;
+        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
+        if (rootCidBytes) {
+            CID *cid = [CID cidFromBytes:rootCidBytes];
+            cidStr = cid.stringValue;
+            rev = [reader getRepoRevisionForDid:did error:blockError];
+        }
+    } error:error];
+    
+    if (!cidStr) {
+        if (error && !*error) *error = [NSError errorWithDomain:@"com.atproto.sync" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Repo root not found"}];
+        return nil;
+    }
+    
+    return @{@"cid": cidStr, @"rev": rev ?: @""};
 }
 
 - (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error {
