@@ -17,6 +17,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
+#import "Repository/CBOR.h"
 
 NSString * const SubscribeReposHandlerErrorDomain = @"com.atproto.pds.subscribeRepos";
 NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
@@ -50,6 +51,8 @@ static NSString * const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 - (BOOL)sendEventData:(NSData *)eventData toConnectionWithBackpressureCheck:(WebSocketConnection *)connection;
 + (NSString *)rfc3339Timestamp;
 - (NSData *)buildCARBlocksForCommit:(RepoCommit *)commit ops:(NSArray<NSDictionary *> *)ops;
+- (nullable CID *)extractCIDFromCBORTag:(CBORValue *)tagValue;
+- (NSUInteger)addMSTNodeBlocksForRootCID:(CID *)rootCID did:(NSString *)repoDid toWriter:(CARWriter *)writer;
 
 @end
 
@@ -701,7 +704,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     // Per ATProto spec, firehose CAR must contain:
     //  1. The signed commit block (root)
     //  2. Record blocks for create/update ops
-    //  3. MST node blocks for tree diffs (TODO: requires MST diff plumbing)
+    //  3. MST node blocks reachable from the new MST root (commit.dataCID)
     
     CID *commitCID = commit.computeCID;
     if (!commitCID) {
@@ -740,13 +743,87 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         }
     }
     
+    // Add MST node blocks reachable from the new MST root
+    NSUInteger mstBlockCount = 0;
+    if (commit.dataCID && commit.did.length > 0) {
+        mstBlockCount = [self addMSTNodeBlocksForRootCID:commit.dataCID did:commit.did toWriter:writer];
+    }
+
     NSData *carData = [writer serialize];
-    PDS_LOG_SYNC_DEBUG(@"Built CAR blocks: %lu bytes (commit + %lu record blocks)",
-                       (unsigned long)carData.length, (unsigned long)recordBlockCount);
-    
-    // TODO: Add MST node blocks when MST diff plumbing is available
-    
+    PDS_LOG_SYNC_DEBUG(@"Built CAR blocks: %lu bytes (commit + %lu record blocks + %lu MST node blocks)",
+                       (unsigned long)carData.length, (unsigned long)recordBlockCount,
+                       (unsigned long)mstBlockCount);
+
     return carData ?: [NSData data];
+}
+
+- (nullable CID *)extractCIDFromCBORTag:(CBORValue *)tagValue {
+    if (!tagValue || tagValue.type != CBORTypeTag) return nil;
+    CBORValue *inner = tagValue.tagValue;
+    if (!inner || inner.type != CBORTypeByteString || inner.byteString.length <= 1) return nil;
+    NSData *cidBytes = [inner.byteString subdataWithRange:NSMakeRange(1, inner.byteString.length - 1)];
+    return [CID cidFromBytes:cidBytes];
+}
+
+// BFS traversal of MST blocks from rootCID, loading each block from the actor store
+// and adding it to writer. Returns the number of blocks added.
+- (NSUInteger)addMSTNodeBlocksForRootCID:(CID *)rootCID did:(NSString *)repoDid toWriter:(CARWriter *)writer {
+    if (!rootCID || !repoDid || !writer || !self.userDatabasePool) return 0;
+
+    NSError *dbError = nil;
+    PDSActorStore *store = [self.userDatabasePool storeForDid:repoDid error:&dbError];
+    if (!store || dbError) {
+        PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ to load MST nodes: %@", repoDid, dbError);
+        return 0;
+    }
+
+    NSMutableArray<NSData *> *queue = [NSMutableArray arrayWithObject:[rootCID bytes]];
+    NSMutableSet<NSString *> *visited = [NSMutableSet set];
+    NSUInteger count = 0;
+
+    while (queue.count > 0) {
+        NSData *cidBytes = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+
+        CID *nodeCID = [CID cidFromBytes:cidBytes];
+        if (!nodeCID) continue;
+
+        NSString *cidKey = nodeCID.stringValue;
+        if (!cidKey || [visited containsObject:cidKey]) continue;
+        [visited addObject:cidKey];
+
+        NSError *blockError = nil;
+        NSData *blockData = [store getBlockForCID:cidBytes forDid:repoDid error:&blockError];
+        if (!blockData) {
+            if (blockError) {
+                PDS_LOG_SYNC_DEBUG(@"MST block not found for CID %@: %@", cidKey, blockError);
+            }
+            continue;
+        }
+
+        [writer addBlock:[CARBlock blockWithCID:nodeCID data:blockData]];
+        count++;
+
+        // Parse the MST node CBOR to discover child node CIDs:
+        //   "l" key: left subtree CID (CBOR tag 42)
+        //   "e" key: array of entry maps, each with "t" key: right subtree CID (CBOR tag 42)
+        CBORValue *nodeMap = [CBORValue decode:blockData];
+        if (!nodeMap || nodeMap.type != CBORTypeMap) continue;
+
+        CID *lCID = [self extractCIDFromCBORTag:nodeMap.map[[CBORValue textString:@"l"]]];
+        if (lCID) [queue addObject:[lCID bytes]];
+
+        CBORValue *eArray = nodeMap.map[[CBORValue textString:@"e"]];
+        if (eArray && eArray.type == CBORTypeArray) {
+            for (CBORValue *entry in eArray.array) {
+                if (entry.type != CBORTypeMap) continue;
+                CID *tCID = [self extractCIDFromCBORTag:entry.map[[CBORValue textString:@"t"]]];
+                if (tCID) [queue addObject:[tCID bytes]];
+            }
+        }
+    }
+
+    return count;
 }
 
 @end
