@@ -1,0 +1,3 @@
+interface:
+  display_name: "ObjC Concurrency Bug Audit"
+  short_description: "Find Objective-C race and deadlock patterns"

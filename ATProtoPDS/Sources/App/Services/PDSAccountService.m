@@ -453,7 +453,10 @@
         plcURLString = @"http://127.0.0.1:2582";
     }
     
-    NSString *pdsURL = [NSString stringWithFormat:@"http://%@:%lu", config.serverHost, (unsigned long)config.serverPort];
+    NSString *pdsURL = config.issuer;
+    if (!pdsURL || pdsURL.length == 0) {
+         pdsURL = [NSString stringWithFormat:@"http://%@:%lu", config.serverHost, (unsigned long)config.serverPort];
+    }
     
     // Format keys as did:key multibase
     NSString *signingKeyMultibase = [signingKey didKeyString];

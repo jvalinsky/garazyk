@@ -487,4 +487,36 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
 
+- (NSDictionary *)toJWKS {
+    if (self.keyRotationManager) {
+        return [self.keyRotationManager toJWKS];
+    }
+    
+    if (self.publicKey) {
+        // Construct JWK for static ES256K key
+        // Uncompressed public key is 65 bytes: 0x04 + X (32) + Y (32)
+        if (self.publicKey.length == 65) {
+            NSData *xData = [self.publicKey subdataWithRange:NSMakeRange(1, 32)];
+            NSData *yData = [self.publicKey subdataWithRange:NSMakeRange(33, 32)];
+            
+            NSString *xStr = [JWT base64URLEncodeData:xData error:nil];
+            NSString *yStr = [JWT base64URLEncodeData:yData error:nil];
+            
+            NSDictionary *jwk = @{
+                @"kty": @"EC",
+                @"crv": @"secp256k1",
+                @"alg": @"ES256K",
+                @"use": @"sig",
+                @"kid": @"server-key", // Static kid for now
+                @"x": xStr ?: @"",
+                @"y": yStr ?: @""
+            };
+            
+            return @{ @"keys": @[jwk] };
+        }
+    }
+    
+    return @{ @"keys": @[] };
+}
+
 @end

@@ -77,7 +77,7 @@
     NSInteger issuedAt = (NSInteger)now;
     NSInteger expiresAt = issuedAt + 600;
     NSMutableDictionary *claims = [NSMutableDictionary dictionary];
-    claims[@"sub"] = @"did:web:admin.pds.example";
+    claims[@"sub"] = @"did:web:administrator.pds.example";
     claims[@"scope"] = scope ?: @"admin";
     if (issuer.length > 0) {
         claims[@"iss"] = issuer;
@@ -128,7 +128,7 @@
 
 - (void)testAuthenticateWithPasswordUsesConfiguredTokenTTL {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
-    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
     [self setEnv:@"PDS_ADMIN_TOKEN_TTL_SECONDS" value:@"120"];
 
     NSError *error = nil;
@@ -148,7 +148,7 @@
 
 - (void)testIsAuthenticatedWithRequestRejectsXAdminTokenWhenDisabled {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
-    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
     [self setEnv:@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER" value:@"1"];
 
     NSError *error = nil;
@@ -166,7 +166,7 @@
 
 - (void)testIsAuthenticatedWithRequestAllowsXAdminTokenByDefault {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
-    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
     [self setEnv:@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER" value:nil];
 
     NSError *error = nil;
@@ -181,7 +181,7 @@
 
 - (void)testLogoutInvalidatesPreviouslyMintedAdminToken {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
-    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 
     NSError *error = nil;
     BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
@@ -198,7 +198,7 @@
 }
 
 - (void)testIsAuthenticatedWithRequestRejectsTokenMissingIssuerClaim {
-    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 
     NSError *error = nil;
     NSString *token = [self mintAdminTokenWithIssuer:nil
@@ -213,7 +213,7 @@
 }
 
 - (void)testIsAuthenticatedWithRequestRejectsTokenMissingAudienceClaim {
-    [self setEnv:@"PDS_ISSUER" value:@"https://admin.pds.example"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 
     NSError *error = nil;
     NSString *token = [self mintAdminTokenWithIssuer:[self expectedIssuer]

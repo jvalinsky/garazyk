@@ -45,6 +45,8 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         _serverHost = @"0.0.0.0";
         _serverPort = 8080;
         _dataDirectory = @"./data";
+        
+        _issuer = nil;
 
         _plcURL = @"mock";
         _plcRetryCount = 3;
@@ -173,6 +175,16 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
         if (server[@"host"]) _serverHost = [self resolveEnvOverrideForKey:@"PDS_HOST" default:server[@"host"]];
         if (server[@"port"]) _serverPort = [server[@"port"] unsignedIntegerValue];
         if (server[@"data_dir"]) _dataDirectory = [self resolveEnvOverrideForKey:@"PDS_DATA_DIR" default:server[@"data_dir"]];
+        if (server[@"issuer"]) _issuer = [self resolveEnvOverrideForKey:@"PDS_ISSUER" default:server[@"issuer"]];
+    }
+    
+    // Top-level issuer override
+    if (config[@"issuer"]) _issuer = [self resolveEnvOverrideForKey:@"PDS_ISSUER" default:config[@"issuer"]];
+    
+    // Always check PDS_ISSUER env var
+    NSString *envIssuer = [self resolveEnvOverrideForKey:@"PDS_ISSUER" default:nil];
+    if (envIssuer.length > 0) {
+        _issuer = envIssuer;
     }
 
     NSDictionary *plc = config[@"plc"];
