@@ -10,6 +10,7 @@
 @interface NodeInfoHandler ()
 @property (nonatomic, strong) NodeInfoProvider *provider;
 @property (nonatomic, copy) NSString *issuer;
+@property (nonatomic, weak) id controller;
 @property (nonatomic, assign) BOOL configured;
 @end
 
@@ -45,6 +46,7 @@
 }
 
 - (void)setController:(id)controller {
+    _controller = controller;
     _configured = (controller != nil);
     [self updateProvider];
 }
@@ -60,6 +62,24 @@
     }
 
     _provider = [[NodeInfoProvider alloc] initWithBaseURL:_issuer configuration:config];
+    
+    // Fetch stats if controller is available
+    if ([self.controller respondsToSelector:@selector(accountService)]) {
+        id accountService = [self.controller performSelector:@selector(accountService)];
+        if ([accountService respondsToSelector:@selector(getAllAccountsWithError:)]) {
+            NSError *error = nil;
+            NSArray *accounts = [accountService performSelector:@selector(getAllAccountsWithError:) withObject:nil];
+            if (accounts) {
+                _provider.totalUsers = accounts.count;
+                // Currently setting posts/comments to 0 as they are fediverse concepts, 
+                // but we could count specific ATProto records here if needed.
+                _provider.localPosts = 0; 
+                _provider.localComments = 0;
+            }
+        }
+    }
+    
+    [_provider refreshUsageStatistics];
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {

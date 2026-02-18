@@ -410,8 +410,54 @@ static const NSInteger kMaxRecursionDepth = 32;
             }
             return NO;
         }
+    } else if ([format isEqualToString:@"record-key"]) {
+        // ATProto record key: 1–512 chars from [a-zA-Z0-9_~.:-], not "." or ".."
+        if (str.length == 0 || str.length > 512) {
+            if (error) {
+                *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
+                                                    message:[NSString stringWithFormat:@"Invalid record-key in '%@': must be 1–512 characters", context]
+                                                    context:context];
+            }
+            return NO;
+        }
+        if ([str isEqualToString:@"."] || [str isEqualToString:@".."]) {
+            if (error) {
+                *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
+                                                    message:[NSString stringWithFormat:@"Invalid record-key in '%@': '.' and '..' are reserved", context]
+                                                    context:context];
+            }
+            return NO;
+        }
+        NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:
+            @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_~.:-"];
+        NSRange invalid = [str rangeOfCharacterFromSet:validChars.invertedSet];
+        if (invalid.location != NSNotFound) {
+            if (error) {
+                *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
+                                                    message:[NSString stringWithFormat:@"Invalid record-key in '%@': contains disallowed character", context]
+                                                    context:context];
+            }
+            return NO;
+        }
+    } else if ([format isEqualToString:@"language"]) {
+        // BCP-47 language tag (simplified): primary subtag + optional subtags
+        // e.g. "en", "en-US", "zh-Hant-TW"
+        NSRegularExpression *langRegex = [NSRegularExpression
+            regularExpressionWithPattern:@"^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$"
+                                 options:0
+                                   error:nil];
+        NSUInteger matches = [langRegex numberOfMatchesInString:str
+                                                        options:0
+                                                          range:NSMakeRange(0, str.length)];
+        if (matches == 0) {
+            if (error) {
+                *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
+                                                    message:[NSString stringWithFormat:@"Invalid language tag in '%@': must be a valid BCP-47 tag", context]
+                                                    context:context];
+            }
+            return NO;
+        }
     }
-    // Other formats (record-key, language) not strictly validated for now
 
     return YES;
 }

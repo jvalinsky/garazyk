@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NodeInfoProvider : NSObject
 
 /*! Base URL for generating href links in discovery document. */
-@property (nonatomic, readonly) NSString *baseURL;
+@property (nonatomic, copy, readonly) NSString *baseURL;
 
 /*! Server configuration. */
 @property (nonatomic, readonly) PDSConfiguration *configuration;
@@ -43,6 +43,21 @@ NS_ASSUME_NONNULL_BEGIN
 /*! NodeInfo 2.1 schema document. */
 @property (nonatomic, readonly) NSDictionary *nodeInfo21;
 
+/*! Total number of registered users. */
+@property (nonatomic, assign) NSUInteger totalUsers;
+
+/*! Number of active users in the last 30 days. */
+@property (nonatomic, assign) NSUInteger activeUsersMonth;
+
+/*! Number of active users in the last 180 days. */
+@property (nonatomic, assign) NSUInteger activeUsersHalfyear;
+
+/*! Number of local posts. */
+@property (nonatomic, assign) NSUInteger localPosts;
+
+/*! Number of local comments. */
+@property (nonatomic, assign) NSUInteger localComments;
+
 /*!
  @brief Initialize with base URL and configuration.
 
@@ -52,51 +67,15 @@ NS_ASSUME_NONNULL_BEGIN
  @return Initialized provider, or nil if validation fails.
  */
 - (nullable instancetype)initWithBaseURL:(NSString *)baseURL
-                          configuration:(PDSConfiguration *)configuration;
+                           configuration:(PDSConfiguration *)configuration;
 
 /*!
- @brief Refresh usage statistics from database.
+ @brief Refresh NodeInfo documents with current statistics.
 
- @discussion Call this method to update the usage counts returned in
- the NodeInfo document. Expensive database queries should not be called
- on every request.
+ @discussion Call this method after updating usage properties to regenerate
+ the JSON documents.
  */
 - (void)refreshUsageStatistics;
-
-/*!
- @brief Get total number of registered users.
-
- @return Total user count, or 0 if unknown.
- */
-- (NSUInteger)totalUsers;
-
-/*!
- @brief Get number of active users in the last 30 days.
-
- @return Active user count, or 0 if unknown.
- */
-- (NSUInteger)activeUsersMonth;
-
-/*!
- @brief Get number of active users in the last 180 days.
-
- @return Active user count, or 0 if unknown.
- */
-- (NSUInteger)activeUsersHalfyear;
-
-/*!
- @brief Get number of local posts.
-
- @return Post count, or 0 if unknown.
- */
-- (NSUInteger)localPosts;
-
-/*!
- @brief Get number of local comments.
-
- @return Comment count, or 0 if unknown.
- */
-- (NSUInteger)localComments;
 
 @end
 

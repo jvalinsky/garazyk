@@ -52,9 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
-    // Legacy implementation doesn't support limit/cursor easily, so we return all
-    // and let the caller slice if needed, or just return all for now as a transitional step.
-    return [_serviceDatabases getAllAccountsWithError:error];
+    return [_serviceDatabases getAccountsWithLimit:limit cursor:cursor error:error];
 }
 
 @end

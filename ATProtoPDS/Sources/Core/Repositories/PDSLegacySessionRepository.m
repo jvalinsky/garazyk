@@ -30,12 +30,7 @@
 }
 
 - (BOOL)revokeRefreshToken:(NSString *)refreshToken error:(NSError **)error {
-    // Current PDSServiceDatabases doesn't have revoke single token by string,
-    // only delete all for account. 
-    // This is a gap in legacy API. For now, we'll return NO or implement a search.
-    // Actually, I'll just return YES for now to avoid breaking compile, 
-    // but in a real app this needs a better legacy API.
-    return YES;
+    return [_serviceDatabases deleteRefreshToken:refreshToken error:error];
 }
 
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)did error:(NSError **)error {
