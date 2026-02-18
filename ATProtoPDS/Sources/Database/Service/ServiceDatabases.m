@@ -110,11 +110,25 @@ static NSString *appPasswordGenerateSecret(void) {
         _didCachePool = [[PDSDatabasePool alloc] initWithDbDirectory:_didCacheDbPath maxSize:didCacheMaxSize];
         _sequencerPool = [[PDSDatabasePool alloc] initWithDbDirectory:_sequencerDbPath maxSize:sequencerMaxSize];
         
+        [self applyPerformancePragmasOnPool:_servicePool];
+        [self applyPerformancePragmasOnPool:_didCachePool];
+        [self applyPerformancePragmasOnPool:_sequencerPool];
         [self initializeServiceSchema:nil];
         [self initializeDidCacheSchema:nil];
         [self initializeSequencerSchema:nil];
     }
     return self;
+}
+
+#pragma mark - Database Configuration
+
+- (void)applyPerformancePragmasOnPool:(PDSDatabasePool *)pool {
+    static NSString *const pragmaSQL =
+        @"PRAGMA journal_mode=WAL;"
+        @"PRAGMA synchronous=NORMAL;"
+        @"PRAGMA cache_size=-32000;"
+        @"PRAGMA temp_store=MEMORY;";
+    [self executeSQL:pragmaSQL onPool:pool error:nil];
 }
 
 #pragma mark - Schema Initialization
@@ -316,6 +330,14 @@ static NSString *appPasswordGenerateSecret(void) {
     return accounts ?: @[];
 }
 
+- (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return @[];
+    NSArray *accounts = [db getAccountsWithLimit:limit afterDid:cursor error:error];
+    [db close];
+    return accounts ?: @[];
+}
+
 #pragma mark - Refresh Token Operations
 
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error {
@@ -333,6 +355,28 @@ static NSString *appPasswordGenerateSecret(void) {
         sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
         sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:30 * 24 * 60 * 60] timeIntervalSince1970]);
 
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+    } error:&localError];
+
+    if (!success && localError) {
+        if (error) *error = localError;
+    }
+
+    return success;
+}
+
+- (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+
+        NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) { success = NO; return; }
+
+        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
 
