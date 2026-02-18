@@ -22,6 +22,8 @@
     checks[@"database"] = [self checkDatabase:context config:config];
     checks[@"storage"] = [self checkStorage:context config:config];
     checks[@"memory"] = [self checkMemory];
+    checks[@"daemon"] = [self checkDaemon:context];
+    checks[@"http"] = [self checkHTTP:context config:config];
 
     result[@"checks"] = checks;
 
@@ -43,29 +45,84 @@
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"status"] = @"ok";
 
-    NSDate *start = [NSDate date];
+    NSString *dataDir = context.dataDir;
+    
+    NSArray *requiredDbs = @[
+        @"service/service.db",
+        @"sequencer/service.db",
+        @"did_cache/service.db"
+    ];
+    
+    NSMutableArray *missing = [NSMutableArray array];
+    for (NSString *dbRelPath in requiredDbs) {
+        NSString *fullPath = [dataDir stringByAppendingPathComponent:dbRelPath];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:fullPath]) {
+            [missing addObject:dbRelPath];
+        }
+    }
+
+    if (missing.count > 0) {
+        result[@"status"] = @"error";
+        result[@"message"] = [NSString stringWithFormat:@"Missing databases: %@", [missing componentsJoinedByString:@", "]];
+    }
+
+    return result;
+}
+
++ (NSDictionary *)checkDaemon:(PDSCLICommandContext *)context {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"status"] = @"ok";
+
+    NSString *pidPath = [context.dataDir stringByAppendingPathComponent:@"pds.pid"];
+    NSString *pidContent = [NSString stringWithContentsOfFile:pidPath encoding:NSUTF8StringEncoding error:nil];
+    
+    if (pidContent) {
+        pid_t pid = (pid_t)[pidContent integerValue];
+        if (pid > 0 && kill(pid, 0) == 0) {
+            result[@"pid"] = @(pid);
+        } else {
+            result[@"status"] = @"warn";
+            result[@"message"] = @"PID file exists but process is not running";
+        }
+    } else {
+        result[@"status"] = @"info";
+        result[@"message"] = @"No background process detected";
+    }
+
+    return result;
+}
+
++ (NSDictionary *)checkHTTP:(PDSCLICommandContext *)context config:(NSDictionary *)config {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"status"] = @"ok";
+
+    NSInteger port = [config[@"server"][@"port"] integerValue] ?: 2583;
+    NSString *urlStr = [NSString stringWithFormat:@"http://localhost:%ld/xrpc/com.atproto.server.describeServer", (long)port];
+    NSURL *url = [NSURL URLWithString:urlStr];
 
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
-    __block BOOL connected = NO;
+    __block NSInteger statusCode = 0;
+    __block NSError *error = nil;
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSString *dbPath = config[@"database"][@"path"] ?: [context.dataDir stringByAppendingPathComponent:@"pds.db"];
-
-        if ([[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
-            connected = YES;
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *taskError) {
+        if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = [(NSHTTPURLResponse *)response statusCode];
         }
-
+        error = taskError;
         dispatch_semaphore_signal(sem);
-    });
+    }];
+    [task resume];
 
-    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
-
-    NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:start] * 1000;
-    result[@"latency_ms"] = @(round(latency));
-
-    if (!connected) {
+    if (dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)) != 0) {
+        [task cancel];
         result[@"status"] = @"error";
-        result[@"message"] = @"Database connection failed";
+        result[@"message"] = @"Timeout connecting to PDS";
+    } else if (error) {
+        result[@"status"] = @"error";
+        result[@"message"] = [NSString stringWithFormat:@"Connection refused: %@", error.localizedDescription];
+    } else if (statusCode != 200) {
+        result[@"status"] = @"warn";
+        result[@"message"] = [NSString stringWithFormat:@"Server returned status %ld", (long)statusCode];
     }
 
     return result;
