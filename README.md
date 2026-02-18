@@ -409,6 +409,47 @@ make audit
 
 Please report security issues privately to [security@jvalinsky.com](mailto:security@jvalinsky.com)
 
+## Operations
+
+### Testing
+To run the automated test suite:
+```bash
+./scripts/run_tests.sh
+```
+
+### Backups
+This project includes an automated backup script `scripts/backup_pds.sh`.
+It safely backs up running SQLite databases using the `.backup` command.
+
+**Usage:**
+```bash
+./scripts/backup_pds.sh --data-dir /path/to/data --backup-dir /path/to/backups
+```
+Recommended: Schedule this via cron daily.
+
+### Restore
+To restore a database from a backup:
+1. Extract the backup archive: `tar -xzf pds-backup-....tar.gz`
+2. Stop the PDS server.
+3. Replace the target database file with the backup copy.
+   - For service DB: `cp backup/service.sqlite /path/to/data/service.sqlite`
+   - For user DB: `cp backup/user/did.../data.sqlite /path/to/data/.../did.../data.sqlite`
+4. Restart the PDS server.
+
+### Debugging
+A database dump utility is provided to inspect PDS data:
+
+```bash
+# Dump service database schema and info
+./scripts/db_dump.sh service
+
+# Dump a specific user's database
+./scripts/db_dump.sh did:plc:1234...
+
+# Dump a specific table from a user's DB
+./scripts/db_dump.sh did:plc:1234... record
+```
+
 ## Contributing
 
 ### Development Workflow

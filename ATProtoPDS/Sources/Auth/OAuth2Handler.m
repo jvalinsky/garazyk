@@ -12,6 +12,14 @@
 
 @interface OAuth2Handler ()
 @property (nonatomic, strong) PDSDatabase *database;
+
+- (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleProtectedResourceMetadata:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
 @end
 
 @implementation OAuth2Handler {
@@ -179,6 +187,12 @@
         __strong typeof(weakSelf) strongSelf = weakSelf;
         [strongSelf handleJWKS:request response:response];
     }];
+
+    // Phase 4: Add /oauth/par endpoint for Pushed Authorization Requests
+    [httpServer addRoute:@"POST" path:@"/oauth/par" handler:^(HttpRequest *request, HttpResponse *response) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf handlePARRequest:request response:response];
+    }];
 }
 
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response {
@@ -298,6 +312,19 @@
     authRequest.codeChallengeMethod = params[@"code_challenge_method"];
     authRequest.nonce = params[@"nonce"];
     authRequest.loginHint = params[@"login_hint"];
+    
+    // RFC 7636: Public clients must use PKCE
+    // A client is considered public if it has no secret
+    BOOL isPublicClient = (client[@"client_secret"] == nil);
+    if (isPublicClient && (!authRequest.codeChallenge || authRequest.codeChallenge.length == 0)) {
+        PDS_LOG_AUTH_WARN(@"Public client missing code_challenge: %@", clientID);
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"code_challenge required for public clients"
+        }];
+        return;
+    }
     
     PDS_LOG_AUTH_INFO(@"Processing authorization for client: %@, hint: %@", clientID, authRequest.loginHint);
 
@@ -610,16 +637,8 @@
 }
 
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response {
-    // Get JWKS from key rotation manager's key store
-    KeyRotationManager *keyManager = self.minter.keyRotationManager;
-    if (!keyManager) {
-        response.statusCode = 500;
-        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Server configuration error: key manager not configured"}];
-        return;
-    }
-
-    // Access the KeyManager's JWKS via toJWKS method
-    NSDictionary *jwks = [keyManager toJWKS];
+    // Access JWKS via the minter
+    NSDictionary *jwks = [self.minter toJWKS];
     if (!jwks) {
         response.statusCode = 500;
         [response setJsonBody:@{@"error": @"server_error", @"error_description": @"Failed to export JWKS"}];
@@ -629,6 +648,77 @@
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
     [response setJsonBody:jwks];
     response.statusCode = 200;
+}
+
+- (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    PDS_LOG_AUTH_INFO(@"Handling PAR request");
+    
+    // Parse body parameters
+    NSString *body = [[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding];
+    NSDictionary *params = [self parseFormUrlEncodedString:body];
+    
+    // Validate client authentication (either client_secret or DPoP)
+    NSString *clientID = params[@"client_id"];
+    if (!clientID) {
+        response.statusCode = 400;
+        [response setJsonBody:@{@"error": @"invalid_client", @"error_description": @"Missing client_id"}];
+        return;
+    }
+    
+    NSError *clientError = nil;
+    NSDictionary *client = [self validateClient:clientID error:&clientError];
+    if (!client) {
+        response.statusCode = 401;
+        [response setJsonBody:@{@"error": @"invalid_client", @"error_description": clientError.localizedDescription ?: @"Invalid client"}];
+        return;
+    }
+
+    NSString *clientSecret = params[@"client_secret"];
+    // Note: DPoP check logic is similar to token endpoint, simplified here for now
+    NSString *expectedSecret = client[@"client_secret"];
+    if (expectedSecret && ![clientSecret isEqualToString:expectedSecret]) {
+         response.statusCode = 401;
+         [response setJsonBody:@{@"error": @"invalid_client", @"error_description": @"Invalid client credentials"}];
+         return;
+    }
+    
+    // Generate request URI
+    NSString *requestUUID = [[NSUUID UUID] UUIDString];
+    NSString *requestURI = [NSString stringWithFormat:@"urn:ietf:params:oauth:request_uri:%@", requestUUID];
+    
+    // Store parameters in database (using a new table or generic storage)
+    // For now, we will store it in a temporary table or generic cache if available.
+    // Since we don't have a specific PAR table, we'll assume a `oauth_par_requests` table exists or should be created.
+    // To conform to the plan, we need to store this.
+    // Let's create the table if needed (lazy init) or just insert.
+    NSData *paramsData = [NSJSONSerialization dataWithJSONObject:params options:0 error:nil];
+    NSTimeInterval expiresIn = 600; // 10 minutes
+    NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:expiresIn];
+    
+    // Simple table schema: request_uri TEXT PRIMARY KEY, params_json TEXT, expires_at TEXT
+    NSString *createTableSQL = @"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, params_json TEXT, expires_at TEXT)";
+    [self.database executeParameterizedUpdate:createTableSQL params:@[] error:nil];
+    
+    NSString *sql = @"INSERT INTO oauth_par_requests (request_uri, params_json, expires_at) VALUES (?, ?, ?)";
+    [self.database executeParameterizedUpdate:sql params:@[requestURI, [[NSString alloc] initWithData:paramsData encoding:NSUTF8StringEncoding], [self iso8601StringFromDate:expiresAt]] error:nil];
+    
+    response.statusCode = 201;
+    [response setJsonBody:@{
+        @"request_uri": requestURI,
+        @"expires_in": @(expiresIn)
+    }];
+}
+
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
+        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
+        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    });
+    return [formatter stringFromDate:date];
 }
 
 @end

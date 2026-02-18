@@ -47,4 +47,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+extern const void * const kPDSActorStoreQueueKey;
+
 NS_ASSUME_NONNULL_END

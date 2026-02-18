@@ -9,6 +9,8 @@
 #import <objc/runtime.h>
 #import "Network/RateLimiter.h"
 #import "Network/HttpResponse.h"
+#import "Auth/OAuthConformanceTests.h"
+#import "Auth/OAuthPublicClientTests.h"
 #import "App/PDSConfiguration.h"
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
@@ -114,6 +116,8 @@ int main(int argc, char * argv[]) {
             @"PLCAuditorTests",
             @"PLCServerTests",
             @"OAuthPKCETests",
+            @"OAuthConformanceTests",
+            @"OAuthPublicClientTests",
             @"OAuthDPoPTests",
             @"JWTTests",
             @"OAuth2Tests",
@@ -207,7 +211,11 @@ int main(int argc, char * argv[]) {
             @"FirehoseIntegrationTests",
             @"PDSReplayCacheTests",
             @"PDSEmailHTTPClientTests",
-            @"PDSResendEmailProviderTests"
+            @"PDSResendEmailProviderTests",
+            @"ProductionSecurityTests",
+            @"FirehoseConformanceTests",
+            @"ServiceDatabasesPruningTests",
+            @"CoverageGapTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
