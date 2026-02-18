@@ -8,7 +8,13 @@
       "Bash(xcodegen generate:*)",
       "Bash(ls:*)",
       "Bash(./build/tests/AllTests:*)",
-      "Bash(cmake:*)"
+      "Bash(cmake:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:resend.com)",
+      "Bash(deciduous nodes:*)",
+      "Skill(work)"
     ]
   }
 }
