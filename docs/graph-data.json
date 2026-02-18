@@ -39,9 +39,9 @@
       "node_type": "goal",
       "title": "Fix OAuthIntegrationTests.testFullOAuthFlow returning HTTP 400",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:46:53.729767-05:00",
-      "updated_at": "2026-01-17T23:46:53.729767-05:00",
+      "updated_at": "2026-02-18T10:58:27.344211-05:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"OAuthIntegrationTests.testFullOAuthFlow test was returning HTTP 400 on token exchange instead of 200. Debug logging revealed DPoP verification failing with \\\"Invalid JWK component length\\\" then \\\"DPoP signature verification failed\\\". Root cause: DPoP tokens created with empty x/y values in JWK header, and DER-encoded signature was being base64url encoded directly instead of extracting raw r||s components first.\"}"
     },
     {
@@ -171,9 +171,9 @@
       "node_type": "goal",
       "title": "MST diff plumbing in SubscribeReposHandler.m:704,747",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T18:16:25.689507-05:00",
-      "updated_at": "2026-02-17T18:16:25.689507-05:00",
+      "updated_at": "2026-02-18T10:58:30.238128-05:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"now work on: MST diff plumbing (SubscribeReposHandler.m:704,747)\"}"
     },
     {
@@ -182,9 +182,9 @@
       "node_type": "goal",
       "title": "MST diff plumbing in SubscribeReposHandler.m",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T18:20:03.320574-05:00",
-      "updated_at": "2026-02-17T18:20:03.320574-05:00",
+      "updated_at": "2026-02-18T10:58:33.134078-05:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"now work on: MST diff plumbing (SubscribeReposHandler.m:704,747)\"}"
     },
     {
@@ -241,6 +241,17 @@
       "created_at": "2026-02-18T10:13:45.762553-05:00",
       "updated_at": "2026-02-18T10:13:45.762553-05:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":98}"
+    },
+    {
+      "id": 23,
+      "change_id": "c1413c05-dd1f-4347-a42e-48c9eb3a1407",
+      "node_type": "action",
+      "title": "Implement P-256 sig verification (PLCAuditor), requestPlcOperationSignature token/email, close done goals",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-02-18T10:30:24.676255-05:00",
+      "updated_at": "2026-02-18T10:30:24.676255-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":88}"
     }
   ],
   "edges": [
@@ -408,6 +419,28 @@
       "weight": 1.0,
       "rationale": "All fixes confirmed present",
       "created_at": "2026-02-18T10:13:45.771169-05:00"
+    },
+    {
+      "id": 16,
+      "from_node_id": 1,
+      "to_node_id": 23,
+      "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
+      "to_change_id": "c1413c05-dd1f-4347-a42e-48c9eb3a1407",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of PLC spec compliance",
+      "created_at": "2026-02-18T10:30:24.684301-05:00"
+    },
+    {
+      "id": 17,
+      "from_node_id": 13,
+      "to_node_id": 23,
+      "from_change_id": "3e0545f7-8fad-43b7-b975-c0a4e273b386",
+      "to_change_id": "c1413c05-dd1f-4347-a42e-48c9eb3a1407",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Scope includes DI verification",
+      "created_at": "2026-02-18T10:30:24.691793-05:00"
     }
   ]
 }
