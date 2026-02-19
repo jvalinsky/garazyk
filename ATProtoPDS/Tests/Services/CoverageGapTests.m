@@ -162,13 +162,11 @@
     XCTAssertNotNil(accountInfo, @"Failed to create account: %@", createError);
     NSString *did = accountInfo[@"did"];
     XCTAssertNotNil(did);
-    NSLog(@"[testGetLatestCommit] Created account with DID: %@", did);
     
     // 2. Inject Repo Root
     NSError *storeError = nil;
     PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:&storeError];
     XCTAssertNotNil(store, @"Failed to get actor store: %@", storeError);
-    NSLog(@"[testGetLatestCommit] Got actor store");
     
     NSString *rootCidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     NSData *rootBytes = [CID cidFromString:rootCidStr].bytes;
@@ -177,11 +175,9 @@
     NSError *transactError = nil;
     [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **err) {
         BOOL result = [transactor updateRepoRoot:did rootCid:rootBytes rev:@"3k55555" error:err];
-        NSLog(@"[testGetLatestCommit] updateRepoRoot result: %@, error: %@", result ? @"YES" : @"NO", *err);
         XCTAssertTrue(result, @"Failed to update repo root");
     } error:&transactError];
     XCTAssertNil(transactError, @"Transaction error: %@", transactError);
-    NSLog(@"[testGetLatestCommit] Transaction completed");
     
     // 3. Verify we can read back the data
     __block NSString *verifyCid = nil;
@@ -192,34 +188,26 @@
             CID *cid = [CID cidFromBytes:rootCidBytes];
             verifyCid = cid.stringValue;
         }
-        NSLog(@"[testGetLatestCommit] Verified root CID: %@", verifyCid);
     } error:&transactError];
     XCTAssertEqualObjects(verifyCid, rootCidStr, @"Root CID not stored correctly");
     
     // 4. Request getLatestCommit via HTTP
     NSString *urlString = [NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.sync.getLatestCommit?did=%@", (unsigned long)self.controller.httpPort, did];
-    NSLog(@"[testGetLatestCommit] Requesting URL: %@", urlString);
     NSURL *url = [NSURL URLWithString:urlString];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
     XCTestExpectation *exp = [self expectationWithDescription:@"Get Latest Commit"];
     
     [[NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        NSLog(@"[testGetLatestCommit] HTTP response status: %ld", (long)((NSHTTPURLResponse *)response).statusCode);
         XCTAssertNil(error);
         NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)response;
+        XCTAssertEqual(httpResp.statusCode, 200);
         
         if (httpResp.statusCode == 200 && data) {
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            NSLog(@"[testGetLatestCommit] Response JSON: %@", json);
             XCTAssertEqualObjects(json[@"cid"], rootCidStr);
             XCTAssertEqualObjects(json[@"rev"], @"3k55555");
-        } else if (data) {
-            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            NSLog(@"[testGetLatestCommit] Error response: %@", json);
         }
-        
-        XCTAssertEqual(httpResp.statusCode, 200);
         
         [exp fulfill];
     }] resume];

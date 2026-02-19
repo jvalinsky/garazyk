@@ -161,8 +161,8 @@
     __weak XrpcDispatcher *weakDispatcher = dispatcher;
     __weak SubscribeReposHandler *weakSubscribeReposHandler = self.subscribeReposHandler;
 
-    // Handler for /xrpc/
-    [server addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
+    // Handler for /xrpc (prefix match for all XRPC methods)
+    [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         XrpcDispatcher *strongDispatcher = weakDispatcher;
         if (strongDispatcher) {
             [strongDispatcher handleRequest:request response:response];
