@@ -412,8 +412,6 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
     if (!_subscribeReposHandler) {
         _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
-        // Inject the PDS signing key for firehose commit signatures
-        _subscribeReposHandler.signingKey = _jwtMinter.privateKey;
     }
     
     // Build and configure HTTP server

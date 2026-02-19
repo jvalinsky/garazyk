@@ -12,7 +12,7 @@
 
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
-#import <Security/Security.h>
+#import "Auth/PDSKeyManagerProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlock;
 @class PDSDatabaseBlob;
+@protocol PDSKeyManager;
 
 /*! Error domain for actor store operations. */
 extern NSString * const PDSActorStoreErrorDomain;
@@ -156,6 +157,18 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Raw SQLite handle (internal use). */
 @property (nonatomic, assign, readonly) sqlite3 *db;
 
+/*! Key manager for cryptographic operations. */
+@property (nonatomic, strong) id<PDSKeyManager> keyManager;
+
+/*! Sign data using the active key. */
+- (nullable NSData *)signData:(NSData *)data error:(NSError **)error;
+
+/*! Get the active public key (compressed secp256k1). */
+- (nullable NSData *)publicSigningKeyWithError:(NSError **)error;
+
+/*! Get the DID key string (did:key:z...) for the active key. */
+- (nullable NSString *)didKeyStringWithError:(NSError **)error;
+
 /*! Creates a store for a DID at the given path. */
 + (instancetype)storeWithDid:(NSString *)did 
                     dbPath:(NSString *)dbPath
@@ -175,36 +188,11 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
                 error:(NSError **)error;
 
-/*! Gets the signing key from Keychain. Caller must CFRelease the returned key. */
-- (nullable SecKeyRef)signingKeyWithError:(NSError **)error;
-
-/*! Returns raw signing key private bytes from Keychain. */
-- (nullable NSData *)signingKeyPrivateBytesWithError:(NSError **)error;
-
-
-
 /*! Generates a new signing key. */
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
 
 /*! Imports an existing signing key (raw private bytes). */
 - (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error;
-
-/*! Whether signing keys should be persisted via the Keychain. Defaults to YES. */
-@property (nonatomic, assign) BOOL useKeychainSigningKey;
-
-/*! When YES (default), signing keys are protected with biometric authentication. */
-@property (nonatomic, assign) BOOL useBiometricProtection;
-
-/*! When YES, use Secure Enclave for key generation (macOS with T2/Apple Silicon). */
-@property (nonatomic, assign) BOOL useSecureEnclave;
-
-/*! Whether the Keychain needs upgrade to biometric protection. */
-@property (nonatomic, assign, readonly) BOOL keychainNeedsUpgrade;
-
-/*! Upgrades existing keys to use biometric protection. */
-- (BOOL)upgradeKeychainToBiometricWithError:(NSError **)error;
-
-- (void)setUseKeychainSigningKey:(BOOL)useKeychain;
 
 // Internal methods for ServiceDatabases
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
