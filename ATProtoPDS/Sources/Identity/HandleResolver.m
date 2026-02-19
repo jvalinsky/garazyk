@@ -11,6 +11,10 @@
  @copyright Copyright (c) 2024 Jack Valinsky
  */
 
+#ifdef GNUSTEP
+#import "Compat/GNUstepCompat.h"
+#endif
+
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
 

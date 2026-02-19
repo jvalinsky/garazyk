@@ -1,3 +1,7 @@
+#ifdef GNUSTEP
+#import "Compat/GNUstepCompat.h"
+#endif
+
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"

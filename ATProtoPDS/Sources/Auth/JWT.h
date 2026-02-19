@@ -334,6 +334,8 @@ typedef NS_ENUM(NSInteger, JWTError) {
 
 @end
 
+@protocol PDSKeyManager;
+
 /*!
  @class JWTMinter
  
