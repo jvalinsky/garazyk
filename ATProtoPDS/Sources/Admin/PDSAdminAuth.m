@@ -10,7 +10,6 @@
 #endif
 
 static NSString *const PDSAdminAuthErrorDomain = @"PDSAdminAuth";
-static NSString *const PDSAdminAuthDefaultIssuer = @"https://pds.local:8443";
 static const NSTimeInterval PDSAdminAuthDefaultTokenTTLSeconds = 3600.0;
 static const NSTimeInterval PDSAdminAuthMinTokenTTLSeconds = 60.0;
 static const NSTimeInterval PDSAdminAuthMaxTokenTTLSeconds = 86400.0;
@@ -74,6 +73,35 @@ static BOOL PDSAdminAuthIsIssuerRequired(NSDictionary *env) {
     return [environment isEqualToString:@"production"];
 }
 
+static BOOL PDSAdminAuthHostLooksLocal(NSString *host) {
+    NSString *normalized = [[host ?: @"" lowercaseString]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
+
+static NSString *PDSAdminAuthCanonicalIssuerFromConfiguration(PDSConfiguration *configuration) {
+    if (configuration.issuer.length > 0) {
+        return configuration.issuer;
+    }
+
+    NSString *host = configuration.serverHost;
+    if (PDSAdminAuthHostLooksLocal(host)) {
+        host = @"localhost";
+    }
+    NSString *scheme = PDSAdminAuthHostLooksLocal(host) ? @"http" : @"https";
+    NSUInteger port = configuration.serverPort > 0 ? configuration.serverPort : 2583;
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+}
+
 static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredButMissing) {
     // First check environment directly
     NSString *issuer = [env[@"PDS_ISSUER"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -82,8 +110,8 @@ static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredBut
         return issuer;
     }
     
-    // Fall back to PDSConfiguration shared instance
-    NSString *configIssuer = [PDSConfiguration sharedConfiguration].issuer;
+    // Fall back to canonical issuer from PDSConfiguration.
+    NSString *configIssuer = PDSAdminAuthCanonicalIssuerFromConfiguration([PDSConfiguration sharedConfiguration]);
     if (configIssuer.length > 0) {
         if (requiredButMissing) *requiredButMissing = NO;
         return configIssuer;
@@ -94,7 +122,7 @@ static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredBut
         return nil;
     }
     if (requiredButMissing) *requiredButMissing = NO;
-    return PDSAdminAuthDefaultIssuer;
+    return @"http://localhost:8080";
 }
 
 static NSInteger PDSAdminAuthParsePositiveInteger(NSString *value) {

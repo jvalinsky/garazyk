@@ -332,4 +332,14 @@
     XCTAssertFalse([encoded containsString:@"/"], @"Should not contain /");
 }
 
+- (void)testBase64URLDecodeHandlesModThreeLength {
+    NSError *error = nil;
+    NSData *decoded = [JWT base64URLDecode:@"YWI" error:&error];
+
+    XCTAssertNotNil(decoded, @"Base64URL decode should handle length %% 4 == 3");
+    XCTAssertNil(error, @"No error expected while decoding valid mod-3 input");
+    NSString *decodedString = [[NSString alloc] initWithData:decoded encoding:NSUTF8StringEncoding];
+    XCTAssertEqualObjects(decodedString, @"ab");
+}
+
 @end

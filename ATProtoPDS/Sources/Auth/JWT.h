@@ -342,6 +342,8 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @discussion JWTMinter handles minting access tokens and refresh tokens
  with proper claims and signatures.
  */
+@protocol PDSKeyManager;
+
 @interface JWTMinter : NSObject
 
 /*! The issuer claim for minted tokens. */
@@ -361,8 +363,6 @@ typedef NS_ENUM(NSInteger, JWTError) {
 
 /*! Optional key rotation manager for signing with rotated keys. */
 @property (nonatomic, strong, nullable) KeyRotationManager *keyRotationManager;
-
-@protocol PDSKeyManager;
 
 /*!
  @method signPayload:keyManager:error:

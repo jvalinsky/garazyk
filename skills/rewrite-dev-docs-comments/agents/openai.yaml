@@ -1,0 +1,4 @@
+interface:
+  display_name: "Doc & Comment Rewriter"
+  short_description: "Rewrite docs/comments in senior dev voice"
+  default_prompt: "Use $rewrite-dev-docs-comments to rewrite this text in concise senior-engineer language and remove LLM-speak."

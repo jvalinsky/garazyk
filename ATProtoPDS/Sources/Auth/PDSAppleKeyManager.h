@@ -68,6 +68,17 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 - (nullable instancetype)initWithServiceIdentifier:(NSString *)serviceIdentifier;
 - (nullable instancetype)initWithDatabase:(PDSDatabase *)database serviceIdentifier:(NSString *)serviceIdentifier;
 
+// Backward-compatible test/helper API.
+- (nullable PDSAppleKeyPair *)generatePDSAppleKeyPairWithAlgorithm:(NSString *)algorithm
+                                                            keySize:(NSUInteger)keySize
+                                                              error:(NSError **)error;
+- (nullable PDSAppleKeyPair *)getPDSAppleKeyPairWithID:(NSString *)keyID
+                                                  error:(NSError **)error;
+- (nullable PDSAppleKeyPair *)getActivePDSAppleKeyPair:(NSError **)error;
+- (NSArray<PDSAppleKeyPair *> *)allPDSAppleKeyPairs:(NSError **)error;
+- (BOOL)deletePDSAppleKeyPairWithID:(NSString *)keyID error:(NSError **)error;
+- (BOOL)setPDSAppleKeyPairActive:(NSString *)keyID error:(NSError **)error;
+
 // Additional methods specific to Apple implementation if needed
 - (BOOL)verifySignature:(NSData *)signature
                forData:(NSData *)data

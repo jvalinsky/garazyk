@@ -56,6 +56,35 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #import "Email/PDSKeychainSecretsProvider.h"
 #import "Email/PDSEnvironmentSecretsProvider.h"
 
+static BOOL PDSControllerHostIsLocal(NSString *host) {
+    NSString *normalized = [[host ?: @"" lowercaseString]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
+
+static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, NSUInteger portHint) {
+    if (configuration.issuer.length > 0) {
+        return configuration.issuer;
+    }
+
+    NSString *host = configuration.serverHost;
+    if (PDSControllerHostIsLocal(host)) {
+        host = @"localhost";
+    }
+    NSString *scheme = PDSControllerHostIsLocal(host) ? @"http" : @"https";
+    NSUInteger port = portHint > 0 ? portHint : (configuration.serverPort > 0 ? configuration.serverPort : 2583);
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+}
+
 @implementation PDSController {
     PDSApplication *_backingApplication;  // When initialized via initWithApplication:
     PDSServiceDatabases *_serviceDatabases;
@@ -238,7 +267,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _jwtMinter = [[JWTMinter alloc] init];
         
         _httpPort = 2583;
-        _jwtMinter.issuer = [PDSConfiguration sharedConfiguration].issuer ?: @"https://pds.local:8443";
+        _jwtMinter.issuer = PDSControllerCanonicalIssuer([PDSConfiguration sharedConfiguration], _httpPort);
         _jwtMinter.signingAlgorithm = @"ES256K";
         
         NSError *serverKeyError = nil;
@@ -334,7 +363,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     builder.serviceDatabases = _serviceDatabases;
     builder.xrpcDispatcher = _xrpcDispatcher;
     builder.subscribeReposHandler = _subscribeReposHandler;
-    builder.issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
+    builder.issuer = PDSControllerCanonicalIssuer([PDSConfiguration sharedConfiguration], self.httpPort);
     
     // Feature flags (all enabled by default)
     builder.enableXrpc = YES;
