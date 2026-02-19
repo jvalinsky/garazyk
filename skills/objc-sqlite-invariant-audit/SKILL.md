@@ -10,7 +10,7 @@ Use this skill to quickly surface database consistency and lifecycle risks in Ob
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-sqlite-invariant-audit/scripts/scan_sqlite_invariants.sh . /tmp/objc-sqlite-invariant-audit
+./skills/objc-sqlite-invariant-audit/scripts/scan_sqlite_invariants.sh . /tmp/objc-sqlite-invariant-audit
 ```
 2. Read `/tmp/objc-sqlite-invariant-audit/summary.md`.
 3. Validate candidates with `references/sqlite-invariant-checklist.md`.

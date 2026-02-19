@@ -418,6 +418,20 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     return count;
 }
 
+- (NSUInteger)pendingSendBytes {
+    __block NSUInteger bytes = 0;
+    if (!self.writeQueue) {
+        return 0;
+    }
+
+    dispatch_sync(self.writeQueue, ^{
+        for (NSData *data in self.messageQueue) {
+            bytes += data.length;
+        }
+    });
+    return bytes;
+}
+
 - (void)flushWriteBuffer {
     if (self.messageQueue.count == 0) return;
 
