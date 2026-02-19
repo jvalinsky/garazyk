@@ -5741,7 +5741,7 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
         }
         
         response.statusCode = HttpStatusOK;
-        [response setHeader:@"application/vnd.ipld.car" forKey:@"Content-Type"];
+        response.contentType = @"application/vnd.ipld.car";
         response.body = carData;
     }];
 
