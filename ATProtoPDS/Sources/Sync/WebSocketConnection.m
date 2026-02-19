@@ -17,6 +17,7 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 static const uint8_t WS_FLAG_FIN = 0x80;
 static const uint8_t WS_MASK = 0x80;
 static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
+static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 
 @interface WebSocketConnection ()
 
@@ -30,6 +31,7 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 @property (nonatomic, strong) NSMutableData *writeBuffer;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t writeQueue;
 @property (nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
+@property (nonatomic, assign) NSUInteger queuedSendBytes;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimer;
 @property (nonatomic, strong, nullable) NSTimer *heartbeatTimeoutTimer;
 @property (nonatomic, assign) BOOL waitingForPong;
@@ -79,6 +81,7 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     _heartbeatTimeout = 10.0;
     _readBuffer = [NSMutableData data];
     _messageQueue = [NSMutableArray array];
+    _queuedSendBytes = 0;
     _writeQueue = dispatch_queue_create("com.atproto.pds.websocket.write", DISPATCH_QUEUE_SERIAL);
     _connectionQueue = dispatch_queue_create("com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
     _waitingForPong = NO;
@@ -361,6 +364,10 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     self.state = WebSocketConnectionStateClosing;
     self.closeCode = code;
     self.closeReason = reason;
+    dispatch_async(self.writeQueue, ^{
+        [self.messageQueue removeAllObjects];
+        self.queuedSendBytes = 0;
+    });
 
     NSMutableData *closeData = [NSMutableData dataWithCapacity:2 + reason.length];
     uint8_t codeBytes[2] = { (uint8_t)((code >> 8) & 0xFF), (uint8_t)(code & 0xFF) };
@@ -399,7 +406,20 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 
 - (void)sendFrame:(NSData *)frame {
     dispatch_async(self.writeQueue, ^{
+        if (self.state == WebSocketConnectionStateClosing || self.state == WebSocketConnectionStateClosed) {
+            return;
+        }
+        if (self.queuedSendBytes + frame.length > WS_MAX_PENDING_SEND_BYTES) {
+            [self.messageQueue removeAllObjects];
+            self.queuedSendBytes = 0;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self closeWithCode:1009 reason:@"Outbound queue limit exceeded"];
+            });
+            return;
+        }
+
         [self.messageQueue addObject:frame];
+        self.queuedSendBytes += frame.length;
         if (self.messageQueue.count == 1) {
             [self flushWriteBuffer];
         }
@@ -425,9 +445,7 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
     }
 
     dispatch_sync(self.writeQueue, ^{
-        for (NSData *data in self.messageQueue) {
-            bytes += data.length;
-        }
+        bytes = self.queuedSendBytes;
     });
     return bytes;
 }
@@ -447,7 +465,13 @@ static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 
         dispatch_async(strongSelf.writeQueue, ^{
             if (strongSelf.messageQueue.count > 0) {
+                NSData *sentFrame = strongSelf.messageQueue.firstObject;
                 [strongSelf.messageQueue removeObjectAtIndex:0];
+                if (sentFrame.length >= strongSelf.queuedSendBytes) {
+                    strongSelf.queuedSendBytes = 0;
+                } else {
+                    strongSelf.queuedSendBytes -= sentFrame.length;
+                }
             }
             [strongSelf flushWriteBuffer];
         });

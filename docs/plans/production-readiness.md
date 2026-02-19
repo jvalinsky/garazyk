@@ -1,163 +1,132 @@
-# Production Readiness Re-Review (2026-02-19, Updated)
+# Production Readiness Deep-Dive (2026-02-19)
 
-## Executive Summary
+## Verdict
 
-**Current verdict:** **NOT production-ready yet** for internet-exposed small selfhosters.
+**No-Go** for internet-exposed personal selfhosters.
 
-### What improved since prior pass
-- Firehose schema fixes implemented:
-  - Commit payload and event fields corrected in `ATProtoPDS/Sources/Sync/EventFormatter.m` at lines 19, 54, 67, and 81.
-  - Publisher fields correctly set in `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` at lines 347 and 379.
-- Core test suites are now passing:
-  - `FirehoseConformanceTests`: 2/2 passed.
-  - `EventFormatterTests`: 10/10 passed.
-  - `AdminAuthXrpcTests`: 34/34 passed.
-  - `AdminAuthApplicationXrpcTests`: 17 run, 0 failed, 2 skipped.
-- Admin auth hardening remains active and verified.
-- Account creation hardening remains active and verified.
+The codebase has materially improved on ATProto endpoint coverage and several previously reported protocol gaps, but new critical regressions and security/reliability defects still block production readiness.
 
-### What still blocks production
-- **Refresh-token security model is weak/incomplete**:
-  - Expiry is ignored during token lookup: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:275`.
-  - Refresh does not rotate or revoke old tokens: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:304`.
-  - `refreshSession` returns only an access token: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:333`.
-- **XRPC DPoP nonce challenge flow remains incomplete**:
-  - Requesting nonce (`requireNonce:YES`) but passing `nil`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5130`.
-- **Lexicon mismatch in `refreshSession`**:
-  - Expects `refreshToken` in body, violating lexicon: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3790`.
-- **Coverage Gap**: `com.atproto.*` coverage remains at 94.79% (5 missing) in `reports/xrpc_coverage.md`.
-- **Public URL Consistency**: Localhost hardcoding in `PDSApplication.m:429` and HTTP fallback in `PDSAccountService.m:458` still break production flows.
+## Audit Scope (Skills + Checks)
 
----
+This pass used:
+- `xrpc-schema-sync`
+- `oauth-jwt-security-audit`
+- `websocket-firehose-conformance`
+- `objc-memory-audit`
+- `objc-concurrency-bug-audit`
+- `objc-locking-queue-audit`
+- `objc-network-timeout-retry-audit`
+- `objc-service-boundary-audit`
+- `atproto-expert`
 
-## Scope and Evidence
+Primary generated artifacts:
+- `/private/tmp/objpds_xrpc_coverage_20260219.md`
+- `/private/tmp/objpds_oauth_audit_20260219/auth_hotspots.json`
+- `/private/tmp/objpds_oauth_audit_20260219/jwt_claims.json`
+- `/private/tmp/objpds_firehose_audit_20260219/firehose_events.json`
+- `/private/tmp/objpds_firehose_audit_20260219/backpressure.json`
+- `/private/tmp/objc-concurrency-audit-20260219/summary.md`
+- `/private/tmp/objc-locking-queue-audit-20260219/summary.md`
+- `/private/tmp/objc-network-timeout-retry-audit-20260219/summary.md`
+- `/private/tmp/objc-service-boundary-audit-20260219/summary.md`
 
-### Commands executed in this re-review
-- `./scripts/archive/stub_find.sh .`
-- `node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates --out-json /tmp/objpds_xrpc_coverage_20260218.json --out-md /tmp/objpds_xrpc_coverage_20260218.md`
-- `node scripts/generate_xrpc_next_steps.js --coverage-path /tmp/objpds_xrpc_coverage_20260218.json --plan-path /tmp/objpds_xrpc_next_steps_20260218.md --issues-path /tmp/objpds_xrpc_issue_candidates_20260218.md --top 30`
-- `./build/tests/AllTests -XCTest AdminAuthXrpcTests`
-- `./build/tests/AllTests -XCTest AdminAuthApplicationXrpcTests`
-- `./build/tests/AllTests -XCTest FirehoseConformanceTests`
-- `./build/tests/AllTests -XCTest ProductionSecurityTests`
-- `./build/tests/AllTests -XCTest OAuthConformanceTests`
-- `./build/tests/AllTests -XCTest RepoAuthXrpcTests`
-- `./build/tests/AllTests -XCTest CoverageGapTests` (sandbox-bounded; startup/bind failure + crash path observed)
+## Confirmed Improvements Since Prior Report
 
-### Snapshot results
-- **XRPC coverage (`com.atproto.*`)**: 91/96 = **94.79%**
-- **Missing endpoints**:
-  - `com.atproto.admin.getAccountTakedown`
-  - `com.atproto.identity.getRecommendedDidCredentials`
-  - `com.atproto.identity.resolveHandle`
-  - `com.atproto.identity.resolveIdentity`
-  - `com.atproto.sync.notifyOfUpdate`
-- Stub scan (server source): no actionable `TODO/FIXME/not implemented/stub` markers in `ATProtoPDS/Sources`.
+1. `com.atproto.*` in-scope endpoint coverage is now **100%** (`96/96`):
+   - `reports/xrpc_coverage.md:13`
+   - `reports/xrpc_coverage.md:25`
+2. Refresh-token lifecycle is substantially improved:
+   - Expiry enforced in lookup query: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:278`
+   - Rotation + revocation in refresh path: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:323`
+   - Refresh response returns both tokens: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:343`
+3. `refreshSession` contract now uses bearer auth header (not JSON body):
+   - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3903`
+   - Lexicon reference: `ATProtoPDS/Resources/lexicons/com/atproto/server/refreshSession.json:7`
+4. XRPC DPoP nonce challenge behavior exists:
+   - `requireNonce:YES`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5284`
+   - `DPoP-Nonce` header on challenge: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5290`
 
----
+## Current Blocking Findings
 
-## Blocking Findings (Must Fix Before Production)
+### P0 — Admin auth runtime regression (unimplemented selector)
 
-### P0 — Refresh-token lifecycle security
-**Impact:** Stolen refresh tokens can be used indefinitely; non-compliance with ATProto security specs.
-Evidence:
-- Token lookup ignores expiry: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:275`.
-- No rotation/revocation on use: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:304`.
-- Missing refresh token in refresh response: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:333`.
-
-### P0 — XRPC DPoP nonce flow incomplete
-**Impact:** Standards-compliant nonce retry clients cannot access protected XRPC routes.
-Evidence:
-- XRPC auth path verifies DPoP with `requireNonce:YES` but passes `nonce:nil`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5130`.
-- Challenge response headers are not yet implemented.
-
----
-
-## High Priority Gaps
-
-### P1 — `refreshSession` request/response contract mismatch
+**Impact:** Admin XRPC paths throw `unrecognized selector`, breaking privileged routes and risking process-level exceptions.
 
 Evidence:
-- Handler expects body `refreshToken`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3791`.
-- Lexicon expects auth via refresh JWT and no input body:
-  - `ATProtoPDS/Resources/lexicons/com/atproto/server/refreshSession.json:6`.
+- Call site invokes 4-arg selector: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:85`
+- 4-arg selector declared in header: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.h:65`
+- Implemented method is 5-arg variant (`...request:response:`): `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5226`
+- Broad admin surface depends on this helper: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:1719`
 
-### P1 — Missing core `com.atproto.*` routes
+Test evidence:
+- `AdminAuthXrpcTests`: 34/34 failed with `unrecognized selector`
+- `AdminAuthApplicationXrpcTests`: 17 run, 2 skipped, 8 failed with same selector issue
 
-Evidence:
-- Coverage output (`/tmp/objpds_xrpc_coverage_20260218.md`) still reports 5 in-scope missing methods.
-- Resolver family currently has `resolveDid` wired, but not `resolveHandle`/`resolveIdentity`:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5245`.
-- Admin takedown route is still registered as `takeDownAccount`, not lexicon `getAccountTakedown`:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:2688`.
+### P1 — Password KDF input-length bug + reduced salt entropy
 
-### P1 — Public issuer/base URL consistency still incomplete
+**Impact:** Non-ASCII passwords are truncated at PBKDF2 input length, creating unintended collisions and weaker credential handling.
 
 Evidence:
-- Startup enforces `PDS_ISSUER` in production and sets minter issuer:
-  - `ATProtoPDS/Sources/App/PDSApplication.m:230`
-  - `ATProtoPDS/Sources/App/PDSApplication.m:233`
-- But HTTP builder issuer is hardcoded to localhost:
-  - `ATProtoPDS/Sources/App/PDSApplication.m:429`
-  - `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m:277`
-- PLC registration still falls back to `http://host:port`:
-  - `ATProtoPDS/Sources/App/Services/PDSAccountService.m:458`.
+- PBKDF2 uses UTF-8 pointer with UTF-16 length: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:402` and `ATProtoPDS/Sources/App/Services/PDSAccountService.m:403`
+- Salt buffer is 32 bytes but only first 16 bytes are populated from UUID bytes: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:388`
 
----
+### P1 — Base64URL decode padding bug in auth primitives
 
-## Operational Readiness Gaps
+**Impact:** Valid JWT/DPoP tokens can fail decoding for certain segment lengths, causing interoperability failures.
 
-### P1 — Backup tooling/docs do not match runtime database layout
 Evidence:
-- Runtime layout uses `service/service.db`: `ATProtoPDS/Sources/Database/Pool/DatabasePool.m:63`.
-- Backup script has duplicated body and incorrect pathing:
-  - `scripts/backup_pds.sh:88`
-  - `scripts/backup_pds.sh:165`
-- Docs still reference legacy paths in `README.md` and `DEPLOYMENT.md`.
+- Incorrect padding math in JWT decode: `ATProtoPDS/Sources/Auth/JWT.m:210`
+- Incorrect padding math in DPoP util decode: `ATProtoPDS/Sources/Auth/DPoPUtil.m:354`
 
-### P2 — Reliability and Crash Resilience
+### P1 — Issuer/public URL consistency still broken
+
+**Impact:** External identity metadata can publish localhost/http-derived values incompatible with production federation.
+
 Evidence:
-- `CoverageGapTests` crashes on nil-data path in restricted environments: `ATProtoPDS/Tests/Services/CoverageGapTests.m:192`.
-- WebSocket connection/backpressure lifecycle needs tighter management.
+- HTTP server builder issuer hardcoded to localhost from app startup path: `ATProtoPDS/Sources/App/PDSApplication.m:427`
+- Builder fallback still defaults to localhost when issuer not supplied: `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m:277`
+- PLC endpoint fallback still permits plain `http://host:port`: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:470`
 
----
+### P1 — Backup script does not match runtime DB naming
 
-## Environment-Specific Test Limitation (Still Needs Hardening)
+**Impact:** Backups may omit critical service DB state in real deployments.
 
-- `CoverageGapTests` cannot bind sockets in this sandbox (`NSPOSIXErrorDomain Code=1`) and then crashes on nil JSON serialization path.
-- Primary failure location:
-  - `ATProtoPDS/Tests/Services/CoverageGapTests.m:25`.
+Evidence:
+- Backup script targets `service.sqlite`: `scripts/backup_pds.sh:88`
+- Runtime DB path uses `service.db`: `ATProtoPDS/Sources/Database/Pool/DatabasePool.m:63`
 
-This is environment-triggered, but test code should fail/skip gracefully rather than crash.
+### P2 — WebSocket backpressure remains unbounded
 
----
+**Impact:** Slow consumers can accumulate unbounded outbound queue memory under firehose load.
 
-## Previously Blocking Items Now Closed
+Evidence:
+- Writes enqueue without byte/queue cap: `ATProtoPDS/Sources/Sync/WebSocketConnection.m:401`
+- Queue-bytes metric exists but is only observational (not enforced): `ATProtoPDS/Sources/Sync/WebSocketConnection.m:421`
 
-1. **Admin auth test drift**: fixed and green (with environment-specific socket skips only).
-2. **Arbitrary DID injection in `createAccount`**: now rejected.
-3. **Invite-only enforcement gap**: now enforced when config requires invites.
-4. **JWKS endpoint availability**: `OAuthConformanceTests` `testJWKSResponse` passes.
+### P2 — Reliability tests still fail hard in restricted environments
 
----
+Evidence:
+- `CoverageGapTests` currently fail in restricted socket environments (port bind denied at setup path): `ATProtoPDS/Tests/Services/CoverageGapTests.m:25`
 
-## Updated Go/No-Go Criteria
+## Targeted Test Snapshot (This Audit)
 
-### Must pass before go-live
-1. **Refresh-token lifecycle**: Expiry enforcement, rotation, and revocation implemented.
-2. **XRPC DPoP nonce challenge**: `DPoP-Nonce` header + retry semantics implemented and tested.
-3. `refreshSession` aligns to lexicon contract (body and response).
-4. Missing 5 `com.atproto.*` methods are implemented.
-5. Backup script/docs matched to current `service.db` layout and de-duplicated.
+- `FirehoseConformanceTests`: 2/2 pass
+- `EventFormatterTests`: 10/10 pass
+- `OAuthConformanceTests`: 2/2 pass
+- `ProductionSecurityTests`: 2/2 pass
+- `AdminAuthXrpcTests`: 34/34 fail (selector regression)
+- `AdminAuthApplicationXrpcTests`: 17 run, 2 skipped, 8 fail (selector regression)
+- `CoverageGapTests`: 3 tests, 11 failures in restricted environment (socket bind denied)
+- `SecurityHardeningTests`: 0 discovered in current `-XCTest` filter run (coverage gap in test targeting)
 
-### Should pass in same hardening window
-1. Canonical issuer/public URL source is used across JWT, NodeInfo, and PLC endpoint generation.
-2. Event retention policy is configurable and executed in runtime path.
-3. Build artifacts and generated outputs are untracked/ignored consistently.
+## Go/No-Go Criteria
 
----
+Go-live requires all of the following:
+1. P0 admin auth selector regression fixed and admin auth suites green.
+2. Password derivation/salt defects fixed with migration-safe handling for existing credentials.
+3. Base64URL decode defects fixed for JWT and DPoP paths.
+4. Canonical production issuer/public URL used consistently across JWT, NodeInfo, and PLC outputs.
+5. Backup tooling validated against current `service.db` + user DB layout.
+6. WebSocket backpressure limits enforced and tested under slow-client scenarios.
 
-## Linked Plan
-
-Implementation sequencing is updated in:
-- `docs/plans/detailed_next_steps_plan.md`
+Until these are complete: **No-Go**.

@@ -70,9 +70,16 @@ static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                              jwtMinter:(JWTMinter *)jwtMinter
                        adminController:(id<PDSAdminController>)adminController
+                               request:(HttpRequest *)request;
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                             jwtMinter:(JWTMinter *)jwtMinter
+                       adminController:(id<PDSAdminController>)adminController
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response;
-+ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request;
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                             controller:(PDSController *)controller
+                                request:(HttpRequest *)request
+                               response:(HttpResponse *)response;
 + (void)storePlcOperationToken:(NSString *)token forDid:(NSString *)did;
 + (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
 @end
@@ -111,6 +118,35 @@ static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response,
     }
     
     return YES;
+}
+
+static BOOL xrpcHostLooksLocal(NSString *host) {
+    NSString *normalized = [[host ?: @"" lowercaseString]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
+
+static NSString *xrpcCanonicalIssuer(PDSConfiguration *config) {
+    if (config.issuer.length > 0) {
+        return config.issuer;
+    }
+
+    NSString *host = config.serverHost;
+    if (xrpcHostLooksLocal(host)) {
+        host = @"localhost";
+    }
+    NSString *scheme = xrpcHostLooksLocal(host) ? @"http" : @"https";
+    NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
 }
 
 static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *config) {
@@ -3424,6 +3460,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *did = body[@"did"];
         Secp256k1KeyPair *keyPair = nil;
+        NSString *signingKey = nil;
         NSError *error = nil;
 
         if (did.length > 0) {
@@ -4222,11 +4259,12 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        NSError *keyError = nil;
-        // Deprecated private key access
-        // NSData *privateKey = [store signingKeyPrivateBytesWithError:&keyError];
-        
-        // ... (time checks) ...
+        long long nowSeconds = (long long)[[NSDate date] timeIntervalSince1970];
+        if (hasRequestedExp && requestedExp <= nowSeconds) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"exp must be in the future"}];
+            return;
+        }
 
         NSMutableDictionary *payload = [NSMutableDictionary dictionary];
         payload[@"iss"] = did;
@@ -5221,7 +5259,16 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }];
 }
 
-
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                             jwtMinter:(JWTMinter *)jwtMinter
+                       adminController:(id<PDSAdminController>)adminController
+                               request:(HttpRequest *)request {
+    return [self extractDIDFromAuthHeader:authHeader
+                               jwtMinter:jwtMinter
+                         adminController:adminController
+                                 request:request
+                                response:nil];
+}
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                              jwtMinter:(JWTMinter *)jwtMinter
@@ -5285,10 +5332,12 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                             outThumbprint:&dpopThumbprint
                                     error:&dpopError]) {
             if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
-                response.statusCode = HttpStatusUnauthorized;
-                NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
-                [response setHeader:nonce forKey:@"DPoP-Nonce"];
-                [response setJsonBody:@{@"error": @"UseDPoPNonce", @"message": @"DPoP nonce required"}];
+                if (response) {
+                    response.statusCode = HttpStatusUnauthorized;
+                    NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+                    [response setHeader:nonce forKey:@"DPoP-Nonce"];
+                    [response setJsonBody:@{@"error": @"UseDPoPNonce", @"message": @"DPoP nonce required"}];
+                }
                 return nil;
             }
             PDS_LOG_AUTH_WARN(@"Invalid DPoP proof: %@", dpopError.localizedDescription ?: @"unknown error");
@@ -5312,7 +5361,8 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     }
 
     // Use configurable issuer from PDSConfiguration, default to localhost
-    NSString *expectedIssuer = [PDSConfiguration sharedConfiguration].issuer ?: @"https://pds.local:8443";
+    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+    NSString *expectedIssuer = xrpcCanonicalIssuer(configuration);
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
     verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(jwtMinter);

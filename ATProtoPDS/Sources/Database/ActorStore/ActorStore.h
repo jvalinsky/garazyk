@@ -12,7 +12,7 @@
 
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
-#import "Auth/PDSKeyManagerProtocol.h"
+#import "Auth/PDSActorKeyManagerProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -22,8 +22,6 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlock;
 @class PDSDatabaseBlob;
-@protocol PDSKeyManager;
-
 /*! Error domain for actor store operations. */
 extern NSString * const PDSActorStoreErrorDomain;
 
@@ -158,7 +156,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 @property (nonatomic, assign, readonly) sqlite3 *db;
 
 /*! Key manager for cryptographic operations. */
-@property (nonatomic, strong) id<PDSKeyManager> keyManager;
+@property (nonatomic, strong) id<PDSActorKeyManager> keyManager;
 
 /*! Sign data using the active key. */
 - (nullable NSData *)signData:(NSData *)data error:(NSError **)error;
