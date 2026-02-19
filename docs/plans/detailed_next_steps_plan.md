@@ -82,7 +82,7 @@ Completed:
 | Phase 3 | ✅ Done | DPoP nonce challenge flow working |
 | Phase 4 | ✅ Done | All 5 missing com.atproto.* endpoints implemented |
 | Phase 5 | ✅ Done | PDS_ISSUER unified across all components |
-| Phase 6 | ⏳ Pending | CoverageGapTests fix, websocket hardening |
+| Phase 6 | 🔄 In Progress | CoverageGapTests fixed; WebSocket pending |
 
 ## Recommended Next Steps
 
