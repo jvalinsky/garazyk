@@ -131,6 +131,7 @@ clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 - `skills/objc-log-redaction-audit/SKILL.md` audits sensitive logging and redaction gaps (tokens, auth headers, secrets).
 - `skills/objc-test-gap-mapper/SKILL.md` maps Objective-C source files to likely test coverage gaps and module risk hotspots.
 - `skills/objc-service-boundary-audit/SKILL.md` audits service-layer authorization and trust-boundary enforcement for privileged operations.
+- `skills/rewrite-dev-docs-comments/SKILL.md` rewrites docs and code comments to remove low-signal LLM-style phrasing and produce concise, technically precise language for experienced developers.
 
 ## CI/CD Pipeline
 

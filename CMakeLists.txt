@@ -214,9 +214,6 @@ if(NOT APPLE)
   # WebSocketServer.m uses Network.framework
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 
-  # ActorStore.m uses Security.framework
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStore\\.m$")
-
   # Identity resolvers use NSURLSession
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")

@@ -27,6 +27,39 @@
 #import "../Debug/PDSLogger.h"
 #import "../Sync/SubscribeReposHandler.h"
 
+static BOOL PDSBuilderHostIsLocal(NSString *host) {
+    NSString *normalized = [[host ?: @"" lowercaseString]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
+
+static NSString *PDSBuilderCanonicalIssuer(PDSConfiguration *configuration, NSUInteger portHint) {
+    if (configuration.issuer.length > 0) {
+        return configuration.issuer;
+    }
+
+    NSString *host = configuration.serverHost;
+    if (PDSBuilderHostIsLocal(host)) {
+        host = @"localhost";
+    }
+    NSString *scheme = PDSBuilderHostIsLocal(host) ? @"http" : @"https";
+    NSUInteger port = portHint > 0 ? portHint : (configuration.serverPort > 0 ? configuration.serverPort : 2583);
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+}
+
+@interface PDSHttpServerBuilder ()
+@property (nonatomic, strong, nullable) PDSConfiguration *configuration;
+@end
+
 @implementation PDSHttpServerBuilder
 
 #pragma mark - Initialization
@@ -48,9 +81,11 @@
 - (instancetype)initWithConfiguration:(PDSConfiguration *)configuration {
     self = [self init];
     if (self) {
+        _configuration = configuration;
         if (configuration) {
             _port = configuration.serverPort > 0 ? configuration.serverPort : 2583;
             _enableNodeInfo = configuration.nodeinfoEnabled;
+            _issuer = configuration.issuer;
         }
     }
     return self;
@@ -271,10 +306,13 @@
 - (void)registerNodeInfoRoutesWithServer:(HttpServer *)server {
     NodeInfoHandler *nodeInfoHandler = [NodeInfoHandler sharedHandler];
 
-    // Use configured issuer or generate from port
+    // Use configured issuer if provided by caller, then configuration, then derive from host/port.
     NSString *issuer = self.issuer;
+    if (!issuer && self.configuration) {
+        issuer = PDSBuilderCanonicalIssuer(self.configuration, self.port);
+    }
     if (!issuer) {
-        issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.port];
+        issuer = [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)self.port];
     }
 
     [nodeInfoHandler setIssuer:issuer];

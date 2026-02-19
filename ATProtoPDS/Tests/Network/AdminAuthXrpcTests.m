@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
 #import "App/PDSApplication.h"
+#import "App/PDSConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Network/XrpcMethodRegistry.h"
@@ -190,7 +191,26 @@
     if ([configuredIssuer isKindOfClass:[NSString class]] && configuredIssuer.length > 0) {
         return configuredIssuer;
     }
-    return @"https://pds.local:8443";
+
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *host = config.serverHost;
+    NSString *normalized = [[host ?: @"" lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    BOOL local = normalized.length == 0 ||
+                 [normalized isEqualToString:@"localhost"] ||
+                 [normalized isEqualToString:@"127.0.0.1"] ||
+                 [normalized isEqualToString:@"::1"] ||
+                 [normalized isEqualToString:@"0.0.0.0"];
+    if (local) {
+        host = @"localhost";
+    }
+    NSString *scheme = local ? @"http" : @"https";
+    NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
 }
 
 - (nullable NSString *)mintAdminTokenWithIssuer:(NSString *)issuer

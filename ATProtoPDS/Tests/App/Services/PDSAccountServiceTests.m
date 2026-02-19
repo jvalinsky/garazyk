@@ -155,4 +155,48 @@
     XCTAssertNotNil(error, @"Should return error for invalid token");
 }
 
+- (void)testLoginRejectsDifferentUnicodePassword {
+    NSError *error = nil;
+    NSDictionary *created = [self.service createAccountForEmail:@"unicode@example.com"
+                                                       password:@"éX"
+                                                         handle:@"unicode.example.com"
+                                                            did:nil
+                                                          error:&error];
+    XCTAssertNotNil(created);
+    XCTAssertNil(error);
+
+    error = nil;
+    NSDictionary *session = [self.service loginWithHandle:@"unicode.example.com"
+                                                 password:@"éY"
+                                                    error:&error];
+    XCTAssertNil(session, @"Different Unicode password must not authenticate");
+    XCTAssertNotNil(error);
+}
+
+- (void)testGeneratedSaltUsesFullEntropyLength {
+    NSError *error = nil;
+    NSDictionary *created = [self.service createAccountForEmail:@"salt@example.com"
+                                                       password:@"password123"
+                                                         handle:@"salt.example.com"
+                                                            did:nil
+                                                          error:&error];
+    XCTAssertNotNil(created);
+    XCTAssertNil(error);
+
+    PDSDatabaseAccount *account = [self.service.serviceDatabases getAccountByEmail:@"salt@example.com" error:&error];
+    XCTAssertNotNil(account);
+    XCTAssertNil(error);
+    XCTAssertEqual(account.passwordSalt.length, 32u);
+
+    const uint8_t *bytes = account.passwordSalt.bytes;
+    BOOL hasNonZeroTailByte = NO;
+    for (NSUInteger i = 16; i < account.passwordSalt.length; i++) {
+        if (bytes[i] != 0) {
+            hasNonZeroTailByte = YES;
+            break;
+        }
+    }
+    XCTAssertTrue(hasNonZeroTailByte, @"Salt tail bytes should contain entropy");
+}
+
 @end

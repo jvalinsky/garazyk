@@ -353,7 +353,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     NSMutableString *base64 = [string mutableCopy];
     NSUInteger remainder = base64.length % 4;
     if (remainder > 0) {
-        [base64 appendString:[@"====" substringToIndex:remainder]];
+        [base64 appendString:[@"====" substringToIndex:(4 - remainder)]];
     }
     [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
     [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];

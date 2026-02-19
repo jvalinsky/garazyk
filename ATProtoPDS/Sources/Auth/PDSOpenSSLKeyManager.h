@@ -7,17 +7,17 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "PDSKeyManagerProtocol.h"
+#import "PDSActorKeyManagerProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- *  A PDSKeyManager implementation using OpenSSL for Linux/GNUstep compatibility.
+ *  Actor signing key manager implementation for Linux/GNUstep compatibility.
  *  
  *  This class manages keys stored in a secure file-based keystore or 
  *  delegates to an OpenSSL-backed implementation.
  */
-@interface PDSOpenSSLKeyManager : NSObject <PDSKeyManager>
+@interface PDSOpenSSLKeyManager : NSObject <PDSActorKeyManager>
 
 /**
  *  The DID this key manager is associated with.

@@ -224,6 +224,50 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     return keyPair;
 }
 
+- (nullable PDSAppleKeyPair *)generatePDSAppleKeyPairWithAlgorithm:(NSString *)algorithm
+                                                            keySize:(NSUInteger)keySize
+                                                              error:(NSError **)error {
+    id<PDSKeyPair>keyPair = [self generateKeyPairWithAlgorithm:algorithm keySize:keySize error:error];
+    if (!keyPair || ![keyPair isKindOfClass:[PDSAppleKeyPair class]]) {
+        return nil;
+    }
+    return (PDSAppleKeyPair *)keyPair;
+}
+
+- (nullable PDSAppleKeyPair *)getPDSAppleKeyPairWithID:(NSString *)keyID
+                                                  error:(NSError **)error {
+    id<PDSKeyPair>keyPair = [self getKeyPairWithID:keyID error:error];
+    return [keyPair isKindOfClass:[PDSAppleKeyPair class]] ? (PDSAppleKeyPair *)keyPair : nil;
+}
+
+- (nullable PDSAppleKeyPair *)getActivePDSAppleKeyPair:(NSError **)error {
+    id<PDSKeyPair>keyPair = [self getActiveKeyPair:error];
+    return [keyPair isKindOfClass:[PDSAppleKeyPair class]] ? (PDSAppleKeyPair *)keyPair : nil;
+}
+
+- (NSArray<PDSAppleKeyPair *> *)allPDSAppleKeyPairs:(NSError **)error {
+    NSArray<id<PDSKeyPair>> *all = [self allKeyPairs:error];
+    if (!all) {
+        return @[];
+    }
+
+    NSMutableArray<PDSAppleKeyPair *> *result = [NSMutableArray arrayWithCapacity:all.count];
+    for (id<PDSKeyPair>keyPair in all) {
+        if ([keyPair isKindOfClass:[PDSAppleKeyPair class]]) {
+            [result addObject:(PDSAppleKeyPair *)keyPair];
+        }
+    }
+    return [result copy];
+}
+
+- (BOOL)deletePDSAppleKeyPairWithID:(NSString *)keyID error:(NSError **)error {
+    return [self deleteKeyPairWithID:keyID error:error];
+}
+
+- (BOOL)setPDSAppleKeyPairActive:(NSString *)keyID error:(NSError **)error {
+    return [self setKeyPairActive:keyID error:error];
+}
+
 - (nullable id<PDSKeyPair>)getKeyPairWithID:(NSString *)keyID error:(NSError **)error {
     __block PDSAppleKeyPair *keyPair = nil;
 

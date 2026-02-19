@@ -7,10 +7,6 @@
 #import "ActorStore.h"
 #import "Compat/PDSTypes.h"
 
-#if !defined(GNUSTEP)
-// #import <Security/Security.h> // Removed
-#endif
-
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSBiometricKeychain;
@@ -23,14 +19,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
 
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t transactionQueue;
-// @property (nonatomic, strong) NSData *signingKeyData;
 #else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
-// Legacy properties removed
 #endif
 
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
