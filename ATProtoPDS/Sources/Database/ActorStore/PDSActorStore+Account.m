@@ -195,24 +195,12 @@
         return NO;
     }
     
-#if defined(GNUSTEP)
-    // Generate secp256k1 signing key for the new account using the account's DID
     NSError *keyError = nil;
     if (![self generateSigningKeyForDid:account.did error:&keyError]) {
         NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
     } else {
-        NSLog(@"[ActorStore] Generated secp256k1 signing key for %@", account.did);
+        NSLog(@"[ActorStore] Generated signing key for %@", account.did);
     }
-#else
-    if (self.useKeychainSigningKey) {
-        NSError *keyError = nil;
-        if (![self generateSigningKeyForDid:account.did error:&keyError]) {
-            NSLog(@"[ActorStore] Warning: Failed to generate signing key for %@: %@", account.did, keyError);
-        } else {
-            NSLog(@"[ActorStore] Generated signing key for %@", account.did);
-        }
-    }
-#endif
 
     return YES;
 }
