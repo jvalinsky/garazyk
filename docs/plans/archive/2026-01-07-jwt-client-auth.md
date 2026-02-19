@@ -119,7 +119,7 @@ Ensure session operations validate against bound authentication keys.
 
 Verify that sessions are properly bound to authentication keys.
 
-## Task 5: Implement Comprehensive Error Handling
+## Task 5: Implement Error Handling
 
 **Files:**
 - Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`

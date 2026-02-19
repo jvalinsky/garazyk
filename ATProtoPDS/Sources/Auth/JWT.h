@@ -16,7 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const JWTErrorDomain;
 
-@class KeyRotationManager;
+@protocol PDSKeyManager;
+@protocol PDSActorKeyManager;
+
 
 /*!
  @enum JWTError
@@ -304,7 +306,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @property (nonatomic, strong, nullable) NSData *publicKey;
 
 /*! Optional key rotation manager for verifying with multiple keys. */
-@property (nonatomic, strong, nullable) KeyRotationManager *keyRotationManager;
+@property (nonatomic, strong, nullable) id<PDSKeyManager> keyManager;
 
 /*! Whether tokens without subject claims are allowed. */
 @property (nonatomic, assign) BOOL allowMissingSubject;
@@ -362,7 +364,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @property (nonatomic, strong, nullable) NSData *publicKey;
 
 /*! Optional key rotation manager for signing with rotated keys. */
-@property (nonatomic, strong, nullable) KeyRotationManager *keyRotationManager;
+@property (nonatomic, strong, nullable) id<PDSKeyManager> keyManager;
 
 /*!
  @method signPayload:keyManager:error:
@@ -375,6 +377,19 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @return The signed JWT string.
  */
 - (NSString *)signPayload:(NSDictionary *)payload keyManager:(id<PDSKeyManager>)keyManager error:(NSError **)error;
+
+/*!
+ @method signPayload:actorKeyManager:error:
+ 
+ @abstract Signs a payload using an actor key manager.
+ 
+ @param payload The payload dictionary to sign.
+ @param keyManager The actor key manager to use for signing.
+ @param error On return, contains an error if signing failed.
+ @return The signed JWT string.
+ */
+- (NSString *)signPayload:(NSDictionary *)payload actorKeyManager:(id<PDSActorKeyManager>)keyManager error:(NSError **)error;
+
 
 /*!
  @method signPayload:error:

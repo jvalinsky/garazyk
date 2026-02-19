@@ -123,7 +123,7 @@ A new test file was added at `ATProtoPDS/Tests/Network/HttpResponseTests.m` with
 1. Always use `[response setHeader:forKey:]` when you need immediate header access
 2. Don't rely on property setters to update backing dictionaries
 3. Add tests for behavioral assumptions that aren't documented
-4. Check `headers` dictionary directly in tests, not just serialized output
+4. Check `headers` dictionary directly in tests, not serialized output
 
 ## References
 

@@ -292,7 +292,7 @@ curl http://localhost:2583/explore/api/debug
 
 ## Best Practices
 
-### Efficient Browsing
+### Browsing
 
 1. Start with accounts: Get overview of available data
 2. Focus on collections: Most records are in feed collections

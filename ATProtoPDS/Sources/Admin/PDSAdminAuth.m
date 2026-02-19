@@ -2,6 +2,7 @@
 #import "Auth/JWT.h"
 #import "App/PDSController.h"
 #import "App/PDSConfiguration.h"
+#import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #include <stdlib.h>
 
@@ -147,11 +148,12 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
         [algorithms addObject:configuredAlgorithm];
     }
 
+    if (minter.keyManager) {
+        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
+    }
+
     if (algorithms.count == 0 && minter.publicKey) {
         [algorithms addObject:@"ES256K"];
-    }
-    if (algorithms.count == 0 && minter.keyRotationManager) {
-        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
     }
 
     return algorithms.count > 0 ? algorithms.array : nil;
@@ -219,6 +221,10 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
 
     NSDictionary *headers = (NSDictionary *)request;
 
+    return [self authenticateHeaders:headers error:nil];
+}
+
+- (BOOL)authenticateHeaders:(NSDictionary<NSString *, NSString *> *)headers error:(NSError **)error {
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
 
     NSString *authorization = headers[@"Authorization"] ?: headers[@"authorization"];
@@ -235,37 +241,64 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
     }
 
     if (token.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Missing authentication token"}];
+        }
         return NO;
     }
 
     NSError *parseError = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token: %@", parseError.localizedDescription);
+        if (error) {
+            *error = parseError ?: [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Invalid token format"}];
+        }
         return NO;
     }
 
     NSString *issuerClaim = [jwt.payload.iss stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *audienceClaim = [jwt.payload.aud stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (issuerClaim.length == 0 || audienceClaim.length == 0) {
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Missing issuer (%@) or audience (%@) in token", issuerClaim, audienceClaim);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Missing issuer or audience in token"}];
+        }
         return NO;
     }
 
     if (!PDSScopesContainAdmin(jwt.payload.scope)) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:403 userInfo:@{NSLocalizedDescriptionKey: @"Token missing admin scope"}];
+        }
         return NO;
     }
 
     PDSController *controller = self.controller ?: [PDSController sharedController];
     if (![controller isKindOfClass:[PDSController class]] || !controller.jwtMinter) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:500 userInfo:@{NSLocalizedDescriptionKey: @"Server controller not initialized"}];
+        }
         return NO;
     }
 
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
-    verifier.keyRotationManager = controller.jwtMinter.keyRotationManager;
+    verifier.keyManager = controller.jwtMinter.keyManager;
     verifier.publicKey = controller.jwtMinter.publicKey;
+
+    if (!verifier.keyManager && !verifier.publicKey) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:500 userInfo:@{NSLocalizedDescriptionKey: @"No key manager or public key available for verification"}];
+        }
+        return NO;
+    }
 
     BOOL issuerRequiredButMissing = NO;
     NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, &issuerRequiredButMissing);
     if (issuerRequiredButMissing || expectedIssuer.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:503 userInfo:@{NSLocalizedDescriptionKey: @"Server issuer not configured"}];
+        }
         return NO;
     }
     verifier.expectedIssuer = expectedIssuer;
@@ -274,10 +307,19 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
 
     NSError *verifyError = nil;
     if (![verifier verifyJWT:jwt error:&verifyError]) {
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed: %@ (Issuer: %@, Expected: %@, Alg: %@)", 
+                         verifyError.localizedDescription, issuerClaim, expectedIssuer, jwt.header.alg);
+        PDS_LOG_AUTH_DEBUG(@"PDSAdminAuth: Rejected JWT Payload: %@", [jwt.payload toDictionary]);
+        if (error) {
+            *error = verifyError;
+        }
         return NO;
     }
 
     if (self.minimumTokenIssuedAt && jwt.payload.iat && [jwt.payload.iat compare:self.minimumTokenIssuedAt] == NSOrderedAscending) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Token invalidated by logout"}];
+        }
         return NO;
     }
 
@@ -404,6 +446,7 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
     claims[@"exp"] = @([expiresAt timeIntervalSince1970]);
     claims[@"iat"] = @([issuedAt timeIntervalSince1970]);
 
+    PDS_LOG_AUTH_DEBUG(@"PDSAdminAuth: Signing admin token with claims: %@", claims);
     NSError *signError = nil;
     NSString *token = [controller.jwtMinter signPayload:claims error:&signError];
     if (token) {

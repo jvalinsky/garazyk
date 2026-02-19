@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document defines a security validation strategy for the ATProto PDS Objective-C implementation. The approach uses multiple specialized analysis components for different security domains, ensuring production-ready code with minimal external dependencies (Apple APIs only).
+Security validation strategy for the ATProto PDS Objective-C implementation using multiple analysis components: static analysis, fuzzing, and runtime sanitizers. External dependencies limited to Apple APIs.
 
 ## Security Analysis Architecture
 

@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive analysis of `did:web` account creation support in the September PDS codebase. The analysis reveals that **most required functionality already exists** across several feature branches, with the `wip-pre-mst-viewer` branch containing the most critical missing pieces.
+This document analyzes `did:web` account creation support in the September PDS codebase. The analysis reveals that **most required functionality already exists** across several feature branches, with the `wip-pre-mst-viewer` branch containing the most critical missing pieces.
 
 ---
 
