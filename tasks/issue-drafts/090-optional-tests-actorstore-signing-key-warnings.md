@@ -30,8 +30,8 @@ Option A (test-only):
 - In tests, initialize controllers/stores with `useKeychainSigningKey = NO` (or equivalent) to avoid keygen.
 - Or add a test flag/env var that disables keygen.
 
-Option B (robust keygen):
-- Fix key generation to be compatible with the environment and avoid sporadic failure.
+Option B (deterministic keygen):
+- Fix key generation to succeed consistently in test environments and eliminate sporadic failures.
 
 ## Suggested investigation steps
 

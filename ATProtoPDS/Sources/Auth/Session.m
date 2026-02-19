@@ -12,7 +12,8 @@
 
 #import "Auth/Session.h"
 #import "Auth/JWT.h"
-#import "Auth/PDSAppleKeyManager.h"
+#import "Auth/PDSKeyManagerFactory.h"
+#import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
@@ -61,7 +62,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 @property (nonatomic, strong, readwrite, nullable) NSDate *refreshTokenExpiresAt;
 @property (nonatomic, strong) SessionToken *accessTokenData;
 @property (nonatomic, strong, nullable) SessionToken *refreshTokenData;
-@property (nonatomic, strong) PDSAppleKeyManager *keyManager;
+@property (nonatomic, strong) id<PDSKeyManager> keyManager;
 @end
 
 @implementation Session
@@ -122,7 +123,6 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         _scope = [scope copy];
         _tokenType = jkt ? @"DPoP" : @"Bearer";
         _createdAt = [NSDate date];
-        _keyManager = [[PDSAppleKeyManager alloc] init];
         _minter = minter;
         _dpopKeyThumbprint = [jkt copy];
 

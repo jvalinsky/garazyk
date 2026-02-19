@@ -167,11 +167,12 @@ static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
         [algorithms addObject:configuredAlgorithm];
     }
 
+    if (minter.keyManager) {
+        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
+    }
+
     if (algorithms.count == 0 && minter.publicKey) {
         [algorithms addObject:@"ES256K"];
-    }
-    if (algorithms.count == 0 && minter.keyRotationManager) {
-        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
     }
 
     return algorithms.count > 0 ? algorithms.array : nil;
@@ -4250,7 +4251,7 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         // minter.privateKey = privateKey; // REMOVED
 
         NSError *mintError = nil;
-        NSString *token = [minter signPayload:payload keyManager:store.keyManager error:&mintError];
+        NSString *token = [minter signPayload:payload actorKeyManager:store.keyManager error:&mintError];
         if (!token) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"TokenMintFailed", @"message": mintError.localizedDescription ?: @"Failed to mint service auth token"}];
@@ -5333,7 +5334,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
     // Create verifier and set expected issuer
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
     if (jwtMinter) {
-        verifier.keyRotationManager = jwtMinter.keyRotationManager;
+        verifier.keyManager = jwtMinter.keyManager;
         verifier.publicKey = jwtMinter.publicKey;
     }
 

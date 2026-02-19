@@ -587,4 +587,18 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     return [formatter stringFromDate:date];
 }
 
+
+
+- (BOOL)verifySignature:(NSData *)signature
+                forData:(NSData *)data
+              withKeyID:(NSString *)keyID
+                  error:(NSError **)error {
+    PDSAppleKeyPair *keyPair = [self getPDSAppleKeyPairWithID:keyID error:error];
+    if (!keyPair) {
+        return NO;
+    }
+    
+    return [self verifySignature:signature forData:data withKey:keyPair.publicKey error:error];
+}
+
 @end

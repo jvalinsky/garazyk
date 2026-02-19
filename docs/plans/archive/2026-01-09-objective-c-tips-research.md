@@ -4,7 +4,7 @@
 
 **Goal:** Create an extensive library of Objective-C coding tips to standardize development and share knowledge.
 
-**Architecture:** A set of Markdown guides (or a single comprehensive one) in `docs/guides/objective_c_tips.md`.
+**Architecture:** A set of Markdown guides in `docs/guides/objective_c_tips.md`.
 
 **Tech Stack:** Objective-C, Markdown.
 

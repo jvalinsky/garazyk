@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Create a comprehensive guide on Objective-C Memory Management based on existing codebase patterns.
+**Goal:** Create a guide on Objective-C Memory Management based on existing codebase patterns.
 
 **Architecture:** Research-based documentation. Analyze `ATProtoPDS/Sources` for ARC, retain cycles, and lifecycle patterns, then synthesize into Markdown.
 
