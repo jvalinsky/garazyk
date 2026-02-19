@@ -446,6 +446,7 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
         return NO;
     }
     _httpPort = _httpServer.port;
+    _configuration.serverPort = _httpPort;
     PDS_LOG_CORE_INFO(@"HTTP server started on port %lu", (unsigned long)_httpPort);
     PDS_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
