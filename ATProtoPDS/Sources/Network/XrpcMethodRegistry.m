@@ -5323,11 +5323,16 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             return nil;
         }
 
+        NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
+        if (requestedNonce.length == 0) {
+            requestedNonce = nil;
+        }
+
         NSError *dpopError = nil;
         if (![OAuth2DPoPProof verifyProof:dpopProof
                                    method:request.methodString
                                       url:dpopURL
-                                    nonce:nil
+                                    nonce:requestedNonce
                              requireNonce:YES
                             outThumbprint:&dpopThumbprint
                                     error:&dpopError]) {
@@ -5335,8 +5340,14 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                 if (response) {
                     response.statusCode = HttpStatusUnauthorized;
                     NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
-                    [response setHeader:nonce forKey:@"DPoP-Nonce"];
-                    [response setJsonBody:@{@"error": @"UseDPoPNonce", @"message": @"DPoP nonce required"}];
+                    if (nonce.length > 0) {
+                        [response setHeader:nonce forKey:@"DPoP-Nonce"];
+                    }
+                    [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+                    [response setJsonBody:@{
+                        @"error": @"use_dpop_nonce",
+                        @"message": dpopError.localizedDescription ?: @"DPoP nonce required"
+                    }];
                 }
                 return nil;
             }

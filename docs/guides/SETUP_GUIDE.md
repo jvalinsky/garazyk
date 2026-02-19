@@ -53,7 +53,7 @@ Server available at `http://localhost:2583`
 make build          # Build all targets
 make build-cli      # Command-line server only
 make build-gui      # macOS GUI application
-make build-release  # Optimized release build
+make build-release  # Release build with compiler optimizations
 
 # Using Xcode
 xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS-CLI build
@@ -73,9 +73,9 @@ make build-debug
 #### Release Build
 ```bash
 make build-release
-# Features: Optimized, stripped symbols
+# Features: Compiler optimizations enabled, symbols stripped
 # Size: Smaller binary
-# Performance: Faster, production-ready
+# Performance: Lower debug overhead for deployment use
 ```
 
 ## Dependencies
@@ -225,12 +225,12 @@ sudo systemctl start atproto-pds
 
 ## Verification
 
-### Professional Test Scripts
+### Test Scripts
 
-All project scripts follow professional bash scripting standards and include comprehensive error handling, input validation, and logging.
+Project scripts use consistent error handling, input validation, and structured logging.
 
 ```bash
-# Run comprehensive integration tests
+# Run integration smoke tests
 ./scripts/simple_test.sh
 
 # Run social features e2e tests (feeds, follows, likes, profiles)

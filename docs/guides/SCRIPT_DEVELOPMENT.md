@@ -1,10 +1,10 @@
 # Script Development and Quality Standards
 
-This document outlines the professional bash scripting standards and improvements implemented in the ATProto PDS project.
+This document defines the shell-script standards used in this repository and summarizes the script updates applied to the ATProto PDS project.
 
-## Professional Bash Scripting Skill
+## Bash Scripting Skill
 
-The project includes a comprehensive skill guide at `skills/professional-bash-scripting/SKILL.md` that documents industry best practices for writing maintainable, secure, and efficient bash scripts. This skill is based on authoritative sources including:
+The project includes `skills/professional-bash-scripting/SKILL.md`, which documents the script patterns expected in this repository. The guide references:
 
 - Google's Bash Style Guide
 - Greg's Wiki BashGuide
@@ -13,12 +13,12 @@ The project includes a comprehensive skill guide at `skills/professional-bash-sc
 
 ## Script Quality Standards
 
-All shell scripts in this project adhere to the following professional standards:
+All repository shell scripts follow these standards:
 
 ### 1. Script Structure
 - **Shebang**: Use `#!/usr/bin/env bash` for portability
 - **Shell Options**: Always set `set -euo pipefail`
-- **Documentation**: Comprehensive header with name, description, author, version
+- **Documentation**: Header with script name, purpose, and usage notes
 - **Error Handling**: Proper trap handlers for cleanup and signal handling
 - **Logging**: Structured logging with debug, info, warn, and error levels
 
@@ -27,7 +27,7 @@ All shell scripts in this project adhere to the following professional standards
 - **SC2155 Compliance**: Declare and assign variables separately to avoid masking return values
 - **Input Validation**: All inputs validated and sanitized
 - **Security**: Safe path handling, secure temporary files, input sanitization
-- **Color Output**: Professional colored logging (green for success, red for errors, yellow for warnings)
+- **Color Output**: Consistent color mapping for status output
 
 ### 3. Error Handling
 - **Exit Codes**: Use standard exit codes (0=success, 1=error, 2=invalid args, etc.)
@@ -42,15 +42,15 @@ All shell scripts in this project adhere to the following professional standards
 ## Upgraded Scripts
 
 ### simple_test.sh
-**Purpose**: Comprehensive integration testing for ATProto PDS server
+**Purpose**: Integration smoke testing for the ATProto PDS server
 
 **Improvements**:
-- Complete rewrite with professional structure
-- Comprehensive error handling and cleanup
+- Reworked structure for predictable setup/teardown
+- Error handling and cleanup on failure paths
 - Structured logging with multiple levels
 - Input validation and dependency checking
 - Environment variable support (VERBOSE, PORT, DB_PATH)
-- Proper test isolation and resource management
+- Test isolation and resource cleanup
 
 **Usage**:
 ```bash
@@ -65,10 +65,10 @@ PORT=3000 ./scripts/simple_test.sh
 ```
 
 ### start_server.sh
-**Purpose**: Production-ready server startup with proper process management
+**Purpose**: Server startup with process management and validation
 
 **Improvements**:
-- Comprehensive initialization and validation
+- Initialization checks before launch
 - Proper PID file management
 - Process conflict detection
 - Environment variable configuration support
@@ -88,11 +88,11 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 **Purpose**: Code quality and static analysis gate
 
 **Improvements**:
-- Professional error handling and validation
-- Comprehensive dependency checking
+- Error handling and validation
+- Dependency checks for required tools
 - Structured progress reporting
 - Configurable thresholds for quality metrics
-- Better integration with build system
+- Integration with the build workflow
 - Detailed error reporting with failed check tracking
 
 **Usage**:
@@ -105,15 +105,15 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
  ```
 
  ### test_social_features.sh (NEW)
- **Purpose**: Comprehensive e2e testing of social features (feeds, follows, likes, profiles)
+ **Purpose**: E2E testing of social features (feeds, follows, likes, profiles)
 
  **Features**:
  - Multi-user test scenarios (Alice & Bob)
  - Post creation, following, and liking functionality
  - Timeline and author feed testing
  - Actor search capabilities
- - Professional colored output and assertions
- - Comprehensive error handling and cleanup
+ - Colored output and assertions
+ - Error handling and cleanup
 
  **Usage**:
  ```bash
@@ -125,7 +125,7 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
  ```
 
  ### test_moderation.sh (NEW)
- **Purpose**: Comprehensive e2e testing of moderation features (reports, labels, account moderation)
+ **Purpose**: E2E testing of moderation features (reports, labels, account moderation)
 
  **Features**:
  - Admin authentication setup
@@ -145,10 +145,10 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
  ```
 
 ### run-tests.sh
-**Purpose**: Professional test suite runner
+**Purpose**: Test suite runner
 
 **Improvements**:
-- Complete professional structure
+- Predictable argument and environment handling
 - Test binary validation
 - Environment variable configuration
 - Structured logging and progress reporting
@@ -186,18 +186,18 @@ VERBOSE=true ./scripts/run-tests.sh
 - **Regular Updates**: Review and update scripts following new best practices
 - **Dependency Monitoring**: Check for deprecated commands or changed interfaces
 - **Performance**: Profile and optimize performance-critical scripts
-- **Security**: Regular security review of script practices
+- **Security**: Review script handling of secrets, paths, and temporary files
 
 ## Quality Metrics
 
 ### Current Status
 - ✅ All scripts pass ShellCheck with 0 warnings
 - ✅ SC2155 compliance (proper variable declaration)
-- ✅ Comprehensive error handling implemented
+- ✅ Error handling and cleanup paths implemented
 - ✅ Structured logging throughout
 - ✅ Input validation and sanitization
 - ✅ Security best practices followed
-- ✅ Professional colored output (when terminal supports it)
+- ✅ Colored output (when terminal supports it)
 - ✅ New E2E test coverage: Social features and moderation
 - ✅ Complete test suite: Unit tests + E2E tests + Performance tests
 
@@ -215,12 +215,10 @@ Colors are automatically disabled when:
 - `NO_COLOR=true` environment variable is set
 - Terminal doesn't support colors
 
-### Performance Benchmarks
-Based on the professional bash scripting skill guidelines:
-- 25-50% performance improvement using built-ins vs external commands
-- 30-60% memory reduction with process substitution
-- 10-20% faster failure detection with proper error handling
-- 40-70% faster execution for large dataset processing
+### Performance Notes
+- Prefer shell built-ins over spawning external processes in hot loops.
+- Avoid subshell-heavy pipelines when simple parameter expansion works.
+- Measure before/after on representative workloads when tuning scripts.
 
 ## Tools and Dependencies
 
