@@ -65,6 +65,35 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     exit(1);
 }
 
+static BOOL PDSApplicationHostIsLocal(NSString *host) {
+    NSString *normalized = [[host ?: @"" lowercaseString]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
+
+static NSString *PDSApplicationCanonicalIssuer(PDSConfiguration *configuration, NSUInteger portHint) {
+    if (configuration.issuer.length > 0) {
+        return configuration.issuer;
+    }
+
+    NSString *host = configuration.serverHost;
+    if (PDSApplicationHostIsLocal(host)) {
+        host = @"localhost";
+    }
+    NSString *scheme = PDSApplicationHostIsLocal(host) ? @"http" : @"https";
+    NSUInteger port = portHint > 0 ? portHint : (configuration.serverPort > 0 ? configuration.serverPort : 2583);
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+}
+
 @implementation PDSApplication {
     SubscribeReposHandler *_subscribeReposHandler;
     XrpcDispatcher *_xrpcDispatcher;
@@ -222,15 +251,19 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     // Initialize JWT Minter
     _jwtMinter = [[JWTMinter alloc] init];
     NSDictionary *pdsEnv = [[NSProcessInfo processInfo] environment];
-    NSString *configuredIssuer = pdsEnv[@"PDS_ISSUER"];
+    NSString *configuredIssuer = _configuration.issuer;
     BOOL isProduction = [[pdsEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
                         [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
                         [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
-    if (isProduction && (configuredIssuer.length == 0 || [configuredIssuer containsString:@"pds.local"])) {
+    if (isProduction && configuredIssuer.length == 0) {
         PDS_LOG_ERROR(@"Core", @"PDS_ISSUER must be set to your public HTTPS domain in production (e.g. PDS_ISSUER=https://pds.example.com). Refusing to start.");
         exit(1);
     }
-    _jwtMinter.issuer = configuredIssuer ?: @"https://pds.local:8443";
+    if (isProduction && [configuredIssuer containsString:@"pds.local"]) {
+        PDS_LOG_ERROR(@"Core", @"PDS_ISSUER cannot use a local placeholder domain in production. Refusing to start.");
+        exit(1);
+    }
+    _jwtMinter.issuer = PDSApplicationCanonicalIssuer(_configuration, _httpPort);
     _jwtMinter.signingAlgorithm = @"ES256K";
     
     // Generate server signing key
@@ -424,7 +457,7 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     builder.serviceDatabases = _serviceDatabases;
     builder.xrpcDispatcher = _xrpcDispatcher;
     builder.subscribeReposHandler = _subscribeReposHandler;
-    builder.issuer = [NSString stringWithFormat:@"https://localhost:%lu", (unsigned long)self.httpPort];
+    builder.issuer = PDSApplicationCanonicalIssuer(_configuration, self.httpPort);
     
     NSError *buildError = nil;
     _httpServer = [builder buildWithError:&buildError];

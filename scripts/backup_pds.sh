@@ -54,6 +54,7 @@ echo "Retention:     $RETENTION_DAYS days"
 echo ""
 
 ERRORS=0
+SERVICE_DB_COUNT=0
 
 # Backup a single SQLite database safely
 backup_db() {
@@ -85,7 +86,17 @@ backup_db() {
 
 # 1. Service database (Critical)
 echo "Service databases:"
-backup_db "$DATA_DIR/service.sqlite" "$BACKUP_DEST/service.sqlite" "service.sqlite"
+if [ -f "$DATA_DIR/service.db" ]; then
+    backup_db "$DATA_DIR/service.db" "$BACKUP_DEST/service.db" "service.db"
+    SERVICE_DB_COUNT=1
+elif [ -f "$DATA_DIR/service.sqlite" ]; then
+    echo "  NOTE: Using legacy service.sqlite path"
+    backup_db "$DATA_DIR/service.sqlite" "$BACKUP_DEST/service.sqlite" "service.sqlite"
+    SERVICE_DB_COUNT=1
+else
+    echo "  FAILED: service.db not found in $DATA_DIR"
+    ERRORS=$((ERRORS + 1))
+fi
 
 # Sequencer database (if exists)
 if [ -f "$DATA_DIR/sequencer.sqlite" ]; then
@@ -159,5 +170,5 @@ if [ "$ERRORS" -gt 0 ]; then
     echo "WARNING: $ERRORS database(s) failed to backup"
     exit 1
 else
-    echo "Status: All databases backed up successfully ($((USER_COUNT + 1)) DBs)"
+    echo "Status: All databases backed up successfully ($((USER_COUNT + SERVICE_DB_COUNT)) DBs)"
 fi

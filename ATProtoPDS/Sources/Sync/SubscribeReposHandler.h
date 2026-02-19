@@ -66,6 +66,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! The service databases for event persistence. */
 @property (nonatomic, readonly) PDSServiceDatabases *serviceDatabases;
 
+/*! Backward-compatible test hook for legacy signing-key injection. */
+@property (nonatomic, copy, nullable) NSData *signingKey;
+
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
 

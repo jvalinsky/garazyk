@@ -3,7 +3,11 @@
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
+#if defined(GNUSTEP)
+#import "Auth/PDSOpenSSLKeyManager.h"
+#else
 #import "Auth/PDSAppleActorKeyManager.h"
+#endif
 #import <CommonCrypto/CommonCrypto.h>
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
@@ -11,7 +15,6 @@
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"
 #import "PDSActorStore+Blob.h"
-#import "App/PDSConfiguration.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
@@ -40,19 +43,18 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     if (self) {
         _did = [did copy];
         _dbPath = [dbPath copy];
+#if defined(GNUSTEP)
+        NSString *keystorePath = [[dbPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"keys"];
+        _keyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:did keystorePath:keystorePath];
+#else
         _keyManager = [[PDSAppleActorKeyManager alloc] initWithDid:did];
+#endif
         _db = NULL;
         _open = NO;
         _transactionQueue = dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
         dispatch_queue_set_specific(_transactionQueue, kPDSActorStoreQueueKey, (void *)kPDSActorStoreQueueKey, NULL);
-#if defined(GNUSTEP)
-        _signingKeyData = nil;
-#else
         _stmtCache = [NSMapTable strongToStrongObjectsMapTable];
         _blobCache = [NSMutableDictionary dictionary];
-        _useBiometricProtection = [PDSConfiguration sharedConfiguration].useBiometricProtection;
-        _useSecureEnclave = NO;
-#endif
     }
     return self;
 }
@@ -286,12 +288,6 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     }
     
     [self.blobCache removeAllObjects];
-    
-#if defined(GNUSTEP)
-    // self.signingKeyData = nil;
-#else
-    // _setSigningKeyUnsafe(&_signingKey, NULL);
-#endif
     
     sqlite3_close(self.db);
     self.db = NULL;
@@ -1229,78 +1225,40 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return count;
 }
 
-#pragma mark - Signing Key Management (Keychain)
-
-static NSString * const kSigningKeyService = @"com.atproto.pds.signing";
-static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
-
-static NSMutableDictionary<NSString *, NSData *> *PDSProcessFallbackSigningKeyStore(void) {
-    static NSMutableDictionary<NSString *, NSData *> *store = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        store = [NSMutableDictionary dictionary];
-    });
-    return store;
-}
-
-static BOOL PDSProcessKeychainUnavailable = NO;
-
-static void PDSStoreFallbackSigningKey(NSString *did, NSData *keyData) {
-    @synchronized([PDSActorStore class]) {
-        PDSProcessFallbackSigningKeyStore()[did] = [keyData copy];
-    }
-}
-
-static NSData *PDSLoadFallbackSigningKey(NSString *did) {
-    @synchronized([PDSActorStore class]) {
-        return [PDSProcessFallbackSigningKeyStore()[did] copy];
-    }
-}
-
-static BOOL PDSIsKeychainUnavailableForProcess(void) {
-    @synchronized([PDSActorStore class]) {
-        return PDSProcessKeychainUnavailable;
-    }
-}
-
-static void PDSMarkKeychainUnavailableForProcess(void) {
-    @synchronized([PDSActorStore class]) {
-        PDSProcessKeychainUnavailable = YES;
-    }
-}
-
-#if !defined(GNUSTEP)
-static NSDictionary *PDSKeychainQueryWithRuntimeOptions(NSDictionary *baseQuery) {
-    NSMutableDictionary *query = [baseQuery mutableCopy];
-    if (@available(macOS 10.15, *)) {
-        query[(__bridge id)kSecUseDataProtectionKeychain] = @YES;
-    }
-    return query;
-}
-
-static BOOL PDSShouldFallbackFromKeychain(OSStatus status) {
-    return status == errSecNotAvailable || status == errSecNoSuchKeychain;
-}
-#endif
+#pragma mark - Signing Key Management
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
     return [self generateSigningKeyForDid:self.did error:error];
 }
 
 - (BOOL)generateSigningKeyForDid:(NSString *)targetDid error:(NSError **)error {
-    // Delegate to KeyManager
-    return [self.keyManager generateKeyPairWithAlgorithm:@"ES256K" keySize:256 error:error] != nil;
+    if (![targetDid isEqualToString:self.did]) {
+#if defined(GNUSTEP)
+        NSString *keystorePath = [[self.dbPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"keys"];
+        id<PDSActorKeyManager> manager = [[PDSOpenSSLKeyManager alloc] initWithDid:targetDid keystorePath:keystorePath];
+#else
+        id<PDSActorKeyManager> manager = [[PDSAppleActorKeyManager alloc] initWithDid:targetDid];
+#endif
+        return [manager generateSigningKeyWithError:error];
+    }
+
+    return [self.keyManager generateSigningKeyWithError:error];
 }
 
 - (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error {
-    // Check if keyManager supports import
-    if ([self.keyManager respondsToSelector:@selector(importKey:error:)]) {
-         return [(id)self.keyManager importKey:privateKey error:error];
-    }
-    if (error) {
-        *error = [NSError errorWithDomain:PDSActorStoreErrorDomain code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Key manager does not support import"}];
-    }
-    return NO;
+    return [self.keyManager importSigningKey:privateKey error:error];
+}
+
+- (nullable NSData *)signData:(NSData *)data error:(NSError **)error {
+    return [self.keyManager signData:data error:error];
+}
+
+- (nullable NSData *)publicSigningKeyWithError:(NSError **)error {
+    return [self.keyManager publicSigningKeyWithError:error];
+}
+
+- (nullable NSString *)didKeyStringWithError:(NSError **)error {
+    return [self.keyManager didKeyStringWithError:error];
 }
 
 

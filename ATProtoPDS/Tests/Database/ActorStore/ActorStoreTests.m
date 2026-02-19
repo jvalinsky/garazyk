@@ -2,7 +2,6 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import <sqlite3.h>
-#import <Security/Security.h>
 
 @interface ActorStoreTests : XCTestCase
 
@@ -29,7 +28,6 @@
     self.store = [PDSActorStore storeWithDid:self.testDID dbPath:dbPath error:&error];
     XCTAssertNotNil(self.store, @"Failed to create store: %@", error);
     XCTAssertTrue(self.store.isOpen, @"Store should be open");
-    self.store.useKeychainSigningKey = NO;
 }
 
 - (void)tearDown {
@@ -195,54 +193,59 @@
 
 - (void)testSigningKeyGeneration {
     __autoreleasing NSError *error = nil;
-    
-    // Initially, we expect no key if one hasn't been generated/stored/loaded
-    // However, if useKeychainSigningKey is NO, signingKeyWithError returns NULL immediately if not set.
-    XCTAssertFalse([self.store signingKeyWithError:&error], @"Should not have signing key initially");
-    
-    // In strict test environments, error might be nil or specific code.
-    // If it returns NULL, we check if error is populated.
-    if (![self.store signingKeyWithError:nil]) {
-         XCTAssertNotNil(error, @"Should have error for missing key");
-    }
-    
+
+    NSData *payload = [@"test-payload" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *initialSignature = [self.store signData:payload error:&error];
+    XCTAssertNil(initialSignature, @"Store should not sign without a key");
+    XCTAssertNotNil(error, @"Missing-key sign path should surface an error");
+
     __autoreleasing NSError *genError = nil;
     if (![self.store generateSigningKeyWithError:&genError]) {
         XCTSkip(@"Signing key generation unavailable in this environment: %@", genError);
         return;
     }
-    
-    __autoreleasing NSError *keyError = nil;
-    SecKeyRef key = [self.store signingKeyWithError:&keyError];
-    XCTAssertNotNil((__bridge id)key, @"Should have signing key now: %@", keyError);
-    if (key) CFRelease(key);
+
+    __autoreleasing NSError *publicKeyError = nil;
+    NSData *compressedPublicKey = [self.store publicSigningKeyWithError:&publicKeyError];
+    XCTAssertNotNil(compressedPublicKey, @"Public key should be available after generation: %@", publicKeyError);
+    XCTAssertEqual(compressedPublicKey.length, (NSUInteger)33, @"Actor signing key must be compressed secp256k1");
+
+    __autoreleasing NSError *didKeyError = nil;
+    NSString *didKey = [self.store didKeyStringWithError:&didKeyError];
+    XCTAssertNotNil(didKey, @"did:key should be available after generation: %@", didKeyError);
+    XCTAssertTrue([didKey hasPrefix:@"did:key:z"], @"did:key must use multibase z prefix");
+
+    __autoreleasing NSError *signError = nil;
+    NSData *signature = [self.store signData:payload error:&signError];
+    XCTAssertNotNil(signature, @"Signing should succeed after key generation: %@", signError);
+    XCTAssertGreaterThan(signature.length, (NSUInteger)0, @"Signature must not be empty");
 }
 
 - (void)testSigningKeyGenerationNoLeak {
-    __autoreleasing NSError *genError = nil;
-    
-    if (![self.store generateSigningKeyWithError:&genError]) {
+    __autoreleasing NSError *firstError = nil;
+    if (![self.store generateSigningKeyWithError:&firstError]) {
         XCTSkip(@"Signing key generation unavailable in this environment");
         return;
     }
-    
-    __autoreleasing NSError *keyError1 = nil;
-    SecKeyRef key1 = [self.store signingKeyWithError:&keyError1];
-    XCTAssertNotNil((__bridge id)key1, @"Should have signing key after first generation");
-    
-    __autoreleasing NSError *genError2 = nil;
-    BOOL success = [self.store generateSigningKeyWithError:&genError2];
-    XCTAssertTrue(success, @"Second key generation should succeed");
-    
-    __autoreleasing NSError *keyError2 = nil;
-    SecKeyRef key2 = [self.store signingKeyWithError:&keyError2];
-    XCTAssertNotNil((__bridge id)key2, @"Should have signing key after second generation");
-    
-    if (key1 != key2) {
-        XCTAssertTrue(YES, @"Second key generation produced different key (no leak)");
-    }
-    if (key1) CFRelease(key1);
-    if (key2) CFRelease(key2);
+
+    __autoreleasing NSError *didKeyError1 = nil;
+    NSString *didKey1 = [self.store didKeyStringWithError:&didKeyError1];
+    XCTAssertNotNil(didKey1, @"First key should produce did:key");
+
+    __autoreleasing NSError *secondError = nil;
+    XCTAssertTrue([self.store generateSigningKeyWithError:&secondError], @"Second key generation should succeed");
+
+    __autoreleasing NSError *didKeyError2 = nil;
+    NSString *didKey2 = [self.store didKeyStringWithError:&didKeyError2];
+    XCTAssertNotNil(didKey2, @"Second key should produce did:key");
+
+    // Rotation should replace the active key material.
+    XCTAssertFalse([didKey1 isEqualToString:didKey2], @"Second generation should rotate the active key");
+
+    NSData *payload = [@"leak-check" dataUsingEncoding:NSUTF8StringEncoding];
+    __autoreleasing NSError *signError = nil;
+    NSData *signature = [self.store signData:payload error:&signError];
+    XCTAssertNotNil(signature, @"Signing should still work after repeated key generation: %@", signError);
 }
 
 - (void)testRecordCount {
