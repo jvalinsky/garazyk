@@ -10,7 +10,7 @@ Use this skill to find and triage re-entrancy hazards before they become product
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-reentrancy-audit/scripts/scan_reentrancy_patterns.sh . /tmp/objc-reentrancy-audit
+./skills/objc-reentrancy-audit/scripts/scan_reentrancy_patterns.sh . /tmp/objc-reentrancy-audit
 ```
 2. Read `/tmp/objc-reentrancy-audit/summary.md`.
 3. Review candidate files with `references/reentrancy-checklist.md`.

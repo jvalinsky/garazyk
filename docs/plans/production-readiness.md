@@ -1,26 +1,32 @@
-# Production Readiness Re-Review (2026-02-18, Updated)
+# Production Readiness Re-Review (2026-02-19, Updated)
 
 ## Executive Summary
 
 **Current verdict:** **NOT production-ready yet** for internet-exposed small selfhosters.
 
 ### What improved since prior pass
-- Admin auth hardening landed in request path:
-  - Prefix-based admin escalation is disabled in `ATProtoPDS/Sources/Security/PDSAuthzManager.m:168`.
-  - Admin routes enforce `PDSAdminAuth` token checks in `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:79`.
-- Account creation hardening landed:
-  - Arbitrary `did` input is rejected in `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3686`.
-  - Invite code enforcement is now active when configured in `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3694`.
-- Admin auth test suites now pass with real admin token flow:
-  - `AdminAuthXrpcTests`: 34 passed, 0 failed.
-  - `AdminAuthApplicationXrpcTests`: 17 executed, 0 failed, 2 skipped (socket unavailable in sandbox).
+- Firehose schema fixes implemented:
+  - Commit payload and event fields corrected in `ATProtoPDS/Sources/Sync/EventFormatter.m` at lines 19, 54, 67, and 81.
+  - Publisher fields correctly set in `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` at lines 347 and 379.
+- Core test suites are now passing:
+  - `FirehoseConformanceTests`: 2/2 passed.
+  - `EventFormatterTests`: 10/10 passed.
+  - `AdminAuthXrpcTests`: 34/34 passed.
+  - `AdminAuthApplicationXrpcTests`: 17 run, 0 failed, 2 skipped.
+- Admin auth hardening remains active and verified.
+- Account creation hardening remains active and verified.
 
 ### What still blocks production
-- Firehose frame encoding remains lexicon-nonconformant.
-- `com.atproto.*` endpoint coverage is still **94.79%** (5 missing).
-- XRPC DPoP nonce challenge flow is incomplete.
-- `com.atproto.server.refreshSession` remains lexicon-mismatched.
-- Backup/restore scripts and docs are still out of sync with actual on-disk DB layout.
+- **Refresh-token security model is weak/incomplete**:
+  - Expiry is ignored during token lookup: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:275`.
+  - Refresh does not rotate or revoke old tokens: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:304`.
+  - `refreshSession` returns only an access token: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:333`.
+- **XRPC DPoP nonce challenge flow remains incomplete**:
+  - Requesting nonce (`requireNonce:YES`) but passing `nil`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5130`.
+- **Lexicon mismatch in `refreshSession`**:
+  - Expects `refreshToken` in body, violating lexicon: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3790`.
+- **Coverage Gap**: `com.atproto.*` coverage remains at 94.79% (5 missing) in `reports/xrpc_coverage.md`.
+- **Public URL Consistency**: Localhost hardcoding in `PDSApplication.m:429` and HTTP fallback in `PDSAccountService.m:458` still break production flows.
 
 ---
 
@@ -52,28 +58,18 @@
 
 ## Blocking Findings (Must Fix Before Production)
 
-### P0 — Firehose schema nonconformance
-
-**Impact:** Strict consumers/relays can reject frames; interoperability and replay safety remain at risk.
-
+### P0 — Refresh-token lifecycle security
+**Impact:** Stolen refresh tokens can be used indefinitely; non-compliance with ATProto security specs.
 Evidence:
-- Commit encoder does not emit required `blocks`: `ATProtoPDS/Sources/Sync/EventFormatter.m:15`.
-- `since` is only emitted when non-nil (required+nullable field): `ATProtoPDS/Sources/Sync/EventFormatter.m:26`.
-- Identity event omits required `seq` and `time`: `ATProtoPDS/Sources/Sync/EventFormatter.m:54`.
-- Account event omits required `seq`: `ATProtoPDS/Sources/Sync/EventFormatter.m:65`.
-- Info event uses `info` key instead of required `name`: `ATProtoPDS/Sources/Sync/EventFormatter.m:84`.
-- Conformance test still fails: `ATProtoPDS/Tests/Sync/FirehoseConformanceTests.m:101`.
+- Token lookup ignores expiry: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:275`.
+- No rotation/revocation on use: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:304`.
+- Missing refresh token in refresh response: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:333`.
 
 ### P0 — XRPC DPoP nonce flow incomplete
-
-**Impact:** Standards-compliant nonce retry clients can fail on protected XRPC routes.
-
+**Impact:** Standards-compliant nonce retry clients cannot access protected XRPC routes.
 Evidence:
-- XRPC auth path verifies DPoP with `requireNonce:YES` but passes `nonce:nil`:
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5130`
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5133`
-- Failure path returns `nil DID` only; no `DPoP-Nonce` response header is emitted in XRPC layer.
-- OAuth DPoP verifier explicitly supports `use_dpop_nonce` semantics: `ATProtoPDS/Sources/Auth/OAuth2.m:808`.
+- XRPC auth path verifies DPoP with `requireNonce:YES` but passes `nonce:nil`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5130`.
+- Challenge response headers are not yet implemented.
 
 ---
 
@@ -112,31 +108,17 @@ Evidence:
 ## Operational Readiness Gaps
 
 ### P1 — Backup tooling/docs do not match runtime database layout
-
 Evidence:
-- Runtime layout uses `service/service.db` plus DID-keyed user DB files:
-  - `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:105`
-  - `ATProtoPDS/Sources/Database/Pool/DatabasePool.m:63`
-- Backup script still targets `service.sqlite` and `data.sqlite`, and is duplicated in the same file:
+- Runtime layout uses `service/service.db`: `ATProtoPDS/Sources/Database/Pool/DatabasePool.m:63`.
+- Backup script has duplicated body and incorrect pathing:
   - `scripts/backup_pds.sh:88`
-  - `scripts/backup_pds.sh:116`
-  - duplicate second script body starts at `scripts/backup_pds.sh:165`.
-- Docs still reference legacy paths:
-  - `README.md:435`
-  - `docs/guides/DEPLOYMENT.md:91`.
+  - `scripts/backup_pds.sh:165`
+- Docs still reference legacy paths in `README.md` and `DEPLOYMENT.md`.
 
-### P2 — Event retention primitive not wired into runtime policy
-
+### P2 — Reliability and Crash Resilience
 Evidence:
-- Prune method exists: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:904`.
-- No runtime caller currently invokes it in sync/event flow.
-
-### P2 — Script/repo hygiene
-
-Evidence:
-- Default start script still points at legacy binary path:
-  - `scripts/start_server.sh:17`.
-- Build artifacts remain tracked (`build-dd/*`) and are not ignored by `.gitignore`.
+- `CoverageGapTests` crashes on nil-data path in restricted environments: `ATProtoPDS/Tests/Services/CoverageGapTests.m:192`.
+- WebSocket connection/backpressure lifecycle needs tighter management.
 
 ---
 
@@ -162,11 +144,11 @@ This is environment-triggered, but test code should fail/skip gracefully rather 
 ## Updated Go/No-Go Criteria
 
 ### Must pass before go-live
-1. Firehose encoder fully matches `subscribeRepos` lexicon for `#commit/#identity/#account/#info`.
-2. XRPC DPoP nonce challenge/retry behavior is implemented and test-covered.
-3. `refreshSession` aligns to lexicon contract.
-4. Missing 5 `com.atproto.*` methods are implemented (or explicitly policy-excluded).
-5. Backup script/docs are corrected and validated via restore drill.
+1. **Refresh-token lifecycle**: Expiry enforcement, rotation, and revocation implemented.
+2. **XRPC DPoP nonce challenge**: `DPoP-Nonce` header + retry semantics implemented and tested.
+3. `refreshSession` aligns to lexicon contract (body and response).
+4. Missing 5 `com.atproto.*` methods are implemented.
+5. Backup script/docs matched to current `service.db` layout and de-duplicated.
 
 ### Should pass in same hardening window
 1. Canonical issuer/public URL source is used across JWT, NodeInfo, and PLC endpoint generation.

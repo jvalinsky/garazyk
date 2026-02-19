@@ -10,7 +10,7 @@ Use this skill to quickly identify where test coverage is likely missing or thin
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-test-gap-mapper/scripts/map_test_gaps.sh . /tmp/objc-test-gap-mapper
+./skills/objc-test-gap-mapper/scripts/map_test_gaps.sh . /tmp/objc-test-gap-mapper
 ```
 2. Read `/tmp/objc-test-gap-mapper/summary.md`.
 3. Prioritize with `references/test-gap-triage-checklist.md`.

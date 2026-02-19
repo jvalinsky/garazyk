@@ -79,6 +79,8 @@
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.seq = 124;
     event.repo = @"did:plc:test";
+    event.commit = [CID cidWithDigest:[@"size-test-cid" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71];
+    event.rev = @"3k3k3k3k3k3k3";
     event.blocks = hugeData;
     event.ops = @[];
     event.time = @"2024-01-01T00:00:00Z";

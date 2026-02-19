@@ -10,7 +10,7 @@ Use this skill when correctness depends on strict lock discipline and queue owne
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-locking-queue-audit/scripts/scan_locking_queue_contracts.sh . /tmp/objc-locking-queue-audit
+./skills/objc-locking-queue-audit/scripts/scan_locking_queue_contracts.sh . /tmp/objc-locking-queue-audit
 ```
 2. Read `/tmp/objc-locking-queue-audit/summary.md`.
 3. Verify candidate files with `references/queue-contract-checklist.md`.

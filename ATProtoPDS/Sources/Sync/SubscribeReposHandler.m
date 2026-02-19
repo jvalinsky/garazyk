@@ -25,6 +25,7 @@ NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
 static const NSUInteger kSubscribeReposReplayBatchSize = 100;
 static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
 static const NSUInteger kSubscribeReposMaxPendingSendsDefault = 512;
+static const NSUInteger kSubscribeReposMaxPendingBytesDefault = 16 * 1024 * 1024; // 16MB
 static NSString * const kSubscribeReposErrorFutureCursor = @"FutureCursor";
 static NSString * const kSubscribeReposErrorConsumerTooSlow = @"ConsumerTooSlow";
 static NSString * const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
@@ -42,6 +43,7 @@ static NSString * const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
 @property (nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
 @property (nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
+@property (nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *lastCommitRevByDID;
 
 - (void)ensureSequenceInitialized;
@@ -75,6 +77,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         _attachedConnections = [NSMutableSet set];
         _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
         _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
+        _maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
         _lastCommitRevByDID = [NSMutableDictionary dictionary];
 
 /*
@@ -171,6 +174,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 - (void)webSocketServer:(WebSocketServer *)server didAcceptConnection:(WebSocketConnection *)connection {
     PDS_LOG_SYNC_INFO(@"Accepted new WebSocket connection for subscribeRepos");
 
+    @synchronized (self.attachedConnections) {
+        [self.attachedConnections addObject:connection];
+    }
+
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didAcceptConnection:)]) {
         [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
     }
@@ -180,6 +187,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketServer:(WebSocketServer *)server didCloseConnection:(WebSocketConnection *)connection {
     PDS_LOG_SYNC_INFO(@"Closed WebSocket connection for subscribeRepos");
+    [self detachConnection:connection];
 
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
         [self.delegate subscribeReposHandler:self didCloseConnection:connection];
@@ -344,7 +352,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         self.sequenceNumber++;
 
         FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+        event.seq = self.sequenceNumber;
         event.did = did;
+        event.time = [SubscribeReposHandler rfc3339Timestamp];
         event.handle = handle;
 
         NSError *error = nil;
@@ -374,6 +384,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         self.sequenceNumber++;
 
         FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+        event.seq = self.sequenceNumber;
         event.did = did;
         event.active = NO;
         event.status = @"takendown";
@@ -658,7 +669,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         return NO;
     }
 
-    if (connection.pendingSendCount >= self.maxPendingSendsPerConnection) {
+    if (connection.pendingSendCount >= self.maxPendingSendsPerConnection ||
+        connection.pendingSendBytes >= self.maxPendingBytesPerConnection) {
         [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
                              message:@"connection output queue exceeded server limit"
                         toConnection:connection];

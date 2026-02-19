@@ -111,6 +111,9 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! Number of queued outbound frames waiting to be flushed. */
 @property (nonatomic, readonly) NSUInteger pendingSendCount;
 
+/*! Approximate number of bytes queued for sending. */
+@property (nonatomic, readonly) NSUInteger pendingSendBytes;
+
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path;
 - (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection;
 
