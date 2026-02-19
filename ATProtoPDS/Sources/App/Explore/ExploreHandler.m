@@ -3,6 +3,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "App/PDSController.h"
+#import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
@@ -562,10 +563,10 @@
     else if ([endpoint isEqualToString:@"debug-paths"]) {
         NSString *dbPath = nil;
         if (self.controller.dataDirectory) {
-            dbPath = [self.controller.dataDirectory stringByAppendingPathComponent:@"pds.db"];
+            dbPath = [self.controller.dataDirectory stringByAppendingPathComponent:@"service/service.db"];
         } else {
             NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-            dbPath = [cwd stringByAppendingPathComponent:@"data/pds.db"];
+            dbPath = [cwd stringByAppendingPathComponent:@"data/service/service.db"];
         }
         BOOL dbExists = [[NSFileManager defaultManager] fileExistsAtPath:dbPath];
         [response setJsonBody:@{
@@ -1521,12 +1522,9 @@
         if (!dataDir) dataDir = @"."; // Prevent crash if dataDir is nil
         
         NSArray *possiblePaths = @[
-            [dataDir stringByAppendingPathComponent:@"pds.db"],
-            [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-            [@"./data/pds.db" stringByExpandingTildeInPath],
-            [@"./data/service.sqlite" stringByExpandingTildeInPath],
-            [dataDir stringByAppendingPathComponent:@"data/pds.db"],
-            [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+            [dataDir stringByAppendingPathComponent:@"service/service.db"],
+            [@"./data/service/service.db" stringByExpandingTildeInPath],
+            [dataDir stringByAppendingPathComponent:@"data/service/service.db"]
         ];
         
         NSString *dbPath = nil;
@@ -1550,7 +1548,7 @@
         for (PDSDatabaseAccount *account in accounts) {
             if ([account.did isEqualToString:did]) {
                 // Determine service endpoint
-                NSString *serviceEndpoint = @"http://localhost:2583";
+                NSString *serviceEndpoint = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
                 
                 NSDictionary *doc = @{
                     @"@context": @[@"https://www.w3.org/ns/did/v1", @"https://w3id.org/security/multikey/v1"],
@@ -1688,12 +1686,9 @@
         if (!dataDir) dataDir = @".";
         
         NSArray *possiblePaths = @[
-            [dataDir stringByAppendingPathComponent:@"pds.db"],
-            [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-            [@"./data/pds.db" stringByExpandingTildeInPath],
-            [@"./data/service.sqlite" stringByExpandingTildeInPath],
-            [dataDir stringByAppendingPathComponent:@"data/pds.db"],
-            [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+            [dataDir stringByAppendingPathComponent:@"service/service.db"],
+            [@"./data/service/service.db" stringByExpandingTildeInPath],
+            [dataDir stringByAppendingPathComponent:@"data/service/service.db"]
         ];
         
         NSString *dbPath = nil;
@@ -1723,7 +1718,7 @@
                     @"prev": [NSNull null],
                     @"type": @"create",
                     @"handle": account.handle ?: @"unknown",
-                    @"service": @"http://localhost:2583",
+                    @"service": [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0],
                     @"signingKey": @"<simulated_key>",
                     @"recoveryKey": @"<simulated_key>"
                 };
@@ -1791,14 +1786,9 @@
 
     NSString *dataDir = self.controller.dataDirectory;
     NSArray *possiblePaths = @[
-        [dataDir stringByAppendingPathComponent:@"service/service.db"], // Correct path for new structure
-        [dataDir stringByAppendingPathComponent:@"pds.db"],
-        [dataDir stringByAppendingPathComponent:@"service.sqlite"],
+        [dataDir stringByAppendingPathComponent:@"service/service.db"],
         [@"./data/service/service.db" stringByExpandingTildeInPath],
-        [@"./data/pds.db" stringByExpandingTildeInPath],
-        [@"./data/service.sqlite" stringByExpandingTildeInPath],
-        [dataDir stringByAppendingPathComponent:@"data/pds.db"],
-        [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+        [dataDir stringByAppendingPathComponent:@"data/service/service.db"]
     ];
     
     NSString *dbPath = nil;
@@ -1866,12 +1856,9 @@
     if (!dataDir) dataDir = @".";
     
     NSArray *possiblePaths = @[
-        [dataDir stringByAppendingPathComponent:@"pds.db"],
-        [dataDir stringByAppendingPathComponent:@"service.sqlite"],
-        [@"./data/pds.db" stringByExpandingTildeInPath],
-        [@"./data/service.sqlite" stringByExpandingTildeInPath],
-        [dataDir stringByAppendingPathComponent:@"data/pds.db"],
-        [dataDir stringByAppendingPathComponent:@"data/service.sqlite"]
+        [dataDir stringByAppendingPathComponent:@"service/service.db"],
+        [@"./data/service/service.db" stringByExpandingTildeInPath],
+        [dataDir stringByAppendingPathComponent:@"data/service/service.db"]
     ];
     
     NSString *dbPath = nil;
