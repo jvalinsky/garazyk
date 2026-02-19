@@ -50,12 +50,16 @@ Completed:
 
 ---
 
-## Phase 5 — Selfhoster Operations Alignment (P1)
+## Phase 5 — Selfhoster Operations Alignment (Done)
 **Goal:** Fix backup/restore tooling and unify public issuer usage.
 ### Tasks
-- [ ] Unify `PDS_ISSUER` usage across JWT, NodeInfo, and PLC endpoints.
+- [x] Unify `PDS_ISSUER` usage across JWT, NodeInfo, and PLC endpoints:
+  - XrpcMethodRegistry.m: JWT verifier now uses `[PDSConfiguration sharedConfiguration].issuer`
+  - PDSController.m: JWT minter now uses `[PDSConfiguration sharedConfiguration].issuer`
+  - OAuth2Handler.m: OAuth server now uses `[PDSConfiguration sharedConfiguration].issuer`
+  - PDSAdminAuth.m: Admin auth now checks PDSConfiguration as fallback
 - [x] Fix `scripts/backup_pds.sh`: remove duplication and update to `service.db`.
-- [ ] Update documentation to match actual on-disk layout.
+- [ ] Update documentation to match actual on-disk layout (deferred to documentation sprint).
 
 ## Phase 6 — Reliability and Hygiene (P2)
 **Goal:** Harden tests and websocket lifecycle.
@@ -74,16 +78,16 @@ Completed:
 | Phase 2 | ✅ Done | Refresh token rotation & configurable TTL |
 | Phase 3 | ✅ Done | DPoP nonce challenge flow working |
 | Phase 4 | ✅ Done | All 5 missing com.atproto.* endpoints implemented |
-| Phase 5 | 🔄 In Progress | PDS_ISSUER unification, docs update |
+| Phase 5 | ✅ Done | PDS_ISSUER unified across all components |
 | Phase 6 | ⏳ Pending | CoverageGapTests fix, websocket hardening |
 
 ## Recommended Next Steps
 
-1. **Phase 5a** — Unify PDS_ISSUER usage (high priority for selfhosters)
-2. **Phase 5b** — Update documentation for actual on-disk layout
-3. **Phase 6** — Address CoverageGapTests and websocket reliability
+1. **Phase 6a** — Fix CoverageGapTests nil-data crash
+2. **Phase 6b** — Tighten websocket connection and backpressure management
+3. **Documentation** — Update docs to match actual on-disk layout (can be deferred)
 
-This keeps external protocol correctness (completed), then finishes operations alignment, then reliability improvements.
+All P0 and P1 work is now complete. Remaining work is P2 reliability improvements.
 
 ---
 
@@ -93,3 +97,5 @@ This keeps external protocol correctness (completed), then finishes operations a
 2. `e118f7a` - feat(auth): configurable refresh token TTL and DPoP method fixes
 3. `152f941` - test(auth): add refresh token rotation tests
 4. `310a01e` - feat(endpoints): implement 5 missing com.atproto.* methods
+5. `254c4a0` - docs(plan): update next steps to reflect completed work
+6. `b077585` - refactor(config): unify PDS_ISSUER usage through PDSConfiguration
