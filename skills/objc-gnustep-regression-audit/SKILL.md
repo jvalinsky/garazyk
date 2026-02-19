@@ -10,7 +10,7 @@ Use this skill to catch macOS-only assumptions before they break Linux/GNUstep b
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-gnustep-regression-audit/scripts/scan_gnustep_regressions.sh . /tmp/objc-gnustep-regression-audit
+./skills/objc-gnustep-regression-audit/scripts/scan_gnustep_regressions.sh . /tmp/objc-gnustep-regression-audit
 ```
 2. Read `/tmp/objc-gnustep-regression-audit/summary.md`.
 3. Validate candidates with `references/gnustep-compat-checklist.md`.

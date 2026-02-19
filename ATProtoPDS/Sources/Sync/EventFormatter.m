@@ -22,10 +22,8 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
     payload[@"repo"] = event.repo;
     payload[@"commit"] = event.commit;  // CID object - will encode as tag 42
     payload[@"rev"] = event.rev;
-    
-    if (event.since) {
-        payload[@"since"] = event.since;
-    }
+    payload[@"since"] = event.since ?: [NSNull null];
+    payload[@"blocks"] = event.blocks ?: [NSData data];
     
     // Sanitize ops to remove recordCBOR which is internal-only and huge
     // Per ATProto spec, the record data is in the blocks (CAR), not in the ops metadata
@@ -53,7 +51,9 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"seq"] = @(event.seq);
     payload[@"did"] = event.did;
+    payload[@"time"] = event.time ?: @"";
 
     if (event.handle) {
         payload[@"handle"] = event.handle;
@@ -64,15 +64,13 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"seq"] = @(event.seq);
     payload[@"did"] = event.did;
     payload[@"active"] = @(event.active);
+    payload[@"time"] = event.time ?: @"";
 
     if (event.status) {
         payload[@"status"] = event.status;
-    }
-
-    if (event.time) {
-        payload[@"time"] = event.time;
     }
 
     return [self encodeStreamEventWithType:@"#account" payload:payload error:error];
@@ -80,8 +78,10 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-    payload[@"message"] = event.message;
-    payload[@"info"] = event.kind;
+    payload[@"name"] = event.kind ?: @"";
+    if (event.message.length > 0) {
+        payload[@"message"] = event.message;
+    }
 
     return [self encodeStreamEventWithType:@"#info" payload:payload error:error];
 }

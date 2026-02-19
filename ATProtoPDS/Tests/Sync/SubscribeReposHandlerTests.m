@@ -9,6 +9,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Network/HttpRequest.h"
 #import <sqlite3.h>
 
 @interface MockWebSocketConnection : WebSocketConnection
@@ -18,6 +19,7 @@
 @property (nonatomic, assign) NSInteger closedCode;
 @property (nonatomic, copy) NSString *closedReason;
 @property (nonatomic, assign) NSUInteger simulatedPendingSendCount;
+@property (nonatomic, assign) NSUInteger simulatedPendingSendBytes;
 @end
 
 @implementation MockWebSocketConnection
@@ -47,12 +49,16 @@
 - (NSUInteger)pendingSendCount {
     return self.simulatedPendingSendCount;
 }
+- (NSUInteger)pendingSendBytes {
+    return self.simulatedPendingSendBytes;
+}
 @end
 
 @interface SubscribeReposHandler (TestAccess)
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor;
 @property (nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
 @property (nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
+@property (nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
 @end
 
 @interface SubscribeReposHandlerTests : XCTestCase
@@ -112,6 +118,58 @@
                                                          ops:ops 
                                                        blobs:blobs], 
                      @"Should handle broadcast with ops and blobs");
+}
+
+- (void)testBackpressureEnforcement {
+    RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
+                                                   data:[CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
+                                                    rev:@"3l66k7pp33p" 
+                                                   prev:nil];
+    
+    NSArray *ops = @[
+        @{
+            @"action": @"create",
+            @"path": @"app.bsky.feed.post/3jqfcqzm3fo2j",
+            @"cid": @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"
+        }
+    ];
+    
+    MockWebSocketConnection *mockConn = [[MockWebSocketConnection alloc] init];
+    // Use didAcceptConnection directly to bypass connection wrapping
+    [(id)self.handler webSocketServer:nil didAcceptConnection:mockConn];
+    
+    // Simulate backpressure by increasing count
+    mockConn.simulatedPendingSendCount = self.handler.maxPendingSendsPerConnection + 1;
+    
+    [self.handler broadcastRepositoryCommit:commit forRepo:@"did:plc:test" ops:ops blobs:@[]];
+    
+    // Wait for async dispatch
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Backpressure check"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [expectation fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    XCTAssertTrue(mockConn.didClose, @"Connection should be closed due to count backpressure");
+    XCTAssertEqual(mockConn.closedCode, 1008);
+    
+    // Reset and test bytes backpressure
+    MockWebSocketConnection *mockConn2 = [[MockWebSocketConnection alloc] init];
+    [(id)self.handler webSocketServer:nil didAcceptConnection:mockConn2];
+    
+    mockConn2.simulatedPendingSendCount = 0;
+    mockConn2.simulatedPendingSendBytes = self.handler.maxPendingBytesPerConnection + 1;
+    
+    [self.handler broadcastRepositoryCommit:commit forRepo:@"did:plc:test" ops:ops blobs:@[]];
+    
+    XCTestExpectation *expectation2 = [self expectationWithDescription:@"Backpressure check bytes"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [expectation2 fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    
+    XCTAssertTrue(mockConn2.didClose, @"Connection should be closed due to bytes backpressure");
+    XCTAssertEqual(mockConn2.closedCode, 1008);
 }
 
 - (void)testBroadcastPersistsEvent {
@@ -200,8 +258,8 @@
         XCTAssertEqual(op2, 1);
         XCTAssertEqualObjects(type1, @"#info");
         XCTAssertEqualObjects(type2, @"#info");
-        XCTAssertEqualObjects(msg1[@"info"], @"info2");
-        XCTAssertEqualObjects(msg2[@"info"], @"info3");
+        XCTAssertEqualObjects(msg1[@"name"], @"info2");
+        XCTAssertEqualObjects(msg2[@"name"], @"info3");
     }
 }
 
@@ -386,10 +444,8 @@
         NSString *type = nil;
         NSDictionary *msg = [formatter decodeEventFromData:conn.sentMessages[0] op:&op msgType:&type error:nil];
         XCTAssertEqualObjects(type, @"#info");
-        XCTAssertEqualObjects(msg[@"info"], @"info3");
-        XCTAssertEqualObjects(msg[@"seq"], @3); 
-        // Note: EventFormatter might verify payload seq matches? No, it just encodes what we put.
-        // SubscribeReposHandler sets seq.
+        XCTAssertEqualObjects(msg[@"name"], @"info3");
+        // Info events don't carry seq in body, so we can't verify seq here
     }
 }
 

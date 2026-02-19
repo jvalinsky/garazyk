@@ -10,7 +10,7 @@ Use this skill to perform a structured static audit for thread-safety defects an
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-concurrency-bug-audit/scripts/scan_concurrency_patterns.sh . /tmp/objc-concurrency-audit
+./skills/objc-concurrency-bug-audit/scripts/scan_concurrency_patterns.sh . /tmp/objc-concurrency-audit
 ```
 2. Read `/tmp/objc-concurrency-audit/summary.md`.
 3. Verify high-risk files with `references/concurrency-checklist.md`.
