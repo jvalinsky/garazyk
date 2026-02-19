@@ -9,6 +9,7 @@
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "App/PDSConfiguration.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -274,7 +275,7 @@ static NSString *appPasswordGenerateSecret(void) {
 
     NSString *sql = @"SELECT a.* FROM accounts a "
                     @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
-                    @"WHERE rt.token = ?";
+                    @"WHERE rt.token = ? AND rt.expires_at > ?";
     __autoreleasing NSError *stmtError = nil;
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
     if (!stmt) {
@@ -283,6 +284,7 @@ static NSString *appPasswordGenerateSecret(void) {
     }
 
     sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         account = [store accountFromStatement:stmt];
@@ -353,7 +355,10 @@ static NSString *appPasswordGenerateSecret(void) {
         sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
-        sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:30 * 24 * 60 * 60] timeIntervalSince1970]);
+        
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSUInteger refreshTokenTtl = config.refreshTokenTtlSeconds > 0 ? config.refreshTokenTtlSeconds : (30 * 24 * 60 * 60);
+        sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:refreshTokenTtl] timeIntervalSince1970]);
 
         success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
