@@ -71,6 +71,47 @@ static inline uint64_t CFSwapInt64HostToBig(uint64_t arg) {
 #define OSSwapHostToBigInt64(x) CFSwapInt64HostToBig(x)
 
 typedef int64_t CFIndex;
+typedef unsigned long CFTypeID;
+
+// CFNumber types and functions
+typedef enum {
+    kCFNumberSInt8Type = 1,
+    kCFNumberSInt16Type = 2,
+    kCFNumberSInt32Type = 3,
+    kCFNumberSInt64Type = 4,
+    kCFNumberFloat32Type = 5,
+    kCFNumberFloat64Type = 6,
+    kCFNumberCharType = 7,
+    kCFNumberShortType = 8,
+    kCFNumberIntType = 9,
+    kCFNumberLongType = 10,
+    kCFNumberLongLongType = 11,
+    kCFNumberFloatType = 12,
+    kCFNumberDoubleType = 13,
+    kCFNumberCFIndexType = 14,
+    kCFNumberNSIntegerType = 15,
+    kCFNumberCGFloatType = 16
+} CFNumberType;
+
+typedef struct __CFNumber *CFNumberRef;
+
+static inline CFTypeID CFGetTypeID(CFTypeRef cf) {
+    (void)cf;
+    return 0;
+}
+
+static inline CFTypeID CFBooleanGetTypeID(void) {
+    return 1; // Arbitrary unique ID
+}
+
+static inline CFTypeID CFNumberGetTypeID(void) {
+    return 2; // Arbitrary unique ID
+}
+
+static inline CFNumberType CFNumberGetType(CFNumberRef number) {
+    (void)number;
+    return kCFNumberIntType; // Default to int
+}
 typedef uint64_t CFHashCode;
 
 typedef struct {
@@ -130,16 +171,16 @@ static inline void CFDictionaryGetKeysAndValues(CFDictionaryRef theDict, const v
     (void)values;
 }
 
-static inline CFTypeRef CFBridgingRelease(CFTypeRef cf) {
-    (void)cf;
-    return NULL;
-}
+// CFBridgingRelease stub - on real macOS returns id and transfers ownership
+// For GNUstep stub, we need to use __bridge_transfer to be compatible with ARC code
+#define CFBridgingRelease(cf) ((__bridge_transfer id)(cf))
 
 static inline CFTypeRef CFRetain(CFTypeRef cf) {
     return cf;
 }
 
-static inline void CFRelease(CFTypeRef cf) {
+// CFRelease stub - accepts any CF type
+static inline void CFRelease(const void *cf) {
     (void)cf;
 }
 
@@ -226,7 +267,7 @@ static inline SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef parameters, OSStat
     return (SecKeyRef)NULL;
 }
 
-static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, OSStatus *error) {
+static inline CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error) {
     (void)key;
     (void)error;
     return NULL;
@@ -237,14 +278,14 @@ static inline SecKeyRef SecKeyCopyPublicKey(SecKeyRef key) {
     return (SecKeyRef)NULL;
 }
 
-static inline SecKeyRef SecKeyCreateWithData(CFDataRef keyData, CFDictionaryRef attributes, OSStatus *error) {
+static inline SecKeyRef SecKeyCreateWithData(CFDataRef keyData, CFDictionaryRef attributes, CFErrorRef *error) {
     (void)keyData;
     (void)attributes;
     (void)error;
     return (SecKeyRef)NULL;
 }
 
-static inline CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef dataToSign, OSStatus *error) {
+static inline CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef dataToSign, CFErrorRef *error) {
     (void)key;
     (void)algorithm;
     (void)dataToSign;
@@ -252,7 +293,7 @@ static inline CFDataRef SecKeyCreateSignature(SecKeyRef key, SecKeyAlgorithm alg
     return NULL;
 }
 
-static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef signedData, CFDataRef signature, OSStatus *error) {
+static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorithm, CFDataRef signedData, CFDataRef signature, CFErrorRef *error) {
     (void)key;
     (void)algorithm;
     (void)signedData;
@@ -265,6 +306,7 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecKeyAlgorithmECDSASignatureRFC6979SHA256 ((SecKeyAlgorithm)0)
 #define kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256 ((SecKeyAlgorithm)0)
 #define kSecKeyAlgorithmECDSASignatureMessageX962SHA256 ((SecKeyAlgorithm)0)
+#define kSecKeyAlgorithmECDSASignatureDigestX962SHA256 ((SecKeyAlgorithm)0)
 
 #define kSecAttrKeyType ((CFStringRef)0)
 #define kSecAttrKeyTypeRSA ((CFStringRef)1)
@@ -282,10 +324,24 @@ static inline BOOL SecKeyVerifySignature(SecKeyRef key, SecKeyAlgorithm algorith
 #define kSecAttrAccessibleAfterFirstUnlock ((CFStringRef)16)
 #define kSecReturnRef ((CFStringRef)17)
 #define kSecValueRef ((CFStringRef)18)
+#define kSecValueData ((CFStringRef)19)
+#define kSecReturnData ((CFStringRef)20)
+#define kSecMatchLimit ((CFStringRef)21)
+#define kSecMatchLimitOne ((CFStringRef)22)
+#define kSecMatchLimitAll ((CFStringRef)23)
 #define kSecClass ((CFStringRef)9)
 #define kSecClassKey ((CFStringRef)10)
 #define kSecClassGenericPassword ((CFStringRef)11)
 #define errSecItemNotFound (-25300)
+#define errSecDuplicateItem (-25299)
+#define errSecAuthFailed (-25293)
+#define errSecParam (-50)
+#define errSecNotAvailable (-25291)
+
+#define kSecAttrType ((CFStringRef)200)
+#define kSecAttrAccessibleWhenUnlockedThisDeviceOnly ((CFStringRef)201)
+#define kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly ((CFStringRef)202)
+#define kSecUseAuthenticationContext ((CFStringRef)203)
 
 static inline OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
     (void)query;
