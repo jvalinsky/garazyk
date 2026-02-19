@@ -1,6 +1,12 @@
 #import "PLC/PLCMetrics.h"
 #import "Debug/PDSLogger.h"
+#ifndef GNUSTEP
 #import <libkern/OSAtomic.h>
+#else
+// Linux: use C11 atomics instead of OSAtomic
+#include <stdatomic.h>
+#define OSAtomicIncrement64(ptr) (atomic_fetch_add((_Atomic(int64_t) *)(ptr), 1) + 1)
+#endif
 
 NS_ASSUME_NONNULL_BEGIN
 
