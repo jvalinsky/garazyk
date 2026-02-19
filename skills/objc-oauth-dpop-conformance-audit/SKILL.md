@@ -10,7 +10,7 @@ Use this skill to triage correctness and security risks across OAuth2 and DPoP f
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-oauth-dpop-conformance-audit/scripts/scan_oauth_dpop_conformance.sh . /tmp/objc-oauth-dpop-conformance-audit
+./skills/objc-oauth-dpop-conformance-audit/scripts/scan_oauth_dpop_conformance.sh . /tmp/objc-oauth-dpop-conformance-audit
 ```
 2. Read `/tmp/objc-oauth-dpop-conformance-audit/summary.md`.
 3. Validate candidates with `references/oauth-dpop-checklist.md`.

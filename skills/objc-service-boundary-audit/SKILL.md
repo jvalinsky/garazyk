@@ -10,7 +10,7 @@ Use this skill to find missing authz and trust-boundary checks around service op
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-service-boundary-audit/scripts/scan_service_boundaries.sh . /tmp/objc-service-boundary-audit
+./skills/objc-service-boundary-audit/scripts/scan_service_boundaries.sh . /tmp/objc-service-boundary-audit
 ```
 2. Read `/tmp/objc-service-boundary-audit/summary.md`.
 3. Validate candidates with `references/service-boundary-checklist.md`.

@@ -10,7 +10,7 @@ Use this skill to find ordering and flow-control risks in streaming sync paths.
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-firehose-ordering-backpressure-audit/scripts/scan_firehose_backpressure.sh . /tmp/objc-firehose-ordering-backpressure-audit
+./skills/objc-firehose-ordering-backpressure-audit/scripts/scan_firehose_backpressure.sh . /tmp/objc-firehose-ordering-backpressure-audit
 ```
 2. Read `/tmp/objc-firehose-ordering-backpressure-audit/summary.md`.
 3. Validate candidates with `references/firehose-backpressure-checklist.md`.
