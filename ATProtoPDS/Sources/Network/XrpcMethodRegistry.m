@@ -2989,6 +2989,86 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:result];
     }];
 
+    [dispatcher registerComAtprotoIdentityResolveHandle:^(HttpRequest *request, HttpResponse *response) {
+        NSString *handle = [request queryParamForKey:@"handle"];
+        if (handle.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle parameter"}];
+            return;
+        }
+
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:handle error:nil];
+        if (account) {
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"did": account.did}];
+            return;
+        }
+
+        HandleResolver *handleResolver = [[HandleResolver alloc] init];
+        __block NSString *resolvedDid = nil;
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+        [handleResolver resolveHandle:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+            resolvedDid = did;
+            dispatch_semaphore_signal(semaphore);
+        }];
+        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+        if (resolvedDid.length > 0) {
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"did": resolvedDid}];
+        } else {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"Handle not found"}];
+        }
+    }];
+
+    [dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
+        NSString *identifier = [request queryParamForKey:@"identifier"];
+        if (identifier.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing identifier parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSString *errorName = nil;
+        NSDictionary *result = resolveIdentityInfoForIdentifier(identifier, serviceDatabases, &errorName, &error);
+        if (!result) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{
+                @"error": errorName ?: @"NotFound",
+                @"message": error.localizedDescription ?: @"Identity not found"
+            }];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
+        PDSConfiguration *configuration = config;
+        NSString *issuer = configuration.issuer ?: @"";
+        
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        
+        if (issuer.length > 0) {
+            result[@"alsoKnownAs"] = @[[NSString stringWithFormat:@"at://%@", issuer]];
+        }
+        
+        result[@"rotationKeys"] = @[];
+        result[@"verificationMethods"] = @{};
+        result[@"services"] = @{
+            @"atproto_pds": @{
+                @"type": @"AtprotoPersonalDataServer",
+                @"endpoint": issuer.length > 0 ? issuer : @""
+            }
+        };
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
@@ -5141,6 +5221,21 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
+
+    [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *hostname = body[@"hostname"];
+        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
+            return;
+        }
+
+        PDS_LOG_INFO(@"Received notifyOfUpdate for hostname: %@ (deprecated, use requestCrawl)", hostname);
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
 }
 
 
@@ -5766,6 +5861,36 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
             @"takedown": @(isTakedown)
         }];
     }];
+
+    [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *did = body[@"did"];
+        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL isTakedown = [adminController isAccountTakedownActive:did error:&error];
+
+        if (error) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"did": did,
+            @"applied": @(isTakedown)
+        }];
+    }];
+
     registerAdminAccountMaintenanceMethods(dispatcher,
                                            serviceDatabases,
                                            jwtMinter,
