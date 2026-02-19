@@ -51,7 +51,7 @@ git add ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m ATProtoPDS/Sources/CLI/PDSCLI
 git commit -m "cli: use +load for repo command registration"
 ```
 
-### Task 2: Robust Global Argument Parsing in main.m
+### Task 2: Global Argument Parsing in main.m
 
 **Files:**
 - Modify: `ATProtoPDS/Sources/CLI/main.m`

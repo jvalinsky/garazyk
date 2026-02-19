@@ -83,6 +83,11 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 - (BOOL)verifySignature:(NSData *)signature
                forData:(NSData *)data
                withKey:(SecKeyRef)publicKey
+                 error:(NSError **)error;
+
+- (BOOL)verifySignature:(NSData *)signature
+                forData:(NSData *)data
+              withKeyID:(NSString *)keyID
                   error:(NSError **)error;
 
 @end

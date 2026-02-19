@@ -80,7 +80,7 @@
 
 **Step 1: Collect all subagent reports**
 
-**Step 2: Compile comprehensive compliance report**
+**Step 2: Compile compliance report**
 - Create `docs/reports/objective_c_compliance_report.md`
 - Categorize by severity (Critical/Major/Minor)
 - Prioritize actionable improvements

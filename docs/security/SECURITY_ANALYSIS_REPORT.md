@@ -128,7 +128,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 
 ### 10. Incomplete Implementations (LOW)
 **Files:**
-- `ATProtoPDS/Sources/Auth/KeyManager.m:7` - `publicKeyJWK` not implemented
+- `ATProtoPDS/Sources/Auth/PDSAppleKeyManager.m` - `publicKeyJWK` implementation exists
 - Multiple files with `bugprone-branch-clone` warnings (identical then/else branches)
 
 ---

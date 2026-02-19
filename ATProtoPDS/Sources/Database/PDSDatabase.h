@@ -77,6 +77,16 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 + (instancetype)databaseAtURL:(NSURL *)url;
 
 /*!
+ @method sharedDatabase
+ 
+ @abstract Returns the shared singleton database instance.
+ 
+ @return The shared PDSDatabase instance.
+ */
++ (instancetype)sharedDatabase;
+
+
+/*!
  @method openWithError:
  
  @abstract Opens the database connection and runs any pending migrations.

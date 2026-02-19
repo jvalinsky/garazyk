@@ -18,7 +18,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
-#import "Auth/JWTSigningKeyStore.h"
+#import "Auth/PDSKeyManagerFactory.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Network/HttpServer.h"
@@ -239,12 +239,25 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     
     // Generate server signing key
     NSError *serverKeyError = nil;
-    Secp256k1KeyPair *serverKey = [JWTSigningKeyStore loadOrCreateKeyPairForDataDirectory:_dataDirectory error:&serverKeyError];
+    // Use factory to get appropriate key manager
+    id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[_serviceDatabases serviceDatabaseWithError:nil]];
+    
+    // Ensure active key exists
+    id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
     if (serverKeyError) {
         PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
     }
-    _jwtMinter.privateKey = serverKey.privateKey;
-    _jwtMinter.publicKey = serverKey.publicKey;
+    
+    _jwtMinter.keyManager = keyManager;
+    // Private/Public key properties on Minter are now optional if keyManager is set, 
+    // but for backwards compatibility or specific internal use we might still need them?
+    // The Minter implementation now prefers keyManager. 
+    // If Minter implementation fallback to privateKey/publicKey is removed or deprecated, 
+    // we don't need to set them. 
+    // Based on my review of JWT.m, it prefers keyManager.
+    // However, for completeness if Minter exposes them: 
+    // _jwtMinter.privateKey = ... (can't easily access raw ref from protocol without cast)
+    // So we rely on keyManager assignment.
 }
 
 - (void)initializeServices {

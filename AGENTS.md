@@ -45,13 +45,13 @@
 - **Professional Bash Scripting Standards**: Core repository scripts follow structured error handling, input validation, and maintainable shell scripting practices.
 - **Script Quality Improvements**: Upgraded core shell scripts following professional bash scripting standards:
   - `simple_test.sh`: Complete overhaul with proper error handling, structured logging, input validation, and dependency checking
-  - `start_server.sh`: Enhanced with comprehensive initialization, cleanup, and process management
+  - `start_server.sh`: Signal handling, PID file management, graceful shutdown with 10s timeout
   - `quality_gate.sh`: Improved error handling, validation, and structured logging
   - `run-tests.sh`: Added professional structure with proper validation and logging
-- **New E2E Test Scripts**: Created comprehensive end-to-end test coverage for core features:
+- **New E2E Test Scripts**: End-to-end tests for social (6 scenarios) and moderation (4 scenarios) workflows:
   - `test_social_features.sh`: Complete social features testing (feeds, follows, likes, profiles, search, timelines)
   - `test_moderation.sh`: Full moderation testing (reports, account moderation, content labeling)
-- **Script Ecosystem Enhancement**: Professional bash scripting now covers the full development lifecycle with standardized, colored output, comprehensive error handling, and ShellCheck compliance.
+- **Script Ecosystem Enhancement**: Shell scripts use `set -euo pipefail`, colored output via `log_info`/`log_error` functions, and pass ShellCheck with zero warnings.
 - **Script Validation**: All scripts (existing and new) pass ShellCheck linting with zero warnings and follow SC2155 best practices for variable declaration.
 
 ### Database Layer
@@ -163,8 +163,6 @@ Before pushing, ensure:
 5. Fuzzers build successfully
 
 ## Linux/GNUstep Compatibility
-
-This project targets both macOS and Linux (via GNUstep). See [docs/GNUSTEP_COMPATIBILITY.md](docs/GNUSTEP_COMPATIBILITY.md) for detailed compatibility information.
 
 ### Key Findings
 

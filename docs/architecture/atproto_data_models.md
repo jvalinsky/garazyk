@@ -140,7 +140,7 @@ Handles are DNS hostnames that must be bidirectionally validated:
 The repository data structure is a key/value content-addressed Merkle Search Tree, functioning as a key/value store. This enables:
 - Verifiable diff operations
 - Cryptographic authentication
-- Efficient synchronization
+- O(log n) key lookup with bounded tree depth
 
 ### MST Operations
 

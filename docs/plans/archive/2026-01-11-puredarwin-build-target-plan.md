@@ -55,7 +55,7 @@ Create a PureDarwin build target with **full feature parity** to macOS builds, t
    - Adapt XcodeGen for Darwin targets (conditional SDKROOT)
    - Add PureDarwin toolchain file for CMake
 
-### Phase 5: Testing & Validation (Comprehensive)
+### Phase 5: Testing & Validation
 1. **Build Verification**:
    - CI pipeline with PureDarwin VM testing (automate VMDK setup)
    - Cross-platform artifact generation and verification
@@ -75,7 +75,7 @@ Create a PureDarwin build target with **full feature parity** to macOS builds, t
 - **Build Tools**: CMake 3.20+, XcodeGen (patched for Darwin)
 
 ## Risk Assessment & Mitigations
-- **High Risk**: Full networking parity - extensive testing needed; mitigate with comprehensive benchmarks
+- **High Risk**: Full networking parity - extensive testing needed; mitigate with benchmarks
 - **Medium Risk**: Dependency vendoring complexity; mitigate with clear subproject management
 - **Low Risk**: Feature completeness - prioritized in plan
 

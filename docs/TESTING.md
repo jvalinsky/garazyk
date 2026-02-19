@@ -40,7 +40,7 @@ This section covers identity resolution, authentication flows, and core security
 **HandleResolver & DIDResolver**
 *   **What it tests:** Resolution of ATProto handles to DIDs and DIDs to DID Documents. Verifies handle syntax, HTTPS well-known resolution, and caching mechanisms.
 *   **Why it exists:** Ensures user identities can be reliably discovered and verified across the network, adhering to the ATProto Identity specifications.
-*   **Sources:** [ATProto Identity Specification](https://atproto.com/specs/identity).
+*   **Sources:** [ATProto DID Specification](https://atproto.com/specs/did), [ATProto Handle Specification](https://atproto.com/specs/handle).
 *   **Security Verifications:**
     *   **SSRF Protection:** Explicitly blocks resolution to private IP ranges (10.x, 127.x, 169.254.x, IPv6 link-local) to prevent Server-Side Request Forgery (`HandleResolverSSRFTests`).
     *   **Input Validation:** Rejects invalid characters, excessive lengths, and malformed segments.

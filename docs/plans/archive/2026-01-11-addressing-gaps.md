@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Address identified gaps in tests and features to make ATProto PDS more complete and robust compared to reference implementations
+**Goal:** Address identified gaps in tests and features to reach feature parity with reference implementations
 
-**Architecture:** Use TDD approach for new features, repair existing broken tests, implement missing Linux support, and add comprehensive test coverage
+**Architecture:** Use TDD approach for new features, repair existing broken tests, implement missing Linux support, and add test coverage
 
 **Tech Stack:** Objective-C, CMake, XCTest, GNUstep (for Linux), secp256k1, SQLite
 
@@ -250,7 +250,7 @@ FAIL
 
 **Step 3: Ensure CLI logic is correct**
 
-Already implemented, just test.
+Already implemented. Test.
 
 **Step 4: Run tests**
 

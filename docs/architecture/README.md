@@ -1,6 +1,6 @@
 # ATProto PDS Architecture Diagrams
 
-This directory contains comprehensive architecture diagrams for the ATProto PDS implementation.
+Architecture diagrams and data flow documentation for the ATProto PDS implementation.
 
 ## Generated Diagrams
 
@@ -313,7 +313,7 @@ See `ARCHITECTURE_ANALYSIS.md` for:
 
 ## Quick Navigation
 
-- **[Full Analysis](ARCHITECTURE_ANALYSIS.md)** - Comprehensive architecture documentation
+- **[Full Analysis](ARCHITECTURE_ANALYSIS.md)** - Component descriptions, data flows, and security model
 - **[Mermaid Diagrams](ARCHITECTURE_DIAGRAMS.md)** - Visual system overview
 - **[Mermaid Diagrams Extended](DIAGRAMS_MERMAID.md)** - ATProto protocols & models
 - **[Development Workflows](docs/guides/DEVELOPMENT_WORKFLOWS.md)** - Dev process diagrams

@@ -525,7 +525,7 @@ git commit -m "feat: add permission calculation to Session class"
 
 ---
 
-### Task 6: Add Comprehensive Tests
+### Task 6: Add Tests
 
 **Files:**
 - Create: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2ScopeTests.m`

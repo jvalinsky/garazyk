@@ -157,7 +157,7 @@ The `refreshAccessToken:` method at lines 304-348 already implements rotation:
 - Lines 335-340: Generates and stores new refresh token
 - Returns both accessJwt and refreshJwt
 
-This is already correct! We just need to verify it with a test.
+Verify token rotation with a test.
 
 **Step 2: Write test for token rotation**
 

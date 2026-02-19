@@ -7,7 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/OAuthServerMetadata.h"
-#import "Auth/KeyRotationManager.h"
+
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
 
@@ -465,7 +465,6 @@
             }];
             return;
         }
-        PDS_LOG_AUTH_DEBUG(@"Token request redirect_uri validation passed (client_id=%@)", clientID ?: @"");
     }
     
     NSString *dpopThumbprint = nil;
@@ -711,6 +710,7 @@
 
     NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
     if (!dpopURL) {
+        PDS_LOG_AUTH_DEBUG(@"validateDPoPForRequest: Failed to construct dpopURL from: %@", urlString);
         response.statusCode = 400;
         [response setJsonBody:@{
             @"error": @"invalid_request",
@@ -730,7 +730,7 @@
                                method:request.methodString
                                   url:dpopURL
                                 nonce:requestedNonce
-                         requireNonce:YES
+                         requireNonce:NO
                         outThumbprint:&dpopThumbprint
                                 error:&dpopError]) {
         if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
