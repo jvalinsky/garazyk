@@ -495,6 +495,10 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
            [@"1" isEqualToString:value];
 }
 
+- (NSString *)canonicalIssuer {
+    return [self canonicalIssuerWithPortHint:0];
+}
+
 - (NSString *)canonicalIssuerWithPortHint:(NSUInteger)portHint {
     NSString *configuredIssuer = PDSConfigCanonicalizedIssuerString(self.issuer);
     if (configuredIssuer.length > 0) {

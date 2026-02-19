@@ -213,4 +213,47 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertNil(response.headers[@"DPoP-Nonce"]);
 }
 
+- (void)testPARRequestReturnsDPoPNonceChallengeWhenNonceMissing {
+    NSError *keyError = nil;
+    SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&keyError);
+    if (privateKey == NULL) {
+        XCTSkip(@"Skipping DPoP nonce challenge test: key import unavailable (%@)", keyError);
+    }
+
+    @try {
+        NSError *proofError = nil;
+        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"POST"
+                                                      uri:@"http://localhost:2583/oauth/par"
+                                                   nonce:nil
+                                                     key:privateKey
+                                                   error:&proofError];
+        XCTAssertNotNil(proof);
+        XCTAssertNil(proofError);
+
+        NSString *body = @"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb";
+        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                      methodString:@"POST"
+                                                              path:@"/oauth/par"
+                                                       queryString:@""
+                                                       queryParams:@{}
+                                                           version:@"1.1"
+                                                           headers:@{
+                                                               @"content-type": @"application/x-www-form-urlencoded",
+                                                               @"host": @"localhost:2583",
+                                                               @"dpop": proof.jwt
+                                                           }
+                                                              body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                        remoteAddress:@"127.0.0.1"];
+        HttpResponse *response = [[HttpResponse alloc] init];
+        [self.handler handlePARRequest:request response:response];
+
+        XCTAssertEqual(response.statusCode, 400);
+        XCTAssertEqualObjects(response.jsonBody[@"error"], @"use_dpop_nonce");
+        XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
+        XCTAssertEqualObjects(response.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+    } @finally {
+        CFRelease(privateKey);
+    }
+}
+
 @end
