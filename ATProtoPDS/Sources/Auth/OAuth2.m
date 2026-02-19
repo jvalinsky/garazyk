@@ -12,7 +12,8 @@
 
 #import "Auth/OAuth2.h"
 #import "Auth/Session.h"
-#import "Auth/PDSAppleKeyManager.h"
+#import "Auth/PDSKeyManagerFactory.h"
+#import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "Core/DID.h"
@@ -760,6 +761,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     NSString *alg = header[@"alg"];
     NSDictionary *jwk = header[@"jwk"];
     if (![typ isEqualToString:@"dpop+jwt"] || ![alg isEqualToString:@"ES256"] || ![jwk isKindOfClass:[NSDictionary class]]) {
+        PDS_LOG_AUTH_DEBUG(@"DPoP verification failed: Invalid header (typ=%@, alg=%@, has_jwk=%d)", typ, alg, jwk != nil);
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorInvalidDPoPProof
@@ -787,6 +789,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 
     NSString *normalizedMethod = [method uppercaseString];
     if (![htm isEqualToString:normalizedMethod]) {
+        PDS_LOG_AUTH_DEBUG(@"DPoP verification failed: htm mismatch (expected=%@, got=%@)", normalizedMethod, htm);
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorInvalidDPoPProof
@@ -803,6 +806,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
             ![payloadComponents.path isEqualToString:components.path] ||
             ![(payloadComponents.query ?: @"") isEqualToString:(components.query ?: @"")]) {
             if (error) {
+                PDS_LOG_AUTH_DEBUG(@"DPoP verification failed: htu mismatch (expected=%@, got=%@)", expectedHTU, htu);
                 *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidDPoPProof
                                          userInfo:@{NSLocalizedDescriptionKey: @"DPoP htu mismatch"}];
@@ -934,17 +938,17 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _authorizationQueue = dispatch_queue_create("com.atproto.oauth2.authorization", DISPATCH_QUEUE_SERIAL);
         _sessionQueue = dispatch_queue_create("com.atproto.oauth2.session", DISPATCH_QUEUE_SERIAL);
         _jwtMinter = [[JWTMinter alloc] init];
-        _keyManager = [[PDSAppleKeyManager alloc] init];
+        _keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:database];
+        _jwtMinter.keyManager = _keyManager;
+        _jwtMinter.signingAlgorithm = @"ES256K";
         _didResolver = [[DIDResolver alloc] init];
         _handleResolver = [[HandleResolver alloc] init];
         _database = database;
 
-        NSError *keyError;
-        Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
-        if (keyPair) {
-            _jwtMinter.privateKey = keyPair.privateKey;
-        } else {
-            PDS_LOG_AUTH_ERROR(@"Failed to generate JWT signing key: %@", keyError);
+        NSError *keyError = nil;
+        id<PDSKeyPair> keyPair = [_keyManager getActiveKeyPair:&keyError];
+        if (!keyPair) {
+            PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError);
         }
     }
     return self;

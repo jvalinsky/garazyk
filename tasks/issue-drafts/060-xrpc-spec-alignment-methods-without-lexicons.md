@@ -6,12 +6,12 @@ The code registers several XRPC methods that are not present in the current `ATP
 
 - Remove the endpoint (if obsolete),
 - Rename it to match a current lexicon method,
-- Add/restore a lexicon definition (if it’s a vendored/legacy method we want to keep).
+- Add/restore a lexicon definition (if it's a vendored/legacy method we want to keep).
 
 This work matters because:
 - Clients and tooling expect lexicons to describe the API surface.
 - Our coverage reports become noisy and misleading if the server ships methods that have no schema.
-- Several of these methods live in *standard namespaces* (`com.atproto.*`, `app.bsky.*`); if they’re not in upstream lexicons, we should strongly prefer aligning rather than diverging.
+- Several of these methods live in *standard namespaces* (`com.atproto.*`, `app.bsky.*`); if they're not in upstream lexicons, we should strongly prefer aligning rather than diverging.
 
 ## Current mismatch list (as of 2026-02-12)
 
@@ -66,7 +66,7 @@ Validation:
 
 ## Non-goals
 
-- Achieving full `app.bsky.*` parity (that’s outside core PDS scope unless we explicitly opt in).
+- Achieving full `app.bsky.*` parity (that's outside core PDS scope unless we explicitly opt in).
 
 ## Proposed resolution workflow
 
@@ -74,11 +74,11 @@ Validation:
 - Identify whether there is a current lexicon equivalent.
 - If yes: rename registration + adjust handler request/response shape to match.
 - If no:
-  - decide “keep as vendored legacy” vs “remove”
-  - if kept: add lexicon JSON under a clearly “vendor” namespace (or explicitly restore old lexicon if appropriate)
+  - decide "keep as vendored legacy" vs "remove"
+  - if kept: add lexicon JSON under a "vendor" namespace (or restore old lexicon)
 
 2) Fix coverage tooling
-- Update schema-sync tooling to parse `registerMethod:@"<nsid>"` so the diff report doesn’t include `unknown`.
+- Update schema-sync tooling to parse `registerMethod:@"<nsid>"` so the diff report doesn't include `unknown`.
 
 ## Per-method investigation notes
 

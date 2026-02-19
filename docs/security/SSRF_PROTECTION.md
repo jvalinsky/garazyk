@@ -1,20 +1,13 @@
 # SSRF Protection for Handle Resolution
 
-## Overview
-
-This document explains the Server-Side Request Forgery (SSRF) protection implemented in the HandleResolver and the corresponding test coverage.
-
-## What is SSRF?
-
-Server-Side Request Forgery (SSRF) is a vulnerability that allows an attacker to induce the server to make HTTP requests to an unintended location. In the context of handle resolution, an attacker could potentially:
-
-1. **Access internal services**: Query internal APIs, databases, or metadata endpoints (e.g., `169.254.169.254` for cloud metadata)
-2. **Bypass network segmentation**: Reach services that are not exposed to the internet
-3. **Exfiltrate data**: Use the server as a proxy to access internal resources or send data to external servers
+Server-Side Request Forgery (SSRF) allows attackers to induce the server to make HTTP requests to unintended locations. In handle resolution, an attacker could:
+1. **Access internal services**: Query internal APIs, databases, or cloud metadata endpoints (e.g., `169.254.169.254`)
+2. **Bypass network segmentation**: Reach services not exposed to the internet
+3. **Exfiltrate data**: Use the server as a proxy to access internal resources
 
 ## Handle Resolution Attack Vector
 
-ATProto handles are resolved to DIDs through HTTP requests to `.well-known/atproto-did` endpoints. Without SSRF protection:
+ATProto handles resolve to DIDs through HTTP requests to `.well-known/atproto-did` endpoints. Without SSRF protection:
 
 ```
 Handle: attacker-controlled.domain.internal
@@ -123,9 +116,9 @@ Tests are located in `ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m` with 
 - [AWS Instance Metadata Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html)
 - [GCP Metadata Server](https://cloud.google.com/compute/docs/metadata)
 
-## Future Considerations
+## Future Work
 
 1. **IPv6 Support**: Complete IPv6 private address detection tests
 2. **DNS Rebinding**: Add protection against DNS rebinding attacks
-3. **Rate Limiting**: Consider adding per-handle rate limits for resolution
-4. **Timeout Configuration**: Ensure timeouts prevent slow-loris style attacks
+3. **Rate Limiting**: Per-handle rate limits for resolution
+4. **Timeout Configuration**: Timeouts to prevent slow-loris attacks

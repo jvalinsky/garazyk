@@ -5,16 +5,15 @@ description: Find stubbed or not_implemented ATProto/XRPC endpoints and placehol
 
 # ATProto Endpoint Stub Finder
 
-Use this skill to detect placeholder logic and map it against registered XRPC methods.
+Detect placeholder logic and map it against registered XRPC methods.
 
 ## Quick start
-1) Run repo-native stub + coverage checks (preferred):
+1) Run repo-native coverage checks:
 ```bash
-./scripts/stub_find.sh .
 node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates
 node scripts/generate_xrpc_next_steps.js
 ```
-2) For parser-level fallback, run this skill’s `scripts/run_all.sh`.
+2) For stub detection, run this skill's `scripts/run_all.sh`.
 
 ## Workflow
 - Collect stub markers (`not_implemented`, `TODO/FIXME`, placeholder/stub markers).
@@ -31,10 +30,9 @@ node scripts/generate_xrpc_next_steps.js
 ## Usage example
 ```bash
 # Preferred
-./scripts/stub_find.sh .
 node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates
 
-# Skill fallback flow
+# Skill stub detection
 ./skills/atproto-endpoint-stub-finder/scripts/run_all.sh . --output-dir /tmp/stub-audit
 ```
 

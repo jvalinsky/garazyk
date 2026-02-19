@@ -66,7 +66,7 @@ Phase 0 implements core repository functionality required for basic PDS operatio
 
 #### Features
 - Multiple record operations in single request
-- Efficient batch processing
+- Batch processing with progress callbacks
 - Progress reporting for large operations
 
 ## 0.2 Query & Search Improvements
@@ -101,7 +101,7 @@ Phase 0 implements core repository functionality required for basic PDS operatio
 **Priority**: P0 | **Complexity**: Medium | **Risk**: Low
 
 #### Improvements
-- Efficient cursor-based pagination
+- Cursor-based pagination with TID ordering
 - Reverse chronological ordering
 - Proper limit enforcement (max 100)
 
@@ -169,7 +169,7 @@ CREATE INDEX idx_accounts_created ON accounts(created_at);
 - Prepared statements caching
 - Connection pooling
 - Query result pagination
-- Memory-efficient result processing
+- Row-by-row result processing to avoid large allocations
 
 ### 0.4.3 Caching Layer
 **Priority**: P1 | **Complexity**: Medium | **Risk**: Medium
@@ -251,18 +251,18 @@ CREATE INDEX idx_records_updated ON records(repo_did, updated_at DESC);
 ### Functional Requirements
 - All basic repository operations working
 - Proper error handling and validation
-- Efficient pagination and querying
+- Pagination with TID cursors
 - CAR import/export functionality
 
 ### Performance Requirements
 - <100ms average response time
 - <10MB memory usage for typical operations
 - Proper database connection pooling
-- Efficient query execution plans
+- Query execution with prepared statements
 
 ### Quality Requirements
 - >90% test coverage
-- Comprehensive error handling
+- Error handling with rollback on failure
 - Proper logging and monitoring
 - Backward API compatibility
 

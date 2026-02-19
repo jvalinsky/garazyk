@@ -517,7 +517,5 @@ CMD ["/app/atprotopds-cli", "serve", "--port", "2583"]
 
 - Documentation: `docs/` folder in repository
 - API Reference: `http://localhost:2583/explore/api/docs`
-- Architecture: `docs/ARCHITECTURE_DIAGRAMS.md`
-- Implementation: `docs/SESSION_SUMMARY.md`
+- Architecture: `docs/architecture/ARCHITECTURE_DIAGRAMS.md`
 - Script Development: `docs/guides/SCRIPT_DEVELOPMENT.md`
-- Professional Bash Scripting: `skills/professional-bash-scripting/SKILL.md`

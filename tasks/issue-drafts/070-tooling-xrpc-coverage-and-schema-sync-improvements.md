@@ -39,7 +39,7 @@ Primary sources:
 
 - [ ] Add small golden fixtures/tests for parser regressions (typed + string registrations).
 - [ ] Decide and document policy for additional lexicon roots (vendor lexicons outside primary root).
-- [ ] Add optional CI gate for in-scope coverage regressions (not just duplicates).
+- [ ] Add CI gate for in-scope coverage regressions (beyond duplicate checks).
 - [x] Classify controller/application dual-path overlap as expected and report actionable cross-scope duplicates separately.
 - [x] Reduce expected controller/application overlap by migrating more methods to shared registration paths (optional cleanup).
 - [ ] Ensure external helper-script docs no longer imply TSV-as-JSON outputs where repo tooling now emits JSON/Markdown.
