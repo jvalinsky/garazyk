@@ -7,6 +7,7 @@
 #include <CommonCrypto/CommonDigest.h>
 #include <CommonCrypto/CommonHMAC.h>
 #include <CommonCrypto/CommonKeyDerivation.h>
+#include <CommonCrypto/CommonCryptor.h>
 #endif
 
 #endif /* CommonCrypto_h */

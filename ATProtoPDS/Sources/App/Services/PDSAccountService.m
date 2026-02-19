@@ -1,3 +1,7 @@
+#ifdef GNUSTEP
+#import "Compat/GNUstepCompat.h"
+#endif
+
 #import "PDSAccountService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"

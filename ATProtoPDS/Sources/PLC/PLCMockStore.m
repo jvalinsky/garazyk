@@ -4,7 +4,11 @@
 
 @interface PLCMockStore ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<PLCOperation *> *> *storage;
+#if defined(GNUSTEP) || defined(LINUX)
+@property (nonatomic, assign) dispatch_queue_t queue;
+#else
 @property (nonatomic, strong) dispatch_queue_t queue;
+#endif
 @end
 
 @implementation PLCMockStore
