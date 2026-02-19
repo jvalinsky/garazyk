@@ -56,10 +56,6 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Delegate for lifecycle events. */
 @property (nonatomic, weak, nullable) id<SubscribeReposHandlerDelegate> delegate;
 
-/*! The 32-byte secp256k1 private key used to sign firehose commits.
-    Must be set before broadcasting events. If nil, commits will not be broadcast. */
-@property (nonatomic, strong, nullable) NSData *signingKey;
-
 /*! Legacy standalone WebSocket server (compatibility/test use only). */
 @property (nonatomic, readonly) WebSocketServer *webSocketServer
     DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; use acceptUpgradedConnection:request:");

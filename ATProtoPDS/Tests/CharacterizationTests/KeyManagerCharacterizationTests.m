@@ -1,9 +1,9 @@
 #import "CharacterizationTestBase.h"
-#import "Auth/KeyManager.h"
+#import "Auth/PDSAppleKeyManager.h"
 
 @interface KeyManagerCharacterizationTests : CharacterizationTestBase
 
-@property (nonatomic, strong) KeyManager *subject;
+@property (nonatomic, strong) PDSAppleKeyManager *subject;
 
 @end
 
@@ -35,7 +35,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.subject = [[KeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys"];
+    self.subject = [[PDSAppleKeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys"];
 }
 
 - (void)tearDown {
@@ -44,7 +44,7 @@
 }
 
 /*
- * Characterization Tests for KeyManager
+ * Characterization Tests for PDSAppleKeyManager
  * Generated automatically. Please implement specific scenarios.
  */
 
@@ -53,7 +53,7 @@
      - (nullable instancetype)initWithServiceIdentifier:(NSString *)serviceIdentifier;
     */
     
-    KeyManager *manager = [[KeyManager alloc] initWithServiceIdentifier:@"com.atproto.pds.test.keys2"];
+    PDSAppleKeyManager *manager = [[PDSAppleKeyManager alloc] initWithServiceIdentifier:@"com.atproto.pds.test.keys2"];
     XCTAssertNotNil(manager);
     XCTAssertEqualObjects(manager.serviceIdentifier, @"com.atproto.pds.test.keys2");
 }
@@ -63,22 +63,22 @@
      - (nullable instancetype)initWithDatabase:(PDSDatabase *)database serviceIdentifier:(NSString *)serviceIdentifier;
     */
     
-    KeyManager *manager = [[KeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys3"];
+    PDSAppleKeyManager *manager = [[PDSAppleKeyManager alloc] initWithDatabase:self.testDatabase serviceIdentifier:@"com.atproto.pds.test.keys3"];
     XCTAssertNotNil(manager);
     XCTAssertEqualObjects(manager.serviceIdentifier, @"com.atproto.pds.test.keys3");
     XCTAssertNotNil(manager.database);
 }
 
-- (void)testCharacterization_generateKeyPairWithAlgorithm {
+- (void)testCharacterization_generatePDSAppleKeyPairWithAlgorithm {
     /* Target Method:
-     - (nullable KeyPair *)generateKeyPairWithAlgorithm:(NSString *)algorithm
+     - (nullable PDSAppleKeyPair *)generatePDSAppleKeyPairWithAlgorithm:(NSString *)algorithm
                                           keySize:(NSUInteger)keySize
                                              error:(NSError **)error;
     */
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
     XCTAssertNil(error);
     XCTAssertEqualObjects(keyPair.algorithm, @"RS256");
@@ -86,87 +86,87 @@
     XCTAssertEqualObjects(self.subject.currentKeyID, keyPair.keyID);
 }
 
-- (void)testCharacterization_getKeyPairWithID {
+- (void)testCharacterization_getPDSAppleKeyPairWithID {
     /* Target Method:
-     - (nullable KeyPair *)getKeyPairWithID:(NSString *)keyID error:(NSError **)error;
+     - (nullable PDSAppleKeyPair *)getPDSAppleKeyPairWithID:(NSString *)keyID error:(NSError **)error;
     */
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
-    KeyPair *fetched = [self.subject getKeyPairWithID:keyPair.keyID error:&error];
+    PDSAppleKeyPair *fetched = [self.subject getPDSAppleKeyPairWithID:keyPair.keyID error:&error];
     XCTAssertNotNil(fetched);
     XCTAssertEqualObjects(fetched.keyID, keyPair.keyID);
 }
 
-- (void)testCharacterization_getActiveKeyPair {
+- (void)testCharacterization_getActivePDSAppleKeyPair {
     /* Target Method:
-     - (nullable KeyPair *)getActiveKeyPair:(NSError **)error;
+     - (nullable PDSAppleKeyPair *)getActivePDSAppleKeyPair:(NSError **)error;
     */
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
-    KeyPair *active = [self.subject getActiveKeyPair:&error];
+    PDSAppleKeyPair *active = [self.subject getActivePDSAppleKeyPair:&error];
     XCTAssertNotNil(active);
     XCTAssertNil(error);
     XCTAssertEqualObjects(active.keyID, keyPair.keyID);
 }
 
-- (void)testCharacterization_allKeyPairs {
+- (void)testCharacterization_allPDSAppleKeyPairs {
     /* Target Method:
-     - (NSArray<KeyPair *> *)allKeyPairs:(NSError **)error;
+     - (NSArray<PDSAppleKeyPair *> *)allPDSAppleKeyPairs:(NSError **)error;
     */
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
-    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    XCTAssertNotNil([self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    XCTAssertNotNil([self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
 
-    NSArray<KeyPair *> *pairs = [self.subject allKeyPairs:&error];
+    NSArray<PDSAppleKeyPair *> *pairs = [self.subject allPDSAppleKeyPairs:&error];
     XCTAssertNil(error);
     XCTAssertGreaterThanOrEqual(pairs.count, 2U);
 }
 
-- (void)testCharacterization_deleteKeyPairWithID {
+- (void)testCharacterization_deletePDSAppleKeyPairWithID {
     /* Target Method:
-     - (BOOL)deleteKeyPairWithID:(NSString *)keyID error:(NSError **)error;
+     - (BOOL)deletePDSAppleKeyPairWithID:(NSString *)keyID error:(NSError **)error;
     */
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
-    BOOL deleted = [self.subject deleteKeyPairWithID:keyPair.keyID error:&error];
+    BOOL deleted = [self.subject deletePDSAppleKeyPairWithID:keyPair.keyID error:&error];
     XCTAssertTrue(deleted);
 
     NSError *fetchError = nil;
-    XCTAssertNil([self.subject getKeyPairWithID:keyPair.keyID error:&fetchError]);
+    XCTAssertNil([self.subject getPDSAppleKeyPairWithID:keyPair.keyID error:&fetchError]);
     XCTAssertNotNil(fetchError);
 }
 
-- (void)testCharacterization_setKeyPairActive {
+- (void)testCharacterization_setPDSAppleKeyPairActive {
     /* Target Method:
-     - (BOOL)setKeyPairActive:(NSString *)keyID error:(NSError **)error;
+     - (BOOL)setPDSAppleKeyPairActive:(NSString *)keyID error:(NSError **)error;
     */
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *first = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
-    KeyPair *second = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *first = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *second = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(first);
     XCTAssertNotNil(second);
 
-    BOOL activated = [self.subject setKeyPairActive:second.keyID error:&error];
+    BOOL activated = [self.subject setPDSAppleKeyPairActive:second.keyID error:&error];
     XCTAssertTrue(activated);
     XCTAssertNil(error);
 
-    KeyPair *active = [self.subject getActiveKeyPair:&error];
+    PDSAppleKeyPair *active = [self.subject getActivePDSAppleKeyPair:&error];
     XCTAssertNotNil(active);
     XCTAssertEqualObjects(active.keyID, second.keyID);
 }
@@ -180,7 +180,7 @@
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
     NSData *data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
@@ -202,7 +202,7 @@
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
     NSDictionary *payload = @{@"iss": @"test.issuer", @"sub": @"did:plc:test"};
@@ -221,7 +221,7 @@
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
     NSString *sig = [self.subject signString:@"hello" withKeyID:keyPair.keyID error:&error];
@@ -239,7 +239,7 @@
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    KeyPair *keyPair = [self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    PDSAppleKeyPair *keyPair = [self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(keyPair, @"Key generation failed: %@", error);
 
     NSData *data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
@@ -258,7 +258,7 @@
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    XCTAssertNotNil([self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
     NSDictionary *jwks = [self.subject toJWKS];
     XCTAssertTrue([jwks isKindOfClass:[NSDictionary class]]);
     XCTAssertGreaterThan(jwks.count, 0U);
@@ -271,7 +271,7 @@
     
     [self requireSecurityKeyGeneration];
     NSError *error = nil;
-    XCTAssertNotNil([self.subject generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
+    XCTAssertNotNil([self.subject generatePDSAppleKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error]);
     NSArray<NSDictionary *> *jwks = [self.subject toJWKSArray];
     XCTAssertTrue([jwks isKindOfClass:[NSArray class]]);
     XCTAssertGreaterThan(jwks.count, 0U);

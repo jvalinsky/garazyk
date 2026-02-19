@@ -11,7 +11,9 @@
  */
 
 #import "Auth/JWT.h"
+#import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
+#import "PDSKeyManagerProtocol.h"
 #import "Auth/KeyRotationManager.h"
 #import <CommonCrypto/CommonDigest.h>
 
@@ -369,6 +371,35 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         _defaultExpiration = 3600;
     }
     return self;
+}
+
+- (NSString *)signPayload:(NSDictionary *)payload keyManager:(id<PDSKeyManager>)keyManager error:(NSError **)error {
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
+    if (!payloadData) return nil;
+
+    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+    if (!payloadEncoded) return nil;
+
+    NSMutableDictionary *header = [NSMutableDictionary dictionary];
+    header[@"alg"] = @"ES256K"; // Assuming Actor keys are always ES256K
+    header[@"typ"] = @"JWT";
+
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
+    if (!headerData) return nil;
+
+    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+    if (!headerEncoded) return nil;
+
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded];
+    NSData *dataToSign = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+
+    NSData *signatureData = [keyManager signData:dataToSign error:error];
+    if (!signatureData) return nil;
+
+    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+    if (!signatureEncoded) return nil;
+
+    return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, signatureEncoded];
 }
 
 - (NSString *)signPayload:(NSDictionary *)payload error:(NSError **)error {
