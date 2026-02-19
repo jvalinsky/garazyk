@@ -9,6 +9,7 @@
 #import "Auth/OAuthServerMetadata.h"
 #import "Auth/KeyRotationManager.h"
 #import "Debug/PDSLogger.h"
+#import "App/PDSConfiguration.h"
 
 @interface OAuth2Handler ()
 @property (nonatomic, strong) PDSDatabase *database;
@@ -42,8 +43,8 @@
         self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
         self.oauthServer.jwtMinter = self.minter;
 
-        // Use configurable issuer from environment, default to localhost
-        NSString *issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+        // Use configurable issuer from PDSConfiguration, default to localhost
+        NSString *issuer = [PDSConfiguration sharedConfiguration].issuer ?: @"https://pds.local:8443";
         self.oauthServer.issuer = issuer;
 
         // Build other endpoints relative to issuer
