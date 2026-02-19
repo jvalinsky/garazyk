@@ -247,6 +247,21 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Returns a boolean configuration value. */
 - (BOOL)boolForKey:(NSString *)key;
 
+/*!
+ @brief Returns the canonical issuer URL for this configuration.
+
+ @param portHint Optional port override. Pass `0` to use configured/default port.
+ @return Canonical issuer URL used by server metadata and token validation.
+ */
+- (NSString *)canonicalIssuerWithPortHint:(NSUInteger)portHint;
+
+/*!
+ @brief Returns the canonical hostname for this PDS instance.
+
+ @return Lowercased hostname derived from issuer or server host.
+ */
+- (NSString *)canonicalHostname;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -3,6 +3,58 @@
 
 NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 
+static NSString *PDSConfigTrimmed(NSString *value) {
+    if (![value isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    return [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+static BOOL PDSConfigHostLooksLocal(NSString *host) {
+    NSString *normalized = [[PDSConfigTrimmed(host) lowercaseString] copy];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
+
+static NSString *PDSConfigNormalizedHost(NSString *host) {
+    NSString *normalized = [[PDSConfigTrimmed(host) lowercaseString] copy];
+    return normalized.length > 0 ? normalized : nil;
+}
+
+static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
+    NSString *trimmedIssuer = PDSConfigTrimmed(issuer);
+    if (trimmedIssuer.length == 0) {
+        return nil;
+    }
+
+    NSURLComponents *components = [NSURLComponents componentsWithString:trimmedIssuer];
+    if (components.host.length == 0 || components.scheme.length == 0) {
+        NSString *withScheme = [NSString stringWithFormat:@"https://%@", trimmedIssuer];
+        components = [NSURLComponents componentsWithString:withScheme];
+    }
+
+    NSString *scheme = [[PDSConfigTrimmed(components.scheme) lowercaseString] copy];
+    if (scheme.length == 0) {
+        scheme = @"https";
+    }
+
+    NSString *host = PDSConfigNormalizedHost(components.host);
+    if (host.length == 0) {
+        return trimmedIssuer;
+    }
+
+    NSUInteger port = components.port != nil ? (NSUInteger)MAX((NSInteger)0, components.port.integerValue) : 0;
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (port > 0 && !defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+    }
+    return [NSString stringWithFormat:@"%@://%@", scheme, host];
+}
+
 @implementation PDSConfiguration {
     NSDictionary *_config;
     NSString *_phoneVerificationProvider;
@@ -441,6 +493,46 @@ NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
     if (!value) return NO;
     return [@"true" isEqualToString:value.lowercaseString] ||
            [@"1" isEqualToString:value];
+}
+
+- (NSString *)canonicalIssuerWithPortHint:(NSUInteger)portHint {
+    NSString *configuredIssuer = PDSConfigCanonicalizedIssuerString(self.issuer);
+    if (configuredIssuer.length > 0) {
+        return configuredIssuer;
+    }
+
+    NSString *host = PDSConfigNormalizedHost(self.serverHost);
+    if (PDSConfigHostLooksLocal(host)) {
+        host = @"localhost";
+    }
+    if (host.length == 0) {
+        host = @"localhost";
+    }
+
+    BOOL localHost = PDSConfigHostLooksLocal(host);
+    NSString *scheme = localHost ? @"http" : @"https";
+    NSUInteger port = portHint > 0 ? portHint : (self.serverPort > 0 ? self.serverPort : 2583);
+    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                       ([scheme isEqualToString:@"http"] && port == 80);
+    if (defaultPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+}
+
+- (NSString *)canonicalHostname {
+    NSString *canonicalIssuer = [self canonicalIssuerWithPortHint:0];
+    NSURLComponents *components = [NSURLComponents componentsWithString:canonicalIssuer];
+    NSString *host = PDSConfigNormalizedHost(components.host);
+    if (host.length > 0) {
+        return host;
+    }
+
+    NSString *fallbackHost = PDSConfigNormalizedHost(self.serverHost);
+    if (PDSConfigHostLooksLocal(fallbackHost)) {
+        return @"localhost";
+    }
+    return fallbackHost.length > 0 ? fallbackHost : @"localhost";
 }
 
 - (NSString *)phoneVerificationProvider {
