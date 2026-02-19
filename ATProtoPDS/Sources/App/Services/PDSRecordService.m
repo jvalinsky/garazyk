@@ -801,17 +801,12 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                                                     prev:prevCommitCID];
     
     // 5. Sign Commit
-    NSData *signingKey = [store signingKeyPrivateBytesWithError:error];
-    if (!signingKey) {
-        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to get signing key for DID %@", did);
+    NSData *signature = [store signData:[commit serialize] error:error];
+    if (!signature) {
+        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to sign commit for DID %@", did);
         return nil;
     }
-    
-    NSError *signError = nil;
-    if (![commit signWithPrivateKey:signingKey error:&signError]) {
-        if (error) *error = signError;
-        return nil;
-    }
+    commit.signature = signature;
     
     // 6. Store Commit Block
     CID *commitCID = [commit computeCID];

@@ -362,6 +362,20 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! Optional key rotation manager for signing with rotated keys. */
 @property (nonatomic, strong, nullable) KeyRotationManager *keyRotationManager;
 
+@protocol PDSKeyManager;
+
+/*!
+ @method signPayload:keyManager:error:
+ 
+ @abstract Signs a payload using a key manager.
+ 
+ @param payload The payload dictionary to sign.
+ @param keyManager The key manager to use for signing.
+ @param error On return, contains an error if signing failed.
+ @return The signed JWT string.
+ */
+- (NSString *)signPayload:(NSDictionary *)payload keyManager:(id<PDSKeyManager>)keyManager error:(NSError **)error;
+
 /*!
  @method signPayload:error:
  
