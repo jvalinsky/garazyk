@@ -19,7 +19,7 @@ extern NSString * const OAuth2ErrorDomain;
 
 // Forward declarations
 @class JWTMinter;
-@class KeyManager;
+@class PDSAppleKeyManager;
 @class DIDResolver;
 @class HandleResolver;
 @class Session;
@@ -445,7 +445,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
 
 /*! Key management service. */
-@property (nonatomic, strong) KeyManager *keyManager;
+@property (nonatomic, strong) PDSAppleKeyManager *keyManager;
 
 /*! DID resolution service for identity verification. */
 @property (nonatomic, strong) DIDResolver *didResolver;

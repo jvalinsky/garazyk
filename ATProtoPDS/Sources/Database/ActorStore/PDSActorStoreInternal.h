@@ -8,7 +8,7 @@
 #import "Compat/PDSTypes.h"
 
 #if !defined(GNUSTEP)
-#import <Security/Security.h>
+// #import <Security/Security.h> // Removed
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
@@ -23,18 +23,14 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
-@property (nonatomic, assign, readwrite) BOOL keychainNeedsUpgrade;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;
 
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t transactionQueue;
-@property (nonatomic, strong) NSData *signingKeyData;
+// @property (nonatomic, strong) NSData *signingKeyData;
 #else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
-/* signingKey uses 'assign' (not 'strong') for Core Foundation compatibility.
-   The setter releases any existing key before assigning a new one.
-   Keys are released in -close. Do not release keys assigned to this property. */
-@property (nonatomic, assign) SecKeyRef signingKey;
-@property (nonatomic, strong) PDSBiometricKeychain *biometricKeychain;
+// Legacy properties removed
 #endif
 
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;

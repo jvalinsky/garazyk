@@ -324,8 +324,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
     if (!_subscribeReposHandler) {
         _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases];
-        // Inject the PDS signing key for firehose commit signatures
-        _subscribeReposHandler.signingKey = _jwtMinter.privateKey;
     }
     
     // Build and configure HTTP server using builder

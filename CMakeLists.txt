@@ -193,7 +193,7 @@ endif()
 # Exclude files using macOS-only APIs on Linux builds
 if(NOT APPLE)
   # KeyManager uses extensive Security framework APIs not available on Linux
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManager\\.m$")
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationManager\\.m$")
 
   # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO)

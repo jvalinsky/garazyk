@@ -1,7 +1,7 @@
 /*!
- @file KeyManager.m
+ @file PDSAppleKeyManager.m
 
- @abstract Cryptographic key management for authentication.
+ @abstract Apple Security.framework implementation of PDSKeyManager.
 
  @discussion This file implements key pair generation, storage, and retrieval
  using the iOS/macOS Security framework. Keys are persisted to the database
@@ -10,7 +10,7 @@
  @copyright Copyright (c) 2024 Jack Valinsky
  */
 
-#import "Auth/KeyManager.h"
+#import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
@@ -19,7 +19,7 @@
 
 NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
-@implementation KeyPair
+@implementation PDSAppleKeyPair
 
 + (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
                                       publicKey:(SecKeyRef)publicKey
@@ -30,7 +30,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     CFRetain(privateKey);
     CFRetain(publicKey);
 
-    KeyPair *keyPair = [[KeyPair alloc] init];
+    PDSAppleKeyPair *keyPair = [[PDSAppleKeyPair alloc] init];
     keyPair.keyID = keyID;
     keyPair.algorithm = algorithm;
     keyPair.privateKey = privateKey;
@@ -97,12 +97,12 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 @end
 
-@interface KeyManager ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, KeyPair *> *keyPairs;
+@interface PDSAppleKeyManager ()
+@property (nonatomic, strong) NSMutableDictionary<NSString *, PDSAppleKeyPair *> *keyPairs;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 @end
 
-@implementation KeyManager
+@implementation PDSAppleKeyManager
 
 + (BOOL)supportsSecureCoding {
     return YES;
@@ -162,23 +162,23 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     [coder encodeObject:self.currentKeyID forKey:@"currentKeyID"];
 }
 
-- (nullable KeyPair *)generateKeyPairWithAlgorithm:(NSString *)algorithm
+- (nullable id<PDSKeyPair>)generateKeyPairWithAlgorithm:(NSString *)algorithm
                                           keySize:(NSUInteger)keySize
                                              error:(NSError **)error {
     NSString *keyID = [[NSUUID UUID] UUIDString];
 
-	    CFTypeRef keyType = kSecAttrKeyTypeRSA;
-	    if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
-	        keyType = kSecAttrKeyTypeECSECPrimeRandom;
-	    }
+    CFTypeRef keyType = kSecAttrKeyTypeRSA;
+    if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
+        keyType = kSecAttrKeyTypeECSECPrimeRandom;
+    }
 
-	    NSDictionary *parameters = @{
-	        (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
-	        (__bridge id)kSecAttrKeySizeInBits: @(keySize)
-	    };
+    NSDictionary *parameters = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
+        (__bridge id)kSecAttrKeySizeInBits: @(keySize)
+    };
 
-	    CFErrorRef cfError = NULL;
-	    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
+    CFErrorRef cfError = NULL;
+    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
 
     if (!privateKey) {
         if (error) {
@@ -202,7 +202,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         return nil;
     }
 
-    KeyPair *keyPair = [KeyPair keyPairFromPrivateKey:privateKey
+    PDSAppleKeyPair *keyPair = [PDSAppleKeyPair keyPairFromPrivateKey:privateKey
                                              publicKey:publicKey
                                                  keyID:keyID
                                               algorithm:algorithm];
@@ -224,62 +224,8 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     return keyPair;
 }
 
-- (nullable KeyPair *)generateECDSAKeyPairWithCurve:(NSString *)curve
-                                             error:(NSError **)error {
-    NSString *keyID = [[NSUUID UUID] UUIDString];
-
-	    NSDictionary *parameters = @{
-	        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
-	        (__bridge id)kSecAttrKeySizeInBits: @(256),
-	        (__bridge id)kSecPrivateKeyAttrs: @{
-	            (__bridge id)kSecAttrIsPermanent: (__bridge id)kCFBooleanFalse,
-	            (__bridge id)kSecAttrApplicationTag: [keyID dataUsingEncoding:NSUTF8StringEncoding]
-	        }
-	    };
-
-    CFErrorRef cfError = NULL;
-    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
-
-    if (!privateKey) {
-        if (error) {
-            *error = cfError ? CFBridgingRelease(cfError) : [NSError errorWithDomain:KeyManagerErrorDomain code:-1 userInfo:@{NSLocalizedDescriptionKey: @"ECDSA key generation failed"}];
-        } else if (cfError) {
-            CFRelease(cfError);
-        }
-        return nil;
-    }
-    // Release cfError even on success path if populated (defensive)
-    if (cfError) CFRelease(cfError);
-
-    CFErrorRef pubError = NULL;
-    SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
-
-    if (pubError) {
-        CFRelease(privateKey);
-        if (error) {
-            *error = CFBridgingRelease(pubError);
-        }
-        return nil;
-    }
-
-    KeyPair *keyPair = [KeyPair keyPairFromPrivateKey:privateKey
-                                             publicKey:publicKey
-                                                keyID:keyID
-                                             algorithm:@"ES256"];
-    CFRelease(privateKey);
-    CFRelease(publicKey);
-
-    dispatch_sync(self.accessQueue, ^{
-        self.keyPairs[keyID] = keyPair;
-    });
-
-    self.currentKeyID = keyID;
-
-    return keyPair;
-}
-
-- (nullable KeyPair *)getKeyPairWithID:(NSString *)keyID error:(NSError **)error {
-    __block KeyPair *keyPair = nil;
+- (nullable id<PDSKeyPair>)getKeyPairWithID:(NSString *)keyID error:(NSError **)error {
+    __block PDSAppleKeyPair *keyPair = nil;
 
     dispatch_sync(self.accessQueue, ^{
         keyPair = self.keyPairs[keyID];
@@ -294,13 +240,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     return keyPair;
 }
 
-- (nullable KeyPair *)getActiveKeyPair:(NSError **)error {
+- (nullable id<PDSKeyPair>)getActiveKeyPair:(NSError **)error {
     if (self.currentKeyID) {
         return [self getKeyPairWithID:self.currentKeyID error:error];
     }
 
     NSArray *keys = [self allKeyPairs:error];
-    for (KeyPair *keyPair in keys) {
+    for (PDSAppleKeyPair *keyPair in keys) {
         if (keyPair.isActive) {
             return keyPair;
         }
@@ -309,7 +255,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     return [self generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:error];
 }
 
-- (NSArray<KeyPair *> *)allKeyPairs:(NSError **)error {
+- (NSArray<id<PDSKeyPair>> *)allKeyPairs:(NSError **)error {
     __block NSArray *keyPairs = @[];
 
     dispatch_sync(self.accessQueue, ^{
@@ -323,7 +269,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     __block BOOL success = NO;
 
     dispatch_sync(self.accessQueue, ^{
-        KeyPair *keyPair = self.keyPairs[keyID];
+        PDSAppleKeyPair *keyPair = self.keyPairs[keyID];
         if (keyPair) {
             [self.keyPairs removeObjectForKey:keyID];
             success = YES;
@@ -344,7 +290,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     dispatch_sync(self.accessQueue, ^{
         if (self.keyPairs[keyID]) {
-            for (KeyPair *keyPair in self.keyPairs.allValues) {
+            for (PDSAppleKeyPair *keyPair in self.keyPairs.allValues) {
                 keyPair.isActive = NO;
             }
             self.keyPairs[keyID].isActive = YES;
@@ -365,7 +311,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 - (nullable NSData *)signData:(NSData *)data
                      withKeyID:(NSString *)keyID
                          error:(NSError **)error {
-    KeyPair *keyPair = [self getKeyPairWithID:keyID error:error];
+    PDSAppleKeyPair *keyPair = (PDSAppleKeyPair *)[self getKeyPairWithID:keyID error:error];
     if (!keyPair) return nil;
 
     CFErrorRef cfError = NULL;
@@ -445,7 +391,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 }
 
 - (NSDictionary *)toJWKS {
-    KeyPair *activeKey = [self getActiveKeyPair:nil];
+    id<PDSKeyPair> activeKey = [self getActiveKeyPair:nil];
     if (activeKey) {
         return [activeKey publicKeyJWK] ?: @{};
     }
@@ -454,9 +400,9 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
 - (NSArray<NSDictionary *> *)toJWKSArray {
     NSMutableArray *jwks = [NSMutableArray array];
-    NSArray *keyPairs = [self allKeyPairs:nil];
+    NSArray<id<PDSKeyPair>> *keyPairs = [self allKeyPairs:nil];
 
-    for (KeyPair *keyPair in keyPairs) {
+    for (id<PDSKeyPair> keyPair in keyPairs) {
         NSDictionary *jwk = [keyPair publicKeyJWK];
         if (jwk) {
             [jwks addObject:jwk];
@@ -516,7 +462,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
             }
 
             if (privateKey && publicKey) {
-                KeyPair *keyPair = [KeyPair keyPairFromPrivateKey:privateKey
+                PDSAppleKeyPair *keyPair = [PDSAppleKeyPair keyPairFromPrivateKey:privateKey
                                                          publicKey:publicKey
                                                            keyID:keyID
                                                         algorithm:algorithm];
@@ -537,7 +483,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     });
 }
 
-- (BOOL)saveKeyPairToDatabase:(KeyPair *)keyPair error:(NSError **)error {
+- (BOOL)saveKeyPairToDatabase:(PDSAppleKeyPair *)keyPair error:(NSError **)error {
     if (!self.database) return YES; // Not an error if no database
 
     // Export key data
