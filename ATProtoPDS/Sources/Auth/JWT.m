@@ -209,7 +209,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     NSMutableString *base64 = [string mutableCopy];
     NSUInteger remainder = base64.length % 4;
     if (remainder > 0) {
-        [base64 appendString:[@"====" substringToIndex:remainder]];
+        [base64 appendString:[@"====" substringToIndex:(4 - remainder)]];
     }
     base64 = [[base64 stringByReplacingOccurrencesOfString:@"-" withString:@"+"] mutableCopy];
     base64 = [[base64 stringByReplacingOccurrencesOfString:@"_" withString:@"/"] mutableCopy];
@@ -393,7 +393,22 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded];
     NSData *dataToSign = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSData *signatureData = [keyManager signData:dataToSign error:error];
+    NSData *signatureData = nil;
+    // Compatibility path for legacy key managers that expose signData:error:
+    if ([(id)keyManager respondsToSelector:@selector(signData:error:)]) {
+        signatureData = [(id)keyManager signData:dataToSign error:error];
+    } else {
+        id<PDSKeyPair>activeKey = [keyManager getActiveKeyPair:error];
+        if (!activeKey || activeKey.keyID.length == 0) {
+            if (error && *error == nil) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorSigningFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No active signing key available"}];
+            }
+            return nil;
+        }
+        signatureData = [keyManager signData:dataToSign withKeyID:activeKey.keyID error:error];
+    }
     if (!signatureData) return nil;
 
     NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];

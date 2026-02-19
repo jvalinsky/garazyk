@@ -6,17 +6,16 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "PDSKeyManagerProtocol.h"
+#import "PDSActorKeyManagerProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class PDSAppleActorKeyManager
- @abstract Apple Security.framework implementation of PDSKeyManagerProtocol for Actor keys.
+ @abstract Apple Security.framework implementation of actor key management for per-user signing keys.
  @discussion Manages per-user signing keys stored in the Keychain (or memory fallback).
- Replaces the direct Security.framework usage in ActorStore.
  */
-@interface PDSAppleActorKeyManager : NSObject <PDSKeyManager>
+@interface PDSAppleActorKeyManager : NSObject <PDSActorKeyManager>
 
 /*! The DID this key manager is responsible for. */
 @property (nonatomic, copy, readonly) NSString *did;
@@ -26,11 +25,6 @@ NS_ASSUME_NONNULL_BEGIN
  @param did The DID to manage keys for.
  */
 - (instancetype)initWithDid:(NSString *)did;
-
-/*!
- Import a raw private key (32 bytes).
- */
-- (BOOL)importKey:(NSData *)keyData error:(NSError **)error;
 
 @end
 

@@ -13,6 +13,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import <Security/Security.h>
 #import "Core/ATProtoError.h"
 #import "Core/Repositories/PDSAccountRepository.h"
 #import "Core/Repositories/PDSSessionRepository.h"
@@ -24,6 +25,16 @@
 #ifndef kCCSuccess
 #define kCCSuccess 0
 #endif
+
+static BOOL PDSHostIsLocalhost(NSString *host) {
+    NSString *normalized = [[host ?: @"" lowercaseString]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return normalized.length == 0 ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"::1"] ||
+           [normalized isEqualToString:@"0.0.0.0"];
+}
 
 @interface PDSAccountService ()
 @end
@@ -387,7 +398,10 @@
 
 - (NSData *)generateSalt {
     NSMutableData *salt = [NSMutableData dataWithLength:32];
-    [[NSUUID UUID] getUUIDBytes:salt.mutableBytes];
+    int randomStatus = SecRandomCopyBytes(kSecRandomDefault, salt.length, salt.mutableBytes);
+    if (randomStatus != errSecSuccess) {
+        arc4random_buf(salt.mutableBytes, salt.length);
+    }
     return salt;
 }
 
@@ -397,10 +411,16 @@
     const size_t derivedKeyLength = 32; // 256 bits
     unsigned char derivedKey[32];
 
+    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+    if (!passwordData) {
+        PDS_LOG_AUTH_ERROR(@"Failed to encode password as UTF-8");
+        return nil;
+    }
+
     int result = CCKeyDerivationPBKDF(
         kCCPBKDF2,                          // algorithm
-        password.UTF8String,                 // password
-        password.length,                     // passwordLen
+        (const char *)passwordData.bytes,    // password
+        passwordData.length,                 // passwordLen
         salt.bytes,                          // salt
         salt.length,                         // saltLen
         kCCPRFHmacAlgSHA256,                // PRF (HMAC-SHA256)
@@ -467,7 +487,19 @@
     
     NSString *pdsURL = config.issuer;
     if (!pdsURL || pdsURL.length == 0) {
-         pdsURL = [NSString stringWithFormat:@"http://%@:%lu", config.serverHost, (unsigned long)config.serverPort];
+        NSString *host = config.serverHost;
+        if (PDSHostIsLocalhost(host)) {
+            host = @"localhost";
+        }
+        NSString *scheme = PDSHostIsLocalhost(host) ? @"http" : @"https";
+        NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
+        BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                           ([scheme isEqualToString:@"http"] && port == 80);
+        if (defaultPort) {
+            pdsURL = [NSString stringWithFormat:@"%@://%@", scheme, host];
+        } else {
+            pdsURL = [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+        }
     }
     
     // Format keys as did:key multibase
