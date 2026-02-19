@@ -1,4 +1,4 @@
-# Detailed Next Steps Plan (Updated 2026-02-18)
+# Detailed Next Steps Plan (Updated 2026-02-19)
 
 ## Objective
 
@@ -9,153 +9,87 @@ Close remaining production blockers for small selfhosters while preserving the s
 ## Completed Since Last Plan Revision
 
 ### Phase 0 — Security Signal Stabilization (Done)
-
 Completed:
 - Admin auth test setup now mints real admin JWTs via `PDSAdminAuth`.
 - `AdminAuthXrpcTests` is green.
 - `AdminAuthApplicationXrpcTests` is green except environment-specific socket skips.
 
-Evidence:
-- `ATProtoPDS/Tests/Network/AdminAuthXrpcTests.m`
-- `ATProtoPDS/Tests/Network/AdminAuthApplicationXrpcTests.m`
+### Phase 1 — Firehose Lexicon Conformance (Done)
+Completed:
+- Firehose schema fixes in `EventFormatter.m` (lines 19, 54, 67, 81).
+- Publisher fields set in `SubscribeReposHandler.m` (lines 347, 379).
+- `FirehoseConformanceTests` (2/2) and `EventFormatterTests` (10/10) are green.
+
+### Phase 2 — Refresh-Token Lifecycle Security (Done)
+Completed:
+- ✅ `getAccountByRefreshToken:` in `ServiceDatabases.m:262-292` enforces `expires_at > current_time` in SQL.
+- ✅ Token rotation implemented in `PDSAccountService.m:304-348`:
+  - Revokes old RT via `[_sessionRepository revokeRefreshToken:...]`
+  - Generates new RT and Access JWT
+  - Stores new RT via `[_sessionRepository storeRefreshToken:...]`
+- ✅ `refreshAccessToken:` returns dictionary with both `accessJwt` and `refreshJwt`
+- ✅ Added configurable TTL via `PDSConfiguration.refreshTokenTtlSeconds` (defaults to 30 days)
+- ✅ Added regression tests in `PDSAccountServiceTests.m` (2 new tests)
+
+### Phase 3 — XRPC DPoP Nonce Challenge (Done)
+Completed:
+- ✅ `DPoP-Nonce` challenge implemented in `XrpcMethodRegistry.m:5146-5264`:
+  - Returns 401 with `DPoP-Nonce` header when proof lacks nonce
+  - Emits `UseDPoPNonce` error response
+- ✅ Fixed `extractDIDFromAuthHeader:jwtMinter:adminController:request:response:` signature
+- ✅ `refreshSession` endpoint already extracts token from `Authorization: Bearer <token>` header (line 3819)
+- ✅ Tests exist in `SecurityHardeningTests.m` for token rotation and DPoP nonce flow
+
+### Phase 4 — Close Remaining `com.atproto.*` Coverage Gaps (Done)
+Completed:
+- ✅ Implemented `identity.resolveHandle` - Resolves handle to DID
+- ✅ Implemented `identity.resolveIdentity` - Full identity resolution with DID document
+- ✅ Implemented `identity.getRecommendedDidCredentials` - Credentials for DID migration
+- ✅ Implemented `sync.notifyOfUpdate` - Deprecated notification endpoint (delegates to requestCrawl)
+- ✅ Implemented `admin.getAccountTakedown` - Check account takedown status
 
 ---
 
-## Phase 1 — Firehose Lexicon Conformance (P0)
-
-**Goal:** Make emitted `subscribeRepos` frames strictly conformant.
-
+## Phase 5 — Selfhoster Operations Alignment (P1)
+**Goal:** Fix backup/restore tooling and unify public issuer usage.
 ### Tasks
-- [ ] Add required `blocks` to commit payload emission in `EventFormatter`.
-- [ ] Always emit `since` key for commits (nullable semantics).
-- [ ] Emit required `seq/time` for identity/account events.
-- [ ] Rename info payload key from `info` to `name`.
-- [ ] Ensure `SubscribeReposHandler` populates all required fields before encoding.
-
-### Acceptance Criteria
-- [ ] `./build/tests/AllTests -XCTest FirehoseConformanceTests` passes.
-- [ ] Replay/backfill behavior remains functional (no regressions in subscribe flow).
-
-### Evidence Targets
-- `ATProtoPDS/Sources/Sync/EventFormatter.m`
-- `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
-- `ATProtoPDS/Tests/Sync/FirehoseConformanceTests.m`
-
----
-
-## Phase 2 — XRPC OAuth/Session Protocol Correctness (P0/P1)
-
-**Goal:** Fix interoperability gaps for standards-compliant OAuth clients.
-
-### Tasks
-- [ ] Implement XRPC DPoP nonce challenge handling with `DPoP-Nonce` response header.
-- [ ] Thread nonce issuance/validation through XRPC auth path (not just OAuth token endpoint).
-- [ ] Align `com.atproto.server.refreshSession` with lexicon (refresh JWT auth, no body `refreshToken` dependency).
-- [ ] Add focused tests for nonce retry dance and refreshSession contract.
-
-### Acceptance Criteria
-- [ ] DPoP nonce-required failure returns recoverable challenge semantics.
-- [ ] Refresh session request/response is lexicon-compliant.
-
-### Evidence Targets
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-- `ATProtoPDS/Sources/Auth/OAuth2.m`
-- `ATProtoPDS/Resources/lexicons/com/atproto/server/refreshSession.json`
-
----
-
-## Phase 3 — Close Remaining `com.atproto.*` Coverage Gaps (P1)
-
-**Goal:** Raise in-scope coverage from 94.79% to 100%.
-
-### Tasks
-- [ ] Implement/register `com.atproto.identity.resolveHandle`.
-- [ ] Implement/register `com.atproto.identity.resolveIdentity`.
-- [ ] Implement/register `com.atproto.identity.getRecommendedDidCredentials`.
-- [ ] Implement/register `com.atproto.sync.notifyOfUpdate`.
-- [ ] Implement/register `com.atproto.admin.getAccountTakedown`.
-
-### Acceptance Criteria
-- [ ] Coverage report shows 0 in-scope missing endpoints.
-- [ ] New endpoints have happy/error-path tests.
-
-### Evidence Targets
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-- `/tmp/objpds_xrpc_coverage_*.md`
-
----
-
-## Phase 4 — Selfhoster Operations Alignment (P1)
-
-**Goal:** Make backup/restore/startup workflows match real runtime layout.
-
-### Tasks
-- [ ] Remove duplicated second body in `scripts/backup_pds.sh`.
-- [ ] Update backup script to actual DB paths (`service/service.db`, DID-keyed user DB files).
-- [ ] Update restore instructions in `README.md` and `docs/guides/DEPLOYMENT.md`.
-- [ ] Update `scripts/start_server.sh` default binary to current executable.
-
-### Acceptance Criteria
-- [ ] Backup script succeeds on real local layout.
-- [ ] Restore docs are executable as written.
-
-### Evidence Targets
-- `scripts/backup_pds.sh`
-- `README.md`
-- `docs/guides/DEPLOYMENT.md`
-- `scripts/start_server.sh`
-
----
-
-## Phase 5 — Issuer/Public URL Consistency (P1)
-
-**Goal:** Ensure one canonical public issuer/base URL across outputs and metadata.
-
-### Tasks
-- [ ] Use configured issuer for builder/nodeinfo instead of localhost fallback.
-- [ ] Remove `http://host:port` fallback for PLC endpoint when issuer exists.
-- [ ] Ensure any service-auth audience derivation uses public issuer host semantics.
-
-### Acceptance Criteria
-- [ ] JWT issuer, NodeInfo issuer, and PLC endpoint resolve to same public origin.
-
-### Evidence Targets
-- `ATProtoPDS/Sources/App/PDSApplication.m`
-- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
-- `ATProtoPDS/Sources/App/Services/PDSAccountService.m`
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-
----
+- [ ] Unify `PDS_ISSUER` usage across JWT, NodeInfo, and PLC endpoints.
+- [x] Fix `scripts/backup_pds.sh`: remove duplication and update to `service.db`.
+- [ ] Update documentation to match actual on-disk layout.
 
 ## Phase 6 — Reliability and Hygiene (P2)
-
-**Goal:** Reduce avoidable operational/test noise.
-
+**Goal:** Harden tests and websocket lifecycle.
 ### Tasks
-- [ ] Harden network-dependent tests to skip/fail gracefully when bind is unavailable (avoid crash).
-- [ ] Remove tracked generated artifacts (for example `build-dd/*`) and add ignore coverage.
-- [ ] Wire event retention (`pruneEventsBefore`) to a configurable runtime policy.
-
-### Acceptance Criteria
-- [ ] `CoverageGapTests` no longer crashes in restricted environments.
-- [ ] Repository stays clean after normal build/test loops.
-- [ ] Event storage growth can be bounded by configuration.
-
-### Evidence Targets
-- `ATProtoPDS/Tests/Services/CoverageGapTests.m`
-- `.gitignore`
-- `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m`
-- `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
+- [ ] Fix `CoverageGapTests` nil-data crash (pre-existing issue).
+- [ ] Tighten websocket connection and backpressure management.
 
 ---
 
-## Recommended Execution Order
+## Summary of Work Completed
 
-1. Phase 1 — Firehose conformance
-2. Phase 2 — OAuth/session correctness
-3. Phase 3 — Endpoint coverage closure
-4. Phase 4 — Ops/script/doc alignment
-5. Phase 5 — Issuer consistency cleanup
-6. Phase 6 — Reliability/hygiene
+| Phase | Status | Key Deliverables |
+|-------|--------|------------------|
+| Phase 0 | ✅ Done | Admin auth tests stabilized |
+| Phase 1 | ✅ Done | Firehose conformance tests passing |
+| Phase 2 | ✅ Done | Refresh token rotation & configurable TTL |
+| Phase 3 | ✅ Done | DPoP nonce challenge flow working |
+| Phase 4 | ✅ Done | All 5 missing com.atproto.* endpoints implemented |
+| Phase 5 | 🔄 In Progress | PDS_ISSUER unification, docs update |
+| Phase 6 | ⏳ Pending | CoverageGapTests fix, websocket hardening |
 
-This keeps external protocol correctness first, then closes remaining interoperability and operability gaps.
+## Recommended Next Steps
+
+1. **Phase 5a** — Unify PDS_ISSUER usage (high priority for selfhosters)
+2. **Phase 5b** — Update documentation for actual on-disk layout
+3. **Phase 6** — Address CoverageGapTests and websocket reliability
+
+This keeps external protocol correctness (completed), then finishes operations alignment, then reliability improvements.
+
+---
+
+## Commits Made Today
+
+1. `6816635` - fix(backup): remove duplicated script body in backup_pds.sh
+2. `e118f7a` - feat(auth): configurable refresh token TTL and DPoP method fixes
+3. `152f941` - test(auth): add refresh token rotation tests
+4. `310a01e` - feat(endpoints): implement 5 missing com.atproto.* methods
