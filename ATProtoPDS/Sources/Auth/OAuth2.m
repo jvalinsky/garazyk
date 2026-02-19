@@ -951,29 +951,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 }
 
 - (instancetype)init {
-    self = [super init];
-    if (self) {
-        _authorizationCodes = [NSMutableDictionary dictionary];
-        _activeSessions = [NSMutableDictionary dictionary];
-        _authorizationQueue = dispatch_queue_create("com.atproto.oauth2.authorization", DISPATCH_QUEUE_SERIAL);
-        _sessionQueue = dispatch_queue_create("com.atproto.oauth2.session", DISPATCH_QUEUE_SERIAL);
-        _jwtMinter = [[JWTMinter alloc] init];
-        _keyManager = [[PDSAppleKeyManager alloc] init];
-        _didResolver = [[DIDResolver alloc] init];
-        _handleResolver = [[HandleResolver alloc] init];
-        NSURL *dbURL = [[NSURL fileURLWithPath:NSHomeDirectory()] URLByAppendingPathComponent:@".gemini/pds.db"];
-        _database = [PDSDatabase databaseAtURL:dbURL];
-        [_database openWithError:nil];
-
-        NSError *keyError;
-        Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
-        if (keyPair) {
-            _jwtMinter.privateKey = keyPair.privateKey;
-        } else {
-            PDS_LOG_AUTH_ERROR(@"Failed to generate JWT signing key: %@", keyError);
-        }
-    }
-    return self;
+    return [self initWithDatabase:nil];
 }
 
 #pragma mark - Thread-Safe Authorization Code Access
