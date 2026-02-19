@@ -20,10 +20,6 @@ NSString * const PDSOpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslkeym
 @property (nonatomic, strong, nullable) NSData *memoryKeyData;
 @end
 
-@interface PDSOpenSSLKeyManager ()
-@property (nonatomic, copy, readwrite) NSString *keyManagerId;
-@end
-
 @implementation PDSOpenSSLKeyManager
 
 - (instancetype)initWithDid:(NSString *)did keystorePath:(NSString *)keystorePath {

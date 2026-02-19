@@ -12,11 +12,7 @@
 
 #import "Auth/OAuth2.h"
 #import "Auth/Session.h"
-#ifndef GNUSTEP
 #import "Auth/PDSAppleKeyManager.h"
-#else
-#import "Auth/PDSOpenSSLKeyManager.h"
-#endif
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "Core/DID.h"
@@ -938,11 +934,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _authorizationQueue = dispatch_queue_create("com.atproto.oauth2.authorization", DISPATCH_QUEUE_SERIAL);
         _sessionQueue = dispatch_queue_create("com.atproto.oauth2.session", DISPATCH_QUEUE_SERIAL);
         _jwtMinter = [[JWTMinter alloc] init];
-#ifndef GNUSTEP
         _keyManager = [[PDSAppleKeyManager alloc] init];
-#else
-        _keyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:@"server" keystorePath:@"/tmp"];
-#endif
         _didResolver = [[DIDResolver alloc] init];
         _handleResolver = [[HandleResolver alloc] init];
         _database = database;
@@ -966,11 +958,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _authorizationQueue = dispatch_queue_create("com.atproto.oauth2.authorization", DISPATCH_QUEUE_SERIAL);
         _sessionQueue = dispatch_queue_create("com.atproto.oauth2.session", DISPATCH_QUEUE_SERIAL);
         _jwtMinter = [[JWTMinter alloc] init];
-#ifndef GNUSTEP
         _keyManager = [[PDSAppleKeyManager alloc] init];
-#else
-        _keyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:@"server" keystorePath:@"/tmp"];
-#endif
         _didResolver = [[DIDResolver alloc] init];
         _handleResolver = [[HandleResolver alloc] init];
         NSURL *dbURL = [[NSURL fileURLWithPath:NSHomeDirectory()] URLByAppendingPathComponent:@".gemini/pds.db"];

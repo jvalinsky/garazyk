@@ -62,17 +62,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)setKeyPairActive:(NSString *)keyID error:(NSError **)error;
 
 /**
- * @brief Sign raw data with a specific key
+ * @brief Sign raw data
  */
 - (nullable NSData *)signData:(NSData *)data
                      withKeyID:(NSString *)keyID
                          error:(NSError **)error;
-
-@optional
-/**
- * @brief Sign raw data using the active key (convenience method)
- */
-- (nullable NSData *)signData:(NSData *)data error:(NSError **)error;
 
 /**
  * @brief Sign a JSON payload

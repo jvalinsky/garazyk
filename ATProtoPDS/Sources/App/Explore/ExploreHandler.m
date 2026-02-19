@@ -1,7 +1,3 @@
-#ifdef GNUSTEP
-#import "Compat/GNUstepCompat.h"
-#endif
-
 #import "App/Explore/ExploreHandler.h"
 #import "App/Explore/ExploreCache.h"
 #import "Network/HttpRequest.h"

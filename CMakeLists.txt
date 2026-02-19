@@ -52,22 +52,15 @@ if(NOT APPLE)
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
         # Add source-built GNUstep headers first for objc runtime
-        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I/usr/GNUstep/Local/Library/Headers ${GNUSTEP_CFLAGS} -fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0 -include ${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxCompat.h")
+        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I/usr/GNUstep/Local/Library/Headers ${GNUSTEP_CFLAGS} -fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
         # Add source-built library path before system paths
         link_directories(BEFORE /usr/GNUstep/Local/Library/Libraries)
-        link_directories(BEFORE /usr/local/lib)  # for libobjc2
-        # Filter out -lobjc from gnustep-config output to avoid linking system libobjc
-        string(REPLACE "-lobjc" "" GNUSTEP_LIBS_FILTERED "${GNUSTEP_LIBS}")
-        string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS_FILTERED}")
+        string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS}")
     endif()
     
-    # Use source-built GNUstep headers (with ARC support) before system headers
-    include_directories(BEFORE /usr/GNUstep/Local/Library/Headers)
-    include_directories(BEFORE /usr/local/include/GNUstep)
-    include_directories(BEFORE /usr/local/include)  # libdispatch headers
+    include_directories(/usr/include/GNUstep)
     if(NOT APPLE)
         include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat)
     endif()
 endif()
 
@@ -123,26 +116,13 @@ else()
     find_package(OpenSSL REQUIRED)
     find_package(SQLite3 REQUIRED)
     
-    # Create SQLite3::SQLite3 target if not created by find_package
-    if(NOT TARGET SQLite3::SQLite3)
-        add_library(SQLite3::SQLite3 UNKNOWN IMPORTED)
-        set_target_properties(SQLite3::SQLite3 PROPERTIES
-            IMPORTED_LOCATION "${SQLite3_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIR}")
-        if(NOT SQLite3_LIBRARY)
-            find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
-        endif()
-        set_target_properties(SQLite3::SQLite3 PROPERTIES IMPORTED_LOCATION "${SQLite3_LIBRARY}")
-    endif()
-    
-    find_library(DISPATCH_LIB dispatch PATHS /usr/local/lib)
+    find_library(DISPATCH_LIB dispatch)
     find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
     find_library(QRENCODE_LIB qrencode REQUIRED)
     find_path(QRENCODE_INCLUDE_DIR qrencode.h REQUIRED)
     
     if(NOT DISPATCH_LIB)
-        message(WARNING "libdispatch not found - using stub")
-        set(DISPATCH_LIB "")  # Empty, don't link
+        message(WARNING "libdispatch not found")
     endif()
 
     if(QRENCODE_INCLUDE_DIR)
@@ -158,17 +138,8 @@ else()
         set(LOCAL_GNUSTEP_BASE gnustep-base)
     endif()
     
-    # Find the locally-built libobjc2
-    find_library(LOCAL_OBJC objc PATHS /usr/local/lib NO_DEFAULT_PATH)
-    if(LOCAL_OBJC)
-        message(STATUS "Using local libobjc2: ${LOCAL_OBJC}")
-    else()
-        set(LOCAL_OBJC objc)
-    endif()
-    
     set(PLATFORM_LIBRARIES
         ${GNUSTEP_LIBS_LIST}
-        ${LOCAL_OBJC}
         OpenSSL::SSL
         OpenSSL::Crypto
         SQLite3::SQLite3
@@ -228,33 +199,24 @@ if(NOT APPLE)
   # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
 
-  # DID.m uses NSURLSession - now using compat layer
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
+  # DID.m uses NSURLSession (not available in GNUstep)
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
 
-  # FederationClient.m uses NSURLSession - now using compat layer
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
+  # FederationClient.m uses NSURLSession
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
 
   # PDSMetrics.m uses os_unfair_lock
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Metrics/PDSMetrics\\.m$")
 
-  # SSLPinningManager.m uses SecTrust/SecPolicy certificate validation APIs not available on Linux
+  # SSLPinningManager.m uses NSURLSession
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
 
   # WebSocketServer.m uses Network.framework
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 
-<<<<<<< HEAD
   # Identity resolvers use NSURLSession
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")
-=======
-  # ActorStore.m uses Security.framework - now using compat layer
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStore\\.m$")
-
-  # Identity resolvers use NSURLSession - now using compat layer
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")
->>>>>>> d1f51e5 (feat: Linux/GNUstep build support)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClient\\.m$")
@@ -262,8 +224,6 @@ if(NOT APPLE)
 
   # Add Linux stub implementations
   list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxStubs.m")
-  list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat/Foundation/NSURLSessionCompat.m")
-  list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/LocalAuthentication/LAContext.m")
 endif()
 
 # Add compat sources for Linux
