@@ -375,6 +375,10 @@
     [self registerMethod:@"com.atproto.admin.getSubjectStatus" handler:handler];
 }
 
+- (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.getAccountTakedown" handler:handler];
+}
+
 - (void)registerComAtprotoAdminGetAccountInfo:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.admin.getAccountInfo" handler:handler];
 }

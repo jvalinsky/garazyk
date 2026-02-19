@@ -317,6 +317,9 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for com.atproto.admin.getSubjectStatus. */
 - (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.admin.getAccountTakedown. */
+- (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler;
+
 /*! Registers handler for com.atproto.admin.getAccountInfo. */
 - (void)registerComAtprotoAdminGetAccountInfo:(XrpcMethodHandler)handler;
 
