@@ -52,8 +52,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 }
 
 - (PDSDatabase *)getDatabase {
-    if (_database) return _database;
-    return [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:@"/tmp/atproto_pds.db"]];
+    return _database;
 }
 
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {

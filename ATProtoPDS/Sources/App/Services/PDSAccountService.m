@@ -424,7 +424,7 @@
         plcURLString = @"http://127.0.0.1:2582";
     }
     
-    NSString *pdsURL = [config canonicalIssuerWithPortHint:0];
+    NSString *pdsURL = config.canonicalIssuer;
     
     // Format keys as did:key multibase
     NSString *signingKeyMultibase = [signingKey didKeyString];

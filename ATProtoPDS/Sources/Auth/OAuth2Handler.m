@@ -20,7 +20,9 @@
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleProtectedResourceMetadata:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (BOOL)validateDPoPForRequest:(HttpRequest *)request response:(HttpResponse *)response outThumbprint:(NSString **)outThumbprint;
 @end
 
 @implementation OAuth2Handler {
@@ -466,90 +468,9 @@
         PDS_LOG_AUTH_DEBUG(@"Token request redirect_uri validation passed (client_id=%@)", clientID ?: @"");
     }
     
-    if (!dpopProof || dpopProof.length == 0) {
-        response.statusCode = 400;
-        [response setJsonBody:@{
-            @"error": @"invalid_request",
-            @"error_description": @"Missing DPoP proof"
-        }];
-        return;
-    }
-
-    NSString *host = [request headerForKey:@"host"];
-    NSString *scheme = [request headerForKey:@"x-forwarded-proto"];
-    if (!scheme) {
-        // Default to http for localhost/127.0.0.1, otherwise https
-        NSString *lowercaseHost = [host lowercaseString];
-        if ([lowercaseHost containsString:@"localhost"] || [lowercaseHost hasPrefix:@"127.0.0.1"] || [lowercaseHost hasPrefix:@"::1"]) {
-            scheme = @"http";
-        } else {
-            scheme = @"https";
-        }
-    }
-    
-    NSString *path = request.path ?: @"/";
-    NSMutableString *urlString = nil;
-    if (host.length > 0) {
-        urlString = [NSMutableString stringWithFormat:@"%@://%@%@", scheme, host, path];
-        if (request.queryString.length > 0) {
-            [urlString appendFormat:@"?%@", request.queryString];
-        }
-    } else if (self.oauthServer.issuer.length > 0) {
-        NSURL *issuerURL = [NSURL URLWithString:self.oauthServer.issuer];
-        urlString = [NSMutableString stringWithFormat:@"%@://%@%@", issuerURL.scheme ?: scheme, issuerURL.host ?: @"", path];
-        if (request.queryString.length > 0) {
-            [urlString appendFormat:@"?%@", request.queryString];
-        }
-    }
-
-    NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
-    if (!dpopURL) {
-        response.statusCode = 400;
-        [response setJsonBody:@{
-            @"error": @"invalid_request",
-            @"error_description": @"Unable to construct DPoP URL"
-        }];
-        return;
-    }
-
-    NSError *dpopError = nil;
     NSString *dpopThumbprint = nil;
-    NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
-    if (requestedNonce.length == 0) {
-        requestedNonce = nil;
-    }
-    if (![OAuth2DPoPProof verifyProof:dpopProof
-                               method:request.methodString
-                                  url:dpopURL
-                                nonce:requestedNonce
-                         requireNonce:YES
-                        outThumbprint:&dpopThumbprint
-                                error:&dpopError]) {
-        if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
-            NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
-            if (nonce.length > 0) {
-                [response setHeader:nonce forKey:@"DPoP-Nonce"];
-            }
-            [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
-            response.statusCode = 400;
-            [response setJsonBody:@{
-                @"error": @"use_dpop_nonce",
-                @"error_description": dpopError.localizedDescription ?: @"DPoP nonce required"
-            }];
-            return;
-        }
-        response.statusCode = 400;
-        [response setJsonBody:@{
-            @"error": @"invalid_dpop_proof",
-            @"error_description": dpopError.localizedDescription ?: @"Invalid DPoP proof"
-        }];
+    if (![self validateDPoPForRequest:request response:response outThumbprint:&dpopThumbprint]) {
         return;
-    }
-    if (dpopThumbprint.length > 0) {
-        NSString *prefix = dpopThumbprint.length > 8 ? [dpopThumbprint substringToIndex:8] : dpopThumbprint;
-        PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint_prefix=%@)", prefix);
-    } else {
-        PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint unavailable)");
     }
 
     OAuth2TokenRequest *tokenRequest = [[OAuth2TokenRequest alloc] init];
@@ -705,6 +626,12 @@
          [response setJsonBody:@{@"error": @"invalid_client", @"error_description": @"Invalid client credentials"}];
          return;
     }
+
+    // Enforce DPoP for PAR
+    NSString *dpopThumbprint = nil;
+    if (![self validateDPoPForRequest:request response:response outThumbprint:&dpopThumbprint]) {
+        return;
+    }
     
     // Generate request URI
     NSString *requestUUID = [[NSUUID UUID] UUIDString];
@@ -743,6 +670,101 @@
         [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
     });
     return [formatter stringFromDate:date];
+}
+
+- (BOOL)validateDPoPForRequest:(HttpRequest *)request response:(HttpResponse *)response outThumbprint:(NSString **)outThumbprint {
+    NSString *dpopProof = [request headerForKey:@"dpop"];
+    if (!dpopProof || dpopProof.length == 0) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"Missing DPoP proof"
+        }];
+        return NO;
+    }
+
+    NSString *host = [request headerForKey:@"host"];
+    NSString *scheme = [request headerForKey:@"x-forwarded-proto"];
+    if (!scheme) {
+        NSString *lowercaseHost = [host lowercaseString];
+        if ([lowercaseHost containsString:@"localhost"] || [lowercaseHost hasPrefix:@"127.0.0.1"] || [lowercaseHost hasPrefix:@"::1"]) {
+            scheme = @"http";
+        } else {
+            scheme = @"https";
+        }
+    }
+    
+    NSString *path = request.path ?: @"/";
+    NSMutableString *urlString = nil;
+    if (host.length > 0) {
+        urlString = [NSMutableString stringWithFormat:@"%@://%@%@", scheme, host, path];
+        if (request.queryString.length > 0) {
+            [urlString appendFormat:@"?%@", request.queryString];
+        }
+    } else if (self.oauthServer.issuer.length > 0) {
+        NSURL *issuerURL = [NSURL URLWithString:self.oauthServer.issuer];
+        urlString = [NSMutableString stringWithFormat:@"%@://%@%@", issuerURL.scheme ?: scheme, issuerURL.host ?: @"", path];
+        if (request.queryString.length > 0) {
+            [urlString appendFormat:@"?%@", request.queryString];
+        }
+    }
+
+    NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
+    if (!dpopURL) {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_request",
+            @"error_description": @"Unable to construct DPoP URL"
+        }];
+        return NO;
+    }
+
+    NSError *dpopError = nil;
+    NSString *dpopThumbprint = nil;
+    NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
+    if (requestedNonce.length == 0) {
+        requestedNonce = nil;
+    }
+    
+    if (![OAuth2DPoPProof verifyProof:dpopProof
+                               method:request.methodString
+                                  url:dpopURL
+                                nonce:requestedNonce
+                         requireNonce:YES
+                        outThumbprint:&dpopThumbprint
+                                error:&dpopError]) {
+        if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
+            NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+            if (nonce.length > 0) {
+                [response setHeader:nonce forKey:@"DPoP-Nonce"];
+            }
+            [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+            response.statusCode = 400;
+            [response setJsonBody:@{
+                @"error": @"use_dpop_nonce",
+                @"error_description": dpopError.localizedDescription ?: @"DPoP nonce required"
+            }];
+            return NO;
+        }
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"invalid_dpop_proof",
+            @"error_description": dpopError.localizedDescription ?: @"Invalid DPoP proof"
+        }];
+        return NO;
+    }
+
+    if (dpopThumbprint.length > 0) {
+        NSString *prefix = dpopThumbprint.length > 8 ? [dpopThumbprint substringToIndex:8] : dpopThumbprint;
+        PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint_prefix=%@)", prefix);
+    } else {
+        PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint unavailable)");
+    }
+    
+    if (outThumbprint) {
+        *outThumbprint = dpopThumbprint;
+    }
+    return YES;
 }
 
 @end
