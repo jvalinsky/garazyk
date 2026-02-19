@@ -11,7 +11,6 @@
 #import "Auth/CryptoUtils.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
-#import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <Security/Security.h>
 #import "Core/ATProtoError.h"
@@ -25,16 +24,6 @@
 #ifndef kCCSuccess
 #define kCCSuccess 0
 #endif
-
-static BOOL PDSHostIsLocalhost(NSString *host) {
-    NSString *normalized = [[host ?: @"" lowercaseString]
-        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return normalized.length == 0 ||
-           [normalized isEqualToString:@"localhost"] ||
-           [normalized isEqualToString:@"127.0.0.1"] ||
-           [normalized isEqualToString:@"::1"] ||
-           [normalized isEqualToString:@"0.0.0.0"];
-}
 
 @interface PDSAccountService ()
 @end
@@ -238,20 +227,9 @@ static BOOL PDSHostIsLocalhost(NSString *host) {
 - (nullable NSDictionary *)loginWithAccount:(PDSDatabaseAccount *)account
                                    password:(NSString *)password
                                       error:(NSError **)error {
-    // Verify password - try PBKDF2 first (new method)
+    // Verify password using the current PBKDF2 policy only.
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
     BOOL isPasswordCorrect = [passwordHash isEqualToData:account.passwordHash];
-    BOOL usedLegacyHash = NO;
-
-    if (!isPasswordCorrect) {
-        // Fallback: try legacy SHA-256 method for migration support
-        NSData *legacyHash = [self legacyHashPassword:password salt:account.passwordSalt];
-        if ([legacyHash isEqualToData:account.passwordHash]) {
-            isPasswordCorrect = YES;
-            usedLegacyHash = YES;
-            PDS_LOG_AUTH_INFO(@"Account %@ using legacy password hash, will upgrade", account.did);
-        }
-    }
 
     if (!isPasswordCorrect && self.serviceDatabases) {
         NSError *appPasswordError = nil;
@@ -266,11 +244,6 @@ static BOOL PDSHostIsLocalhost(NSString *host) {
                                        message:@"Invalid password"];
         }
         return nil;
-    }
-
-    // Upgrade password hash if using legacy method
-    if (usedLegacyHash) {
-        [self upgradePasswordHashIfNeeded:password forAccount:account error:nil];
     }
 
     // Generate new tokens
@@ -437,40 +410,6 @@ static BOOL PDSHostIsLocalhost(NSString *host) {
     return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
 }
 
-- (NSData *)legacyHashPassword:(NSString *)password salt:(NSData *)salt {
-    // Legacy SHA-256 method for migration support only
-    // This will be removed after all passwords are migrated
-    NSMutableData *input = [NSMutableData data];
-    [input appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [input appendData:salt];
-
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(input.bytes, (CC_LONG)input.length, hash);
-    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-}
-
-- (BOOL)upgradePasswordHashIfNeeded:(NSString *)password
-                         forAccount:(PDSDatabaseAccount *)account
-                              error:(NSError **)error {
-    // Called after successful login with legacy hash
-    // Re-hash with PBKDF2 and update database
-    NSData *newHash = [self hashPassword:password salt:account.passwordSalt];
-    if (!newHash) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInternalServerError
-                                       message:@"Failed to rehash password"];
-        }
-        return NO;
-    }
-
-    account.passwordHash = newHash;
-    BOOL success = [_accountRepository saveAccount:account error:error];
-    if (success) {
-        PDS_LOG_AUTH_INFO(@"Upgraded password hash for account: %@", account.did);
-    }
-    return success;
-}
-
 #pragma mark - PLC Registration
 
 - (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
@@ -485,22 +424,7 @@ static BOOL PDSHostIsLocalhost(NSString *host) {
         plcURLString = @"http://127.0.0.1:2582";
     }
     
-    NSString *pdsURL = config.issuer;
-    if (!pdsURL || pdsURL.length == 0) {
-        NSString *host = config.serverHost;
-        if (PDSHostIsLocalhost(host)) {
-            host = @"localhost";
-        }
-        NSString *scheme = PDSHostIsLocalhost(host) ? @"http" : @"https";
-        NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
-        BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
-                           ([scheme isEqualToString:@"http"] && port == 80);
-        if (defaultPort) {
-            pdsURL = [NSString stringWithFormat:@"%@://%@", scheme, host];
-        } else {
-            pdsURL = [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
-        }
-    }
+    NSString *pdsURL = [config canonicalIssuerWithPortHint:0];
     
     // Format keys as did:key multibase
     NSString *signingKeyMultibase = [signingKey didKeyString];

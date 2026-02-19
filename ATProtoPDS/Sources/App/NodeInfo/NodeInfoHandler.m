@@ -10,7 +10,7 @@
 @interface NodeInfoHandler ()
 @property (nonatomic, strong) NodeInfoProvider *provider;
 @property (nonatomic, copy) NSString *issuer;
-@property (nonatomic, weak) id controller;
+@property (nonatomic, weak) id accountService;
 @property (nonatomic, assign) BOOL configured;
 @end
 
@@ -45,9 +45,8 @@
     [self updateProvider];
 }
 
-- (void)setController:(id)controller {
-    _controller = controller;
-    _configured = (controller != nil);
+- (void)setAccountService:(id)accountService {
+    _accountService = accountService;
     [self updateProvider];
 }
 
@@ -63,19 +62,14 @@
 
     _provider = [[NodeInfoProvider alloc] initWithBaseURL:_issuer configuration:config];
     
-    // Fetch stats if controller is available
-    if ([self.controller respondsToSelector:@selector(accountService)]) {
-        id accountService = [self.controller performSelector:@selector(accountService)];
-        if ([accountService respondsToSelector:@selector(getAllAccountsWithError:)]) {
-            NSError *error = nil;
-            NSArray *accounts = [accountService performSelector:@selector(getAllAccountsWithError:) withObject:nil];
-            if (accounts) {
-                _provider.totalUsers = accounts.count;
-                // Currently setting posts/comments to 0 as they are fediverse concepts, 
-                // but we could count specific ATProto records here if needed.
-                _provider.localPosts = 0; 
-                _provider.localComments = 0;
-            }
+    // Fetch stats if account service is available.
+    if ([self.accountService respondsToSelector:@selector(getAllAccountsWithError:)]) {
+        NSArray *accounts = [self.accountService performSelector:@selector(getAllAccountsWithError:) withObject:nil];
+        if (accounts) {
+            _provider.totalUsers = accounts.count;
+            // NodeInfo doesn't model ATProto-specific content classes directly.
+            _provider.localPosts = 0;
+            _provider.localComments = 0;
         }
     }
     
