@@ -26,7 +26,7 @@ node scripts/generate_xrpc_next_steps.js
 - For parser-level debugging, run `scripts/run_all.sh` in this skill directory (fallback mode).
 
 ## Script behavior
-`/Users/jack/.codex/skills/xrpc-schema-sync/scripts/run_all.sh`:
+`./skills/xrpc-schema-sync/scripts/run_all.sh`:
 - Detects repo-native generators and uses them first.
 - Falls back to local parser scripts (`list_xrpc_methods.py`, `parse_lexicons.py`, `diff_methods.py`) if repo generators are unavailable.
 
@@ -37,7 +37,7 @@ node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates
 node scripts/generate_xrpc_next_steps.js
 
 # Fallback parser flow
-/Users/jack/.codex/skills/xrpc-schema-sync/scripts/run_all.sh . --output-dir /tmp/xrpc-audit
+./skills/xrpc-schema-sync/scripts/run_all.sh . --output-dir /tmp/xrpc-audit
 ```
 
 ## References

@@ -35,7 +35,7 @@ node scripts/generate_xrpc_next_steps.js
 node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates
 
 # Skill fallback flow
-/Users/jack/.codex/skills/atproto-endpoint-stub-finder/scripts/run_all.sh . --output-dir /tmp/stub-audit
+./skills/atproto-endpoint-stub-finder/scripts/run_all.sh . --output-dir /tmp/stub-audit
 ```
 
 ## References

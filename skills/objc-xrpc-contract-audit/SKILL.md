@@ -10,7 +10,7 @@ Use this skill to triage endpoint contract gaps between registry, handler logic,
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-xrpc-contract-audit/scripts/scan_xrpc_contracts.sh . /tmp/objc-xrpc-contract-audit
+./skills/objc-xrpc-contract-audit/scripts/scan_xrpc_contracts.sh . /tmp/objc-xrpc-contract-audit
 ```
 2. Read `/tmp/objc-xrpc-contract-audit/summary.md`.
 3. Validate candidates with `references/xrpc-contract-checklist.md`.

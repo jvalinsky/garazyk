@@ -10,7 +10,7 @@ Use this skill to identify network reliability bugs caused by weak timeout, retr
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-network-timeout-retry-audit/scripts/scan_network_timeout_retry.sh . /tmp/objc-network-timeout-retry-audit
+./skills/objc-network-timeout-retry-audit/scripts/scan_network_timeout_retry.sh . /tmp/objc-network-timeout-retry-audit
 ```
 2. Read `/tmp/objc-network-timeout-retry-audit/summary.md`.
 3. Validate candidates with `references/network-timeout-retry-checklist.md`.

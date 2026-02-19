@@ -41,6 +41,8 @@
     event.repo = @"did:plc:abc123";
     NSData *digest = [@"test2" dataUsingEncoding:NSUTF8StringEncoding];
     event.commit = [CID cidWithDigest:digest codec:0x71];
+    event.rev = @"3k3k3k3k3k3k3";
+    event.time = @"2024-01-01T00:00:00Z";
     event.ops = @[];
     event.blobs = @[];
     
@@ -48,12 +50,23 @@
     
     XCTAssertNotNil(encoded);
     XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(msgType, @"#commit");
+    XCTAssertNotNil(decoded[@"blocks"]);
+    XCTAssertEqualObjects(decoded[@"since"], [NSNull null]);
 }
 
 - (void)testEncodeIdentityEvent {
     NSError *error = nil;
     FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    event.seq = 17;
     event.did = @"did:plc:abc123";
+    event.time = @"2024-01-01T00:00:00Z";
     
     NSData *encoded = [self.formatter encodeIdentityEvent:event error:&error];
     
@@ -100,7 +113,9 @@
 - (void)testDecodeIdentityEvent {
     NSError *error = nil;
     FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    event.seq = 11;
     event.did = @"did:plc:abc123";
+    event.time = @"2024-01-01T00:00:00Z";
     event.handle = @"handle.bsky.social";
 
     NSData *encoded = [self.formatter encodeIdentityEvent:event error:&error];
@@ -115,7 +130,9 @@
     XCTAssertNotNil(decoded);
     XCTAssertEqual(op, 1);
     XCTAssertEqualObjects(msgType, @"#identity");
+    XCTAssertEqualObjects(decoded[@"seq"], @11);
     XCTAssertEqualObjects(decoded[@"did"], @"did:plc:abc123");
+    XCTAssertEqualObjects(decoded[@"time"], @"2024-01-01T00:00:00Z");
     XCTAssertEqualObjects(decoded[@"handle"], @"handle.bsky.social");
 }
 
@@ -141,9 +158,11 @@
 - (void)testDecodeAccountEvent {
     NSError *error = nil;
     FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    event.seq = 22;
     event.did = @"did:plc:abc123";
     event.active = NO;
     event.status = @"takendown";
+    event.time = @"2024-01-01T00:00:00Z";
 
     NSData *encoded = [self.formatter encodeAccountEvent:event error:&error];
     XCTAssertNotNil(encoded);
@@ -157,7 +176,9 @@
     XCTAssertNotNil(decoded);
     XCTAssertEqual(op, 1);
     XCTAssertEqualObjects(msgType, @"#account");
+    XCTAssertEqualObjects(decoded[@"seq"], @22);
     XCTAssertEqualObjects(decoded[@"did"], @"did:plc:abc123");
+    XCTAssertEqualObjects(decoded[@"time"], @"2024-01-01T00:00:00Z");
     XCTAssertEqualObjects(decoded[@"status"], @"takendown");
 }
 
@@ -179,7 +200,7 @@
     XCTAssertNotNil(decoded);
     XCTAssertEqual(op, 1);
     XCTAssertEqualObjects(msgType, @"#info");
-    XCTAssertEqualObjects(decoded[@"info"], @"OutdatedCursor");
+    XCTAssertEqualObjects(decoded[@"name"], @"OutdatedCursor");
     XCTAssertEqualObjects(decoded[@"message"], @"Unable to retrieve repository state");
 }
 
