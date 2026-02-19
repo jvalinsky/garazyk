@@ -66,3 +66,4 @@ reference/
 ATProtoPDS/Tests/Blob/debug_blob_test.txt
 
 com.apple.DeveloperTools/
+build-dd/
