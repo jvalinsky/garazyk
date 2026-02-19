@@ -319,6 +319,9 @@
         return nil;
     }
 
+    // Revoke old refresh token (Rotation)
+    [_sessionRepository revokeRefreshToken:refreshToken error:nil];
+
     // Generate new access token
     NSString *accessToken = nil;
     if (self.minter) {
@@ -327,11 +330,20 @@
     } else {
         accessToken = [[NSUUID UUID] UUIDString];
     }
+
+    // Generate new refresh token
+    NSString *newRefreshToken = [[NSUUID UUID] UUIDString];
+
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
+    account.refreshJwt = [newRefreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
+    [_sessionRepository storeRefreshToken:newRefreshToken forAccountDid:account.did error:nil];
 
     return @{
-        @"accessJwt": accessToken
+        @"accessJwt": accessToken,
+        @"refreshJwt": newRefreshToken,
+        @"handle": account.handle ?: @"",
+        @"did": account.did ?: @""
     };
 }
 

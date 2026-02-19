@@ -105,8 +105,14 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  */
 @interface FirehoseIdentityEvent : NSObject
 
+/*! The stream sequence number of this message. */
+@property (nonatomic, assign) int64_t seq;
+
 /*! The DID whose identity was updated. */
 @property (nonatomic, copy) NSString *did;
+
+/*! Timestamp of the event in RFC-3339 format. */
+@property (nonatomic, copy) NSString *time;
 
 /*! The new handle (may be nil if not changed). */
 @property (nonatomic, copy, nullable) NSString *handle;
@@ -121,6 +127,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  @abstract Represents an account status event (takedown, suspension, etc).
  */
 @interface FirehoseAccountEvent : NSObject
+
+/*! The stream sequence number of this message. */
+@property (nonatomic, assign) int64_t seq;
 
 /*! The DID of the affected account. */
 @property (nonatomic, copy) NSString *did;

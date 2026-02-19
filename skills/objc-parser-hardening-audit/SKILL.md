@@ -10,7 +10,7 @@ Use this skill to find high-risk parsing paths and prioritize hardening work.
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-parser-hardening-audit/scripts/scan_parser_hardening.sh . /tmp/objc-parser-hardening-audit
+./skills/objc-parser-hardening-audit/scripts/scan_parser_hardening.sh . /tmp/objc-parser-hardening-audit
 ```
 2. Read `/tmp/objc-parser-hardening-audit/summary.md`.
 3. Validate candidates with `references/parser-hardening-checklist.md`.

@@ -10,7 +10,7 @@ Use this skill to detect logging paths that may leak credentials or sensitive us
 ## Quick start
 1. Run:
 ```bash
-/Users/jack/Software/objpds/skills/objc-log-redaction-audit/scripts/scan_log_redaction.sh . /tmp/objc-log-redaction-audit
+./skills/objc-log-redaction-audit/scripts/scan_log_redaction.sh . /tmp/objc-log-redaction-audit
 ```
 2. Read `/tmp/objc-log-redaction-audit/summary.md`.
 3. Validate candidates with `references/log-redaction-checklist.md`.
