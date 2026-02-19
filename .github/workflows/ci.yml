@@ -86,3 +86,49 @@ jobs:
           tags: atprotopds:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  linux-gnustep-build-and-test:
+    name: Linux GNUstep Build & Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            cmake \
+            ninja-build \
+            gnustep-make \
+            libgnustep-base-dev \
+            libblocksruntime-dev \
+            libssl-dev \
+            libsqlite3-dev \
+            libqrencode-dev
+
+      - name: Configure (GNUstep CMake)
+        run: |
+          cmake -S . -B build-linux \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_OBJC_COMPILER=clang \
+            -DBUILD_SECP256K1=ON \
+            -DBUILD_TESTS=ON \
+            -DBUILD_FUZZERS=OFF
+
+      - name: Build (GNUstep)
+        run: |
+          cmake --build build-linux --parallel 4 --target september AllTests
+
+      - name: Run Tests (GNUstep)
+        run: |
+          ctest --test-dir build-linux --output-on-failure

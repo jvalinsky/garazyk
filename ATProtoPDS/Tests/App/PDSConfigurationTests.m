@@ -208,4 +208,40 @@
     [[NSFileManager defaultManager] removeItemAtPath:configPath error:nil];
 }
 
+- (void)testCanonicalIssuerUsesConfiguredIssuer {
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    config.issuer = @" https://Example.COM:443/path ";
+
+    NSString *canonicalIssuer = [config canonicalIssuerWithPortHint:9999];
+    XCTAssertEqualObjects(canonicalIssuer, @"https://example.com");
+    XCTAssertEqualObjects(config.canonicalHostname, @"example.com");
+}
+
+- (void)testCanonicalIssuerFallsBackToLocalhostForLocalBindHosts {
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    [config applyConfig:@{
+        @"server": @{
+            @"host": @"0.0.0.0",
+            @"port": @2583
+        }
+    }];
+
+    XCTAssertEqualObjects([config canonicalIssuerWithPortHint:0], @"http://localhost:2583");
+    XCTAssertEqualObjects(config.canonicalHostname, @"localhost");
+}
+
+- (void)testCanonicalIssuerUsesHintedPortForPublicHosts {
+    TestablePDSConfiguration *config = [[TestablePDSConfiguration alloc] initWithEnvironment:@{}];
+    [config applyConfig:@{
+        @"server": @{
+            @"host": @"PDS.EXAMPLE.COM",
+            @"port": @443
+        }
+    }];
+
+    XCTAssertEqualObjects([config canonicalIssuerWithPortHint:0], @"https://pds.example.com");
+    XCTAssertEqualObjects([config canonicalIssuerWithPortHint:8443], @"https://pds.example.com:8443");
+    XCTAssertEqualObjects(config.canonicalHostname, @"pds.example.com");
+}
+
 @end

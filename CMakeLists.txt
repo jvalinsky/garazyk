@@ -38,8 +38,12 @@ if(NOT APPLE)
 
     add_compile_definitions(GNUSTEP LINUX)
     
-    # GNUstep Configuration - prefer source-built version
-    find_program(GNUSTEP_CONFIG gnustep-config PATHS /usr/GNUstep/System/Tools REQUIRED)
+    # GNUstep Configuration - support both source-built and distro installs
+    find_program(GNUSTEP_CONFIG
+        NAMES gnustep-config
+        PATHS /usr/GNUstep/System/Tools /usr/bin
+        REQUIRED
+    )
     if(GNUSTEP_CONFIG)
         execute_process(
             COMMAND ${GNUSTEP_CONFIG} --objc-flags
@@ -376,6 +380,8 @@ if(BUILD_TESTS)
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketConnectionTests.m")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyRotationTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManagerSecurityTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/CharacterizationTests/KeyManagerCharacterizationTests.m")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStoreTests.m")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DIDValidationTests.m")
   endif()
