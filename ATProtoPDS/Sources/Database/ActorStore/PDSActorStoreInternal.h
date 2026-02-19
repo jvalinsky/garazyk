@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t transactionQueue;
+@property (nonatomic, strong) NSData *signingKeyData;
 #else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
 #endif

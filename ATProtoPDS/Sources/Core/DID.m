@@ -10,6 +10,10 @@
  @copyright Copyright (c) 2024 Jack Valinsky
  */
 
+#ifdef GNUSTEP
+#import "Compat/GNUstepCompat.h"
+#endif
+
 #import "Core/DID.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"

@@ -1,3 +1,7 @@
+#ifdef GNUSTEP
+#import "Compat/GNUstepCompat.h"
+#endif
+
 #import "Federation/FederationClient.h"
 #import "Core/DID.h"
 #import "Debug/PDSLogger.h"

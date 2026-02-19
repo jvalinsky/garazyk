@@ -4,7 +4,11 @@
 
 @interface PDSNonceManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *issuedNonces;
+#if defined(GNUSTEP) || defined(LINUX)
+@property (nonatomic, assign) dispatch_queue_t lockQueue;
+#else
 @property (nonatomic, strong) dispatch_queue_t lockQueue;
+#endif
 @end
 
 @implementation PDSNonceManager

@@ -635,10 +635,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     NSScanner *scanner = [NSScanner scannerWithString:cursor];
-    unsigned long long parsed = 0;
-    if (![scanner scanUnsignedLongLong:&parsed] || ![scanner isAtEnd]) {
+    long long signedParsed = 0;
+    // Use scanLongLong as scanUnsignedLongLong may not be available on GNUstep
+    if (![scanner scanLongLong:&signedParsed] || ![scanner isAtEnd] || signedParsed < 0) {
         return NO;
     }
+    unsigned long long parsed = (unsigned long long)signedParsed;
     if (parsed > (unsigned long long)NSUIntegerMax) {
         return NO;
     }

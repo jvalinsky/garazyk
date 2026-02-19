@@ -1,3 +1,7 @@
+#ifdef GNUSTEP
+#import "Compat/GNUstepCompat.h"
+#endif
+
 #import "SSLPinningManager.h"
 #import "App/PDSConfiguration.h"
 #import <Security/Security.h>
