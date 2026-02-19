@@ -33,19 +33,16 @@
 }
 
 - (void)testResolveDid {
-    // 1. Create a local account
-    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-    account.did = @"did:plc:testuser";
-    account.handle = @"testuser.bsky.social";
-    account.email = @"test@example.com";
-    account.passwordHash = [NSData data]; // Fake
-    account.passwordSalt = [NSData data]; // Fake
-    account.createdAt = [[NSDate date] timeIntervalSince1970];
-    account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    
+    // 1. Create a local account using the controller method
     NSError *createError = nil;
-    BOOL created = [self.controller.serviceDatabases createAccount:account error:&createError];
-    XCTAssertTrue(created, @"Failed to create account: %@", createError);
+    NSDictionary *accountInfo = [self.controller createAccountForEmail:@"test@example.com"
+                                                              password:@"password"
+                                                                handle:@"testuser.bsky.social"
+                                                                   did:nil
+                                                                 error:&createError];
+    XCTAssertNotNil(accountInfo, @"Failed to create account: %@", createError);
+    NSString *did = accountInfo[@"did"];
+    XCTAssertNotNil(did);
     
     // 2. Resolve DID via HTTP request to the running server
     // Since PDSController starts the server on a random port (or we can configure it), we need the port.
@@ -67,13 +64,13 @@
     // Alternative: Use `[self.controller.serverDispatch dispatchRequest:...]` if exposed.
     // `PDSController` has `dispatcher`?
     
-    // Let's use `NSURLSession` to hit localhost:2583 (default) if we key off that?
+    // Let's use `NSURLSession` to hit localhost:%lu (default) if we key off that?
     // Or just try to read the port from logs?
     
     // Better: `PDSController` should expose the port it bound to.
     // If not, we can rely on integration test standard (2583).
     
-    NSURL *url = [NSURL URLWithString:@"http://localhost:2583/xrpc/com.atproto.identity.resolveDid?did=did:plc:testuser"];
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.identity.resolveDid?did=%@", (unsigned long)self.controller.httpPort, did]];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"Resolve DID"];
@@ -85,9 +82,9 @@
         
         if (data) {
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            XCTAssertEqualObjects(json[@"id"], @"did:plc:testuser");
+            XCTAssertEqualObjects(json[@"id"], did);
             NSArray *aka = json[@"alsoKnownAs"];
-            XCTAssertTrue([aka containsObject:@"at://testuser.bsky.social"]);
+            XCTAssertTrue([aka containsObject:@"at://testuser.bsky.social"], @"alsoKnownAs should contain the handle");
         }
         
         [expectation fulfill];
@@ -97,17 +94,16 @@
 }
 
 - (void)testGetBlocks {
-    // 1. Create account
-    NSString *did = @"did:plc:blocks";
-    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-    account.did = did;
-    account.handle = @"blocks.test";
-    account.email = @"blocks@test.com";
-    account.passwordHash = [NSData data];
-    account.passwordSalt = [NSData data];
-    account.createdAt = [[NSDate date] timeIntervalSince1970];
-    account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    [self.controller.serviceDatabases createAccount:account error:nil];
+    // 1. Create account using the controller method
+    NSError *createError = nil;
+    NSDictionary *accountInfo = [self.controller createAccountForEmail:@"blocks@test.com"
+                                                              password:@"password"
+                                                                handle:@"blocks.test"
+                                                                   did:nil
+                                                                 error:&createError];
+    XCTAssertNotNil(accountInfo, @"Failed to create account: %@", createError);
+    NSString *did = accountInfo[@"did"];
+    XCTAssertNotNil(did);
     
     // 2. Inject blocks into ActorStore
     PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:nil];
@@ -132,7 +128,7 @@
     
     // 3. Request getBlocks
     // URL: /xrpc/com.atproto.sync.getBlocks?did=...&cids=...&cids=...
-    NSString *urlString = [NSString stringWithFormat:@"http://localhost:2583/xrpc/com.atproto.sync.getBlocks?did=%@&cids=%@&cids=%@", did, cid1Str, cid2Str];
+    NSString *urlString = [NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.sync.getBlocks?did=%@&cids=%@&cids=%@", (unsigned long)self.controller.httpPort, did, cid1Str, cid2Str];
     NSURL *url = [NSURL URLWithString:urlString];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
@@ -156,42 +152,74 @@
 }
 
 - (void)testGetLatestCommit {
-    // 1. Create account
-    NSString *did = @"did:plc:commit";
-    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-    account.did = did;
-    account.handle = @"commit.test";
-    account.email = @"commit@test.com";
-    account.passwordHash = [NSData data];
-    account.passwordSalt = [NSData data];
-    account.createdAt = [[NSDate date] timeIntervalSince1970];
-    account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    [self.controller.serviceDatabases createAccount:account error:nil];
+    // 1. Create account using the controller method
+    NSError *createError = nil;
+    NSDictionary *accountInfo = [self.controller createAccountForEmail:@"commit@test.com"
+                                                              password:@"password"
+                                                                handle:@"commit.test"
+                                                                   did:nil
+                                                                 error:&createError];
+    XCTAssertNotNil(accountInfo, @"Failed to create account: %@", createError);
+    NSString *did = accountInfo[@"did"];
+    XCTAssertNotNil(did);
+    NSLog(@"[testGetLatestCommit] Created account with DID: %@", did);
     
     // 2. Inject Repo Root
-    PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:nil];
+    NSError *storeError = nil;
+    PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:&storeError];
+    XCTAssertNotNil(store, @"Failed to get actor store: %@", storeError);
+    NSLog(@"[testGetLatestCommit] Got actor store");
+    
     NSString *rootCidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     NSData *rootBytes = [CID cidFromString:rootCidStr].bytes;
+    XCTAssertNotNil(rootBytes, @"Failed to create CID bytes");
     
+    NSError *transactError = nil;
     [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **err) {
-        [transactor updateRepoRoot:did rootCid:rootBytes rev:@"3k55555" error:nil];
-    } error:nil];
+        BOOL result = [transactor updateRepoRoot:did rootCid:rootBytes rev:@"3k55555" error:err];
+        NSLog(@"[testGetLatestCommit] updateRepoRoot result: %@, error: %@", result ? @"YES" : @"NO", *err);
+        XCTAssertTrue(result, @"Failed to update repo root");
+    } error:&transactError];
+    XCTAssertNil(transactError, @"Transaction error: %@", transactError);
+    NSLog(@"[testGetLatestCommit] Transaction completed");
     
-    // 3. Request getLatestCommit
-    NSString *urlString = [NSString stringWithFormat:@"http://localhost:2583/xrpc/com.atproto.sync.getLatestCommit?did=%@", did];
+    // 3. Verify we can read back the data
+    __block NSString *verifyCid = nil;
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **err) {
+        id<PDSActorStoreReader> reader = (id<PDSActorStoreReader>)transactor;
+        NSData *rootCidBytes = [reader getRepoRootForDid:did error:err];
+        if (rootCidBytes) {
+            CID *cid = [CID cidFromBytes:rootCidBytes];
+            verifyCid = cid.stringValue;
+        }
+        NSLog(@"[testGetLatestCommit] Verified root CID: %@", verifyCid);
+    } error:&transactError];
+    XCTAssertEqualObjects(verifyCid, rootCidStr, @"Root CID not stored correctly");
+    
+    // 4. Request getLatestCommit via HTTP
+    NSString *urlString = [NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.sync.getLatestCommit?did=%@", (unsigned long)self.controller.httpPort, did];
+    NSLog(@"[testGetLatestCommit] Requesting URL: %@", urlString);
     NSURL *url = [NSURL URLWithString:urlString];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
     XCTestExpectation *exp = [self expectationWithDescription:@"Get Latest Commit"];
     
     [[NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        NSLog(@"[testGetLatestCommit] HTTP response status: %ld", (long)((NSHTTPURLResponse *)response).statusCode);
         XCTAssertNil(error);
         NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)response;
-        XCTAssertEqual(httpResp.statusCode, 200);
         
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        XCTAssertEqualObjects(json[@"cid"], rootCidStr);
-        XCTAssertEqualObjects(json[@"rev"], @"3k55555");
+        if (httpResp.statusCode == 200 && data) {
+            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            NSLog(@"[testGetLatestCommit] Response JSON: %@", json);
+            XCTAssertEqualObjects(json[@"cid"], rootCidStr);
+            XCTAssertEqualObjects(json[@"rev"], @"3k55555");
+        } else if (data) {
+            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            NSLog(@"[testGetLatestCommit] Error response: %@", json);
+        }
+        
+        XCTAssertEqual(httpResp.statusCode, 200);
         
         [exp fulfill];
     }] resume];
