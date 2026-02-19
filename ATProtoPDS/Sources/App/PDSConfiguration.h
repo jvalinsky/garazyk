@@ -46,16 +46,17 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @interface PDSConfiguration : NSObject
 
 /*! Server host address. */
+@property (nonatomic, strong) NSString *issuer;
+@property (nonatomic, readonly) NSString *canonicalIssuer;
+
+/*! Server host address. */
 @property (nonatomic, readonly) NSString *serverHost;
 
 /*! Server port. */
-@property (nonatomic, readonly) NSUInteger serverPort;
+@property (nonatomic, assign) NSUInteger serverPort;
 
 /*! Path to data directory. */
 @property (nonatomic, readonly) NSString *dataDirectory;
-
-/*! The public issuer URL (PDS_ISSUER). */
-@property (nonatomic, copy, nullable) NSString *issuer;
 
 /*! PLC directory server URL. */
 @property (nonatomic, copy) NSString *plcURL;
