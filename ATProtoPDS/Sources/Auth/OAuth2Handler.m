@@ -43,8 +43,17 @@
         self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
         self.oauthServer.jwtMinter = self.minter;
 
-        // Use configurable issuer from PDSConfiguration, default to localhost
-        NSString *issuer = [PDSConfiguration sharedConfiguration].issuer ?: @"https://pds.local:8443";
+        // Keep env override behavior for tests/runtime while canonicalizing issuer shape.
+        PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+        NSString *envIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"];
+        NSString *issuer = nil;
+        if (envIssuer.length > 0) {
+            PDSConfiguration *envConfiguration = [[PDSConfiguration alloc] init];
+            envConfiguration.issuer = envIssuer;
+            issuer = [envConfiguration canonicalIssuerWithPortHint:0];
+        } else {
+            issuer = [configuration canonicalIssuerWithPortHint:0];
+        }
         self.oauthServer.issuer = issuer;
 
         // Build other endpoints relative to issuer
@@ -505,19 +514,33 @@
 
     NSError *dpopError = nil;
     NSString *dpopThumbprint = nil;
+    NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
+    if (requestedNonce.length == 0) {
+        requestedNonce = nil;
+    }
     if (![OAuth2DPoPProof verifyProof:dpopProof
                                method:request.methodString
                                   url:dpopURL
-                                nonce:nil
-                         requireNonce:NO
+                                nonce:requestedNonce
+                         requireNonce:YES
                         outThumbprint:&dpopThumbprint
                                 error:&dpopError]) {
-        if (dpopError.userInfo[@"use_dpop_nonce"]) {
-            [response setHeader:[[PDSNonceManager sharedManager] generateNonce] forKey:@"DPoP-Nonce"];
+        if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
+            NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+            if (nonce.length > 0) {
+                [response setHeader:nonce forKey:@"DPoP-Nonce"];
+            }
+            [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+            response.statusCode = 400;
+            [response setJsonBody:@{
+                @"error": @"use_dpop_nonce",
+                @"error_description": dpopError.localizedDescription ?: @"DPoP nonce required"
+            }];
+            return;
         }
         response.statusCode = 400;
         [response setJsonBody:@{
-            @"error": @"use_dpop_nonce",
+            @"error": @"invalid_dpop_proof",
             @"error_description": dpopError.localizedDescription ?: @"Invalid DPoP proof"
         }];
         return;

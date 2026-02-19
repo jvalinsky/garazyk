@@ -46,13 +46,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setConfigured;
 
 /*!
- @brief Set the PDS controller for configuration access.
+ @brief Set the account service used for usage statistics.
 
- @param controller The PDS controller instance.
- @deprecated Use setIssuer: and setConfigured instead.
+ @param accountService Service responding to `getAllAccountsWithError:`.
  */
-- (void)setController:(id)controller
-    DEPRECATED_MSG_ATTRIBUTE("Use setIssuer: and setConfigured instead");
+- (void)setAccountService:(id)accountService;
 
 /*!
  @brief Register NodeInfo routes with the HTTP server.

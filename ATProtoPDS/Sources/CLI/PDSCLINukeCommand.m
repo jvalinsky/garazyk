@@ -88,15 +88,11 @@
 
     // List what we're about to delete
     NSArray<NSString *> *dataFiles = @[
-        @"pds.db",
-        @"pds.db-shm",
-        @"pds.db-wal",
-        @"pds.db-journal",
         @"di",           // Per-user databases
         @"blobs",        // Blob storage
-        @"service.sqlite",
-        @"sequencer.sqlite", 
-        @"did_cache.sqlite"
+        @"service",      // Service database directory
+        @"sequencer",    // Sequencer database directory
+        @"did_cache"     // DID cache database directory
     ];
 
     NSUInteger deletedCount = 0;

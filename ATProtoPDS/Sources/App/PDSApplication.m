@@ -65,35 +65,6 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     exit(1);
 }
 
-static BOOL PDSApplicationHostIsLocal(NSString *host) {
-    NSString *normalized = [[host ?: @"" lowercaseString]
-        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return normalized.length == 0 ||
-           [normalized isEqualToString:@"localhost"] ||
-           [normalized isEqualToString:@"127.0.0.1"] ||
-           [normalized isEqualToString:@"::1"] ||
-           [normalized isEqualToString:@"0.0.0.0"];
-}
-
-static NSString *PDSApplicationCanonicalIssuer(PDSConfiguration *configuration, NSUInteger portHint) {
-    if (configuration.issuer.length > 0) {
-        return configuration.issuer;
-    }
-
-    NSString *host = configuration.serverHost;
-    if (PDSApplicationHostIsLocal(host)) {
-        host = @"localhost";
-    }
-    NSString *scheme = PDSApplicationHostIsLocal(host) ? @"http" : @"https";
-    NSUInteger port = portHint > 0 ? portHint : (configuration.serverPort > 0 ? configuration.serverPort : 2583);
-    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
-                       ([scheme isEqualToString:@"http"] && port == 80);
-    if (defaultPort) {
-        return [NSString stringWithFormat:@"%@://%@", scheme, host];
-    }
-    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
-}
-
 @implementation PDSApplication {
     SubscribeReposHandler *_subscribeReposHandler;
     XrpcDispatcher *_xrpcDispatcher;
@@ -263,7 +234,7 @@ static NSString *PDSApplicationCanonicalIssuer(PDSConfiguration *configuration, 
         PDS_LOG_ERROR(@"Core", @"PDS_ISSUER cannot use a local placeholder domain in production. Refusing to start.");
         exit(1);
     }
-    _jwtMinter.issuer = PDSApplicationCanonicalIssuer(_configuration, _httpPort);
+    _jwtMinter.issuer = [_configuration canonicalIssuerWithPortHint:_httpPort];
     _jwtMinter.signingAlgorithm = @"ES256K";
     
     // Generate server signing key
@@ -457,7 +428,7 @@ static NSString *PDSApplicationCanonicalIssuer(PDSConfiguration *configuration, 
     builder.serviceDatabases = _serviceDatabases;
     builder.xrpcDispatcher = _xrpcDispatcher;
     builder.subscribeReposHandler = _subscribeReposHandler;
-    builder.issuer = PDSApplicationCanonicalIssuer(_configuration, self.httpPort);
+    builder.issuer = [_configuration canonicalIssuerWithPortHint:self.httpPort];
     
     NSError *buildError = nil;
     _httpServer = [builder buildWithError:&buildError];
