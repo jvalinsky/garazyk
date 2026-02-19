@@ -1,11 +1,11 @@
 #import <XCTest/XCTest.h>
 #import "Auth/KeyRotationManager.h"
-#import "Auth/KeyManager.h"
+#import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
 
 @interface KeyRotationTests : XCTestCase
 
-@property (nonatomic, strong) KeyManager *keyManager;
+@property (nonatomic, strong) PDSAppleKeyManager *keyManager;
 @property (nonatomic, strong) KeyRotationManager *keyRotationManager;
 
 @end
@@ -15,7 +15,7 @@
 - (void)setUp {
     [super setUp];
     
-    self.keyManager = [[KeyManager alloc] init];
+    self.keyManager = [[PDSAppleKeyManager alloc] init];
     self.keyRotationManager = [[KeyRotationManager alloc] initWithKeyStore:self.keyManager];
 }
 
@@ -37,7 +37,7 @@
     
     // Generate a key
     NSError *error = nil;
-    KeyPair *keyPair = [self.keyManager generateKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
+    PDSAppleKeyPair *keyPair = [self.keyManager generatePDSAppleKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
     XCTAssertNotNil(keyPair);
     XCTAssertNil(error);
     
@@ -54,7 +54,7 @@
     
     // Generate a key
     NSError *error = nil;
-    KeyPair *keyPair = [self.keyManager generateKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
+    PDSAppleKeyPair *keyPair = [self.keyManager generatePDSAppleKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
     XCTAssertNotNil(keyPair);
     
     // Should have one valid key
@@ -84,7 +84,7 @@
 - (void)testJWTSigningWithKeyRotation {
     // Generate initial key
     NSError *error = nil;
-    [self.keyManager generateKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
+    [self.keyManager generatePDSAppleKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
     XCTAssertNil(error);
     
     // Create JWT minter with key rotation manager
@@ -111,7 +111,7 @@
 - (void)testJWTVerificationAfterKeyRotation {
     // Generate initial key
     NSError *error = nil;
-    [self.keyManager generateKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
+    [self.keyManager generatePDSAppleKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
     XCTAssertNil(error);
     
     // Create JWT minter with key rotation manager

@@ -683,9 +683,10 @@
                                             prev:storedCommitCID]; // Use stored ID (even if data mismatch) as prev
         
         // Attempt to sign with store key
-        NSData *key = [store signingKeyPrivateBytesWithError:nil];
-        if (key) {
-             [commit signWithPrivateKey:key error:nil];
+        // Attempt to sign with store key
+        NSData *signature = [store signData:[commit serialize] error:nil];
+        if (signature) {
+             commit.signature = signature;
         }
         
         commitBlock = [commit serialize];

@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Auth/KeyManager.h"
+#import "Auth/PDSAppleKeyManager.h"
 
 @interface KeyManagerSecurityTests : XCTestCase
 @end
@@ -7,9 +7,9 @@
 @implementation KeyManagerSecurityTests
 
 - (void)testJWKUsesBase64URLWithoutPadding {
-    KeyManager *manager = [[KeyManager alloc] initWithServiceIdentifier:@"com.atproto.pds.test.keys"];
+    PDSAppleKeyManager *manager = [[PDSAppleKeyManager alloc] initWithServiceIdentifier:@"com.atproto.pds.test.keys"];
     NSError *error = nil;
-    KeyPair *pair = [manager generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
+    id<PDSKeyPair> pair = [manager generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:&error];
     XCTAssertNotNil(pair);
     XCTAssertNil(error);
 
