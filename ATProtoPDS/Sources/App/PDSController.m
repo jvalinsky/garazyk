@@ -238,7 +238,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         _jwtMinter = [[JWTMinter alloc] init];
         
         _httpPort = 2583;
-        _jwtMinter.issuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+        _jwtMinter.issuer = [PDSConfiguration sharedConfiguration].issuer ?: @"https://pds.local:8443";
         _jwtMinter.signingAlgorithm = @"ES256K";
         
         NSError *serverKeyError = nil;
