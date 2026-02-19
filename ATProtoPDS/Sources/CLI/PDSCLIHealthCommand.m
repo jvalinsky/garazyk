@@ -1,7 +1,3 @@
-#ifdef GNUSTEP
-#import "Compat/GNUstepCompat.h"
-#endif
-
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
 
