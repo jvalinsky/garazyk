@@ -1,6 +1,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
 #import "App/PDSController.h"
+#import "App/PDSConfiguration.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #include <stdlib.h>
 
@@ -74,11 +75,20 @@ static BOOL PDSAdminAuthIsIssuerRequired(NSDictionary *env) {
 }
 
 static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredButMissing) {
+    // First check environment directly
     NSString *issuer = [env[@"PDS_ISSUER"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (issuer.length > 0) {
         if (requiredButMissing) *requiredButMissing = NO;
         return issuer;
     }
+    
+    // Fall back to PDSConfiguration shared instance
+    NSString *configIssuer = [PDSConfiguration sharedConfiguration].issuer;
+    if (configIssuer.length > 0) {
+        if (requiredButMissing) *requiredButMissing = NO;
+        return configIssuer;
+    }
+    
     if (PDSAdminAuthIsIssuerRequired(env)) {
         if (requiredButMissing) *requiredButMissing = YES;
         return nil;
