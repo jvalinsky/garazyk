@@ -64,7 +64,10 @@ Completed:
 ## Phase 6 — Reliability and Hygiene (P2)
 **Goal:** Harden tests and websocket lifecycle.
 ### Tasks
-- [ ] Fix `CoverageGapTests` nil-data crash (pre-existing issue).
+- [x] Fix `CoverageGapTests` nil-data crash:
+  - Fixed routing for paths with parameters (registered `/xrpc` without trailing slash)
+  - Fixed Content-Type handling in `getBlocks`
+  - Improved test reliability with dynamic ports and better setup
 - [ ] Tighten websocket connection and backpressure management.
 
 ---
@@ -83,11 +86,10 @@ Completed:
 
 ## Recommended Next Steps
 
-1. **Phase 6a** — Fix CoverageGapTests nil-data crash
-2. **Phase 6b** — Tighten websocket connection and backpressure management
-3. **Documentation** — Update docs to match actual on-disk layout (can be deferred)
+1. **Phase 6b** — Tighten websocket connection and backpressure management
+2. **Documentation** — Update docs to match actual on-disk layout (can be deferred)
 
-All P0 and P1 work is now complete. Remaining work is P2 reliability improvements.
+All P0 and P1 work is complete. CoverageGapTests passed. Remaining work is low priority.
 
 ---
 
@@ -99,3 +101,6 @@ All P0 and P1 work is now complete. Remaining work is P2 reliability improvement
 4. `310a01e` - feat(endpoints): implement 5 missing com.atproto.* methods
 5. `254c4a0` - docs(plan): update next steps to reflect completed work
 6. `b077585` - refactor(config): unify PDS_ISSUER usage through PDSConfiguration
+7. `66260a2` - docs(plan): mark Phase 5 as complete
+8. `2ecc88a` - test(coverage): improve CoverageGapTests with better error handling
+9. `9264c25` - fix(coverage): resolve CoverageGapTests failures
