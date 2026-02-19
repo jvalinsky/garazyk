@@ -2,6 +2,7 @@
 #import "App/Services/PDSAccountService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/PDSDatabase.h"
 
 @interface PDSAccountServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -97,6 +98,61 @@
                                                     error:&error];
     XCTAssertNil(session);
     XCTAssertNotNil(error);
+}
+
+- (void)testRefreshAccessToken_RotatesRefreshToken {
+    // Arrange: Create account and login to get initial tokens
+    NSError *error = nil;
+    NSDictionary *initialSession = [self.service createAccountForEmail:@"rotation@example.com"
+                                                              password:@"password123"
+                                                                handle:@"rotation.example.com"
+                                                                   did:nil
+                                                                 error:&error];
+    XCTAssertNotNil(initialSession, @"Should create account successfully");
+    XCTAssertNil(error, @"Should not have error creating account");
+    
+    NSString *originalRefreshToken = initialSession[@"refreshJwt"];
+    XCTAssertNotNil(originalRefreshToken, @"Should have refresh token");
+    
+    // Verify original token is valid by looking up account
+    PDSDatabaseAccount *accountBefore = [self.service.serviceDatabases getAccountByRefreshToken:originalRefreshToken error:&error];
+    XCTAssertNotNil(accountBefore, @"Original refresh token should be valid before rotation");
+    
+    // Act: Refresh the access token
+    error = nil;
+    NSDictionary *refreshedSession = [self.service refreshAccessToken:originalRefreshToken error:&error];
+    
+    // Assert: Should get new tokens
+    XCTAssertNotNil(refreshedSession, @"Should return refreshed session");
+    XCTAssertNil(error, @"Should not have error refreshing token");
+    XCTAssertNotNil(refreshedSession[@"accessJwt"], @"Should return new access token");
+    XCTAssertNotNil(refreshedSession[@"refreshJwt"], @"Should return new refresh token");
+    XCTAssertNotEqualObjects(refreshedSession[@"refreshJwt"], originalRefreshToken, @"New refresh token should be different from original");
+    
+    // Assert: Old token should be revoked (no longer valid)
+    error = nil;
+    PDSDatabaseAccount *accountAfterOldToken = [self.service.serviceDatabases getAccountByRefreshToken:originalRefreshToken error:&error];
+    XCTAssertNil(accountAfterOldToken, @"Old refresh token should be revoked after rotation");
+    
+    // Assert: New token should be valid
+    NSString *newRefreshToken = refreshedSession[@"refreshJwt"];
+    error = nil;
+    PDSDatabaseAccount *accountAfterNewToken = [self.service.serviceDatabases getAccountByRefreshToken:newRefreshToken error:&error];
+    XCTAssertNotNil(accountAfterNewToken, @"New refresh token should be valid");
+    XCTAssertEqualObjects(accountAfterNewToken.did, accountBefore.did, @"New token should resolve to same account");
+}
+
+- (void)testRefreshAccessToken_InvalidTokenReturnsError {
+    // Arrange: Use an invalid/non-existent refresh token
+    NSString *invalidToken = @"invalid-token-12345";
+    
+    // Act: Attempt to refresh with invalid token
+    NSError *error = nil;
+    NSDictionary *session = [self.service refreshAccessToken:invalidToken error:&error];
+    
+    // Assert: Should fail with error
+    XCTAssertNil(session, @"Should not return session for invalid token");
+    XCTAssertNotNil(error, @"Should return error for invalid token");
 }
 
 @end
