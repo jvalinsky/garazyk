@@ -14,6 +14,7 @@
 @class HttpServer;
 @class HttpRequest;
 @class HttpResponse;
+@protocol PDSAccountService;
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
@@ -45,12 +46,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)setConfigured;
 
+
+
 /*!
  @brief Set the account service used for usage statistics.
 
  @param accountService Service responding to `getAllAccountsWithError:`.
  */
-- (void)setAccountService:(id)accountService;
+- (void)setAccountService:(id<PDSAccountService>)accountService;
 
 /*!
  @brief Register NodeInfo routes with the HTTP server.

@@ -6,11 +6,12 @@
 #import "NodeInfoProvider.h"
 #import "NodeInfoSchemas.h"
 #import "Debug/PDSLogger.h"
+#import "App/Services/PDSAccountService.h"
 
 @interface NodeInfoHandler ()
 @property (nonatomic, strong) NodeInfoProvider *provider;
 @property (nonatomic, copy) NSString *issuer;
-@property (nonatomic, weak) id accountService;
+@property (nonatomic, weak) id<PDSAccountService> accountService;
 @property (nonatomic, assign) BOOL configured;
 @end
 
@@ -45,26 +46,31 @@
     [self updateProvider];
 }
 
-- (void)setAccountService:(id)accountService {
+- (void)setAccountService:(id<PDSAccountService>)accountService {
     _accountService = accountService;
     [self updateProvider];
 }
 
 - (void)updateProvider {
-    if (!_issuer || !_configured) {
-        return;
-    }
-
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *effectiveIssuer = _issuer ?: config.canonicalIssuer;
+
+    if (!effectiveIssuer || (!_configured && !_issuer)) {
+        // If not configured via setter and no config available (unlikely), fallback.
+        // Actually, if we use config.canonicalIssuer, we might consider it 'configured'.
+    }
+    
+    if (!effectiveIssuer) return;
+
     if (!config) {
         return;
     }
 
-    _provider = [[NodeInfoProvider alloc] initWithBaseURL:_issuer configuration:config];
+    _provider = [[NodeInfoProvider alloc] initWithBaseURL:effectiveIssuer configuration:config];
     
     // Fetch stats if account service is available.
-    if ([self.accountService respondsToSelector:@selector(getAllAccountsWithError:)]) {
-        NSArray *accounts = [self.accountService performSelector:@selector(getAllAccountsWithError:) withObject:nil];
+    if (self.accountService) {
+        NSArray *accounts = [self.accountService getAllAccountsWithError:nil];
         if (accounts) {
             _provider.totalUsers = accounts.count;
             // NodeInfo doesn't model ATProto-specific content classes directly.
