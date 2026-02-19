@@ -322,7 +322,7 @@
 - (void)setNodeHash:(CID *)hash {
     // Store the computed hash (used for caching)
     // Note: In our implementation, hashes are computed on-demand via getCID:
-    // This method exists for compatibility but is not actively used
+    // Kept for API compatibility; current code paths do not persist nodeHash here.
 }
 
 - (NSArray<MSTEntry *> *)fullEntries {

@@ -1,6 +1,6 @@
 # Testing Guide
 
-This document provides a comprehensive overview of the testing strategy for `ATProtoPDS`. The test suite mirrors the architecture of the AT Protocol, ensuring compliance with the official specifications.
+This document describes the `ATProtoPDS` testing strategy. The test suites are organized by protocol and subsystem so failures map to concrete implementation areas.
 
 ## Running Tests
 
@@ -33,7 +33,7 @@ make -j$(nproc)
 
 ## Identity & Authentication
 
-This section details the comprehensive testing suite for identity resolution, authentication flows, and security primitives.
+This section covers identity resolution, authentication flows, and core security primitives.
 
 ### Identity System
 
@@ -128,7 +128,7 @@ These tests ensure the PDS complies with the authenticated data structure standa
 These tests validate the fundamental data types and validation logic used throughout the system.
 
 *   **ATProtoCoreTests**
-    *   **What**: Comprehensive suite for CIDs, TIDs (Timestamp Identifiers), CBOR encoding, and JWTs.
+    *   **What**: Coverage for CIDs, TIDs (Timestamp Identifiers), CBOR encoding, and JWTs.
     *   **Why**: These primitives are the building blocks of the protocol.
     *   **Edge Cases**:
         *   **DAG-CBOR Compliance**: Enforces canonical bytewise key sorting in CBOR maps (critical for signature verification).
@@ -244,10 +244,10 @@ The tests use XCTest's `measureBlock:` for consistent benchmarking. Results incl
 
 ## Network & Synchronization
 
-The networking layer is the backbone of the PDS, handling HTTP/1.1 requests, XRPC commands, and WebSocket-based synchronization (Firehose).
+The networking layer handles HTTP/1.1 requests, XRPC methods, and WebSocket firehose synchronization.
 
 ### Core Networking
-Tests in `Tests/Network` validate the custom HTTP stack implementation, ensuring it is robust enough to replace standard frameworks where necessary for portability (Linux/BSD).
+Tests in `Tests/Network` validate the custom HTTP stack used for portability-sensitive paths (Linux/BSD).
 
 *   **HTTP Stack** (`HttpServerTests`, `HttpRequestParsingTests`, `HttpResponseTests`):
     *   **Parsing**: GET query parameters, POST JSON bodies, Multipart forms, and `Transfer-Encoding: chunked`.
@@ -287,7 +287,7 @@ Tests in `Tests/Sync` cover the real-time event stream used to replicate data ac
 ## Application & Database Layer
 
 ### Database Layer
-The database layer uses a multi-tenant architecture with a shared service database and individual SQLite databases for each user (ActorStore).
+The database layer uses a shared service database plus per-user SQLite databases (`ActorStore`).
 
 *   **ActorStore** (`ActorStoreTests`)
     *   **What it tests:** Verifies CRUD operations for accounts, records, blocks (MST nodes), and blobs within a user's isolated database. Also tests key management and transaction support.
@@ -297,7 +297,7 @@ The database layer uses a multi-tenant architecture with a shared service databa
 *   **DatabasePool** (`DatabasePoolTests`)
     *   **What it tests:** Verifies the connection pooling logic, including LRU eviction, maximum size enforcement, and thread safety.
     *   **Why it exists:** Crucial for resource management (file descriptors) when serving thousands of users.
-    *   **Role:** Manages the lifecycle of `ActorStore` instances, providing efficient access while respecting resource limits.
+    *   **Role:** Manages the lifecycle of `ActorStore` instances, providing pooled access while respecting resource limits.
 
 *   **ServiceDatabases** (`ServiceDatabasesTests`)
     *   **What it tests:** Verifies persistence for service-wide entities like Accounts (DID/Handle mapping), Invite Codes, and the DID Cache.
