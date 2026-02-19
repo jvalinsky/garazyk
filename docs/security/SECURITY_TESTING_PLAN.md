@@ -1,7 +1,7 @@
 # ATProto PDS Security Testing Plan
 
 **Generated:** 2026-01-07
-**Scope:** Comprehensive security testing for parsing exploits, SQL injection, and blob upload vulnerabilities
+**Scope:** Security testing for parsing exploits, SQL injection, and blob upload vulnerabilities
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Executive Summary
 
-This document defines a security testing plan for the Objective-C ATProto PDS implementation. The testing focuses on three critical areas:
+Security testing focuses on three critical areas:
 
 | Category | Risk Level | Primary Concerns |
 |----------|------------|------------------|
@@ -834,9 +834,3 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 5. [CVE-2024-7254 Protobuf](https://asec.ahnlab.com/en/84033/)
 6. [SQLite Fuzzing](https://sqlite.org/afl/doc/trunk/README.md)
 7. [PortSwigger File Upload Testing](https://portswigger.net/web-security/file-upload)
-
----
-
-## Document Maintenance
-
-This document requires updates when new vulnerabilities are discovered or the codebase evolves.

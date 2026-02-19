@@ -14,7 +14,8 @@
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "PDSKeyManagerProtocol.h"
-#import "Auth/KeyRotationManager.h"
+#import "Auth/PDSKeyManagerProtocol.h"
+#import "Auth/PDSActorKeyManagerProtocol.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const JWTErrorDomain = @"com.atproto.pds.jwt";
@@ -231,7 +232,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @synthesize allowedAlgorithms = _allowedAlgorithms;
 @synthesize clockOffset = _clockOffset;
 @synthesize publicKey = _publicKey;
-@synthesize keyRotationManager = _keyRotationManager;
+@synthesize keyManager = _keyManager;
 @synthesize allowMissingSubject = _allowMissingSubject;
 
 - (instancetype)init {
@@ -259,29 +260,53 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     BOOL verified = NO;
     NSString *alg = jwt.header.alg ?: @"";
     if ([alg isEqualToString:@"ES256K"]) {
-        if (!self.publicKey) {
+        if (self.publicKey) {
+            Secp256k1 *secp = [Secp256k1 shared];
+            unsigned char hash[32];
+            CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+            NSData *hashData = [NSData dataWithBytes:hash length:32];
+            verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+        } else if (self.keyManager) {
+            NSString *kid = jwt.header.kid;
+            if (kid) {
+                verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
+            } else {
+                // Legacy path for ES256K without kid (standard for actor keys)
+                // Use the first available key if no kid is present
+                id<PDSKeyPair> active = [self.keyManager getActiveKeyPair:error];
+                if (active) {
+                    verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:active.keyID error:error];
+                }
+            }
+        } else {
             if (error) {
                 *error = [NSError errorWithDomain:JWTErrorDomain
                                              code:JWTErrorNoPublicKey
-                                         userInfo:@{NSLocalizedDescriptionKey: @"No public key configured for ES256K signature verification"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No public key or key manager configured for ES256K signature verification"}];
             }
             return NO;
         }
-        Secp256k1 *secp = [Secp256k1 shared];
-        unsigned char hash[32];
-        CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
-        NSData *hashData = [NSData dataWithBytes:hash length:32];
-        verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
     } else {
-        if (!self.keyRotationManager) {
+        if (!self.keyManager) {
             if (error) {
                 *error = [NSError errorWithDomain:JWTErrorDomain
                                              code:JWTErrorNoPublicKey
-                                         userInfo:@{NSLocalizedDescriptionKey: @"No key rotation manager configured for signature verification"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No key manager configured for signature verification"}];
             }
             return NO;
         }
-        verified = [self.keyRotationManager verifySignature:signatureData forData:signingInputData error:error];
+        // Extract kid from header
+        NSString *kid = jwt.header.kid;
+        if (!kid) {
+             if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidHeader
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing 'kid' in header"}];
+            }
+            return NO;
+        }
+        
+        verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
     }
 
     if (!verified) {
@@ -362,7 +387,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @synthesize defaultExpiration = _defaultExpiration;
 @synthesize privateKey = _privateKey;
 @synthesize publicKey = _publicKey;
-@synthesize keyRotationManager = _keyRotationManager;
+@synthesize keyManager = _keyManager;
 
 - (instancetype)init {
     self = [super init];
@@ -374,6 +399,9 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (NSString *)signPayload:(NSDictionary *)payload keyManager:(id<PDSKeyManager>)keyManager error:(NSError **)error {
+    id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:error];
+    if (!activeKey) return nil;
+
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
     if (!payloadData) return nil;
 
@@ -381,7 +409,37 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (!payloadEncoded) return nil;
 
     NSMutableDictionary *header = [NSMutableDictionary dictionary];
-    header[@"alg"] = @"ES256K"; // Assuming Actor keys are always ES256K
+    header[@"alg"] = activeKey.algorithm;
+    header[@"typ"] = @"JWT";
+    header[@"kid"] = activeKey.keyID;
+
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
+    if (!headerData) return nil;
+
+    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+    if (!headerEncoded) return nil;
+
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded];
+    NSData *dataToSign = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+
+    NSData *signatureData = [keyManager signData:dataToSign withKeyID:activeKey.keyID error:error];
+    if (!signatureData) return nil;
+
+    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+    if (!signatureEncoded) return nil;
+
+    return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, signatureEncoded];
+}
+
+- (NSString *)signPayload:(NSDictionary *)payload actorKeyManager:(id<PDSActorKeyManager>)keyManager error:(NSError **)error {
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
+    if (!payloadData) return nil;
+
+    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+    if (!payloadEncoded) return nil;
+
+    NSMutableDictionary *header = [NSMutableDictionary dictionary];
+    header[@"alg"] = @"ES256K"; // Actor keys are ES256K
     header[@"typ"] = @"JWT";
 
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
@@ -393,22 +451,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded];
     NSData *dataToSign = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSData *signatureData = nil;
-    // Compatibility path for legacy key managers that expose signData:error:
-    if ([(id)keyManager respondsToSelector:@selector(signData:error:)]) {
-        signatureData = [(id)keyManager signData:dataToSign error:error];
-    } else {
-        id<PDSKeyPair>activeKey = [keyManager getActiveKeyPair:error];
-        if (!activeKey || activeKey.keyID.length == 0) {
-            if (error && *error == nil) {
-                *error = [NSError errorWithDomain:JWTErrorDomain
-                                             code:JWTErrorSigningFailed
-                                         userInfo:@{NSLocalizedDescriptionKey: @"No active signing key available"}];
-            }
-            return nil;
-        }
-        signatureData = [keyManager signData:dataToSign withKeyID:activeKey.keyID error:error];
-    }
+    NSData *signatureData = [keyManager signData:dataToSign error:error];
     if (!signatureData) return nil;
 
     NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
@@ -417,7 +460,12 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, signatureEncoded];
 }
 
+
 - (NSString *)signPayload:(NSDictionary *)payload error:(NSError **)error {
+    if (self.keyManager) {
+        return [self signPayload:payload keyManager:self.keyManager error:error];
+    }
+
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
     if (!payloadData) return nil;
 
@@ -448,8 +496,11 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 - (NSData *)signData:(NSString *)data error:(NSError **)error {
     NSData *dataBytes = [data dataUsingEncoding:NSUTF8StringEncoding];
     
-    if (self.keyRotationManager) {
-        return [self.keyRotationManager signData:dataBytes error:error];
+    if (self.keyManager) {
+        // Use active key ID if available, or generate/get one
+        id<PDSKeyPair> active = [self.keyManager getActiveKeyPair:error];
+        if (!active) return nil;
+        return [self.keyManager signData:dataBytes withKeyID:active.keyID error:error];
     }
     
     if (self.privateKey) {
@@ -534,8 +585,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (NSDictionary *)toJWKS {
-    if (self.keyRotationManager) {
-        return [self.keyRotationManager toJWKS];
+    if (self.keyManager) {
+        return [self.keyManager toJWKS];
     }
     
     if (self.publicKey) {

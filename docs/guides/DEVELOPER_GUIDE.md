@@ -22,7 +22,6 @@ ATProtoPDS/
 │   ├── quality_gate.sh       # Code quality and static analysis
 │   └── run-tests.sh          # Test suite runner
 ├── skills/                   # Development skills and best practices
-│   └── professional-bash-scripting/SKILL.md  # Bash scripting standards
 ├── CMakeLists.txt            # Main build configuration
 └── project.yml               # Xcode project configuration
 ```
@@ -84,12 +83,12 @@ Fuzzer binaries will be at `./build/fuzzing/`.
 
 ### Script Development Standards
 
-All shell scripts in this project follow professional bash scripting standards as documented in `skills/professional-bash-scripting/SKILL.md`. Key requirements:
+All shell scripts follow the bash scripting standards documented in `docs/guides/SCRIPT_DEVELOPMENT.md`. Key requirements:
 
 #### Script Structure
 - Use `#!/usr/bin/env bash` shebang for portability
 - Set shell options: `set -euo pipefail`
-- Include comprehensive header documentation
+- Include header documentation with purpose and usage
 - Implement proper error handling with trap handlers
 - Use structured logging (debug, info, warn, error)
 
@@ -375,10 +374,8 @@ If you encounter build errors:
 
 - API Documentation: `http://localhost:2583/explore/api/docs`
 - OpenAPI Specification: `http://localhost:2583/explore/api/openapi.yaml`
-- Architecture Documentation: `docs/ARCHITECTURE_DIAGRAMS.md`
-- Session Summary: `docs/SESSION_SUMMARY.md`
+- Architecture Documentation: `docs/architecture/ARCHITECTURE_DIAGRAMS.md`
 - Script Development Standards: `docs/guides/SCRIPT_DEVELOPMENT.md`
-- Professional Bash Scripting: `skills/professional-bash-scripting/SKILL.md`
 
 ### Contributing
 

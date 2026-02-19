@@ -18,7 +18,7 @@ Objective-C, SQLite, macOS Foundation/Network frameworks, ATProto XRPC protocol,
 - Full MST implementation with proper root CID tracking
 - CAR file generation and parsing for repository export
 - Blockstore integration for content-addressed storage
-- Efficient diff-based synchronization
+- Diff-based synchronization with revision tracking
 
 ### Federation Features
 - Inter-server communication protocols
@@ -33,7 +33,7 @@ Objective-C, SQLite, macOS Foundation/Network frameworks, ATProto XRPC protocol,
 - Appeal and review workflows
 
 ### Performance & Scalability
-- Efficient query optimization
+- Query optimization with indexed lookups
 - Caching strategies for hot data
 - Background job processing
 - Rate limiting and abuse prevention
@@ -84,7 +84,7 @@ Separate blob storage from repository block storage.
 Store blocks by CID with deduplication.
 
 **Step 3: Add Block Retrieval APIs**
-Efficient block lookup and streaming.
+Block lookup and streaming by CID.
 
 ### Phase 1B: Federation Foundations (Weeks 3-4)
 
@@ -127,7 +127,7 @@ Tables for labels, labelers, and label targets.
 Create, read, update label assignments.
 
 **Step 3: Add Label Query APIs**
-Efficient label filtering and aggregation.
+Label filtering and aggregation by target.
 
 #### Task 7: Moderation Actions
 
@@ -155,7 +155,7 @@ Optimize common query patterns.
 Memcached/Redis integration for hot data.
 
 **Step 3: Add Pagination Helpers**
-Efficient cursor-based pagination.
+Cursor-based pagination with TID ordering.
 
 #### Task 9: Rate Limiting & Security
 
@@ -170,7 +170,7 @@ Input sanitization and size limits.
 **Step 3: Implement Abuse Detection**
 Automated blocking of malicious patterns.
 
-#### Task 10: Comprehensive Testing
+#### Task 10: Testing
 
 **Files:** Modify `test_endpoints.sh`, Create `ATProtoPDS/ATProtoPDS/Tests/IntegrationTests.m`, Create `ATProtoPDS/ATProtoPDS/Tests/PerformanceTests.m`
 
@@ -224,7 +224,7 @@ Fault injection and recovery testing.
 - Security audit clean
 
 ### Operational
-- Comprehensive logging and monitoring
+- Structured logging with os_log and metrics integration
 - Automated deployment pipeline
 - Rollback procedures documented
 - Production configuration templates

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This skill performs comprehensive compliance reviews of ATProto Personal Data Server (PDS) implementations against official ATProto specifications. It analyzes codebases for adherence to protocol requirements, identifies compliance gaps, and provides structured remediation recommendations.
+Audits ATProto PDS implementations against official specifications. Checks protocol requirements, identifies gaps, and outputs remediation steps with code references.
 
 ## Supported Specifications
 
@@ -26,8 +26,8 @@ atproto-compliance-review --codebase-path /path/to/pds
 # Focus on specific areas
 atproto-compliance-review --codebase-path /path/to/pds --focus-areas xrpc oauth repository
 
-# Comprehensive analysis with detailed reporting
-atproto-compliance-review --codebase-path /path/to/pds --compliance-level comprehensive --output-format all
+# Full specification scan (XRPC, OAuth, Repository, DID, Handle)
+atproto-compliance-review --codebase-path /path/to/pds --compliance-level full --output-format all
 ```
 
 ## Compliance Check Categories
@@ -74,7 +74,7 @@ Machine-readable compliance checklist with pass/fail status for each requirement
 High-level overview of compliance status with risk assessment and priority recommendations.
 
 ### Detailed Gap Analysis
-Comprehensive analysis of non-compliant areas with specific code references and remediation steps.
+Lists non-compliant areas with file paths, line numbers, spec citations, and fix suggestions.
 
 ## Integration Points
 

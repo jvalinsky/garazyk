@@ -83,6 +83,14 @@ NS_ASSUME_NONNULL_BEGIN
                              error:(NSError **)error;
 
 /**
+ * @brief Verify a signature for raw data
+ */
+- (BOOL)verifySignature:(NSData *)signature
+                forData:(NSData *)data
+              withKeyID:(NSString *)keyID
+                  error:(NSError **)error;
+
+/**
  * @brief Export all public keys as JSON Web Key Set (JWKS)
  */
 - (NSDictionary *)toJWKS;

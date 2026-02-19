@@ -3,7 +3,7 @@
 > **Status:** Draft
 > **Scope:** ATProtoPDS Project
 
-This comprehensive guide aggregates best practices for Objective-C development within the `ATProtoPDS` project. It covers modern syntax, memory management, architectural patterns, and runtime features.
+Guide for Objective-C development within `ATProtoPDS`, covering modern syntax, memory management, architectural patterns, and runtime features.
 
 ---
 
@@ -40,7 +40,6 @@ Generics provide compile-time type checking for collections.
 
 **Example (`PDSDatabase.m`):**
 ```objective-c
-// Returns an array of dictionaries, not just raw objects
 - (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error;
 ```
 
@@ -386,7 +385,7 @@ objc_setAssociatedObject(self, &kKey, value, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
 ## Part 6: Memory Debugging Session (Jan 2026)
 
-This section documents issues discovered and fixed during a comprehensive memory analysis session using the memory-analysis skill.
+Issues discovered and fixed during a memory analysis session (Jan 2026).
 
 ### 1. Retain Cycles in Route Handlers
 

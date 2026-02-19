@@ -1397,7 +1397,7 @@ https://resend.com/domains
 
 ```bash
 git add config/email-resend-env.json
-# Note: Keychain config is just an example
+# Note: Keychain config is an example
 git add config/email-resend-keychain.json
 git add config/EMAIL_SETUP.md
 git commit -m "docs: add Resend email configuration examples and setup guide"
@@ -1511,7 +1511,7 @@ git commit -m "docs: add email configuration section to README"
   - `PDSEmailHTTPClient` shared HTTP client with retry logic
   - `PDSResendEmailProvider` - Resend API integration as HTTP example
   - Support for both Keychain and environment variable secrets
-  - Comprehensive test coverage for all new components
+  - Unit tests for all new components
   - Configuration examples and setup documentation
 
 ### Changed
@@ -1611,7 +1611,7 @@ git status
 ✅ **Protocol-based design** - No inheritance coupling, maximum flexibility
 ✅ **Dual secrets management** - Keychain for production, env vars for flexibility
 ✅ **Resend integration** - Working HTTP API example with retry logic
-✅ **Comprehensive testing** - Unit tests for all components
+✅ **Unit tests** - Tests for all components
 ✅ **Production ready** - Error handling, logging, security best practices
 ✅ **Well documented** - Setup guides, examples, README updates
 

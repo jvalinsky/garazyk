@@ -2,7 +2,7 @@
 
 ## Current Status: Spec-Compliant & Verified (Feb 2026)
 
-The project has successfully reached **Phase 10**, achieving full AT Protocol specification compliance with native implementation and comprehensive verification.
+The project has reached **Phase 10**, achieving AT Protocol specification compliance with native implementation and 901 passing conformance tests.
 
 ### Completed Milestones
 
@@ -44,7 +44,7 @@ The project has successfully reached **Phase 10**, achieving full AT Protocol sp
 - [x] Achieved 100% test pass rate (901/901)
 
 #### Phase 7: Polish
-- [x] Optimized MST rebuilds
+- [x] MST rebuilds optimized for batch writes
 - [x] Wipe-and-rebuild utilities
 
 #### Phase 9: PLC Server Compliance

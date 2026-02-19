@@ -414,7 +414,7 @@ Please report security issues privately to [security@jvalinsky.com](mailto:secur
 ### Testing
 To run the automated test suite:
 ```bash
-./scripts/run_tests.sh
+./scripts/run-tests.sh
 ```
 
 ### Backups
@@ -495,5 +495,3 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 - **Advanced Security**: OAuth 2.0 Request Object signing, DPoP, and Biometric Keychain integration
 - **Performance**: Reduced MST rebuild cost and request fan-out latency on hot paths
 - **Testing**: Expanded suite to 901+ tests covering all edge cases
-
-See [SESSION_SUMMARY.md](docs/SESSION_SUMMARY.md) for detailed implementation notes.
