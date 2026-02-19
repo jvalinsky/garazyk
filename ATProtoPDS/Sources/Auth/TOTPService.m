@@ -3,6 +3,7 @@
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/YubiKeyOATH.h"
+#import "Auth/PDSAppleKeyManager.h"
 
 #if defined(GNUSTEP)
 #import <qrencode.h>
