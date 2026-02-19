@@ -5328,8 +5328,8 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         verifier.publicKey = jwtMinter.publicKey;
     }
 
-    // Use configurable issuer from environment, default to localhost
-    NSString *expectedIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443";
+    // Use configurable issuer from PDSConfiguration, default to localhost
+    NSString *expectedIssuer = [PDSConfiguration sharedConfiguration].issuer ?: @"https://pds.local:8443";
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
     verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(jwtMinter);
