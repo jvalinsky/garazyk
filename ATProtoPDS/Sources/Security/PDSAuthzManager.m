@@ -165,10 +165,9 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
         return NO;
     }
 
-    // P0 Security Fix: Removed handle/DID prefix-based admin escalation.
-    // Admin privileges must be granted via JWT scope 'admin' signed by the correct issuer.
-    // This method now returns NO by default to prevent unauthorized access via this path.
-    // The calling layer (XrpcMethodRegistry) is responsible for verifying the admin JWT.
+    // Legacy handle/DID prefix-based escalation was removed.
+    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
+    // Keep this path deny-by-default to avoid accidental bypass.
     
     if (error) {
         *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorAdminRequired userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (check JWT scope)"}];

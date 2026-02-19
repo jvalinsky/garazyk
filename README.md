@@ -12,7 +12,7 @@ Standards-compliant AT Protocol Personal Data Server (PDS) implementation writte
 - **Interactive Explorer** - Web-based UI for exploring AT Protocol data
 - **Auto-Generated API Docs** - OpenAPI 3.0 specification with interactive Swagger UI
 - **Unified Logging** - Structured JSON logging with component filtering and request correlation
-- **Comprehensive Test Suite** - 900+ tests across protocol, auth, repository, and integration layers
+- **Test Coverage** - 900+ tests across protocol, auth, repository, and integration layers
 
 ## Table of Contents
 
@@ -473,7 +473,7 @@ A database dump utility is provided to inspect PDS data:
 - **Performance Optimization**: More caching strategies
 - **New Features**: Additional AT Protocol support
 - **UI/UX**: Better web interface
-- **Testing**: More comprehensive test coverage
+- **Testing**: Add coverage for untested modules and failure paths
 - **Documentation**: User guides and tutorials
 
 ## License
@@ -493,7 +493,7 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 - **Full ATProto Compliance**: Canonical DAG-CBOR encoding, CAR v1 emission, correct CID-link framing
 - **Firehose V2**: Spec-compliant `subscribeRepos` stream with real back-fill and cursor support
 - **Advanced Security**: OAuth 2.0 Request Object signing, DPoP, and Biometric Keychain integration
-- **Performance**: Optimized MST rebuilding and parallel request handling
+- **Performance**: Reduced MST rebuild cost and request fan-out latency on hot paths
 - **Testing**: Expanded suite to 901+ tests covering all edge cases
 
 See [SESSION_SUMMARY.md](docs/SESSION_SUMMARY.md) for detailed implementation notes.

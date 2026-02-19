@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive analysis of the ATProto Personal Data Server (PDS) implementation in Objective-C. The system implements a **modular layered architecture** with clear separation between presentation, application, domain, data, and infrastructure layers.
+This document analyzes the ATProto Personal Data Server (PDS) implementation in Objective-C. The system uses a layered architecture with separation between presentation, application, domain, data, and infrastructure concerns.
 
 ## System Overview
 
@@ -81,7 +81,7 @@ Multi-factor authentication system:
 ### 5. Repository Engine (`repository_engine.dot`)
 
 AT Protocol's content-addressable storage:
-- **MST (Merkle Search Tree)**: Balanced tree structure for efficient record lookups
+- **MST (Merkle Search Tree)**: Balanced tree structure for deterministic key lookup and root derivation
 - **CAR (Content Addressable Records)**: Binary archive format for data export/import
 - **CBOR**: Concise Binary Object Representation for serialization
 - **Data Model**: Records → Collections → Keys (rkey)
@@ -146,7 +146,7 @@ Per-user database access:
 
 Content-addressable tree structure:
 - Sorted key-value storage
-- Efficient range queries
+- Range queries over sorted keys
 - Cryptographic integrity verification
 - Incremental updates
 
@@ -333,7 +333,7 @@ WebSocket handler for firehose:
 
 - ✅ **Clear Domain Separation**: Modules have single responsibilities
 - ✅ **Protocol Compliance**: Complete XRPC implementation
-- ✅ **Comprehensive Auth**: Multiple authentication methods
+- ✅ **Authentication Coverage**: JWT, OAuth2, TOTP, and WebAuthn flows
 - ✅ **Real-time Sync**: WebSocket firehose implementation
 - ✅ **Content-Addressable Storage**: MST + CAR for data integrity
 - ✅ **Test Coverage**: 107 unit tests passing
@@ -408,11 +408,11 @@ xcodegen generate
 
 ## Conclusion
 
-The ATProto PDS implementation is a well-structured Objective-C application that correctly implements the AT Protocol specification. While the "god class" pattern for `PDSController` and `PDSDatabase` should be refactored, the overall architecture is maintainable and testable.
+The ATProto PDS implementation maps cleanly to the AT Protocol specification. The primary structural risk is concentration of responsibilities in `PDSController` and `PDSDatabase`.
 
 The key strengths are:
 - Protocol compliance
-- Comprehensive authentication
+- Authentication coverage across multiple credential flows
 - Content-addressable storage
 - Real-time sync capabilities
 
