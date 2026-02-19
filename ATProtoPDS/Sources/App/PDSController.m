@@ -16,7 +16,7 @@
 
 #import "Core/TID.h"
 #import "Auth/JWT.h"
-#import "Auth/JWTSigningKeyStore.h"
+#import "Auth/PDSKeyManagerFactory.h"
 #import "Sync/SubscribeReposHandler.h"
 #import "Repository/RepoCommit.h"
 #import "Auth/OAuth2Handler.h"
@@ -271,12 +271,16 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, N
         _jwtMinter.signingAlgorithm = @"ES256K";
         
         NSError *serverKeyError = nil;
-        Secp256k1KeyPair *serverKey = [JWTSigningKeyStore loadOrCreateKeyPairForDataDirectory:_dataDirectory error:&serverKeyError];
+        // Use factory to get appropriate key manager
+        id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[_serviceDatabases serviceDatabaseWithError:nil]];
+        
+        // Ensure active key exists
+        id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
         if (serverKeyError) {
-            PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
+             PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
         }
-        _jwtMinter.privateKey = serverKey.privateKey;
-        _jwtMinter.publicKey = serverKey.publicKey;
+        
+        _jwtMinter.keyManager = keyManager;
         
         _accountService.minter = _jwtMinter;
         

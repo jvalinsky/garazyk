@@ -1,8 +1,10 @@
 # PDS Integration Test Results - Findings Report
 
+> **Status (2026-02-19):** Items 1 (JWT tokens) and 4 (session persistence) are resolved. Access tokens are now signed JWTs. Sessions persist to SQLite. Items 2-3 remain as documented.
+
 ## Executive Summary
 
-Integration tests were written and executed to verify the behavior of a normal PDS interaction session. **All 7 tests pass**, documenting both expected behavior and several significant implementation differences from ATProto specification.
+Integration tests verified PDS interaction session behavior. **All 7 tests pass**, documenting expected behavior and implementation differences from ATProto specification.
 
 ## Test Results
 
@@ -20,24 +22,20 @@ Integration tests were written and executed to verify the behavior of a normal P
 
 ### 1. Tokens Are UUIDs, Not JWTs
 
+> **RESOLVED (Phase 2):** Access tokens are now signed JWTs via `JWTMinter`. Refresh tokens remain opaque.
+
 **Expected (ATProto Spec):**
 - Access/refresh tokens should be signed JWTs with cryptographic claims
 - JWT structure: `header.payload.signature`
 - Claims include: `iss`, `sub`, `aud`, `iat`, `exp`
 
-**Actual Implementation:**
+**Historical Implementation (pre-Phase 2):**
 ```
 Access token: 87CB3C9A-0922-4DA8-A3C2-8E50CD7400B8
 Refresh token: 5A15252D-A080-41F7-89E7-477FB5B5A54B
 ```
 
-Tokens are opaque UUID strings with no cryptographic verification.
-
-**Security Implications:**
-- No verification of token claims
-- Tokens can be forged if session store is compromised
-- No proof of token ownership beyond session store access
-- Sessions are authenticated via in-memory lookup only
+Tokens were opaque UUID strings with no cryptographic verification.
 
 ### 2. getRecord Returns Incomplete Data
 
@@ -85,9 +83,11 @@ Uses `bafyre` prefix with base64url-encoded SHA-256 (59 chars).
 
 ### 4. Session Persistence
 
-**Status:** Sessions are stored in-memory in `SessionStore` NSMutableDictionary.
+> **RESOLVED (Phase 5):** Sessions now persist to SQLite via `SessionStore`.
 
-**Impact:**
+**Historical Status:** Sessions were stored in-memory in `SessionStore` NSMutableDictionary.
+
+**Impact (resolved):**
 - Sessions lost on server restart
 - Users must re-authenticate after restart
 - No session recovery mechanism
@@ -112,10 +112,9 @@ Uses `bafyre` prefix with base64url-encoded SHA-256 (59 chars).
 
 ### High Priority
 
-1. **Implement JWT Token Generation**
-   - Replace UUID tokens with signed JWTs
-   - Include standard claims: `iss`, `sub`, `aud`, `iat`, `exp`
-   - Enable cryptographic token verification
+1. **~~Implement JWT Token Generation~~** ✓ DONE
+   - ~~Replace UUID tokens with signed JWTs~~
+   - Implemented via `JWTMinter` in Phase 2
 
 2. **Fix getRecord Response**
    - Include `value` field with record content
@@ -128,9 +127,9 @@ Uses `bafyre` prefix with base64url-encoded SHA-256 (59 chars).
    - Use proper CIDv1 multicodec format
    - Consider using a proper CID library
 
-4. **Persist Sessions to Database**
-   - Store sessions in SQLite for persistence
-   - Implement session recovery on restart
+4. **~~Persist Sessions to Database~~** ✓ DONE
+   - Sessions now persist to SQLite
+   - Implemented in Phase 5
 
 ### Low Priority
 
@@ -140,11 +139,11 @@ Uses `bafyre` prefix with base64url-encoded SHA-256 (59 chars).
 
 ## Conclusion
 
-The PDS implementation works correctly for basic operations (account creation, login, record CRUD), but has significant deviations from ATProto specification in:
+The PDS implementation works correctly for basic operations (account creation, login, record CRUD). Remaining deviations from ATProto specification:
 
-1. **Authentication:** UUID-based instead of JWT-based
-2. **Record Retrieval:** Missing value field
-3. **CID Format:** Non-standard encoding
-4. **Session Persistence:** In-memory only
+1. **Record Retrieval:** Missing value field
+2. **CID Format:** Non-standard encoding
 
-These findings inform the gap between current implementation and specification compliance.
+Resolved items:
+- Authentication: Now JWT-based (Phase 2)
+- Session persistence: Now SQLite-backed (Phase 5)

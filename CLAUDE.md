@@ -63,7 +63,7 @@ Prompts are viewable in the TUI detail panel (`deciduous tui`) and web viewer.
 
 ### CRITICAL: Maintain Connections
 
-**The graph's value is in its CONNECTIONS, not just nodes.**
+**Disconnected nodes break graph traversal. Link every node to its parent.**
 
 | When you create... | IMMEDIATELY link to... |
 |-------------------|------------------------|

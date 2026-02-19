@@ -2,10 +2,9 @@
 
 This document defines the shell-script standards used in this repository and summarizes the script updates applied to the ATProto PDS project.
 
-## Bash Scripting Skill
+## Bash Scripting Standards
 
-The project includes `skills/professional-bash-scripting/SKILL.md`, which documents the script patterns expected in this repository. The guide references:
-
+All scripts follow these external references:
 - Google's Bash Style Guide
 - Greg's Wiki BashGuide
 - POSIX Shell Specification
@@ -168,7 +167,7 @@ VERBOSE=true ./scripts/run-tests.sh
 
 ### Creating New Scripts
 
-1. **Follow the Skill**: Reference `skills/professional-bash-scripting/SKILL.md` for all new scripts
+1. **Follow Standards**: Apply the patterns documented in this guide
 2. **Use Templates**: Start with the provided script structure and patterns
 3. **Validate Early**: Run ShellCheck during development: `shellcheck script.sh`
 4. **Test Thoroughly**: Test on target environment with various input scenarios
@@ -286,7 +285,6 @@ fi
 
 ## References
 
-- [Professional Bash Scripting Skill](skills/professional-bash-scripting/SKILL.md)
 - [Google's Bash Style Guide](https://google.github.io/styleguide/shellguide.html)
 - [Greg's BashGuide](https://mywiki.wooledge.org/BashGuide)
 - [ShellCheck](https://github.com/koalaman/shellcheck)

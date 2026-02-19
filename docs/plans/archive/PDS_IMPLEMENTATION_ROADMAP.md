@@ -28,7 +28,7 @@ This roadmap defines the remaining features required to transform the current AT
   - Collection counts and size information
 - **listRecords** pagination improvements
   - Cursor-based pagination
-  - Efficient database queries
+  - Indexed database queries
 - **searchPosts** basic implementation (optional)
 
 ### 0.3 Repository Import/Export
@@ -48,7 +48,7 @@ This roadmap defines the remaining features required to transform the current AT
 - **Memory management** for large repositories
 
 ### 0.5 Error Handling & Validation
-- **Comprehensive error codes** (per ATProto spec)
+- **Error codes** (per ATProto spec)
 - **Input validation** improvements
 - **Rate limiting** basic implementation
 - **Request logging** and monitoring
@@ -184,7 +184,7 @@ This roadmap defines the remaining features required to transform the current AT
 - **Incremental Deployment**: Each phase can be deployed independently
 - **Feature Flags**: Enable/disable features without redeployment
 - **Rollback Plans**: Clear rollback procedures for each phase
-- **Monitoring**: Comprehensive observability throughout
+- **Monitoring**: os_log integration with structured logging
 
 ---
 

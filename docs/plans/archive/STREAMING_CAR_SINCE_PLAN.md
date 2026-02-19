@@ -3,7 +3,7 @@
 ## Scope
 Implement `com.atproto.sync.getRepo` with:
 - true response streaming (no full-response buffering in HTTP layer)
-- robust `since` behavior keyed to repo `rev` (TID)
+- `since` behavior keyed to repo `rev` (TID)
 - interoperability-safe CAR payloads (`application/vnd.ipld.car`)
 
 This plan builds on current groundwork already merged in working tree:
@@ -15,7 +15,7 @@ This plan builds on current groundwork already merged in working tree:
 Current gaps:
 - response is still built and queued as one in-memory `NSData`
 - `since` is only exact-head short-circuit; no incremental export model
-- schema does not track per-object change revs needed for efficient diffs
+- schema does not track per-object change revs needed for incremental diffs
 
 ## Millipds Patterns Worth Adopting
 Reference: `/Users/jack/Software/millipds/src/millipds/atproto_sync.py`

@@ -420,7 +420,7 @@ ATProtoPDS/
    - Test AppView integration
 
 **Deliverables:**
-- [ ] Comprehensive test suite
+- [ ] Test suite
 - [ ] Integration test framework
 - [ ] Federation validation
 

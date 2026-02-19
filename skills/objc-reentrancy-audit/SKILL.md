@@ -16,7 +16,7 @@ Use this skill to find and triage re-entrancy hazards before they become product
 3. Review candidate files with `references/reentrancy-checklist.md`.
 
 ## Workflow
-1. Locate lock or synchronization regions (`@synchronized`, mutex, semaphore, `[lock lock]`).
+1. Locate synchronization regions (`@synchronized`, mutex, semaphore, `[theLock lock]`).
 2. Locate callbacks (`delegate`, `completion`, `handler`, `postNotification`) near those regions.
 3. Trace whether callback targets can re-enter the caller before state is fully committed.
 4. Flag findings where re-entry can observe partial mutation or violate invariants.

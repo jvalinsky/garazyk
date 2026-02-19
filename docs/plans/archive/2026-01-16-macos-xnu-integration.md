@@ -6,7 +6,7 @@
 
 ## Overview
 
-Comprehensive macOS integration for the ATProto PDS CLI tool, enabling background service operation, security hardening, system integration, and streamlined distribution.
+macOS integration for the ATProto PDS CLI tool: background service operation, security hardening, system integration, and distribution.
 
 ## User Requirements Confirmed
 

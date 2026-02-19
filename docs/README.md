@@ -2,28 +2,33 @@
 
 ## Core Guides
 - [Developer Guide](guides/DEVELOPER_GUIDE.md)
-- [Script Development](guides/SCRIPT_DEVELOPMENT.md) - Professional bash scripting standards and new E2E tests
-- [Troubleshooting](guides/TROUBLESHOOTING.md)
+- [Script Development](guides/SCRIPT_DEVELOPMENT.md)
+- [Setup Guide](guides/SETUP_GUIDE.md)
+- [User Guide](guides/USER_GUIDE.md)
+- [Objective-C Tips](guides/objective_c_tips.md)
+- [Deployment](guides/DEPLOYMENT.md)
 - [Workflows](guides/DEVELOPMENT_WORKFLOWS.md)
-- [Executive Summary](guides/EXECUTIVE_SUMMARY.md)
-- [Build Status](guides/BUILD_STATUS.md)
 
 ## Architecture
-- [Codebase Organization](architecture/CODEBASE_ORGANIZATION_PLAN.md)
-- [XRPC Protocol](architecture/XRPC_PROTOCOL_REFERENCE.md)
+- [Architecture Analysis](architecture/ARCHITECTURE_ANALYSIS.md)
+- [Data Models](architecture/atproto_data_models.md)
+- [PDS Architecture](architecture/atproto_pds_architecture.md)
 - [Diagrams](architecture/DIAGRAMS_MERMAID.md)
+- [XRPC Protocol Reference](architecture/XRPC_PROTOCOL_REFERENCE.md)
 
-## Operations & Security
-- [Security Testing Plan](security/SECURITY_TESTING_IMPROVEMENT_PLAN.md)
-- [Metasploit Testing](security/METASPLOIT_TESTING.md)
+## Security
+- [Security Testing Plan](security/SECURITY_TESTING_PLAN.md)
+- [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT.md)
+- [SQL Injection Report](security/SQL_INJECTION_VULNERABILITY_REPORT.md)
+- [SSRF Protection](security/SSRF_PROTECTION.md)
 - [Admin Auth Configuration](security/ADMIN_AUTH_CONFIGURATION.md)
-- [Logging](guides/LOGGING.md)
 
-## Plans
-- [Test Implementation](plans/TEST_IMPLEMENTATION_PLAN.md)
-- [Storage Improvement](plans/STORAGE_IMPROVEMENT_PLAN.md)
-- [Readonly API](plans/READONLY_API_PLAN.md)
-- [Phase 2 Completion](plans/phase2-completion-plan.md)
+## Plans & Roadmap
+- [Roadmap](plans/ROADMAP.md)
+- [Production Readiness](plans/production-readiness.md)
+- [Detailed Next Steps](plans/detailed_next_steps_plan.md)
+- [Pluggable Email](plans/2026-02-17-pluggable-email-resend.md)
+- [Security Hardening](plans/2026-02-18-p0-security-hardening.md)
 
-## Archive
-- [Archive Directory](archive/) - Contains older logs, debug sessions, and completed implementation plans.
+## Testing
+- [Testing Guide](TESTING.md)
