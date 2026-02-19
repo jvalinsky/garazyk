@@ -61,14 +61,14 @@ Completed:
 - [x] Fix `scripts/backup_pds.sh`: remove duplication and update to `service.db`.
 - [ ] Update documentation to match actual on-disk layout (deferred to documentation sprint).
 
-## Phase 6 — Reliability and Hygiene (P2)
+## Phase 6 — Reliability and Hygiene (Done)
 **Goal:** Harden tests and websocket lifecycle.
 ### Tasks
-- [x] Fix `CoverageGapTests` nil-data crash:
-  - Fixed routing for paths with parameters (registered `/xrpc` without trailing slash)
-  - Fixed Content-Type handling in `getBlocks`
-  - Improved test reliability with dynamic ports and better setup
-- [ ] Tighten websocket connection and backpressure management.
+- [x] Fix `CoverageGapTests` nil-data crash.
+- [x] Tighten websocket connection and backpressure management:
+  - Added byte-based backpressure (16MB limit)
+  - Fixed connection lifecycle memory leaks
+  - Added backpressure enforcement tests
 
 ---
 
@@ -82,14 +82,14 @@ Completed:
 | Phase 3 | ✅ Done | DPoP nonce challenge flow working |
 | Phase 4 | ✅ Done | All 5 missing com.atproto.* endpoints implemented |
 | Phase 5 | ✅ Done | PDS_ISSUER unified across all components |
-| Phase 6 | 🔄 In Progress | CoverageGapTests fixed; WebSocket pending |
+| Phase 6 | ✅ Done | CoverageGapTests fixed, WebSocket hardened |
 
 ## Recommended Next Steps
 
-1. **Phase 6b** — Tighten websocket connection and backpressure management
-2. **Documentation** — Update docs to match actual on-disk layout (can be deferred)
+1. **Documentation** — Update docs to match actual on-disk layout (Phase 5b).
+2. **Release** — Prepare for release/deployment.
 
-All P0 and P1 work is complete. CoverageGapTests passed. Remaining work is low priority.
+All P0, P1, and P2 work is complete. The system is production-ready.
 
 ---
 
@@ -104,3 +104,4 @@ All P0 and P1 work is complete. CoverageGapTests passed. Remaining work is low p
 7. `66260a2` - docs(plan): mark Phase 5 as complete
 8. `2ecc88a` - test(coverage): improve CoverageGapTests with better error handling
 9. `9264c25` - fix(coverage): resolve CoverageGapTests failures
+10. `73f102d` - feat(sync): harden WebSocket backpressure and finalize security fixes
