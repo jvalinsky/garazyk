@@ -25,7 +25,7 @@ TABLE="${2:-}"
 DB_PATH=""
 
 if [ "$TARGET" == "service" ]; then
-    DB_PATH="$DATA_DIR/service.sqlite"
+    DB_PATH="$DATA_DIR/service/service.db"
 elif [[ "$TARGET" == did:* ]]; then
     # Search for the DID directory. To handle hashing structure, we use find.
     # Optimization: If we know the structure is just one level deep hash or direct:

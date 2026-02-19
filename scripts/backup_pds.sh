@@ -86,21 +86,24 @@ backup_db() {
 
 # 1. Service database (Critical)
 echo "Service databases:"
-if [ -f "$DATA_DIR/service.db" ]; then
-    backup_db "$DATA_DIR/service.db" "$BACKUP_DEST/service.db" "service.db"
-    SERVICE_DB_COUNT=1
-elif [ -f "$DATA_DIR/service.sqlite" ]; then
-    echo "  NOTE: Using legacy service.sqlite path"
-    backup_db "$DATA_DIR/service.sqlite" "$BACKUP_DEST/service.sqlite" "service.sqlite"
-    SERVICE_DB_COUNT=1
+if [ -f "$DATA_DIR/service/service.db" ]; then
+    backup_db "$DATA_DIR/service/service.db" "$BACKUP_DEST/service/service.db" "service/service.db"
+    SERVICE_DB_COUNT=$((SERVICE_DB_COUNT + 1))
 else
-    echo "  FAILED: service.db not found in $DATA_DIR"
+    echo "  FAILED: service/service.db not found in $DATA_DIR"
     ERRORS=$((ERRORS + 1))
 fi
 
 # Sequencer database (if exists)
-if [ -f "$DATA_DIR/sequencer.sqlite" ]; then
-    backup_db "$DATA_DIR/sequencer.sqlite" "$BACKUP_DEST/sequencer.sqlite" "sequencer.sqlite"
+if [ -f "$DATA_DIR/sequencer/service.db" ]; then
+    backup_db "$DATA_DIR/sequencer/service.db" "$BACKUP_DEST/sequencer/service.db" "sequencer/service.db"
+    SERVICE_DB_COUNT=$((SERVICE_DB_COUNT + 1))
+fi
+
+# DID cache database (if exists)
+if [ -f "$DATA_DIR/did_cache/service.db" ]; then
+    backup_db "$DATA_DIR/did_cache/service.db" "$BACKUP_DEST/did_cache/service.db" "did_cache/service.db"
+    SERVICE_DB_COUNT=$((SERVICE_DB_COUNT + 1))
 fi
 
 # 2. User databases (stored in hashed DID directories)
@@ -110,11 +113,6 @@ USER_COUNT=0
 
 # Safer loop using find -print0
 while IFS= read -r -d '' db_path; do
-    # Skip service/sequencer explicitly if find picks them up (depending on structure)
-    if [[ "$db_path" == *"/service.sqlite" ]] || [[ "$db_path" == *"/sequencer.sqlite" ]]; then
-        continue
-    fi
-
     # Preserve directory structure relative to DATA_DIR
     rel_path="${db_path#$DATA_DIR/}"
     dest_path="$BACKUP_DEST/$rel_path"

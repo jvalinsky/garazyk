@@ -120,56 +120,40 @@ static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response,
     return YES;
 }
 
-static BOOL xrpcHostLooksLocal(NSString *host) {
-    NSString *normalized = [[host ?: @"" lowercaseString]
-        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return normalized.length == 0 ||
-           [normalized isEqualToString:@"localhost"] ||
-           [normalized isEqualToString:@"127.0.0.1"] ||
-           [normalized isEqualToString:@"::1"] ||
-           [normalized isEqualToString:@"0.0.0.0"];
-}
-
-static NSString *xrpcCanonicalIssuer(PDSConfiguration *config) {
-    if (config.issuer.length > 0) {
-        return config.issuer;
+static NSString *didWebIdentifierFromIssuer(NSString *issuer, NSString *fallbackHost) {
+    NSURLComponents *components = [NSURLComponents componentsWithString:issuer];
+    NSString *scheme = [components.scheme.lowercaseString copy];
+    NSString *host = [components.host.lowercaseString copy];
+    if (host.length == 0) {
+        host = [fallbackHost.lowercaseString copy];
     }
-
-    NSString *host = config.serverHost;
-    if (xrpcHostLooksLocal(host)) {
+    if (host.length == 0) {
         host = @"localhost";
     }
-    NSString *scheme = xrpcHostLooksLocal(host) ? @"http" : @"https";
-    NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
-    BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
-                       ([scheme isEqualToString:@"http"] && port == 80);
-    if (defaultPort) {
-        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+
+    NSUInteger port = components.port != nil ? (NSUInteger)MAX((NSInteger)0, components.port.integerValue) : 0;
+    BOOL includePort = NO;
+    if (port > 0) {
+        BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
+                           ([scheme isEqualToString:@"http"] && port == 80);
+        includePort = !defaultPort;
     }
-    return [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
+
+    if (includePort) {
+        return [NSString stringWithFormat:@"did:web:%@%%3A%lu", host, (unsigned long)port];
+    }
+    return [NSString stringWithFormat:@"did:web:%@", host];
 }
 
 static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *config) {
-    NSString *hostInput = config.serverHost ?: @"localhost";
-    if ([hostInput isEqualToString:@"0.0.0.0"]) {
-        hostInput = @"localhost";
+    NSString *issuer = [config canonicalIssuerWithPortHint:0];
+    NSString *canonicalHost = [config canonicalHostname];
+    NSMutableOrderedSet<NSString *> *audiences = [NSMutableOrderedSet orderedSet];
+    [audiences addObject:didWebIdentifierFromIssuer(issuer, canonicalHost)];
+    if (canonicalHost.length > 0) {
+        [audiences addObject:[NSString stringWithFormat:@"did:web:%@", canonicalHost]];
     }
-    NSURLComponents *components = [NSURLComponents componentsWithString:[@"https://" stringByAppendingString:hostInput]];
-    NSString *host = components.host ?: hostInput;
-    NSNumber *port = components.port;
-    if (!port && config.serverPort != 0) {
-        port = @(config.serverPort);
-    }
-
-    NSMutableArray<NSString *> *audiences = [NSMutableArray array];
-    if (host.length > 0) {
-        [audiences addObject:[NSString stringWithFormat:@"did:web:%@", host]];
-    }
-    if (port && port.unsignedIntegerValue != 80 && port.unsignedIntegerValue != 443) {
-        NSString *encodedHost = [NSString stringWithFormat:@"%@%%3A%@", host, port];
-        [audiences addObject:[NSString stringWithFormat:@"did:web:%@", encodedHost]];
-    }
-    return audiences;
+    return audiences.array;
 }
 
 static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
@@ -215,13 +199,7 @@ static NSDictionary *resolveDid(NSString *did, PDSServiceDatabases *dbs, PDSConf
         return nil;
     }
     
-    NSString *serviceEndpoint = [NSString stringWithFormat:@"https://%@", config.serverHost ?: @"localhost"];
-    if (config.serverPort > 0 && config.serverPort != 443 && config.serverPort != 80) {
-         serviceEndpoint = [NSString stringWithFormat:@"%@:%lu", serviceEndpoint, (unsigned long)config.serverPort];
-    }
-    if (config.issuer.length > 0) {
-        serviceEndpoint = config.issuer;
-    }
+    NSString *serviceEndpoint = [config canonicalIssuerWithPortHint:0];
     
     return @{
         @"@context": @[
@@ -905,17 +883,10 @@ static HttpResponseBodyChunkProducer blobFileChunkProducer(NSString *path,
 static void registerServerDescribeAndResolveLexiconMethods(XrpcDispatcher *dispatcher,
                                                            PDSConfiguration *config) {
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
-        NSString *issuer = config.issuer;
-        if (!issuer || issuer.length == 0) {
-           issuer = [NSString stringWithFormat:@"https://%@", config.serverHost ?: @"localhost"];
-        }
-        
-        // Extract hostname from issuer for DID calculation if needed, or just use the issuer domain
-        NSURL *issuerURL = [NSURL URLWithString:issuer];
-        NSString *hostname = issuerURL.host ?: config.serverHost ?: @"localhost";
-
-        NSString *serverDid = [NSString stringWithFormat:@"did:web:%@", hostname];
-        NSArray *availableUserDomains = @[hostname];
+        NSString *issuer = [config canonicalIssuerWithPortHint:0];
+        NSString *hostname = [config canonicalHostname];
+        NSString *serverDid = didWebIdentifierFromIssuer(issuer, hostname);
+        NSArray *availableUserDomains = hostname.length > 0 ? @[hostname] : @[];
 
         NSDictionary *result = @{
             @"inviteCodeRequired": @(config.inviteCodeRequired),
@@ -1618,12 +1589,11 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
 }
 
 static NSDictionary *defaultPdsServiceForConfig(PDSConfiguration *config) {
-    NSString *host = config.serverHost ?: @"localhost";
-    NSUInteger port = config.serverPort > 0 ? config.serverPort : 2583;
+    NSString *serviceEndpoint = [config canonicalIssuerWithPortHint:0];
     return @{
         @"atproto_pds": @{
             @"type": @"AtprotoPersonalDataServer",
-            @"endpoint": [NSString stringWithFormat:@"http://%@:%lu", host, (unsigned long)port]
+            @"endpoint": serviceEndpoint
         }
     };
 }
@@ -3084,15 +3054,11 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
     [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
         PDSConfiguration *configuration = config;
-        NSString *issuer = configuration.issuer ?: @"";
+        NSString *issuer = [configuration canonicalIssuerWithPortHint:0];
         
         NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        
-        if (issuer.length > 0) {
-            result[@"alsoKnownAs"] = @[[NSString stringWithFormat:@"at://%@", issuer]];
-        }
-        
         result[@"rotationKeys"] = @[];
+        result[@"alsoKnownAs"] = @[];
         result[@"verificationMethods"] = @{};
         result[@"services"] = @{
             @"atproto_pds": @{
@@ -5373,7 +5339,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     // Use configurable issuer from PDSConfiguration, default to localhost
     PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
-    NSString *expectedIssuer = xrpcCanonicalIssuer(configuration);
+    NSString *expectedIssuer = [configuration canonicalIssuerWithPortHint:0];
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
     verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(jwtMinter);
