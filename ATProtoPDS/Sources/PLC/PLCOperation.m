@@ -112,13 +112,11 @@ static NSString *PLCNormalizeServiceEndpoint(NSString *value) {
     }];
     
     NSMutableArray *services = [NSMutableArray array];
-    [self.services enumerateKeysAndObjectsUsingBlock:^(id key, id service, BOOL *stop) {
-        NSString *keyStr = (NSString *)key;
-        NSDictionary *serviceDict = (NSDictionary *)service;
+    [self.services enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSDictionary *service, BOOL *stop) {
         [services addObject:@{
-            @"id": [NSString stringWithFormat:@"#%@", keyStr],
-            @"type": serviceDict[@"type"],
-            @"serviceEndpoint": serviceDict[@"endpoint"]
+            @"id": [NSString stringWithFormat:@"#%@", key],
+            @"type": service[@"type"],
+            @"serviceEndpoint": service[@"endpoint"]
         }];
     }];
     
