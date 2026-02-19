@@ -718,7 +718,13 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
               nonce:(nullable NSString *)nonce
       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
               error:(NSError **)error {
-    return [self verifyProof:dpopJwt method:method url:url nonce:nil requireNonce:NO outThumbprint:thumbprint error:error];
+    return [self verifyProof:dpopJwt
+                      method:method
+                         url:url
+                       nonce:nonce
+                requireNonce:NO
+               outThumbprint:thumbprint
+                       error:error];
 }
 
 + (BOOL)verifyProof:(NSString *)dpopJwt
@@ -811,7 +817,8 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 
     // DPoP nonce check
     NSString *proofNonce = payload[@"nonce"];
-    if (requireNonce && !proofNonce) {
+    BOOL nonceRequired = requireNonce || nonce.length > 0;
+    if (nonceRequired && proofNonce.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorInvalidDPoPProof
@@ -821,7 +828,17 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         return NO;
     }
     
-    if (proofNonce) {
+    if (proofNonce.length > 0) {
+        if (nonce.length > 0 && ![proofNonce isEqualToString:nonce]) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidDPoPProof
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP nonce mismatch",
+                                                    @"use_dpop_nonce": @YES}];
+            }
+            return NO;
+        }
+
         if (![[PDSNonceManager sharedManager] validateNonce:proofNonce]) {
             if (error) {
                 *error = [NSError errorWithDomain:OAuth2ErrorDomain
