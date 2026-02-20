@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVER="$SCRIPT_DIR/../build/bin/september"
+SERVER="$SCRIPT_DIR/../build/bin/kaszlak"
 PORT=2583
 BASE_URL="http://localhost:$PORT"
 SERVER_PID=""

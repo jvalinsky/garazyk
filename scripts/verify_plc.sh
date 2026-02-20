@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SERVER_BIN="./build/bin/atproto-plc"
+SERVER_BIN="./build/bin/campagnola"
 DB_PATH="./plc_test.db"
 PORT=3001
 

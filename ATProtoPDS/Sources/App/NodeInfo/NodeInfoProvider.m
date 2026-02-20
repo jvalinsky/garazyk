@@ -51,7 +51,7 @@
     NSString *schema21URL = [[baseUrl URLByAppendingPathComponent:@"nodeinfo/2.1"] absoluteString];
 
     NSDictionary *software20 = @{
-        @"name": _configuration.nodeinfoSoftwareName ?: @"atprotopds",
+        @"name": _configuration.nodeinfoSoftwareName ?: @"kaszlak",
         @"version": _configuration.nodeinfoSoftwareVersion ?: @"1.0.0"
     };
 

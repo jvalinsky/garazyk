@@ -13,7 +13,7 @@ BUILD_DIR="${ROOT_DIR}/build"
 CLI_BIN="${BUILD_DIR}/bin/september"
 PLC_BIN="${BUILD_DIR}/bin/atproto-plc"
 
-killall september atproto-plc 2>/dev/null || true
+killall kaszlak campagnola 2>/dev/null || true
 
 if [ ! -f "$CLI_BIN" ] || [ ! -f "$PLC_BIN" ]; then
     echo "ERROR: Required binaries not found. Please build the project first."
@@ -21,7 +21,7 @@ if [ ! -f "$CLI_BIN" ] || [ ! -f "$PLC_BIN" ]; then
 fi
 
 TEMP_DIR=$(mktemp -d)
-trap 'echo "Cleaning up..."; killall september atproto-plc 2>/dev/null || true; kill $(jobs -p) 2>/dev/null || true; rm -rf "$TEMP_DIR"' EXIT
+trap 'echo "Cleaning up..."; killall kaszlak campagnola 2>/dev/null || true; kill $(jobs -p) 2>/dev/null || true; rm -rf "$TEMP_DIR"' EXIT
 
 PLC_PORT=2582
 PDS_A_PORT=8001

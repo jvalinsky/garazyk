@@ -18,7 +18,7 @@ The ATProto PDS Explorer provides a web interface for exploring AT Protocol data
 
 1. Start the server:
    ```bash
-   ./build/bin/atprotopds-cli serve
+   ./build/bin/kaszlak serve
    ```
 
 2. Open browser: Visit `http://localhost:2583/explore/`
@@ -29,13 +29,13 @@ The ATProto PDS Explorer provides a web interface for exploring AT Protocol data
 
 ### 1. Command-Line Interface (CLI)
 
-The `atprotopds-cli` tool is the primary way to manage your PDS server, accounts, and invite codes.
+The `kaszlak` tool is the primary way to manage your PDS server, accounts, and invite codes.
 
 ### Server Management
 
 Start the PDS server:
 ```bash
-./build/bin/atprotopds-cli serve
+./build/bin/kaszlak serve
 ```
 
 Common options:
@@ -47,41 +47,41 @@ Common options:
 
 List all registered accounts:
 ```bash
-./build/bin/atprotopds-cli account list
+./build/bin/kaszlak account list
 ```
 
 Create a new account:
 ```bash
-./build/bin/atprotopds-cli account create --email alice@example.com --handle alice.test
+./build/bin/kaszlak account create --email alice@example.com --handle alice.test
 ```
 
 Show account details:
 ```bash
-./build/bin/atprotopds-cli account info alice.test
+./build/bin/kaszlak account info alice.test
 ```
 
 ### Invite Codes
 
 List all invite codes:
 ```bash
-./build/bin/atprotopds-cli invite list --used
+./build/bin/kaszlak invite list --used
 ```
 
 Create a new invite code:
 ```bash
-./build/bin/atprotopds-cli invite create --uses 5
+./build/bin/kaszlak invite create --uses 5
 ```
 
 ### Repository Inspection
 
 View repository records for a DID:
 ```bash
-./build/bin/atprotopds-cli repo list did:plc:abc...
+./build/bin/kaszlak repo list did:plc:abc...
 ```
 
 Get the root CID of a repository:
 ```bash
-./build/bin/atprotopds-cli repo root did:plc:abc...
+./build/bin/kaszlak repo root did:plc:abc...
 ```
 
 ## 2. Web Explorer
