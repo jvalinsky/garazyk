@@ -5340,7 +5340,7 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
     // Use configurable issuer from PDSConfiguration, default to localhost
     PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
-    NSString *expectedIssuer = [configuration canonicalIssuerWithPortHint:0];
+    NSString *expectedIssuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
     verifier.expectedIssuer = expectedIssuer;
     verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
     verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(jwtMinter);

@@ -1677,7 +1677,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
         // No client_secret for public client
-        @"redirect_uris": @[@"http://localhost:3000/callback", @"http://localhost:8080/callback", @"https://localhost:2583/oauth-demo/callback", @"http://localhost:2583/oauth-demo/callback", @"https://127.0.0.1:2583/oauth-demo/callback", @"http://127.0.0.1:2583/oauth-demo/callback"],
+        @"redirect_uris": @[@"http://localhost:3000/callback", @"http://localhost:8080/callback", @"https://localhost:2583/oauth-demo/callback", @"http://localhost:2583/oauth-demo/callback", @"https://127.0.0.1:2583/oauth-demo/callback", @"http://127.0.0.1:2583/oauth-demo/callback", @"http://localhost:2583/?oauth_callback=1", @"http://127.0.0.1:2583/?oauth_callback=1", @"http://localhost:8080/?oauth_callback=1", @"http://127.0.0.1:8080/?oauth_callback=1"],
         @"grant_types": @"authorization_code,refresh_token",
         @"scope": @"atproto"
     };
