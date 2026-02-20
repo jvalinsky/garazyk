@@ -70,6 +70,7 @@
     
     // Ensure we start with a clean state for the command execution
     // (Though PDSDatabase handles schema creation, we rely on the command to open it)
+    setenv("PDS_NON_INTERACTIVE", "1", 1);
 }
 
 - (void)tearDown {
@@ -80,7 +81,7 @@
 }
 
 - (void)testCreateAccountSuccess {
-    NSArray *args = @[@"create", @"--email", @"test@example.com", @"--handle", @"test.bsky.social", @"--password", @"password123"];
+    NSArray *args = @[@"create", @"--email", @"test@example.com", @"--handle", @"test.example.com", @"--password", @"password123"];
     
     int rc = [self.dispatcher dispatchWithCommandName:@"account" arguments:args context:self.context];
     XCTAssertEqual(rc, 0);
@@ -101,7 +102,7 @@
     NSError *error = nil;
     XCTAssertTrue([db openWithError:&error]);
     
-    PDSDatabaseAccount *account = [db getAccountByHandle:@"test.bsky.social" error:&error];
+    PDSDatabaseAccount *account = [db getAccountByHandle:@"test.example.com" error:&error];
     XCTAssertNotNil(account);
     XCTAssertEqualObjects(account.email, @"test@example.com");
     XCTAssertTrue([account.did hasPrefix:@"did:plc:"], @"DID should be generated");
@@ -120,11 +121,11 @@
 
 - (void)testCreateAccountDuplicateHandle {
     // Create first account
-    NSArray *args = @[@"create", @"--email", @"test1@example.com", @"--handle", @"duplicate.bsky.social", @"--password", @"pw1"];
+    NSArray *args = @[@"create", @"--email", @"test1@example.com", @"--handle", @"duplicate.example.com", @"--password", @"pw1"];
     [self.dispatcher dispatchWithCommandName:@"account" arguments:args context:self.context];
     
     // Try to create second account with same handle
-    NSArray *args2 = @[@"create", @"--email", @"test2@example.com", @"--handle", @"duplicate.bsky.social", @"--password", @"pw2"];
+    NSArray *args2 = @[@"create", @"--email", @"test2@example.com", @"--handle", @"duplicate.example.com", @"--password", @"pw2"];
     [self.dispatcher dispatchWithCommandName:@"account" arguments:args2 context:self.context];
     
     BOOL foundErrorMessage = NO;
@@ -139,9 +140,9 @@
 
 - (void)testListAccounts {
     // Create two accounts
-    NSArray *createAArgs = @[@"create", @"--email", @"a@e.com", @"--handle", @"a.bsky.social", @"--password", @"pw-a"];
+    NSArray *createAArgs = @[@"create", @"--email", @"a@e.com", @"--handle", @"a.example.com", @"--password", @"pw-a"];
     XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createAArgs context:self.context], 0);
-    NSArray *createBArgs = @[@"create", @"--email", @"b@e.com", @"--handle", @"b.bsky.social", @"--password", @"pw-b"];
+    NSArray *createBArgs = @[@"create", @"--email", @"b@e.com", @"--handle", @"b.example.com", @"--password", @"pw-b"];
     XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createBArgs context:self.context], 0);
     
     // Clear messages from creation
@@ -166,7 +167,7 @@
 
 - (void)testListAccountsJSON {
     // Create account
-    NSArray *createArgs = @[@"create", @"--email", @"json@e.com", @"--handle", @"json.bsky.social", @"--password", @"pw-json"];
+    NSArray *createArgs = @[@"create", @"--email", @"json@e.com", @"--handle", @"json.example.com", @"--password", @"pw-json"];
     XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createArgs context:self.context], 0);
     
     self.context.jsonOutput = YES;
@@ -176,17 +177,17 @@
     NSArray *list = self.context.jsonOutputs.lastObject;
     XCTAssertTrue([list isKindOfClass:[NSArray class]]);
     XCTAssertEqual(list.count, 1);
-    XCTAssertEqualObjects(list[0][@"handle"], @"json.bsky.social");
+    XCTAssertEqualObjects(list[0][@"handle"], @"json.example.com");
 }
 
 - (void)testInfoCommand {
     // Create account
-    NSArray *createArgs = @[@"create", @"--email", @"info@e.com", @"--handle", @"info.bsky.social", @"--password", @"pw-info"];
+    NSArray *createArgs = @[@"create", @"--email", @"info@e.com", @"--handle", @"info.example.com", @"--password", @"pw-info"];
     XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createArgs context:self.context], 0);
     
     // Get info
     self.context.jsonOutput = YES; // Use JSON to capture output easily
-    [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"info", @"info.bsky.social"] context:self.context];
+    [self.dispatcher dispatchWithCommandName:@"account" arguments:@[@"info", @"info.example.com"] context:self.context];
     
     XCTAssertTrue(self.context.jsonOutputs.count > 0);
     NSDictionary *info = self.context.jsonOutputs.lastObject;

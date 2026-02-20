@@ -7,7 +7,16 @@
 @implementation PDSCLIInputHelper
 
 + (BOOL)isInteractiveTTY {
-    return isatty(STDIN_FILENO);
+    if (!isatty(STDIN_FILENO)) {
+        return NO;
+    }
+    
+    char *nonInteractive = getenv("PDS_NON_INTERACTIVE");
+    if (nonInteractive && (strcmp(nonInteractive, "1") == 0 || strcmp(nonInteractive, "true") == 0)) {
+        return NO;
+    }
+
+    return YES;
 }
 
 + (nullable NSString *)promptForInput:(NSString *)prompt defaultValue:(nullable NSString *)defaultValue {
