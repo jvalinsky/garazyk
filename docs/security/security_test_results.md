@@ -100,3 +100,14 @@
 
 - All tests passed - code handles malicious payloads correctly
 - Continue fuzzing with longer runs for additional coverage
+
+---
+
+## Related Documentation
+
+- [Security Documentation Index](README.md) - Overview of all security docs
+- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Detailed test plan and vectors
+- [Security Plan](SECURITY_PLAN.md) - Comprehensive security strategy
+- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT.md) - SQL injection findings
+- [Security Reports](reports/README.md) - Historical analysis reports
+- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation

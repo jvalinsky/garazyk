@@ -58,24 +58,14 @@ The project has reached **Phase 10**, achieving AT Protocol specification compli
 
 ---
 
-## Future Work & Improvements
+## Related Documentation
 
-### Phase 11: Production Hardening
-- [ ] **Manual Client Review**: Verify with real Bluesky client (iOS/Web)
-- [ ] **Performance Tuning**: Analyze MST rebuild performance (currently O(N) on writes)
-- [ ] **Database Optimization**: Review SQLite indexing for scale
-
-### Phase 12: Architecture Refinement
-- [ ] **PDSController Refactor Completion**:
-  - `PDSController.m` is evolving into a facade (~700 lines).
-  - Continue extracting logic into `PDSApplication`, `PDSAdminController`, etc.
-  - Target: `PDSController` < 200 lines (delegation only).
-- [ ] **Service Isolation**: Ensure strict boundaries between Account, Repo, and Blob services.
-
-### Phase 13: Advanced Features
-- [ ] **Federation Expansion**: Enhanced relay integration
-- [ ] **Moderation Tooling**: Admin UI for moderation actions
-- [ ] **Backup & Restore**: User-facing export/import tools
+- [Production Readiness](production-readiness.md) - Current audit findings and blocking issues
+- [Detailed Next Steps](detailed_next_steps_plan.md) - Priority execution plan for production blockers
+- [Architecture Overview](../architecture/README.md) - System architecture decisions
+- [Security Documentation](../security/README.md) - Security hardening guides
+- [OAuth2 Documentation](../oauth2/README.md) - Authentication implementation details
 
 ---
+
 *Last Updated: 2026-02-17*

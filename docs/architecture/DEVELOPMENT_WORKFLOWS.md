@@ -295,3 +295,19 @@ graph TD
     style src fill:#bbdefb
     style docs fill:#ffe0b2
 ```
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis and build system details
+
+### Diagram Documents
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) - System overview diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Protocol flow diagrams
+- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
+
+### Related Guides
+- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE.md) - Developer onboarding guide
+- [../guides/DEVELOPMENT_WORKFLOWS.md](../guides/DEVELOPMENT_WORKFLOWS.md) - Duplicate guide version
+- [../guides/SETUP_GUIDE.md](../guides/SETUP_GUIDE.md) - Environment setup guide

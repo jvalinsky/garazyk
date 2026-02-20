@@ -147,3 +147,18 @@ The PDS implementation works correctly for basic operations (account creation, l
 Resolved items:
 - Authentication: Now JWT-based (Phase 2)
 - Session persistence: Now SQLite-backed (Phase 5)
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis and data flows
+- [atproto_pds_architecture.md](atproto_pds_architecture.md) - Expected token format and CID specs
+- [atproto_data_models.md](atproto_data_models.md) - Record and CID structure
+
+### Related Tests
+- [../tests/00-identity-auth/oauth.md](../tests/00-identity-auth/oauth.md) - OAuth and JWT token tests
+- [../tests/02-network/xrpc.md](../tests/02-network/xrpc.md) - XRPC endpoint tests
+
+### Security Documentation
+- [../security/](../security/) - Security audit and hardening guides
