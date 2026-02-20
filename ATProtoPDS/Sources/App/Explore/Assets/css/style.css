@@ -185,52 +185,291 @@ ul.tree-view li.active {
     padding: 3px 0;
 }
 
-/* MST Viewer Tree Styles */
-.mst-tree {
-    font-family: Monaco, Geneva_9, monospace;
+/* MST Viewer */
+#win-mst-viewer .window-body {
+    font-family: Chicago_12, Geneva_9, monospace;
+    font-size: 12px;
+}
+
+#win-mst-viewer .btn {
+    font-family: Chicago_12, monospace;
+    font-size: 12px;
+    border: 1.5px solid var(--secondary);
+    background: var(--primary);
+    padding: 2px 10px;
+    cursor: pointer;
+    box-shadow: var(--box-shadow);
+}
+
+#win-mst-viewer .btn:hover {
+    background: var(--secondary);
+    color: var(--primary);
+}
+
+#win-mst-viewer .btn:active {
+    box-shadow: none;
+    transform: translate(1px, 1px);
+}
+
+#win-mst-viewer .btn-default {
+    font-weight: bold;
+    border-width: 2px;
+}
+
+#win-mst-viewer label {
+    font-family: Chicago_12, monospace;
+}
+
+#win-mst-viewer input[type="text"] {
+    font-family: Geneva_9, Chicago_12, monospace;
+    font-size: 12px;
+    border: 1.5px solid var(--secondary);
+    padding: 2px 4px;
+}
+
+#mst-stats {
+    font-family: Geneva_9, Chicago_12, monospace;
     font-size: 11px;
-    padding: 8px;
+    padding: 4px 6px;
+    border: 1.5px solid var(--secondary);
+    background: var(--primary);
+    min-height: 1.4em;
+}
+
+/* MST Tree Styles */
+.mst-tree {
+    font-family: Chicago_12, Geneva_9, monospace;
+    font-size: 12px;
+    padding: 4px;
 }
 
 .mst-node-wrapper {
-    margin: 2px 0;
+    margin: 1px 0;
 }
 
 .mst-node-header {
     display: flex;
     align-items: center;
-    padding: 2px 4px;
-    border: 1px solid transparent;
+    padding: 1px 3px;
     cursor: default;
 }
 
 .mst-node-header:hover {
-    background: #e0e0e0;
-    border: 1px solid #999;
+    background: #000080;
+    color: var(--primary);
+}
+
+.mst-node-header:hover .mst-key,
+.mst-node-header:hover .mst-cid,
+.mst-node-header:hover .mst-toggle,
+.mst-node-header:hover .mst-icon {
+    color: var(--primary);
 }
 
 .mst-toggle {
     font-family: Chicago_12, monospace;
-    font-size: 10px;
+    font-size: 9px;
     width: 12px;
     text-align: center;
+    color: var(--secondary);
+    user-select: none;
 }
 
 .mst-icon {
-    font-size: 12px;
+    font-family: Chicago_12, monospace;
+    font-size: 11px;
+    margin-right: 3px;
+    color: var(--secondary);
 }
 
 .mst-key {
-    font-weight: bold;
-    color: #000;
+    font-family: Chicago_12, monospace;
+    font-size: 12px;
+    color: var(--secondary);
+}
+
+.mst-key-entry {
+    font-family: Monaco, monospace;
+    font-size: 11px;
+    color: var(--secondary);
 }
 
 .mst-cid {
     font-family: Monaco, monospace;
+    font-size: 10px;
+    color: var(--tertiary);
 }
 
 .mst-node-children {
-    border-left: 1px dashed #999;
-    margin-left: 8px;
+    border-left: 1.5px dotted var(--secondary);
+    margin-left: 6px;
     padding-left: 4px;
+}
+
+/* Mac Classic Post Renderer */
+.post-classic {
+    border: 1.5px solid #000;
+    background: #fff;
+    margin-bottom: 10px;
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.post-classic-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #c0c0c0;
+    border-bottom: 1.5px solid #000;
+    font-family: Chicago_12, monospace;
+    font-size: 12px;
+}
+
+.post-classic-icon {
+    font-size: 12px;
+}
+
+.post-classic-type {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.post-classic-date {
+    margin-left: auto;
+    color: #333;
+    font-size: 11px;
+    font-family: Geneva_9, Chicago_12, monospace;
+}
+
+.post-classic-body {
+    padding: 10px 12px;
+    font-family: Geneva_9, Chicago_12, sans-serif;
+    font-size: 13px;
+}
+
+.post-classic-text {
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.post-classic-meta {
+    padding: 4px 12px;
+    border-top: 1px dotted #999;
+    font-family: Geneva_9, Chicago_12, monospace;
+    font-size: 11px;
+    color: #444;
+}
+
+.post-classic-meta-label {
+    font-weight: bold;
+}
+
+.post-classic-meta-value {
+    font-family: Monaco, monospace;
+    font-size: 10px;
+}
+
+.post-classic-embed {
+    margin: 8px 12px 4px;
+    padding: 6px 8px;
+    border: 1px solid #999;
+    background: #f5f5f5;
+}
+
+.post-classic-embed-inner {
+    font-family: Geneva_9, Chicago_12, monospace;
+    font-size: 11px;
+}
+
+.post-classic-embed-alt {
+    color: #666;
+    font-style: italic;
+    margin-top: 2px;
+    font-size: 11px;
+}
+
+.post-classic-toggle {
+    margin-left: auto;
+    font-family: Chicago_12, monospace !important;
+    font-size: 10px !important;
+    padding: 1px 6px !important;
+    cursor: pointer;
+}
+
+/* Reusable Classic Card (profile, like, follow, etc.) */
+.classic-card {
+    border: 1.5px solid #000;
+    background: #fff;
+    margin-bottom: 10px;
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.classic-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #c0c0c0;
+    border-bottom: 1.5px solid #000;
+    font-family: Chicago_12, monospace;
+    font-size: 12px;
+}
+
+.classic-card-body {
+    padding: 10px 12px;
+    font-family: Geneva_9, Chicago_12, sans-serif;
+    font-size: 13px;
+}
+
+/* Profile Classic */
+.profile-classic-name {
+    font-weight: bold;
+    font-size: 15px;
+    font-family: Chicago_12, monospace;
+    margin-bottom: 4px;
+}
+
+.profile-classic-bio {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    padding: 6px 0;
+    border-top: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+}
+
+.profile-classic-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+    font-family: Geneva_9, Chicago_12, monospace;
+    font-size: 12px;
+}
+
+.profile-classic-stat {
+    color: #333;
+}
+
+/* Rich Text Facets */
+.rt-link {
+    color: #0066cc;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.rt-link:hover {
+    color: #004499;
+}
+
+.rt-mention {
+    color: #0066cc;
+    font-weight: bold;
+    cursor: default;
+}
+
+.rt-tag {
+    color: #336699;
+    font-style: italic;
 }
