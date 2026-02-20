@@ -39,15 +39,15 @@ NSString *handleErrorDescriptionForCode(NSInteger code, NSString *handle, NSStri
 NSString *handleRecoverySuggestionForCode(NSInteger code, NSString *handle) {
     switch (code) {
         case 1001:
-            return @"Provide a handle in the format: username.domain (e.g., alice.bsky.social)";
+            return @"Provide a handle in the format: username.domain (e.g., alice.test)";
         case 1002:
             return @"Shorten your handle to 253 characters or less";
         case 1003:
             return @"Use a domain name instead of an IP address. For testing, you can use .test TLD (e.g., alice.test)";
         case 1004:
-            return @"Add a domain after the username. Valid examples: alice.bsky.social, bob.test, carol.com";
+            return @"Add a domain after the username. Valid examples: alice.test, bob.example.com";
         case 1005:
-            return @"Remove empty parts from your handle. For example, change 'alice..bsky.social' to 'alice.bsky.social'";
+            return @"Remove empty parts from your handle. For example, change 'alice..example.com' to 'alice.example.com'";
         case 1006:
             return @"Shorten each part of your handle to 63 characters or less";
         case 1007:

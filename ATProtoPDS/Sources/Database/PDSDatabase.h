@@ -431,7 +431,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  
  @abstract Retrieves an account by its handle.
  
- @param handle The handle to search for (e.g., "user.bsky.social").
+ @param handle The handle to search for (e.g., "alice.test").
  @param error On return, contains an error if the operation failed.
  @return The account object, or nil if not found.
  */
