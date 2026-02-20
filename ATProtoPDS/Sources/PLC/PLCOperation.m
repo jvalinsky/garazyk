@@ -7,6 +7,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 NSString * const PLCErrorDomain = @"com.atproto.plc";
 
+// Error Codes
+typedef NS_ENUM(NSInteger, PLCErrorCode) {
+    PLCErrorMissingSignature = 1,
+    PLCErrorUnsupportedType = 2,
+    PLCErrorInvalidDIDFormat = 3,
+    PLCErrorExceedsSizeLimit = 4,
+    PLCErrorInvalidRotationKeys = 5,
+    PLCErrorInvalidVerificationMethods = 6,
+    PLCErrorInvalidAlsoKnownAs = 7,
+    PLCErrorInvalidServices = 8
+};
+
 static NSString *PLCNormalizeAtprotoHandle(NSString *value) {
     if ([value hasPrefix:@"at://"]) {
         return value;
@@ -23,12 +35,16 @@ static NSString *PLCNormalizeServiceEndpoint(NSString *value) {
     return [NSString stringWithFormat:@"https://%@", value];
 }
 
+static BOOL isBase32Char(unichar c) {
+    return (c >= 'a' && c <= 'z') || (c >= '2' && c <= '7');
+}
+
 @implementation PLCOperation
 
 + (NSString *)calculateDIDForData:(NSDictionary *)data {
     NSError *error = nil;
     NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
-    if (!cborData) {
+    if (!cborData || cborData.length > 7500) {
         return @"";
     }
     
@@ -41,9 +57,49 @@ static NSString *PLCNormalizeServiceEndpoint(NSString *value) {
     return [NSString stringWithFormat:@"did:plc:%@", base32];
 }
 
++ (BOOL)isValidDidPlc:(NSString *)did {
+    if (!did || did.length != 32 || ![did hasPrefix:@"did:plc:"]) {
+        return NO;
+    }
+    for (NSUInteger i = 8; i < 32; i++) {
+        if (!isBase32Char([did characterAtIndex:i])) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
++ (BOOL)assertDidPlc:(NSString *)did error:(NSError **)error {
+    if (!did) {
+        if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidDIDFormat userInfo:@{NSLocalizedDescriptionKey: @"DID must be a string"}];
+        return NO;
+    }
+    if (![did hasPrefix:@"did:plc:"]) {
+        if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidDIDFormat userInfo:@{NSLocalizedDescriptionKey: @"Invalid did:plc prefix"}];
+        return NO;
+    }
+    if (did.length != 32) {
+        if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidDIDFormat userInfo:@{NSLocalizedDescriptionKey: @"did:plc must be exactly 32 characters long"}];
+        return NO;
+    }
+    for (NSUInteger i = 8; i < 32; i++) {
+        if (!isBase32Char([did characterAtIndex:i])) {
+            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidDIDFormat userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid character at position %lu", (unsigned long)i] forKey:NSLocalizedDescriptionKey]];
+            return NO;
+        }
+    }
+    return YES;
+}
+
 + (nullable NSString *)calculateCIDForOperation:(NSDictionary *)operation error:(NSError **)error {
     NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:operation error:error];
     if (!cborData) {
+        return nil;
+    }
+    if (cborData.length > 7500) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorExceedsSizeLimit userInfo:@{NSLocalizedDescriptionKey: @"Operation exceeds 7500 bytes DAG-CBOR limit"}];
+        }
         return nil;
     }
     NSData *digest = [CID sha256Digest:cborData];
@@ -54,6 +110,11 @@ static NSString *PLCNormalizeServiceEndpoint(NSString *value) {
 + (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error {
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = dict[@"did"];
+    
+    if (op.did && ![self assertDidPlc:op.did error:error]) {
+        return nil;
+    }
+    
     op.sig = dict[@"sig"];
     
     id prev = dict[@"prev"];
@@ -67,19 +128,64 @@ static NSString *PLCNormalizeServiceEndpoint(NSString *value) {
     
     if (!op.sig) {
         if (error) {
-            *error = [NSError errorWithDomain:PLCErrorDomain code:1 userInfo:@{NSLocalizedDescriptionKey: @"Invalid operation dictionary: missing sig"}];
+            *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorMissingSignature userInfo:@{NSLocalizedDescriptionKey: @"Invalid operation dictionary: missing sig"}];
         }
         return nil;
     }
     
     NSString *type = op.data[@"type"];
+    if (![type isKindOfClass:[NSString class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorUnsupportedType userInfo:@{NSLocalizedDescriptionKey: @"Operation missing valid type"}];
+        }
+        return nil;
+    }
+    
     if ([type isEqualToString:@"update_handle"]) {
         if (error) {
             *error = [NSError errorWithDomain:PLCErrorDomain
-                                         code:2
+                                         code:PLCErrorUnsupportedType
                                      userInfo:@{NSLocalizedDescriptionKey: @"update_handle is not supported in spec-compliant PLC"}];
         }
         return nil;
+    }
+    
+    if ([type isEqualToString:@"plc_operation"]) {
+        NSArray *rotationKeys = op.data[@"rotationKeys"];
+        if (![rotationKeys isKindOfClass:[NSArray class]] || rotationKeys.count == 0) {
+            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidRotationKeys userInfo:@{NSLocalizedDescriptionKey: @"plc_operation requires rotationKeys array"}];
+            return nil;
+        }
+        for (NSString *key in rotationKeys) {
+            if (![key isKindOfClass:[NSString class]] || ![key hasPrefix:@"did:key:"]) {
+                if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidRotationKeys userInfo:@{NSLocalizedDescriptionKey: @"rotationKeys must be valid did:key strings"}];
+                return nil;
+            }
+        }
+        
+        NSDictionary *verificationMethods = op.data[@"verificationMethods"];
+        if (verificationMethods && ![verificationMethods isKindOfClass:[NSDictionary class]]) {
+            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidVerificationMethods userInfo:@{NSLocalizedDescriptionKey: @"verificationMethods must be an object"}];
+            return nil;
+        }
+        
+        NSArray *alsoKnownAs = op.data[@"alsoKnownAs"];
+        if (alsoKnownAs && ![alsoKnownAs isKindOfClass:[NSArray class]]) {
+            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidAlsoKnownAs userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs must be an array"}];
+            return nil;
+        }
+        for (NSString *alias in alsoKnownAs) {
+            if (![alias isKindOfClass:[NSString class]] || ![alias hasPrefix:@"at://"]) {
+                if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidAlsoKnownAs userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs entries must be strings starting with at://"}];
+                return nil;
+            }
+        }
+        
+        NSDictionary *services = op.data[@"services"];
+        if (services && ![services isKindOfClass:[NSDictionary class]]) {
+            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidServices userInfo:@{NSLocalizedDescriptionKey: @"services must be an object"}];
+            return nil;
+        }
     }
     
     return op;
