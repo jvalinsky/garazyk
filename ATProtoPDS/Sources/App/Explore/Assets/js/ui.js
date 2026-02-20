@@ -4,6 +4,11 @@ import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
 import * as Poster from './poster.js';
 import { MSTViewer } from './mst-viewer.js';
+import { AdminPanel } from '/admin-ui/js/admin-panel.js';
+import { AdminOverview } from '/admin-ui/js/admin-overview.js';
+import { AdminAccounts } from '/admin-ui/js/admin-accounts.js';
+import { AdminReports } from '/admin-ui/js/admin-reports.js';
+import { AdminSystem } from '/admin-ui/js/admin-system.js';
 
 const PLC_BASE = 'http://localhost:2582';
 
@@ -125,11 +130,11 @@ function init() {
         });
     }
 
+    // MST Viewer
+    MSTViewer.init();
+
     // Session management (OAuth, login/logout, poster)
     initSession();
-
-    // Initialize MST Viewer
-    MSTViewer.init();
 
     window.openWindow('did-doc');
     loadAccounts();
@@ -152,7 +157,7 @@ async function loadAccounts() {
             li.dataset.did = account.did;
             li.dataset.handle = account.handle || '';
             li.innerHTML = `
-                <span style="font-size:14px">👤</span>
+                <span style="font-size:14px">◉</span>
                 <span class="account-handle">${escapeHtml(account.handle || account.did)}</span>
             `;
             li.addEventListener('click', () => selectAccount(account));
@@ -173,6 +178,8 @@ async function selectAccount(account) {
 
     currentDid = account.did;
     currentHandle = account.handle || '';
+
+    MSTViewer.setDID(account.did);
 
     document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
     document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
@@ -363,22 +370,420 @@ async function showRecordDetail(uri) {
 
     window.openWindow('record-detail');
 
-
     document.getElementById('record-title').textContent = uri;
-    document.getElementById('record-content').textContent = 'Loading...';
+    const container = document.getElementById('record-content');
+    container.className = 'code-block';
+    container.style.whiteSpace = 'pre-wrap';
+    container.style.wordBreak = 'break-all';
+    container.innerHTML = '';
+    container.textContent = 'Loading...';
 
     try {
         const record = await API.getRecord(uri);
         console.log('getRecord result:', record);
         if (record.error) {
-            document.getElementById('record-content').textContent = record.error;
+            container.textContent = record.error;
+            return;
+        }
+
+        const recordType = record.value?.$type || record.$type || '';
+        if (recordType === 'app.bsky.feed.post') {
+            renderPostWithToggle(container, record);
+        } else if (recordType === 'app.bsky.actor.profile') {
+            renderGenericWithToggle(container, record, renderProfileClassic(record.value || record));
+        } else if (recordType === 'app.bsky.feed.like') {
+            renderGenericWithToggle(container, record, renderLikeClassic(record.value || record));
+        } else if (recordType === 'app.bsky.graph.follow') {
+            renderGenericWithToggle(container, record, renderFollowClassic(record.value || record));
         } else {
-            document.getElementById('record-content').textContent = JSON.stringify(record, null, 2);
+            container.textContent = JSON.stringify(record, null, 2);
         }
     } catch (e) {
         console.error('Failed to get record:', e);
-        document.getElementById('record-content').textContent = 'Error: ' + e.message;
+        container.textContent = 'Error: ' + e.message;
     }
+}
+
+function renderPostWithToggle(container, record) {
+    const postData = record.value || record;
+    const jsonStr = JSON.stringify(record, null, 2);
+
+    // Switch to a plain div for rich content
+    container.className = '';
+    container.style.whiteSpace = '';
+    container.style.wordBreak = '';
+    container.innerHTML = '';
+
+    // Toggle bar
+    const toggleBar = document.createElement('div');
+    toggleBar.style.cssText = 'margin-bottom: 8px; display: flex; gap: 4px;';
+
+    const btnRendered = document.createElement('button');
+    btnRendered.className = 'btn btn-default';
+    btnRendered.textContent = 'Rendered';
+    btnRendered.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
+
+    const btnJSON = document.createElement('button');
+    btnJSON.className = 'btn';
+    btnJSON.textContent = 'JSON';
+    btnJSON.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
+
+    toggleBar.appendChild(btnRendered);
+    toggleBar.appendChild(btnJSON);
+    container.appendChild(toggleBar);
+
+    // Rendered view
+    const renderedView = document.createElement('div');
+    renderedView.innerHTML = renderPostClassic(postData);
+    container.appendChild(renderedView);
+
+    // JSON view
+    const jsonView = document.createElement('pre');
+    jsonView.className = 'code-block';
+    jsonView.textContent = jsonStr;
+    jsonView.style.display = 'none';
+    container.appendChild(jsonView);
+
+    btnRendered.addEventListener('click', () => {
+        renderedView.style.display = '';
+        jsonView.style.display = 'none';
+        btnRendered.className = 'btn btn-default';
+        btnJSON.className = 'btn';
+    });
+
+    btnJSON.addEventListener('click', () => {
+        renderedView.style.display = 'none';
+        jsonView.style.display = '';
+        btnJSON.className = 'btn btn-default';
+        btnRendered.className = 'btn';
+    });
+}
+
+function renderGenericWithToggle(container, record, renderedHtml) {
+    const jsonStr = JSON.stringify(record, null, 2);
+    container.className = '';
+    container.style.whiteSpace = '';
+    container.style.wordBreak = '';
+    container.innerHTML = '';
+
+    const toggleBar = document.createElement('div');
+    toggleBar.style.cssText = 'margin-bottom: 8px; display: flex; gap: 4px;';
+
+    const btnRendered = document.createElement('button');
+    btnRendered.className = 'btn btn-default';
+    btnRendered.textContent = 'Rendered';
+    btnRendered.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
+
+    const btnJSON = document.createElement('button');
+    btnJSON.className = 'btn';
+    btnJSON.textContent = 'JSON';
+    btnJSON.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
+
+    toggleBar.appendChild(btnRendered);
+    toggleBar.appendChild(btnJSON);
+    container.appendChild(toggleBar);
+
+    const renderedView = document.createElement('div');
+    renderedView.innerHTML = renderedHtml;
+    container.appendChild(renderedView);
+
+    const jsonView = document.createElement('pre');
+    jsonView.className = 'code-block';
+    jsonView.textContent = jsonStr;
+    jsonView.style.display = 'none';
+    container.appendChild(jsonView);
+
+    btnRendered.addEventListener('click', () => {
+        renderedView.style.display = '';
+        jsonView.style.display = 'none';
+        btnRendered.className = 'btn btn-default';
+        btnJSON.className = 'btn';
+    });
+
+    btnJSON.addEventListener('click', () => {
+        renderedView.style.display = 'none';
+        jsonView.style.display = '';
+        btnJSON.className = 'btn btn-default';
+        btnRendered.className = 'btn';
+    });
+}
+
+function renderRichText(text, facets) {
+    if (!facets || facets.length === 0) {
+        return escapeHtml(text).replace(/\n/g, '<br>');
+    }
+
+    // Convert text to byte array for proper indexing
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const bytes = encoder.encode(text);
+
+    // Sort facets by byteStart
+    const sorted = [...facets].sort((a, b) => {
+        const aStart = a.index?.byteStart ?? 0;
+        const bStart = b.index?.byteStart ?? 0;
+        return aStart - bStart;
+    });
+
+    let html = '';
+    let lastEnd = 0;
+
+    for (const facet of sorted) {
+        const start = facet.index?.byteStart ?? 0;
+        const end = facet.index?.byteEnd ?? 0;
+        if (start < lastEnd || end > bytes.length) continue;
+
+        // Plain text before this facet
+        if (start > lastEnd) {
+            html += escapeHtml(decoder.decode(bytes.slice(lastEnd, start))).replace(/\n/g, '<br>');
+        }
+
+        const facetText = escapeHtml(decoder.decode(bytes.slice(start, end)));
+        const feature = facet.features?.[0];
+
+        if (feature?.$type === 'app.bsky.richtext.facet#link') {
+            html += '<a href="' + escapeHtml(feature.uri) + '" target="_blank" class="rt-link">' + facetText + '</a>';
+        } else if (feature?.$type === 'app.bsky.richtext.facet#mention') {
+            html += '<span class="rt-mention" title="' + escapeHtml(feature.did || '') + '">@' + facetText.replace(/^@/, '') + '</span>';
+        } else if (feature?.$type === 'app.bsky.richtext.facet#tag') {
+            html += '<span class="rt-tag">#' + facetText.replace(/^#/, '') + '</span>';
+        } else {
+            html += facetText;
+        }
+
+        lastEnd = end;
+    }
+
+    // Remaining text
+    if (lastEnd < bytes.length) {
+        html += escapeHtml(decoder.decode(bytes.slice(lastEnd))).replace(/\n/g, '<br>');
+    }
+
+    return html;
+}
+
+function renderPostClassic(postData) {
+    const text = escapeHtml(postData.text || '');
+    const createdAt = postData.createdAt || '';
+    const langs = (postData.langs || []).map(l => escapeHtml(l)).join(', ');
+
+    let dateStr = '';
+    if (createdAt) {
+        try {
+            const d = new Date(createdAt);
+            dateStr = d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+                + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+            dateStr = escapeHtml(createdAt);
+        }
+    }
+
+    let html = '<div class="post-classic">';
+
+    // Header
+    html += '<div class="post-classic-header">';
+    html += '<span class="post-classic-icon">¶</span>';
+    html += '<span class="post-classic-type">app.bsky.feed.post</span>';
+    if (dateStr) {
+        html += '<span class="post-classic-date">' + dateStr + '</span>';
+    }
+    html += '</div>';
+
+    // Body
+    html += '<div class="post-classic-body">';
+    const richHtml = renderRichText(postData.text || '', postData.facets);
+    html += '<div class="post-classic-text">' + richHtml + '</div>';
+    html += '</div>';
+
+    // Reply info
+    if (postData.reply) {
+        html += '<div class="post-classic-meta">';
+        html += '<span class="post-classic-meta-label">↩ Reply to:</span> ';
+        html += '<code class="post-classic-meta-value">' + escapeHtml(postData.reply.parent?.uri || 'unknown') + '</code>';
+        html += '</div>';
+    }
+
+    // Embeds
+    if (postData.embed) {
+        html += '<div class="post-classic-embed">';
+        html += renderEmbedClassic(postData.embed);
+        html += '</div>';
+    }
+
+    // Facets (note: already rendered in rich text above)
+    if (postData.facets && postData.facets.length > 0) {
+        html += '<div class="post-classic-meta">';
+        html += '<span class="post-classic-meta-label">Facets:</span> ';
+        html += escapeHtml(postData.facets.length + ' rich-text annotation(s)');
+        html += '</div>';
+    }
+
+    // Languages
+    if (langs) {
+        html += '<div class="post-classic-meta">';
+        html += '<span class="post-classic-meta-label">Lang:</span> ';
+        html += '<span class="post-classic-meta-value">' + langs + '</span>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function renderEmbedClassic(embed) {
+    const type = embed.$type || '';
+    let html = '<div class="post-classic-embed-inner">';
+
+    if (type === 'app.bsky.embed.images') {
+        const images = embed.images || [];
+        html += '<span class="post-classic-meta-label">▣ ' + images.length + ' image(s)</span>';
+        for (const img of images) {
+            if (img.alt) {
+                html += '<div class="post-classic-embed-alt">Alt: ' + escapeHtml(img.alt) + '</div>';
+            }
+        }
+    } else if (type === 'app.bsky.embed.external') {
+        const ext = embed.external || {};
+        html += '<span class="post-classic-meta-label">⌘ External link</span>';
+        if (ext.title) html += '<div style="font-weight: bold; margin-top: 4px;">' + escapeHtml(ext.title) + '</div>';
+        if (ext.uri) html += '<div><code>' + escapeHtml(ext.uri) + '</code></div>';
+        if (ext.description) html += '<div style="color: #666; margin-top: 2px;">' + escapeHtml(ext.description) + '</div>';
+    } else if (type === 'app.bsky.embed.record') {
+        html += '<span class="post-classic-meta-label">⊞ Quoted record</span>';
+        if (embed.record?.uri) html += '<div><code>' + escapeHtml(embed.record.uri) + '</code></div>';
+    } else if (type === 'app.bsky.embed.recordWithMedia') {
+        html += '<span class="post-classic-meta-label">⊞ Record + Media</span>';
+        if (embed.record?.record?.uri) html += '<div><code>' + escapeHtml(embed.record.record.uri) + '</code></div>';
+    } else {
+        html += '<span class="post-classic-meta-label">Embed: ' + escapeHtml(type) + '</span>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function renderProfileClassic(profileData) {
+    const displayName = escapeHtml(profileData.displayName || '');
+    const description = escapeHtml(profileData.description || '');
+    const createdAt = profileData.createdAt || '';
+
+    let dateStr = '';
+    if (createdAt) {
+        try {
+            const d = new Date(createdAt);
+            dateStr = d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (_) {
+            dateStr = escapeHtml(createdAt);
+        }
+    }
+
+    let html = '<div class="classic-card">';
+    html += '<div class="classic-card-header">';
+    html += '<span class="post-classic-icon">☰</span>';
+    html += '<span class="post-classic-type">app.bsky.actor.profile</span>';
+    if (dateStr) {
+        html += '<span class="post-classic-date">' + dateStr + '</span>';
+    }
+    html += '</div>';
+
+    html += '<div class="classic-card-body">';
+    if (displayName) {
+        html += '<div class="profile-classic-name">' + displayName + '</div>';
+    }
+    if (description) {
+        html += '<div class="profile-classic-bio">' + description.replace(/\n/g, '<br>') + '</div>';
+    }
+
+    // Avatar/Banner refs
+    if (profileData.avatar) {
+        html += '<div class="post-classic-meta" style="border-top: none;">';
+        html += '<span class="post-classic-meta-label">▣ Avatar:</span> ';
+        html += '<code class="post-classic-meta-value">' + escapeHtml(profileData.avatar?.ref?.$link || 'blob') + '</code>';
+        html += '</div>';
+    }
+    if (profileData.banner) {
+        html += '<div class="post-classic-meta" style="border-top: none;">';
+        html += '<span class="post-classic-meta-label">▤ Banner:</span> ';
+        html += '<code class="post-classic-meta-value">' + escapeHtml(profileData.banner?.ref?.$link || 'blob') + '</code>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+function renderLikeClassic(likeData) {
+    const createdAt = likeData.createdAt || '';
+    const subjectUri = escapeHtml(likeData.subject?.uri || '');
+    const subjectCid = escapeHtml(likeData.subject?.cid || '');
+
+    let dateStr = '';
+    if (createdAt) {
+        try {
+            const d = new Date(createdAt);
+            dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+            dateStr = escapeHtml(createdAt);
+        }
+    }
+
+    let html = '<div class="classic-card">';
+    html += '<div class="classic-card-header">';
+    html += '<span class="post-classic-icon">♡</span>';
+    html += '<span class="post-classic-type">app.bsky.feed.like</span>';
+    if (dateStr) {
+        html += '<span class="post-classic-date">' + dateStr + '</span>';
+    }
+    html += '</div>';
+    html += '<div class="classic-card-body">';
+    html += '<div class="post-classic-meta" style="border: none; padding: 0;">';
+    html += '<span class="post-classic-meta-label">Subject:</span> ';
+    html += '<code class="post-classic-meta-value">' + subjectUri + '</code>';
+    html += '</div>';
+    if (subjectCid) {
+        html += '<div class="post-classic-meta" style="border: none; padding: 2px 0 0;">';
+        html += '<span class="post-classic-meta-label">CID:</span> ';
+        html += '<code class="post-classic-meta-value">' + subjectCid.slice(0, 16) + '…</code>';
+        html += '</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+function renderFollowClassic(followData) {
+    const createdAt = followData.createdAt || '';
+    const subject = escapeHtml(followData.subject || '');
+
+    let dateStr = '';
+    if (createdAt) {
+        try {
+            const d = new Date(createdAt);
+            dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+            dateStr = escapeHtml(createdAt);
+        }
+    }
+
+    let html = '<div class="classic-card">';
+    html += '<div class="classic-card-header">';
+    html += '<span class="post-classic-icon">⇄</span>';
+    html += '<span class="post-classic-type">app.bsky.graph.follow</span>';
+    if (dateStr) {
+        html += '<span class="post-classic-date">' + dateStr + '</span>';
+    }
+    html += '</div>';
+    html += '<div class="classic-card-body">';
+    html += '<div class="post-classic-meta" style="border: none; padding: 0;">';
+    html += '<span class="post-classic-meta-label">Following:</span> ';
+    html += '<code class="post-classic-meta-value">' + subject + '</code>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    return html;
 }
 
 async function showFeedPosts() {
@@ -394,20 +799,80 @@ async function showFeedPosts() {
     }
 
     let html = '<p class="description">Found <strong>' + result.posts.length + '</strong> posts.</p>';
-    for (const post of result.posts) {
-        const text = escapeHtml(post.record?.text || '');
-        const date = post.record?.createdAt || '';
+    for (let i = 0; i < result.posts.length; i++) {
+        const post = result.posts[i];
+        const postData = post.record || {};
+        const text = escapeHtml(postData.text || '');
         const handle = escapeHtml(post.author?.handle || post.author?.did || '');
-        html += '<div style="border:1px solid #999; padding:8px; margin-bottom:8px; background:#fff;">';
-        html += '<div style="display:flex; justify-content:space-between; margin-bottom:4px;">';
-        html += '<strong>' + handle + '</strong>';
-        html += '<span style="color:#666;">' + escapeHtml(date) + '</span>';
+        const jsonStr = escapeHtml(JSON.stringify(post, null, 2));
+
+        let dateStr = '';
+        if (postData.createdAt) {
+            try {
+                const d = new Date(postData.createdAt);
+                dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            } catch (_) {
+                dateStr = escapeHtml(postData.createdAt);
+            }
+        }
+
+        html += '<div class="post-classic">';
+
+        // Header with toggle
+        html += '<div class="post-classic-header">';
+        html += '<span class="post-classic-icon">◉</span>';
+        html += '<span class="post-classic-type">' + handle + '</span>';
+        if (dateStr) {
+            html += '<span class="post-classic-date">' + dateStr + '</span>';
+        }
+        html += '<button class="btn post-classic-toggle" data-toggle-post="' + i + '">JSON</button>';
         html += '</div>';
-        html += '<div style="white-space:pre-wrap;">' + text + '</div>';
+
+        // Rendered body
+        html += '<div class="post-classic-body" id="post-rendered-' + i + '">';
+        html += '<div class="post-classic-text">' + text.replace(/\n/g, '<br>') + '</div>';
+
+        if (postData.reply) {
+            html += '<div class="post-classic-meta" style="margin-top: 6px;">';
+            html += '<span class="post-classic-meta-label">↩ Reply to:</span> ';
+            html += '<code class="post-classic-meta-value">' + escapeHtml(postData.reply.parent?.uri || 'unknown') + '</code>';
+            html += '</div>';
+        }
+
+        if (postData.embed) {
+            html += '<div class="post-classic-embed">';
+            html += renderEmbedClassic(postData.embed);
+            html += '</div>';
+        }
+
+        html += '</div>';
+
+        // JSON body (hidden)
+        html += '<pre class="code-block" id="post-json-' + i + '" style="display: none; margin: 0;">' + jsonStr + '</pre>';
+
         html += '</div>';
     }
 
     content.innerHTML = html;
+
+    // Attach toggle handlers
+    content.querySelectorAll('[data-toggle-post]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = btn.dataset.togglePost;
+            const rendered = document.getElementById('post-rendered-' + idx);
+            const json = document.getElementById('post-json-' + idx);
+            if (json.style.display === 'none') {
+                json.style.display = '';
+                rendered.style.display = 'none';
+                btn.textContent = 'Rendered';
+            } else {
+                json.style.display = 'none';
+                rendered.style.display = '';
+                btn.textContent = 'JSON';
+            }
+        });
+    });
 }
 
 async function showFeedLikes() {
@@ -423,20 +888,62 @@ async function showFeedLikes() {
     }
 
     let html = '<p class="description">Found <strong>' + result.likes.length + '</strong> likes.</p>';
-    html += '<table class="param-table"><thead><tr><th>Subject</th><th>Author</th><th>Date</th></tr></thead><tbody>';
-    for (const like of result.likes) {
+    for (let i = 0; i < result.likes.length; i++) {
+        const like = result.likes[i];
         const subjectUri = escapeHtml(like.subject?.uri || '');
-        const subjectHandle = escapeHtml(like.subject?.author?.handle || like.subject?.author?.did || '');
-        const date = escapeHtml(like.createdAt || '');
-        html += '<tr>';
-        html += '<td><code>' + subjectUri + '</code></td>';
-        html += '<td>' + subjectHandle + '</td>';
-        html += '<td>' + date + '</td>';
-        html += '</tr>';
+        const createdAt = like.createdAt || '';
+        const jsonStr = escapeHtml(JSON.stringify(like, null, 2));
+
+        let dateStr = '';
+        if (createdAt) {
+            try {
+                const d = new Date(createdAt);
+                dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            } catch (_) {
+                dateStr = escapeHtml(createdAt);
+            }
+        }
+
+        html += '<div class="classic-card">';
+        html += '<div class="classic-card-header">';
+        html += '<span class="post-classic-icon">♡</span>';
+        html += '<span class="post-classic-type">Like</span>';
+        if (dateStr) {
+            html += '<span class="post-classic-date">' + dateStr + '</span>';
+        }
+        html += '<button class="btn post-classic-toggle" data-toggle-like="' + i + '">JSON</button>';
+        html += '</div>';
+
+        html += '<div class="classic-card-body" id="like-rendered-' + i + '">';
+        html += '<div class="post-classic-meta" style="border: none; padding: 0;">';
+        html += '<span class="post-classic-meta-label">Subject:</span> ';
+        html += '<code class="post-classic-meta-value">' + subjectUri + '</code>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<pre class="code-block" id="like-json-' + i + '" style="display: none; margin: 0;">' + jsonStr + '</pre>';
+        html += '</div>';
     }
-    html += '</tbody></table>';
 
     content.innerHTML = html;
+
+    content.querySelectorAll('[data-toggle-like]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = btn.dataset.toggleLike;
+            const rendered = document.getElementById('like-rendered-' + idx);
+            const json = document.getElementById('like-json-' + idx);
+            if (json.style.display === 'none') {
+                json.style.display = '';
+                rendered.style.display = 'none';
+                btn.textContent = 'Rendered';
+            } else {
+                json.style.display = 'none';
+                rendered.style.display = '';
+                btn.textContent = 'JSON';
+            }
+        });
+    });
 }
 
 async function showFeedReposts() {
@@ -481,17 +988,52 @@ async function showGraphFollows() {
     }
 
     let html = '<p class="description">Following <strong>' + result.actors.length + '</strong> accounts.</p>';
-    html += '<table class="param-table"><thead><tr><th>Handle</th><th>DID</th><th>Display Name</th></tr></thead><tbody>';
-    for (const actor of result.actors) {
-        html += '<tr>';
-        html += '<td><strong>' + escapeHtml(actor.handle) + '</strong></td>';
-        html += '<td><code>' + escapeHtml(actor.did) + '</code></td>';
-        html += '<td>' + escapeHtml(actor.displayName || '') + '</td>';
-        html += '</tr>';
+    for (let i = 0; i < result.actors.length; i++) {
+        const actor = result.actors[i];
+        const handle = escapeHtml(actor.handle || '');
+        const did = escapeHtml(actor.did || '');
+        const displayName = escapeHtml(actor.displayName || '');
+        const jsonStr = escapeHtml(JSON.stringify(actor, null, 2));
+
+        html += '<div class="classic-card">';
+        html += '<div class="classic-card-header">';
+        html += '<span class="post-classic-icon">◉</span>';
+        html += '<span class="post-classic-type">' + handle + '</span>';
+        html += '<button class="btn post-classic-toggle" data-toggle-follow="' + i + '">JSON</button>';
+        html += '</div>';
+
+        html += '<div class="classic-card-body" id="follow-rendered-' + i + '">';
+        if (displayName) {
+            html += '<div class="profile-classic-name" style="font-size: 12px;">' + displayName + '</div>';
+        }
+        html += '<div class="post-classic-meta" style="border: none; padding: 2px 0 0;">';
+        html += '<span class="post-classic-meta-label">DID:</span> ';
+        html += '<code class="post-classic-meta-value">' + did + '</code>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<pre class="code-block" id="follow-json-' + i + '" style="display: none; margin: 0;">' + jsonStr + '</pre>';
+        html += '</div>';
     }
-    html += '</tbody></table>';
 
     content.innerHTML = html;
+
+    content.querySelectorAll('[data-toggle-follow]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = btn.dataset.toggleFollow;
+            const rendered = document.getElementById('follow-rendered-' + idx);
+            const json = document.getElementById('follow-json-' + idx);
+            if (json.style.display === 'none') {
+                json.style.display = '';
+                rendered.style.display = 'none';
+                btn.textContent = 'Rendered';
+            } else {
+                json.style.display = 'none';
+                rendered.style.display = '';
+                btn.textContent = 'JSON';
+            }
+        });
+    });
 }
 
 async function showActorProfile() {
@@ -506,26 +1048,77 @@ async function showActorProfile() {
         return;
     }
 
-    let html = '<div style="border:1px solid #999; padding:10px; background:#fff;">';
-    html += '<div style="margin-bottom:10px;">';
-    html += '<div style="font-size:16px; font-weight:bold;">' + escapeHtml(result.displayName || result.handle) + '</div>';
-    html += '<div style="color:#666;">@' + escapeHtml(result.handle) + '</div>';
-    html += '<div style="color:#999;"><code>' + escapeHtml(result.did) + '</code></div>';
-    html += '</div>';
-    if (result.description) {
-        html += '<div style="margin-bottom:10px; white-space:pre-wrap;">' + escapeHtml(result.description) + '</div>';
-    }
-    html += '<div style="display:flex; gap:20px;">';
-    html += '<div><strong>' + (result.postsCount || 0) + '</strong> posts</div>';
-    html += '<div><strong>' + (result.followsCount || 0) + '</strong> following</div>';
-    html += '<div><strong>' + (result.followersCount || 0) + '</strong> followers</div>';
-    html += '</div>';
+    const jsonStr = JSON.stringify(result, null, 2);
+
+    let dateStr = '';
     if (result.createdAt) {
-        html += '<div style="margin-top:10px; color:#999;">Joined: ' + escapeHtml(result.createdAt) + '</div>';
+        try {
+            const d = new Date(result.createdAt);
+            dateStr = d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (_) {
+            dateStr = escapeHtml(result.createdAt);
+        }
+    }
+
+    // Toggle bar
+    let html = '<div style="margin-bottom: 8px; display: flex; gap: 4px;">';
+    html += '<button class="btn btn-default" id="profile-btn-rendered" style="font-family: Chicago_12, monospace; font-size: 12px;">Rendered</button>';
+    html += '<button class="btn" id="profile-btn-json" style="font-family: Chicago_12, monospace; font-size: 12px;">JSON</button>';
+    html += '</div>';
+
+    // Rendered view
+    html += '<div id="profile-rendered-view">';
+    html += '<div class="classic-card">';
+    html += '<div class="classic-card-header">';
+    html += '<span class="post-classic-icon">☰</span>';
+    html += '<span class="post-classic-type">' + escapeHtml(result.handle || 'Profile') + '</span>';
+    if (dateStr) {
+        html += '<span class="post-classic-date">Joined ' + dateStr + '</span>';
     }
     html += '</div>';
 
+    html += '<div class="classic-card-body">';
+    html += '<div class="profile-classic-name">' + escapeHtml(result.displayName || result.handle) + '</div>';
+    html += '<div style="color:#666; font-size: 11px; margin-bottom: 6px;">@' + escapeHtml(result.handle) + ' · <code style="font-size: 10px;">' + escapeHtml(result.did) + '</code></div>';
+
+    if (result.description) {
+        html += '<div class="profile-classic-bio">' + escapeHtml(result.description).replace(/\n/g, '<br>') + '</div>';
+    }
+
+    html += '<div class="profile-classic-stats">';
+    html += '<div class="profile-classic-stat"><strong>' + (result.postsCount || 0) + '</strong> posts</div>';
+    html += '<div class="profile-classic-stat"><strong>' + (result.followsCount || 0) + '</strong> following</div>';
+    html += '<div class="profile-classic-stat"><strong>' + (result.followersCount || 0) + '</strong> followers</div>';
+    html += '</div>';
+
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // JSON view (hidden)
+    html += '<pre class="code-block" id="profile-json-view" style="display: none;">' + escapeHtml(jsonStr) + '</pre>';
+
     content.innerHTML = html;
+
+    // Toggle handlers
+    const btnRendered = document.getElementById('profile-btn-rendered');
+    const btnJSON = document.getElementById('profile-btn-json');
+    const renderedView = document.getElementById('profile-rendered-view');
+    const jsonView = document.getElementById('profile-json-view');
+
+    btnRendered.addEventListener('click', () => {
+        renderedView.style.display = '';
+        jsonView.style.display = 'none';
+        btnRendered.className = 'btn btn-default';
+        btnJSON.className = 'btn';
+    });
+
+    btnJSON.addEventListener('click', () => {
+        renderedView.style.display = 'none';
+        jsonView.style.display = '';
+        btnJSON.className = 'btn btn-default';
+        btnRendered.className = 'btn';
+    });
 }
 
 async function handleCidDecode() {
@@ -744,15 +1337,7 @@ function initSession() {
     if (menuInviteCodes) {
         menuInviteCodes.addEventListener('click', (e) => {
             e.preventDefault();
-            if (!AdminAPI.isAuthenticated()) {
-                AdminAPI.promptLogin(() => {
-                    document.getElementById('win-invite-codes').style.display = 'block';
-                    AdminAPI.loadInviteCodes();
-                });
-                return;
-            }
-            document.getElementById('win-invite-codes').style.display = 'block';
-            AdminAPI.loadInviteCodes();
+            openAdminPanel('system');
         });
     }
 
@@ -761,15 +1346,7 @@ function initSession() {
     if (menuModeration) {
         menuModeration.addEventListener('click', (e) => {
             e.preventDefault();
-            if (!AdminAPI.isAuthenticated()) {
-                AdminAPI.promptLogin(() => {
-                    document.getElementById('win-moderation').style.display = 'block';
-                    AdminAPI.loadModeration();
-                });
-                return;
-            }
-            document.getElementById('win-moderation').style.display = 'block';
-            AdminAPI.loadModeration();
+            openAdminPanel('reports');
         });
     }
 
@@ -790,6 +1367,71 @@ function initSession() {
     const inviteGenBtn = document.getElementById('invite-generate-btn');
     if (inviteGenBtn) {
         inviteGenBtn.addEventListener('click', () => AdminAPI.generateInviteCode());
+    }
+
+    // --- Admin Panel Tab Initialization ---
+    initAdminPanelTabs();
+}
+
+function openAdminPanel(tab = 'overview') {
+    if (!AdminPanel.isAuthenticated()) {
+        AdminAPI.promptLogin(() => {
+            AdminPanel.setToken(sessionStorage.getItem('admin_token'));
+            showAdminPanel(tab);
+        });
+        return;
+    }
+    showAdminPanel(tab);
+}
+
+function showAdminPanel(tab) {
+    const panel = document.getElementById('win-admin-panel');
+    if (panel) {
+        panel.style.display = 'block';
+        AdminPanel.switchTab(tab);
+        
+        if (tab === 'overview') {
+            AdminOverview.load();
+        } else if (tab === 'accounts') {
+            AdminAccounts.load();
+        } else if (tab === 'reports') {
+            AdminReports.load();
+        } else if (tab === 'system') {
+            AdminSystem.load();
+        }
+    }
+}
+
+function initAdminPanelTabs() {
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.dataset.tab;
+            AdminPanel.switchTab(tabId);
+            
+            if (tabId === 'overview') {
+                AdminOverview.load();
+            } else if (tabId === 'accounts') {
+                AdminAccounts.load();
+            } else if (tabId === 'reports') {
+                AdminReports.load();
+            } else if (tabId === 'system') {
+                AdminSystem.load();
+            }
+        });
+    });
+
+    const accountsSearch = document.getElementById('admin-accounts-search');
+    if (accountsSearch) {
+        accountsSearch.addEventListener('input', () => {
+            AdminAccounts.search(accountsSearch.value);
+        });
+    }
+
+    const reportsStatusFilter = document.getElementById('admin-reports-status-filter');
+    if (reportsStatusFilter) {
+        reportsStatusFilter.addEventListener('change', () => {
+            AdminReports.setStatusFilter(reportsStatusFilter.value);
+        });
     }
 }
 
@@ -859,7 +1501,7 @@ const AdminAPI = {
         const resp = await fetch(url, { ...opts, headers });
         if (resp.status === 401) {
             sessionStorage.removeItem('admin_token');
-            this.promptLogin(() => {});
+            this.promptLogin(() => { });
             throw new Error('Admin session expired');
         }
         return resp;
@@ -971,8 +1613,8 @@ const AdminAPI = {
                     <td style="padding: 4px; text-align: center;">${status}</td>
                     <td style="padding: 4px; text-align: center;">
                         ${user.deactivated
-                            ? '<button class="btn" data-enable-did="' + escapeHtml(user.did) + '">Enable</button>'
-                            : '<button class="btn" data-disable-did="' + escapeHtml(user.did) + '">Disable</button>'}
+                        ? '<button class="btn" data-enable-did="' + escapeHtml(user.did) + '">Enable</button>'
+                        : '<button class="btn" data-disable-did="' + escapeHtml(user.did) + '">Disable</button>'}
                     </td>
                 `;
                 tbody.appendChild(tr);

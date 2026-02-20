@@ -365,6 +365,12 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for com.atproto.admin.moderateRecord. */
 - (void)registerComAtprotoAdminModerateRecord:(XrpcMethodHandler)handler;
 
+/*! Registers handler for com.atproto.admin.getModerationReports. */
+- (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler;
+
+/*! Registers handler for com.atproto.admin.resolveReport. */
+- (void)registerComAtprotoAdminResolveReport:(XrpcMethodHandler)handler;
+
 // MARK: - Label Methods
 
 /*! Registers handler for com.atproto.label.queryLabels. */

@@ -86,6 +86,10 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self handleAdminMetrics:headers body:body];
     } else if ([path isEqualToString:@"/admin/health"]) {
         return [self handleAdminHealth:headers body:body];
+    } else if ([path isEqualToString:@"/admin/stats"]) {
+        return [self handleAdminStats:headers body:body];
+    } else if ([path isEqualToString:@"/admin/audit-log"]) {
+        return [self handleAdminAuditLog:headers body:body];
     }
 
     return nil;
@@ -101,7 +105,9 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             @"/admin/invites/disable",
             @"/admin/blobs",
             @"/admin/metrics",
-            @"/admin/health"
+            @"/admin/health",
+            @"/admin/stats",
+            @"/admin/audit-log"
         ]
     }];
 }
@@ -331,6 +337,56 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             }
         }
     }];
+}
+
+- (NSString *)handleAdminStats:(NSDictionary *)headers body:(NSData *)body {
+    PDSAdminService *svc = self.adminService;
+    if (!svc) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": @"Admin service unavailable"}];
+    }
+    
+    NSError *error = nil;
+    NSDictionary *stats = [svc getServerStatsWithError:&error];
+    if (!stats) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": error.localizedDescription ?: @"Failed to get stats"}];
+    }
+    
+    return [self jsonResponseWithStatus:200 body:stats];
+}
+
+- (NSString *)handleAdminAuditLog:(NSDictionary *)headers body:(NSData *)body {
+    PDSAdminService *svc = self.adminService;
+    if (!svc) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": @"Admin service unavailable"}];
+    }
+    
+    // Parse query params from body (POST) or use defaults
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    NSInteger limit = 50;
+    NSString *cursor = nil;
+    
+    if (body) {
+        NSError *parseError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        if (json && [json isKindOfClass:[NSDictionary class]]) {
+            if (json[@"admin_did"]) filters[@"admin_did"] = json[@"admin_did"];
+            if (json[@"action"]) filters[@"action"] = json[@"action"];
+            if (json[@"subject_type"]) filters[@"subject_type"] = json[@"subject_type"];
+            if (json[@"subject_id"]) filters[@"subject_id"] = json[@"subject_id"];
+            if (json[@"since"]) filters[@"since"] = json[@"since"];
+            if (json[@"until"]) filters[@"until"] = json[@"until"];
+            if (json[@"limit"]) limit = [json[@"limit"] integerValue];
+            if (json[@"cursor"]) cursor = json[@"cursor"];
+        }
+    }
+    
+    NSError *error = nil;
+    NSDictionary *result = [svc queryAuditLog:filters limit:limit cursor:cursor error:&error];
+    if (!result) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": error.localizedDescription ?: @"Failed to query audit log"}];
+    }
+    
+    return [self jsonResponseWithStatus:200 body:result];
 }
 
 - (NSString *)jsonResponseWithStatus:(NSInteger)status body:(NSDictionary *)body {

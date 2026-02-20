@@ -825,4 +825,43 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 @end
 
+/*!
+ @category PDSDatabase (AdminAudit)
+ 
+ @abstract Admin audit logging methods.
+ */
+@interface PDSDatabase (AdminAudit)
+
+- (BOOL)insertAuditLogEntry:(NSDictionary *)entry error:(NSError **)error;
+- (NSArray<NSDictionary *> *)queryAuditLog:(NSDictionary *)filters limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
+- (BOOL)deleteAuditLogsOlderThanDays:(NSInteger)days error:(NSError **)error;
+
+@end
+
+/*!
+ @category PDSDatabase (Reports)
+ 
+ @abstract Moderation reports methods.
+ */
+@interface PDSDatabase (Reports)
+
+- (NSString *)createReport:(NSDictionary *)report error:(NSError **)error;
+- (NSArray<NSDictionary *> *)queryReports:(NSDictionary *)filters limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
+- (nullable NSDictionary *)getReportById:(NSString *)reportId error:(NSError **)error;
+- (BOOL)updateReportStatus:(NSString *)reportId status:(NSString *)status resolvedBy:(nullable NSString *)adminDid notes:(nullable NSString *)notes error:(NSError **)error;
+
+@end
+
+/*!
+ @category PDSDatabase (AdminConfig)
+ 
+ @abstract Admin configuration methods.
+ */
+@interface PDSDatabase (AdminConfig)
+
+- (nullable NSString *)getAdminConfigValue:(NSString *)key error:(NSError **)error;
+- (BOOL)setAdminConfigValue:(NSString *)value forKey:(NSString *)key error:(NSError **)error;
+
+@end
+
 NS_ASSUME_NONNULL_END

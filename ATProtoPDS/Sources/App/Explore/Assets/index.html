@@ -7,6 +7,7 @@
     <title> Kaszlak</title>
     <link rel="stylesheet" href="/css/system.css">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/admin-ui/admin-panel.css">
 </head>
 
 <body>
@@ -142,7 +143,7 @@
                             <button class="btn" id="back-records">◀ Back</button>
                             <span id="record-title" style="font-weight:bold; margin-left:10px;"></span>
                         </div>
-                        <pre id="record-content" class="code-block"></pre>
+                        <div id="record-content"></div>
                     </section>
 
                     <!-- Graph / Feed sections simplified into content area -->
@@ -209,20 +210,24 @@
                 <button class="close" onclick="closeWindow('win-mst-viewer')"><span>Close</span></button>
             </div>
             <div class="window-body">
-                <div class="field-row" style="margin-bottom: 10px;">
+                <div class="field-row" style="margin-bottom: 8px;">
                     <label for="mst-did-input">DID:</label>
                     <input type="text" id="mst-did-input" placeholder="did:plc:..." style="flex: 1;">
-                    <button id="mst-load-btn" class="btn btn-default">Load</button>
+                    <button id="mst-load-btn" class="btn btn-default" style="margin-left: 6px;">Load</button>
                 </div>
-                <div id="mst-stats" style="margin-bottom: 10px; font-size: 11px; color: #666;"></div>
-                <div id="mst-tree-container" style="border: 1.5px solid #000; background: #fff; height: 350px; overflow: auto;">
-                    <p class="placeholder" style="padding: 20px;">Enter a DID to view its Merkle Search Tree.</p>
+                <div id="mst-stats" style="margin-bottom: 8px;"></div>
+                <div id="mst-tree-container" style="border: 1.5px solid #000; background: #fff; height: 340px; overflow: auto;">
+                    <p class="placeholder" style="padding: 20px;">Enter a DID and press Load to view the Merkle Search Tree.</p>
                 </div>
-                <div class="field-row" style="justify-content: flex-end; margin-top: 10px;">
+                <div class="field-row" style="justify-content: flex-end; margin-top: 8px;">
                     <button id="mst-expand-all" class="btn">Expand All</button>
                     <button id="mst-collapse-all" class="btn" style="margin-left: 6px;">Collapse All</button>
                     <button id="mst-export-json" class="btn" style="margin-left: 6px;">Export JSON</button>
                 </div>
+            </div>
+            <div class="status-bar">
+                <p class="status-bar-field" id="mst-status-left">Ready</p>
+                <p class="status-bar-field" id="mst-status-right">Merkle Search Tree</p>
             </div>
         </div>
 
@@ -370,6 +375,79 @@
                     </table>
                 </div>
                 <div id="moderation-result" style="margin-top: 8px;"></div>
+            </div>
+        </div>
+
+        <!-- Admin Control Panel Window -->
+        <div class="window admin-panel-window" id="win-admin-panel" style="display: none; width: 750px; top: 30px; left: 50px;">
+            <div class="title-bar">
+                <span class="title">Admin Control Panel</span>
+                <button class="close" onclick="closeWindow('win-admin-panel')"><span>Close</span></button>
+            </div>
+            <div class="window-body" style="padding: 0; display: flex; flex-direction: column; height: 450px;">
+                <div class="admin-tab-bar">
+                    <div class="admin-tab active" data-tab="overview">Overview</div>
+                    <div class="admin-tab" data-tab="accounts">Accounts</div>
+                    <div class="admin-tab" data-tab="reports">Moderation</div>
+                    <div class="admin-tab" data-tab="system">System</div>
+                </div>
+                
+                <!-- Overview Tab -->
+                <div id="admin-tab-overview" class="admin-tab-content active">
+                    <div id="admin-overview-content"></div>
+                </div>
+                
+                <!-- Accounts Tab -->
+                <div id="admin-tab-accounts" class="admin-tab-content">
+                    <div class="admin-master-panel">
+                        <div class="admin-search-box">
+                            <input type="text" id="admin-accounts-search" placeholder="Search accounts...">
+                        </div>
+                        <ul id="admin-accounts-list" class="admin-list"></ul>
+                    </div>
+                    <div class="admin-detail-panel">
+                        <div id="admin-accounts-detail">
+                            <p class="placeholder">Select an account to view details.</p>
+                        </div>
+                        <div id="admin-accounts-result"></div>
+                    </div>
+                </div>
+                
+                <!-- Reports/Moderation Tab -->
+                <div id="admin-tab-reports" class="admin-tab-content">
+                    <div class="admin-master-panel">
+                        <div class="admin-filter-bar">
+                            <select id="admin-reports-status-filter">
+                                <option value="">All Status</option>
+                                <option value="open">Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="dismissed">Dismissed</option>
+                            </select>
+                        </div>
+                        <div style="padding: 6px 8px; border-bottom: 1px solid #999; font-size: 11px; color: #666;">
+                            <span id="admin-reports-count">Loading...</span>
+                        </div>
+                        <ul id="admin-reports-list" class="admin-list"></ul>
+                    </div>
+                    <div class="admin-detail-panel">
+                        <div id="admin-reports-detail">
+                            <p class="placeholder">Select a report to view details.</p>
+                        </div>
+                        <div id="admin-reports-result"></div>
+                    </div>
+                </div>
+                
+                <!-- System Tab -->
+                <div id="admin-tab-system" class="admin-tab-content" style="flex-direction: column; padding: 10px; overflow-y: auto;">
+                    <div id="admin-system-status"></div>
+                    <div id="admin-invite-stats"></div>
+                    <div id="admin-audit-preview"></div>
+                </div>
+            </div>
+            <div class="status-bar">
+                <p class="status-bar-field" id="admin-status-left">Ready</p>
+                <p class="status-bar-field" id="admin-status-right">Admin Panel</p>
             </div>
         </div>
     </div>

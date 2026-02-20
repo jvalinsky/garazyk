@@ -5916,6 +5916,88 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                                            adminController,
                                            YES);
 
+    [dispatcher registerComAtprotoAdminGetModerationReports:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+        NSString *status = [request queryParamForKey:@"status"];
+        NSString *reasonType = [request queryParamForKey:@"reasonType"];
+        NSString *subjectDid = [request queryParamForKey:@"subjectDid"];
+        NSString *reportedBy = [request queryParamForKey:@"reportedBy"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+
+        if (status) filters[@"status"] = status;
+        if (reasonType) filters[@"reason_type"] = reasonType;
+        if (subjectDid) filters[@"subject_did"] = subjectDid;
+        if (reportedBy) filters[@"reported_by_did"] = reportedBy;
+
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit > 100) limit = 100;
+
+        NSError *error = nil;
+        NSDictionary *result = [adminController queryReports:filters limit:limit cursor:cursor error:&error];
+
+        if (error) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    [dispatcher registerComAtprotoAdminResolveReport:^(HttpRequest *request, HttpResponse *response) {
+        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
+            return;
+        }
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (!body) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
+            return;
+        }
+
+        NSString *reportId = body[@"id"];
+        NSString *status = body[@"status"];
+        NSString *notes = body[@"notes"];
+        NSString *adminDid = body[@"createdBy"];
+
+        if (!reportId || !status) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing id or status"}];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [adminController resolveReport:reportId status:status resolvedBy:adminDid notes:notes error:&error];
+
+        if (!success) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"ResolveFailed", @"message": error.localizedDescription ?: @"Failed to resolve report"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"success": @YES}];
+    }];
+
     [dispatcher registerComAtprotoLabelQueryLabels:^(HttpRequest *request, HttpResponse *response) {
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
