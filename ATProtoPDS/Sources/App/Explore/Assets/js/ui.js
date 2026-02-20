@@ -3,6 +3,7 @@ import { CIDDecoder } from './cid.js';
 import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
 import * as Poster from './poster.js';
+import { MSTViewer } from './mst-viewer.js';
 
 const PLC_BASE = 'http://localhost:2582';
 
@@ -124,8 +125,11 @@ function init() {
         });
     }
 
-    // Poster window
-    initPoster();
+    // Session management (OAuth, login/logout, poster)
+    initSession();
+
+    // Initialize MST Viewer
+    MSTViewer.init();
 
     window.openWindow('did-doc');
     loadAccounts();
@@ -564,68 +568,121 @@ function showCollectionsSection() {
 }
 
 
-// --- Poster (OAuth) ---
+// --- Session Management ---
 
-function initPoster() {
+let sessionAdminDids = [];
+
+function initSession() {
     // Check for OAuth callback on page load
     Poster.handleOAuthCallback().then(result => {
         if (result && !result.error && result.did) {
-            showPosterSession(result.did);
-            document.getElementById('win-poster').style.display = 'block';
+            // Store handle if available (from sessionStorage set during login)
+            const handle = sessionStorage.getItem('login_handle') || result.did;
+            updateUIForLogin(result.did, handle);
+            showPosterResult('Logged in successfully!', false);
         } else if (result && result.error) {
             showPosterResult('Error: ' + result.error, true);
-            document.getElementById('win-poster').style.display = 'block';
         }
     });
 
     // Restore session if exists
     const session = Poster.getSession();
     if (session) {
-        showPosterSession(session.did);
+        const handle = sessionStorage.getItem('login_handle') || session.did;
+        updateUIForLogin(session.did, handle);
     }
 
-    // Menu item
-    const menuPoster = document.getElementById('menu-poster');
-    if (menuPoster) {
-        menuPoster.addEventListener('click', (e) => {
+    // Fetch admin DIDs from describeServer
+    fetchAdminDids();
+
+    // --- File Menu: Login ---
+    const menuLogin = document.getElementById('menu-login');
+    if (menuLogin) {
+        menuLogin.addEventListener('click', (e) => {
             e.preventDefault();
-            document.getElementById('win-poster').style.display = 'block';
+            document.getElementById('win-login').style.display = 'block';
+            document.getElementById('login-handle').focus();
         });
     }
 
-    // Login button
-    const loginBtn = document.getElementById('poster-login-btn');
+    // Login dialog: Login button
+    const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
-            const handle = document.getElementById('poster-handle').value.trim();
+            const handle = document.getElementById('login-handle').value.trim();
             if (!handle) return;
-            Poster.startLogin(handle);
+            triggerLogin(handle);
         });
     }
 
-    // Handle enter key on login input
-    const handleInput = document.getElementById('poster-handle');
-    if (handleInput) {
-        handleInput.addEventListener('keypress', (e) => {
+    // Login dialog: Enter key
+    const loginHandleInput = document.getElementById('login-handle');
+    if (loginHandleInput) {
+        loginHandleInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                const handle = handleInput.value.trim();
-                if (handle) Poster.startLogin(handle);
+                const handle = loginHandleInput.value.trim();
+                if (!handle) return;
+                triggerLogin(handle);
+            }
+        });
+
+        // Resolve on blur
+        loginHandleInput.addEventListener('blur', async () => {
+            const handle = loginHandleInput.value.trim();
+            if (!handle || !handle.includes('.')) return;
+            const statusEl = document.getElementById('login-resolve-status');
+            statusEl.textContent = 'Resolving…';
+            const did = await Poster.resolveHandle(handle);
+            if (did) {
+                statusEl.innerHTML = '✅ Resolved: <code>' + escapeHtml(did) + '</code>';
+            } else {
+                statusEl.textContent = '❌ Could not resolve handle';
             }
         });
     }
 
-    // Logout
-    const logoutBtn = document.getElementById('poster-logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+    // --- File Menu: Logout ---
+    const menuLogout = document.getElementById('menu-logout');
+    if (menuLogout) {
+        menuLogout.addEventListener('click', (e) => {
+            e.preventDefault();
             Poster.logout();
-            document.getElementById('poster-login').style.display = 'block';
-            document.getElementById('poster-session').style.display = 'none';
-            document.getElementById('poster-result').innerHTML = '';
+            sessionStorage.removeItem('login_handle');
+            updateUIForLogout();
         });
     }
 
-    // Test session
+    // --- File Menu: New Post ---
+    const menuPoster = document.getElementById('menu-poster');
+    if (menuPoster) {
+        menuPoster.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const handle = sessionStorage.getItem('login_handle') || '';
+            document.getElementById('poster-handle').textContent = handle;
+            document.getElementById('win-poster').style.display = 'block';
+            // Load recent posts
+            const recentList = document.getElementById('poster-recent-list');
+            if (recentList) {
+                recentList.innerHTML = '<p style="color: #999; margin: 0;">Loading...</p>';
+                const posts = await Poster.loadRecentPosts();
+                if (posts.length === 0) {
+                    recentList.innerHTML = '<p style="color: #999; margin: 0;">No posts yet.</p>';
+                } else {
+                    recentList.innerHTML = posts.map(p => {
+                        const text = p.value?.text || '';
+                        const date = p.value?.createdAt || '';
+                        const shortDate = date ? new Date(date).toLocaleString() : '';
+                        return '<div style="border-bottom: 1px solid #ddd; padding: 4px 0; font-size: 11px;">'
+                            + '<div style="white-space: pre-wrap;">' + escapeHtml(text) + '</div>'
+                            + '<div style="color: #999; font-size: 10px;">' + escapeHtml(shortDate) + '</div>'
+                            + '</div>';
+                    }).join('');
+                }
+            }
+        });
+    }
+
+    // Poster: Test session button
     const testBtn = document.getElementById('poster-test-btn');
     if (testBtn) {
         testBtn.addEventListener('click', async () => {
@@ -639,39 +696,394 @@ function initPoster() {
         });
     }
 
-    // Post button
+    // Poster: Post button
     const postBtn = document.getElementById('poster-post-btn');
     if (postBtn) {
         postBtn.addEventListener('click', async () => {
             const text = document.getElementById('poster-text').value;
             if (!text.trim()) return;
+            const replyTo = document.getElementById('poster-reply-to')?.value.trim() || '';
             postBtn.disabled = true;
             showPosterResult('Posting...', false);
             try {
-                const data = await Poster.createPost(text);
+                const data = await Poster.createPost(text, replyTo || undefined);
                 showPosterResult('Posted! URI: <code>' + escapeHtml(data.uri) + '</code>', false);
                 document.getElementById('poster-text').value = '';
                 document.getElementById('poster-charcount').textContent = '0';
+                if (document.getElementById('poster-reply-to')) document.getElementById('poster-reply-to').value = '';
             } catch (err) {
-                showPosterResult('Error: ' + escapeHtml(err.message), true);
+                showPosterResult('Error: ' + escapeHtml(err.message) + ' <button class="btn" id="poster-retry-btn" style="margin-left: 8px;">Retry</button>', true);
+                const retryBtn = document.getElementById('poster-retry-btn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => postBtn.click());
+                }
             }
             postBtn.disabled = false;
         });
     }
 
-    // Char counter
+    // Poster: Char counter
     const textarea = document.getElementById('poster-text');
     if (textarea) {
         textarea.addEventListener('input', () => {
-            document.getElementById('poster-charcount').textContent = textarea.value.length;
+            let count;
+            if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+                const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                count = [...segmenter.segment(textarea.value)].length;
+            } else {
+                count = textarea.value.length;
+            }
+            const el = document.getElementById('poster-charcount');
+            el.textContent = count;
+            el.style.color = count > 300 ? '#ff0000' : '#666';
         });
+    }
+
+    // --- Admin Menu: Invite Codes ---
+    const menuInviteCodes = document.getElementById('menu-invite-codes');
+    if (menuInviteCodes) {
+        menuInviteCodes.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!AdminAPI.isAuthenticated()) {
+                AdminAPI.promptLogin(() => {
+                    document.getElementById('win-invite-codes').style.display = 'block';
+                    AdminAPI.loadInviteCodes();
+                });
+                return;
+            }
+            document.getElementById('win-invite-codes').style.display = 'block';
+            AdminAPI.loadInviteCodes();
+        });
+    }
+
+    // --- Admin Menu: Moderation ---
+    const menuModeration = document.getElementById('menu-moderation');
+    if (menuModeration) {
+        menuModeration.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!AdminAPI.isAuthenticated()) {
+                AdminAPI.promptLogin(() => {
+                    document.getElementById('win-moderation').style.display = 'block';
+                    AdminAPI.loadModeration();
+                });
+                return;
+            }
+            document.getElementById('win-moderation').style.display = 'block';
+            AdminAPI.loadModeration();
+        });
+    }
+
+    // --- Admin Login button ---
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', () => AdminAPI.doLogin());
+    }
+
+    const adminPasswordInput = document.getElementById('admin-password');
+    if (adminPasswordInput) {
+        adminPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') AdminAPI.doLogin();
+        });
+    }
+
+    // --- Invite Generate button ---
+    const inviteGenBtn = document.getElementById('invite-generate-btn');
+    if (inviteGenBtn) {
+        inviteGenBtn.addEventListener('click', () => AdminAPI.generateInviteCode());
     }
 }
 
-function showPosterSession(did) {
-    document.getElementById('poster-login').style.display = 'none';
-    document.getElementById('poster-session').style.display = 'block';
-    document.getElementById('poster-did').textContent = did;
+function triggerLogin(handle) {
+    sessionStorage.setItem('login_handle', handle);
+    document.getElementById('win-login').style.display = 'none';
+    Poster.startLogin(handle);
+}
+
+// --- Admin API ---
+const AdminAPI = {
+    _token: null,
+    _onLoginCallback: null,
+
+    isAuthenticated() {
+        return !!sessionStorage.getItem('admin_token');
+    },
+
+    getToken() {
+        return sessionStorage.getItem('admin_token');
+    },
+
+    promptLogin(callback) {
+        this._onLoginCallback = callback;
+        document.getElementById('admin-login-error').textContent = '';
+        document.getElementById('admin-password').value = '';
+        document.getElementById('win-admin-login').style.display = 'block';
+        document.getElementById('admin-password').focus();
+    },
+
+    async doLogin() {
+        const password = document.getElementById('admin-password').value;
+        if (!password) {
+            document.getElementById('admin-login-error').textContent = 'Password required.';
+            return;
+        }
+
+        try {
+            const resp = await fetch('/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+            const data = await resp.json();
+            if (resp.ok && data.token) {
+                sessionStorage.setItem('admin_token', data.token);
+                document.getElementById('win-admin-login').style.display = 'none';
+                // Show admin menu group
+                const adminGroup = document.getElementById('menu-admin-group');
+                if (adminGroup) adminGroup.style.display = '';
+                if (this._onLoginCallback) {
+                    this._onLoginCallback();
+                    this._onLoginCallback = null;
+                }
+            } else {
+                document.getElementById('admin-login-error').textContent = data.error || 'Login failed.';
+            }
+        } catch (e) {
+            document.getElementById('admin-login-error').textContent = 'Connection error.';
+        }
+    },
+
+    async adminFetch(url, opts = {}) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not admin-authenticated');
+        const headers = { ...(opts.headers || {}), 'Authorization': 'Bearer ' + token };
+        const resp = await fetch(url, { ...opts, headers });
+        if (resp.status === 401) {
+            sessionStorage.removeItem('admin_token');
+            this.promptLogin(() => {});
+            throw new Error('Admin session expired');
+        }
+        return resp;
+    },
+
+    async loadInviteCodes() {
+        const tbody = document.getElementById('invite-table-body');
+        const countEl = document.getElementById('invite-count');
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">Loading...</td></tr>';
+
+        try {
+            const resp = await this.adminFetch('/admin/invites');
+            const data = await resp.json();
+            const invites = data.invites || [];
+            countEl.textContent = invites.length + ' invite code(s)';
+
+            if (invites.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">No invite codes</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            for (const inv of invites) {
+                const tr = document.createElement('tr');
+                const disabled = inv.disabled;
+                const status = disabled ? '🔴 Disabled' : '🟢 Active';
+                tr.innerHTML = `
+                    <td style="padding: 4px;"><code>${escapeHtml(inv.code)}</code></td>
+                    <td style="padding: 4px;">${escapeHtml(inv.created_by)}</td>
+                    <td style="padding: 4px; text-align: center;">${inv.uses || 0}/${inv.max_uses || 1}</td>
+                    <td style="padding: 4px; text-align: center;">${status}</td>
+                    <td style="padding: 4px; text-align: center;">${disabled ? '' : '<button class="btn" data-disable-code="' + escapeHtml(inv.code) + '">Disable</button>'}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Attach disable handlers
+            tbody.querySelectorAll('[data-disable-code]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const code = btn.dataset.disableCode;
+                    try {
+                        await this.adminFetch('/admin/invites/disable', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code })
+                        });
+                        this.loadInviteCodes();
+                    } catch (e) {
+                        document.getElementById('invite-result').innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+                    }
+                });
+            });
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center; color: red;">Error: ' + escapeHtml(e.message) + '</td></tr>';
+        }
+    },
+
+    async generateInviteCode() {
+        const resultEl = document.getElementById('invite-result');
+        // Need a forAccount DID. Use the first account or admin DID.
+        let forAccount = sessionAdminDids[0] || '';
+        if (!forAccount) {
+            resultEl.innerHTML = '<div style="color: red;">No admin DID available. Cannot create invite code.</div>';
+            return;
+        }
+
+        try {
+            const resp = await this.adminFetch('/admin/invites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ forAccount, usesAvailable: 1 })
+            });
+            const data = await resp.json();
+            if (data.code) {
+                resultEl.innerHTML = '<div style="border: 1px solid #000; padding: 6px; background: #fff;">New code: <strong><code>' + escapeHtml(data.code) + '</code></strong></div>';
+                this.loadInviteCodes();
+            } else {
+                resultEl.innerHTML = '<div style="color: red;">' + escapeHtml(data.error || 'Unknown error') + '</div>';
+            }
+        } catch (e) {
+            resultEl.innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+        }
+    },
+
+    async loadModeration() {
+        const tbody = document.getElementById('moderation-table-body');
+        const countEl = document.getElementById('moderation-count');
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">Loading...</td></tr>';
+
+        try {
+            const resp = await this.adminFetch('/admin/users');
+            const data = await resp.json();
+            const users = data.users || [];
+            countEl.textContent = users.length + ' account(s)';
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">No accounts</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            for (const user of users) {
+                const tr = document.createElement('tr');
+                const status = user.deactivated ? '🔴 Disabled' : '🟢 Active';
+                tr.innerHTML = `
+                    <td style="padding: 4px;">${escapeHtml(user.handle)}</td>
+                    <td style="padding: 4px;"><code style="font-size: 10px;">${escapeHtml(user.did)}</code></td>
+                    <td style="padding: 4px;">${escapeHtml(user.email)}</td>
+                    <td style="padding: 4px; text-align: center;">${status}</td>
+                    <td style="padding: 4px; text-align: center;">
+                        ${user.deactivated
+                            ? '<button class="btn" data-enable-did="' + escapeHtml(user.did) + '">Enable</button>'
+                            : '<button class="btn" data-disable-did="' + escapeHtml(user.did) + '">Disable</button>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Attach action handlers
+            tbody.querySelectorAll('[data-disable-did]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const did = btn.dataset.disableDid;
+                    try {
+                        await this.adminFetch('/xrpc/com.atproto.admin.disableAccountInvites', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ did })
+                        });
+                        this.loadModeration();
+                    } catch (e) {
+                        document.getElementById('moderation-result').innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+                    }
+                });
+            });
+
+            tbody.querySelectorAll('[data-enable-did]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const did = btn.dataset.enableDid;
+                    try {
+                        await this.adminFetch('/xrpc/com.atproto.admin.enableAccountInvites', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ did })
+                        });
+                        this.loadModeration();
+                    } catch (e) {
+                        document.getElementById('moderation-result').innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+                    }
+                });
+            });
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center; color: red;">Error: ' + escapeHtml(e.message) + '</td></tr>';
+        }
+    }
+};
+
+async function fetchAdminDids() {
+    try {
+        const resp = await fetch('/xrpc/com.atproto.server.describeServer');
+        if (resp.ok) {
+            const data = await resp.json();
+            // The ATProto describeServer response doesn't have a standard adminDids field,
+            // but our PDS may return contact.email or we check via the DID
+            // For now, use a custom field if available, or check if the logged-in DID
+            // is the server's own DID (did:web:hostname)
+            if (data.did) {
+                sessionAdminDids = [data.did];
+            }
+        }
+    } catch (e) {
+        console.warn('Could not fetch server description for admin DID check:', e);
+    }
+}
+
+function isAdmin(did) {
+    return sessionAdminDids.includes(did);
+}
+
+function updateUIForLogin(did, handle) {
+    // Status bar
+    const statusUser = document.getElementById('status-user');
+    const statusHandle = document.getElementById('status-user-handle');
+    if (statusUser && statusHandle) {
+        statusHandle.textContent = handle;
+        statusUser.style.display = 'inline';
+    }
+
+    // Menu items
+    const loginItem = document.getElementById('menu-login-item');
+    const logoutItem = document.getElementById('menu-logout-item');
+    const posterItem = document.getElementById('menu-poster-item');
+    const fileDivider = document.getElementById('menu-file-divider');
+    if (loginItem) loginItem.style.display = 'none';
+    if (logoutItem) logoutItem.style.display = '';
+    if (posterItem) posterItem.style.display = '';
+    if (fileDivider) fileDivider.style.display = '';
+
+    // Admin menu
+    if (isAdmin(did)) {
+        const adminGroup = document.getElementById('menu-admin-group');
+        if (adminGroup) adminGroup.style.display = '';
+    }
+}
+
+function updateUIForLogout() {
+    // Status bar
+    const statusUser = document.getElementById('status-user');
+    if (statusUser) statusUser.style.display = 'none';
+
+    // Menu items
+    const loginItem = document.getElementById('menu-login-item');
+    const logoutItem = document.getElementById('menu-logout-item');
+    const posterItem = document.getElementById('menu-poster-item');
+    const fileDivider = document.getElementById('menu-file-divider');
+    const adminGroup = document.getElementById('menu-admin-group');
+    if (loginItem) loginItem.style.display = '';
+    if (logoutItem) logoutItem.style.display = 'none';
+    if (posterItem) posterItem.style.display = 'none';
+    if (fileDivider) fileDivider.style.display = 'none';
+    if (adminGroup) adminGroup.style.display = 'none';
+
+    // Close poster if open
+    document.getElementById('win-poster').style.display = 'none';
+    document.getElementById('poster-result').innerHTML = '';
 }
 
 function showPosterResult(html, isError) {
