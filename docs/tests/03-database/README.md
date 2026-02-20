@@ -30,3 +30,12 @@ Tests for SQLite-based persistence: actor stores, service databases, and connect
 ./build/tests/AllTests -only-testing:AllTests/DatabasePoolTests
 ./build/tests/AllTests -only-testing:AllTests/ServiceDatabasesTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
+- [Repository Tests](../01-repository/README.md) - MST and CAR persistence
+- [Application Tests](../04-application/README.md) - Services using databases
+- [Integration Tests](../06-integration/README.md) - E2E database operations
+- [SQLite Invariant Audit](../../skills/objc-sqlite-invariant-audit/SKILL.md) - SQLite correctness

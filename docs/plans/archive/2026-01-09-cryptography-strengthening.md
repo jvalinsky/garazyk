@@ -214,5 +214,13 @@ Include configuration option to disable pinning in development.
 | SSL Pinning | Medium (4 hours) | Low |
 
 **Total Estimated Effort:** 19 hours
-**Priority:** P1 (Security hardening)</content>
+**Priority:** P1 (Security hardening)
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Security Docs](../../security/README.md) - Security-related documentation</content>
 <parameter name="filePath">docs/plans/2026-01-09-cryptography-strengthening.md

@@ -700,6 +700,14 @@ Execute the updated test script to verify end-to-end functionality.
 **Step 3: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/test_endpoints.sh
-git commit -m "test: add scope validation to integration tests"
-```
+    git add oauth-atproto-scope/test_endpoints.sh
+    git commit -m "test: add scope validation to integration tests"
+    ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details

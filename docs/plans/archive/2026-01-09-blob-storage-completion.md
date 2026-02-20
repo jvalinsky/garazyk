@@ -367,3 +367,11 @@ curl "http://localhost:2583/xrpc/com.atproto.sync.getBlob?did=<your_did>&cid=<bl
 - **Garbage collection**: Clean up orphaned blobs
 - **Temp blob flow**: Upload blob before record creation with temporary reference
 - **Streaming uploads**: Support chunked/resumable uploads for large files
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

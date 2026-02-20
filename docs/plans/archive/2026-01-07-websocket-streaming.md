@@ -372,5 +372,13 @@ Reference the new WebSocket streaming capability.
 ```bash
 git add docs/websocket_streaming.md
 git commit -m "docs: document WebSocket streaming and subscribeRepos endpoint"
-```</content>
+```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation</content>
 <parameter name="filePath">streaming-worktree/docs/plans/2026-01-07-websocket-streaming.md

@@ -18,3 +18,10 @@
 - Characterization tests now contain real assertions/fixtures (ATProtoPDS/Tests/CharacterizationTests/*).
 
 Please file follow-up work items if you want these tracked in an issue tracker, and reopen this file if the list grows.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans

@@ -33,3 +33,12 @@ Tests for HTTP server, XRPC protocol, WebSocket/firehose, and network transport 
 ./build/tests/AllTests -only-testing:AllTests/XrpcHandlerTests
 ./build/tests/AllTests -only-testing:AllTests/WebSocketServerTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [XRPC Protocol Reference](../../architecture/XRPC_PROTOCOL_REFERENCE.md) - XRPC specification
+- [Architecture Diagrams](../../architecture/ARCHITECTURE_DIAGRAMS.md) - System diagrams
+- [Security Tests](../05-security/README.md) - Authorization and validation
+- [Integration Tests](../06-integration/README.md) - E2E network flows
+- [SSRF Protection](../../security/SSRF_PROTECTION.md) - Network security

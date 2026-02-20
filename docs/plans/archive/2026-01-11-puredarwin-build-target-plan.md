@@ -92,3 +92,11 @@ Create a PureDarwin build target with **full feature parity** to macOS builds, t
 
 ## Next Steps
 With these preferences incorporated, the plan is ready for implementation. Do you want to proceed, or are there any other aspects to adjust (e.g., specific timeline concerns or dependency preferences)? If ready, I can begin executing the phases.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

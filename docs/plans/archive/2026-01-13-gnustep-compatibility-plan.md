@@ -303,3 +303,11 @@ After changes, verify:
 1. Review and approve this plan
 2. Confirm NSURLSession handling preference
 3. Begin Phase 1: Import path verification and corrections
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

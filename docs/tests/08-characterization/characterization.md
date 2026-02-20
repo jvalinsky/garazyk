@@ -50,3 +50,13 @@ Characterization tests verify that the Objective-C implementation produces ident
 3. **Cross-validation** - Compare outputs against expected values
 
 This ensures protocol compliance and interoperability across implementations.
+
+## Related Documentation
+
+- [Folder README](README.md) - Characterization tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Repository Tests](../01-repository/mst.md) - MST interop tests
+- [Repository Tests](../01-repository/car-cbor.md) - CAR interop tests
+- [Database Tests](../03-database/actor-store.md) - Actor store tests
+- [Network Tests](../02-network/xrpc.md) - XRPC registry tests
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - Key manager tests
