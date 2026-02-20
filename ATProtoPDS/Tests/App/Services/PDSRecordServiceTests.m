@@ -691,4 +691,203 @@
     XCTAssertEqual(did2Records.count, 1);
 }
 
+#pragma mark - Authorization Tests
+
+- (void)testPutRecordUnauthorized {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Unauthorized post attempt",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+    };
+    
+    NSString *targetDID = @"did:plc:targetuser";
+    NSString *actorDID = @"did:plc:attacker";
+    
+    NSError *error = nil;
+    BOOL success = [self.service putRecord:@"app.bsky.feed.post"
+                                      rkey:@"unauthorized-rkey"
+                                     value:value
+                                    forDid:targetDID
+                                  actorDid:actorDID
+                            validationMode:PDSValidationModeOff
+                                     error:&error];
+    
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRecordServiceErrorUnauthorized);
+    XCTAssertEqualObjects(error.domain, PDSRecordServiceErrorDomain);
+}
+
+- (void)testPutRecordAuthorized {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Authorized post",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+    };
+    
+    NSError *error = nil;
+    BOOL success = [self.service putRecord:@"app.bsky.feed.post"
+                                      rkey:@"authorized-rkey"
+                                     value:value
+                                    forDid:self.testDID
+                                  actorDid:self.testDID
+                            validationMode:PDSValidationModeOff
+                                     error:&error];
+    
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+}
+
+- (void)testPutRecordConvenienceMethodAuthorizes {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Convenience method post",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+    };
+    
+    NSError *error = nil;
+    BOOL success = [self.service putRecord:@"app.bsky.feed.post"
+                                      rkey:@"convenience-rkey"
+                                     value:value
+                                    forDid:self.testDID
+                             validationMode:PDSValidationModeOff
+                                     error:&error];
+    
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+}
+
+- (void)testDeleteRecordUnauthorized {
+    NSString *targetDID = @"did:plc:targetuser2";
+    NSString *actorDID = @"did:plc:attacker2";
+    
+    NSError *error = nil;
+    BOOL success = [self.service deleteRecord:@"app.bsky.feed.post"
+                                         rkey:@"some-rkey"
+                                       forDid:targetDID
+                                     actorDid:actorDID
+                                        error:&error];
+    
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRecordServiceErrorUnauthorized);
+}
+
+- (void)testDeleteRecordAuthorized {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Post to delete",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+    };
+    
+    NSError *error = nil;
+    [self.service putRecord:@"app.bsky.feed.post"
+                       rkey:@"to-delete-rkey"
+                      value:value
+                     forDid:self.testDID
+               validationMode:PDSValidationModeOff
+                      error:&error];
+    
+    BOOL success = [self.service deleteRecord:@"app.bsky.feed.post"
+                                         rkey:@"to-delete-rkey"
+                                       forDid:self.testDID
+                                     actorDid:self.testDID
+                                        error:&error];
+    
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+}
+
+- (void)testApplyWritesUnauthorized {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"test-rkey",
+            @"value": @{@"$type": @"app.bsky.feed.post", @"text": @"test"}
+        }
+    ];
+    
+    NSString *targetDID = @"did:plc:targetuser3";
+    NSString *actorDID = @"did:plc:attacker3";
+    
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:targetDID
+                                            actorDid:actorDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    
+    XCTAssertNil(result);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRecordServiceErrorUnauthorized);
+}
+
+- (void)testApplyWritesAuthorized {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"apply-writes-rkey",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"Applied write",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+    
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                            actorDid:self.testDID
+                                            validate:NO
+                                          swapCommit:nil
+                                               error:&error];
+    
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+}
+
+- (void)testAuthorizationWithNilActorDid {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"test"
+    };
+    
+    NSError *error = nil;
+    BOOL success = [self.service putRecord:@"app.bsky.feed.post"
+                                      rkey:@"nil-actor-rkey"
+                                     value:value
+                                    forDid:self.testDID
+                                  actorDid:nil
+                            validationMode:PDSValidationModeOff
+                                     error:&error];
+    
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRecordServiceErrorUnauthorized);
+}
+
+- (void)testAuthorizationWithNilTargetDid {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"test"
+    };
+    
+    NSError *error = nil;
+    BOOL success = [self.service putRecord:@"app.bsky.feed.post"
+                                      rkey:@"nil-target-rkey"
+                                     value:value
+                                    forDid:nil
+                                  actorDid:self.testDID
+                            validationMode:PDSValidationModeOff
+                                     error:&error];
+    
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRecordServiceErrorUnauthorized);
+}
+
 @end

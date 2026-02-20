@@ -3,6 +3,7 @@
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/Session.h"
+#import "Auth/CryptoUtils.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
@@ -747,7 +748,8 @@ static NSMutableDictionary *sPendingConsents = nil;
     NSString *sessionIdToRemove = nil;
     for (NSString *sessionId in self.oauthServer.activeSessions) {
         Session *session = self.oauthServer.activeSessions[sessionId];
-        if ([session.accessToken isEqualToString:token] || [session.refreshToken isEqualToString:token]) {
+        if ([CryptoUtils constantTimeCompare:session.accessToken to:token] || 
+            [CryptoUtils constantTimeCompare:session.refreshToken to:token]) {
             sessionIdToRemove = sessionId;
             break;
         }
