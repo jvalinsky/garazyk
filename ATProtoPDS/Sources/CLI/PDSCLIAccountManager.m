@@ -1,0 +1,571 @@
+#import "CLI/PDSCLIAccountManager.h"
+#import <CommonCrypto/CommonKeyDerivation.h>
+#import "PDSCLIDefinitions.h"
+#import "Debug/PDSLogger.h"
+#import "PDSCLIInputHelper.h"
+#import "Database/PDSDatabase.h"
+#import "Database/Schema.h"
+#import "App/PDSConfiguration.h"
+#import "Identity/ATProtoHandleValidator.h"
+#import "Auth/Secp256k1.h"
+#import "Auth/CryptoUtils.h"
+#import "Core/ATProtoCBORSerialization.h"
+#import "Core/CID.h"
+#import "PLC/PLCOperation.h"
+#import "PLC/DIDPLCResolver.h"
+#import <CommonCrypto/CommonDigest.h>
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
+
+#ifndef kCCSuccess
+#define kCCSuccess 0
+#endif
+
+@implementation PDSCLIAccountManager
+
++ (NSString *)dataDirForContext:(PDSCLICommandContext *)context {
+    NSDictionary *config = [context loadConfig];
+    NSString *dataDir = config[@"server"][@"data_dir"] ?: @"./data";
+    
+    // Command line flag should override config file
+    if (context.dataDir && ![context.dataDir isEqualToString:@"./data"]) {
+        dataDir = context.dataDir;
+    }
+    return dataDir;
+}
+
++ (NSString *)databasePathForContext:(PDSCLICommandContext *)context {
+    NSString *dataDir = [self dataDirForContext:context];
+    return [[dataDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
+}
+
++ (NSString *)pdsHostnameForContext:(PDSCLICommandContext *)context {
+    NSDictionary *config = [context loadConfig];
+    NSString *host = config[@"server"][@"host"];
+    if (!host || host.length == 0) {
+        host = @"localhost";
+    }
+    if ([host isEqualToString:@"0.0.0.0"]) {
+        host = @"localhost";
+    }
+    return host;
+}
+
++ (NSArray<PDSDatabaseAccount *> *)listAccountsWithContext:(PDSCLICommandContext *)context
+                                                    filter:(NSString *)filter
+                                                    limit:(NSInteger)limit {
+    NSString *dbPath = [self databasePathForContext:context];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+        if (context.verbose) {
+            PDS_LOG_WARN(@"Database not found at %@", dbPath);
+        }
+        return @[];
+    }
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
+        }
+        return @[];
+    }
+
+    NSArray<PDSDatabaseAccount *> *allAccounts = [db getAllAccountsWithError:&error];
+    [db close];
+
+    if (error) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to query accounts: %@", error.localizedDescription);
+        }
+        return @[];
+    }
+
+    if (filter.length == 0 && limit <= 0) {
+        return allAccounts;
+    }
+
+    NSMutableArray<PDSDatabaseAccount *> *filtered = [NSMutableArray array];
+    for (PDSDatabaseAccount *account in allAccounts) {
+        if (filter.length > 0) {
+            if (![account.handle containsString:filter] &&
+                ![account.email containsString:filter] &&
+                ![account.did containsString:filter]) {
+                continue;
+            }
+        }
+        [filtered addObject:account];
+        if (limit > 0 && filtered.count >= limit) {
+            break;
+        }
+    }
+
+    return filtered;
+}
+
++ (nullable PDSDatabaseAccount *)getAccountWithContext:(PDSCLICommandContext *)context
+                                               identifier:(NSString *)identifier {
+    NSString *dbPath = [self databasePathForContext:context];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+        return nil;
+    }
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return nil;
+    }
+
+    PDSDatabaseAccount *account = [db getAccountByDid:identifier error:&error];
+    if (!account || error) {
+        account = [db getAccountByHandle:identifier error:&error];
+    }
+
+    [db close];
+    return account;
+}
+
++ (BOOL)createAccountWithContext:(PDSCLICommandContext *)context
+                              email:(NSString *)email
+                            handle:(NSString *)handle
+                          password:(NSString *)password {
+    NSString *dbPath = [self databasePathForContext:context];
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
+        }
+        return NO;
+    }
+
+    if (context.verbose) {
+        PDS_LOG_INFO(@"Creating account: email=%@, handle=%@", email, handle);
+    }
+
+    PDSDatabaseAccount *existing = [db getAccountByHandle:handle error:&error];
+    if (existing) {
+        if (context.verbose) {
+            PDS_LOG_WARN(@"Account with handle %@ already exists", handle);
+        }
+        [db close];
+        return NO;
+    }
+
+    NSString *pdsHostname = [self pdsHostnameForContext:context];
+    
+    // Generate Identity Keys
+    Secp256k1 *signer = [Secp256k1 shared];
+    NSError *keyError = nil;
+    Secp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
+    
+    if (!keyPair) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to generate keypair: %@", keyError.localizedDescription);
+        }
+        [db close];
+        return NO;
+    }
+
+    // Register with PLC
+    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname keyPair:keyPair error:&error];
+    if (!did) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to register DID with PLC: %@", error.localizedDescription);
+        }
+        [db close];
+        return NO;
+    }
+
+    // Save the rotation key so that CLI operations (like migration) can rotate endpoints
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
+    PDSActorStore *store = [pool storeForDid:did error:&error];
+    if (store) {
+        [store importSigningKey:keyPair.privateKey error:nil];
+    } else if (context.verbose) {
+        PDS_LOG_ERROR(@"Failed to open ActorStore to save rotation key: %@", error.localizedDescription);
+    }
+
+    if (context.verbose) {
+        PDS_LOG_INFO(@"Generated and Registered DID: %@", did);
+    }
+
+    // Generate salt and hash password
+    NSData *salt = [self generateSalt];
+    NSData *passwordHash = [self hashPassword:password salt:salt];
+    
+    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+    account.did = did;
+    account.handle = handle;
+    account.email = email;
+    account.passwordHash = passwordHash;
+    account.passwordSalt = salt;
+    account.createdAt = [[NSDate date] timeIntervalSince1970];
+    account.updatedAt = account.createdAt;
+
+    BOOL success = [db createAccount:account error:&error];
+    if (!success) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to create account: %@", error.localizedDescription);
+        }
+    }
+
+    [db close];
+    return success;
+}
+
++ (NSData *)generateSalt {
+    NSMutableData *salt = [NSMutableData dataWithLength:32];
+    [[NSUUID UUID] getUUIDBytes:salt.mutableBytes]; // Simple salt using UUID bytes
+    return salt;
+}
+
++ (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
+    const uint32_t iterations = 600000;
+    const size_t derivedKeyLength = 32;
+
+    NSMutableData *derivedKey = [NSMutableData dataWithLength:derivedKeyLength];
+
+    int result = CCKeyDerivationPBKDF(
+        kCCPBKDF2,
+        password.UTF8String,
+        password.length,
+        salt.bytes,
+        salt.length,
+        kCCPRFHmacAlgSHA256,
+        iterations,
+        derivedKey.mutableBytes,
+        derivedKeyLength
+    );
+
+    if (result != kCCSuccess) {
+        return nil;
+    }
+
+    return [derivedKey copy];
+}
+
++ (NSString *)registerDidWithHandle:(NSString *)handle 
+                             email:(NSString *)email 
+                           pdsHost:(NSString *)pdsHost 
+                           keyPair:(Secp256k1KeyPair *)keyPair
+                             error:(NSError **)error {
+    NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
+
+    // 3. Genesis Op Data
+    NSDictionary *opData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[pubKeyDidKey],
+        @"verificationMethods": @{@"atproto": pubKeyDidKey},
+        @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
+        @"services": @{
+            @"atproto_pds": @{
+                @"type": @"AtprotoPersonalDataServer",
+                @"endpoint": [NSString stringWithFormat:@"http://%@", pdsHost]
+            }
+        },
+        @"prev": [NSNull null]
+    };
+
+    // 4. Generate DID (Derive from genesis data)
+    NSString *did = [PLCOperation calculateDIDForData:opData];
+    
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
+    BOOL shouldPostToPlc = (!config.debugSkipPlcOperations &&
+                            plcUrl.length > 0 &&
+                            ![plcUrl isEqualToString:@"mock"]);
+    if (!shouldPostToPlc) {
+        return did;
+    }
+
+    // 5. POST to PLC Server (loop 3 times to verify chaining logic)
+    NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
+    
+    NSDictionary *currentOpData = opData;
+    NSString *prevHash = nil;
+    
+    for (int i = 0; i < 3; i++) {
+        // If not first op, update it
+        if (i > 0) {
+            NSMutableDictionary *newOp = [currentOpData mutableCopy];
+            newOp[@"prev"] = prevHash;
+            
+            // Mutate service to ensure uniqueness
+            NSMutableDictionary *services = [newOp[@"services"] mutableCopy];
+            services[[NSString stringWithFormat:@"dummy_%d", i]] = @{
+                @"type": @"DummyService",
+                @"endpoint": [NSString stringWithFormat:@"http://dummy%d.test", i]
+            };
+            newOp[@"services"] = services;
+            
+            currentOpData = newOp;
+        }
+        
+        // Encode and Sign
+        NSError *cborError = nil;
+        NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:currentOpData error:&cborError];
+         if (!cborData) {
+            if (error) *error = cborError;
+            return nil;
+        }
+        
+        NSData *sha256 = [CryptoUtils sha256:cborData];
+        if (!sha256) {
+             if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
+             return nil;
+        }
+        
+        NSError *sigError = nil;
+        NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
+        if (!signature) {
+            if (error) *error = sigError;
+            return nil;
+        }
+        
+        NSMutableDictionary *payload = [currentOpData mutableCopy];
+        payload[@"sig"] = [CryptoUtils base64URLEncode:signature];
+        
+        // Post
+        NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
+        req.HTTPMethod = @"POST";
+        [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+        
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+        __block NSError *reqError = nil;
+        __block BOOL success = NO;
+        
+        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+            if (err) {
+                reqError = err;
+            } else {
+                NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)resp;
+                if (httpResp.statusCode == 200) {
+                    success = YES;
+                } else {
+                    NSString *body = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    reqError = [NSError errorWithDomain:@"PDSCLI" code:httpResp.statusCode userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
+                }
+            }
+            dispatch_semaphore_signal(sema);
+        }] resume];
+        
+        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+        
+        if (!success) {
+            if (error) *error = reqError;
+            return nil;
+        }
+        
+        // Calculate CID of the SIGNED payload to use as 'prev' in next op
+        prevHash = [PLCOperation calculateCIDForOperation:payload error:nil];
+        
+        if (i%5==0) [NSThread sleepForTimeInterval:0.05]; 
+    }
+    
+    return did;
+}
+
++ (NSData *)addMulticodecPrefix:(NSData *)pubKey {
+    // Add secp256k1 multicodec prefix (0xe7, 0x01)
+    NSMutableData *data = [NSMutableData dataWithBytes:"\xe7\x01" length:2];
+    [data appendData:pubKey];
+    return data;
+}
+
++ (BOOL)deactivateAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did {
+    if (context.verbose) {
+        PDS_LOG_INFO(@"Deactivating account: %@", did);
+    }
+    return YES;
+}
+
++ (BOOL)reactivateAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did {
+    if (context.verbose) {
+        PDS_LOG_INFO(@"Reactivating account: %@", did);
+    }
+    return YES;
+}
+
++ (BOOL)deleteAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did {
+    NSString *dbPath = [self databasePathForContext:context];
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return NO;
+    }
+
+    BOOL success = [db deleteAccount:did error:&error];
+    if (context.verbose) {
+        if (success) {
+            PDS_LOG_INFO(@"Deleted account: %@", did);
+        } else {
+            PDS_LOG_ERROR(@"Failed to delete account: %@", error.localizedDescription);
+        }
+    }
+
+    [db close];
+    return success;
+}
+
++ (BOOL)updateEmailWithContext:(PDSCLICommandContext *)context
+                             did:(NSString *)did
+                           email:(NSString *)email {
+    NSString *dbPath = [self databasePathForContext:context];
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return NO;
+    }
+
+    PDSDatabaseAccount *account = [db getAccountByDid:did error:&error];
+    if (!account) {
+        [db close];
+        return NO;
+    }
+
+    account.email = email;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    BOOL success = [db updateAccount:account error:&error];
+
+    [db close];
+    return success;
+}
+
++ (BOOL)updateHandleWithContext:(PDSCLICommandContext *)context
+                              did:(NSString *)did
+                           handle:(NSString *)handle {
+    NSString *dbPath = [self databasePathForContext:context];
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return NO;
+    }
+
+    PDSDatabaseAccount *account = [db getAccountByDid:did error:&error];
+    if (!account) {
+        [db close];
+        return NO;
+    }
+
+    account.handle = handle;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    BOOL success = [db updateAccount:account error:&error];
+
+    [db close];
+    return success;
+}
+
++ (BOOL)updatePlcEndpointWithContext:(PDSCLICommandContext *)context
+                                  did:(NSString *)did
+                          newEndpoint:(NSString *)newEndpoint {
+    if (context.verbose) {
+        PDS_LOG_INFO(@"Updating PLC endpoint for %@ to %@", did, newEndpoint);
+    }
+    
+    NSString *dbPath = [self databasePathForContext:context];
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        if (context.verbose) PDS_LOG_ERROR(@"Failed to open DB: %@", error.localizedDescription);
+        return NO;
+    }
+
+    PDSDatabaseAccount *account = [db getAccountByDid:did error:&error];
+    if (!account) {
+        if (context.verbose) PDS_LOG_ERROR(@"Account not found");
+        [db close];
+        return NO;
+    }
+    [db close];
+
+    // Read the current highest operation from the PLC server
+    NSDictionary *config = [context loadConfig];
+    NSString *plcUrl = config[@"plc"][@"url"];
+    if (!plcUrl) {
+        plcUrl = [[NSProcessInfo processInfo] environment][@"PDS_PLC_URL"] ?: @"http://localhost:2582";
+    }
+
+    DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+    NSArray *auditLog = [resolver resolveAuditLogForDID:did error:&error];
+    
+    if (!auditLog || auditLog.count == 0) {
+        if (context.verbose) PDS_LOG_ERROR(@"Failed to fetch PLC log for DID: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    NSDictionary *lastOpPayload = auditLog.lastObject;
+    NSString *lastOpHash = [PLCOperation calculateCIDForOperation:lastOpPayload error:nil];
+    
+    if (!lastOpHash) {
+         if (context.verbose) PDS_LOG_ERROR(@"Could not calculate cid of previous operation");
+         return NO;
+    }
+    
+    NSMutableDictionary *newOpData = [lastOpPayload mutableCopy];
+    // Strip old signature
+    [newOpData removeObjectForKey:@"sig"];
+    newOpData[@"prev"] = lastOpHash;
+    
+    // Update the service endpoint
+    NSMutableDictionary *services = [newOpData[@"services"] mutableCopy] ?: [NSMutableDictionary dictionary];
+    services[@"atproto_pds"] = @{
+        @"type": @"AtprotoPersonalDataServer",
+        @"endpoint": newEndpoint
+    };
+    newOpData[@"services"] = services;
+    
+    // Sign It
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
+    PDSActorStore *store = [pool storeForDid:did error:&error];
+    if (!store) {
+        if (context.verbose) PDS_LOG_ERROR(@"Could not open actor store: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    NSData *privKeyData = [store exportSigningKeyWithError:&error];
+    if (!privKeyData) {
+        if (context.verbose) PDS_LOG_ERROR(@"No rotation key available: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:newOpData error:&error];
+    NSData *sha256 = [CryptoUtils sha256:cborData];
+    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
+    
+    if (!signature) {
+        if (context.verbose) PDS_LOG_ERROR(@"Failed to sign new PLC op: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    newOpData[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    
+    // Post to PLC
+    NSString *postUrl = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:postUrl]];
+    req.HTTPMethod = @"POST";
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:newOpData options:0 error:nil];
+    
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block BOOL success = NO;
+    [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+        if (!err && [(NSHTTPURLResponse *)resp statusCode] == 200) {
+            success = YES;
+        } else {
+            NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"";
+            if (context.verbose) PDS_LOG_ERROR(@"PLC Post Failed: %ld %@", (long)[(NSHTTPURLResponse *)resp statusCode], body);
+        }
+        dispatch_semaphore_signal(sema);
+    }] resume];
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+
+    return success;
+}
+
+@end

@@ -86,6 +86,39 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, strong, nullable) id controller;
 
+/**
+ * @brief Checks if a DID has administrator privileges.
+ *
+ * @param did The DID to check.
+ * @return YES if the DID is an administrator, NO otherwise.
+ */
+- (BOOL)isAdminDid:(NSString *)did;
+
+/**
+ * @brief Adds a DID to the persistent administrator list.
+ *
+ * @param did The DID to add.
+ * @param error On return, contains an error if the operation failed.
+ * @return YES if the DID was added successfully, NO otherwise.
+ */
+- (BOOL)addAdminDid:(NSString *)did error:(NSError **)error;
+
+/**
+ * @brief Removes a DID from the persistent administrator list.
+ *
+ * @param did The DID to remove.
+ * @param error On return, contains an error if the operation failed.
+ * @return YES if the DID was removed successfully, NO otherwise.
+ */
+- (BOOL)removeAdminDid:(NSString *)did error:(NSError **)error;
+
+/**
+ * @brief Returns the list of all administrator DIDs.
+ *
+ * @return An array of DID strings.
+ */
+- (NSArray<NSString *> *)listAdminDids;
+
 @end
 
 NS_ASSUME_NONNULL_END
