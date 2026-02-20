@@ -211,8 +211,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         NSString *newRootCID = newRootMeta[@"cid"];
         NSString *newRev = newRootMeta[@"rev"];
 
-/*
-        NSLog(@"[PDSRecordService] Debug notification: did=%@, collection=%@, rkey=%@, cid=%@, commit=%@, rev=%@, recordCBOR_len=%lu", did, collection, rkey, cidString, newRootCID, newRev, (unsigned long)cborData.length);
+        PDS_LOG_DEBUG(@"[PDSRecordService] Record changed: did=%@, collection=%@, rkey=%@, cid=%@, commit=%@, rev=%@, recordCBOR_len=%lu", did, collection, rkey, cidString, newRootCID, newRev, (unsigned long)cborData.length);
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
                                                           userInfo:@{
@@ -226,7 +225,6 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             @"rev": newRev ?: [NSNull null],
             @"recordCBOR": cborData ?: [NSNull null]
         }];
-*/
     }
 
     NSLog(@"[PDSRecordService] putRecord finishing with success: %d", success);
