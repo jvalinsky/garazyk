@@ -6,7 +6,7 @@ import random
 import json
 
 # Configuration
-BASE_URL = os.environ.get("PDS_URL", "http://localhost:8080")
+BASE_URL = os.environ.get("PDS_URL", "http://localhost:2583")
 BIN_PATH = os.environ.get("PDS_BIN", "./build/bin/kaszlak")
 DATA_DIR = os.environ.get("PDS_DATA_DIR", "./simulation_data")
 
