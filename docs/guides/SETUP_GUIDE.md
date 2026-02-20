@@ -33,7 +33,7 @@ xcodegen generate
 xcodebuild -scheme ATProtoPDS-CLI build
 
 # Run the server
-./build/bin/atprotopds-cli serve
+./build/bin/kaszlak serve
 ```
 
 Server available at `http://localhost:2583`
@@ -175,7 +175,7 @@ VERBOSE=true ./scripts/start_server.sh
 
 ```bash
 # Manual startup
-./build/release/atprotopds-cli serve --port 2583
+./build/release/kaszlak serve --port 2583
 
 # Background process (not recommended for production)
 nohup ./scripts/start_server.sh &
@@ -184,7 +184,7 @@ nohup ./scripts/start_server.sh &
 ### Command Line Options
 
 ```bash
-./build/bin/atprotopds-cli serve --help
+./build/bin/kaszlak serve --help
 
 Options:
   --port PORT          Server port (default: 2583)
@@ -210,7 +210,7 @@ After=network.target
 Type=simple
 User=atproto
 WorkingDirectory=/opt/atproto-pds
-ExecStart=/opt/atproto-pds/atprotopds-cli serve --port 2583
+ExecStart=/opt/atproto-pds/kaszlak serve --port 2583
 Restart=always
 RestartSec=5
 
@@ -307,7 +307,7 @@ make clean-deps
 make deps
 
 # Check library paths
-otool -L build/debug/atprotopds-cli
+otool -L build/debug/kaszlak
 ```
 
 #### Compilation Errors
@@ -331,7 +331,7 @@ lsof -i :2583
 kill -9 <PID>
 
 # Use different port
-./atprotopds-cli serve --port 2584
+./kaszlak serve --port 2584
 ```
 
 #### Database Permission Issues
@@ -443,10 +443,10 @@ make security-test
 
 ```bash
 # Enable verbose logging
-./atprotopds-cli serve --verbose --log-level debug
+./kaszlak serve --verbose --log-level debug
 
 # Attach debugger
-lldb ./atprotopds-cli
+lldb ./kaszlak
 (lldb) run serve --port 2583
 
 # Check core dumps
@@ -494,7 +494,7 @@ FROM macos:latest
 COPY . /app
 RUN make build-release
 EXPOSE 2583
-CMD ["/app/atprotopds-cli", "serve", "--port", "2583"]
+CMD ["/app/kaszlak", "serve", "--port", "2583"]
 ```
 
 ## Support

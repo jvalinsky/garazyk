@@ -55,7 +55,7 @@ info() {
 trap cleanup EXIT INT TERM
 
 # Check if server binary exists
-if [ ! -f "build/bin/september" ]; then
+if [ ! -f "build/bin/kaszlak" ]; then
     error_exit "Server binary not found. Run 'make build' first."
 fi
 
@@ -68,7 +68,7 @@ rm -f "$TEST_DB"
 rm -f "$PID_FILE"
 
 info "Starting PDS server..."
-./build/bin/september serve &
+./build/bin/kaszlak serve &
 SERVER_PID=$!
 echo $SERVER_PID > "$PID_FILE"
 

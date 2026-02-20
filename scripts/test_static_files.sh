@@ -15,7 +15,7 @@ echo -e "${YELLOW}Testing static file serving and performance...${NC}"
 
 # Build paths
 # Use CMake build path
-CLI_PATH="./build/bin/september"
+CLI_PATH="./build/bin/kaszlak"
 TEST_PORT=2583
 BASE_URL="http://localhost:${TEST_PORT}"
 

@@ -48,7 +48,7 @@ You can build targets using `xcodebuild` or from within Xcode.
 ```bash
 xcodebuild -scheme ATProtoPDS-CLI build
 ```
-The binary will be available at `./build/bin/atprotopds-cli`.
+The binary will be available at `./build/bin/kaszlak`.
 
 **Unit Tests:**
 ```bash
@@ -252,10 +252,10 @@ Test the PDS server using the CLI and curl:
 
 ```bash
 # Start server
-./build/bin/atprotopds-cli serve --verbose
+./build/bin/kaszlak serve --verbose
 
 # Create test account
-./build/bin/atprotopds-cli account create --email test@example.com --handle test.test
+./build/bin/kaszlak account create --email test@example.com --handle test.test
 
 # Test API endpoint
 curl -s http://localhost:2583/explore/api/accounts

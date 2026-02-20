@@ -13,21 +13,21 @@ cleanup() {
         rm pds.pid
     fi
     # Also ensure no strays are left on these ports
-    pkill -f "atproto-plc.*2582" || true
+    pkill -f "campagnola.*2582" || true
     pkill -f "september.*2583" || true
 }
 trap cleanup EXIT
 
 # Force cleanup of any existing stray servers before starting
 echo "Cleaning up any existing stray servers..."
-pkill -f "atproto-plc.*2582" || true
+pkill -f "campagnola.*2582" || true
 pkill -f "september.*2583" || true
 rm -f plc.log pds.log
 sleep 1
 
 # Build paths
-PLC_BIN="./build/bin/atproto-plc"
-PDS_BIN="./build/bin/september"
+PLC_BIN="./build/bin/campagnola"
+PDS_BIN="./build/bin/kaszlak"
 DATA_DIR="${DATA_DIR:-/tmp/objpds-demo-data}"
 
 if [ ! -f "$PLC_BIN" ]; then
