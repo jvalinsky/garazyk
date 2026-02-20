@@ -1,34 +1,81 @@
 # ATProtoPDS Documentation
 
-## Core Guides
-- [Developer Guide](guides/DEVELOPER_GUIDE.md)
-- [Script Development](guides/SCRIPT_DEVELOPMENT.md)
-- [Setup Guide](guides/SETUP_GUIDE.md)
-- [User Guide](guides/USER_GUIDE.md)
-- [Objective-C Tips](guides/objective_c_tips.md)
-- [Deployment](guides/DEPLOYMENT.md)
-- [Workflows](guides/DEVELOPMENT_WORKFLOWS.md)
+This directory contains comprehensive documentation for the ATProtoPDS project, organized by topic and function.
 
-## Architecture
+## Directory Index
+
+| Folder | Description | README |
+|--------|-------------|--------|
+| [architecture/](architecture/) | System architecture diagrams, data models, and XRPC protocol reference | [README](architecture/README.md) |
+| [examples/](examples/) | Example configuration files (systemd service, etc.) | — |
+| [guides/](guides/) | Developer guides, setup instructions, and workflows | — |
+| [oauth2/](oauth2/) | OAuth 2.0 implementation with DPoP, PKCE, and token management | [README](oauth2/README.md) |
+| [plan/](plan/) | Project roadmap and planning documents | — |
+| [plans/](plans/) | Detailed implementation plans and production readiness | — |
+| [security/](security/) | Security analysis, testing plans, and vulnerability reports | — |
+| [skills/](skills/) | ATProto compliance review skills and audit tools | [README](skills/README.md) |
+| [tests/](tests/) | Test documentation index covering 135 test classes | [README](tests/README.md) |
+
+## Top-Level Documents
+
+| File | Description |
+|------|-------------|
+| [TESTING.md](TESTING.md) | Comprehensive testing guide and methodology |
+| [atproto-plc-architecture.md](atproto-plc-architecture.md) | ATProto PLC directory architecture |
+
+## Quick Navigation
+
+### Getting Started
+- [Setup Guide](guides/SETUP_GUIDE.md)
+- [Developer Guide](guides/DEVELOPER_GUIDE.md)
+- [User Guide](guides/USER_GUIDE.md)
+
+### Architecture & Design
 - [Architecture Analysis](architecture/ARCHITECTURE_ANALYSIS.md)
-- [Data Models](architecture/atproto_data_models.md)
 - [PDS Architecture](architecture/atproto_pds_architecture.md)
-- [Diagrams](architecture/DIAGRAMS_MERMAID.md)
+- [Data Models](architecture/atproto_data_models.md)
+- [Diagrams (Mermaid)](architecture/DIAGRAMS_MERMAID.md)
 - [XRPC Protocol Reference](architecture/XRPC_PROTOCOL_REFERENCE.md)
 
-## Security
+### OAuth2 & Authentication
+- [OAuth 2.0 Overview](oauth2/README.md)
+- [Authorization Flow](oauth2/authorization-flow.md)
+- [DPoP Implementation](oauth2/dpop.md)
+- [PKCE](oauth2/pkce.md)
+- [Token Management](oauth2/token-management.md)
+- [Web UI](oauth2/web-ui.md)
+
+### Security
 - [Security Testing Plan](security/SECURITY_TESTING_PLAN.md)
 - [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT.md)
 - [SQL Injection Report](security/SQL_INJECTION_VULNERABILITY_REPORT.md)
 - [SSRF Protection](security/SSRF_PROTECTION.md)
 - [Admin Auth Configuration](security/ADMIN_AUTH_CONFIGURATION.md)
 
-## Plans & Roadmap
-- [Roadmap](plans/ROADMAP.md)
-- [Production Readiness](plans/production-readiness.md)
-- [Detailed Next Steps](plans/detailed_next_steps_plan.md)
-- [Pluggable Email](plans/2026-02-17-pluggable-email-resend.md)
-- [Security Hardening](plans/2026-02-18-p0-security-hardening.md)
-
-## Testing
+### Testing
 - [Testing Guide](TESTING.md)
+- [Test Documentation Index](tests/README.md)
+
+### Guides & References
+- [Script Development](guides/SCRIPT_DEVELOPMENT.md)
+- [Objective-C Tips](guides/objective_c_tips.md)
+- [Deployment](guides/DEPLOYMENT.md)
+- [Development Workflows](guides/DEVELOPMENT_WORKFLOWS.md)
+- [macOS Network Server Guide](guides/macOS_Network_Server_Guide.md)
+
+## Related Documentation
+
+This section provides quick links to key documentation in each subfolder:
+
+| Topic | Key Documents |
+|-------|---------------|
+| **Architecture** | [PDS Architecture](architecture/atproto_pds_architecture.md), [Data Models](architecture/atproto_data_models.md), [Diagrams](architecture/DIAGRAMS_MERMAID.md) |
+| **Guides** | [Developer Guide](guides/DEVELOPER_GUIDE.md), [Setup Guide](guides/SETUP_GUIDE.md), [Deployment](guides/DEPLOYMENT.md) |
+| **OAuth2** | [Overview](oauth2/README.md), [Authorization Flow](oauth2/authorization-flow.md), [DPoP](oauth2/dpop.md) |
+| **Security** | [Testing Plan](security/SECURITY_TESTING_PLAN.md), [Analysis Report](security/SECURITY_ANALYSIS_REPORT.md) |
+| **Testing** | [Test Index](tests/README.md), [Identity/Auth](tests/00-identity-auth/README.md), [Repository](tests/01-repository/README.md) |
+
+## Project Links
+
+- [Main Project README](../README.md)
+- [Agent Instructions (AGENTS.md)](../AGENTS.md)

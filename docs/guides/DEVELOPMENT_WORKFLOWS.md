@@ -295,3 +295,12 @@ graph TD
     style src fill:#bbdefb
     style docs fill:#ffe0b2
 ```
+
+## Related Documentation
+
+- **[Developer Guide](DEVELOPER_GUIDE.md)** - API extension procedures
+- **[Setup Guide](SETUP_GUIDE.md)** - Build and run instructions
+- **[Testing Guide](../TESTING.md)** - Test suite documentation
+- **[Architecture Diagrams](../architecture/DIAGRAMS_MERMAID.md)** - System Mermaid diagrams
+- **[Diagram Quick Reference](../architecture/DIAGRAM_QUICK_REFERENCE.md)** - Diagram selection guide
+- **[OAuth 2.0 Architecture](../oauth2/architecture.md)** - Auth system design

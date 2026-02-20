@@ -343,6 +343,26 @@ These services reside above the database layer and implement the business logic 
 *   **Handlers** (`ExploreHandlerTests`, `MSTViewerHandlerTests`)
     *   **What it tests:** Request routing and response generation for auxiliary endpoints (Explore, Debug viewers).
 
+## Related Documentation
+
+### Test Documentation
+- [Test Documentation Index](tests/README.md) - Complete index of all test classes
+- [Identity & Auth Tests](tests/00-identity-auth/README.md) - JWT, crypto, OAuth, MFA tests
+- [Repository Tests](tests/01-repository/README.md) - MST, CAR, CBOR tests
+- [Network Tests](tests/02-network/README.md) - HTTP, XRPC, WebSocket tests
+- [Database Tests](tests/03-database/README.md) - ActorStore, pool, service tests
+- [Application Tests](tests/04-application/README.md) - Services, controller, CLI tests
+- [Security Tests](tests/05-security/README.md) - Hardening, validation, auth security
+- [Integration Tests](tests/06-integration/README.md) - E2E, federation, PLC tests
+
+### Guides
+- [Developer Guide](guides/DEVELOPER_GUIDE.md) - Development setup and workflows
+- [Setup Guide](guides/SETUP_GUIDE.md) - Initial project setup
+
+### Security
+- [Security Testing Plan](security/SECURITY_TESTING_PLAN.md) - Security test methodology
+- [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT.md) - Security audit results
+
 ## Sources & References
 
 *   [AT Protocol Repository Spec](https://atproto.com/specs/repository)

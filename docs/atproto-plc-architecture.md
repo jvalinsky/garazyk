@@ -69,14 +69,30 @@ How any server on the internet determines your current PDS address or handle.
 How the PDS (`kaszlak`) uses `campagnola`.
 
 ```text
-   +-----------------------+           +-----------------------+
-   |  SEPTEMBER (PDS)      |           |  ATPROTO-PLC          |
-   |                       |           |                       |
-   |  [ Account Service ]--|---HTTP--->|  [ MockLogProvider ]  |
-   |  [ Repo Service    ]  | (Update)  |  [ SQLite Store    ]  |
-   +-----------------------+           +-----------------------+
-               ^                                   |
-               |                                   |
-               `------------- HTTP ----------------'
-                          (Resolution)
+    +-----------------------+           +-----------------------+
+    |  SEPTEMBER (PDS)      |           |  ATPROTO-PLC          |
+    |                       |           |                       |
+    |  [ Account Service ]--|---HTTP--->|  [ MockLogProvider ]  |
+    |  [ Repo Service    ]  | (Update)  |  [ SQLite Store    ]  |
+    +-----------------------+           +-----------------------+
+                ^                                   |
+                |                                   |
+                `------------- HTTP ----------------'
+                           (Resolution)
 ```
+
+## Related Documentation
+
+### Architecture
+- [PDS Architecture](architecture/atproto_pds_architecture.md) - Overall PDS system design
+- [Architecture Analysis](architecture/ARCHITECTURE_ANALYSIS.md) - Detailed architecture review
+- [Data Models](architecture/atproto_data_models.md) - ATProto data structures
+- [Architecture Diagrams](architecture/DIAGRAMS_MERMAID.md) - Visual architecture diagrams
+
+### Testing
+- [Identity & Auth Tests](tests/00-identity-auth/README.md) - DID resolution, JWT tests
+- [Integration Tests](tests/06-integration/plc.md) - PLC integration testing
+
+### OAuth & Security
+- [OAuth 2.0 Overview](oauth2/README.md) - OAuth implementation details
+- [Security Analysis](security/SECURITY_ANALYSIS_REPORT.md) - Security posture review

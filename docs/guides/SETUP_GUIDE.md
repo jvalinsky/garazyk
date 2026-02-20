@@ -517,5 +517,13 @@ CMD ["/app/kaszlak", "serve", "--port", "2583"]
 
 - Documentation: `docs/` folder in repository
 - API Reference: `http://localhost:2583/explore/api/docs`
-- Architecture: `docs/architecture/ARCHITECTURE_DIAGRAMS.md`
-- Script Development: `docs/guides/SCRIPT_DEVELOPMENT.md`
+
+## Related Documentation
+
+- **[Developer Guide](DEVELOPER_GUIDE.md)** - API extension and contribution guidelines
+- **[User Guide](USER_GUIDE.md)** - Web explorer and CLI commands
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment with TLS
+- **[Architecture Overview](../architecture/ARCHITECTURE_ANALYSIS.md)** - System design and components
+- **[Testing Guide](../TESTING.md)** - Test suite documentation
+- **[OAuth 2.0 Implementation](../oauth2/README.md)** - Authentication setup
+- **[Script Development](SCRIPT_DEVELOPMENT.md)** - Shell script standards
