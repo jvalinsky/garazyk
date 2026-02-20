@@ -4,305 +4,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATProto PDS Documentation</title>
+    <title> PDS Explorer</title>
+    <link rel="stylesheet" href="/css/system.css">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
-    <header class="apple-header">
-        <div class="apple-logo"></div>
-        <h1>Developer Documentation</h1>
-    </header>
+    <ul role="menu-bar">
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            
+            <ul role="menu">
+                <li role="menu-item"><a href="#">About PDS Explorer</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            PDS
+            <ul role="menu">
+                <li role="menu-item"><a href="#" id="menu-accounts">Accounts</a></li>
+                <li role="menu-item"><a href="#" id="menu-details">Site Details</a></li>
+                <li role="menu-item" class="divider"></li>
+                <li role="menu-item"><a href="/api/pds/docs">API Reference</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            PLC
+            <ul role="menu">
+                <li role="menu-item"><a href="#" id="plc-explorer-link">PLC Explorer</a></li>
+                <li role="menu-item"><a href="#" id="plc-metrics-link">PLC Metrics</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            View
+            <ul role="menu">
+                <li role="menu-item"><a href="#" onclick="openWindow('did-doc')">DID Document</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('plc-ops')">PLC Operations</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('collections')">Repo Collections</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('graph-follows')">Social Graph</a></li>
+                <li role="menu-item" class="divider"></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('feed-posts')">Feed Posts</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('feed-likes')">Feed Likes</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('feed-reposts')">Feed Reposts</a></li>
+                <li role="menu-item" class="divider"></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('actor-profile')">Actor Profile</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            Utilities
+            <ul role="menu">
+                <li role="menu-item"><a href="#" onclick="openWindow('cid-decode')">CID Decoder</a></li>
+                <li role="menu-item"><a href="#" id="menu-poster">Post (OAuth)</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" style="float: right;">
+            <span id="status-clock">12:00 PM</span>
+        </li>
+    </ul>
 
-    <div class="app-container">
-        <nav class="sidebar">
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="lookup-input" placeholder="Search DID or handle..." autocomplete="off">
+    <div class="desktop">
+        <!-- Explorer / Account List Window -->
+        <div class="window" id="win-accounts">
+            <div class="title-bar">
+                <span class="title">Accounts</span>
+                <button class="close" onclick="closeWindow('win-accounts')"><span>Close</span></button>
             </div>
-
-            <ul class="nav-tree">
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">ATProto PDS</span>
-                    </div>
-                    <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-did-doc" data-section="did-doc">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">DID Document</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-plc-ops" data-section="plc-ops">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">PLC Operations</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-collections" data-section="collections">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Collections</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-records" data-section="records" style="display:none">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Records</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-record-detail" data-section="record-detail"
-                                style="display:none">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Record Detail</span>
-                            </div>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">Feed</span>
-                    </div>
-                    <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-feed-posts" data-section="feed-posts">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Posts</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-feed-likes" data-section="feed-likes">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Likes</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-feed-reposts" data-section="feed-reposts">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Reposts</span>
-                            </div>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">Graph</span>
-                    </div>
-                    <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-graph-follows" data-section="graph-follows">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Follows</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-actor-profile" data-section="actor-profile">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Profile</span>
-                            </div>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">Utilities</span>
-                    </div>
-                    <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-cid-decode" data-section="cid-decode">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">CID Decoder</span>
-                            </div>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">Reference</span>
-                    </div>
-                    <ul class="nav-children">
-                        <div class="nav-row" onclick="window.location.href='/api/pds/docs'">
-                            <span class="disclosure"></span>
-                            <span class="nav-label">API Reference</span>
-                        </div>
-                </li>
-            </ul>
-            </li>
-            </ul>
-
-            <div class="account-section">
-                <h3>Accounts</h3>
-                <ul id="account-list">
-                    <li class="loading">Loading...</li>
+            <div class="window-body">
+                <div class="field-row">
+                    <input type="text" id="lookup-input" placeholder="Search DID or handle..." style="width: 100%;">
+                </div>
+                <ul class="tree-view" id="account-list" style="height: 400px; overflow-y: auto;">
+                    <li class="loading">Loading accounts...</li>
                 </ul>
             </div>
-        </nav>
+        </div>
 
-        <main class="content">
-            <nav class="breadcrumb">
-                <a href="#">Home</a> &gt;
-                <a href="#">ATProto</a> &gt;
-                <span id="breadcrumb-current">DID Document</span>
-            </nav>
+        <!-- Main Content Window -->
+        <div class="window" id="win-content">
+            <div class="title-bar">
+                <button class="close" onclick="closeWindow('win-content')"><span>Close</span></button>
+                <span class="title" id="content-title">DID Document</span>
+                <button class="resize"><span>Resize</span></button>
+            </div>
+            <div class="window-body">
+                <div id="section-container">
+                    <!-- DID Document -->
+                    <section id="did-doc" class="doc-section active">
+                        <div id="did-content">
+                            <p class="placeholder">Select an account from the sidebar or search to view DID details.</p>
+                        </div>
+                    </section>
 
-            <!-- DID Document Section -->
-            <section id="did-doc" class="doc-section active">
-                <div class="section-header">
-                    <h1>DID Document</h1>
-                </div>
-                <div id="did-content">
-                    <p class="placeholder">Select an account or search for a DID to view its document.</p>
-                </div>
-            </section>
+                    <!-- PLC Operations -->
+                    <section id="plc-ops" class="doc-section">
+                        <div id="plc-content">
+                            <p class="placeholder">PLC operations will appear here.</p>
+                        </div>
+                    </section>
 
-            <!-- PLC Operations Section -->
-            <section id="plc-ops" class="doc-section">
-                <div class="section-header">
-                    <h1>PLC Operations</h1>
-                </div>
-                <div id="plc-content">
-                    <p class="placeholder">PLC operations log will appear here.</p>
-                </div>
-            </section>
+                    <!-- Collections -->
+                    <section id="collections" class="doc-section">
+                        <div id="collections-content">
+                            <p class="placeholder">Select a DID to browse its repository collections.</p>
+                        </div>
+                    </section>
 
-            <!-- Collections Section -->
-            <section id="collections" class="doc-section">
-                <div class="section-header">
-                    <h1>Collections</h1>
-                </div>
-                <div id="collections-content">
-                    <p class="placeholder">Select a DID to view its collections.</p>
-                </div>
-            </section>
+                    <!-- Records -->
+                    <section id="records" class="doc-section">
+                        <div style="margin-bottom: 10px;">
+                            <button class="btn" id="back-collections">◀ Back</button>
+                            <span id="records-title" style="font-weight:bold; margin-left:10px;"></span>
+                        </div>
+                        <div id="records-content"></div>
+                    </section>
 
-            <!-- Records Section -->
-            <section id="records" class="doc-section">
-                <div class="section-header">
-                    <h1>Records</h1>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-collections" class="btn-secondary">Back to Collections</button>
-                    <span id="records-title" style="font-weight:bold; margin-left:10px;"></span>
-                </div>
-                <div id="records-content">
-                    <p class="placeholder">Loading records...</p>
-                </div>
-            </section>
+                    <!-- Record Detail -->
+                    <section id="record-detail" class="doc-section">
+                        <div style="margin-bottom: 10px;">
+                            <button class="btn" id="back-records">◀ Back</button>
+                            <span id="record-title" style="font-weight:bold; margin-left:10px;"></span>
+                        </div>
+                        <pre id="record-content" class="code-block"></pre>
+                    </section>
 
-            <!-- Record Detail Section -->
-            <section id="record-detail" class="doc-section">
-                <div class="section-header">
-                    <h1>Record Detail</h1>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-records" class="btn-secondary">Back to Records</button>
-                    <span id="record-title" style="font-weight:bold; margin-left:10px;"></span>
-                </div>
-                <pre id="record-content" class="code-block"></pre>
-            </section>
+                    <!-- Graph / Feed sections simplified into content area -->
+                    <section id="graph-follows" class="doc-section">
+                        <div id="graph-follows-content"></div>
+                    </section>
 
-            <!-- Feed Posts Section -->
-            <section id="feed-posts" class="doc-section">
-                <div class="section-header">
-                    <h1>Posts</h1>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-from-posts" class="btn-secondary">Back</button>
-                    <span id="posts-account" style="font-weight:bold; margin-left:10px;"></span>
-                </div>
-                <div id="feed-posts-content">
-                    <p class="placeholder">Select an account to view posts.</p>
-                </div>
-            </section>
+                    <section id="feed-posts" class="doc-section">
+                        <div id="feed-posts-content">
+                            <p class="placeholder">Select an account to view feed posts.</p>
+                        </div>
+                    </section>
 
-            <!-- Feed Likes Section -->
-            <section id="feed-likes" class="doc-section">
-                <div class="section-header">
-                    <h1>Likes</h1>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-from-likes" class="btn-secondary">Back</button>
-                    <span id="likes-account" style="font-weight:bold; margin-left:10px;"></span>
-                </div>
-                <div id="feed-likes-content">
-                    <p class="placeholder">Select an account to view likes.</p>
-                </div>
-            </section>
+                    <section id="feed-likes" class="doc-section">
+                        <div id="feed-likes-content">
+                            <p class="placeholder">Select an account to view likes.</p>
+                        </div>
+                    </section>
 
-            <!-- Feed Reposts Section -->
-            <section id="feed-reposts" class="doc-section">
-                <div class="section-header">
-                    <h1>Reposts</h1>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-from-reposts" class="btn-secondary">Back</button>
-                    <span id="reposts-account" style="font-weight:bold; margin-left:10px;"></span>
-                </div>
-                <div id="feed-reposts-content">
-                    <p class="placeholder">Select an account to view reposts.</p>
-                </div>
-            </section>
+                    <section id="feed-reposts" class="doc-section">
+                        <div id="feed-reposts-content">
+                            <p class="placeholder">Select an account to view reposts.</p>
+                        </div>
+                    </section>
 
-            <!-- Graph Follows Section -->
-            <section id="graph-follows" class="doc-section">
-                <div class="section-header">
-                    <h1>Follows</h1>
+                    <section id="actor-profile" class="doc-section">
+                        <div id="actor-profile-content">
+                            <p class="placeholder">Select an account to view profile.</p>
+                        </div>
+                    </section>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-from-follows" class="btn-secondary">Back</button>
-                    <span id="follows-account" style="font-weight:bold; margin-left:10px;"></span>
-                </div>
-                <div id="graph-follows-content">
-                    <p class="placeholder">Select an account to view follows.</p>
-                </div>
-            </section>
+            </div>
+            <div class="status-bar">
+                <p class="status-bar-field" id="status-left">Ready</p>
+                <p class="status-bar-field" id="status-right">ATProto PDS</p>
+            </div>
+        </div>
 
-            <!-- Actor Profile Section -->
-            <section id="actor-profile" class="doc-section">
-                <div class="section-header">
-                    <h1>Profile</h1>
+        <!-- Utility Window: CID Decoder -->
+        <div class="window" id="win-cid-decode" style="display: none;">
+            <div class="title-bar">
+                <span class="title">CID Decoder</span>
+                <button class="close" onclick="closeWindow('win-cid-decode')"><span>Close</span></button>
+            </div>
+            <div class="window-body">
+                <div class="field-row-stacked">
+                    <label for="cid-input">Enter CID:</label>
+                    <input type="text" id="cid-input" placeholder="bafybeie..." style="width: 100%;">
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <button id="back-from-profile" class="btn-secondary">Back</button>
-                    <span id="profile-account" style="font-weight:bold; margin-left:10px;"></span>
+                <div class="field-row" style="justify-content: flex-end; margin-top: 10px;">
+                    <button id="cid-decode-btn" class="btn btn-default">Decode</button>
                 </div>
-                <div id="actor-profile-content">
-                    <p class="placeholder">Select an account to view profile.</p>
-                </div>
-            </section>
-
-            <!-- CID Decoder Section -->
-            <section id="cid-decode" class="doc-section">
-                <div class="section-header">
-                    <h1>CID Decoder</h1>
-                </div>
-                <div class="cid-input-group">
-                    <input type="text" id="cid-input" placeholder="bafybeie..." autocomplete="off">
-                    <button id="cid-decode-btn" class="btn-primary">Decode</button>
-                </div>
+                <hr>
                 <div id="cid-result">
-                    <p class="placeholder">Enter a CID above to decode it.</p>
+                    <p class="placeholder">Result will appear here.</p>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
+
+        <!-- Utility Window: Post (OAuth) -->
+        <div class="window" id="win-poster" style="display: none; width: 380px; top: 60px; left: 40px;">
+            <div class="title-bar">
+                <span class="title">Post (OAuth)</span>
+                <button class="close" onclick="closeWindow('win-poster')"><span>Close</span></button>
+            </div>
+            <div class="window-body">
+                <div id="poster-login">
+                    <div class="field-row-stacked">
+                        <label for="poster-handle">Handle:</label>
+                        <input type="text" id="poster-handle" placeholder="alice.test" style="width: 100%;">
+                    </div>
+                    <div class="field-row" style="justify-content: flex-end; margin-top: 8px;">
+                        <button id="poster-login-btn" class="btn btn-default">Login</button>
+                    </div>
+                </div>
+                <div id="poster-session" style="display: none;">
+                    <div style="border: 1px solid #000; padding: 6px; margin-bottom: 8px; background: #fff;">
+                        Logged in as <strong id="poster-did"></strong>
+                        <button id="poster-logout-btn" class="btn" style="float: right; margin-top: -2px;">Logout</button>
+                        <div style="clear: both;"></div>
+                    </div>
+                    <div class="field-row-stacked">
+                        <label for="poster-text">Post:</label>
+                        <textarea id="poster-text" rows="4" style="width: 100%; font-family: Chicago_12, monospace; border: 1.5px solid #000; padding: 4px;" placeholder="What's on your mind?"></textarea>
+                    </div>
+                    <div style="text-align: right; margin-top: 4px; color: #666;">
+                        <span id="poster-charcount">0</span>/300
+                    </div>
+                    <div class="field-row" style="justify-content: space-between; margin-top: 8px;">
+                        <button id="poster-test-btn" class="btn">Test Session</button>
+                        <button id="poster-post-btn" class="btn btn-default">Post</button>
+                    </div>
+                    <hr>
+                    <div id="poster-result"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        function toggleNav(el) {
-            el.parentElement.classList.toggle('expanded');
-        }
-    </script>
     <script type="module" src="/js/ui.js"></script>
+    <script>
+        // Global window management helpers
+        window.openWindow = function (sectionId) {
+            document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+            const section = document.getElementById(sectionId);
+            if (section) section.classList.add('active');
+
+            const titles = {
+                'did-doc': 'DID Document',
+                'plc-ops': 'PLC Operations',
+                'collections': 'Repo Collections',
+                'records': 'Records',
+                'record-detail': 'Record Detail',
+                'graph-follows': 'Social Graph',
+                'feed-posts': 'Feed Posts',
+                'feed-likes': 'Feed Likes',
+                'feed-reposts': 'Feed Reposts',
+                'actor-profile': 'Actor Profile',
+                'cid-decode': 'CID Decoder'
+            };
+
+            if (sectionId === 'cid-decode') {
+                document.getElementById('win-cid-decode').style.display = 'block';
+            } else {
+                document.getElementById('content-title').innerText = titles[sectionId] || 'PDS Explorer';
+                document.getElementById('win-content').style.display = 'block';
+            }
+        };
+
+        window.closeWindow = function (winId) {
+            document.getElementById(winId).style.display = 'none';
+        };
+
+        const PLC_BASE = 'http://localhost:2582';
+        const plcExplorerLink = document.getElementById('plc-explorer-link');
+        const plcMetricsLink = document.getElementById('plc-metrics-link');
+        if (plcExplorerLink) plcExplorerLink.href = PLC_BASE;
+        if (plcMetricsLink) plcMetricsLink.href = PLC_BASE + '/_metrics';
+
+        // Simple Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('status-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }, 1000);
+    </script>
 </body>
 
 </html>

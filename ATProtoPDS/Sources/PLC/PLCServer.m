@@ -364,6 +364,11 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [weakSelf serveStaticFile:[NSString stringWithFormat:@"css/%@", file] response:resp];
     }];
 
+    [self.httpServer addRoute:@"GET" path:@"/css/fonts/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
+        NSString *file = req.pathParameters[@"file"];
+        [weakSelf serveStaticFile:[NSString stringWithFormat:@"css/fonts/%@", file] response:resp];
+    }];
+
     [self.httpServer addRoute:@"GET" path:@"/js/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
         NSString *file = req.pathParameters[@"file"];
         [weakSelf serveStaticFile:[NSString stringWithFormat:@"js/%@", file] response:resp];
@@ -734,6 +739,8 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     else if ([extension isEqualToString:@"css"]) contentType = @"text/css; charset=utf-8";
     else if ([extension isEqualToString:@"js"]) contentType = @"application/javascript; charset=utf-8";
     else if ([extension isEqualToString:@"json"]) contentType = @"application/json; charset=utf-8";
+    else if ([extension isEqualToString:@"woff2"]) contentType = @"font/woff2";
+    else if ([extension isEqualToString:@"woff"]) contentType = @"font/woff";
     
     // Explicitly set the header to ensure it overrides any defaults
     [resp setHeader:contentType forKey:@"Content-Type"];
