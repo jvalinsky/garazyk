@@ -1,4 +1,5 @@
 #import "Admin/AdminMiddleware.h"
+#import "Admin/PDSAdminAuth.h"
 #import "Auth/Session.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -62,6 +63,10 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
     dispatch_sync(self.accessQueue, ^{
         isAdmin = [self.adminDids containsObject:session.did];
     });
+
+    if (!isAdmin) {
+        isAdmin = [[PDSAdminAuth sharedAuth] isAdminDid:session.did];
+    }
     
     if (!isAdmin && self.customAdminCheck) {
         isAdmin = self.customAdminCheck(session);

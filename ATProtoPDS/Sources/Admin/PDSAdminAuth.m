@@ -161,6 +161,8 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
 
 @interface PDSAdminAuth ()
 @property (nonatomic, strong, nullable) NSDate *minimumTokenIssuedAt;
+@property (nonatomic, strong) NSMutableOrderedSet<NSString *> *adminDidsInternal;
+@property (nonatomic, strong) dispatch_queue_t adminQueue;
 @end
 
 static NSString *PDSAdminAuthMinIATFilePath(NSString *dataDirectory) {
@@ -185,6 +187,32 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
     return [NSDate dateWithTimeIntervalSince1970:ts];
 }
 
+static NSString *PDSAdminAuthAdminDidsPath(NSString *dataDirectory) {
+    if (dataDirectory.length == 0) return nil;
+    return [dataDirectory stringByAppendingPathComponent:@"admin_dids.json"];
+}
+
+static NSArray<NSString *> *PDSAdminAuthLoadAdminDids(NSString *dataDirectory) {
+    NSString *path = PDSAdminAuthAdminDidsPath(dataDirectory);
+    if (!path || ![[NSFileManager defaultManager] fileExistsAtPath:path]) return @[];
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    if (!data) return @[];
+    NSError *error = nil;
+    NSArray *dids = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    if (error || ![dids isKindOfClass:[NSArray class]]) return @[];
+    return dids;
+}
+
+static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString *> *dids) {
+    NSString *path = PDSAdminAuthAdminDidsPath(dataDirectory);
+    if (!path) return;
+    NSError *error = nil;
+    NSData *data = [NSJSONSerialization dataWithJSONObject:dids options:NSJSONWritingPrettyPrinted error:&error];
+    if (data) {
+        [data writeToFile:path atomically:YES];
+    }
+}
+
 @implementation PDSAdminAuth
 
 + (instancetype)sharedAuth {
@@ -201,6 +229,8 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
     if (self) {
         _adminToken = nil;
         _minimumTokenIssuedAt = nil;
+        _adminDidsInternal = [NSMutableOrderedSet orderedSet];
+        _adminQueue = dispatch_queue_create("com.atproto.pds.admin-auth", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -212,6 +242,12 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
     if (persisted) {
         _minimumTokenIssuedAt = persisted;
     }
+    
+    NSArray *dids = PDSAdminAuthLoadAdminDids(_dataDirectory);
+    dispatch_sync(self.adminQueue, ^{
+        [self.adminDidsInternal removeAllObjects];
+        [self.adminDidsInternal addObjectsFromArray:dids];
+    });
 }
 
 - (BOOL)isAuthenticatedWithRequest:(NSObject *)request {
@@ -267,9 +303,12 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
         return NO;
     }
 
-    if (!PDSScopesContainAdmin(jwt.payload.scope)) {
+    NSString *sub = jwt.payload.sub;
+    BOOL isExplicitAdmin = [self isAdminDid:sub];
+
+    if (!isExplicitAdmin && !PDSScopesContainAdmin(jwt.payload.scope)) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:403 userInfo:@{NSLocalizedDescriptionKey: @"Token missing admin scope"}];
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:403 userInfo:@{NSLocalizedDescriptionKey: @"Token missing admin scope and user is not an admin"}];
         }
         return NO;
     }
@@ -467,6 +506,75 @@ static NSDate *PDSAdminAuthLoadMinIAT(NSString *dataDirectory) {
     NSDate *now = [NSDate date];
     self.minimumTokenIssuedAt = now;
     PDSAdminAuthPersistMinIAT(self.dataDirectory, now);
+}
+
+#pragma mark - Admin DID Management
+
+- (BOOL)isAdminDid:(NSString *)did {
+    if (did.length == 0) return NO;
+    
+    // Check if it's the hardcoded admin DID (did:web:<host>)
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, nil);
+    if (expectedIssuer) {
+        NSURLComponents *components = [NSURLComponents componentsWithString:expectedIssuer];
+        NSString *issuerHost = components.host ?: expectedIssuer;
+        NSString *hardcodedAdminDID = [NSString stringWithFormat:@"did:web:%@", issuerHost];
+        if ([did isEqualToString:hardcodedAdminDID]) return YES;
+    }
+    
+    __block BOOL isAdmin = NO;
+    dispatch_sync(self.adminQueue, ^{
+        isAdmin = [self.adminDidsInternal containsObject:did];
+    });
+    return isAdmin;
+}
+
+- (BOOL)addAdminDid:(NSString *)did error:(NSError **)error {
+    if (did.length == 0) return NO;
+    
+    __block BOOL changed = NO;
+    dispatch_sync(self.adminQueue, ^{
+        if (![self.adminDidsInternal containsObject:did]) {
+            [self.adminDidsInternal addObject:did];
+            changed = YES;
+        }
+    });
+    
+    if (changed) {
+        [self saveAdminDids];
+    }
+    return YES;
+}
+
+- (BOOL)removeAdminDid:(NSString *)did error:(NSError **)error {
+    if (did.length == 0) return NO;
+    
+    __block BOOL changed = NO;
+    dispatch_sync(self.adminQueue, ^{
+        if ([self.adminDidsInternal containsObject:did]) {
+            [self.adminDidsInternal removeObject:did];
+            changed = YES;
+        }
+    });
+    
+    if (changed) {
+        [self saveAdminDids];
+    }
+    return YES;
+}
+
+- (NSArray<NSString *> *)listAdminDids {
+    __block NSArray *dids = nil;
+    dispatch_sync(self.adminQueue, ^{
+        dids = [self.adminDidsInternal array];
+    });
+    return dids;
+}
+
+- (void)saveAdminDids {
+    NSArray *dids = [self listAdminDids];
+    PDSAdminAuthSaveAdminDids(self.dataDirectory, dids);
 }
 
 @end
