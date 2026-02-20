@@ -327,15 +327,19 @@
     NSString *path = request.path;
     PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"ExploreHandler handleRequest: %@", path);
 
-    
     if ([path isEqualToString:@"/"] || [path isEqualToString:@""]) {
         [self serveIndex:response];
     }
     else if ([path hasPrefix:@"/css/"]) {
-        [self serveCss:request response:response];
+        NSString *subpath = [path substringFromIndex:1];
+        NSString *contentType = @"text/css; charset=utf-8";
+        if ([path hasSuffix:@".woff2"]) contentType = @"font/woff2";
+        else if ([path hasSuffix:@".woff"]) contentType = @"font/woff";
+        [self serveStaticFile:subpath response:response contentType:contentType];
     }
     else if ([path hasPrefix:@"/js/"]) {
-        [self serveJs:request response:response];
+        NSString *subpath = [path substringFromIndex:1];
+        [self serveStaticFile:subpath response:response contentType:@"application/javascript; charset=utf-8"];
     }
     else if ([path hasPrefix:@"/api/pds/"]) {
         NSString *endpoint = request.pathParameters[@"endpoint"] ?: [self apiEndpointForPath:request.path];
@@ -386,62 +390,25 @@
     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
-- (void)serveCss:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *path = request.path;
-    NSString *filename = [path lastPathComponent];
-
-    NSString *cssPath = [self staticFilePath:[NSString stringWithFormat:@"css/%@", filename]];
-    
-    if (!cssPath) {
+- (void)serveStaticFile:(NSString *)subpath response:(HttpResponse *)response contentType:(NSString *)contentType {
+    NSString *filePath = [self staticFilePath:subpath];
+    if (!filePath) {
         response.statusCode = HttpStatusNotFound;
-        response.contentType = @"text/css; charset=utf-8";
-        [response setBodyData:[@"/* Assets path not configured */" dataUsingEncoding:NSUTF8StringEncoding]];
+        [response setJsonBody:@{@"error": @"Assets path not configured"}];
         return;
     }
     
-    NSError *error = nil;
-    NSString *css = [NSString stringWithContentsOfFile:cssPath encoding:NSUTF8StringEncoding error:&error];
-    
-    if (error || !css) {
+    NSData *data = [NSData dataWithContentsOfFile:filePath];
+    if (!data) {
         response.statusCode = HttpStatusNotFound;
-        response.contentType = @"text/css; charset=utf-8";
-        [response setBodyData:[[NSString stringWithFormat:@"/* CSS file not found: %@ */", cssPath ?: @"unknown"] dataUsingEncoding:NSUTF8StringEncoding]];
+        [response setJsonBody:@{@"error": @"File not found", @"path": subpath}];
         return;
     }
     
     response.statusCode = 200;
-    response.contentType = @"text/css; charset=utf-8";
+    response.contentType = contentType;
     response.keepAlive = NO;
-    [response setBodyData:[css dataUsingEncoding:NSUTF8StringEncoding]];
-}
-
-- (void)serveJs:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *path = request.path;
-    NSString *filename = [path lastPathComponent];
-    
-    NSString *jsPath = [self staticFilePath:[NSString stringWithFormat:@"js/%@", filename]];
-    
-    if (!jsPath) {
-        response.statusCode = HttpStatusNotFound;
-        response.contentType = @"application/javascript; charset=utf-8";
-        [response setBodyData:[@"// Assets path not configured" dataUsingEncoding:NSUTF8StringEncoding]];
-        return;
-    }
-    
-    NSError *error = nil;
-    NSString *js = [NSString stringWithContentsOfFile:jsPath encoding:NSUTF8StringEncoding error:&error];
-    
-    if (error || !js) {
-        response.statusCode = HttpStatusNotFound;
-        response.contentType = @"application/javascript; charset=utf-8";
-        [response setBodyData:[[NSString stringWithFormat:@"// File not found: %@", path] dataUsingEncoding:NSUTF8StringEncoding]];
-        return;
-    }
-    
-    response.statusCode = 200;
-    response.contentType = @"application/javascript; charset=utf-8";
-    response.keepAlive = NO;
-    [response setBodyData:[js dataUsingEncoding:NSUTF8StringEncoding]];
+    [response setBodyData:data];
 }
 
 - (void)serveVendor:(HttpRequest *)request response:(HttpResponse *)response {
