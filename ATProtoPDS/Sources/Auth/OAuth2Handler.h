@@ -8,9 +8,11 @@
 @class HttpResponse;
 @class JWTMinter;
 
+@protocol PDSAccountService;
+
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
+/**
  @class OAuth2Handler
  
  @abstract HTTP handler for OAuth 2.0 endpoints.
@@ -26,6 +28,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! JWT minting service. */
 @property (nonatomic, strong, nullable) JWTMinter *minter;
+
+/*! Data directory for assets. */
+@property (nonatomic, copy, nullable) NSString *dataDirectory;
+
+/*! Account service for sign-in credential validation. */
+@property (nonatomic, strong, nullable) id<PDSAccountService> accountService;
 
 /*!
  @method initWithDatabase:
