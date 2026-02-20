@@ -139,10 +139,10 @@ XCTAssertNotNil(payload[@"exp"]); // Expiration
 ## CLI Commands
 
 ```
-atprotopds-cli account create --email user@example.com --handle user.bsky.social --password secret
-atprotopds-cli account list --json
-atprotopds-cli account info --handle user.bsky.social
-atprotopds-cli invite create --uses 5
-atprotopds-cli invite list --used
-atprotopds-cli invite revoke <code>
+kaszlak account create --email user@example.com --handle user.bsky.social --password secret
+kaszlak account list --json
+kaszlak account info --handle user.bsky.social
+kaszlak invite create --uses 5
+kaszlak invite list --used
+kaszlak invite revoke <code>
 ```

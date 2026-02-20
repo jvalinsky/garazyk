@@ -1359,7 +1359,7 @@ Create `config/EMAIL_SETUP.md`:
 
 2. Use the environment config:
    ```bash
-   ./atprotopds-cli serve --config config/email-resend-env.json
+   ./kaszlak serve --config config/email-resend-env.json
    ```
 
 ### Option 2: macOS Keychain (Recommended for Production)
@@ -1373,7 +1373,7 @@ Create `config/EMAIL_SETUP.md`:
 
 2. Use the Keychain config:
    ```bash
-   ./atprotopds-cli serve --config config/email-resend-keychain.json
+   ./kaszlak serve --config config/email-resend-keychain.json
    ```
 
 ### Environment Variable Overrides
@@ -1462,7 +1462,7 @@ The PDS supports multiple email providers for account notifications and verifica
 
 ```bash
 export RESEND_API_KEY="re_your_api_key"
-./atprotopds-cli serve --config config/email-resend-env.json
+./kaszlak serve --config config/email-resend-env.json
 ```
 
 See `config/EMAIL_SETUP.md` for detailed configuration options.

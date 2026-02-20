@@ -56,7 +56,7 @@ export function renderPlcOperations(operations) {
     html += `
         <h3 class="see-also">Tools</h3>
         <ul class="see-also-links">
-            <li><a href="${PLC_BASE}" target="_blank">Open Standalone PLC Explorer</a></li>
+            <li><a href="${PLC_BASE}" target="_blank">Open Campagnola</a></li>
             <li><a href="https://github.com/did-method-plc/did-method-plc" target="_blank">PLC Specification</a></li>
         </ul>
     `;

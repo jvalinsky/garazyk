@@ -44,13 +44,13 @@ cmake --build build --target september atproto-plc || exit 1
 
 # Start PLC server in background
 echo "[E2E] Starting PLC server..."
-./build/bin/atproto-plc > "${PLC_LOG}" 2>&1 &
+./build/bin/campagnola > "${PLC_LOG}" 2>&1 &
 PLC_PID=$!
 sleep 2
 
 # Start PDS server in background
 echo "[E2E] Starting PDS server..."
-./build/bin/september --config "${CONFIG_PATH}" serve --port 2583 --data-dir "${DATA_DIR}" > "${PDS_LOG}" 2>&1 &
+./build/bin/kaszlak --config "${CONFIG_PATH}" serve --port 2583 --data-dir "${DATA_DIR}" > "${PDS_LOG}" 2>&1 &
 SERVER_PID=$!
 
 # Wait for servers to be ready
@@ -59,7 +59,7 @@ sleep 5
 
 # Create test accounts
 echo "[E2E] Creating test accounts..."
-./build/bin/september --config "${CONFIG_PATH}" account create \
+./build/bin/kaszlak --config "${CONFIG_PATH}" account create \
     --handle e2e1.test \
     --email e2e1@test.com \
     --password hunter2 \
@@ -73,7 +73,7 @@ echo "[E2E] Creating test accounts..."
         exit 1
     }
 
-./build/bin/september --config "${CONFIG_PATH}" account create \
+./build/bin/kaszlak --config "${CONFIG_PATH}" account create \
     --handle e2e2.test \
     --email e2e2@test.com \
     --password hunter2 \

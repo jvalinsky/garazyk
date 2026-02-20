@@ -15,7 +15,7 @@ echo -e "${BLUE}🚀 Performance testing ATProto PDS server...${NC}"
 
 # CLI path
 # Use CMake build path
-CLI_PATH="./build/bin/september"
+CLI_PATH="./build/bin/kaszlak"
 TEST_PORT=2583
 
 # Function to cleanup background processes
