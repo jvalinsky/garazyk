@@ -5365,9 +5365,9 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
             return nil;
         }
-        if (![tokenJkt isEqualToString:dpopThumbprint]) {
-            NSLog(@"[AuthRegistry] DPoP thumbprint mismatch: token=%@, proof=%@", tokenJkt, dpopThumbprint);
-            PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch: token=%@, proof=%@", tokenJkt, dpopThumbprint);
+        if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
+            NSLog(@"[AuthRegistry] DPoP thumbprint mismatch");
+            PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
             return nil;
         }
     } else if (tokenJkt) {
