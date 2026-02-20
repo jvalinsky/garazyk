@@ -36,9 +36,8 @@ function renderList(dids) {
     let html = `
         <div class="audit-card">
             <h3>Registered Identities (${dids.length})</h3>
-            <div style="max-height: 400px; overflow-y: auto;">
-                <table class="param-table">
-                    <tbody>
+            <table class="param-table">
+                <tbody>
     `;
 
     dids.forEach(did => {
@@ -51,9 +50,8 @@ function renderList(dids) {
     });
 
     html += `
-                    </tbody>
-                </table>
-            </div>
+                </tbody>
+            </table>
         </div>
     `;
 

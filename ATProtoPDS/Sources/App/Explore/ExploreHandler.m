@@ -189,7 +189,7 @@
         _cache = [ExploreCache sharedCache];
         _enabled = YES;
         _cacheDirectory = @"/tmp/pds-explore-cache";
-        _plcServerURL = @"http://localhost:2582"; // Local PLC
+        _plcServerURL = [PDSConfiguration sharedConfiguration].plcURL ?: @"http://localhost:2582";
         _didTTL = 3600;
         _plcTTL = 86400;
         _accountTTL = 300;
