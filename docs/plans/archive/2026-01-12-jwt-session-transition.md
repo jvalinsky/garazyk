@@ -47,3 +47,11 @@
 
 **Steps:**
 1. Ensure `PDSController` initializes `Session` objects with a correctly configured `JWTMinter` (with the PDS private key).
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details

@@ -123,3 +123,10 @@ Ensure email and handle are provided and basic format for handle (e.g., contains
 git add ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
 git commit -m "cli: improve account command help and validation"
 ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans

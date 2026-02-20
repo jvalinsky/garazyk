@@ -65,3 +65,12 @@ Tests for blob upload, MIME type validation, and XRPC blob endpoints.
 | Image | image/jpeg, image/png, image/gif, image/webp |
 | Video | video/mp4, video/webm |
 | Audio | audio/mpeg, audio/wav, audio/ogg |
+
+## Related Documentation
+
+- [Folder README](README.md) - Application tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Services Tests](services.md) - PDSBlobService tests
+- [Database Tests](../03-database/actor-store.md) - Blob storage in actor store
+- [XRPC Tests](../02-network/xrpc.md) - XRPC blob endpoints
+- [Validation Tests](../05-security/validation.md) - MIME type validation

@@ -29,3 +29,11 @@ Tests for configuration, metrics, debugging tools, and exploration endpoints.
 ./build/tests/AllTests -only-testing:AllTests/NodeInfoTests
 ./build/tests/AllTests -only-testing:AllTests/ExploreHandlerTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [Config & Metrics Tests](config-metrics.md) - Configuration details
+- [Debug Tests](debug.md) - Debug and exploration tools
+- [Application Tests](../04-application/README.md) - Application lifecycle
+- [Controller Tests](../04-application/controller.md) - Configuration loading

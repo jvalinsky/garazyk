@@ -48,3 +48,11 @@ docker build -f docker/Dockerfile.gnustep .
 3. Run test suite available in that environment.
 4. Re-run XRPC coverage script after endpoint changes:
    `node scripts/generate_xrpc_coverage_report.js --source-only`.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

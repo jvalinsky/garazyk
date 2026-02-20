@@ -76,3 +76,11 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 - [ ] `./build/bin/kaszlak help` shows new commands
 - [ ] `./build/bin/kaszlak install` registers launchd services
 - [ ] All 168 existing tests pass
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

@@ -126,3 +126,14 @@ XCTAssertEqualObjects(event[@"$type"], @"com.atproto.sync.subscribeRepos#commit"
 5. Delete Record → Tombstone created
 6. Refresh Session → New tokens, old revoked
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Integration tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Federation Tests](federation.md) - Cross-PDS communication
+- [PLC Tests](plc.md) - PLC directory operations
+- [Services Tests](../04-application/services.md) - Business services
+- [Repository Tests](../01-repository/mst.md) - Commit chains
+- [WebSocket Tests](../02-network/websocket.md) - Firehose events
+- [OAuth Tests](../00-identity-auth/oauth.md) - Session management

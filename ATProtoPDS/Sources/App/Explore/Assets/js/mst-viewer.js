@@ -10,123 +10,242 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+function setStatus(text) {
+    var el = document.getElementById('mst-status-left');
+    if (el) el.textContent = text;
+}
+
 async function loadMST(did) {
     const container = document.getElementById('mst-tree-container');
     const statsEl = document.getElementById('mst-stats');
-    
-    container.innerHTML = '<p class="loading" style="padding: 20px;">Loading MST...</p>';
+
+    container.innerHTML = '<p class="loading" style="padding: 20px;">Loading\u2026</p>';
     statsEl.textContent = '';
+    setStatus('Loading\u2026');
 
     try {
-        const resp = await fetch('/api/mst/tree?did=' + encodeURIComponent(did));
-        if (!resp.ok) {
-            throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
+        const [treeResp, statsResp] = await Promise.all([
+            fetch('/api/mst/tree/' + encodeURIComponent(did)),
+            fetch('/api/mst/stats/' + encodeURIComponent(did))
+        ]);
+
+        if (!treeResp.ok) {
+            throw new Error('HTTP ' + treeResp.status + ': ' + treeResp.statusText);
         }
-        const data = await resp.json();
-        currentMstData = data;
-        
-        if (data.error) {
-            container.innerHTML = '<p class="error" style="padding: 20px; color: #cc0000;">' + escapeHtml(data.error) + '</p>';
+
+        const treeData = await treeResp.json();
+        currentMstData = treeData;
+
+        if (treeData.error) {
+            container.innerHTML = '<p class="placeholder" style="padding: 20px;">' + escapeHtml(treeData.error) + '</p>';
+            setStatus('Error');
             return;
         }
 
-        renderMST(data);
-        updateStats(data);
+        var stats = null;
+        if (statsResp.ok) {
+            stats = await statsResp.json();
+            if (stats.error) stats = null;
+        }
+
+        renderMST(treeData);
+        updateStats(treeData, stats);
+
+        var nodeCount = (stats && stats.nodeCount) || treeData.nodeCount || 0;
+        var entryCount = (stats && stats.entryCount) || treeData.entryCount || 0;
+        setStatus(nodeCount + ' nodes, ' + entryCount + ' entries');
     } catch (e) {
-        container.innerHTML = '<p class="error" style="padding: 20px; color: #cc0000;">Error: ' + escapeHtml(e.message) + '</p>';
+        container.innerHTML = '<p class="placeholder" style="padding: 20px;">Error: ' + escapeHtml(e.message) + '</p>';
+        setStatus('Error: ' + e.message);
     }
 }
 
-function updateStats(data) {
+function updateStats(treeData, stats) {
     const statsEl = document.getElementById('mst-stats');
-    if (!data || !data.stats) {
-        statsEl.textContent = '';
-        return;
+    var nodeCount = (stats && stats.nodeCount) || treeData.nodeCount || 0;
+    var entryCount = (stats && stats.entryCount) || treeData.entryCount || 0;
+    var maxDepth = (stats && stats.maxDepth) || treeData.maxDepth || 0;
+
+    var parts = [];
+    parts.push('Nodes: ' + nodeCount);
+    parts.push('Entries: ' + entryCount);
+    parts.push('Depth: ' + maxDepth);
+
+    if (stats && stats.leafNodeCount !== undefined) {
+        parts.push('Leaves: ' + stats.leafNodeCount);
     }
-    const s = data.stats;
-    statsEl.innerHTML = 'Nodes: <strong>' + (s.nodeCount || 0) + '</strong> | ' +
-        'Leaves: <strong>' + (s.leafCount || 0) + '</strong> | ' +
-        'Depth: <strong>' + (s.maxDepth || 0) + '</strong>';
+
+    statsEl.textContent = parts.join(' \u2502 ');
+}
+
+function buildHierarchy(flatData) {
+    if (!flatData || !flatData.nodes || !flatData.rootCID) return null;
+
+    var nodeMap = new Map();
+    flatData.nodes.forEach(function(n) {
+        if (n.cid) nodeMap.set(n.cid, n);
+    });
+
+    var visited = new Set();
+
+    function build(cid, depth) {
+        if (!cid || visited.has(cid) || depth > 64) return null;
+        visited.add(cid);
+
+        var node = nodeMap.get(cid);
+        if (!node) return null;
+
+        var result = {
+            cid: node.cid,
+            type: node.kind || (node.level === 0 ? 'leaf' : 'non-leaf'),
+            level: node.level || 0,
+            children: []
+        };
+
+        if (node.left) {
+            var leftChild = build(node.left, depth + 1);
+            if (leftChild) {
+                leftChild._label = '\u2190 subtree';
+                result.children.push(leftChild);
+            }
+        }
+
+        if (node.entries) {
+            node.entries.forEach(function(entry) {
+                result.children.push({
+                    type: 'entry',
+                    key: entry.fullKey || '',
+                    value: entry.value || '',
+                    children: []
+                });
+
+                if (entry.tree) {
+                    var subtree = build(entry.tree, depth + 1);
+                    if (subtree) {
+                        subtree._label = '\u2192 subtree';
+                        result.children.push(subtree);
+                    }
+                }
+            });
+        }
+
+        return result;
+    }
+
+    return build(flatData.rootCID, 0);
 }
 
 function renderMST(data) {
     const container = document.getElementById('mst-tree-container');
-    
-    if (!data || !data.root) {
-        container.innerHTML = '<p class="placeholder" style="padding: 20px;">No MST data available.</p>';
+
+    var root = buildHierarchy(data);
+    if (!root) {
+        container.innerHTML = '<p class="placeholder" style="padding: 20px;">Empty MST.</p>';
         return;
     }
 
-    const treeEl = document.createElement('div');
+    var treeEl = document.createElement('div');
     treeEl.className = 'mst-tree';
-    treeEl.appendChild(renderNode(data.root, 0));
+    treeEl.appendChild(renderNode(root, 0, true));
     container.innerHTML = '';
     container.appendChild(treeEl);
 }
 
-function renderNode(node, depth) {
-    const wrapper = document.createElement('div');
+function renderNode(node, depth, startOpen) {
+    var wrapper = document.createElement('div');
     wrapper.className = 'mst-node-wrapper';
-    wrapper.style.marginLeft = (depth * 16) + 'px';
+    wrapper.style.marginLeft = (depth * 14) + 'px';
 
-    const header = document.createElement('div');
+    var header = document.createElement('div');
     header.className = 'mst-node-header';
 
-    if (node.children && node.children.length > 0) {
-        const toggle = document.createElement('span');
+    // Entry node (record key)
+    if (node.type === 'entry') {
+        var spacer = document.createElement('span');
+        spacer.style.width = '12px';
+        spacer.style.display = 'inline-block';
+        header.appendChild(spacer);
+
+        var icon = document.createElement('span');
+        icon.className = 'mst-icon';
+        icon.textContent = '\u25AB';
+        header.appendChild(icon);
+
+        var keyEl = document.createElement('span');
+        keyEl.className = 'mst-key-entry';
+        keyEl.textContent = truncateKey(node.key);
+        keyEl.title = node.key;
+        header.appendChild(keyEl);
+
+        if (node.value) {
+            var arrow = document.createElement('span');
+            arrow.className = 'mst-cid';
+            arrow.textContent = ' \u2192 ';
+            header.appendChild(arrow);
+
+            var valEl = document.createElement('span');
+            valEl.className = 'mst-cid';
+            valEl.textContent = truncateCid(node.value);
+            valEl.title = node.value;
+            header.appendChild(valEl);
+        }
+
+        wrapper.appendChild(header);
+        return wrapper;
+    }
+
+    // MST tree node
+    var hasChildren = node.children && node.children.length > 0;
+
+    if (hasChildren) {
+        var toggle = document.createElement('span');
         toggle.className = 'mst-toggle';
-        toggle.innerHTML = '\u25B6';
+        toggle.textContent = startOpen ? '\u25BC' : '\u25B6';
         toggle.style.cursor = 'pointer';
-        toggle.style.marginRight = '4px';
         toggle.addEventListener('click', function() {
-            const content = wrapper.querySelector('.mst-node-children');
+            var content = wrapper.querySelector('.mst-node-children');
             if (content.style.display === 'none') {
                 content.style.display = 'block';
-                toggle.innerHTML = '\u25BC';
+                toggle.textContent = '\u25BC';
             } else {
                 content.style.display = 'none';
-                toggle.innerHTML = '\u25B6';
+                toggle.textContent = '\u25B6';
             }
         });
         header.appendChild(toggle);
     } else {
-        const spacer = document.createElement('span');
-        spacer.innerHTML = '&nbsp;&nbsp;&nbsp;';
-        header.appendChild(spacer);
+        var spacer2 = document.createElement('span');
+        spacer2.style.width = '12px';
+        spacer2.style.display = 'inline-block';
+        header.appendChild(spacer2);
     }
 
-    const icon = document.createElement('span');
-    icon.className = 'mst-icon';
-    icon.textContent = node.type === 'leaf' ? '\uD83D\uDCC4' : '\uD83D\uDCC1';
-    icon.style.marginRight = '4px';
-    header.appendChild(icon);
+    var icon2 = document.createElement('span');
+    icon2.className = 'mst-icon';
+    icon2.textContent = node.type === 'leaf' ? '\u25A1' : '\u25A0';
+    header.appendChild(icon2);
 
-    if (node.key !== undefined && node.key !== null) {
-        const keyEl = document.createElement('span');
-        keyEl.className = 'mst-key';
-        keyEl.textContent = truncateKey(String(node.key));
-        keyEl.title = node.key;
-        header.appendChild(keyEl);
-    }
+    var labelEl = document.createElement('span');
+    labelEl.className = 'mst-key';
+    labelEl.textContent = node._label || ('L' + node.level);
+    header.appendChild(labelEl);
 
     if (node.cid) {
-        const cidEl = document.createElement('span');
+        var cidEl = document.createElement('span');
         cidEl.className = 'mst-cid';
-        cidEl.textContent = truncateCid(node.cid);
+        cidEl.textContent = ' ' + truncateCid(node.cid);
         cidEl.title = node.cid;
-        cidEl.style.marginLeft = '8px';
-        cidEl.style.color = '#666';
-        cidEl.style.fontSize = '10px';
         header.appendChild(cidEl);
     }
 
     wrapper.appendChild(header);
 
-    if (node.children && node.children.length > 0) {
-        const childrenEl = document.createElement('div');
+    if (hasChildren) {
+        var childrenEl = document.createElement('div');
         childrenEl.className = 'mst-node-children';
-        for (const child of node.children) {
-            childrenEl.appendChild(renderNode(child, depth + 1));
+        if (!startOpen) childrenEl.style.display = 'none';
+        for (var i = 0; i < node.children.length; i++) {
+            childrenEl.appendChild(renderNode(node.children[i], depth + 1, false));
         }
         wrapper.appendChild(childrenEl);
     }
@@ -135,14 +254,14 @@ function renderNode(node, depth) {
 }
 
 function truncateKey(key) {
-    if (key.length <= 40) return key;
-    return key.substring(0, 37) + '...';
+    if (key.length <= 44) return key;
+    return key.substring(0, 41) + '\u2026';
 }
 
 function truncateCid(cid) {
     if (!cid) return '';
     if (cid.length <= 16) return cid;
-    return cid.substring(0, 8) + '...' + cid.substring(cid.length - 4);
+    return cid.substring(0, 8) + '\u2026' + cid.substring(cid.length - 4);
 }
 
 function expandAll() {
@@ -150,8 +269,9 @@ function expandAll() {
         el.style.display = 'block';
     });
     document.querySelectorAll('#mst-tree-container .mst-toggle').forEach(function(el) {
-        el.innerHTML = '\u25BC';
+        el.textContent = '\u25BC';
     });
+    setStatus('All nodes expanded');
 }
 
 function collapseAll() {
@@ -159,8 +279,9 @@ function collapseAll() {
         el.style.display = 'none';
     });
     document.querySelectorAll('#mst-tree-container .mst-toggle').forEach(function(el) {
-        el.innerHTML = '\u25B6';
+        el.textContent = '\u25B6';
     });
+    setStatus('All nodes collapsed');
 }
 
 function exportJSON() {
@@ -168,26 +289,32 @@ function exportJSON() {
         alert('No MST data to export.');
         return;
     }
-    const json = JSON.stringify(currentMstData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    var json = JSON.stringify(currentMstData, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
     a.href = url;
     a.download = 'mst-export.json';
     a.click();
     URL.revokeObjectURL(url);
+    setStatus('Exported JSON');
+}
+
+function setDID(did) {
+    var input = document.getElementById('mst-did-input');
+    if (input && did) input.value = did;
 }
 
 function init() {
-    const loadBtn = document.getElementById('mst-load-btn');
-    const didInput = document.getElementById('mst-did-input');
-    const expandBtn = document.getElementById('mst-expand-all');
-    const collapseBtn = document.getElementById('mst-collapse-all');
-    const exportBtn = document.getElementById('mst-export-json');
+    var loadBtn = document.getElementById('mst-load-btn');
+    var didInput = document.getElementById('mst-did-input');
+    var expandBtn = document.getElementById('mst-expand-all');
+    var collapseBtn = document.getElementById('mst-collapse-all');
+    var exportBtn = document.getElementById('mst-export-json');
 
     if (loadBtn) {
         loadBtn.addEventListener('click', function() {
-            const did = didInput.value.trim();
+            var did = didInput.value.trim();
             if (did) loadMST(did);
         });
     }
@@ -195,7 +322,7 @@ function init() {
     if (didInput) {
         didInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                const did = didInput.value.trim();
+                var did = didInput.value.trim();
                 if (did) loadMST(did);
             }
         });
@@ -208,7 +335,8 @@ function init() {
 
 const MSTViewer = {
     init: init,
-    loadMST: loadMST
+    loadMST: loadMST,
+    setDID: setDID
 };
 
 export { MSTViewer };

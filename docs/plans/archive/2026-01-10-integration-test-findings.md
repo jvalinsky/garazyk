@@ -148,3 +148,11 @@ The PDS implementation works correctly for basic operations (account creation, l
 4. **Session Persistence:** In-memory only
 
 These findings inform the gap between current implementation and specification compliance.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Tests Docs](../../tests/README.md) - Testing documentation

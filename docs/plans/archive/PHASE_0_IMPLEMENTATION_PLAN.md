@@ -284,3 +284,11 @@ CREATE INDEX idx_records_updated ON records(repo_did, updated_at DESC);
 - **Week 5-6**: CAR import/export and advanced features
 
 This Phase 0 plan provides foundation for production-ready PDS core functionality.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

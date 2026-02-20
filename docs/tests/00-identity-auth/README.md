@@ -34,3 +34,12 @@ Tests for identity resolution, OAuth flows, JWT handling, cryptography, and mult
 ./build/tests/AllTests -only-testing:AllTests/JWTTests
 ./build/tests/AllTests -only-testing:AllTests/OAuth2Tests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 architecture and flows
+- [Security Documentation](../../security/README.md) - Security hardening and validation
+- [Authorization Flow](../../oauth2/authorization-flow.md) - OAuth2 authorization process
+- [Token Management](../../oauth2/token-management.md) - JWT token handling
+- [SSRF Protection](../../security/SSRF_PROTECTION.md) - Handle resolver SSRF protection

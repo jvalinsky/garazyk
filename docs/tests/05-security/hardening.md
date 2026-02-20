@@ -191,3 +191,15 @@ NSString *originalRefreshToken = session.refreshToken;
 - [ ] Token rotation
 - [ ] DPoP nonce challenges
 - [ ] Null-byte detection
+
+## Related Documentation
+
+- [Folder README](README.md) - Security tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Auth Security Tests](auth-security.md) - Authorization tests
+- [Validation Tests](validation.md) - Input validation
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - JWT security
+- [OAuth Tests](../00-identity-auth/oauth.md) - Token rotation
+- [CAR & CBOR Tests](../01-repository/car-cbor.md) - CBOR parsing
+- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT.md) - Detailed review
+- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security model

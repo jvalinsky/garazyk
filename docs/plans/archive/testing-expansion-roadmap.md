@@ -379,5 +379,13 @@
 
 ---
 
-This  testing expansion plan will transform ATProtoPDS from basic test coverage to enterprise-grade testing infrastructure, ensuring reliability, security, and maintainability for production deployment.</content>
+This  testing expansion plan will transform ATProtoPDS from basic test coverage to enterprise-grade testing infrastructure, ensuring reliability, security, and maintainability for production deployment.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Tests Docs](../../tests/README.md) - Testing documentation</content>
 <parameter name="filePath">/Users/jack/Software/objpds/docs/plans/-testing-expansion-plan.md

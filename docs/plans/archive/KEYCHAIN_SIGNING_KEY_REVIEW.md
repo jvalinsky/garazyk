@@ -168,3 +168,11 @@ if (self.signingKey) {
 | Key generation (macOS) | Lines 1093-1150 |
 | Key storage | Lines 1017-1069 |
 | Key retrieval | Lines 964-1014 |
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Security Docs](../../security/README.md) - Security-related documentation

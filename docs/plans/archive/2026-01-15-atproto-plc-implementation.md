@@ -121,3 +121,11 @@ Implement `index.html` and supporting assets for a simple DID explorer.
 **Step 4: Run `xcodegen generate` and build**
 **Step 5: Verify binary runs**
 **Step 6: Commit**
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

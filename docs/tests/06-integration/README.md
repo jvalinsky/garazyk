@@ -31,3 +31,13 @@ End-to-end tests for complete system flows, PLC directory, and federation.
 ./build/tests/AllTests -only-testing:AllTests/PLCServerTests
 ./build/tests/AllTests -only-testing:AllTests/FederationClientTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
+- [Repository Tests](../01-repository/README.md) - MST and CAR
+- [Database Tests](../03-database/README.md) - Actor stores
+- [Application Tests](../04-application/README.md) - Services
+- [Network Tests](../02-network/README.md) - WebSocket/firehose
+- [Characterization Tests](../08-characterization/README.md) - Reference compliance

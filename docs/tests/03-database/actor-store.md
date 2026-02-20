@@ -235,3 +235,14 @@ CREATE TABLE blobs (
     data BLOB
 );
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Database tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Pool Integration Tests](pool-integration.md) - Connection pooling
+- [Service Databases Tests](service-databases.md) - Global service databases
+- [Repository Tests](../01-repository/mst.md) - MST persistence in actor store
+- [Blob Tests](../04-application/blob.md) - Blob storage tests
+- [Services Tests](../04-application/services.md) - Business services
+- [Characterization Tests](../08-characterization/characterization.md) - Actor store compliance

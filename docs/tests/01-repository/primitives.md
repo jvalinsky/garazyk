@@ -166,3 +166,13 @@ XCTAssertFalse([NSIDValidator isValid:@"App.Bsky.Feed.Post"]);  // Uppercase
 ./build/tests/AllTests -only-testing:AllTests/DIDValidationTests
 ./build/tests/AllTests -only-testing:AllTests/RecordPathValidationTests
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Repository tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [MST Tests](mst.md) - Merkle Search Tree tests
+- [CAR & CBOR Tests](car-cbor.md) - CAR file format tests
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - DID resolution
+- [XRPC Tests](../02-network/xrpc.md) - NSID validation in XRPC
+- [Validation Tests](../05-security/validation.md) - Input validation security
