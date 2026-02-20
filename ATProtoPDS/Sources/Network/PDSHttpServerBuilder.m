@@ -145,6 +145,12 @@
     
     OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:db];
     oauthHandler.minter = self.jwtMinter;
+    oauthHandler.dataDirectory = self.dataDirectory;
+    if (self.application.accountService) {
+        oauthHandler.accountService = self.application.accountService;
+    } else if (self.controller.accountService) {
+        oauthHandler.accountService = self.controller.accountService;
+    }
     [oauthHandler registerRoutesWithServer:server];
     
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth routes registered");
@@ -169,24 +175,12 @@
 
     // Handler for /xrpc (prefix match for all XRPC methods)
     [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        XrpcDispatcher *strongDispatcher = weakDispatcher;
-        if (strongDispatcher) {
-            [strongDispatcher handleRequest:request response:response];
-        } else {
-            response.statusCode = 503;
-            [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
-        }
+        [dispatcher handleRequest:request response:response];
     }];
 
     // Handler for /xrpc/:method
     [server addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
-        XrpcDispatcher *strongDispatcher = weakDispatcher;
-        if (strongDispatcher) {
-            [strongDispatcher handleRequest:request response:response];
-        } else {
-            response.statusCode = 503;
-            [response setJsonBody:@{@"error": @"ServiceUnavailable", @"message": @"Server is shutting down"}];
-        }
+        [dispatcher handleRequest:request response:response];
     }];
 
     if (self.subscribeReposHandler) {
