@@ -110,6 +110,10 @@ NSString * const PDSOpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslkeym
     return pair.didKeyString;
 }
 
+- (nullable NSData *)exportPrivateKeyWithError:(NSError **)error {
+    return [self loadPrivateKeyWithError:error];
+}
+
 - (nullable NSData *)loadPrivateKeyWithError:(NSError **)error {
     if (self.memoryKeyData.length == 32) {
         return self.memoryKeyData;
