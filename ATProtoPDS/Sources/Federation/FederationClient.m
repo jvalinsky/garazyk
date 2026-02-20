@@ -4,6 +4,7 @@
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
+#import "App/PDSConfiguration.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -65,6 +66,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         _session = [NSURLSession sessionWithConfiguration:config];
 
         _didResolver = [[DIDResolver alloc] init];
+        ((DIDResolver *)_didResolver).plcURL = [PDSConfiguration sharedConfiguration].plcURL;
     }
     return self;
 }
