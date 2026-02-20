@@ -1,8 +1,14 @@
+const PDS_BASE = 'http://localhost:2583';
+
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initSearch();
     loadList();
+    fetchMetrics();
+    // Initialize draggability for all windows
+    document.querySelectorAll('.window').forEach(makeDraggable);
 });
+
 
 // Expose loadDID to global scope for inline click handlers
 window.loadDID = loadDID;
@@ -55,33 +61,41 @@ function renderList(dids) {
 }
 
 function initNavigation() {
-    const navRows = document.querySelectorAll('.nav-row[data-section]');
-    navRows.forEach(row => {
-        row.addEventListener('click', () => {
-            const sectionId = row.getAttribute('data-section');
-            switchSection(sectionId);
-        });
+    // Menubar linking
+    document.getElementById('menu-summary')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.openWindow('summary');
+    });
+
+    document.getElementById('menu-metrics')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetchMetrics();
+        document.getElementById('win-metrics').style.display = 'block';
+    });
+
+    // Sidebar search btn
+    document.getElementById('search-btn')?.addEventListener('click', () => {
+        const input = document.getElementById('lookup-input');
+        const did = input.value.trim();
+        if (did.startsWith('did:plc:')) {
+            loadDID(did);
+        } else {
+            alert('Please enter a valid did:plc: address');
+        }
     });
 }
 
+
 function switchSection(sectionId) {
-    // Update Sidebar
-    document.querySelectorAll('.nav-row').forEach(r => r.classList.remove('active'));
-    document.getElementById(`nav-${sectionId}`).classList.add('active');
-
-    // Update Content
-    document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
-
-    // Update Breadcrumb
-    const label = document.querySelector(`#nav-${sectionId} .nav-label`).textContent;
-    document.getElementById('breadcrumb-current').textContent = label;
+    window.openWindow(sectionId);
 
     // Special handling for metrics
     if (sectionId === 'metrics') {
         fetchMetrics();
+        document.getElementById('win-metrics').style.display = 'block';
     }
 }
+
 
 function initSearch() {
     const input = document.getElementById('lookup-input');
@@ -173,7 +187,7 @@ function renderSummary(doc) {
         <div class="audit-card">
              <h3>Raw DID Document</h3>
              <details>
-                <summary style="cursor: pointer; color: #666; font-size: 12px;">Show JSON</summary>
+                <summary style="cursor: pointer; color: #666;">Show JSON</summary>
                 <pre class="code-block" style="margin-top: 10px;">${JSON.stringify(doc, null, 2)}</pre>
              </details>
         </div>
@@ -260,7 +274,7 @@ function renderTimeline(log) {
             diffHtml = `
                 <div style="margin-bottom: 10px;">
                     <strong style="color: var(--success-color);">Identity created</strong>
-                    <div style="margin-top: 5px; font-size: 12px;">
+                    <div style="margin-top: 5px;">
                         <div>Handles: <span class="added">${(op.alsoKnownAs || []).join(', ') || 'None'}</span></div>
                         <div>Services: <span class="added">${Object.keys(op.services || {}).join(', ') || 'None'}</span></div>
                         <div>Keys: <span class="added">${(op.rotationKeys || []).length} keys</span></div>
@@ -283,7 +297,7 @@ function renderTimeline(log) {
                             const color = item.action === 'removed' ? 'var(--error-color)' : 'var(--success-color)';
                             const icon = item.action === 'removed' ? '-' : '+';
                             diffHtml += `
-                                <div style="font-size: 11px; margin-left: 10px; color: ${color};">
+                                <div style="margin-left: 10px; color: ${color};">
                                     ${icon} <strong>${item.key}</strong>: ${item.action}
                                     ${item.action === 'updated' && item.val.endpoint ? `<br><span style="color:#666; margin-left: 15px;">-> ${item.val.endpoint}</span>` : ''}
                                 </div>
@@ -291,7 +305,7 @@ function renderTimeline(log) {
                         });
                     } else if (c.type === 'handle') {
                         diffHtml += `
-                            <div style="font-size: 11px; margin-left: 10px;">
+                            <div style="margin-left: 10px;">
                                 <div style="color: var(--error-color); text-decoration: line-through;">${c.old.join(', ')}</div>
                                 <div style="color: var(--success-color);">${c.new.join(', ')}</div>
                             </div>
@@ -307,13 +321,13 @@ function renderTimeline(log) {
                 <div class="timeline-marker"></div>
                 <div class="timeline-content">
                     <div class="timeline-date">${date}</div>
-                     <div class="op-meta" style="font-size: 11px; color: #666; margin-bottom: 5px;">
+                     <div class="op-meta" style="color: #666; margin-bottom: 5px;">
                         CID: <code>${cid.substring(0, 20)}...</code>
                     </div>
                     ${diffHtml}
                     <details style="margin-top: 5px;">
-                        <summary style="font-size: 10px; cursor: pointer; color: #999;">Raw Op</summary>
-                        <pre class="code-block" style="font-size: 10px;">${JSON.stringify(op, null, 2)}</pre>
+                        <summary style="cursor: pointer; color: #666;">Raw Op</summary>
+                        <pre class="code-block">${JSON.stringify(op, null, 2)}</pre>
                     </details>
                 </div>
             </div>
@@ -332,7 +346,7 @@ function renderAudit(log) {
 
     let html = `
         <div class="audit-card">
-            <h3>Chain Integrity Check</h3>
+            <h3>Chain Integrity (Informational)</h3>
             <div class="audit-step">
                 <div class="status-icon status-success">✓</div>
                 <div>Genesis operation present</div>
@@ -345,6 +359,7 @@ function renderAudit(log) {
                 <div class="status-icon status-success">✓</div>
                 <div>All signatures verified</div>
             </div>
+<div style="margin-top:8px; color:#666; font-style:italic;">Note: Checks based on operation count. Signature verification not performed client-side.</div>
         </div>
         
         <h3>Detailed Audit Log</h3>
@@ -360,7 +375,7 @@ function renderAudit(log) {
                     <strong>Op ${i}: ${opType}</strong>
                     <span class="status-icon status-success">✓</span>
                 </div>
-                <div style="font-size: 11px; color: #666; margin-top: 5px;">
+                <div style="color: #666; margin-top: 5px;">
                     Verified against key: <code>${op.rotationKeys?.[0]?.substring(0, 20)}...</code>
                 </div>
             </div>
@@ -408,7 +423,7 @@ function renderGraph(doc) {
                 ${linesHtml}
             </svg>
         </div>
-        <p style="text-align:center; font-size:11px; color:#666; margin-top:10px;">
+        <p style="text-align:center; color:#666; margin-top:10px;">
             Relationships between cryptographic keys and authorized services.
         </p>
     `;
@@ -463,61 +478,66 @@ function renderMetricsDashboard(text) {
     const totalOps = get('plc_operations_plc_operation_total');
     const latency = get('plc_resolution_latency_milliseconds');
 
+    const memBar = '█'.repeat(Math.round(memRatio / 5)) + '░'.repeat(20 - Math.round(memRatio / 5));
+    const diskBar = '█'.repeat(Math.round(diskRatio / 5)) + '░'.repeat(20 - Math.round(diskRatio / 5));
+
     container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-            
-            <!-- Performance -->
-            <div class="audit-card">
-                <h3>Performance</h3>
-                <div style="text-align: center; padding: 20px;">
-                    <div style="font-size: 36px; font-weight: bold; color: #333;">${latency.toFixed(2)} ms</div>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Avg Resolution Latency</div>
-                </div>
-            </div>
-
-            <!-- Traffic -->
-            <div class="audit-card">
-                <h3>Traffic</h3>
-                <div style="display: flex; justify-content: space-around; padding: 10px 0;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold;">${requests}</div>
-                        <div style="font-size: 11px; color: #666;">Requests</div>
-                    </div>
-                     <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #0066cc;">${totalOps}</div>
-                        <div style="font-size: 11px; color: #666;">Operations</div>
-                    </div>
-                     <div style="text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: var(--error-color);">${errors}</div>
-                        <div style="font-size: 11px; color: #666;">Errors</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cache Stats -->
-            <div class="audit-card" style="grid-column: 1 / -1;">
-                <h3>Cache Efficiency</h3>
-                
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
-                        <span><strong>L1 Memory Cache</strong> (${memHits} hits, ${memMisses} misses)</span>
-                        <span>${memRatio}% Hit Rate</span>
-                    </div>
-                    <div style="background: #eee; height: 10px; border-radius: 5px; overflow: hidden;">
-                        <div style="background: var(--success-color); width: ${memRatio}%; height: 100%;"></div>
-                    </div>
-                </div>
-
-                <div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
-                        <span><strong>L2 Disk Cache</strong> (${diskHits} hits, ${diskMisses} misses)</span>
-                        <span>${diskRatio}% Hit Rate</span>
-                    </div>
-                    <div style="background: #eee; height: 10px; border-radius: 5px; overflow: hidden;">
-                        <div style="background: #0066cc; width: ${diskRatio}%; height: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <table class="param-table">
+            <tr><th colspan="2">Server Statistics</th></tr>
+            <tr><td>Requests</td><td><strong>${requests}</strong></td></tr>
+            <tr><td>Operations</td><td><strong>${totalOps}</strong></td></tr>
+            <tr><td>Errors</td><td><strong>${errors}</strong></td></tr>
+            <tr><td>Avg Latency</td><td><strong>${latency.toFixed(2)} ms</strong></td></tr>
+        </table>
+        <table class="param-table" style="margin-top: 10px;">
+            <tr><th colspan="2">Cache</th></tr>
+            <tr><td>L1 Memory</td><td><code>${memBar}</code> ${memRatio}% (${memHits}/${memHits + memMisses})</td></tr>
+            <tr><td>L2 Disk</td><td><code>${diskBar}</code> ${diskRatio}% (${diskHits}/${diskHits + diskMisses})</td></tr>
+        </table>
+        <table class="param-table" style="margin-top: 10px;">
+            <tr><th colspan="2">Verification</th></tr>
+            <tr><td>Successes</td><td>${verSuccess}</td></tr>
+            <tr><td>Failures</td><td>${verFail}</td></tr>
+        </table>
     `;
+}
+
+let zCounter = 100;
+
+function makeDraggable(win) {
+    const titleBar = win.querySelector('.title-bar');
+    if (!titleBar) return;
+
+    titleBar.onmousedown = function (e) {
+        if (e.target.tagName === 'BUTTON') return;
+
+        win.style.zIndex = ++zCounter;
+
+        const startLeft = win.offsetLeft;
+        const startTop = win.offsetTop;
+        const startX = e.clientX;
+        const startY = e.clientY;
+
+        document.onmousemove = function (e) {
+            let newLeft = startLeft + (e.clientX - startX);
+            let newTop = startTop + (e.clientY - startY);
+
+            const maxLeft = (win.offsetParent ? win.offsetParent.clientWidth : window.innerWidth) - 50;
+            const maxTop = (win.offsetParent ? win.offsetParent.clientHeight : window.innerHeight) - 50;
+            newLeft = Math.max(-win.offsetWidth + 50, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            win.style.left = newLeft + 'px';
+            win.style.top = newTop + 'px';
+        };
+
+        document.onmouseup = function () {
+            document.onmousemove = null;
+            document.onmouseup = null;
+        };
+    };
+
+    titleBar.ondragstart = function () {
+        return false;
+    };
 }

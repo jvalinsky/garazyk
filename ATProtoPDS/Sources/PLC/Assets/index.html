@@ -4,131 +4,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLC Identity Explorer</title>
+    <title> PLC Explorer</title>
+    <link rel="stylesheet" href="/css/system.css">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
-    <header class="apple-header">
-        <div class="apple-logo"></div>
-        <h1>PLC Identity Explorer</h1>
-    </header>
-
-    <div class="app-container">
-        <nav class="sidebar">
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="lookup-input" placeholder="Search DID..." autocomplete="off">
-            </div>
-
-            <ul class="nav-tree">
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">Identity Views</span>
-                    </div>
-                    <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row active" id="nav-summary" data-section="summary">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Summary</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-timeline" data-section="timeline">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Visual Timeline</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-auditor" data-section="auditor">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Security Auditor</span>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-graph" data-section="graph">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Identity Graph</span>
-                            </div>
-                        </li>
-                    </ul>
-                </li>
-                <li class="nav-item expanded">
-                    <div class="nav-row" onclick="toggleNav(this)">
-                        <span class="disclosure">▶</span>
-                        <span class="nav-label">Server</span>
-                    </div>
-                    <ul class="nav-children">
-                        <li class="nav-item">
-                            <div class="nav-row" id="nav-metrics" data-section="metrics">
-                                <span class="disclosure"></span>
-                                <span class="nav-label">Health & Metrics</span>
-                            </div>
-                        </li>
-                    </ul>
-                </li>
+    <ul role="menu-bar">
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            
+            <ul role="menu">
+                <li role="menu-item"><a href="#">About PLC Explorer</a></li>
             </ul>
-        </nav>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            PLC
+            <ul role="menu">
+                <li role="menu-item"><a href="#" id="menu-summary">Identity Summary</a></li>
+                <li role="menu-item"><a href="#" id="menu-metrics">Server Metrics</a></li>
+                <li role="menu-item" class="divider"></li>
+                <li role="menu-item"><a href="#" id="pds-link">PDS Explorer</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            View
+            <ul role="menu">
+                <li role="menu-item"><a href="#" onclick="openWindow('summary')">Identity Summary</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('timeline')">Operation Timeline</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('auditor')">Security Audit</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('graph')">Identity Graph</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" style="float: right;">
+            <span id="status-clock">12:00 PM</span>
+        </li>
+    </ul>
 
-        <main class="content">
-            <nav class="breadcrumb">
-                <a href="#">Home</a> &gt;
-                <a href="#">PLC</a> &gt;
-                <span id="breadcrumb-current">Summary</span>
-            </nav>
+    <div class="desktop">
+        <!-- Search Window -->
+        <div class="window" id="win-search">
+            <div class="title-bar">
+                <span class="title">Find DID</span>
+                <button class="close" onclick="closeWindow('win-search')"><span>Close</span></button>
+            </div>
+            <div class="window-body">
+                <div class="field-row">
+                    <input type="text" id="lookup-input" placeholder="Search DID..." style="width: 100%;">
+                </div>
+                <div class="field-row" style="justify-content: flex-end; margin-top: 5px;">
+                    <button id="search-btn" class="btn btn-default">Find</button>
+                </div>
+            </div>
+        </div>
 
-            <section id="summary" class="doc-section active">
-                <div class="section-header">
-                    <h1>Identity Summary</h1>
-                </div>
-                <div id="summary-content">
-                    <p class="placeholder">Search for a DID to view identity details.</p>
-                </div>
-            </section>
+        <!-- Metric Window -->
+        <div class="window" id="win-metrics">
+            <div class="title-bar">
+                <span class="title">Health &amp; Metrics</span>
+                <button class="close" onclick="closeWindow('win-metrics')"><span>Close</span></button>
+            </div>
+            <div class="window-body">
+                <div id="metrics-content">Loading...</div>
+            </div>
+        </div>
 
-            <section id="timeline" class="doc-section">
-                <div class="section-header">
-                    <h1>Operation Timeline</h1>
-                </div>
-                <div id="timeline-content">
-                    <p class="placeholder">Search for a DID to view timeline.</p>
-                </div>
-            </section>
+        <!-- Main Workspace Window -->
+        <div class="window" id="win-content">
+            <div class="title-bar">
+                <button class="close" onclick="closeWindow('win-content')"><span>Close</span></button>
+                <span class="title" id="content-title">Identity Summary</span>
+                <button class="resize"><span>Resize</span></button>
+            </div>
+            <div class="window-body">
+                <div id="section-container">
+                    <section id="summary" class="doc-section active">
+                        <div id="summary-content">
+                            <p class="placeholder">Search for a DID to view identity details.</p>
+                        </div>
+                    </section>
 
-            <section id="auditor" class="doc-section">
-                <div class="section-header">
-                    <h1>Security Audit</h1>
-                </div>
-                <div id="auditor-content">
-                    <p class="placeholder">Search for a DID to run audit.</p>
-                </div>
-            </section>
+                    <section id="timeline" class="doc-section">
+                        <div id="timeline-content">
+                            <p class="placeholder">Operation history will appear here.</p>
+                        </div>
+                    </section>
 
-            <section id="graph" class="doc-section">
-                <div class="section-header">
-                    <h1>Identity Graph</h1>
-                </div>
-                <div id="graph-content">
-                    <p class="placeholder">Search for a DID to view graph.</p>
-                </div>
-            </section>
+                    <section id="auditor" class="doc-section">
+                        <div id="auditor-content">
+                            <p class="placeholder">Security audit results will appear here.</p>
+                        </div>
+                    </section>
 
-            <section id="metrics" class="doc-section">
-                <div class="section-header">
-                    <h1>Server Metrics</h1>
+                    <section id="graph" class="doc-section">
+                        <div id="graph-content">
+                            <p class="placeholder">Identity graph visualization.</p>
+                        </div>
+                    </section>
                 </div>
-                <div id="metrics-content" style="padding: 10px;">Loading metrics...</div>
-            </section>
-        </main>
+            </div>
+            <div class="status-bar">
+                <p class="status-bar-field">PLC Server</p>
+                <p class="status-bar-field" id="status-right">Ready</p>
+            </div>
+        </div>
     </div>
 
-    <script>
-        function toggleNav(el) {
-            el.parentElement.classList.toggle('expanded');
-        }
-    </script>
     <script type="module" src="/js/explorer.js"></script>
+    <script>
+        window.openWindow = function (sectionId) {
+            document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+            const section = document.getElementById(sectionId);
+            if (section) section.classList.add('active');
+
+            const titles = {
+                'summary': 'Identity Summary',
+                'timeline': 'Operation Timeline',
+                'auditor': 'Security Audit',
+                'graph': 'Identity Graph'
+            };
+
+            document.getElementById('content-title').innerText = titles[sectionId] || 'PLC Explorer';
+            document.getElementById('win-content').style.display = 'block';
+        };
+
+        window.closeWindow = function (winId) {
+            document.getElementById(winId).style.display = 'none';
+        };
+
+        const PDS_BASE = 'http://localhost:2583';
+        const pdsLink = document.getElementById('pds-link');
+        if (pdsLink) pdsLink.href = PDS_BASE;
+
+        // Simple Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('status-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }, 1000);
+    </script>
 </body>
 
 </html>

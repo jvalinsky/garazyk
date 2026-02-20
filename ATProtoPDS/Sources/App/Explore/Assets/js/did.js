@@ -88,7 +88,7 @@ export function renderDidSummary(doc) {
                 <tr>
                     <td><code>${escapeHtml(shortId)}</code></td>
                     <td>${escapeHtml(key.type)}</td>
-                    <td><code style="font-size:11px">${escapeHtml(shortKey)}</code></td>
+                    <td><code>${escapeHtml(shortKey)}</code></td>
                 </tr>
             `;
         }
@@ -125,8 +125,8 @@ export function renderDidSummary(doc) {
         
         <h3 class="see-also">See Also</h3>
         <ul class="see-also-links">
-            <li><a href="#" onclick="document.getElementById('nav-plc-ops').click(); return false;">PLC Operations</a></li>
-            <li><a href="#" onclick="document.getElementById('nav-collections').click(); return false;">Collections</a></li>
+            <li><a href="#" onclick="window.openWindow('plc-ops'); return false;">PLC Operations</a></li>
+            <li><a href="#" onclick="window.openWindow('collections'); return false;">Collections</a></li>
             <li><a href="https://atproto.com/specs/did" target="_blank">ATProto DID Specification</a></li>
         </ul>
     `;
