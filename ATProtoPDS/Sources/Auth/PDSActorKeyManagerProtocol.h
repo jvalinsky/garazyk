@@ -70,6 +70,16 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSString *)didKeyStringWithError:(NSError **)error;
 
+/*!
+ @method exportPrivateKeyWithError:
+
+ @abstract Returns the raw 32-byte secp256k1 private key.
+
+ @param error On failure, set to the export error.
+ @result Private key bytes, or nil on failure.
+ */
+- (nullable NSData *)exportPrivateKeyWithError:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

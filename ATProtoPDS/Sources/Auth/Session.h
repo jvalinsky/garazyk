@@ -122,7 +122,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @code
  // Create a new session
  Session *session = [Session sessionWithDID:@"did:plc:..."
-                                    handle:@"user.bsky.social"
+                                    handle:@"alice.test"
                                      scope:@"atproto"];
  
  // Get token response for API

@@ -1399,6 +1399,16 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return privateKey;
 }
 
+- (nullable NSData *)exportSigningKeyWithError:(NSError **)error {
+    if (!self.keyManager) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInternalServerError message:@"Key manager not available"];
+        }
+        return nil;
+    }
+    return [self.keyManager exportPrivateKeyWithError:error];
+}
+
 - (nullable NSData *)rotationKeyCompressedPublicKeyWithError:(NSError **)error {
     NSString *sql = @"SELECT public_key_compressed FROM rotation_keys WHERE did = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
