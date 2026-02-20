@@ -109,7 +109,8 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         _cacheTimestamps = [[NSMutableDictionary alloc] init];
         _staleTTL = 3600.0; // 1 hour
         _maxTTL = 86400.0; // 1 day
-        _plcURL = @"https://plc.directory";
+        NSString *envPlc = NSProcessInfo.processInfo.environment[@"PDS_PLC_URL"];
+        _plcURL = envPlc ?: @"https://plc.directory";
     }
     return self;
 }
