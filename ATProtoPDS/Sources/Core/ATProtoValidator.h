@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @abstract Validates a user handle.
  
- @param handle The handle to validate (e.g., "alice.bsky.social").
+ @param handle The handle to validate (e.g., "alice.test").
  @param error On return, contains an error if validation failed.
  @return YES if valid, NO otherwise.
  */

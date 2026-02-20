@@ -70,7 +70,7 @@ typedef NS_ENUM(NSInteger, PDSValidationError) {
 /*! Validates a DID (e.g., did:plc:...). */
 - (BOOL)isValidDID:(NSString *)did;
 
-/*! Validates a handle (e.g., user.bsky.social). */
+/*! Validates a handle (e.g., alice.test). */
 - (BOOL)isValidHandle:(NSString *)handle;
 
 /*! Validates a record key. */

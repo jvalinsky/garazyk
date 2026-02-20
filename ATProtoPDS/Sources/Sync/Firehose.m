@@ -153,7 +153,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 }
 
 - (void)connect {
-    NSString *host = self.serverURL.host ?: @"bsky.social";
+    NSString *host = self.serverURL.host ?: @"localhost";
     NSNumber *portNum = self.serverURL.port;
     uint16_t port = portNum ? (uint16_t)[portNum intValue] : ([self.serverURL.scheme.lowercaseString isEqualToString:@"https"] ? 443 : 80);
     NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
