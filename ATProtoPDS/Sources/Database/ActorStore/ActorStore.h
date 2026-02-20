@@ -197,6 +197,9 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (void)finalizeStatement:(sqlite3_stmt *)stmt;
 - (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt;
 
+/*! Exports the raw private key bytes to be used in migration operations */
+- (nullable NSData *)exportSigningKeyWithError:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
