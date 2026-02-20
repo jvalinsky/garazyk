@@ -81,3 +81,13 @@ These items from the original plan are now complete:
 - Use Deciduous to track these items
 - Create an issue for each high-level item
 - Link PRs to these issues
+
+---
+
+## Related Documentation
+
+- [Plan Index](README.md) — Index of planning documents
+- [Detailed Roadmap](../plans/ROADMAP.md) — Comprehensive phase tracking (Phases 0-10 complete)
+- [Production Readiness](../plans/production-readiness.md) — Current blockers and go/no-go criteria
+- [CI Workflows](../guides/DEVELOPMENT_WORKFLOWS.md) — Development workflow documentation
+- [Architecture](../architecture/README.md) — System architecture reference

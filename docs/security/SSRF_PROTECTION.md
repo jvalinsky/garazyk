@@ -122,3 +122,13 @@ Tests are located in `ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m` with 
 2. **DNS Rebinding**: Add protection against DNS rebinding attacks
 3. **Rate Limiting**: Per-handle rate limits for resolution
 4. **Timeout Configuration**: Timeouts to prevent slow-loris attacks
+
+---
+
+## Related Documentation
+
+- [Security Documentation Index](README.md) - Overview of all security docs
+- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Attack vectors and test cases
+- [Security Plan](SECURITY_PLAN.md) - Comprehensive security strategy
+- [Identity Resolution Tests](../tests/00-identity-auth/identity-resolution.md) - Handle/DID tests
+- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation

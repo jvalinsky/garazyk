@@ -383,3 +383,16 @@ If you encounter build errors:
 2.  Write tests for new features
 3.  Update documentation
 4.  Submit pull requests with clear descriptions
+
+## Related Documentation
+
+- **[Setup Guide](SETUP_GUIDE.md)** - Build and installation instructions
+- **[Objective-C Tips](objective_c_tips.md)** - Memory management and coding patterns
+- **[XRPC Protocol Reference](XRPC_PROTOCOL_REFERENCE.md)** - Protocol quick reference
+- **[Script Development](SCRIPT_DEVELOPMENT.md)** - Shell script standards
+- **[Development Workflows](DEVELOPMENT_WORKFLOWS.md)** - Visual process diagrams
+- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS.md)** - System design overview
+- **[PDS Architecture](../architecture/atproto_pds_architecture.md)** - AT Protocol specifications
+- **[OAuth 2.0 Implementation](../oauth2/README.md)** - Authentication flow details
+- **[Security Plan](../security/SECURITY_PLAN.md)** - Security validation strategy
+- **[Testing Guide](../TESTING.md)** - Test suite documentation

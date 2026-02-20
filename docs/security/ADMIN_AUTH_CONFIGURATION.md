@@ -85,3 +85,14 @@ Before enabling production traffic:
 - Confirm `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1` unless you intentionally need legacy header auth.
 - Confirm token TTL matches your risk tolerance.
 - Confirm admin endpoints reject tokens with mismatched issuer/audience.
+
+---
+
+## Related Documentation
+
+- [Security Documentation Index](README.md) - Overview of all security docs
+- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
+- [Admin Auth Details](../oauth2/admin-auth.md) - Admin authentication in OAuth2 context
+- [Token Management](../oauth2/token-management.md) - Token lifecycle and rotation
+- [DPoP Implementation](../oauth2/dpop.md) - DPoP proof generation and validation
+- [Security Analysis Report](SECURITY_ANALYSIS_REPORT.md) - Static analysis findings

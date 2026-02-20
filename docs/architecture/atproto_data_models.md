@@ -464,3 +464,18 @@ const authParams = {
 4. **Service Auth JWTs**: Signed requests between services
 5. **MST Authentication**: Tree structure enables cryptographic verification
 6. **Blob References**: Content-addressed to prevent tampering
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [atproto_pds_architecture.md](atproto_pds_architecture.md) - PDS role in ecosystem and API endpoints
+- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) - NSID syntax and method patterns
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Repository engine component analysis
+
+### Diagram Documents
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Data model class diagrams
+
+### Related Tests
+- [../tests/01-repository/mst.md](../tests/01-repository/mst.md) - MST interoperability tests
+- [../tests/01-repository/car-cbor.md](../tests/01-repository/car-cbor.md) - CAR and CBOR tests

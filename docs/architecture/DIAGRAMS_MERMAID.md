@@ -253,3 +253,16 @@ flowchart TD
 | Control Flow | `flowchart TD` | Decision processes |
 | Architecture | `graph TB` | Component diagrams |
 | State | `stateDiagram-v2` | State machines |
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis referenced in diagrams
+- [atproto_pds_architecture.md](atproto_pds_architecture.md) - Protocol specifications for flows above
+- [atproto_data_models.md](atproto_data_models.md) - Data model class diagram details
+
+### Diagram Documents
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) - System overview diagrams
+- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
+- [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) - Development process diagrams

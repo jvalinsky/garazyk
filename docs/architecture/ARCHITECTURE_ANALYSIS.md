@@ -440,3 +440,20 @@ Generate PNGs with:
 ```bash
 dot -Tpng high_level_architecture.dot > high_level_architecture.png
 ```
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [atproto_pds_architecture.md](atproto_pds_architecture.md) - PDS specifications and OAuth 2.1 profile
+- [atproto_data_models.md](atproto_data_models.md) - DID, MST, and Lexicon schemas
+- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) - XRPC method quick reference
+
+### Diagram Documents
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) - System overview diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Protocol flow diagrams
+- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
+
+### Related Guides
+- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE.md) - Developer onboarding guide
+- [../tests/](../tests/) - Test documentation for components referenced above
