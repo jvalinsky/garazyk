@@ -20,3 +20,11 @@ This project follows the official did:plc reference implementation for signature
 - When serializing the signature, ensure base64url **no padding**.
 - When validating signatures, reject any `sig` that ends with `=`.
 - The bytes signed are the DAG-CBOR encoding of the unsigned operation.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

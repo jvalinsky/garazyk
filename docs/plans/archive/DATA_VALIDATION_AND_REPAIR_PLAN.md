@@ -93,3 +93,10 @@ Ensure output is lowercase:
 // After generating hex string
 return [NSString stringWithFormat:@"bafyrei%@", [hashString lowercaseString]];
 ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans

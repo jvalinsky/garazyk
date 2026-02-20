@@ -642,6 +642,14 @@ List blobs for an account.
 ### Step 2: Commit
 
 ```bash
-git add docs/blob_storage_api.md
-git commit -m "docs: add API documentation for blob storage system"
-```
+    git add docs/blob_storage_api.md
+    git commit -m "docs: add API documentation for blob storage system"
+    ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

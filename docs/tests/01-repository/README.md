@@ -31,3 +31,12 @@ Tests for Merkle Search Tree operations, CAR file format, DAG-CBOR encoding, and
 ./build/tests/AllTests -only-testing:AllTests/CARInteropTests
 ./build/tests/AllTests -only-testing:AllTests/ATProtoCoreTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
+- [ATProto Data Models](../../architecture/atproto_data_models.md) - Data structure specifications
+- [Database Tests](../03-database/README.md) - Actor store persistence
+- [Integration Tests](../06-integration/README.md) - E2E repository operations
+- [Characterization Tests](../08-characterization/README.md) - Reference implementation compliance

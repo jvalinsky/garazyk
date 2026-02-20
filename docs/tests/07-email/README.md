@@ -24,3 +24,10 @@ Tests for email providers, HTTP clients, and secrets management.
 ./build/tests/AllTests -only-testing:AllTests/PDSResendEmailProviderTests
 ./build/tests/AllTests -only-testing:AllTests/PDSKeychainSecretsProviderTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [Email Provider Tests](email.md) - Email provider details
+- [Application Tests](../04-application/README.md) - Application services
+- [Security Tests](../05-security/README.md) - Secrets management

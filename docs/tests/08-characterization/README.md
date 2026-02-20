@@ -24,3 +24,12 @@ Tests verifying compliance with reference implementations (Go, TypeScript).
 ./build/tests/AllTests -only-testing:AllTests/ActorStoreCharacterizationTests
 ./build/tests/AllTests -only-testing:AllTests/MSTCharacterizationTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [Characterization Tests](characterization.md) - Reference compliance details
+- [Repository Tests](../01-repository/README.md) - MST and CAR tests
+- [Database Tests](../03-database/README.md) - Actor store tests
+- [Network Tests](../02-network/README.md) - XRPC tests
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - Key manager tests

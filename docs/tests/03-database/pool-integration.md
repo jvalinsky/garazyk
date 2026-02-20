@@ -110,3 +110,12 @@ XCTAssertTrue(valid);
 ./build/tests/AllTests -only-testing:AllTests/DatabasePoolTests
 ./build/tests/AllTests -only-testing:AllTests/PDSDatabaseIntegrationTests
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Database tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Actor Store Tests](actor-store.md) - Per-user storage
+- [Service Databases Tests](service-databases.md) - Global service databases
+- [Application Tests](../04-application/README.md) - Application using pools
+- [Concurrency Audit](../../skills/objc-concurrency-bug-audit/SKILL.md) - Thread safety

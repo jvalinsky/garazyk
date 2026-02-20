@@ -94,3 +94,10 @@ Ensure code examples match the patterns found in Task 1 & 2.
 git add docs/guides/drafts/memory_management.md
 git commit -m "docs: add memory management guide"
 ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans

@@ -139,3 +139,14 @@ XCTAssertNil(data, "Floats must be rejected in DAG-CBOR");
 
 - [CAR v1 Spec](https://ipld.io/specs/transport/car/carv1/)
 - [DAG-CBOR Spec](https://ipld.io/specs/codecs/dag-cbor/spec/)
+
+## Related Documentation
+
+- [Folder README](README.md) - Repository tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [MST Tests](mst.md) - Merkle Search Tree tests
+- [Primitives Tests](primitives.md) - Core data type tests
+- [Database Tests](../03-database/README.md) - Actor store persistence
+- [Integration Tests](../06-integration/README.md) - E2E repository operations
+- [Characterization Tests](../08-characterization/characterization.md) - Reference compliance
+- [Security Hardening](../05-security/hardening.md) - CBOR parser security

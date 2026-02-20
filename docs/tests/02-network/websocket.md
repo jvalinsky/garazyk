@@ -135,3 +135,13 @@ Client                          Server
 
 - [ATProto Sync Spec](https://atproto.com/specs/sync)
 - [RFC 6455 (WebSocket)](https://datatracker.ietf.org/doc/html/rfc6455)
+
+## Related Documentation
+
+- [Folder README](README.md) - Network tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [HTTP Stack Tests](http-stack.md) - HTTP server tests
+- [XRPC Tests](xrpc.md) - XRPC protocol tests
+- [Integration Tests](../06-integration/e2e.md) - E2E firehose testing
+- [Federation Tests](../06-integration/federation.md) - Relay synchronization
+- [Repository Tests](../01-repository/mst.md) - Repository sync with CAR

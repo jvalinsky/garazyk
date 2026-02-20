@@ -155,3 +155,12 @@ X-RateLimit-Limit: 5000
 X-RateLimit-Remaining: 4999
 X-RateLimit-Reset: 1704067200
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Network tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [HTTP Stack Tests](http-stack.md) - HTTP server tests
+- [WebSocket Tests](websocket.md) - WebSocket/firehose tests
+- [SSRF Protection](../../security/SSRF_PROTECTION.md) - Network security
+- [GNUstep Compatibility](../../plans/archive/GNUSTEP_COMPATIBILITY.md) - Linux porting

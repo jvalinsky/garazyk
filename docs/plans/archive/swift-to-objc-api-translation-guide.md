@@ -265,5 +265,12 @@ Apple uses special annotations to guide Swift usage:
 
 ## Key Takeaway
 
-Swift APIs are designed for fluency and clarity at the call site, while Objective-C APIs include full type information in method names. The translation preserves functionality while adapting to each language's design philosophy.</content>
+Swift APIs are designed for fluency and clarity at the call site, while Objective-C APIs include full type information in method names. The translation preserves functionality while adapting to each language's design philosophy.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans</content>
 <parameter name="filePath">/Users/jack/Software/objpds/docs/research/swift-api-naming-translation.md

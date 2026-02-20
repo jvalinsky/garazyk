@@ -174,3 +174,13 @@ CREATE TABLE reserved_handles (
     reservedAt INTEGER
 );
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Database tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Actor Store Tests](actor-store.md) - Per-user storage
+- [Pool Integration Tests](pool-integration.md) - Connection pooling
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - DID caching
+- [Admin Tests](../04-application/admin.md) - Admin invite code management
+- [Security Tests](../05-security/README.md) - TOCTOU prevention

@@ -30,3 +30,13 @@ Tests for authorization, security hardening, and input validation.
 ./build/tests/AllTests -only-testing:AllTests/CBORSecurityTests
 ./build/tests/AllTests -only-testing:AllTests/PDSInputValidatorTests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [Security Documentation](../../security/README.md) - Security analysis
+- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT.md) - Detailed security review
+- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security model
+- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION.md) - Admin auth setup
+- [Identity Tests](../00-identity-auth/README.md) - Authentication tests
+- [Network Tests](../02-network/README.md) - Network security

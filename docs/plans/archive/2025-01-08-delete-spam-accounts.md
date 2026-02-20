@@ -179,5 +179,13 @@ Expected: Backup created.
 ```bash
 git add final_accounts_list.json
 git commit -m "feat: verify spam account deletions"
-```</content>
+```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2025-01-08-delete-spam-accounts.md

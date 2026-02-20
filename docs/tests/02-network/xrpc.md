@@ -170,3 +170,14 @@ Content-Type: application/json
 ```json
 {"error": "InvalidRequest", "message": "Missing required field"}
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Network tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [HTTP Stack Tests](http-stack.md) - HTTP server tests
+- [Transport Tests](transport.md) - Network transport tests
+- [WebSocket Tests](websocket.md) - WebSocket/firehose tests
+- [Auth Security Tests](../05-security/auth-security.md) - XRPC authorization
+- [Repository Tests](../01-repository/README.md) - Repository data models
+- [XRPC Protocol Reference](../../architecture/XRPC_PROTOCOL_REFERENCE.md) - XRPC specification
