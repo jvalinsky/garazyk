@@ -107,6 +107,21 @@ async function dpopFetch(url, init, kp, opts) {
 
 // --- OAuth flow ---
 
+export async function resolveHandle(handle) {
+    if (!handle || !handle.includes('.')) return null;
+    try {
+        const url = new URL('/xrpc/com.atproto.identity.resolveHandle', OAUTH_CONFIG.issuer);
+        url.searchParams.set('handle', handle);
+        const resp = await fetch(url.href);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        return data.did;
+    } catch (e) {
+        console.error('Handle resolution failed:', e);
+        return null;
+    }
+}
+
 export async function startLogin(handle) {
     const kp = await getOrCreateKey();
     const state = randomString(32);
@@ -184,35 +199,94 @@ export function logout() {
     dpopKeyPair = null;
 }
 
-export async function createPost(text) {
+export async function createPost(text, replyTo) {
     const token = sessionStorage.getItem(OAUTH_KEYS.accessToken);
     const did = sessionStorage.getItem(OAUTH_KEYS.sessionDid);
-    if (!token || !did) throw new Error('Not logged in');
-    if (!text.trim()) throw new Error('Post text is empty');
+
+    if (!token || !did) {
+        throw new Error('You must be logged in to post. Please sign in via OAuth first.');
+    }
+
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+        throw new Error('Post content cannot be empty.');
+    }
+
+    if (trimmedText.length > 300) {
+        throw new Error(`Post is too long (${trimmedText.length}/300 characters). Please shorten it.`);
+    }
 
     const kp = await getOrCreateKey();
     const url = new URL('/xrpc/com.atproto.repo.createRecord', OAUTH_CONFIG.issuer).href;
 
-    const resp = await dpopFetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'DPoP ' + token
-        },
-        body: JSON.stringify({
-            repo: did,
-            collection: 'app.bsky.feed.post',
-            record: {
-                $type: 'app.bsky.feed.post',
-                text: text.trim(),
-                createdAt: new Date().toISOString()
-            }
-        })
-    }, kp, { accessToken: token });
+    const record = {
+        $type: 'app.bsky.feed.post',
+        text: trimmedText,
+        createdAt: new Date().toISOString()
+    };
 
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || data.message || 'Failed');
-    return data;
+    if (replyTo && replyTo.startsWith('at://')) {
+        const parts = replyTo.replace('at://', '').split('/');
+        if (parts.length >= 3) {
+            record.reply = {
+                root: { uri: replyTo, cid: '' },
+                parent: { uri: replyTo, cid: '' }
+            };
+        }
+    }
+
+    try {
+        const resp = await dpopFetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'DPoP ' + token
+            },
+            body: JSON.stringify({
+                repo: did,
+                collection: 'app.bsky.feed.post',
+                record
+            })
+        }, kp, { accessToken: token });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            console.error('Post failed:', data);
+            const errorMsg = data.message || data.error || `Server returned ${resp.status}`;
+            if (resp.status === 401) {
+                throw new Error('Your session has expired. Please log in again.');
+            }
+            throw new Error(`Failed to create post: ${errorMsg}`);
+        }
+
+        return data;
+    } catch (err) {
+        if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+            throw new Error('Network error: Could not reach the PDS. Please check your connection.');
+        }
+        throw err;
+    }
+}
+
+export async function loadRecentPosts() {
+    const token = sessionStorage.getItem(OAUTH_KEYS.accessToken);
+    const did = sessionStorage.getItem(OAUTH_KEYS.sessionDid);
+    if (!token || !did) return [];
+
+    try {
+        const url = new URL('/xrpc/com.atproto.repo.listRecords', OAUTH_CONFIG.issuer);
+        url.searchParams.set('repo', did);
+        url.searchParams.set('collection', 'app.bsky.feed.post');
+        url.searchParams.set('limit', '5');
+        const resp = await fetch(url.href);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        return data.records || [];
+    } catch (e) {
+        console.error('Failed to load recent posts:', e);
+        return [];
+    }
 }
 
 export async function testSession() {
