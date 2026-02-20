@@ -1,24 +1,29 @@
 #import <Foundation/Foundation.h>
 #import "Admin/PDSAdminAuth.h"
 #import "Metrics/PDSMetrics.h"
+#import "Database/PDSDatabase.h"
+#import "Services/PDSAdminService.h"
+#import "App/PDSController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
-    PDSHTTPMethodDELETE,
     PDSHTTPMethodGET,
     PDSHTTPMethodPOST,
-    PDSHTTPMethodPUT
+    PDSHTTPMethodPUT,
+    PDSHTTPMethodDELETE
 };
 
 @interface PDSAdminHandler : NSObject
+@property (nonatomic, strong, nullable) PDSDatabase *database;
+@property (nonatomic, strong, nullable) PDSAdminService *adminService;
 
 + (instancetype)sharedHandler;
 
 - (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
-                                        path:(NSString *)path
-                                     headers:(NSDictionary<NSString *, NSString *> *)headers
-                                        body:(nullable NSData *)body;
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body;
 
 @end
 
@@ -33,10 +38,30 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return shared;
 }
 
+- (nullable PDSDatabase *)database {
+    if (!_database) {
+        PDSController *controller = [PDSController sharedController];
+        if ([controller respondsToSelector:@selector(database)]) {
+            _database = [controller performSelector:@selector(database)];
+        }
+    }
+    return _database;
+}
+
+- (nullable PDSAdminService *)adminService {
+    if (!_adminService) {
+        PDSController *controller = [PDSController sharedController];
+        if ([controller respondsToSelector:@selector(adminService)]) {
+            _adminService = [controller performSelector:@selector(adminService)];
+        }
+    }
+    return _adminService;
+}
+
 - (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
-                                        path:(NSString *)path
-                                     headers:(NSDictionary<NSString *, NSString *> *)headers
-                                        body:(nullable NSData *)body {
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body {
     PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
 
     if (![path isEqualToString:@"/admin/login"] && ![auth isAuthenticatedWithRequest:headers]) {
@@ -50,9 +75,11 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     } else if ([path isEqualToString:@"/admin/logout"]) {
         return [self handleAdminLogout:headers body:body];
     } else if ([path isEqualToString:@"/admin/users"]) {
-        return [self handleAdminUsers:headers body:body];
+        return [self handleAdminUsers:headers body:body method:method];
     } else if ([path isEqualToString:@"/admin/invites"]) {
-        return [self handleAdminInvites:headers body:body];
+        return [self handleAdminInvites:headers body:body method:method];
+    } else if ([path isEqualToString:@"/admin/invites/disable"]) {
+        return [self handleAdminInviteDisable:headers body:body];
     } else if ([path isEqualToString:@"/admin/blobs"]) {
         return [self handleAdminBlobs:headers body:body];
     } else if ([path isEqualToString:@"/admin/metrics"]) {
@@ -71,6 +98,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         @"endpoints": @[
             @"/admin/users",
             @"/admin/invites",
+            @"/admin/invites/disable",
             @"/admin/blobs",
             @"/admin/metrics",
             @"/admin/health"
@@ -113,53 +141,154 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return [self jsonResponseWithStatus:200 body:@{@"message": @"Logged out"}];
 }
 
-- (NSString *)handleAdminUsers:(NSDictionary *)headers body:(NSData *)body {
+- (NSString *)handleAdminUsers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
+    PDSDatabase *db = self.database;
+    if (!db) {
+        return [self jsonResponseWithStatus:200 body:@{@"users": @[], @"total": @0}];
+    }
+
+    NSError *error = nil;
+    NSArray<PDSDatabaseAccount *> *accounts = [db getAllAccountsWithError:&error];
+    if (!accounts) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": error.localizedDescription ?: @"Database error"}];
+    }
+
+    NSMutableArray *users = [NSMutableArray arrayWithCapacity:accounts.count];
+    for (PDSDatabaseAccount *account in accounts) {
+        NSMutableDictionary *user = [NSMutableDictionary dictionary];
+        user[@"did"] = account.did ?: @"";
+        user[@"handle"] = account.handle ?: @"";
+        user[@"email"] = account.email ?: @"";
+        user[@"deactivated"] = @NO;
+        user[@"invite_enabled"] = @(account.inviteEnabled);
+
+        if (account.createdAt > 0) {
+            NSDate *date = [NSDate dateWithTimeIntervalSince1970:account.createdAt];
+            NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+            [fmt setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss'Z'"];
+            [fmt setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+            user[@"created_at"] = [fmt stringFromDate:date];
+        } else {
+            user[@"created_at"] = @"";
+        }
+
+        [users addObject:user];
+    }
+
     return [self jsonResponseWithStatus:200 body:@{
-        @"users": @[
-            @{
-                @"did": @"did:plc:ewvi7nxzyoun6zhxrhs64oiz",
-                @"handle": @"user.example.com",
-                @"email": @"user@example.com",
-                @"email_confirmed": @YES,
-                @"deactivated": @NO,
-                @"created_at": @"2026-01-01T00:00:00Z"
-            },
-            @{
-                @"did": @"did:plc:7HjwGtP5cLyq3vD5nDzDgXYZ",
-                @"handle": @"admin.example.com",
-                @"email": @"admin@example.com",
-                @"email_confirmed": @YES,
-                @"deactivated": @NO,
-                @"created_at": @"2025-12-15T00:00:00Z"
-            }
-        ],
-        @"total": @2
+        @"users": users,
+        @"total": @(users.count)
     }];
 }
 
-- (NSString *)handleAdminInvites:(NSDictionary *)headers body:(NSData *)body {
-    return [self jsonResponseWithStatus:200 body:@{
-        @"invites": @[
-            @{
-                @"code": @"ABCD-1234-EFGH-5678",
-                @"created_by": @"admin@example.com",
-                @"uses": @0,
-                @"max_uses": @1,
-                @"disabled": @NO,
-                @"created_at": @"2026-01-01T00:00:00Z"
-            },
-            @{
-                @"code": @"WXYZ-9012-RSTU-3456",
-                @"created_by": @"admin@example.com",
-                @"uses": @2,
-                @"max_uses": @5,
-                @"disabled": @NO,
-                @"expires_at": @"2026-02-01T00:00:00Z",
-                @"created_at": @"2025-12-20T00:00:00Z"
+- (NSString *)handleAdminInvites:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
+    PDSDatabase *db = self.database;
+
+    if (method == PDSHTTPMethodPOST) {
+        // Create new invite code
+        if (!body) {
+            return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing request body"}];
+        }
+
+        NSError *parseError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        if (parseError || ![json isKindOfClass:[NSDictionary class]]) {
+            return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid JSON"}];
+        }
+
+        PDSAdminService *svc = self.adminService;
+        if (!svc) {
+            return [self jsonResponseWithStatus:500 body:@{@"error": @"Admin service unavailable"}];
+        }
+
+        NSError *createError = nil;
+        NSDictionary *result = [svc createInviteCode:json error:&createError];
+        if (!result) {
+            return [self jsonResponseWithStatus:400 body:@{@"error": createError.localizedDescription ?: @"Failed to create invite code"}];
+        }
+
+        return [self jsonResponseWithStatus:200 body:result];
+    }
+
+    // GET: list invite codes
+    if (!db) {
+        return [self jsonResponseWithStatus:200 body:@{@"invites": @[], @"total": @0}];
+    }
+
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT code, account_did, created_at, max_uses, uses, disabled FROM invite_codes ORDER BY created_at DESC"
+                                                           params:@[]
+                                                            error:&error];
+    if (!rows) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": error.localizedDescription ?: @"Database error"}];
+    }
+
+    NSMutableArray *invites = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSMutableDictionary *invite = [NSMutableDictionary dictionary];
+        invite[@"code"] = row[@"code"] ?: @"";
+        invite[@"created_by"] = row[@"account_did"] ?: @"";
+
+        id usesVal = row[@"uses"];
+        invite[@"uses"] = usesVal ?: @0;
+
+        id maxUsesVal = row[@"max_uses"];
+        invite[@"max_uses"] = maxUsesVal ?: @1;
+
+        id disabledVal = row[@"disabled"];
+        invite[@"disabled"] = @([disabledVal integerValue] != 0);
+
+        id createdAtVal = row[@"created_at"];
+        if (createdAtVal) {
+            NSTimeInterval ts = [createdAtVal doubleValue];
+            if (ts > 0) {
+                NSDate *date = [NSDate dateWithTimeIntervalSince1970:ts];
+                NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+                [fmt setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss'Z'"];
+                [fmt setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+                invite[@"created_at"] = [fmt stringFromDate:date];
+            } else {
+                invite[@"created_at"] = @"";
             }
-        ],
-        @"total": @2
+        }
+
+        [invites addObject:invite];
+    }
+
+    return [self jsonResponseWithStatus:200 body:@{
+        @"invites": invites,
+        @"total": @(invites.count)
     }];
+}
+
+- (NSString *)handleAdminInviteDisable:(NSDictionary *)headers body:(NSData *)body {
+    if (!body) {
+        return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing request body"}];
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+    if (parseError || ![json isKindOfClass:[NSDictionary class]]) {
+        return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid JSON"}];
+    }
+
+    NSString *code = json[@"code"];
+    if (!code.length) {
+        return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing code"}];
+    }
+
+    PDSAdminService *svc = self.adminService;
+    if (!svc) {
+        return [self jsonResponseWithStatus:500 body:@{@"error": @"Admin service unavailable"}];
+    }
+
+    NSError *disableError = nil;
+    BOOL ok = [svc disableInviteCode:code error:&disableError];
+    if (!ok) {
+        return [self jsonResponseWithStatus:400 body:@{@"error": disableError.localizedDescription ?: @"Failed to disable invite code"}];
+    }
+
+    return [self jsonResponseWithStatus:200 body:@{@"message": @"Invite code disabled"}];
 }
 
 - (NSString *)handleAdminBlobs:(NSDictionary *)headers body:(NSData *)body {
