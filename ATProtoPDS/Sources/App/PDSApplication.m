@@ -16,6 +16,7 @@
 #import "Services/PDSRepositoryService.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
+#import "Services/PDSRelayService.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/PDSKeyManagerFactory.h"
@@ -46,6 +47,7 @@
 @property (nonatomic, strong, readwrite) PDSDatabasePool *userDatabasePool;
 @property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
+@property (nonatomic, strong, readwrite) PDSRelayService *relayService;
 @property (nonatomic, strong, readwrite) id<PDSAccountService> accountService;
 @property (nonatomic, strong, readwrite) PDSRecordService *recordService;
 @property (nonatomic, strong, readwrite) PDSBlobService *blobService;
@@ -258,6 +260,10 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     // However, for completeness if Minter exposes them: 
     // _jwtMinter.privateKey = ... (can't easily access raw ref from protocol without cast)
     // So we rely on keyManager assignment.
+
+    // Initialize Relay Service
+    _relayService = [[PDSRelayService alloc] initWithRelays:_configuration.crawlRelays
+                                                   hostname:_jwtMinter.issuer];
 }
 
 - (void)initializeServices {
@@ -464,6 +470,7 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     PDS_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
     _running = YES;
+    [_relayService start];
     PDS_LOG_CORE_INFO(@"PDSApplication started successfully");
     return YES;
 }
@@ -477,6 +484,8 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     
     [_subscribeReposHandler stop];
     _subscribeReposHandler = nil;
+    
+    [_relayService stop];
     
     // Close databases
     [_userDatabasePool closeAll];
