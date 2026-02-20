@@ -196,3 +196,12 @@ resolver.cacheTimestamps[@"did:plc:test"] = @([[NSDate date] timeIntervalSince19
 1. **SSRF Protection**: All private IP ranges blocked by default
 2. **Handle Validation**: Strict format rules prevent injection
 3. **Cache TTL**: Prevents stale data from being served indefinitely
+
+## Related Documentation
+
+- [Folder README](README.md) - Identity & authentication tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [SSRF Protection](../../security/SSRF_PROTECTION.md) - SSRF protection implementation
+- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security considerations
+- [Security Tests](../05-security/README.md) - Security test documentation
+- [Network Tests](../02-network/README.md) - Network layer tests

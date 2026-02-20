@@ -164,3 +164,12 @@ Document how to configure and use JWT client authentication.
 **Step 4: Update API documentation**
 
 Document new OAuth2 client authentication endpoints and parameters.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details
+- [Security Docs](../../security/README.md) - Security-related documentation

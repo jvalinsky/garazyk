@@ -445,5 +445,13 @@ cd federation-worktree && chmod +x test_federation.sh && ./test_federation.sh
 ```bash
 git add federation-worktree/README.md federation-worktree/test_federation.sh
 git commit -m "docs: add federation documentation and integration tests"
-```</content>
+```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2026-01-07-federation-support.md

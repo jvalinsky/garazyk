@@ -122,3 +122,14 @@ Removed: <script>, javascript:, on*=
 ```bash
 ./build/tests/AllTests -only-testing:AllTests/PDSInputValidatorTests
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Security tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Hardening Tests](hardening.md) - Production security hardening
+- [Auth Security Tests](auth-security.md) - Authorization tests
+- [Primitives Tests](../01-repository/primitives.md) - Core validation
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - Handle/DID validation
+- [XRPC Tests](../02-network/xrpc.md) - XRPC input validation
+- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT.md) - Detailed review

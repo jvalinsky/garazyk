@@ -49,3 +49,12 @@ Tests for debug handlers, MST viewer, and logging utilities.
 | `/explore` | Debug explore UI |
 | `/mst-viewer` | MST visualization |
 | `/oauth/demo` | OAuth flow demo |
+
+## Related Documentation
+
+- [Folder README](README.md) - Utilities tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Config & Metrics Tests](config-metrics.md) - Configuration and metrics
+- [Repository Tests](../01-repository/mst.md) - MST visualization
+- [OAuth Tests](../00-identity-auth/oauth.md) - OAuth demo
+- [HTTP Stack Tests](../02-network/http-stack.md) - HTTP routing

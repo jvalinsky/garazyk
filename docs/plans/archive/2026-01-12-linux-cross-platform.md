@@ -262,3 +262,11 @@ objpds-40l (Docker) <────────────────┘
 - Some Apple APIs have no direct Linux equivalents (NSURLSession → libcurl)
 - Consider maintaining two code paths with `#ifdef __APPLE__`
 - Some tests may always be macOS-only (e.g., Keychain tests)
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

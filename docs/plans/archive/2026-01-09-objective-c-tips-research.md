@@ -57,3 +57,10 @@ We will split the research into 4 independent domains to cover the breadth of th
 - **Internal Codebase:** `ATProtoPDS/Sources` (Check conventions in `Auth/`, `Database/`, `Network/`).
 - **Existing Docs:** `docs/objectivec_networking.md`.
 - **External:** Apple Developer Documentation, NSHipster, Objc.io (via web search/fetch).
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans

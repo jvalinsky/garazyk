@@ -1,35 +1,175 @@
-# Dockerfile for GNUstep Build Verification
-FROM ubuntu:22.04
+# =============================================================================
+# Multi-stage Dockerfile for ATProtoPDS (GNUstep/Linux)
+# =============================================================================
+# Stage 1: Build GNUstep runtime from source (libobjc2 + gnustep-make + gnustep-base)
+# Stage 2: Build the PDS project
+# Stage 3: Minimal runtime image
+# =============================================================================
 
-# Avoid interactive prompts during package installation
+# ---------------------------------------------------------------------------
+# Stage 1: Build GNUstep runtime with libobjc2 (gnustep-2.0 ABI)
+# ---------------------------------------------------------------------------
+FROM ubuntu:22.04 AS builder-gnustep
+
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies matching scripts/setup_linux.sh
-RUN apt-get update && apt-get install -y \
-    clang \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    clang-14 \
     cmake \
-    gnustep-make \
-    libgnustep-base-dev \
-    libblocksruntime-dev \
-    libssl-dev \
-    libqrencode-dev \
     git \
+    libffi-dev \
+    libicu-dev \
+    libxml2-dev \
+    libxslt1-dev \
     make \
+    ninja-build \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up environment variables for GNUstep
-ENV GNUSTEP_MAKEFILES=/usr/share/GNUstep/Makefiles
-ENV GS_MAKE=gnustep-make
+# Use clang-14 as default
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
 
-# Set work directory
+WORKDIR /build
+
+# Build libobjc2 (provides gnustep-2.0 ObjC runtime with ARC + blocks)
+RUN git clone --depth 1 --branch v2.2 https://github.com/gnustep/libobjc2.git && \
+    cd libobjc2 && \
+    git submodule update --init --depth 1 && \
+    mkdir build && cd build && \
+    cmake .. -G Ninja \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr/GNUstep/Local && \
+    ninja && ninja install
+
+# Register the newly installed libobjc2 libraries with the linker
+RUN echo "/usr/GNUstep/Local/Library/Libraries" > /etc/ld.so.conf.d/gnustep-local.conf && \
+    echo "/usr/GNUstep/Local/lib" >> /etc/ld.so.conf.d/gnustep-local.conf && \
+    ldconfig
+
+# Make libobjc2 discoverable by configure scripts
+ENV LD_LIBRARY_PATH=/usr/GNUstep/Local/Library/Libraries:/usr/GNUstep/Local/lib
+ENV LIBRARY_PATH=/usr/GNUstep/Local/Library/Libraries:/usr/GNUstep/Local/lib
+ENV CPATH=/usr/GNUstep/Local/include
+
+# Build gnustep-make
+RUN git clone --depth 1 https://github.com/gnustep/tools-make.git && \
+    cd tools-make && \
+    CC=clang CXX=clang++ \
+    LDFLAGS="-L/usr/GNUstep/Local/Library/Libraries -L/usr/GNUstep/Local/lib" \
+    ./configure \
+    --with-layout=gnustep \
+    --prefix=/usr/GNUstep \
+    --with-library-combo=ng-gnu-gnu && \
+    make && make install
+
+# Source GNUstep environment and build gnustep-base
+RUN git clone --depth 1 https://github.com/gnustep/libs-base.git && \
+    cd libs-base && \
+    . /usr/GNUstep/System/Library/Makefiles/GNUstep.sh && \
+    CC=clang CXX=clang++ ./configure \
+    --with-installation-domain=LOCAL \
+    --disable-tls && \
+    make -j$(nproc) && make install && \
+    ldconfig
+
+# ---------------------------------------------------------------------------
+# Stage 2: Build ATProtoPDS
+# ---------------------------------------------------------------------------
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang-14 \
+    cmake \
+    git \
+    libffi-dev \
+    libicu-dev \
+    libqrencode-dev \
+    libsqlite3-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    make \
+    pkg-config \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
+
+# Copy the source-built GNUstep runtime from stage 1
+COPY --from=builder-gnustep /usr/GNUstep /usr/GNUstep
+RUN ldconfig
+
 WORKDIR /src
 
-# Copy the project
+# Copy the project source
 COPY . .
 
-# Create build directory
-RUN mkdir build
+# Build with CMake (Release, no tests, no fuzzers)
+RUN mkdir build && cd build && \
+    cmake -S /src -B . \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_OBJC_COMPILER=clang \
+    -DBUILD_TESTS=OFF \
+    -DBUILD_FUZZERS=OFF && \
+    cmake --build . --parallel $(nproc)
 
-# Run CMake and Build
-# Using the same flags as the CI workflow
-CMD ["sh", "-c", "cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_OBJC_COMPILER=clang -DBUILD_TESTS=OFF && cmake --build build --parallel $(nproc)"]
+# ---------------------------------------------------------------------------
+# Stage 3: Minimal runtime image
+# ---------------------------------------------------------------------------
+FROM ubuntu:22.04 AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libffi8 \
+    libicu70 \
+    libqrencode4 \
+    libsqlite3-0 \
+    libssl3 \
+    libxml2 \
+    libxslt1.1 \
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy GNUstep runtime libraries
+COPY --from=builder-gnustep /usr/GNUstep /usr/GNUstep
+
+# BlocksRuntime is provided by libobjc2, already in /usr/GNUstep/Local/Library/Libraries
+
+# Copy built binaries
+COPY --from=builder /src/build/bin/kaszlak /usr/local/bin/kaszlak
+COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
+
+# Copy web assets (HTML/CSS/JS for the PDS UI)
+COPY --from=builder /src/ATProtoPDS/Sources/App/Assets /usr/share/atprotopds/assets
+
+# Set up library paths
+ENV LD_LIBRARY_PATH=/usr/GNUstep/Local/Library/Libraries:/usr/GNUstep/System/Library/Libraries
+
+# Update library cache
+RUN ldconfig
+
+# Create data directory
+RUN mkdir -p /var/lib/atprotopds
+
+# Default port
+EXPOSE 3000
+
+# Run as non-root
+RUN useradd -r -s /usr/sbin/nologin pds && \
+    chown -R pds:pds /var/lib/atprotopds
+USER pds
+
+WORKDIR /var/lib/atprotopds
+
+ENTRYPOINT ["kaszlak"]
+CMD ["serve"]
