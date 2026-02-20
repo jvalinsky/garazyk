@@ -1176,7 +1176,7 @@ function showCollectionsSection() {
 
 // --- Session Management ---
 
-let sessionAdminDids = [];
+let sessionIsAdmin = false;
 
 function initSession() {
     // Check for OAuth callback on page load
@@ -1184,7 +1184,7 @@ function initSession() {
         if (result && !result.error && result.did) {
             // Store handle if available (from sessionStorage set during login)
             const handle = sessionStorage.getItem('login_handle') || result.did;
-            updateUIForLogin(result.did, handle);
+            fetchSessionAndCheckAdmin(result.did, handle);
             showPosterResult('Logged in successfully!', false);
         } else if (result && result.error) {
             showPosterResult('Error: ' + result.error, true);
@@ -1195,11 +1195,8 @@ function initSession() {
     const session = Poster.getSession();
     if (session) {
         const handle = sessionStorage.getItem('login_handle') || session.did;
-        updateUIForLogin(session.did, handle);
+        fetchSessionAndCheckAdmin(session.did, handle);
     }
-
-    // Fetch admin DIDs from describeServer
-    fetchAdminDids();
 
     // --- File Menu: Login ---
     const menuLogin = document.getElementById('menu-login');
@@ -1676,35 +1673,41 @@ const AdminAPI = {
     }
 };
 
-async function fetchAdminDids() {
+async function fetchSessionAndCheckAdmin(did, handle) {
+    const token = Poster.getAccessToken();
+    if (!token) {
+        updateUIForLogin(did, handle, false);
+        return;
+    }
+    
     try {
-        const resp = await fetch('/xrpc/com.atproto.server.describeServer');
+        const resp = await fetch('/xrpc/com.atproto.server.getSession', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
         if (resp.ok) {
             const data = await resp.json();
-            // The ATProto describeServer response doesn't have a standard adminDids field,
-            // but our PDS may return contact.email or we check via the DID
-            // For now, use a custom field if available, or check if the logged-in DID
-            // is the server's own DID (did:web:hostname)
-            if (data.did) {
-                sessionAdminDids = [data.did];
-            }
+            sessionIsAdmin = data.isAdmin === true;
+            updateUIForLogin(did, handle, sessionIsAdmin);
+        } else {
+            updateUIForLogin(did, handle, false);
         }
     } catch (e) {
-        console.warn('Could not fetch server description for admin DID check:', e);
+        console.warn('Could not fetch session for admin check:', e);
+        updateUIForLogin(did, handle, false);
     }
 }
 
-function isAdmin(did) {
-    return sessionAdminDids.includes(did);
-}
-
-function updateUIForLogin(did, handle) {
+function updateUIForLogin(did, handle, isAdminUser) {
     // Status bar
     const statusUser = document.getElementById('status-user');
     const statusHandle = document.getElementById('status-user-handle');
     if (statusUser && statusHandle) {
         statusHandle.textContent = handle;
         statusUser.style.display = 'inline';
+        // Different icon for admins
+        statusUser.innerHTML = isAdminUser 
+            ? '<span style="color: #666;">\u2699</span> <span id="status-user-handle">' + escapeHtml(handle) + '</span>'
+            : '<span style="color: #666;">\u263A</span> <span id="status-user-handle">' + escapeHtml(handle) + '</span>';
     }
 
     // Menu items
@@ -1718,13 +1721,15 @@ function updateUIForLogin(did, handle) {
     if (fileDivider) fileDivider.style.display = '';
 
     // Admin menu
-    if (isAdmin(did)) {
+    if (isAdminUser) {
         const adminGroup = document.getElementById('menu-admin-group');
         if (adminGroup) adminGroup.style.display = '';
     }
 }
 
 function updateUIForLogout() {
+    sessionIsAdmin = false;
+    
     // Status bar
     const statusUser = document.getElementById('status-user');
     if (statusUser) statusUser.style.display = 'none';
