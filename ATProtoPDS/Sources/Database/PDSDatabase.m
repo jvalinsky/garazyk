@@ -372,6 +372,30 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
+    rc = sqlite3_exec(_db, [kPDSAdminAuditLogTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSReportsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSAdminConfigTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
     rc = sqlite3_exec(_db, [kPDSIndexInviteCodesAccountDidSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
@@ -381,6 +405,62 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexTakedownsSubjectIdSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexAuditLogAdminSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexAuditLogSubjectSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexAuditLogCreatedSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexReportsStatusSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexReportsSubjectSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexReportsReportedBySQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexReportsCreatedSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
@@ -1907,6 +1987,192 @@ static NSDateFormatter * iso8601Formatter(void) {
     [params addObject:@(limit)];
     
     return [self executeParameterizedQuery:sql params:params error:error];
+}
+
+@end
+
+#pragma mark - Admin Audit
+
+@implementation PDSDatabase (AdminAudit)
+
+- (BOOL)insertAuditLogEntry:(NSDictionary *)entry error:(NSError **)error {
+    NSString *sql = @"INSERT INTO admin_audit_log (admin_did, action, subject_type, subject_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    
+    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    
+    NSArray *params = @[
+        entry[@"admin_did"] ?: [NSNull null],
+        entry[@"action"] ?: [NSNull null],
+        entry[@"subject_type"] ?: [NSNull null],
+        entry[@"subject_id"] ?: [NSNull null],
+        entry[@"details"] ?: [NSNull null],
+        entry[@"ip_address"] ?: [NSNull null],
+        dateStr
+    ];
+    
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (NSArray<NSDictionary *> *)queryAuditLog:(NSDictionary *)filters limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    NSMutableString *sql = [@"SELECT * FROM admin_audit_log WHERE 1=1" mutableCopy];
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (filters[@"admin_did"]) {
+        [sql appendString:@" AND admin_did = ?"];
+        [params addObject:filters[@"admin_did"]];
+    }
+    
+    if (filters[@"action"]) {
+        [sql appendString:@" AND action = ?"];
+        [params addObject:filters[@"action"]];
+    }
+    
+    if (filters[@"subject_type"]) {
+        [sql appendString:@" AND subject_type = ?"];
+        [params addObject:filters[@"subject_type"]];
+    }
+    
+    if (filters[@"subject_id"]) {
+        [sql appendString:@" AND subject_id = ?"];
+        [params addObject:filters[@"subject_id"]];
+    }
+    
+    if (filters[@"since"]) {
+        [sql appendString:@" AND created_at >= ?"];
+        [params addObject:filters[@"since"]];
+    }
+    
+    if (filters[@"until"]) {
+        [sql appendString:@" AND created_at <= ?"];
+        [params addObject:filters[@"until"]];
+    }
+    
+    if (cursor) {
+        [sql appendString:@" AND id < ?"];
+        [params addObject:cursor];
+    }
+    
+    [sql appendString:@" ORDER BY id DESC LIMIT ?"];
+    [params addObject:@(limit)];
+    
+    return [self executeParameterizedQuery:sql params:params error:error];
+}
+
+- (BOOL)deleteAuditLogsOlderThanDays:(NSInteger)days error:(NSError **)error {
+    NSDate *cutoffDate = [[NSDate date] dateByAddingTimeInterval:-((NSTimeInterval)days * 24 * 60 * 60)];
+    NSString *cutoffStr = [iso8601Formatter() stringFromDate:cutoffDate];
+    
+    NSString *sql = @"DELETE FROM admin_audit_log WHERE created_at < ?";
+    return [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];
+}
+
+@end
+
+#pragma mark - Reports
+
+@implementation PDSDatabase (Reports)
+
+- (NSString *)createReport:(NSDictionary *)report error:(NSError **)error {
+    NSString *reportId = [[NSUUID UUID] UUIDString];
+    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    
+    NSString *sql = @"INSERT INTO reports (report_id, reason_type, reason, reported_by_did, subject_type, subject_did, subject_uri, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)";
+    
+    NSArray *params = @[
+        reportId,
+        report[@"reason_type"] ?: [NSNull null],
+        report[@"reason"] ?: [NSNull null],
+        report[@"reported_by_did"] ?: [NSNull null],
+        report[@"subject_type"] ?: [NSNull null],
+        report[@"subject_did"] ?: [NSNull null],
+        report[@"subject_uri"] ?: [NSNull null],
+        dateStr
+    ];
+    
+    if ([self executeParameterizedUpdate:sql params:params error:error]) {
+        return reportId;
+    }
+    return nil;
+}
+
+- (NSArray<NSDictionary *> *)queryReports:(NSDictionary *)filters limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    NSMutableString *sql = [@"SELECT * FROM reports WHERE 1=1" mutableCopy];
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (filters[@"status"]) {
+        [sql appendString:@" AND status = ?"];
+        [params addObject:filters[@"status"]];
+    }
+    
+    if (filters[@"reason_type"]) {
+        [sql appendString:@" AND reason_type = ?"];
+        [params addObject:filters[@"reason_type"]];
+    }
+    
+    if (filters[@"reported_by_did"]) {
+        [sql appendString:@" AND reported_by_did = ?"];
+        [params addObject:filters[@"reported_by_did"]];
+    }
+    
+    if (filters[@"subject_did"]) {
+        [sql appendString:@" AND subject_did = ?"];
+        [params addObject:filters[@"subject_did"]];
+    }
+    
+    if (filters[@"subject_type"]) {
+        [sql appendString:@" AND subject_type = ?"];
+        [params addObject:filters[@"subject_type"]];
+    }
+    
+    if (cursor) {
+        [sql appendString:@" AND id < ?"];
+        [params addObject:cursor];
+    }
+    
+    [sql appendString:@" ORDER BY id DESC LIMIT ?"];
+    [params addObject:@(limit)];
+    
+    return [self executeParameterizedQuery:sql params:params error:error];
+}
+
+- (nullable NSDictionary *)getReportById:(NSString *)reportId error:(NSError **)error {
+    NSString *sql = @"SELECT * FROM reports WHERE report_id = ?";
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[reportId] error:error];
+    return rows.firstObject;
+}
+
+- (BOOL)updateReportStatus:(NSString *)reportId status:(NSString *)status resolvedBy:(nullable NSString *)adminDid notes:(nullable NSString *)notes error:(NSError **)error {
+    NSMutableString *sql = [@"UPDATE reports SET status = ?" mutableCopy];
+    NSMutableArray *params = [NSMutableArray arrayWithObjects:status, nil];
+    
+    if ([status isEqualToString:@"resolved"] || [status isEqualToString:@"dismissed"]) {
+        [sql appendString:@", resolved_by_did = ?, resolved_at = ?, resolution_notes = ?"];
+        NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+        [params addObjectsFromArray:@[adminDid ?: [NSNull null], dateStr, notes ?: [NSNull null]]];
+    }
+    
+    [sql appendString:@" WHERE report_id = ?"];
+    [params addObject:reportId];
+    
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+@end
+
+#pragma mark - Admin Config
+
+@implementation PDSDatabase (AdminConfig)
+
+- (nullable NSString *)getAdminConfigValue:(NSString *)key error:(NSError **)error {
+    NSString *sql = @"SELECT value FROM admin_config WHERE key = ?";
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[key] error:error];
+    return rows.firstObject[@"value"];
+}
+
+- (BOOL)setAdminConfigValue:(NSString *)value forKey:(NSString *)key error:(NSError **)error {
+    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *sql = @"INSERT OR REPLACE INTO admin_config (key, value, updated_at) VALUES (?, ?, ?)";
+    return [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
 }
 
 @end

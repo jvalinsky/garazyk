@@ -115,4 +115,56 @@
     return [_adminService getLabels:params error:error];
 }
 
+#pragma mark - Server Statistics
+
+- (nullable NSDictionary *)getServerStatsWithError:(NSError **)error {
+    return [_adminService getServerStatsWithError:error];
+}
+
+#pragma mark - Audit Logging
+
+- (BOOL)logAdminAction:(NSString *)action
+           subjectType:(nullable NSString *)subjectType
+             subjectId:(nullable NSString *)subjectId
+               details:(nullable NSDictionary *)details
+              ipAddress:(nullable NSString *)ipAddress
+               adminDid:(NSString *)adminDid
+                  error:(NSError **)error {
+    return [_adminService logAdminAction:action
+                             subjectType:subjectType
+                               subjectId:subjectId
+                                 details:details
+                                ipAddress:ipAddress
+                                 adminDid:adminDid
+                                    error:error];
+}
+
+- (nullable NSDictionary *)queryAuditLog:(NSDictionary *)filters
+                                   limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                   error:(NSError **)error {
+    return [_adminService queryAuditLog:filters limit:limit cursor:cursor error:error];
+}
+
+#pragma mark - Reports
+
+- (nullable NSDictionary *)createReport:(NSDictionary *)params error:(NSError **)error {
+    return [_adminService createReport:params error:error];
+}
+
+- (nullable NSDictionary *)queryReports:(NSDictionary *)filters
+                                  limit:(NSInteger)limit
+                                cursor:(nullable NSString *)cursor
+                                  error:(NSError **)error {
+    return [_adminService queryReports:filters limit:limit cursor:cursor error:error];
+}
+
+- (BOOL)resolveReport:(NSString *)reportId
+               status:(NSString *)status
+            resolvedBy:(nullable NSString *)resolvedBy
+                notes:(nullable NSString *)notes
+                error:(NSError **)error {
+    return [_adminService resolveReport:reportId status:status resolvedBy:resolvedBy notes:notes error:error];
+}
+
 @end

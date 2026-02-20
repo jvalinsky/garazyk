@@ -212,14 +212,113 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method getLabels:error:
-
+ 
  @abstract Retrieves labels matching the given criteria.
-
+ 
  @param params Dictionary containing query parameters (uriPatterns, sources, limit, cursor).
  @param error On return, contains an error if the operation failed.
  @return Dictionary with labels array and cursor, or nil on failure.
  */
 - (nullable NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error;
+
+#pragma mark - Server Statistics
+
+/*!
+ @method getServerStatsWithError:
+ 
+ @abstract Retrieves server statistics for admin dashboard.
+ 
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with server statistics, or nil on failure.
+ */
+- (nullable NSDictionary *)getServerStatsWithError:(NSError **)error;
+
+#pragma mark - Audit Logging
+
+/*!
+ @method logAdminAction:subjectType:subjectId:details:ipAddress:error:
+ 
+ @abstract Logs an admin action to the audit log.
+ 
+ @param action The action being performed (e.g., "account.disable").
+ @param subjectType The type of subject (e.g., "account", "record", "invite_code").
+ @param subjectId The identifier of the subject.
+ @param details Additional details as a dictionary (will be JSON-encoded).
+ @param ipAddress The IP address of the admin.
+ @param adminDid The DID of the admin performing the action.
+ @param error On return, contains an error if the operation failed.
+ @return YES if successful, NO otherwise.
+ */
+- (BOOL)logAdminAction:(NSString *)action
+           subjectType:(nullable NSString *)subjectType
+             subjectId:(nullable NSString *)subjectId
+               details:(nullable NSDictionary *)details
+              ipAddress:(nullable NSString *)ipAddress
+               adminDid:(NSString *)adminDid
+                  error:(NSError **)error;
+
+/*!
+ @method queryAuditLog:limit:cursor:error:
+ 
+ @abstract Queries the audit log with optional filters.
+ 
+ @param filters Dictionary of filters (admin_did, action, subject_type, subject_id, since, until).
+ @param limit Maximum number of results.
+ @param cursor Pagination cursor.
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with audit log entries and cursor, or nil on failure.
+ */
+- (nullable NSDictionary *)queryAuditLog:(NSDictionary *)filters
+                                   limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                   error:(NSError **)error;
+
+#pragma mark - Reports
+
+/*!
+ @method createReport:error:
+ 
+ @abstract Creates a new moderation report.
+ 
+ @param params Dictionary containing report parameters (reason_type, reason, reported_by_did, subject_type, subject_did, subject_uri).
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with the created report, or nil on failure.
+ */
+- (nullable NSDictionary *)createReport:(NSDictionary *)params error:(NSError **)error;
+
+/*!
+ @method queryReports:limit:cursor:error:
+ 
+ @abstract Queries moderation reports with optional filters.
+ 
+ @param filters Dictionary of filters (status, reason_type, reported_by_did, subject_did, subject_type).
+ @param limit Maximum number of results.
+ @param cursor Pagination cursor.
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with reports array and cursor, or nil on failure.
+ */
+- (nullable NSDictionary *)queryReports:(NSDictionary *)filters
+                                  limit:(NSInteger)limit
+                                cursor:(nullable NSString *)cursor
+                                  error:(NSError **)error;
+
+/*!
+ @method resolveReport:status:resolvedBy:notes:error:
+ 
+ @abstract Resolves or dismisses a moderation report.
+ 
+ @param reportId The ID of the report to resolve.
+ @param status The new status ("resolved" or "dismissed").
+ @param resolvedBy The DID of the admin resolving the report.
+ @param notes Optional resolution notes.
+ @param error On return, contains an error if the operation failed.
+ @return YES if successful, NO otherwise.
+ */
+- (BOOL)resolveReport:(NSString *)reportId
+               status:(NSString *)status
+            resolvedBy:(nullable NSString *)resolvedBy
+                notes:(nullable NSString *)notes
+                error:(NSError **)error;
 
 @end
 

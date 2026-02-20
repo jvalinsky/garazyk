@@ -507,4 +507,12 @@
     [self registerMethod:@"app.bsky.user.getUserStats" handler:handler];
 }
 
+- (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.getModerationReports" handler:handler];
+}
+
+- (void)registerComAtprotoAdminResolveReport:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.resolveReport" handler:handler];
+}
+
 @end

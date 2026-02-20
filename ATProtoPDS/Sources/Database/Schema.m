@@ -10,6 +10,9 @@ NSString * const kPDSBlobTableName = @"blobs";
 NSString * const kPDSInviteCodeTableName = @"invite_codes";
 
 NSString * const kPDSAdminTakedownTableName = @"admin_takedowns";
+NSString * const kPDSAdminAuditLogTableName = @"admin_audit_log";
+NSString * const kPDSReportsTableName = @"reports";
+NSString * const kPDSAdminConfigTableName = @"admin_config";
 NSString * const kPDSLabelTableName = @"labels";
 NSString * const kPDSReservedHandleTableName = @"reserved_handles";
 NSString * const kPDSPasskeysTableName = @"passkeys";
@@ -111,6 +114,42 @@ NSString * const kPDSAdminTakedownTableCreateSQL =
     @"createdAt DATETIME NOT NULL"
     @")";
 
+NSString * const kPDSAdminAuditLogTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS admin_audit_log ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"admin_did TEXT NOT NULL,"
+    @"action TEXT NOT NULL,"
+    @"subject_type TEXT,"
+    @"subject_id TEXT,"
+    @"details TEXT,"
+    @"ip_address TEXT,"
+    @"created_at DATETIME NOT NULL"
+    @")";
+
+NSString * const kPDSReportsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS reports ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"report_id TEXT NOT NULL UNIQUE,"
+    @"reason_type TEXT NOT NULL,"
+    @"reason TEXT,"
+    @"reported_by_did TEXT NOT NULL,"
+    @"subject_type TEXT NOT NULL,"
+    @"subject_did TEXT,"
+    @"subject_uri TEXT,"
+    @"status TEXT NOT NULL DEFAULT 'open',"
+    @"resolved_by_did TEXT,"
+    @"resolved_at DATETIME,"
+    @"resolution_notes TEXT,"
+    @"created_at DATETIME NOT NULL"
+    @")";
+
+NSString * const kPDSAdminConfigTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS admin_config ("
+    @"key TEXT PRIMARY KEY,"
+    @"value TEXT NOT NULL,"
+    @"updated_at DATETIME NOT NULL"
+    @")";
+
 NSString * const kPDSLabelTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS labels ("
     @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -134,6 +173,27 @@ NSString * const kPDSIndexInviteCodesAccountDidSQL =
 
 NSString * const kPDSIndexTakedownsSubjectIdSQL =
     @"CREATE INDEX IF NOT EXISTS idx_admin_takedowns_subject_id ON admin_takedowns(subjectId)";
+
+NSString * const kPDSIndexAuditLogAdminSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_audit_log_admin ON admin_audit_log(admin_did)";
+
+NSString * const kPDSIndexAuditLogSubjectSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_audit_log_subject ON admin_audit_log(subject_type, subject_id)";
+
+NSString * const kPDSIndexAuditLogCreatedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_audit_log_created ON admin_audit_log(created_at)";
+
+NSString * const kPDSIndexReportsStatusSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)";
+
+NSString * const kPDSIndexReportsSubjectSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_reports_subject ON reports(subject_type, subject_did)";
+
+NSString * const kPDSIndexReportsReportedBySQL =
+    @"CREATE INDEX IF NOT EXISTS idx_reports_reported_by ON reports(reported_by_did)";
+
+NSString * const kPDSIndexReportsCreatedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at)";
 
 NSString * const kPDSIndexLabelsUriSQL =
     @"CREATE INDEX IF NOT EXISTS idx_labels_uri ON labels(uri)";
