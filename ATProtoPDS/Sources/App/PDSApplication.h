@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSController;
 @class JWTMinter;
 @class HttpServer;
+@class PDSRelayService;
 
 @protocol PDSAccountService;
 @protocol PDSAdminController;
@@ -215,6 +216,13 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract The HTTP server instance (available after start).
  */
 @property (nonatomic, strong, readonly, nullable) HttpServer *httpServer;
+
+/*!
+ * @property relayService
+ *
+ * @abstract Service for notifying external relays of updates.
+ */
+@property (nonatomic, strong, readonly) PDSRelayService *relayService;
 
 /*!
  @property emailProvider
