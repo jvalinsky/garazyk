@@ -4,6 +4,9 @@
 # Stage 1: Build GNUstep runtime from source (libobjc2 + gnustep-make + gnustep-base)
 # Stage 2: Build the PDS project
 # Stage 3: Minimal runtime image
+#
+# Prerequisites:
+#   git submodule update --init   (secp256k1 must be checked out)
 # =============================================================================
 
 # ---------------------------------------------------------------------------
@@ -87,6 +90,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang-14 \
     cmake \
     git \
+    libdispatch-dev \
     libffi-dev \
     libicu-dev \
     libqrencode-dev \
@@ -104,19 +108,32 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100 && 
 
 # Copy the source-built GNUstep runtime from stage 1
 COPY --from=builder-gnustep /usr/GNUstep /usr/GNUstep
-RUN ldconfig
+
+# Register GNUstep library paths with the linker (not carried from stage 1)
+RUN echo "/usr/GNUstep/Local/Library/Libraries" > /etc/ld.so.conf.d/gnustep-local.conf && \
+    echo "/usr/GNUstep/Local/lib" >> /etc/ld.so.conf.d/gnustep-local.conf && \
+    echo "/usr/GNUstep/System/Library/Libraries" >> /etc/ld.so.conf.d/gnustep-local.conf && \
+    ldconfig
+
+# Make gnustep-config discoverable by CMake's find_program
+ENV PATH=/usr/GNUstep/System/Tools:$PATH
 
 WORKDIR /src
 
 # Copy the project source
 COPY . .
 
+# Verify secp256k1 submodule is present
+RUN test -f secp256k1/CMakeLists.txt || \
+    { echo "ERROR: secp256k1 submodule not checked out. Run: git submodule update --init"; exit 1; }
+
 # Build with CMake (Release, no tests, no fuzzers)
+# Do NOT pass -DCMAKE_C_COMPILER or -DCMAKE_OBJC_COMPILER here;
+# CMakeLists.txt handles compiler detection via find_program to avoid
+# an infinite configure loop caused by cache invalidation.
 RUN mkdir build && cd build && \
     cmake -S /src -B . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_OBJC_COMPILER=clang \
     -DBUILD_TESTS=OFF \
     -DBUILD_FUZZERS=OFF && \
     cmake --build . --parallel $(nproc)
@@ -130,6 +147,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    libdispatch0 \
     libffi8 \
     libicu70 \
     libqrencode4 \
@@ -143,7 +161,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy GNUstep runtime libraries
 COPY --from=builder-gnustep /usr/GNUstep /usr/GNUstep
 
-# BlocksRuntime is provided by libobjc2, already in /usr/GNUstep/Local/Library/Libraries
+# Register GNUstep library paths with the linker
+RUN echo "/usr/GNUstep/Local/Library/Libraries" > /etc/ld.so.conf.d/gnustep-local.conf && \
+    echo "/usr/GNUstep/Local/lib" >> /etc/ld.so.conf.d/gnustep-local.conf && \
+    echo "/usr/GNUstep/System/Library/Libraries" >> /etc/ld.so.conf.d/gnustep-local.conf && \
+    ldconfig
 
 # Copy built binaries
 COPY --from=builder /src/build/bin/kaszlak /usr/local/bin/kaszlak
@@ -151,12 +173,6 @@ COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
 
 # Copy web assets (HTML/CSS/JS for the PDS UI)
 COPY --from=builder /src/ATProtoPDS/Sources/App/Assets /usr/share/atprotopds/assets
-
-# Set up library paths
-ENV LD_LIBRARY_PATH=/usr/GNUstep/Local/Library/Libraries:/usr/GNUstep/System/Library/Libraries
-
-# Update library cache
-RUN ldconfig
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds

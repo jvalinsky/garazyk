@@ -293,36 +293,98 @@
 
 - (void)registerAdminRoutesWithServer:(HttpServer *)server {
     PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
-
-    [server addRoute:@"POST" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
-                                                            path:@"/admin/login"
-                                                         headers:request.headers
-                                                            body:request.body];
-        if (result) {
-            response.statusCode = 200;
-            [response setBodyString:result];
-        } else {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found"}];
-        }
-    }];
-
-    [server addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
-                                                            path:@"/admin/logout"
-                                                         headers:request.headers
-                                                            body:request.body];
-        if (result) {
-            response.statusCode = 200;
-            [response setBodyString:result];
-        } else {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found"}];
-        }
-    }];
+    
+    NSArray *adminPaths = @[
+        @"/admin",
+        @"/admin/login",
+        @"/admin/logout",
+        @"/admin/users",
+        @"/admin/invites",
+        @"/admin/invites/disable",
+        @"/admin/blobs",
+        @"/admin/metrics",
+        @"/admin/health",
+        @"/admin/stats",
+        @"/admin/audit-log"
+    ];
+    
+    for (NSString *path in adminPaths) {
+        [server addRoute:@"GET" path:path handler:^(HttpRequest *request, HttpResponse *response) {
+            NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                                path:path
+                                                             headers:request.headers
+                                                                body:request.body];
+            if (result) {
+                response.statusCode = 200;
+                [response setBodyString:result];
+            } else {
+                response.statusCode = 404;
+                [response setJsonBody:@{@"error": @"Not Found"}];
+            }
+        }];
+        
+        [server addRoute:@"POST" path:path handler:^(HttpRequest *request, HttpResponse *response) {
+            NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                                path:path
+                                                             headers:request.headers
+                                                                body:request.body];
+            if (result) {
+                response.statusCode = 200;
+                [response setBodyString:result];
+            } else {
+                response.statusCode = 404;
+                [response setJsonBody:@{@"error": @"Not Found"}];
+            }
+        }];
+    }
+    
+    [self registerAdminUIRoutesWithServer:server];
 
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin routes registered");
+}
+
+- (void)registerAdminUIRoutesWithServer:(HttpServer *)server {
+    NSString *adminUIPath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"AdminUI"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:adminUIPath]) {
+        adminUIPath = [[NSBundle bundleForClass:[self class]].resourcePath stringByAppendingPathComponent:@"AdminUI"];
+    }
+    if (![[NSFileManager defaultManager] fileExistsAtPath:adminUIPath]) {
+        adminUIPath = @"/Users/jack/Software/objpds/ATProtoPDS/Sources/App/AdminUI";
+    }
+    
+    NSString *assetsPath = [adminUIPath stringByAppendingPathComponent:@"Assets"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:assetsPath]) {
+        PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin UI assets not found at %@", assetsPath);
+        return;
+    }
+    
+    [server addRoute:@"GET" path:@"/admin-ui/*" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *filePath = [request.path stringByReplacingOccurrencesOfString:@"/admin-ui/" withString:@""];
+        if ([filePath containsString:@".."]) {
+            response.statusCode = 403;
+            [response setJsonBody:@{@"error": @"Forbidden"}];
+            return;
+        }
+        
+        NSString *fullPath = [assetsPath stringByAppendingPathComponent:filePath];
+        NSData *data = [NSData dataWithContentsOfFile:fullPath];
+        if (data) {
+            response.statusCode = 200;
+            if ([filePath hasSuffix:@".js"]) {
+                [response setHeader:@"application/javascript" forKey:@"Content-Type"];
+            } else if ([filePath hasSuffix:@".css"]) {
+                [response setHeader:@"text/css" forKey:@"Content-Type"];
+            } else if ([filePath hasSuffix:@".html"]) {
+                [response setHeader:@"text/html" forKey:@"Content-Type"];
+            }
+            [response setBodyData:data];
+        } else {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found"}];
+        }
+    }];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin UI routes registered");
 }
 
 @end
