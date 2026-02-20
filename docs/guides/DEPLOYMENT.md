@@ -102,3 +102,16 @@ curl https://pds.example.com/xrpc/_health
 sqlite3 data/service/__service__.db 'PRAGMA journal_mode;'
 # Should print: wal
 ```
+
+---
+
+## Related Documentation
+
+- **[Setup Guide](SETUP_GUIDE.md)** - Initial build and configuration
+- **[Security Plan](../security/SECURITY_PLAN.md)** - Security validation strategy
+- **[Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION.md)** - Admin password setup
+- **[SSRF Protection](../security/SSRF_PROTECTION.md)** - Network security hardening
+- **[OAuth 2.0 Overview](../oauth2/README.md)** - Authentication endpoints
+- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS.md)** - System components
+- **[Script Development](SCRIPT_DEVELOPMENT.md)** - Production script standards
+- **[macOS Network Guide](macOS_Network_Server_Guide.md)** - Platform-specific networking

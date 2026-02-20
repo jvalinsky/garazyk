@@ -117,3 +117,12 @@ For ongoing compliance maintenance:
 - Regular compliance audits
 
 This skill ensures ATProto implementations remain compliant with protocol evolution while maintaining interoperability and security standards.
+
+## Related Documentation
+
+- [Skills Overview](README.md) - Index of all skills documentation
+- [OAuth 2.0 Implementation](../oauth2/README.md) - OAuth flows, DPoP, PKCE, token management
+- [Security Documentation](../security/README.md) - Security testing, SSRF protection, admin auth
+- [Testing Guide](../tests/README.md) - Test infrastructure and CI/CD integration
+- [XRPC Protocol Reference](../architecture/XRPC_PROTOCOL_REFERENCE.md) - HTTP API conventions and endpoints
+- [Architecture Overview](../architecture/README.md) - System design and data models

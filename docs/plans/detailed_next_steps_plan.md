@@ -79,3 +79,13 @@ Still blocking:
 ## Deployment Decision
 
 Remain **No-Go** until all P0 and P1 criteria are complete.
+
+## Related Documentation
+
+- [Production Readiness](production-readiness.md) - Full audit findings and evidence
+- [Roadmap](ROADMAP.md) - Project milestones and future work
+- [Security Hardening](../security/README.md) - Security analysis and hardening guides
+- [OAuth2 Documentation](../oauth2/README.md) - Token management and DPoP implementation
+- [Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION.md) - Admin authentication setup
+- [DPoP Implementation](../oauth2/dpop.md) - DPoP proof verification details
+- [Architecture Overview](../architecture/README.md) - System design decisions
