@@ -6,6 +6,15 @@ server:
   host: "0.0.0.0"
   port: 8080
   data_dir: "./data"
+  
+# Server Links
+links:
+  privacy_policy: "https://example.com/privacy"
+  terms_of_service: "https://example.com/terms"
+
+# Scraping Relays
+relays:
+  - "https://bsky.network"
 
 # PLC Directory Configuration
 # For local development, set plc_url to a local PLC server or use "mock" for testing

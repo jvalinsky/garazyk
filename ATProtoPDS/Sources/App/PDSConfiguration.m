@@ -161,6 +161,11 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
         _nodeinfoHomepageURL = @"https://github.com/jvalinsky/NSPds";
         _nodeinfoOpenRegistrations = YES;
         
+        _privacyPolicyURL = nil;
+        _termsOfServiceURL = nil;
+        
+        _crawlRelays = @[@"https://bsky.network"];
+        
         // Security defaults
         _useBiometricProtection = YES;
         if ([self envVarExists:@"PDS_USE_BIOMETRIC_PROTECTION"]) {
@@ -434,6 +439,29 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
         if (nodeinfo[@"open_registrations"]) _nodeinfoOpenRegistrations = [self boolFromEnv:@"PDS_NODEINFO_OPEN_REGISTRATIONS" default:[nodeinfo[@"open_registrations"] boolValue]];
     }
 
+    NSDictionary *links = config[@"links"];
+    if (links) {
+        if (links[@"privacy_policy"]) _privacyPolicyURL = [self resolveEnvOverrideForKey:@"PDS_PRIVACY_POLICY_URL" default:links[@"privacy_policy"]];
+        if (links[@"terms_of_service"]) _termsOfServiceURL = [self resolveEnvOverrideForKey:@"PDS_TERMS_OF_SERVICE_URL" default:links[@"terms_of_service"]];
+    }
+    
+    // Environment variables override everything
+    NSString *envPrivacy = [self resolveEnvOverrideForKey:@"PDS_PRIVACY_POLICY_URL" default:nil];
+    if (envPrivacy) _privacyPolicyURL = envPrivacy;
+    
+    NSString *envTerms = [self resolveEnvOverrideForKey:@"PDS_TERMS_OF_SERVICE_URL" default:nil];
+    if (envTerms) _termsOfServiceURL = envTerms;
+
+    NSArray *relays = config[@"relays"];
+    if ([relays isKindOfClass:[NSArray class]]) {
+        _crawlRelays = [relays copy];
+    }
+
+    NSString *envRelays = [self resolveEnvOverrideForKey:@"PDS_CRAWL_RELAYS" default:nil];
+    if (envRelays.length > 0) {
+        _crawlRelays = [envRelays componentsSeparatedByString:@","];
+    }
+
     // Also check environment variables if no config file logging section
     if (!logging) {
         NSString *logFile = [[NSProcessInfo processInfo] environment][@"PDS_LOG_FILE"];
@@ -513,8 +541,16 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
         host = @"localhost";
     }
 
+    // Check if host already contains a port
+    BOOL hostHasPort = [host containsString:@":"];
+    
     BOOL localHost = PDSConfigHostLooksLocal(host);
     NSString *scheme = localHost ? @"http" : @"https";
+    
+    if (hostHasPort) {
+        return [NSString stringWithFormat:@"%@://%@", scheme, host];
+    }
+    
     NSUInteger port = portHint > 0 ? portHint : (self.serverPort > 0 ? self.serverPort : 2583);
     BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
                        ([scheme isEqualToString:@"http"] && port == 80);
@@ -528,11 +564,20 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
     NSString *canonicalIssuer = [self canonicalIssuerWithPortHint:0];
     NSURLComponents *components = [NSURLComponents componentsWithString:canonicalIssuer];
     NSString *host = PDSConfigNormalizedHost(components.host);
+    
+    // If issuer had a port, components.host only returns the host portion.
+    // If we want to return exactly what's needed for the domain part of the handle without ports, we use components.host
     if (host.length > 0) {
         return host;
     }
 
     NSString *fallbackHost = PDSConfigNormalizedHost(self.serverHost);
+    
+    // Strip port from fallbackHost if present
+    if ([fallbackHost containsString:@":"]) {
+        fallbackHost = [[fallbackHost componentsSeparatedByString:@":"] firstObject];
+    }
+    
     if (PDSConfigHostLooksLocal(fallbackHost)) {
         return @"localhost";
     }
