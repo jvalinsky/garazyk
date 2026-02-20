@@ -894,8 +894,8 @@ static void registerServerDescribeAndResolveLexiconMethods(XrpcDispatcher *dispa
             @"phoneVerificationRequired": @NO,
             @"availableUserDomains": availableUserDomains,
             @"links": @{
-                @"privacyPolicy": @"https://bsky.social/about/blog/privacy-policy",
-                @"termsOfService": @"https://bsky.social/about/blog/terms-of-service"
+                @"privacyPolicy": config.privacyPolicyURL ?: @"",
+                @"termsOfService": config.termsOfServiceURL ?: @""
             },
             @"did": serverDid
         };
