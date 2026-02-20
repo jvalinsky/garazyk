@@ -10,20 +10,27 @@
 
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
+#import "App/Services/PDSAccountService.h"
 
 @interface OAuth2Handler ()
 @property (nonatomic, strong) PDSDatabase *database;
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeConfirm:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeSignIn:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleProtectedResourceMetadata:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
-- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
 - (BOOL)validateDPoPForRequest:(HttpRequest *)request response:(HttpResponse *)response outThumbprint:(NSString **)outThumbprint;
+- (NSString *)assetsPath;
+- (NSString *)escapeHtml:(NSString *)input;
+- (void)serveAuthorizePage:(HttpResponse *)response params:(NSDictionary *)params;
 @end
+
+static NSMutableDictionary *sPendingConsents = nil;
 
 @implementation OAuth2Handler {
     JWTMinter *_minter;
@@ -42,6 +49,7 @@
     self = [super init];
     if (self) {
         _database = database;
+        if (!sPendingConsents) sPendingConsents = [NSMutableDictionary dictionary];
         self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
         self.oauthServer.jwtMinter = self.minter;
 
@@ -154,11 +162,15 @@
     }
 
     // Exact match required (OAuth 2.0 security best practice)
+    PDS_LOG_AUTH_DEBUG(@"Validating redirect_uri: '%@' against allowed: %@", redirectURI, allowedURIs);
     for (NSString *allowedURI in allowedURIs) {
         if ([redirectURI isEqualToString:allowedURI]) {
+            PDS_LOG_AUTH_DEBUG(@"Successfully matched redirect_uri: %@", allowedURI);
             return YES;
         }
     }
+    
+    PDS_LOG_AUTH_DEBUG(@"No match found for redirect_uri: %@", redirectURI);
 
     if (error) {
         *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid redirect_uri"}];
@@ -167,43 +179,42 @@
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
-    __weak typeof(self) weakSelf = self;
-
     [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleAuthorizeRequest:request response:response];
+        [self handleAuthorizeRequest:request response:response];
+    }];
+    
+    [httpServer addRoute:@"POST" path:@"/oauth/authorize/confirm" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleAuthorizeConfirm:request response:response];
+    }];
+
+    [httpServer addRoute:@"POST" path:@"/oauth/authorize/sign-in" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleAuthorizeSignIn:request response:response];
     }];
 
     [httpServer addRoute:@"POST" path:@"/oauth/token" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleTokenRequest:request response:response];
+        [self handleTokenRequest:request response:response];
     }];
-
+    
     [httpServer addRoute:@"POST" path:@"/oauth/revoke" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleRevokeRequest:request response:response];
+        [self handleRevokeRequest:request response:response];
     }];
 
     [httpServer addRoute:@"GET" path:@"/.well-known/oauth-authorization-server" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleAuthorizationServerMetadata:request response:response];
+        [self handleAuthorizationServerMetadata:request response:response];
     }];
 
     [httpServer addRoute:@"GET" path:@"/.well-known/oauth-protected-resource" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleProtectedResourceMetadata:request response:response];
+        [self handleProtectedResourceMetadata:request response:response];
     }];
 
     // Phase 4: Add /oauth/jwks endpoint for publishing public keys
     [httpServer addRoute:@"GET" path:@"/oauth/jwks" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleJWKS:request response:response];
+        [self handleJWKS:request response:response];
     }];
 
     // Phase 4: Add /oauth/par endpoint for Pushed Authorization Requests
     [httpServer addRoute:@"POST" path:@"/oauth/par" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handlePARRequest:request response:response];
+        [self handlePARRequest:request response:response];
     }];
 }
 
@@ -340,48 +351,222 @@
     
     PDS_LOG_AUTH_INFO(@"Processing authorization for client: %@, hint: %@", clientID, authRequest.loginHint);
 
+    // Instead of auto-authorizing, serve the consent screen
+    [self serveAuthorizePage:response params:params];
+}
+
+- (void)serveAuthorizePage:(HttpResponse *)response params:(NSDictionary *)params {
+    NSString *assetsPath = [self assetsPath];
+    NSString *filePath = [assetsPath stringByAppendingPathComponent:@"authorize.html"];
+    PDS_LOG_AUTH_INFO(@"Serving authorize page from: %@", filePath);
+    
+    NSError *error = nil;
+    NSString *html = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:&error];
+    if (!html || error) {
+        PDS_LOG_AUTH_ERROR(@"Failed to load authorize.html at %@: %@", filePath, error);
+        response.statusCode = 500;
+        [response setBodyString:@"Internal Server Error: Missing authorization assets."];
+        return;
+    }
+    
+    PDS_LOG_AUTH_DEBUG(@"Loaded html, size: %lu", (unsigned long)html.length);
+    
+    // Generate CSRF token
+    NSString *csrfToken = [[NSUUID UUID] UUIDString];
+    html = [html stringByReplacingOccurrencesOfString:@"{{csrf_token}}" withString:[self escapeHtml:csrfToken]];
+    
+    // Simple template replacement with HTML escaping
+    NSString *clientId = [self escapeHtml:params[@"client_id"] ?: @"Unknown App"];
+    NSString *state = [self escapeHtml:params[@"state"] ?: @""];
+    NSString *scope = [self escapeHtml:params[@"scope"] ?: @"atproto"];
+    NSString *redirectUri = [self escapeHtml:params[@"redirect_uri"] ?: @""];
+    NSString *responseType = [self escapeHtml:params[@"response_type"] ?: @"code"];
+    NSString *codeChallenge = [self escapeHtml:params[@"code_challenge"] ?: @""];
+    NSString *codeChallengeMethod = [self escapeHtml:params[@"code_challenge_method"] ?: @"S256"];
+    NSString *nonce = [self escapeHtml:params[@"nonce"] ?: @""];
+
+    NSString *loginHint = [self escapeHtml:params[@"login_hint"] ?: @""];
+    
+    html = [html stringByReplacingOccurrencesOfString:@"{{client_id}}" withString:clientId];
+    html = [html stringByReplacingOccurrencesOfString:@"{{state}}" withString:state];
+    html = [html stringByReplacingOccurrencesOfString:@"{{scope}}" withString:scope];
+    html = [html stringByReplacingOccurrencesOfString:@"{{redirect_uri}}" withString:redirectUri];
+    html = [html stringByReplacingOccurrencesOfString:@"{{response_type}}" withString:responseType];
+    html = [html stringByReplacingOccurrencesOfString:@"{{code_challenge}}" withString:codeChallenge];
+    html = [html stringByReplacingOccurrencesOfString:@"{{code_challenge_method}}" withString:codeChallengeMethod];
+    html = [html stringByReplacingOccurrencesOfString:@"{{nonce}}" withString:nonce];
+    html = [html stringByReplacingOccurrencesOfString:@"{{login_hint}}" withString:loginHint];
+    
+    [response setHeader:[NSString stringWithFormat:@"csrf_token=%@; Path=/oauth; HttpOnly; SameSite=Strict", csrfToken] forKey:@"Set-Cookie"];
+    response.statusCode = 200;
+    response.contentType = @"text/html; charset=utf-8";
+    [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
+}
+
+- (void)handleAuthorizeConfirm:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *body = [[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding];
+    NSDictionary *params = [self parseFormUrlEncodedString:body];
+    
+    NSString *decision = params[@"decision"];
+    NSString *clientID = params[@"client_id"];
+    NSString *state = params[@"state"];
+    NSString *scope = params[@"scope"];
+    
+    if ([decision isEqualToString:@"deny"]) {
+        NSString *redirectUri = params[@"redirect_uri"];
+        if (redirectUri.length > 0) {
+            NSURLComponents *components = [NSURLComponents componentsWithString:redirectUri];
+            NSMutableArray *queryItems = [components.queryItems mutableCopy] ?: [NSMutableArray array];
+            [queryItems addObject:[NSURLQueryItem queryItemWithName:@"error" value:@"access_denied"]];
+            [queryItems addObject:[NSURLQueryItem queryItemWithName:@"error_description" value:@"User denied the authorization request"]];
+            if (state.length > 0) {
+                [queryItems addObject:[NSURLQueryItem queryItemWithName:@"state" value:state]];
+            }
+            components.queryItems = queryItems;
+            response.statusCode = 302;
+            [response setHeader:components.URL.absoluteString forKey:@"Location"];
+        } else {
+            response.statusCode = 403;
+            [response setJsonBody:@{@"error": @"access_denied", @"error_description": @"User denied the authorization request"}];
+        }
+        return;
+    }
+    
+    // Validate session token
+    NSString *sessionToken = params[@"session_token"];
+    
+    if (!sessionToken || sessionToken.length == 0) {
+        response.statusCode = 403;
+        [response setJsonBody:@{@"error": @"access_denied", @"error_description": @"Missing session token"}];
+        return;
+    }
+    
+    NSDictionary *consentSession = nil;
+    @synchronized (sPendingConsents) {
+        consentSession = sPendingConsents[sessionToken];
+    }
+    
+    if (!consentSession) {
+        response.statusCode = 403;
+        [response setJsonBody:@{@"error": @"access_denied", @"error_description": @"Invalid or expired session token"}];
+        return;
+    }
+    
+    NSDate *expires = consentSession[@"expires"];
+    if ([expires compare:[NSDate date]] == NSOrderedAscending) {
+        @synchronized (sPendingConsents) {
+            [sPendingConsents removeObjectForKey:sessionToken];
+        }
+        response.statusCode = 403;
+        [response setJsonBody:@{@"error": @"access_denied", @"error_description": @"Session token expired"}];
+        return;
+    }
+    
+    // Clean up used token
+    @synchronized (sPendingConsents) {
+        [sPendingConsents removeObjectForKey:sessionToken];
+    }
+    
+    // Proceed with authorization
+    OAuth2AuthorizationRequest *authRequest = [[OAuth2AuthorizationRequest alloc] init];
+    authRequest.clientID = clientID;
+    authRequest.state = state;
+    authRequest.scope = scope;
+    authRequest.redirectURI = params[@"redirect_uri"];
+    authRequest.responseType = params[@"response_type"];
+    authRequest.codeChallenge = params[@"code_challenge"];
+    authRequest.codeChallengeMethod = params[@"code_challenge_method"];
+    authRequest.nonce = params[@"nonce"];
+    // Pass the authenticated user's handle so the auth code gets a login_hint_did
+    authRequest.loginHint = consentSession[@"handle"];
+    
+    PDS_LOG_AUTH_INFO(@"Authorizing request for client: %@, redirect_uri: %@", clientID, authRequest.redirectURI);
+    
     [self.oauthServer handleAuthorizationRequest:authRequest completion:^(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error) {
         if (error) {
-            PDS_LOG_AUTH_ERROR(@"Authorization failed: %@", error.localizedDescription);
             response.statusCode = 400;
-            [response setJsonBody:@{
-                @"error": @"invalid_request",
-                @"error_description": error.localizedDescription
-            }];
+            [response setJsonBody:@{@"error": @"invalid_request", @"error_description": error.localizedDescription}];
             return;
         }
         
         if (authorizationURL) {
-            PDS_LOG_AUTH_INFO(@"Authorization successful, redirecting to: %@", authRequest.redirectURI);
-            // For demo purposes, redirect with code
             response.statusCode = 302;
-            
-            NSString *baseRedirect = authRequest.redirectURI ?: @"http://localhost:3000/callback";
-            NSString *separator = [baseRedirect containsString:@"?"] ? @"&" : @"?";
-            
-            NSString *redirectURL = [NSString stringWithFormat:@"%@%@code=%@", 
-                                   baseRedirect,
-                                   separator,
-                                   authorizationCode];
-            if (authRequest.state) {
-                redirectURL = [NSString stringWithFormat:@"%@&state=%@", redirectURL, authRequest.state];
-            }
-            [response setHeader:redirectURL forKey:@"Location"];
+            [response setHeader:authorizationURL.absoluteString forKey:@"Location"];
         } else {
             response.statusCode = 500;
-            [response setJsonBody:@{
-                @"error": @"server_error",
-                @"error_description": @"Failed to generate authorization"
-            }];
+            [response setBodyString:@"Server Error"];
         }
     }];
+}
+
+- (void)handleAuthorizeSignIn:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *body = [[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding];
+    NSDictionary *params = [self parseFormUrlEncodedString:body];
+    
+    NSString *handle = params[@"handle"];
+    NSString *password = params[@"password"];
+    
+    // CSRF validation
+    NSString *csrfHeader = [request headerForKey:@"X-CSRF-Token"];
+    NSString *cookieHeader = [request headerForKey:@"Cookie"];
+    NSString *csrfCookie = nil;
+    if (cookieHeader) {
+        for (NSString *cookie in [cookieHeader componentsSeparatedByString:@";"]) {
+            NSString *trimmed = [cookie stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            if ([trimmed hasPrefix:@"csrf_token="]) {
+                csrfCookie = [trimmed substringFromIndex:@"csrf_token=".length];
+                break;
+            }
+        }
+    }
+    if (!csrfHeader || !csrfCookie || ![csrfHeader isEqualToString:csrfCookie]) {
+        response.statusCode = 403;
+        [response setJsonBody:@{@"ok": @NO, @"error": @"Invalid CSRF token"}];
+        return;
+    }
+    
+    if (!handle.length || !password.length) {
+        response.statusCode = 400;
+        [response setJsonBody:@{@"ok": @NO, @"error": @"Handle and password are required"}];
+        return;
+    }
+    
+    if (!self.accountService) {
+        PDS_LOG_AUTH_ERROR(@"Sign-in attempted but no accountService configured");
+        response.statusCode = 500;
+        [response setJsonBody:@{@"ok": @NO, @"error": @"Authentication service unavailable"}];
+        return;
+    }
+    
+    NSError *authError = nil;
+    NSDictionary *result = [self.accountService loginWithIdentifier:handle
+                                                          password:password
+                                                             error:&authError];
+    
+    if (result && result[@"did"]) {
+        PDS_LOG_AUTH_INFO(@"Sign-in successful for handle: %@", handle);
+        NSString *sessionToken = [[NSUUID UUID] UUIDString];
+        @synchronized (sPendingConsents) {
+            sPendingConsents[sessionToken] = @{
+                @"did": result[@"did"],
+                @"handle": handle,
+                @"expires": [NSDate dateWithTimeIntervalSinceNow:300]
+            };
+        }
+        response.statusCode = 200;
+        [response setJsonBody:@{@"ok": @YES, @"did": result[@"did"], @"session_token": sessionToken}];
+    } else {
+        PDS_LOG_AUTH_INFO(@"Sign-in failed for handle: %@, error: %@", handle, authError.localizedDescription ?: @"unknown");
+        response.statusCode = 401;
+        [response setJsonBody:@{@"ok": @NO, @"error": @"Invalid handle or password"}];
+    }
 }
 
 - (NSDictionary *)parseFormUrlEncodedString:(NSString *)input {
     NSMutableDictionary *params = [NSMutableDictionary dictionary];
     // NSURLComponents parses percent-encoded query strings automatically
     NSURLComponents *components = [[NSURLComponents alloc] init];
-    components.query = input;
+    components.percentEncodedQuery = input;
     
     for (NSURLQueryItem *item in components.queryItems) {
         if (item.name) {
@@ -511,13 +696,15 @@
         
         if (session) {
             response.statusCode = 200;
-            [response setJsonBody:@{
+            NSMutableDictionary *tokenResp = [@{
                 @"access_token": session.accessToken,
                 @"token_type": @"DPoP",
                 @"expires_in": @3600,
-                @"refresh_token": session.refreshToken,
-                @"scope": session.scope
-            }];
+                @"scope": session.scope ?: @"atproto"
+            } mutableCopy];
+            if (session.refreshToken) tokenResp[@"refresh_token"] = session.refreshToken;
+            if (session.did) tokenResp[@"sub"] = session.did;
+            [response setJsonBody:tokenResp];
         } else {
             response.statusCode = 500;
             [response setJsonBody:@{
@@ -770,6 +957,38 @@
         *outThumbprint = dpopThumbprint;
     }
     return YES;
+}
+
+- (NSString *)escapeHtml:(NSString *)input {
+    if (!input) return @"";
+    NSString *escaped = input;
+    escaped = [escaped stringByReplacingOccurrencesOfString:@"&" withString:@"&amp;"];
+    escaped = [escaped stringByReplacingOccurrencesOfString:@"<" withString:@"&lt;"];
+    escaped = [escaped stringByReplacingOccurrencesOfString:@">" withString:@"&gt;"];
+    escaped = [escaped stringByReplacingOccurrencesOfString:@"\"" withString:@"&quot;"];
+    escaped = [escaped stringByReplacingOccurrencesOfString:@"'" withString:@"&#39;"];
+    return escaped;
+}
+
+- (NSString *)assetsPath {
+    if (self.dataDirectory) {
+        NSString *path = [self.dataDirectory stringByAppendingPathComponent:@"Auth/Assets"];
+        PDS_LOG_AUTH_DEBUG(@"Checking for assets in dataDirectory: %@", path);
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            return path;
+        }
+    }
+    
+    // Fallback to project structure if running from source
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *sourcePath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/Auth/Assets"];
+    PDS_LOG_AUTH_DEBUG(@"Checking for assets in sourcePath: %@", sourcePath);
+    if ([[NSFileManager defaultManager] fileExistsAtPath:sourcePath]) {
+        return sourcePath;
+    }
+    
+    PDS_LOG_AUTH_ERROR(@"No assets path found for OAuth2Handler (dataDirectory: %@, cwd: %@)", self.dataDirectory, cwd);
+    return nil;
 }
 
 @end

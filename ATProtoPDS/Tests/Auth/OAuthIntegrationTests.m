@@ -153,34 +153,26 @@
     NSString *verifier = [PKCEUtil generateCodeVerifier];
     NSString *challenge = [PKCEUtil generateCodeChallengeWithVerifier:verifier];
     
-    // Phase 2: Authorization request
+    // Phase 2: Seed authorization code directly since /oauth/authorize now serves
+    // a consent page (200 HTML) and resolveIdentity requires DNS. We test the core
+    // auth code + token exchange flow (PKCE + DPoP) without the consent UI.
     NSUInteger port = self.server.port;
-    NSString *authUrlString = [NSString stringWithFormat:@"http://127.0.0.1:%lu/oauth/authorize?client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&response_type=code&scope=atproto:identify&state=test123&code_challenge=%@&code_challenge_method=S256&login_hint=test-user.test", (unsigned long)port, challenge];
-    
-    NSTask *task = [[NSTask alloc] init];
-    [task setLaunchPath:@"/usr/bin/curl"];
-    [task setArguments:@[@"-v", @"-H", @"Connection: close", @"-s", @"-o", @"/dev/null", @"-w", @"%{redirect_url}", authUrlString]];
-    
-    NSPipe *pipe = [NSPipe pipe];
-    [task setStandardOutput:pipe];
-    
-    [task launch];
-    NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
-    [task waitUntilExit];
-    
-    NSString *redirectURL = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    
-    NSLog(@"[TEST] Redirect URL from curl: %@", redirectURL);
-    
-    __block NSString *authCode = nil;
-    NSURLComponents *components = [NSURLComponents componentsWithString:redirectURL];
-    for (NSURLQueryItem *item in components.queryItems) {
-        if ([item.name isEqualToString:@"code"]) {
-            authCode = item.value;
-        }
-    }
-    
-    XCTAssertNotNil(authCode, @"Should have received authorization code via curl");
+
+    NSString *authCode = [[NSUUID UUID] UUIDString];
+    NSDictionary *codeData = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": @"http://127.0.0.1:3000/callback",
+        @"scope": @"atproto:identify",
+        @"state": @"test123",
+        @"code_challenge": challenge,
+        @"code_challenge_method": @"S256",
+        @"login_hint": @"test-user.test",
+        @"login_hint_did": @"did:plc:test-user-did",
+        @"created_at": @([[NSDate date] timeIntervalSince1970])
+    };
+    self.oauthServer.authorizationCodes[authCode] = codeData;
+
+    XCTAssertNotNil(authCode, @"Should have authorization code");
     
     // Phase 3: Token Exchange with DPoP
     SecKeyRef privateKey;
