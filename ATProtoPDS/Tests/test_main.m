@@ -215,7 +215,8 @@ int main(int argc, char * argv[]) {
             @"ProductionSecurityTests",
             @"FirehoseConformanceTests",
             @"ServiceDatabasesPruningTests",
-            @"CoverageGapTests"
+            @"CoverageGapTests",
+            @"DIDPLCResolverTests"
         ];
 
         SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
