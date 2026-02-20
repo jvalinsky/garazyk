@@ -37,7 +37,7 @@ rm -f "$DB_PATH" 2>/dev/null || true
 
 # Start server in background
 echo "Starting server..."
-./build/bin/september &
+./build/bin/kaszlak &
 SERVER_PID=$!
 
 # Wait for server

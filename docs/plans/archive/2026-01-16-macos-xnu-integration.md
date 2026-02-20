@@ -73,6 +73,6 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 
 - [ ] `xcodegen generate` succeeds
 - [ ] `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
-- [ ] `./build/bin/september help` shows new commands
-- [ ] `./build/bin/september install` registers launchd services
+- [ ] `./build/bin/kaszlak help` shows new commands
+- [ ] `./build/bin/kaszlak install` registers launchd services
 - [ ] All 168 existing tests pass

@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 readonly PROJECT_ROOT
-SERVER_BINARY="${SERVER_BINARY:-$PROJECT_ROOT/build/bin/september}"
+SERVER_BINARY="${SERVER_BINARY:-$PROJECT_ROOT/build/bin/kaszlak}"
 readonly SERVER_BINARY
 LOG_FILE="${LOG_FILE:-$PROJECT_ROOT/server.log}"
 readonly LOG_FILE

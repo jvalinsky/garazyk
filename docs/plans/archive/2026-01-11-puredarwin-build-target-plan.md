@@ -19,7 +19,7 @@ Create a PureDarwin build target with **full feature parity** to macOS builds, t
 
 2. **Artifact Separation**:
    - Modify build scripts to output to `build/${TARGET_PLATFORM}/` directories
-   - Add platform suffixes to binary names (e.g., `atprotopds-cli-puredarwin`)
+   - Add platform suffixes to binary names (e.g., `kaszlak-puredarwin`)
 
 ### Phase 2: Core API Replacements (Full Parity Focus)
 1. **Network Transport (Complete Rewrite for Parity)**:
