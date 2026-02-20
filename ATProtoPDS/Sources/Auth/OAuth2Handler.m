@@ -355,8 +355,13 @@
             PDS_LOG_AUTH_INFO(@"Authorization successful, redirecting to: %@", authRequest.redirectURI);
             // For demo purposes, redirect with code
             response.statusCode = 302;
-            NSString *redirectURL = [NSString stringWithFormat:@"%@?code=%@", 
-                                   authRequest.redirectURI ?: @"http://localhost:3000/callback",
+            
+            NSString *baseRedirect = authRequest.redirectURI ?: @"http://localhost:3000/callback";
+            NSString *separator = [baseRedirect containsString:@"?"] ? @"&" : @"?";
+            
+            NSString *redirectURL = [NSString stringWithFormat:@"%@%@code=%@", 
+                                   baseRedirect,
+                                   separator,
                                    authorizationCode];
             if (authRequest.state) {
                 redirectURL = [NSString stringWithFormat:@"%@&state=%@", redirectURL, authRequest.state];
