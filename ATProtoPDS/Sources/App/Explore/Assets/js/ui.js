@@ -4,11 +4,24 @@ import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
 import * as Poster from './poster.js';
 import { MSTViewer } from './mst-viewer.js';
-import { AdminPanel } from '/admin-ui/js/admin-panel.js';
-import { AdminOverview } from '/admin-ui/js/admin-overview.js';
-import { AdminAccounts } from '/admin-ui/js/admin-accounts.js';
-import { AdminReports } from '/admin-ui/js/admin-reports.js';
-import { AdminSystem } from '/admin-ui/js/admin-system.js';
+// Admin panel modules — loaded lazily since the admin-ui route may not be available
+let AdminPanel, AdminOverview, AdminAccounts, AdminReports, AdminSystem;
+async function loadAdminModules() {
+    if (AdminPanel) return true;
+    try {
+        [AdminPanel, AdminOverview, AdminAccounts, AdminReports, AdminSystem] = (await Promise.all([
+            import('/admin-ui/js/admin-panel.js'),
+            import('/admin-ui/js/admin-overview.js'),
+            import('/admin-ui/js/admin-accounts.js'),
+            import('/admin-ui/js/admin-reports.js'),
+            import('/admin-ui/js/admin-system.js'),
+        ])).map(m => m.AdminPanel || m.AdminOverview || m.AdminAccounts || m.AdminReports || m.AdminSystem || m.default);
+        return true;
+    } catch (e) {
+        console.warn('Admin panel modules not available:', e.message);
+        return false;
+    }
+}
 
 const PLC_BASE = 'http://localhost:2582';
 
@@ -1373,7 +1386,12 @@ function initSession() {
     initAdminPanelTabs();
 }
 
-function openAdminPanel(tab = 'overview') {
+async function openAdminPanel(tab = 'overview') {
+    const loaded = await loadAdminModules();
+    if (!loaded) {
+        alert('Admin panel modules are not available.');
+        return;
+    }
     if (!AdminPanel.isAuthenticated()) {
         AdminAPI.promptLogin(() => {
             AdminPanel.setToken(sessionStorage.getItem('admin_token'));
@@ -1389,7 +1407,7 @@ function showAdminPanel(tab) {
     if (panel) {
         panel.style.display = 'block';
         AdminPanel.switchTab(tab);
-        
+
         if (tab === 'overview') {
             AdminOverview.load();
         } else if (tab === 'accounts') {
@@ -1407,7 +1425,7 @@ function initAdminPanelTabs() {
         tab.addEventListener('click', () => {
             const tabId = tab.dataset.tab;
             AdminPanel.switchTab(tabId);
-            
+
             if (tabId === 'overview') {
                 AdminOverview.load();
             } else if (tabId === 'accounts') {
