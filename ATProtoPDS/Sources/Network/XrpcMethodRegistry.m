@@ -3899,6 +3899,9 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
         if (!result[@"handle"]) {
             result[@"handle"] = @"unknown.handle";
         }
+        
+        BOOL isAdmin = [[PDSAdminAuth sharedAuth] isAdminDid:did];
+        result[@"isAdmin"] = @(isAdmin);
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];

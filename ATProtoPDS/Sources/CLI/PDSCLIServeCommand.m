@@ -9,6 +9,7 @@
 #import "App/PDSConfiguration.h"
 #import "Auth/JWT.h"
 #import "Sync/SubscribeReposHandler.h"
+#import "Admin/PDSAdminAuth.h"
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end
@@ -158,6 +159,9 @@
         printf("Failed to initialize PDS controller\n");
         return 0;
     }
+    
+    // Ensure PDSAdminAuth has data directory for admin DID persistence
+    [PDSAdminAuth sharedAuth].dataDirectory = dataDir;
 
     SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:controller.serviceDatabases];
 
