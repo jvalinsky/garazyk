@@ -269,7 +269,7 @@ ls -la scripts/
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Validate paths exist
-if [[ ! -f "$SCRIPT_DIR/../build/bin/september" ]]; then
+if [[ ! -f "$SCRIPT_DIR/../build/bin/kaszlak" ]]; then
     echo "ERROR: Server binary not found"
     exit 1
 fi

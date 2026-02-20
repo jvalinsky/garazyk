@@ -249,7 +249,7 @@ objpds-40l (Docker) <────────────────┘
 
 ## Success Criteria
 
-- [ ] `atprotopds-cli` builds on Linux
+- [ ] `kaszlak` builds on Linux
 - [ ] `atprotopds-server` builds on Linux  
 - [ ] `AllTests` builds on Linux
 - [ ] Tests pass (or known failures documented)

@@ -5,7 +5,7 @@ set -e
 echo "Building CLI..."
 cd build && make -j$(sysctl -n hw.ncpu) september && cd ..
 
-CLI="./build/bin/september"
+CLI="./build/bin/kaszlak"
 DATA_DIR="$(pwd)/data"
 
 # Stop existing server

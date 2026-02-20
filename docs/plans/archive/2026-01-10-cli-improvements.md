@@ -42,7 +42,7 @@
 **Step 3: Build and verify commands are still registered**
 
 Run: `xcodebuild -scheme ATProtoPDS-CLI build`
-Expected: Build passes. Run `./build/bin/atprotopds-cli` to see `repo` in help output.
+Expected: Build passes. Run `./build/bin/kaszlak` to see `repo` in help output.
 
 **Step 4: Commit**
 
@@ -86,7 +86,7 @@ Remove `print_usage()` from `main.m` and call `[[PDSCLIDispatcher sharedDispatch
 
 **Step 3: Verify crash fix**
 
-Run: `./build/bin/atprotopds-cli --data-dir`
+Run: `./build/bin/kaszlak --data-dir`
 Expected: Error message instead of crash.
 
 **Step 4: Commit**

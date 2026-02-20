@@ -1,6 +1,6 @@
 # ATProto PLC Architecture
 
-This document describes the architecture and data flows for the `atproto-plc` utility, an Objective-C implementation of the DID:PLC protocol.
+This document describes the architecture and data flows for the `campagnola` utility, an Objective-C implementation of the DID:PLC protocol.
 
 ## 1. The Operation Chain (The Ledger)
 The "Log" is a linked list of signed operations. Each operation points to the hash of the previous one, making the history immutable and verifiable.
@@ -24,7 +24,7 @@ The "Log" is a linked list of signed operations. Each operation points to the ha
 How a PDS (or User) updates their identity.
 
 ```text
-      [ PDS / USER ]                    [ atproto-plc ]
+      [ PDS / USER ]                    [ campagnola ]
             |                                  |
     1. Create Op JSON                          |
     2. Sign with R-Key                         |
@@ -43,7 +43,7 @@ How a PDS (or User) updates their identity.
 How any server on the internet determines your current PDS address or handle.
 
 ```text
-      [ RESOLVER ]                      [ atproto-plc ]
+      [ RESOLVER ]                      [ campagnola ]
             |                                  |
     1. GET /did:plc:123  --------------------->|
             |                                  | 2. Fetch full history from DB
@@ -66,7 +66,7 @@ How any server on the internet determines your current PDS address or handle.
 ```
 
 ## 4. Integration with PDS
-How the PDS (`september`) uses `atproto-plc`.
+How the PDS (`kaszlak`) uses `campagnola`.
 
 ```text
    +-----------------------+           +-----------------------+

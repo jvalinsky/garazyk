@@ -12,7 +12,7 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
-SERVER_BINARY="${SERVER_BINARY:-$SCRIPT_DIR/../build/bin/september}"
+SERVER_BINARY="${SERVER_BINARY:-$SCRIPT_DIR/../build/bin/kaszlak}"
 readonly SERVER_BINARY
 BASE_URL="${BASE_URL:-http://localhost:2583}"
 readonly BASE_URL

@@ -155,7 +155,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
 
         // NodeInfo defaults
         _nodeinfoEnabled = YES;
-        _nodeinfoSoftwareName = @"atprotopds";
+        _nodeinfoSoftwareName = @"kaszlak";
         _nodeinfoSoftwareVersion = @"1.0.0";
         _nodeinfoRepositoryURL = @"https://github.com/jvalinsky/NSPds";
         _nodeinfoHomepageURL = @"https://github.com/jvalinsky/NSPds";

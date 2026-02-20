@@ -15,7 +15,7 @@ echo -e "${YELLOW}Starting ATProto PDS server test...${NC}"
 
 # Build paths
 # Use CMake build path
-CLI_PATH="./build/bin/september"
+CLI_PATH="./build/bin/kaszlak"
 TEST_PORT=2583
 TEST_URL="http://localhost:${TEST_PORT}/explore"
 
