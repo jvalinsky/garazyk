@@ -342,3 +342,11 @@ git log --all --oneline -S "getRecommendedDidCredentials"
 git log --all --oneline --grep="did:web"
 git log --all --oneline --grep="identity"
 ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details

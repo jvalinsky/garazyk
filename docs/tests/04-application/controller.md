@@ -154,3 +154,13 @@ NSArray *accounts = [manager listAccountsWithCursor:nil limit:10];
 ./build/tests/AllTests -only-testing:AllTests/PDSConfigurationTests
 ./build/tests/AllTests -only-testing:AllTests/PDSServiceContainerTests
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Application tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Services Tests](services.md) - Business services
+- [Admin Tests](admin.md) - Admin operations
+- [HTTP Stack Tests](../02-network/http-stack.md) - HTTP server
+- [Database Tests](../03-database/README.md) - Database initialization
+- [Utilities Tests](../09-utilities/config-metrics.md) - Configuration details

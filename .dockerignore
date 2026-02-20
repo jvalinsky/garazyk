@@ -1,11 +1,50 @@
+# Version control
 .git
+.gitattributes
+.github
+
+# Build artifacts
 build
-data
-reference/pds-gatekeeper
-reference/deciduous
-reference/atproto
-reference/pegasus-ocaml
-reference/indigo
-reference/cocoon
-*.cast
 *.log
+*.cast
+*.profraw
+*.profdata
+.cache
+
+# IDE / editor
+.DS_Store
+*.xcodeproj
+*.xcworkspace
+.claude
+.deciduous
+.opencode
+.worktrees
+com.apple.DeveloperTools
+
+# Data / runtime files
+data
+demo_data
+pds.pid
+plc.pid
+config.json
+config.yaml
+:memory:*
+
+# Large reference / vendored repos (not needed for build)
+reference
+tmp_atproto
+tmp_social_app
+
+# Documentation & reports (not needed for build)
+docs
+reports
+tasks
+skills
+
+# Fuzzing artifacts
+fuzzing/corpus_*
+fuzzing/crashers
+
+# Coverage
+coverage.*
+default.profraw

@@ -130,3 +130,10 @@ A new test file was added at `ATProtoPDS/Tests/Network/HttpResponseTests.m` with
 - Issue: Test failure in `MSTViewerHandlerTests.testHandleRequestIndex` - Content-Type header not found in `res.headers[@"Content-Type"]`
 - Fix commit: 36afcbc - "fix: return empty MST on load failure to prevent hangs"
 - Previous memory debugging session documented in `docs/guides/objective_c_tips.md`
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans

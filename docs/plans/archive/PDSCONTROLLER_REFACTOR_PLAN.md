@@ -553,36 +553,44 @@ Each phase is designed to be independently reversible:
 - getRecordForDid:collection:rkey:error:                       // LEGACY
 - listRecordsForDid:collection:limit:cursor:error:             // LEGACY
 - deleteRecordForDid:collection:rkey:error:                    // LEGACY
-- getRepoStatsForDid:error:
-- putRecordForDid:collection:rkey:record:validationMode:error: // LEGACY
+ - getRepoStatsForDid:error:
+ - putRecordForDid:collection:rkey:record:validationMode:error: // LEGACY
 
-// Blob (delegate to PDSBlobService)
-- getBlob:forDid:error:
-- uploadBlob:forDid:mimeType:error:
-- uploadBlob:mimeType:did:error:                          // LEGACY
-- getBlobWithCID:did:error:                               // LEGACY
-- listBlobsForDID:limit:cursor:error:                     // LEGACY
-- deleteBlobWithCID:did:error:                            // LEGACY
+ // Blob (delegate to PDSBlobService)
+ - getBlob:forDid:error:
+ - uploadBlob:forDid:mimeType:error:
+ - uploadBlob:mimeType:did:error:                          // LEGACY
+ - getBlobWithCID:did:error:                               // LEGACY
+ - listBlobsForDID:limit:cursor:error:                     // LEGACY
+ - deleteBlobWithCID:did:error:                            // LEGACY
 
-// Write (keep as convenience)
-- applyWrites:repo:validate:swapCommit:error:
+ // Write (keep as convenience)
+ - applyWrites:repo:validate:swapCommit:error:
 
-// Admin (move to PDSAdminController)
-- getAllAccountsWithError:
-- takeDownAccount:reason:error:
-- reinstateAccount:error:
-- isAccountTakedownActive:error:
+ // Admin (move to PDSAdminController)
+ - getAllAccountsWithError:
+ - takeDownAccount:reason:error:
+ - reinstateAccount:error:
+ - isAccountTakedownActive:error:
 
-// Moderation (move to PDSAdminController)
-- moderateAccount:error:
-- moderateRecord:error:
+ // Moderation (move to PDSAdminController)
+ - moderateAccount:error:
+ - moderateRecord:error:
 
-// Labeling (move to PDSAdminController)
-- createLabel:error:
-- getLabels:error:
+ // Labeling (move to PDSAdminController)
+ - createLabel:error:
+ - getLabels:error:
 
-// Health (move to PDSHealthService or keep)
-- getHealthCheck
-- getMetrics
-- serviceDatabaseWithError:
-```
+ // Health (move to PDSHealthService or keep)
+ - getHealthCheck
+ - getMetrics
+ - serviceDatabaseWithError:
+ ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

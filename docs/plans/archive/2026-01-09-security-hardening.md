@@ -337,3 +337,12 @@ Run tests.
 ```bash
 git commit -m "feat(config): make JWT issuer configurable"
 ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Security Docs](../../security/README.md) - Security-related documentation
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details

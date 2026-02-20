@@ -339,3 +339,11 @@ After implementing changes, verify:
 - Project README: [README.md](../README.md)
 - Developer Guide: [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE.md)
 - Troubleshooting: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Tests Docs](../../tests/README.md) - Testing documentation

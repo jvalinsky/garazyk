@@ -182,3 +182,11 @@ Hardware security keys provide superior protection, but software fallback ensure
 3. Fallback:
    Software TOTP when hardware unavailable
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Identity & authentication tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 flows
+- [Security Hardening](../05-security/hardening.md) - Production security
+- [Security Tests](../05-security/README.md) - Security test documentation

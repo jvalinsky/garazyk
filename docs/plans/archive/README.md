@@ -56,3 +56,14 @@ This directory contains completed, superseded, or historical planning documents.
 | `stub_issues.md` | Behaviors to Track - Remaining work and recently resolved |
 | `swift-to-objc-api-translation-guide.md` | Swift API Naming Translation - Swift-to-ObjC naming rules |
 | `testing-expansion-roadmap.md` | Testing Expansion Plan - Enterprise-grade test coverage |
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Current Plans](../README.md) | Active planning documents |
+| [Architecture](../../architecture/README.md) | System architecture documentation |
+| [OAuth2](../../oauth2/README.md) | OAuth2 implementation docs |
+| [Security](../../security/README.md) | Security documentation |
+| [Tests](../../tests/README.md) | Test documentation |
+| [Main Docs](../../README.md) | Documentation index

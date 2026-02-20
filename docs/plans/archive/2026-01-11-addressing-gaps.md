@@ -316,3 +316,11 @@ PASS
 git add CMakeLists.txt ATProtoPDS/Tests/Linux/GNUstepTests.m
 git commit -m "feat: integrate GNUstep for Linux tests"
 ```
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Tests Docs](../../tests/README.md) - Testing documentation

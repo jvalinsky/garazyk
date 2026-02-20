@@ -52,3 +52,11 @@ Default Values (lowest priority)
 ./build/tests/AllTests -only-testing:AllTests/PDSConfigurationTests
 ./build/tests/AllTests -only-testing:AllTests/NodeInfoTests
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Utilities tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Debug Tests](debug.md) - Debug and exploration tools
+- [Controller Tests](../04-application/controller.md) - Configuration loading
+- [Application Tests](../04-application/README.md) - Application lifecycle
