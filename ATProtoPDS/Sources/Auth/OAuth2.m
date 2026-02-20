@@ -26,6 +26,7 @@
 #import <Security/Security.h>
 #import "Auth/PDSReplayCache.h"
 #import "Auth/PDSNonceManager.h"
+#import "App/PDSConfiguration.h"
 
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
 NSString * const OAuth2ScopeSignIn = @"atproto:signin";
@@ -942,6 +943,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _jwtMinter.keyManager = _keyManager;
         _jwtMinter.signingAlgorithm = @"ES256K";
         _didResolver = [[DIDResolver alloc] init];
+        _didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
         _handleResolver = [[HandleResolver alloc] init];
         _database = database;
 
@@ -1030,11 +1032,14 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
                        @(request.dpopJWK != nil),
                        @(request.loginHint.length > 0));
 
-    NSMutableString *authURL = [request.authorizationURL.absoluteString mutableCopy];
-    NSString *separator = [authURL containsString:@"?"] ? @"&" : @"?";
-    [authURL appendFormat:@"%@code=%@", separator, code];
+    NSMutableString *redirectURL = [request.redirectURI mutableCopy];
+    NSString *separator = [redirectURL containsString:@"?"] ? @"&" : @"?";
+    [redirectURL appendFormat:@"%@code=%@", separator, code];
+    if (request.state) {
+        [redirectURL appendFormat:@"&state=%@", request.state];
+    }
 
-    completion([NSURL URLWithString:authURL], code, nil);
+    completion([NSURL URLWithString:redirectURL], code, nil);
 }
 
 - (void)handleTokenRequest:(OAuth2TokenRequest *)request
