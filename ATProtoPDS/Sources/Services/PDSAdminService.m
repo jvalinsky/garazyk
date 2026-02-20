@@ -621,4 +621,160 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     return [_database executeParameterizedUpdate:sql params:params error:error];
 }
 
+#pragma mark - Server Statistics
+
+- (nullable NSDictionary *)getServerStatsWithError:(NSError **)error {
+    NSMutableDictionary *stats = [NSMutableDictionary dictionary];
+    
+    // Account counts
+    NSArray *accounts = [_database executeQuery:@"SELECT COUNT(*) as count FROM accounts" error:error];
+    if (accounts.count > 0) {
+        stats[@"accounts_total"] = accounts.firstObject[@"count"] ?: @0;
+    }
+    
+    // Active accounts (with repos)
+    NSArray *repos = [_database executeQuery:@"SELECT COUNT(*) as count FROM repos" error:error];
+    if (repos.count > 0) {
+        stats[@"repos_total"] = repos.firstObject[@"count"] ?: @0;
+    }
+    
+    // Record count
+    NSArray *records = [_database executeQuery:@"SELECT COUNT(*) as count FROM records" error:error];
+    if (records.count > 0) {
+        stats[@"records_total"] = records.firstObject[@"count"] ?: @0;
+    }
+    
+    // Blob count and size
+    NSArray *blobs = [_database executeQuery:@"SELECT COUNT(*) as count, COALESCE(SUM(size), 0) as total_size FROM blobs" error:error];
+    if (blobs.count > 0) {
+        stats[@"blobs_total"] = blobs.firstObject[@"count"] ?: @0;
+        stats[@"blobs_size_bytes"] = blobs.firstObject[@"total_size"] ?: @0;
+    }
+    
+    // Block count
+    NSArray *blocks = [_database executeQuery:@"SELECT COUNT(*) as count FROM blocks" error:error];
+    if (blocks.count > 0) {
+        stats[@"blocks_total"] = blocks.firstObject[@"count"] ?: @0;
+    }
+    
+    // Invite code stats
+    NSArray *invites = [_database executeQuery:@"SELECT COUNT(*) as total, SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active FROM invite_codes" error:error];
+    if (invites.count > 0) {
+        stats[@"invite_codes_total"] = invites.firstObject[@"total"] ?: @0;
+        stats[@"invite_codes_active"] = invites.firstObject[@"active"] ?: @0;
+    }
+    
+    // Open reports count
+    NSArray *reports = [_database executeQuery:@"SELECT COUNT(*) as count FROM reports WHERE status = 'open'" error:error];
+    if (reports.count > 0) {
+        stats[@"reports_open"] = reports.firstObject[@"count"] ?: @0;
+    }
+    
+    // Recent signups (last 7 days)
+    NSString *sevenDaysAgo = [NSDateFormatter atproto_stringFromDate:[[NSDate date] dateByAddingTimeInterval:-7*24*60*60]];
+    NSArray *recentSignups = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM accounts WHERE created_at >= ?" params:@[sevenDaysAgo] error:error];
+    if (recentSignups.count > 0) {
+        stats[@"recent_signups_7d"] = recentSignups.firstObject[@"count"] ?: @0;
+    }
+    
+    return stats;
+}
+
+#pragma mark - Audit Logging
+
+- (BOOL)logAdminAction:(NSString *)action
+           subjectType:(nullable NSString *)subjectType
+             subjectId:(nullable NSString *)subjectId
+               details:(nullable NSDictionary *)details
+              ipAddress:(nullable NSString *)ipAddress
+               adminDid:(NSString *)adminDid
+                  error:(NSError **)error {
+    NSString *detailsJson = nil;
+    if (details) {
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:details options:0 error:nil];
+        if (jsonData) {
+            detailsJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        }
+    }
+    
+    NSDictionary *entry = @{
+        @"admin_did": adminDid ?: @"unknown",
+        @"action": action ?: @"unknown",
+        @"subject_type": subjectType ?: [NSNull null],
+        @"subject_id": subjectId ?: [NSNull null],
+        @"details": detailsJson ?: [NSNull null],
+        @"ip_address": ipAddress ?: [NSNull null]
+    };
+    
+    return [_database insertAuditLogEntry:entry error:error];
+}
+
+- (nullable NSDictionary *)queryAuditLog:(NSDictionary *)filters
+                                   limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                   error:(NSError **)error {
+    if (limit <= 0) limit = 50;
+    
+    NSArray *entries = [_database queryAuditLog:filters limit:limit cursor:cursor error:error];
+    if (!entries) return nil;
+    
+    NSString *nextCursor = nil;
+    if (entries.count > 0) {
+        nextCursor = [NSString stringWithFormat:@"%@", entries.lastObject[@"id"]];
+    }
+    
+    return @{
+        @"entries": entries,
+        @"cursor": nextCursor ?: [NSNull null]
+    };
+}
+
+#pragma mark - Reports
+
+- (nullable NSDictionary *)createReport:(NSDictionary *)params error:(NSError **)error {
+    NSString *reportId = [_database createReport:params error:error];
+    if (!reportId) return nil;
+    
+    return @{
+        @"id": reportId,
+        @"reasonType": params[@"reason_type"] ?: [NSNull null],
+        @"reason": params[@"reason"] ?: [NSNull null],
+        @"reportedBy": params[@"reported_by_did"] ?: [NSNull null],
+        @"subject": @{
+            @"$type": params[@"subject_type"] ?: @"unknown",
+            @"did": params[@"subject_did"] ?: [NSNull null],
+            @"uri": params[@"subject_uri"] ?: [NSNull null]
+        },
+        @"createdAt": [NSDateFormatter atproto_stringFromDate:[NSDate date]]
+    };
+}
+
+- (nullable NSDictionary *)queryReports:(NSDictionary *)filters
+                                  limit:(NSInteger)limit
+                                cursor:(nullable NSString *)cursor
+                                  error:(NSError **)error {
+    if (limit <= 0) limit = 50;
+    
+    NSArray *reports = [_database queryReports:filters limit:limit cursor:cursor error:error];
+    if (!reports) return nil;
+    
+    NSString *nextCursor = nil;
+    if (reports.count > 0) {
+        nextCursor = [NSString stringWithFormat:@"%@", reports.lastObject[@"id"]];
+    }
+    
+    return @{
+        @"reports": reports,
+        @"cursor": nextCursor ?: [NSNull null]
+    };
+}
+
+- (BOOL)resolveReport:(NSString *)reportId
+               status:(NSString *)status
+            resolvedBy:(nullable NSString *)resolvedBy
+                notes:(nullable NSString *)notes
+                error:(NSError **)error {
+    return [_database updateReportStatus:reportId status:status resolvedBy:resolvedBy notes:notes error:error];
+}
+
 @end

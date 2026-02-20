@@ -128,14 +128,113 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method getLabels:error:
-
+ 
  @abstract Retrieves labels matching the given criteria.
-
+ 
  @param params Dictionary containing query parameters (uriPatterns, sources, limit, cursor).
  @param error On return, contains an error if the operation failed.
  @return Dictionary with labels array and cursor, or nil on failure.
  */
 - (nullable NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error;
+
+#pragma mark - Server Statistics
+
+/*!
+ @method getServerStatsWithError:
+ 
+ @abstract Retrieves server statistics for admin dashboard.
+ 
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with server statistics, or nil on failure.
+ */
+- (nullable NSDictionary *)getServerStatsWithError:(NSError **)error;
+
+#pragma mark - Audit Logging
+
+/*!
+ @method logAdminAction:subjectType:subjectId:details:ipAddress:adminDid:error:
+ 
+ @abstract Logs an admin action to the audit log.
+ 
+ @param action The action being performed.
+ @param subjectType The type of subject.
+ @param subjectId The identifier of the subject.
+ @param details Additional details dictionary.
+ @param ipAddress The IP address of the admin.
+ @param adminDid The DID of the admin.
+ @param error On return, contains an error if the operation failed.
+ @return YES if successful, NO otherwise.
+ */
+- (BOOL)logAdminAction:(NSString *)action
+           subjectType:(nullable NSString *)subjectType
+             subjectId:(nullable NSString *)subjectId
+               details:(nullable NSDictionary *)details
+              ipAddress:(nullable NSString *)ipAddress
+               adminDid:(NSString *)adminDid
+                  error:(NSError **)error;
+
+/*!
+ @method queryAuditLog:limit:cursor:error:
+ 
+ @abstract Queries the audit log with filters.
+ 
+ @param filters Dictionary of filters.
+ @param limit Maximum results.
+ @param cursor Pagination cursor.
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with audit log entries, or nil on failure.
+ */
+- (nullable NSDictionary *)queryAuditLog:(NSDictionary *)filters
+                                   limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                   error:(NSError **)error;
+
+#pragma mark - Reports
+
+/*!
+ @method createReport:error:
+ 
+ @abstract Creates a new moderation report.
+ 
+ @param params Report parameters.
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with created report, or nil on failure.
+ */
+- (nullable NSDictionary *)createReport:(NSDictionary *)params error:(NSError **)error;
+
+/*!
+ @method queryReports:limit:cursor:error:
+ 
+ @abstract Queries moderation reports.
+ 
+ @param filters Filter dictionary.
+ @param limit Maximum results.
+ @param cursor Pagination cursor.
+ @param error On return, contains an error if the operation failed.
+ @return Dictionary with reports, or nil on failure.
+ */
+- (nullable NSDictionary *)queryReports:(NSDictionary *)filters
+                                  limit:(NSInteger)limit
+                                cursor:(nullable NSString *)cursor
+                                  error:(NSError **)error;
+
+/*!
+ @method resolveReport:status:resolvedBy:notes:error:
+ 
+ @abstract Resolves a moderation report.
+ 
+ @param reportId Report ID.
+ @param status New status.
+ @param resolvedBy Admin DID.
+ @param notes Resolution notes.
+ @param error On return, contains an error if the operation failed.
+ @return YES if successful, NO otherwise.
+ */
+- (BOOL)resolveReport:(NSString *)reportId
+               status:(NSString *)status
+            resolvedBy:(nullable NSString *)resolvedBy
+                notes:(nullable NSString *)notes
+                error:(NSError **)error;
 
 @end
 
