@@ -37,7 +37,7 @@
     NSError *createError = nil;
     NSDictionary *accountInfo = [self.controller createAccountForEmail:@"test@example.com"
                                                               password:@"password"
-                                                                handle:@"testuser.bsky.social"
+                                                                handle:@"testuser.test"
                                                                    did:nil
                                                                  error:&createError];
     XCTAssertNotNil(accountInfo, @"Failed to create account: %@", createError);
@@ -84,7 +84,7 @@
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
             XCTAssertEqualObjects(json[@"id"], did);
             NSArray *aka = json[@"alsoKnownAs"];
-            XCTAssertTrue([aka containsObject:@"at://testuser.bsky.social"], @"alsoKnownAs should contain the handle");
+            XCTAssertTrue([aka containsObject:@"at://testuser.test"], @"alsoKnownAs should contain the handle");
         }
         
         [expectation fulfill];
