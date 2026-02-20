@@ -67,3 +67,11 @@ ATProtoPDS/Tests/Blob/debug_blob_test.txt
 
 com.apple.DeveloperTools/
 build-dd/
+
+# Coverage files
+*.profdata
+*.profraw
+coverage/
+
+# Test logs
+testing_*_logs.txt
