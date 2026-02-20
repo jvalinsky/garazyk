@@ -256,4 +256,74 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     }
 }
 
+- (void)testAuthorizeRedirectWithExistingQueryString {
+    NSString *redirectWithQuery = @"http://localhost:2583/?oauth_callback=1";
+    
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@""
+                                                   queryParams:@{
+                                                       @"client_id": @"test-client",
+                                                       @"response_type": @"code",
+                                                       @"redirect_uri": redirectWithQuery,
+                                                       @"state": @"test-state-123",
+                                                       @"code_challenge": @"test-challenge",
+                                                       @"code_challenge_method": @"S256",
+                                                       @"login_hint": @"alice.test"
+                                                   }
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:nil
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    
+    [self.handler handleAuthorizeRequest:request response:response];
+    
+    XCTAssertEqual(response.statusCode, 302, @"Should redirect with 302");
+    
+    NSString *location = response.headers[@"location"];
+    XCTAssertNotNil(location, @"Location header should be set");
+    
+    XCTAssertTrue([location hasPrefix:redirectWithQuery], @"Should redirect to base redirect URI");
+    XCTAssertTrue([location containsString:@"&code="], @"Should use & separator for existing query string");
+    XCTAssertFalse([location containsString:@"?code="], @"Should NOT use ? when query already exists");
+    XCTAssertTrue([location containsString:@"&state=test-state-123"], @"Should append state with & separator");
+}
+
+- (void)testAuthorizeRedirectWithoutQueryString {
+    NSString *redirectWithoutQuery = @"http://localhost:3000/callback";
+    
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@""
+                                                   queryParams:@{
+                                                       @"client_id": @"test-client",
+                                                       @"response_type": @"code",
+                                                       @"redirect_uri": redirectWithoutQuery,
+                                                       @"state": @"test-state-456",
+                                                       @"code_challenge": @"test-challenge",
+                                                       @"code_challenge_method": @"S256",
+                                                       @"login_hint": @"bob.test"
+                                                   }
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:nil
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    
+    [self.handler handleAuthorizeRequest:request response:response];
+    
+    XCTAssertEqual(response.statusCode, 302, @"Should redirect with 302");
+    
+    NSString *location = response.headers[@"location"];
+    XCTAssertNotNil(location, @"Location header should be set");
+    
+    XCTAssertTrue([location hasPrefix:redirectWithoutQuery], @"Should redirect to base redirect URI");
+    XCTAssertTrue([location containsString:@"?code="], @"Should use ? separator when no query string exists");
+    XCTAssertFalse([location containsString:@"&code="], @"Should NOT use & as first separator");
+    XCTAssertTrue([location containsString:@"&state=test-state-456"], @"Should append state with & separator after code");
+}
+
 @end
