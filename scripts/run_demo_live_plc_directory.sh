@@ -18,7 +18,7 @@ Options:
   --local-url-host <host>    Host used for local health checks/seed requests (default: 127.0.0.1)
   --server-host <host>       Hostname written into PLC operations as the PDS service endpoint (default: localhost)
   --issuer <url>             JWT issuer (default: derived from server-host/port)
-  --pds-bin <path>           Path to PDS binary (default: ./build/bin/september)
+  --pds-bin <path>           Path to PDS binary (default: ./build/bin/kaszlak)
   --log-level <level>        debug|info|warn|error (default: debug)
   --log-file <path>          PDS stdout/stderr log file (default: /tmp/objpds-demo-live-plc-pds.log)
   --pid-file <path>          PID file path (default: /tmp/objpds-demo-live-plc-pds.pid)
@@ -132,7 +132,7 @@ LISTEN_HOST="127.0.0.1"
 LOCAL_URL_HOST="127.0.0.1"
 SERVER_HOST="localhost"
 ISSUER=""
-PDS_BIN="${PROJECT_ROOT}/build/bin/september"
+PDS_BIN="${PROJECT_ROOT}/build/bin/kaszlak"
 LOG_LEVEL="debug"
 LOG_FILE="/tmp/objpds-demo-live-plc-pds.log"
 PID_FILE="/tmp/objpds-demo-live-plc-pds.pid"

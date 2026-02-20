@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}🚀 Setting up ATProto PDS with test data...${NC}"
 
 # CLI path using CMake build location
-CLI_PATH="./build/bin/september"
+CLI_PATH="./build/bin/kaszlak"
 
 # Check if CLI exists
 if [ ! -f "$CLI_PATH" ]; then

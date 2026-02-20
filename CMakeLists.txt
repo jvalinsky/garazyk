@@ -263,7 +263,7 @@ target_compile_definitions(september PRIVATE
 )
 
 set_target_properties(september PROPERTIES
-  OUTPUT_NAME "september"
+  OUTPUT_NAME "kaszlak"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
@@ -284,7 +284,7 @@ target_link_libraries(atproto-plc PRIVATE
 )
 
 set_target_properties(atproto-plc PROPERTIES
-  OUTPUT_NAME "atproto-plc"
+  OUTPUT_NAME "campagnola"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
