@@ -212,6 +212,15 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether NodeInfo open registrations field is enabled. */
 @property (nonatomic, readonly) BOOL nodeinfoOpenRegistrations;
 
+/*! URL for the privacy policy. */
+@property (nonatomic, readonly, nullable) NSString *privacyPolicyURL;
+
+/*! URL for the terms of service. */
+@property (nonatomic, readonly, nullable) NSString *termsOfServiceURL;
+
+/*! List of relay hostnames to notify on updates. */
+@property (nonatomic, readonly, copy) NSArray<NSString *> *crawlRelays;
+
 /*! Whether biometric protection is enabled for signing keys (default: YES). */
 @property (nonatomic, assign) BOOL useBiometricProtection;
 
