@@ -1,3 +1,5 @@
+const PLC_BASE = 'http://localhost:2582';
+
 export async function fetchPlcLog(did) {
     const response = await fetch(`/api/pds/plc-log?did=${encodeURIComponent(did)}`);
     if (!response.ok) {
@@ -38,12 +40,12 @@ export function renderPlcOperations(operations) {
                 <div class="op-card" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
                         <span style="font-weight: bold; color: #333;">${escapeHtml(opType.toUpperCase())}</span>
-                        <span style="font-size: 11px; color: #999;">${escapeHtml(timestamp)}</span>
+                        <span style="color: #999;">${escapeHtml(timestamp)}</span>
                     </div>
-                    <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
+                    <div style="color: #666; margin-bottom: 8px;">
                         CID: <code>${escapeHtml(typeof cid === 'string' ? cid.slice(0, 12) + '...' : JSON.stringify(cid))}</code>
                     </div>
-                    <pre style="font-family: monospace; font-size: 11px; background: #eee; padding: 8px; border-radius: 3px; margin: 0; overflow-x: auto;">${escapeHtml(JSON.stringify(op, null, 2))}</pre>
+                    <pre class="code-block" style="margin: 0; overflow-x: auto;">${escapeHtml(JSON.stringify(op, null, 2))}</pre>
                 </div>
             </div>
         `;
@@ -54,7 +56,7 @@ export function renderPlcOperations(operations) {
     html += `
         <h3 class="see-also">Tools</h3>
         <ul class="see-also-links">
-            <li><a href="http://localhost:2582" target="_blank">Open Standalone PLC Explorer</a></li>
+            <li><a href="${PLC_BASE}" target="_blank">Open Standalone PLC Explorer</a></li>
             <li><a href="https://github.com/did-method-plc/did-method-plc" target="_blank">PLC Specification</a></li>
         </ul>
     `;

@@ -2,6 +2,9 @@ import { API } from './api.js';
 import { CIDDecoder } from './cid.js';
 import { renderDidDocument, renderDidSummary } from './did.js';
 import { renderPlcOperations } from './plc.js';
+import * as Poster from './poster.js';
+
+const PLC_BASE = 'http://localhost:2582';
 
 console.log('ui.js loading...');
 
@@ -60,68 +63,83 @@ window.viewActorProfile = () => {
     showActorProfile();
 };
 
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('ui.js: DOM fully loaded and parsed');
+    try {
+        init();
+        console.log('ui.js: Initialization successful');
+    } catch (error) {
+        console.error('ui.js: Initialization failed:', error);
+    }
+});
+
 function init() {
-    document.getElementById('lookup-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLookup();
-    });
-    
-    document.getElementById('cid-decode-btn').addEventListener('click', handleCidDecode);
-    document.getElementById('cid-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleCidDecode();
-    });
-    
-    document.getElementById('back-collections').addEventListener('click', showCollectionsSection);
-    document.getElementById('back-records').addEventListener('click', () => {
-        showSection('records', `Records: ${currentCollection || ''}`);
-    });
-    
-    document.getElementById('back-from-posts')?.addEventListener('click', showCollectionsSection);
-    document.getElementById('back-from-likes')?.addEventListener('click', showCollectionsSection);
-    document.getElementById('back-from-reposts')?.addEventListener('click', showCollectionsSection);
-    document.getElementById('back-from-follows')?.addEventListener('click', showCollectionsSection);
-    document.getElementById('back-from-profile')?.addEventListener('click', showCollectionsSection);
-    
-    document.querySelectorAll('.nav-row[data-section]').forEach(row => {
-        row.addEventListener('click', (e) => {
-            const section = row.dataset.section;
-            const label = row.querySelector('.nav-label').textContent;
-            
-            if (section === 'cid-decode') {
-                showSection(section, label);
-            } else if (['feed-posts', 'feed-likes', 'feed-reposts', 'graph-follows', 'actor-profile'].includes(section)) {
-                if (currentDid) {
-                    showSection(section, label);
-                } else {
-                    const firstAccount = document.querySelector('.account-item');
-                    if (firstAccount) {
-                        firstAccount.click();
-                    } else {
-                        alert('Please select an account first.');
-                    }
-                }
-            } else if (currentDid) {
-                showSection(section, label);
-            } else {
-                const firstAccount = document.querySelector('.account-item');
-                if (firstAccount) {
-                    firstAccount.click();
-                } else {
-                    alert('Please search for a DID or select an account first.');
-                }
-            }
+    console.log('ui.js: Initializing UI components...');
+
+    const lookupInput = document.getElementById('lookup-input');
+    if (lookupInput) {
+        lookupInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLookup();
         });
-    });
-    
-    showSection('did-doc', 'DID Document');
+    }
+
+    const cidDecodeBtn = document.getElementById('cid-decode-btn');
+    if (cidDecodeBtn) {
+        cidDecodeBtn.addEventListener('click', handleCidDecode);
+    }
+
+    const cidInput = document.getElementById('cid-input');
+    if (cidInput) {
+        cidInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleCidDecode();
+        });
+    }
+
+    const backCollections = document.getElementById('back-collections');
+    if (backCollections) {
+        backCollections.addEventListener('click', showCollectionsSection);
+    }
+
+    const backRecords = document.getElementById('back-records');
+    if (backRecords) {
+        backRecords.addEventListener('click', () => {
+            window.openWindow('records');
+        });
+    }
+
+    // Menubar linking
+    const menuAccounts = document.getElementById('menu-accounts');
+    if (menuAccounts) {
+        menuAccounts.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('win-accounts').style.display = 'block';
+        });
+    }
+
+    const menuDetails = document.getElementById('menu-details');
+    if (menuDetails) {
+        menuDetails.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.openWindow('did-doc');
+        });
+    }
+
+    // Poster window
+    initPoster();
+
+    window.openWindow('did-doc');
     loadAccounts();
+    // Initialize draggability for all windows
+    document.querySelectorAll('.window').forEach(makeDraggable);
 }
+
 
 async function loadAccounts() {
     const list = document.getElementById('account-list');
     list.innerHTML = '<li class="loading">Loading...</li>';
-    
+
     const result = await API.getAccounts();
-    
+
     if (result.accounts && result.accounts.length > 0) {
         list.innerHTML = '';
         for (const account of result.accounts) {
@@ -148,67 +166,89 @@ async function selectAccount(account) {
             li.classList.add('active');
         }
     });
-    
+
     currentDid = account.did;
     currentHandle = account.handle || '';
-    
+
     document.getElementById('did-content').innerHTML = '<p class="loading">Loading DID document...</p>';
     document.getElementById('plc-content').innerHTML = '<p class="loading">Loading PLC operations...</p>';
     document.getElementById('collections-content').innerHTML = '<p class="loading">Loading collections...</p>';
-    
-    showSection('did-doc', 'DID Document');
-    await showDidDocument(account.did);
+
+    const activeSection = document.querySelector('.doc-section.active');
+    const currentSection = activeSection ? activeSection.id : 'did-doc';
+
+    if (currentSection === 'feed-posts') {
+        await showDidDocument(account.did);
+        showFeedPosts();
+    } else if (currentSection === 'feed-likes') {
+        await showDidDocument(account.did);
+        showFeedLikes();
+    } else if (currentSection === 'feed-reposts') {
+        await showDidDocument(account.did);
+        showFeedReposts();
+    } else if (currentSection === 'graph-follows') {
+        await showDidDocument(account.did);
+        showGraphFollows();
+    } else if (currentSection === 'actor-profile') {
+        await showDidDocument(account.did);
+        showActorProfile();
+    } else {
+        window.openWindow('did-doc');
+        await showDidDocument(account.did);
+    }
 }
+
 
 async function handleLookup() {
     const input = document.getElementById('lookup-input').value.trim();
     if (!input) return;
-    
+
     document.getElementById('lookup-input').disabled = true;
-    
+
     // Reset view
     document.querySelectorAll('.account-item').forEach(li => li.classList.remove('active'));
     document.getElementById('did-content').innerHTML = '<p class="loading">Looking up DID/handle...</p>';
-    
+
     const result = await API.lookup(input);
     document.getElementById('lookup-input').disabled = false;
-    
+
     if (result.error) {
         alert('DID/handle not found: ' + result.error);
         return;
     }
-    
+
     currentDid = result.did;
-    
+
     // Highlight if it's in our list
     document.querySelectorAll('.account-item').forEach(li => {
         if (li.dataset.did === result.did) {
             li.classList.add('active');
         }
     });
-    
-    showSection('did-doc', 'DID Document');
+
+    window.openWindow('did-doc');
     await showDidDocument(result.did);
 }
+
 
 async function showDidDocument(did) {
     const didContent = document.getElementById('did-content');
     const plcContent = document.getElementById('plc-content');
     const collectionsContent = document.getElementById('collections-content');
-    
+
     // Parallel API calls
     const [doc, ops, describe] = await Promise.all([
         API.getDidDocument(did),
         API.getPlcLog(did),
         API.getRepoDescribe(did)
     ]);
-    
+
     if (doc.error) {
         didContent.innerHTML = `<p class="error">${escapeHtml(doc.error)}</p>`;
     } else {
         didContent.innerHTML = renderDidSummary(doc);
     }
-    
+
     plcContent.innerHTML = renderPlcOperations(ops);
     renderCollections(describe);
 }
@@ -216,17 +256,17 @@ async function showDidDocument(did) {
 function renderCollections(describe) {
     console.log('renderCollections called with:', describe);
     const content = document.getElementById('collections-content');
-    
+
     if (describe.error) {
         content.innerHTML = `<p class="error">${escapeHtml(describe.error)}</p>`;
         return;
     }
-    
+
     if (!describe.collections || describe.collections.length === 0) {
         content.innerHTML = '<p class="empty">No collections found</p>';
         return;
     }
-    
+
     let html = `
         <p class="description">
             This repository contains <strong>${describe.collections.length}</strong> collections. 
@@ -238,7 +278,7 @@ function renderCollections(describe) {
             </thead>
             <tbody>
     `;
-    
+
     for (const collection of describe.collections) {
         html += `
             <tr>
@@ -247,7 +287,7 @@ function renderCollections(describe) {
             </tr>
         `;
     }
-    
+
     html += '</tbody></table>';
     content.innerHTML = html;
 }
@@ -258,20 +298,15 @@ async function showRecords(collection) {
         console.error('No currentDid set');
         return;
     }
-    
-    // Update nav visibility
-    const recordsNav = document.getElementById('nav-records');
-    if (recordsNav) {
-        recordsNav.style.display = 'flex';
-    }
-    
-    showSection('records', `Records: ${collection}`);
-    
+
+    window.openWindow('records');
+
+
     document.getElementById('records-title').textContent = collection;
-    
+
     const content = document.getElementById('records-content');
     content.innerHTML = '<p class="loading">Loading records...</p>';
-    
+
     try {
         const result = await API.listRecords(currentDid, collection, { limit: 20 });
         console.log('listRecords result:', result);
@@ -285,12 +320,12 @@ async function showRecords(collection) {
 function renderRecordsList(records, collection) {
     console.log('renderRecordsList called with:', records);
     const content = document.getElementById('records-content');
-    
+
     if (!records || records.length === 0) {
         content.innerHTML = `<p class="empty">No records in collection ${escapeHtml(collection)}</p>`;
         return;
     }
-    
+
     let html = `
         <p class="description">Found <strong>${records.length}</strong> records in ${escapeHtml(collection)}.</p>
         <table>
@@ -299,7 +334,7 @@ function renderRecordsList(records, collection) {
             </thead>
             <tbody>
     `;
-    
+
     for (const record of records) {
         const displayCid = record.cid ? record.cid.slice(0, 12) + '...' : 'N/A';
         html += `
@@ -310,7 +345,7 @@ function renderRecordsList(records, collection) {
             </tr>
         `;
     }
-    
+
     html += '</tbody></table>';
     content.innerHTML = html;
 }
@@ -322,17 +357,12 @@ async function showRecordDetail(uri) {
         return;
     }
 
-    // Update nav
-    const detailNav = document.getElementById('nav-record-detail');
-    if (detailNav) {
-        detailNav.style.display = 'flex';
-    }
-    
-    showSection('record-detail', 'Record Detail');
-    
+    window.openWindow('record-detail');
+
+
     document.getElementById('record-title').textContent = uri;
     document.getElementById('record-content').textContent = 'Loading...';
-    
+
     try {
         const record = await API.getRecord(uri);
         console.log('getRecord result:', record);
@@ -347,20 +377,167 @@ async function showRecordDetail(uri) {
     }
 }
 
+async function showFeedPosts() {
+    window.openWindow('feed-posts');
+    const content = document.getElementById('feed-posts-content');
+    content.innerHTML = '<p class="loading">Loading posts...</p>';
+
+    const result = await API.getFeedPosts(currentDid, { limit: 20 });
+
+    if (!result.posts || result.posts.length === 0) {
+        content.innerHTML = '<p class="empty">No posts found</p>';
+        return;
+    }
+
+    let html = '<p class="description">Found <strong>' + result.posts.length + '</strong> posts.</p>';
+    for (const post of result.posts) {
+        const text = escapeHtml(post.record?.text || '');
+        const date = post.record?.createdAt || '';
+        const handle = escapeHtml(post.author?.handle || post.author?.did || '');
+        html += '<div style="border:1px solid #999; padding:8px; margin-bottom:8px; background:#fff;">';
+        html += '<div style="display:flex; justify-content:space-between; margin-bottom:4px;">';
+        html += '<strong>' + handle + '</strong>';
+        html += '<span style="color:#666;">' + escapeHtml(date) + '</span>';
+        html += '</div>';
+        html += '<div style="white-space:pre-wrap;">' + text + '</div>';
+        html += '</div>';
+    }
+
+    content.innerHTML = html;
+}
+
+async function showFeedLikes() {
+    window.openWindow('feed-likes');
+    const content = document.getElementById('feed-likes-content');
+    content.innerHTML = '<p class="loading">Loading likes...</p>';
+
+    const result = await API.getFeedLikes(currentDid, { limit: 20 });
+
+    if (!result.likes || result.likes.length === 0) {
+        content.innerHTML = '<p class="empty">No likes found</p>';
+        return;
+    }
+
+    let html = '<p class="description">Found <strong>' + result.likes.length + '</strong> likes.</p>';
+    html += '<table class="param-table"><thead><tr><th>Subject</th><th>Author</th><th>Date</th></tr></thead><tbody>';
+    for (const like of result.likes) {
+        const subjectUri = escapeHtml(like.subject?.uri || '');
+        const subjectHandle = escapeHtml(like.subject?.author?.handle || like.subject?.author?.did || '');
+        const date = escapeHtml(like.createdAt || '');
+        html += '<tr>';
+        html += '<td><code>' + subjectUri + '</code></td>';
+        html += '<td>' + subjectHandle + '</td>';
+        html += '<td>' + date + '</td>';
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+
+    content.innerHTML = html;
+}
+
+async function showFeedReposts() {
+    window.openWindow('feed-reposts');
+    const content = document.getElementById('feed-reposts-content');
+    content.innerHTML = '<p class="loading">Loading reposts...</p>';
+
+    const result = await API.getFeedReposts(currentDid, { limit: 20 });
+
+    if (!result.reposts || result.reposts.length === 0) {
+        content.innerHTML = '<p class="empty">No reposts found</p>';
+        return;
+    }
+
+    let html = '<p class="description">Found <strong>' + result.reposts.length + '</strong> reposts.</p>';
+    html += '<table class="param-table"><thead><tr><th>Subject</th><th>Author</th><th>Date</th></tr></thead><tbody>';
+    for (const repost of result.reposts) {
+        const subjectUri = escapeHtml(repost.subject?.uri || '');
+        const subjectHandle = escapeHtml(repost.subject?.author?.handle || repost.subject?.author?.did || '');
+        const date = escapeHtml(repost.createdAt || '');
+        html += '<tr>';
+        html += '<td><code>' + subjectUri + '</code></td>';
+        html += '<td>' + subjectHandle + '</td>';
+        html += '<td>' + date + '</td>';
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+
+    content.innerHTML = html;
+}
+
+async function showGraphFollows() {
+    window.openWindow('graph-follows');
+    const content = document.getElementById('graph-follows-content');
+    content.innerHTML = '<p class="loading">Loading follows...</p>';
+
+    const result = await API.getFollows(currentDid, { limit: 50 });
+
+    if (!result.actors || result.actors.length === 0) {
+        content.innerHTML = '<p class="empty">No follows found</p>';
+        return;
+    }
+
+    let html = '<p class="description">Following <strong>' + result.actors.length + '</strong> accounts.</p>';
+    html += '<table class="param-table"><thead><tr><th>Handle</th><th>DID</th><th>Display Name</th></tr></thead><tbody>';
+    for (const actor of result.actors) {
+        html += '<tr>';
+        html += '<td><strong>' + escapeHtml(actor.handle) + '</strong></td>';
+        html += '<td><code>' + escapeHtml(actor.did) + '</code></td>';
+        html += '<td>' + escapeHtml(actor.displayName || '') + '</td>';
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+
+    content.innerHTML = html;
+}
+
+async function showActorProfile() {
+    window.openWindow('actor-profile');
+    const content = document.getElementById('actor-profile-content');
+    content.innerHTML = '<p class="loading">Loading profile...</p>';
+
+    const result = await API.getActorProfile(currentDid);
+
+    if (result.error) {
+        content.innerHTML = '<p class="error">' + escapeHtml(result.error) + '</p>';
+        return;
+    }
+
+    let html = '<div style="border:1px solid #999; padding:10px; background:#fff;">';
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:16px; font-weight:bold;">' + escapeHtml(result.displayName || result.handle) + '</div>';
+    html += '<div style="color:#666;">@' + escapeHtml(result.handle) + '</div>';
+    html += '<div style="color:#999;"><code>' + escapeHtml(result.did) + '</code></div>';
+    html += '</div>';
+    if (result.description) {
+        html += '<div style="margin-bottom:10px; white-space:pre-wrap;">' + escapeHtml(result.description) + '</div>';
+    }
+    html += '<div style="display:flex; gap:20px;">';
+    html += '<div><strong>' + (result.postsCount || 0) + '</strong> posts</div>';
+    html += '<div><strong>' + (result.followsCount || 0) + '</strong> following</div>';
+    html += '<div><strong>' + (result.followersCount || 0) + '</strong> followers</div>';
+    html += '</div>';
+    if (result.createdAt) {
+        html += '<div style="margin-top:10px; color:#999;">Joined: ' + escapeHtml(result.createdAt) + '</div>';
+    }
+    html += '</div>';
+
+    content.innerHTML = html;
+}
+
 async function handleCidDecode() {
     const cid = document.getElementById('cid-input').value.trim();
     if (!cid) return;
-    
+
     const resultEl = document.getElementById('cid-result');
     resultEl.innerHTML = '<p class="loading">Decoding...</p>';
-    
+
     try {
         const decoded = CIDDecoder.decode(cid);
         if (decoded.error) {
             resultEl.innerHTML = `<p class="error">${escapeHtml(decoded.error)}</p>`;
             return;
         }
-        
+
         // Custom render for the new style
         let html = '<div style="margin-top:20px">';
         html += `<h3>CID Version ${decoded.version}</h3>`;
@@ -370,51 +547,142 @@ async function handleCidDecode() {
         html += `<tr><td>Digest Size</td><td>${decoded.multihash.size} bytes</td></tr>`;
         html += '</table>';
         html += '</div>';
-        
+
         resultEl.innerHTML = html;
     } catch (e) {
         resultEl.innerHTML = `<p class="error">${escapeHtml(e.message)}</p>`;
     }
 }
 
-function showSection(sectionId, breadcrumbLabel) {
-    console.log('showSection called for:', sectionId);
-    // Hide all sections
-    document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
-    
-    // Show target section
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.add('active');
-    } else {
-        console.error('Section not found:', sectionId);
-    }
-    
-    // Update nav selection
-    document.querySelectorAll('.nav-row').forEach(row => row.classList.remove('active'));
-    const activeNav = document.querySelector(`.nav-row[data-section="${sectionId}"]`);
-    if (activeNav) {
-        activeNav.classList.add('active');
-        // Ensure all parent nav-items are expanded
-        let parentItem = activeNav.closest('.nav-item');
-        while (parentItem) {
-            parentItem.classList.add('expanded');
-            parentItem = parentItem.parentElement.closest('.nav-item');
+function showSection(sectionId) {
+    window.openWindow(sectionId);
+}
+
+
+function showCollectionsSection() {
+    window.openWindow('collections');
+}
+
+
+// --- Poster (OAuth) ---
+
+function initPoster() {
+    // Check for OAuth callback on page load
+    Poster.handleOAuthCallback().then(result => {
+        if (result && !result.error && result.did) {
+            showPosterSession(result.did);
+            document.getElementById('win-poster').style.display = 'block';
+        } else if (result && result.error) {
+            showPosterResult('Error: ' + result.error, true);
+            document.getElementById('win-poster').style.display = 'block';
         }
+    });
+
+    // Restore session if exists
+    const session = Poster.getSession();
+    if (session) {
+        showPosterSession(session.did);
     }
-    
-    // Update breadcrumb
-    if (breadcrumbLabel) {
-        document.getElementById('breadcrumb-current').textContent = breadcrumbLabel;
+
+    // Menu item
+    const menuPoster = document.getElementById('menu-poster');
+    if (menuPoster) {
+        menuPoster.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('win-poster').style.display = 'block';
+        });
+    }
+
+    // Login button
+    const loginBtn = document.getElementById('poster-login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            const handle = document.getElementById('poster-handle').value.trim();
+            if (!handle) return;
+            Poster.startLogin(handle);
+        });
+    }
+
+    // Handle enter key on login input
+    const handleInput = document.getElementById('poster-handle');
+    if (handleInput) {
+        handleInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const handle = handleInput.value.trim();
+                if (handle) Poster.startLogin(handle);
+            }
+        });
+    }
+
+    // Logout
+    const logoutBtn = document.getElementById('poster-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            Poster.logout();
+            document.getElementById('poster-login').style.display = 'block';
+            document.getElementById('poster-session').style.display = 'none';
+            document.getElementById('poster-result').innerHTML = '';
+        });
+    }
+
+    // Test session
+    const testBtn = document.getElementById('poster-test-btn');
+    if (testBtn) {
+        testBtn.addEventListener('click', async () => {
+            showPosterResult('Testing session...', false);
+            try {
+                const data = await Poster.testSession();
+                showPosterResult('<pre class="code-block">' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>', false);
+            } catch (err) {
+                showPosterResult('Error: ' + escapeHtml(err.message), true);
+            }
+        });
+    }
+
+    // Post button
+    const postBtn = document.getElementById('poster-post-btn');
+    if (postBtn) {
+        postBtn.addEventListener('click', async () => {
+            const text = document.getElementById('poster-text').value;
+            if (!text.trim()) return;
+            postBtn.disabled = true;
+            showPosterResult('Posting...', false);
+            try {
+                const data = await Poster.createPost(text);
+                showPosterResult('Posted! URI: <code>' + escapeHtml(data.uri) + '</code>', false);
+                document.getElementById('poster-text').value = '';
+                document.getElementById('poster-charcount').textContent = '0';
+            } catch (err) {
+                showPosterResult('Error: ' + escapeHtml(err.message), true);
+            }
+            postBtn.disabled = false;
+        });
+    }
+
+    // Char counter
+    const textarea = document.getElementById('poster-text');
+    if (textarea) {
+        textarea.addEventListener('input', () => {
+            document.getElementById('poster-charcount').textContent = textarea.value.length;
+        });
     }
 }
 
-function showCollectionsSection() {
-    showSection('collections', 'Collections');
-    // Hide temporary nav items
-    document.getElementById('nav-records').style.display = 'none';
-    document.getElementById('nav-record-detail').style.display = 'none';
+function showPosterSession(did) {
+    document.getElementById('poster-login').style.display = 'none';
+    document.getElementById('poster-session').style.display = 'block';
+    document.getElementById('poster-did').textContent = did;
 }
+
+function showPosterResult(html, isError) {
+    const el = document.getElementById('poster-result');
+    if (isError) {
+        el.innerHTML = '<div style="color: var(--error-color); border: 1px solid var(--error-color); padding: 6px; background: #fff;">' + html + '</div>';
+    } else {
+        el.innerHTML = '<div style="padding: 6px; border: 1px solid #999; background: #fff;">' + html + '</div>';
+    }
+}
+
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -429,5 +697,44 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-// Initialize
-init();
+
+let zCounter = 100;
+
+function makeDraggable(win) {
+    const titleBar = win.querySelector('.title-bar');
+    if (!titleBar) return;
+
+    titleBar.onmousedown = function (e) {
+        if (e.target.tagName === 'BUTTON') return;
+
+        win.style.zIndex = ++zCounter;
+
+        const parentRect = win.offsetParent ? win.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
+        const startLeft = win.offsetLeft;
+        const startTop = win.offsetTop;
+        const startX = e.clientX;
+        const startY = e.clientY;
+
+        document.onmousemove = function (e) {
+            let newLeft = startLeft + (e.clientX - startX);
+            let newTop = startTop + (e.clientY - startY);
+
+            const maxLeft = (win.offsetParent ? win.offsetParent.clientWidth : window.innerWidth) - 50;
+            const maxTop = (win.offsetParent ? win.offsetParent.clientHeight : window.innerHeight) - 50;
+            newLeft = Math.max(-win.offsetWidth + 50, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            win.style.left = newLeft + 'px';
+            win.style.top = newTop + 'px';
+        };
+
+        document.onmouseup = function () {
+            document.onmousemove = null;
+            document.onmouseup = null;
+        };
+    };
+
+    titleBar.ondragstart = function () {
+        return false;
+    };
+}
