@@ -184,13 +184,34 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 /*!
  @method seedTestClient:
- 
+  
  @abstract Creates a test client for development/testing.
- 
+  
  @param error On return, contains an error if the operation failed.
  @return YES if the test client was created successfully, NO otherwise.
  */
 - (BOOL)seedTestClient:(NSError **)error;
+
+/*!
+ @method getAllOAuthClients:
+  
+ @abstract Retrieves all registered OAuth clients.
+  
+ @param error On return, contains an error if the operation failed.
+ @return An array of client dictionaries, or nil on error.
+ */
+- (nullable NSArray<NSDictionary *> *)getAllOAuthClientsWithError:(NSError **)error;
+
+/*!
+ @method deleteOAuthClientWithID:error:
+  
+ @abstract Deletes an OAuth client by ID.
+  
+ @param clientID The client ID to delete.
+ @param error On return, contains an error if the operation failed.
+ @return YES if the client was deleted, NO otherwise.
+ */
+- (BOOL)deleteOAuthClientWithID:(NSString *)clientID error:(NSError **)error;
 
 @end
 

@@ -1774,6 +1774,64 @@ static NSDateFormatter * iso8601Formatter(void) {
     #endif
 }
 
+- (NSArray<NSDictionary *> *)getAllOAuthClientsWithError:(NSError **)error {
+    NSString *sql = @"SELECT * FROM oauth_clients ORDER BY created_at DESC";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return nil;
+    }
+
+    NSMutableArray *clients = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+        dict[@"client_id"] = @((const char *)sqlite3_column_text(stmt, 0));
+
+        const char *secret = (const char *)sqlite3_column_text(stmt, 1);
+        if (secret) dict[@"client_secret"] = @(secret);
+
+        const char *redirectUrisStr = (const char *)sqlite3_column_text(stmt, 2);
+        if (redirectUrisStr) {
+            NSString *urisString = @(redirectUrisStr);
+            NSArray *uris = [urisString componentsSeparatedByString:@" "];
+            dict[@"redirect_uris"] = uris;
+        } else {
+            dict[@"redirect_uris"] = @[];
+        }
+
+        const char *grants = (const char *)sqlite3_column_text(stmt, 3);
+        if (grants) dict[@"grant_types"] = @(grants);
+
+        const char *scope = (const char *)sqlite3_column_text(stmt, 4);
+        if (scope) dict[@"scope"] = @(scope);
+
+        [clients addObject:dict];
+    }
+
+    return clients;
+}
+
+- (BOOL)deleteOAuthClientWithID:(NSString *)clientID error:(NSError **)error {
+    NSString *sql = @"DELETE FROM oauth_clients WHERE client_id = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, clientID.UTF8String, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return NO;
+    }
+
+    return sqlite3_changes(_db) > 0;
+}
+
 @end
 
 #pragma mark - Records
