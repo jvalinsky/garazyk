@@ -231,3 +231,14 @@ node_cid = CID(SHA-256(CBOR_encode(node)))
 - [ATProto Repository Spec](https://atproto.com/specs/repository)
 - [MST Implementation Guide](https://atproto.com/specs/mst)
 - [Go Reference](https://github.com/bluesky-social/indigo/tree/main/mst)
+
+## Related Documentation
+
+- [Folder README](README.md) - Repository tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [CAR & CBOR Tests](car-cbor.md) - CAR file format tests
+- [Primitives Tests](primitives.md) - Core data type tests
+- [Database Tests](../03-database/actor-store.md) - Actor store persistence
+- [Integration Tests](../06-integration/e2e.md) - Commit chain integrity
+- [Characterization Tests](../08-characterization/characterization.md) - Reference compliance
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - Secp256k1 signing

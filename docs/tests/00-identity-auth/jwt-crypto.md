@@ -201,3 +201,12 @@ JWTs with `jti` claim can only be used once within their expiration window. With
 2. **Claim Validation**: Always verify `iss`, `aud`, `exp`, `nbf`
 3. **Replay Protection**: Use JTI cache to prevent token replay
 4. **Key Derivation**: Derive public key from private for consistency
+
+## Related Documentation
+
+- [Folder README](README.md) - Identity & authentication tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [OAuth2 Token Management](../../oauth2/token-management.md) - Token lifecycle
+- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security model
+- [Security Hardening Tests](../05-security/hardening.md) - Token security testing
+- [Repository Tests](../01-repository/README.md) - MST signing with secp256k1

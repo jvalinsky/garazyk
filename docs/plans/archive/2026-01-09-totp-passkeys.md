@@ -101,3 +101,11 @@ Implements the Relying Party (Server) logic for WebAuthn.
 - **Security**: for `SecKey` operations (ECDSA verification).
 - **CoreImage**: for QR Code generation.
 - **Foundation**: for general logic.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Security Docs](../../security/README.md) - Security-related documentation

@@ -159,3 +159,11 @@ Deliver in one focused change set:
 4. tests proving streamed response + unchanged payload correctness
 
 Then follow with `since` data model + true incremental delta in a second PR.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation

@@ -253,3 +253,15 @@ XCTAssertNotNil(retrieved, @"Session should persist across store instances");
 3. **Token Rotation**: Refresh tokens rotate to prevent replay if leaked
 4. **Algorithm Restriction**: JWT verifier rejects `none` algorithm
 5. **Cross-Client Protection**: Tokens cannot be revoked by other clients
+
+## Related Documentation
+
+- [Folder README](README.md) - Identity & authentication tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [OAuth2 Architecture](../../oauth2/architecture.md) - OAuth2 system architecture
+- [Authorization Flow](../../oauth2/authorization-flow.md) - OAuth2 authorization process
+- [DPoP Implementation](../../oauth2/dpop.md) - DPoP proof specification
+- [PKCE](../../oauth2/pkce.md) - Proof Key for Code Exchange
+- [Token Management](../../oauth2/token-management.md) - Token lifecycle
+- [Security Hardening Tests](../05-security/hardening.md) - Token security testing
+- [Security Tests](../05-security/README.md) - Security test documentation

@@ -474,3 +474,12 @@ git commit -m "feat: add YubiKey OATH integration framework with software fallba
 ## Next Steps
 
 After completing these tasks, move to Phase 3 advanced testing including security expansion, performance optimization, and regression automation.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation
+- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details

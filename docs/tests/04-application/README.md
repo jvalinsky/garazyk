@@ -36,3 +36,12 @@ Tests for business logic, controllers, CLI, admin operations, and blob storage.
 ./build/tests/AllTests -only-testing:AllTests/PDSAccountServiceTests
 ./build/tests/AllTests -only-testing:AllTests/PDSCLITests
 ```
+
+## Related Documentation
+
+- [Test Index](../README.md) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
+- [Database Tests](../03-database/README.md) - Actor stores and pools
+- [Security Tests](../05-security/README.md) - Authorization and validation
+- [Integration Tests](../06-integration/README.md) - E2E application flows
+- [Utilities Tests](../09-utilities/README.md) - Configuration and metrics

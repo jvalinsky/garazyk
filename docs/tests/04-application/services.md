@@ -194,3 +194,14 @@ XCTAssertNotNil(error);  // Access denied
 ./build/tests/AllTests -only-testing:AllTests/PDSRepositoryServiceTests
 ./build/tests/AllTests -only-testing:AllTests/PDSBlobServiceTests
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Application tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Controller Tests](controller.md) - Application lifecycle
+- [Admin Tests](admin.md) - Admin operations
+- [Database Tests](../03-database/README.md) - Actor stores and pools
+- [Repository Tests](../01-repository/README.md) - MST and CAR
+- [OAuth Tests](../00-identity-auth/oauth.md) - Session management
+- [Integration Tests](../06-integration/e2e.md) - E2E service flows

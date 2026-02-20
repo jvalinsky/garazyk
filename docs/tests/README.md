@@ -163,6 +163,26 @@ ATProtoPDS/Tests/
 └── XRPC/            # XRPC tests
 ```
 
+## Related Documentation
+
+### Architecture
+- [ATProto PDS Architecture](../architecture/atproto_pds_architecture.md) - System architecture overview
+- [XRPC Protocol Reference](../architecture/XRPC_PROTOCOL_REFERENCE.md) - XRPC protocol specification
+- [ATProto Data Models](../architecture/atproto_data_models.md) - Data structure specifications
+
+### Security
+- [Security Documentation](../security/README.md) - Security analysis and testing
+- [Security Analysis Report](../security/SECURITY_ANALYSIS_REPORT.md) - Detailed security review
+- [SSRF Protection](../security/SSRF_PROTECTION.md) - Network security measures
+
+### OAuth2
+- [OAuth2 Documentation](../oauth2/README.md) - Authentication flow documentation
+- [Authorization Flow](../oauth2/authorization-flow.md) - OAuth authorization process
+- [DPoP Implementation](../oauth2/dpop.md) - Demonstrating Proof-of-Possession
+
+### Guides
+- [Development Workflows](../guides/README.md) - Development and testing guides
+
 ## Contributing
 
 When adding new tests, update the relevant documentation file in the appropriate subfolder. Each test class should be documented with:

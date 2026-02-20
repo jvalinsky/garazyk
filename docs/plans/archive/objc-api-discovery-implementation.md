@@ -305,5 +305,12 @@ free(methods);
 3. Pattern-based guessing (educated guesses)
 4. Compilation testing (verification)
 
-**Always test:** Compile and run discovered APIs before assuming they work as expected.</content>
+**Always test:** Compile and run discovered APIs before assuming they work as expected.
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans</content>
 <parameter name="filePath">/Users/jack/.config/opencode/superpowers/skills/objc-api-discovery.md

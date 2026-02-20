@@ -249,5 +249,13 @@ Fault injection and recovery testing.
 **Total Estimated Effort:** 8 weeks
 **Risk Level:** Medium (complex protocols, performance requirements)
 **Team Size:** 1-2 developers
-**Key Dependencies:** ATProto specification stability</content>
+**Key Dependencies:** ATProto specification stability
+
+---
+
+## Related Documentation
+
+- [Archive Index](./README.md) - Index of all archived plans
+- [Current Plans](../README.md) - Active implementation plans
+- [Architecture Docs](../../architecture/README.md) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2026-01-07-phase-1-atproto-pds.md

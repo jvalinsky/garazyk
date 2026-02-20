@@ -146,3 +146,12 @@ kaszlak invite create --uses 5
 kaszlak invite list --used
 kaszlak invite revoke <code>
 ```
+
+## Related Documentation
+
+- [Folder README](README.md) - Application tests overview
+- [Test Index](../README.md) - Main test documentation index
+- [Services Tests](services.md) - Account and invite services
+- [Controller Tests](controller.md) - Application lifecycle
+- [Database Tests](../03-database/service-databases.md) - Invite code storage
+- [Utilities Tests](../09-utilities/debug.md) - Debug tools
