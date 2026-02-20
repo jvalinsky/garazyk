@@ -165,3 +165,14 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 **Fuzzing configuration:**
 - ASAN/UBSAN enabled for memory safety testing
 - Corpus directories: `fuzzing/corpus_http/`, `fuzzing/corpus_xrpc/`, `fuzzing/corpus_cbor/`
+
+---
+
+## Related Documentation
+
+- [Security Documentation Index](README.md) - Overview of all security docs
+- [Security Plan](SECURITY_PLAN.md) - Comprehensive security testing strategy
+- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Detailed fuzzing and exploit testing
+- [Security Test Results](security_test_results.md) - Current test results
+- [Reports](reports/README.md) - Historical security analysis reports
+- [OAuth2 Security](../oauth2/security.md) - OAuth2 implementation security

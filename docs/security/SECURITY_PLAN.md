@@ -485,3 +485,15 @@ jobs:
 - [AddressSanitizer](https://clang.llvm.org/docs/AddressSanitizer.html)
 - [CERT C Coding Standard](https://www.cert.org/secure-coding/)
 - [Apple Security Guide](https://developer.apple.com/library/archive/documentation/Security/Conceptual/SecureCodingGuide/)
+
+---
+
+## Related Documentation
+
+- [Security Documentation Index](README.md) - Overview of all security docs
+- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Detailed fuzzing strategies
+- [Security Analysis Report](SECURITY_ANALYSIS_REPORT.md) - Current findings
+- [Security Test Results](security_test_results.md) - Test execution results
+- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT.md) - SQL vulnerabilities
+- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
+- [Security Tests](../tests/05-security/README.md) - Security test documentation

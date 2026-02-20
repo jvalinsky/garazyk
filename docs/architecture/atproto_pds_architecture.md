@@ -257,3 +257,23 @@ GitHub: `DavidBuchanan314/millipds` (149 stars)
 3. **Key Rotation**: Support for rotating signing keys without account migration
 4. **Input Validation**: Strict validation of DAG-CBOR and CBOR data
 5. **Rate Limiting**: Protect against abuse with connection and message limits
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Deep code analysis and component details
+- [atproto_data_models.md](atproto_data_models.md) - DID, MST, and repository structure
+- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) - XRPC method quick reference
+
+### Diagram Documents
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - OAuth2 and record lifecycle diagrams
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) - System architecture diagrams
+
+### Related Tests
+- [../tests/00-identity-auth/oauth.md](../tests/00-identity-auth/oauth.md) - OAuth and DPoP test documentation
+- [../tests/01-repository/mst.md](../tests/01-repository/mst.md) - MST test documentation
+- [../tests/02-network/xrpc.md](../tests/02-network/xrpc.md) - XRPC test documentation
+
+### Security Documentation
+- [../security/](../security/) - Security audit and hardening guides
