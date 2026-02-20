@@ -150,6 +150,10 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     return keyPair.didKeyString;
 }
 
+- (nullable NSData *)exportPrivateKeyWithError:(NSError **)error {
+    return [self loadPrivateKeyWithError:error];
+}
+
 - (nullable NSData *)loadPrivateKeyWithError:(NSError **)error {
     if (self.memoryKeyData.length == 32) {
         return self.memoryKeyData;
