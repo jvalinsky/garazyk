@@ -289,3 +289,12 @@ fi
 - [Greg's BashGuide](https://mywiki.wooledge.org/BashGuide)
 - [ShellCheck](https://github.com/koalaman/shellcheck)
 - [POSIX Shell Specification](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html)
+
+## Related Documentation
+
+- **[Developer Guide](DEVELOPER_GUIDE.md)** - Build system and project structure
+- **[Setup Guide](SETUP_GUIDE.md)** - Server startup and verification scripts
+- **[Testing Guide](../TESTING.md)** - Test suite execution
+- **[Deployment Guide](DEPLOYMENT.md)** - Production script integration
+- **[Development Workflows](DEVELOPMENT_WORKFLOWS.md)** - Build and test process diagrams
+- **[CI/CD Pipeline](../../.github/workflows/ci.yml)** - Automated workflow configuration

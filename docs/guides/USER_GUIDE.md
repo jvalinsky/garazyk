@@ -365,3 +365,12 @@ tail -f server.log | grep "handleApi"
 ```
 
 For API development details, see the [API Documentation](http://localhost:2583/explore/api/docs) or [OpenAPI Specification](http://localhost:2583/explore/api/openapi.yaml).
+
+## Related Documentation
+
+- **[Setup Guide](SETUP_GUIDE.md)** - Installation and server startup
+- **[Developer Guide](DEVELOPER_GUIDE.md)** - API development procedures
+- **[XRPC Protocol Reference](XRPC_PROTOCOL_REFERENCE.md)** - Protocol method reference
+- **[Architecture Diagrams](../architecture/ARCHITECTURE_DIAGRAMS.md)** - System visual overview
+- **[Data Models](../architecture/atproto_data_models.md)** - DID, CID, and record structures
+- **[OAuth 2.0 Overview](../oauth2/README.md)** - Authentication for programmatic access

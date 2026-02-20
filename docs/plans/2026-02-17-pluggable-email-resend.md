@@ -1628,3 +1628,13 @@ Two approaches for implementation:
 **2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
 
 **Which approach would you prefer?**
+
+---
+
+## Related Documentation
+
+- [Plans Index](README.md) - All project plans
+- [Roadmap](ROADMAP.md) - Project milestones
+- [Architecture Overview](../architecture/README.md) - Protocol-based design patterns
+- [Developer Guide](../guides/DEVELOPER_GUIDE.md) - Development workflows
+- [Deployment Guide](../guides/DEPLOYMENT.md) - Production deployment instructions

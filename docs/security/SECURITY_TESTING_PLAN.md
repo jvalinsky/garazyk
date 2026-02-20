@@ -834,3 +834,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 5. [CVE-2024-7254 Protobuf](https://asec.ahnlab.com/en/84033/)
 6. [SQLite Fuzzing](https://sqlite.org/afl/doc/trunk/README.md)
 7. [PortSwigger File Upload Testing](https://portswigger.net/web-security/file-upload)
+
+---
+
+## Related Documentation
+
+- [Security Documentation Index](README.md) - Overview of all security docs
+- [Security Plan](SECURITY_PLAN.md) - Comprehensive security strategy
+- [Security Analysis Report](SECURITY_ANALYSIS_REPORT.md) - Current findings
+- [Security Test Results](security_test_results.md) - Test execution results
+- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT.md) - SQL vulnerabilities
+- [SSRF Protection](SSRF_PROTECTION.md) - SSRF mitigation strategies
+- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
+- [Security Tests](../tests/05-security/README.md) - Security test documentation
