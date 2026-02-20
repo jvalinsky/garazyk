@@ -11,9 +11,12 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "PLC/PLCOperation.h"
+#import "PLC/DIDPLCResolver.h"
 #import "Auth/CryptoUtils.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
 
 #ifndef kCCSuccess
 #define kCCSuccess 0
@@ -39,6 +42,9 @@
 + (BOOL)updateHandleWithContext:(PDSCLICommandContext *)context
                              did:(NSString *)did
                           handle:(NSString *)handle;
++ (BOOL)updatePlcEndpointWithContext:(PDSCLICommandContext *)context
+                                 did:(NSString *)did
+                         newEndpoint:(NSString *)newEndpoint;
 
 + (NSString *)databasePathForContext:(PDSCLICommandContext *)context;
 + (NSString *)pdsHostnameForContext:(PDSCLICommandContext *)context;
@@ -172,14 +178,36 @@
 
     NSString *pdsHostname = [self pdsHostnameForContext:context];
     
+    // Generate Identity Keys
+    Secp256k1 *signer = [Secp256k1 shared];
+    NSError *keyError = nil;
+    Secp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
+    
+    if (!keyPair) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to generate keypair: %@", keyError.localizedDescription);
+        }
+        [db close];
+        return NO;
+    }
+
     // Register with PLC
-    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname error:&error];
+    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname keyPair:keyPair error:&error];
     if (!did) {
         if (context.verbose) {
             PDS_LOG_ERROR(@"Failed to register DID with PLC: %@", error.localizedDescription);
         }
         [db close];
         return NO;
+    }
+
+    // Save the rotation key so that CLI operations (like migration) can rotate endpoints
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+    PDSActorStore *store = [pool storeForDid:did error:&error];
+    if (store) {
+        [store importSigningKey:keyPair.privateKey error:nil];
+    } else if (context.verbose) {
+        PDS_LOG_ERROR(@"Failed to open ActorStore to save rotation key: %@", error.localizedDescription);
     }
 
     if (context.verbose) {
@@ -220,7 +248,7 @@
     const uint32_t iterations = 600000;
     const size_t derivedKeyLength = 32;
 
-    unsigned char derivedKey[derivedKeyLength];
+    NSMutableData *derivedKey = [NSMutableData dataWithLength:derivedKeyLength];
 
     int result = CCKeyDerivationPBKDF(
         kCCPBKDF2,
@@ -230,7 +258,7 @@
         salt.length,
         kCCPRFHmacAlgSHA256,
         iterations,
-        derivedKey,
+        derivedKey.mutableBytes,
         derivedKeyLength
     );
 
@@ -238,23 +266,15 @@
         return nil;
     }
 
-    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
+    return [derivedKey copy];
 }
 
 + (NSString *)registerDidWithHandle:(NSString *)handle 
                              email:(NSString *)email 
                            pdsHost:(NSString *)pdsHost 
+                           keyPair:(Secp256k1KeyPair *)keyPair
                              error:(NSError **)error {
-    // 1. Generate Keypair
-    Secp256k1 *signer = [Secp256k1 shared];
-    NSError *keyError = nil;
-    Secp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
-    if (!keyPair) {
-        if (error) *error = keyError;
-        return nil;
-    }
-
-    NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.publicKey]]];
+    NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
 
     // 3. Genesis Op Data
     NSDictionary *opData = @{
@@ -321,7 +341,7 @@
         }
         
         NSError *sigError = nil;
-        NSData *signature = [signer signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
+        NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
         if (!signature) {
             if (error) *error = sigError;
             return nil;
@@ -480,6 +500,113 @@
     return success;
 }
 
++ (BOOL)updatePlcEndpointWithContext:(PDSCLICommandContext *)context
+                                 did:(NSString *)did
+                         newEndpoint:(NSString *)newEndpoint {
+    if (context.verbose) {
+        PDS_LOG_INFO(@"Updating PLC endpoint for %@ to %@", did, newEndpoint);
+    }
+    
+    NSString *dbPath = [self databasePathForContext:context];
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        if (context.verbose) PDS_LOG_ERROR(@"Failed to open DB: %@", error.localizedDescription);
+        return NO;
+    }
+
+    PDSDatabaseAccount *account = [db getAccountByDid:did error:&error];
+    if (!account) {
+        if (context.verbose) PDS_LOG_ERROR(@"Account not found");
+        [db close];
+        return NO;
+    }
+    [db close];
+
+    // Read the current highest operation from the PLC server
+    NSDictionary *config = [context loadConfig];
+    NSString *plcUrl = config[@"plc"][@"url"];
+    if (!plcUrl) {
+        plcUrl = [[NSProcessInfo processInfo] environment][@"PDS_PLC_URL"] ?: @"http://localhost:2582";
+    }
+
+    DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+    NSArray *auditLog = [resolver resolveAuditLogForDID:did error:&error];
+    
+    if (!auditLog || auditLog.count == 0) {
+        if (context.verbose) PDS_LOG_ERROR(@"Failed to fetch PLC log for DID: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    NSDictionary *lastOpPayload = auditLog.lastObject;
+    NSString *lastOpHash = [PLCOperation calculateCIDForOperation:lastOpPayload error:nil];
+    
+    if (!lastOpHash) {
+         if (context.verbose) PDS_LOG_ERROR(@"Could not calculate cid of previous operation");
+         return NO;
+    }
+    
+    NSMutableDictionary *newOpData = [lastOpPayload mutableCopy];
+    // Strip old signature
+    [newOpData removeObjectForKey:@"sig"];
+    newOpData[@"prev"] = lastOpHash;
+    
+    // Update the service endpoint
+    NSMutableDictionary *services = [newOpData[@"services"] mutableCopy] ?: [NSMutableDictionary dictionary];
+    services[@"atproto_pds"] = @{
+        @"type": @"AtprotoPersonalDataServer",
+        @"endpoint": newEndpoint
+    };
+    newOpData[@"services"] = services;
+    
+    // Sign It
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+    PDSActorStore *store = [pool storeForDid:did error:&error];
+    if (!store) {
+        if (context.verbose) PDS_LOG_ERROR(@"Could not open actor store: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    NSData *privKeyData = [store exportSigningKeyWithError:&error];
+    if (!privKeyData) {
+        if (context.verbose) PDS_LOG_ERROR(@"No rotation key available: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:newOpData error:&error];
+    NSData *sha256 = [CryptoUtils sha256:cborData];
+    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
+    
+    if (!signature) {
+        if (context.verbose) PDS_LOG_ERROR(@"Failed to sign new PLC op: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    newOpData[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    
+    // Post to PLC
+    NSString *postUrl = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:postUrl]];
+    req.HTTPMethod = @"POST";
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:newOpData options:0 error:nil];
+    
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block BOOL success = NO;
+    [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+        if (!err && [(NSHTTPURLResponse *)resp statusCode] == 200) {
+            success = YES;
+        } else {
+            NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"";
+            if (context.verbose) PDS_LOG_ERROR(@"PLC Post Failed: %ld %@", (long)[(NSHTTPURLResponse *)resp statusCode], body);
+        }
+        dispatch_semaphore_signal(sema);
+    }] resume];
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+
+    return success;
+}
+
 @end
 
 #pragma mark - Account Command
@@ -512,7 +639,8 @@
            @"  reactivate <did>       Reactivate a deactivated account\n"
            @"  delete <did>           Permanently delete an account\n"
            @"  update-email <did> <email>  Update account email\n"
-           @"  update-handle <did> <handle>  Update account handle\n\n"
+           @"  update-handle <did> <handle>  Update account handle\n"
+           @"  update-plc-endpoint <did> <endpoint>  Update the account PLC service endpoint\n\n"
            @"Options for 'list':\n"
            @"  --limit, -l <n>        Limit results (default: 100)\n"
            @"  --filter, -f <text>    Filter by handle, email, or DID";
@@ -523,7 +651,7 @@
 }
 
 - (NSArray<NSString *> *)subcommands {
-    return @[@"list", @"info", @"create", @"deactivate", @"reactivate", @"delete", @"update-email", @"update-handle"];
+    return @[@"list", @"info", @"create", @"deactivate", @"reactivate", @"delete", @"update-email", @"update-handle", @"update-plc-endpoint"];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -551,6 +679,8 @@
         return [self executeUpdateEmailWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"update-handle"]) {
         return [self executeUpdateHandleWithArgs:subArgs context:context];
+    } else if ([subcommand isEqualToString:@"update-plc-endpoint"]) {
+        return [self executeUpdatePlcEndpointWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
         return 1;
@@ -866,12 +996,35 @@
     }
 }
 
+- (int)executeUpdatePlcEndpointWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+    if (args.count < 2) {
+        [context printError:@"Missing arguments: update-plc-endpoint <did> <endpoint>"];
+        [context printInfo:@"\nUsage: pds account update-plc-endpoint <did> <new-endpoint>"];
+        [context printInfo:@"\nExample:"];
+        [context printInfo:@"  pds account update-plc-endpoint did:plc:abc123 http://127.0.0.1:8002"];
+        return 1;
+    }
+
+    NSString *did = args[0];
+    NSString *newEndpoint = args[1];
+
+    BOOL success = [PDSCLIAccountManager updatePlcEndpointWithContext:context did:did newEndpoint:newEndpoint];
+
+    if (success) {
+        [context printInfo:@"PLC endpoint updated successfully"];
+        return 0;
+    } else {
+        [context printError:@"Failed to update PLC endpoint"];
+        return 1;
+    }
+}
+
 - (int)executeUpdateHandleWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count < 2) {
         [context printError:@"Missing arguments: --update-handle <did> <handle>"];
         [context printInfo:@"\nUsage: pds account update-handle <did> <new-handle>"];
         [context printInfo:@"\nExample:"];
-        [context printInfo:@"  pds account update-handle did:plc:abc123 newhandle.bsky.social"];
+        [context printInfo:@"  pds account update-handle did:plc:abc123 newhandle.example.com"];
         return 1;
     }
 
