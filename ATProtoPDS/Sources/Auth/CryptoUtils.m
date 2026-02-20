@@ -143,4 +143,36 @@
     return [NSString stringWithString:hex];
 }
 
++ (BOOL)constantTimeCompare:(NSString *)a to:(NSString *)b {
+    if (a == nil && b == nil) {
+        return YES;
+    }
+    if (a == nil || b == nil) {
+        return NO;
+    }
+    
+    NSUInteger aLen = a.length;
+    NSUInteger bLen = b.length;
+    
+    if (aLen != bLen) {
+        volatile uint8_t dummy = 0;
+        const char *bBytes = [b UTF8String];
+        for (NSUInteger i = 0; i < bLen; i++) {
+            dummy |= (uint8_t)bBytes[i];
+        }
+        (void)dummy;
+        return NO;
+    }
+    
+    const char *aBytes = [a UTF8String];
+    const char *bBytes = [b UTF8String];
+    volatile uint8_t result = 0;
+    
+    for (NSUInteger i = 0; i < aLen; i++) {
+        result |= (uint8_t)(aBytes[i] ^ bBytes[i]);
+    }
+    
+    return result == 0;
+}
+
 @end

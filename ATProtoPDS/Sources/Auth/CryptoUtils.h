@@ -42,6 +42,15 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Base64URL decodes string. */
 + (nullable NSData *)base64URLDecode:(NSString *)string;
 
+/*! Constant-time string comparison. Resistant to timing attacks.
+    Compares strings byte-by-byte with constant time regardless of where
+    the first difference occurs. Use for comparing secrets like tokens,
+    thumbprints, and cryptographic values.
+    @param a First string to compare (may be nil).
+    @param b Second string to compare (may be nil).
+    @return YES if strings are equal (including both nil), NO otherwise. */
++ (BOOL)constantTimeCompare:(nullable NSString *)a to:(nullable NSString *)b;
+
 @end
 
 NS_ASSUME_NONNULL_END

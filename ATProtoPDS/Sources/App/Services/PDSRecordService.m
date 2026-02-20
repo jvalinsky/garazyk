@@ -15,10 +15,12 @@
 #import <CommonCrypto/CommonDigest.h>
 #import "Repository/RepoCommit.h"
 
+NSErrorDomain const PDSRecordServiceErrorDomain = @"com.atproto.pds.record-service";
 NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNotification";
 
 @interface PDSRecordService ()
 
+- (BOOL)checkAuthorizationForDid:(NSString *)targetDid actorDid:(NSString *)actorDid error:(NSError **)error;
 - (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error;
@@ -35,6 +37,30 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         _databasePool = databasePool;
     }
     return self;
+}
+
+#pragma mark - Authorization
+
+- (BOOL)checkAuthorizationForDid:(NSString *)targetDid actorDid:(NSString *)actorDid error:(NSError **)error {
+    if (!actorDid || !targetDid) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                                          code:PDSRecordServiceErrorUnauthorized
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Authorization required: missing actor or target DID"}];
+        }
+        return NO;
+    }
+    
+    if (![actorDid isEqualToString:targetDid]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                                          code:PDSRecordServiceErrorUnauthorized
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Cannot modify another user's repository"}];
+        }
+        return NO;
+    }
+    
+    return YES;
 }
 
 #pragma mark - Record Operations
@@ -105,11 +131,17 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 }
 
 - (BOOL)putRecord:(NSString *)collection
-             rkey:(NSString *)rkey
-            value:(NSDictionary *)value
-           forDid:(NSString *)did
-   validationMode:(PDSValidationMode)mode
-            error:(NSError **)error {
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+          actorDid:(NSString *)actorDid
+    validationMode:(PDSValidationMode)mode
+             error:(NSError **)error {
+    
+    if (![self checkAuthorizationForDid:did actorDid:actorDid error:error]) {
+        return NO;
+    }
+    
     // Validate collection NSID format
     NSError *nsidError = nil;
     if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
@@ -232,23 +264,43 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 }
 
 - (BOOL)putRecord:(NSString *)collection
-             rkey:(NSString *)rkey
-            value:(NSDictionary *)value
-           forDid:(NSString *)did
-            error:(NSError **)error {
-    // Convenience method with default required validation
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+             error:(NSError **)error {
     return [self putRecord:collection
                       rkey:rkey
                      value:value
                     forDid:did
+                  actorDid:did
             validationMode:PDSValidationModeRequired
                      error:error];
 }
 
+- (BOOL)putRecord:(NSString *)collection
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+    validationMode:(PDSValidationMode)mode
+             error:(NSError **)error {
+    return [self putRecord:collection
+                      rkey:rkey
+                     value:value
+                    forDid:did
+                  actorDid:did
+            validationMode:mode
+                     error:error];
+}
+
 - (BOOL)deleteRecord:(NSString *)collection
-                rkey:(NSString *)rkey
-              forDid:(NSString *)did
-               error:(NSError **)error {
+                 rkey:(NSString *)rkey
+               forDid:(NSString *)did
+             actorDid:(NSString *)actorDid
+                error:(NSError **)error {
+    
+    if (![self checkAuthorizationForDid:did actorDid:actorDid error:error]) {
+        return NO;
+    }
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSString *writeRev = [TID tid].stringValue;
@@ -302,11 +354,24 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     return success;
 }
 
+- (BOOL)deleteRecord:(NSString *)collection
+                 rkey:(NSString *)rkey
+               forDid:(NSString *)did
+                error:(NSError **)error {
+    return [self deleteRecord:collection rkey:rkey forDid:did actorDid:did error:error];
+}
+
 - (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
-                                forDid:(NSString *)did
-                              validate:(BOOL)validate
-                            swapCommit:(nullable NSString *)swapCommit
-                                 error:(NSError **)error {
+                                 forDid:(NSString *)did
+                               actorDid:(NSString *)actorDid
+                               validate:(BOOL)validate
+                             swapCommit:(nullable NSString *)swapCommit
+                                  error:(NSError **)error {
+    
+    if (![self checkAuthorizationForDid:did actorDid:actorDid error:error]) {
+        return nil;
+    }
+    
     if (!writes.count) {
         return @{@"results": @[]};
     }
@@ -712,6 +777,14 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     return response;
+}
+
+- (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
+                                 forDid:(NSString *)did
+                               validate:(BOOL)validate
+                             swapCommit:(nullable NSString *)swapCommit
+                                  error:(NSError **)error {
+    return [self applyWrites:writes forDid:did actorDid:did validate:validate swapCommit:swapCommit error:error];
 }
 
 - (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
