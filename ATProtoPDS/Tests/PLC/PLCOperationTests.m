@@ -16,7 +16,7 @@
 
 - (void)testParseFromDictionary {
     NSDictionary *json = @{
-        @"did": @"did:plc:123",
+        @"did": @"did:plc:abcdefghijklmnopqrstuvwx",
         @"prev": @"cid:456",
         @"sig": @"sig789",
         @"type": @"plc_operation"
@@ -27,7 +27,7 @@
     
     XCTAssertNil(error);
     XCTAssertNotNil(op);
-    XCTAssertEqualObjects(op.did, @"did:plc:123");
+    XCTAssertEqualObjects(op.did, @"did:plc:abcdefghijklmnopqrstuvwx");
     XCTAssertEqualObjects(op.prev, @"cid:456");
     XCTAssertEqualObjects(op.sig, @"sig789");
     XCTAssertEqualObjects(op.data[@"type"], @"plc_operation");
@@ -35,7 +35,7 @@
 
 - (void)testParseFromDictionaryMissingOptionalPrev {
     NSDictionary *json = @{
-        @"did": @"did:plc:123",
+        @"did": @"did:plc:abcdefghijklmnopqrstuvwx",
         @"sig": @"sig789",
         @"type": @"plc_operation"
     };
@@ -45,7 +45,7 @@
     
     XCTAssertNil(error);
     XCTAssertNotNil(op);
-    XCTAssertEqualObjects(op.did, @"did:plc:123");
+    XCTAssertEqualObjects(op.did, @"did:plc:abcdefghijklmnopqrstuvwx");
     XCTAssertNil(op.prev);
     XCTAssertEqualObjects(op.sig, @"sig789");
     XCTAssertEqualObjects(op.data[@"type"], @"plc_operation");
@@ -53,7 +53,7 @@
 
 - (void)testParseFromDictionaryMissingRequiredField {
     NSDictionary *json = @{
-        @"did": @"did:plc:123"
+        @"did": @"did:plc:abcdefghijklmnopqrstuvwx"
         // missing sig
     };
     

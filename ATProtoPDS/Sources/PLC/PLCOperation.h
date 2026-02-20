@@ -15,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)calculateDIDForData:(NSDictionary *)data;
 + (nullable NSString *)calculateCIDForOperation:(NSDictionary *)operation error:(NSError **)error;
 + (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error;
+
++ (BOOL)isValidDidPlc:(NSString *)did;
++ (BOOL)assertDidPlc:(NSString *)did error:(NSError **)error;
+
 - (NSDictionary *)toDictionary;
 
 @end
