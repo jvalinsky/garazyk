@@ -45,4 +45,40 @@
     XCTAssertNotEqualObjects(r1, r2, @"Random bytes should be different");
 }
 
+#pragma mark - Constant-Time Comparison Tests
+
+- (void)testConstantTimeCompareEqual {
+    XCTAssertTrue([CryptoUtils constantTimeCompare:@"abc123xyz" to:@"abc123xyz"]);
+    XCTAssertTrue([CryptoUtils constantTimeCompare:@"" to:@""]);
+    XCTAssertTrue([CryptoUtils constantTimeCompare:@"a" to:@"a"]);
+    XCTAssertTrue([CryptoUtils constantTimeCompare:@"dpop_thumbprint_12345" to:@"dpop_thumbprint_12345"]);
+}
+
+- (void)testConstantTimeCompareNotEqual {
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abc123xyz" to:@"abc123xya"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abc123xyz" to:@"xbc123xyz"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abc123xyz" to:@"abc123xyZ"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abc" to:@"abd"]);
+}
+
+- (void)testConstantTimeCompareDifferentLength {
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abc" to:@"abcd"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abcd" to:@"abc"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"" to:@"a"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"a" to:@""]);
+}
+
+- (void)testConstantTimeCompareNilHandling {
+    XCTAssertFalse([CryptoUtils constantTimeCompare:nil to:@"abc"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"abc" to:nil]);
+    XCTAssertTrue([CryptoUtils constantTimeCompare:nil to:nil]);
+}
+
+- (void)testConstantTimeCompareSpecialCharacters {
+    XCTAssertTrue([CryptoUtils constantTimeCompare:@"base64/url+encoded==" to:@"base64/url+encoded=="]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"base64/url+encoded==" to:@"base64/url+encoded=!"]);
+    XCTAssertTrue([CryptoUtils constantTimeCompare:@"did:plc:abc123" to:@"did:plc:abc123"]);
+    XCTAssertFalse([CryptoUtils constantTimeCompare:@"did:plc:abc123" to:@"did:plc:abc124"]);
+}
+
 @end
