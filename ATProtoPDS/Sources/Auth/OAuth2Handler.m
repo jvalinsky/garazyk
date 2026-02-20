@@ -66,18 +66,9 @@ static NSMutableDictionary *sPendingConsents = nil;
         }
         self.oauthServer.issuer = issuer;
 
-        // Build other endpoints relative to issuer
         self.oauthServer.authorizationEndpoint = [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
         self.oauthServer.tokenEndpoint = [NSString stringWithFormat:@"%@/oauth/token", issuer];
         self.oauthServer.jwksURI = [NSString stringWithFormat:@"%@/oauth/jwks", issuer];
-
-        #ifdef DEBUG
-        // Seed test client for development only
-        NSError *seedError = nil;
-        if (![_database seedTestClient:&seedError]) {
-            PDS_LOG_AUTH_WARN(@"Failed to seed test OAuth client: %@", seedError.localizedDescription);
-        }
-        #endif
     }
     return self;
 }

@@ -5,7 +5,6 @@ import os
 import random
 import json
 
-# Configuration
 BASE_URL = os.environ.get("PDS_URL", "http://localhost:2583")
 BIN_PATH = os.environ.get("PDS_BIN", "./build/bin/kaszlak")
 DATA_DIR = os.environ.get("PDS_DATA_DIR", "./simulation_data")
@@ -17,6 +16,15 @@ def run_cli(args, is_admin=False):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"CLI error: {result.stderr}")
+        return False
+    return True
+
+def run_oauth_cli(args):
+    cmd = [BIN_PATH, "--data-dir", DATA_DIR, "oauth"] + args
+    print(f"Running OAuth CLI: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"OAuth CLI error: {result.stderr}")
         return False
     return True
 
@@ -79,6 +87,17 @@ def create_report(session, subject_uri, subject_cid, reason):
 
 def main():
     suffix = str(random.randint(100, 999))
+    
+    # 0. Register OAuth test client (required for OAuth flows)
+    print("\n=== Registering OAuth test client ===")
+    redirect_uris = [
+        f"{BASE_URL}/?oauth_callback=1",
+        f"{BASE_URL}/oauth-demo/callback",
+    ]
+    run_oauth_cli(["client", "register", 
+                   "--client-id", "test-client", 
+                   "--redirect-uri", redirect_uris[0],
+                   "--redirect-uri", redirect_uris[1]])
     
     users = {
         "admin": {"handle": f"admin{suffix}.test", "email": f"admin{suffix}@test.com", "pass": "adminpass123", "is_admin": True, "persona": "Server Admin"},
