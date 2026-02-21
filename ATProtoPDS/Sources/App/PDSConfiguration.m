@@ -1,5 +1,6 @@
 #import "PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/Foundation/NSDataCompat.h"
 
 NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 

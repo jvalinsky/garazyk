@@ -6,20 +6,20 @@
 #else
 #include <stdlib.h>
 #include <stdint.h>
+#include <arpa/inet.h>
+
+// Import CF types FIRST (no Foundation dependency)
+#import "../CoreFoundation/CFTypes.h"
+
+// Then import Foundation for other needs
 #import <Foundation/Foundation.h>
 
-// CF Types and stubs (restored for compatibility)
-#ifndef CF_TYPES_DEFINED
-#define CF_TYPES_DEFINED
-typedef const void *CFTypeRef;
-typedef const struct __CFDictionary *CFDictionaryRef;
-typedef struct __CFDictionary *CFMutableDictionaryRef;
-typedef const struct __CFString *CFStringRef;
-typedef const struct __CFData *CFDataRef;
-typedef const struct __CFBoolean *CFBooleanRef;
-typedef const struct __CFAllocator *CFAllocatorRef;
-typedef const struct __CFError *CFErrorRef;
-typedef const struct __CFArray *CFArrayRef;
+// Import CFByteOrder for byte swapping
+#import "../CoreFoundation/CFByteOrder.h"
+
+typedef uint8_t UInt8;
+
+// CF Types not yet in CFBase.h
 typedef const struct __CFHost *CFHostRef;
 typedef const struct __CFRunLoop *CFRunLoopRef;
 typedef const struct __CFRunLoopMode *CFRunLoopModeRef;
@@ -27,16 +27,35 @@ typedef const struct __CFRunLoopMode *CFRunLoopModeRef;
 typedef int32_t OSStatus;
 typedef int32_t CFStreamError;
 typedef int CFHostInfoType;
-typedef unsigned char Boolean;
-typedef int64_t CFIndex;
+
+// SecKeyAlgorithm is just a CFStringRef
+typedef CFStringRef SecKeyAlgorithm;
+
+// CFNumber types
+typedef CFIndex CFNumberType;
+enum {
+    kCFNumberSInt8Type = 1,
+    kCFNumberSInt16Type = 2,
+    kCFNumberSInt32Type = 3,
+    kCFNumberSInt64Type = 4,
+    kCFNumberFloat32Type = 5,
+    kCFNumberFloat64Type = 6,
+    kCFNumberCharType = 7,
+    kCFNumberShortType = 8,
+    kCFNumberIntType = 9,
+    kCFNumberLongType = 10,
+    kCFNumberLongLongType = 11,
+    kCFNumberFloatType = 12,
+    kCFNumberDoubleType = 13,
+    kCFNumberCFIndexType = 14,
+    kCFNumberNSIntegerType = 15,
+    kCFNumberCGFloatType = 16
+};
+typedef const struct __CFNumber *CFNumberRef;
 
 #define kCFHostAddresses 0
-#define kCFAllocatorDefault ((CFAllocatorRef)0)
-#define kCFBooleanTrue ((CFBooleanRef)1)
-#define kCFBooleanFalse ((CFBooleanRef)0)
 #define errSecSuccess 0
 #define errSecItemNotFound (-25300)
-#endif
 
 // CFHost stubs for HandleResolver.m
 static inline CFHostRef CFHostCreateWithName(CFAllocatorRef allocator, CFStringRef hostname) {
@@ -56,29 +75,33 @@ static inline CFArrayRef CFHostGetAddressing(CFHostRef host, Boolean *hasName) {
 }
 
 static inline CFIndex CFArrayGetCount(CFArrayRef theArray) {
-    return 0;
+    if (theArray == NULL) return 0;
+    NSArray *arr = (__bridge NSArray *)theArray;
+    return [arr count];
 }
 
 static inline const void *CFArrayGetValueAtIndex(CFArrayRef theArray, CFIndex idx) {
-    return NULL;
+    if (theArray == NULL) return NULL;
+    NSArray *arr = (__bridge NSArray *)theArray;
+    return (__bridge const void *)[arr objectAtIndex:idx];
 }
 
 static inline const uint8_t *CFDataGetBytePtr(CFDataRef theData) {
-    return NULL;
+    if (theData == NULL) return NULL;
+    NSData *data = (__bridge NSData *)theData;
+    return [data bytes];
 }
 
-static inline void CFRelease(CFTypeRef cf) {
-    if (cf) free((void*)cf);
+static inline CFNumberType CFNumberGetType(CFNumberRef number) {
+    (void)number;
+    return kCFNumberDoubleType;
 }
-
-// Byte swapping
-static inline uint32_t CFSwapInt32BigToHost(uint32_t arg) { return ntohl(arg); }
-static inline uint16_t CFSwapInt16BigToHost(uint16_t arg) { return ntohs(arg); }
 
 // Import new modular headers
 #import "SecRandom.h"
 #import "SecKey.h"
 #import "SecItem.h"
+#import "SecAccessControl.h"
 
 #endif
 

@@ -38,34 +38,20 @@ if(NOT APPLE)
 
     add_compile_definitions(GNUSTEP LINUX)
     
-    # GNUstep Configuration - support both source-built and distro installs
-    find_program(GNUSTEP_CONFIG
-        NAMES gnustep-config
-        PATHS /usr/GNUstep/System/Tools /usr/bin
-        REQUIRED
-    )
-    if(GNUSTEP_CONFIG)
-        execute_process(
-            COMMAND ${GNUSTEP_CONFIG} --objc-flags
-            OUTPUT_VARIABLE GNUSTEP_CFLAGS
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        execute_process(
-            COMMAND ${GNUSTEP_CONFIG} --base-libs
-            OUTPUT_VARIABLE GNUSTEP_LIBS
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        # Add source-built GNUstep headers first for objc runtime
-        set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I/usr/GNUstep/Local/Library/Headers ${GNUSTEP_CFLAGS} -fblocks -fobjc-arc -fobjc-runtime=gnustep-2.0")
-        # Add source-built library path before system paths
-        link_directories(BEFORE /usr/GNUstep/Local/Library/Libraries)
-        string(REPLACE " " ";" GNUSTEP_LIBS_LIST "${GNUSTEP_LIBS}")
-    endif()
+    # GNUstep Configuration - use source-built installation
+    set(GNUSTEP_PREFIX "DEPLOY_DIR/GNUstep/install" CACHE PATH "GNUstep installation prefix")
     
-    include_directories(/usr/include/GNUstep)
-    if(NOT APPLE)
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
-    endif()
+    # Set Objective-C flags for GNUstep ng runtime with ARC support
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fblocks -fobjc-runtime=gnustep-2.2 -fobjc-arc")
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I${GNUSTEP_PREFIX}/include")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GNUSTEP_PREFIX}/lib")
+    
+    # Add GNUstep include directories
+    include_directories(${GNUSTEP_PREFIX}/include)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
+    
+    # Link directories
+    link_directories(BEFORE ${GNUSTEP_PREFIX}/lib)
 endif()
 
 #=============================
@@ -120,41 +106,38 @@ else()
     find_package(OpenSSL REQUIRED)
     find_package(SQLite3 REQUIRED)
     
-    find_library(DISPATCH_LIB dispatch)
-    find_library(BLOCKS_RUNTIME_LIB BlocksRuntime)
     find_library(QRENCODE_LIB qrencode REQUIRED)
     find_path(QRENCODE_INCLUDE_DIR qrencode.h REQUIRED)
     
-    if(NOT DISPATCH_LIB)
-        message(WARNING "libdispatch not found")
-    endif()
-
     if(QRENCODE_INCLUDE_DIR)
         include_directories(${QRENCODE_INCLUDE_DIR})
     endif()
     
-    # Use local GNUstep libraries (from /usr/GNUstep/Local) which are compiled with libobjc2
-    find_library(LOCAL_GNUSTEP_BASE gnustep-base PATHS /usr/GNUstep/Local/Library/Libraries NO_DEFAULT_PATH)
-    if(LOCAL_GNUSTEP_BASE)
-        message(STATUS "Using local gnustep-base: ${LOCAL_GNUSTEP_BASE}")
-    else()
-        message(STATUS "Local gnustep-base not found, using system default")
-        set(LOCAL_GNUSTEP_BASE gnustep-base)
-    endif()
-    
     set(PLATFORM_LIBRARIES
-        ${GNUSTEP_LIBS_LIST}
+        gnustep-base
+        objc
+        curl
+        dispatch
         OpenSSL::SSL
         OpenSSL::Crypto
-        SQLite3::SQLite3
-        ${DISPATCH_LIB}
-        ${BLOCKS_RUNTIME_LIB}
+        ${SQLite3_LIBRARIES}
         ${QRENCODE_LIB}
         pthread
         m
         dl
         resolv
+        icui18n
+        icuuc
+        icudata
+        ffi
+        xml2
+        xslt
+        z
     )
+endif()
+
+if(SQLite3_INCLUDE_DIRS)
+    include_directories(${SQLite3_INCLUDE_DIRS})
 endif()
 
 #=============================
@@ -228,10 +211,12 @@ endif()
 # Add compat sources for Linux
 if(NOT APPLE)
   file(GLOB COMPAT_SOURCES "Sources/Compat/**/*.m")
-  list(APPEND ATProtoPDS_OBJC_SOURCES ${COMPAT_SOURCES})
+  file(GLOB COMPAT_SOURCES_C "Sources/Compat/**/*.c")
+  file(GLOB ATPROTOPDS_COMPAT_SOURCES "ATProtoPDS/Sources/Compat/**/*.m")
+  list(APPEND ATProtoPDS_OBJC_SOURCES ${COMPAT_SOURCES} ${COMPAT_SOURCES_C} ${ATPROTOPDS_COMPAT_SOURCES})
 endif()
 
-set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES})
+set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES} ${COMPAT_SOURCES_C})
 
 #=============================
 # Main Executables

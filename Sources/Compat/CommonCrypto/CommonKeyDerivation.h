@@ -7,6 +7,8 @@
 #include <CommonCrypto/CommonDigest.h>
 #include <openssl/evp.h>
 
+typedef int32_t CCCryptorStatus;
+
 enum {
     kCCSuccess = 0,
     kCCParamError = -4300,

@@ -2,6 +2,7 @@
 #import "CLI/PDSCLIDefinitions.h"
 #import "Admin/PDSInstallerCommand.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/Foundation/NSDataCompat.h"
 
 @implementation PDSCLICommandContext
 
