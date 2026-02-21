@@ -103,6 +103,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether invite codes are required. */
 @property (nonatomic, readonly) BOOL inviteCodeRequired;
 
+/*! Available user domains for registration. If nil, defaults to canonical hostname. */
+@property (nonatomic, readonly, nullable) NSArray<NSString *> *availableUserDomains;
+
 /*! Phone verification provider name (`none`, `mock`, or provider key). */
 @property (nonatomic, readonly) NSString *phoneVerificationProvider;
 
