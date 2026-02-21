@@ -23,8 +23,8 @@ This guide covers building, installing, and running the ATProto PDS server.
 
 ```bash
 # Clone repository
-git clone https://github.com/jvalinsky/NSPds.git
-cd NSPds
+git clone https://github.com/jvalinsky/objpds.git
+cd objpds
 
 # Generate the Xcode project
 xcodegen generate
@@ -49,22 +49,26 @@ Server available at `http://localhost:2583`
 ### Available Targets
 
 ```bash
-# Using Make
-make build          # Build all targets
-make build-cli      # Command-line server only
-make build-gui      # macOS GUI application
-make build-release  # Release build with compiler optimizations
+# Generate Xcode project (required after CMakeLists.txt changes)
+xcodegen generate
 
-# Using Xcode
-xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS-CLI build
-xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS build
+# Build CLI tool
+xcodebuild -scheme ATProtoPDS-CLI build
+
+# Build all tests
+xcodebuild -scheme AllTests build
+
+# Build with CMake (alternative)
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(sysctl -n hw.ncpu)
 ```
 
 ### Build Configuration
 
 #### Debug Build
 ```bash
-make build-debug
+xcodebuild -scheme ATProtoPDS-CLI -configuration Debug build
 # Features: Logging, assertions, debug symbols
 # Size: Larger binary
 # Performance: Slower with detailed error info
@@ -72,7 +76,7 @@ make build-debug
 
 #### Release Build
 ```bash
-make build-release
+xcodebuild -scheme ATProtoPDS-CLI -configuration Release build
 # Features: Compiler optimizations enabled, symbols stripped
 # Size: Smaller binary
 # Performance: Lower debug overhead for deployment use
@@ -230,9 +234,6 @@ sudo systemctl start atproto-pds
 Project scripts use consistent error handling, input validation, and structured logging.
 
 ```bash
-# Run integration smoke tests
-./scripts/simple_test.sh
-
 # Run social features e2e tests (feeds, follows, likes, profiles)
 ./scripts/test_social_features.sh
 
@@ -302,22 +303,20 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/ATProtoPDS-*
 
 #### Missing Dependencies
 ```bash
-# Reinstall dependencies
-make clean-deps
-make deps
+# Update submodules
+git submodule update --init --recursive
 
 # Check library paths
-otool -L build/debug/kaszlak
+otool -L build/bin/kaszlak
 ```
 
 #### Compilation Errors
 ```bash
 # Clean and rebuild
-make clean
-make build
+xcodebuild -scheme ATProtoPDS-CLI clean build
 
 # Check for syntax errors
-xcodebuild -project ATProtoPDS.xcodeproj -scheme ATProtoPDS-CLI clean build 2>&1 | head -50
+xcodebuild -scheme ATProtoPDS-CLI build 2>&1 | head -50
 ```
 
 ### Runtime Issues
@@ -430,13 +429,13 @@ sqlite3 data/pds.db "VACUUM; ANALYZE;"
 
 ```bash
 # Run unit tests
-make test
+xcodebuild -scheme AllTests build && ./build/tests/AllTests
 
 # Run integration tests
 ./scripts/test_server.sh
 
 # Run security tests
-make security-test
+./scripts/quality_gate.sh
 ```
 
 ### Debugging
@@ -459,7 +458,7 @@ ls /cores/
 
 1. Build release version
    ```bash
-   make build-release
+   xcodebuild -scheme ATProtoPDS-CLI -configuration Release build
    ```
 
 2. Configure environment
@@ -492,7 +491,7 @@ ls /cores/
 ```dockerfile
 FROM macos:latest
 COPY . /app
-RUN make build-release
+RUN xcodebuild -scheme ATProtoPDS-CLI -configuration Release build
 EXPOSE 2583
 CMD ["/app/kaszlak", "serve", "--port", "2583"]
 ```

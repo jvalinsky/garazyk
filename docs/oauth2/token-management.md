@@ -169,7 +169,15 @@ grant_type=authorization_code
 &code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 ```
 
-**Implementation** (`OAuth2.m:1059-1175`):
+**Supported Grant Types:**
+- `authorization_code` - Standard authorization code exchange
+- `refresh_token` - Token refresh
+- `urn:ietf:params:oauth:grant-type:dpop` - DPoP-bound token grant
+
+**Optional Parameters:**
+- `tfa_code` - TOTP code when two-factor authentication is enabled
+
+**Implementation** (`OAuth2.m:1051-1175`):
 
 1. Retrieve authorization code data from storage
 2. Verify code hasn't expired (600 second max age)
@@ -368,6 +376,10 @@ The `JWTMinter` class handles token creation:
 @end
 ```
 
+**Algorithm Usage:**
+- `JWTMinter` defaults to ES256 (P-256) for token signing
+- `OAuth2Server` uses ES256K (secp256k1) for ATProto compliance
+
 ### Key Management
 
 Keys are managed via `PDSKeyManager` protocol:
@@ -428,6 +440,7 @@ The `JWTVerifier` class validates tokens:
 | `unsupported_grant_type` | 400 | Grant type not supported |
 | `invalid_scope` | 400 | Requested scope invalid |
 | `interaction_required` | 400 | User interaction required (e.g., 2FA) |
+| `mfa_required` | 400 | Two-factor authentication required |
 | `use_dpop_nonce` | 400 | DPoP nonce required |
 
 ### JWT Error Codes

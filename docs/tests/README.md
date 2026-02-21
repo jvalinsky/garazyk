@@ -7,17 +7,17 @@ Comprehensive documentation for all unit and integration tests in the ATProtoPDS
 | Category | Description | Classes |
 |----------|-------------|---------|
 | [00-identity-auth](00-identity-auth/README.md) | OAuth, JWT, MFA, handle/DID resolution | 28 |
-| [01-repository](01-repository/README.md) | MST, CAR, CBOR, core primitives | 12 |
-| [02-network](02-network/README.md) | HTTP, XRPC, WebSocket, transport | 19 |
-| [03-database](03-database/README.md) | Actor stores, service DBs, pooling | 8 |
-| [04-application](04-application/README.md) | Services, controllers, CLI, admin | 20 |
-| [05-security](05-security/README.md) | Hardening, validation, authorization | 9 |
-| [06-integration](06-integration/README.md) | E2E, PLC, federation | 12 |
-| [07-email](07-email/README.md) | Email providers, secrets management | 5 |
-| [08-characterization](08-characterization/README.md) | Reference implementation compliance | 4 |
-| [09-utilities](09-utilities/README.md) | Config, metrics, debug tools | 8 |
+| [01-repository](01-repository/README.md) | MST, CAR, CBOR, core primitives | 14 |
+| [02-network](02-network/README.md) | HTTP, XRPC, WebSocket, transport | 45 |
+| [03-database](03-database/README.md) | Actor stores, service DBs, pooling | 18 |
+| [04-application](04-application/README.md) | Services, controllers, CLI, admin | 24 |
+| [05-security](05-security/README.md) | Hardening, validation, authorization | 6 |
+| [06-integration](06-integration/README.md) | E2E, PLC, federation | 13 |
+| [07-email](07-email/README.md) | Email providers, secrets management | 4 |
+| [08-characterization](08-characterization/README.md) | Reference implementation compliance | 6 |
+| [09-utilities](09-utilities/README.md) | Config, metrics, debug tools | 15 |
 
-**Total: ~125 test classes**
+**Total: ~140 test classes**
 
 ## Running Tests
 
