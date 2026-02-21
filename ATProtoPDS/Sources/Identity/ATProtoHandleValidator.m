@@ -31,6 +31,8 @@ NSString *handleErrorDescriptionForCode(NSInteger code, NSString *handle, NSStri
         }
         case 1008:
             return @"Top-level domain (TLD) cannot be all numbers. This helps distinguish handles from IP addresses. Use a real domain like .com, .social, .test, or .bsky.";
+        case 1009:
+            return @"Handle cannot start with 'admin.' - this prefix is reserved";
         default:
             return @"Invalid handle";
     }
@@ -54,6 +56,8 @@ NSString *handleRecoverySuggestionForCode(NSInteger code, NSString *handle) {
             return @"Remove any special characters, spaces, or symbols. Only letters, numbers, and hyphens are allowed";
         case 1008:
             return @"Use a non-numeric TLD like .com, .social, .test, .app, or .bsky instead of numbers";
+        case 1009:
+            return @"Choose a handle that doesn't start with 'admin.'";
         default:
             return @"Check that your handle follows DNS naming rules";
     }
@@ -147,7 +151,18 @@ NSString *emailRecoverySuggestionForCode(NSInteger code) {
         return NO;
     }
     
-    // Note: 'admin.' prefix reservation removed for self-hosted PDS deployments.
+    // Reject reserved prefixes
+    if ([[handle lowercaseString] hasPrefix:@"admin."]) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoHandleErrorDomain
+                                         code:1009
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: handleErrorDescriptionForCode(1009, handle, nil),
+                NSLocalizedRecoverySuggestionErrorKey: handleRecoverySuggestionForCode(1009, handle)
+            }];
+        }
+        return NO;
+    }
     
     NSString *labelPattern = @"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$";
     NSRegularExpression *labelRegex = [NSRegularExpression regularExpressionWithPattern:labelPattern options:0 error:nil];
