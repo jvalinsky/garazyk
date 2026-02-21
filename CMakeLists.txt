@@ -203,28 +203,23 @@ if(NOT APPLE)
   # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
 
-  # DID.m uses NSURLSession (not available in GNUstep)
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
-
-  # FederationClient.m uses NSURLSession
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
-
   # PDSMetrics.m uses os_unfair_lock
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Metrics/PDSMetrics\\.m$")
 
-  # SSLPinningManager.m uses NSURLSession
+  # SSLPinningManager.m uses SecTrust (not yet ported)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
 
   # WebSocketServer.m uses Network.framework
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 
-  # Identity resolvers use NSURLSession
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClient\\.m$")
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCAccountCreator\\.m$")
+  # Enable Identity resolvers (using GNUstep NSURLSession or fallback)
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClient\\.m$")
+  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCAccountCreator\\.m$")
 
   # Add Linux stub implementations
   list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxStubs.m")
@@ -376,20 +371,32 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
 
-  # Linux-specific test exclusions (NSURLSession not available, or depend on excluded sources)
+  # Linux-specific test exclusions
   if(NOT APPLE)
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClientTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
+    # Exclude OAuth2EndpointTests if they depend on specific auth flows not yet fully ported
+    # But basic OAuth/DID tests should now work
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
+    
+    # Enable Identity/Network tests
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolverTests.m")
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClientTests.m")
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
+    
+    # Exclude WebSocket/Sync tests (WebSocketServer not implemented)
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketConnectionTests.m")
 
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManagerSecurityTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/CharacterizationTests/KeyManagerCharacterizationTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStoreTests.m")
-    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DIDValidationTests.m")
+    # Exclude KeyManager tests that might rely on specific Keychain behaviors not yet mocked
+    # But we want to test SecKey implementation!
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManagerSecurityTests.m")
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/CharacterizationTests/KeyManagerCharacterizationTests.m")
+    
+    # Enable ActorStore tests (uses SQLite)
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/ActorStoreTests.m")
+    
+    # Enable DID validation
+    # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DIDValidationTests.m")
   endif()
 
   add_executable(AllTests

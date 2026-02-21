@@ -15,7 +15,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 
 #ifdef GNUSTEP
-#import "Compat/Security/Security.h"
+#import <Security/Security.h>
 #else
 #import <Security/Security.h>
 #endif
