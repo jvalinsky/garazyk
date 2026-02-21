@@ -313,89 +313,63 @@
         return did;
     }
 
-    // 5. POST to PLC Server (loop 3 times to verify chaining logic)
+    // 5. POST genesis operation to PLC Server
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
     
-    NSDictionary *currentOpData = opData;
-    NSString *prevHash = nil;
+    // Encode and sign the operation
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&cborError];
+    if (!cborData) {
+        if (error) *error = cborError;
+        return nil;
+    }
     
-    for (int i = 0; i < 3; i++) {
-        // If not first op, update it
-        if (i > 0) {
-            NSMutableDictionary *newOp = [currentOpData mutableCopy];
-            newOp[@"prev"] = prevHash;
-            
-            // Mutate service to ensure uniqueness
-            NSMutableDictionary *services = [newOp[@"services"] mutableCopy];
-            services[[NSString stringWithFormat:@"dummy_%d", i]] = @{
-                @"type": @"DummyService",
-                @"endpoint": [NSString stringWithFormat:@"http://dummy%d.test", i]
-            };
-            newOp[@"services"] = services;
-            
-            currentOpData = newOp;
-        }
-        
-        // Encode and Sign
-        NSError *cborError = nil;
-        NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:currentOpData error:&cborError];
-         if (!cborData) {
-            if (error) *error = cborError;
-            return nil;
-        }
-        
-        NSData *sha256 = [CryptoUtils sha256:cborData];
-        if (!sha256) {
-             if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
-             return nil;
-        }
-        
-        NSError *sigError = nil;
-        NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
-        if (!signature) {
-            if (error) *error = sigError;
-            return nil;
-        }
-        
-        NSMutableDictionary *payload = [currentOpData mutableCopy];
-        payload[@"sig"] = [CryptoUtils base64URLEncode:signature];
-        
-        // Post
-        NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
-        req.HTTPMethod = @"POST";
-        [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-        req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-        
-        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-        __block NSError *reqError = nil;
-        __block BOOL success = NO;
-        
-        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
-            if (err) {
-                reqError = err;
+    NSData *sha256 = [CryptoUtils sha256:cborData];
+    if (!sha256) {
+        if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
+        return nil;
+    }
+    
+    NSError *sigError = nil;
+    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
+    if (!signature) {
+        if (error) *error = sigError;
+        return nil;
+    }
+    
+    NSMutableDictionary *payload = [opData mutableCopy];
+    payload[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    
+    // Post to PLC server
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
+    req.HTTPMethod = @"POST";
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block NSError *reqError = nil;
+    __block BOOL success = NO;
+    
+    [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+        if (err) {
+            reqError = err;
+        } else {
+            NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)resp;
+            if (httpResp.statusCode == 200 || httpResp.statusCode == 201) {
+                success = YES;
             } else {
-                NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)resp;
-                if (httpResp.statusCode == 200) {
-                    success = YES;
-                } else {
-                    NSString *body = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    reqError = [NSError errorWithDomain:@"PDSCLI" code:httpResp.statusCode userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
-                }
+                NSString *body = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                reqError = [NSError errorWithDomain:@"PDSCLI" code:httpResp.statusCode userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
             }
-            dispatch_semaphore_signal(sema);
-        }] resume];
-        
-        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
-        
-        if (!success) {
-            if (error) *error = reqError;
-            return nil;
         }
-        
-        // Calculate CID of the SIGNED payload to use as 'prev' in next op
-        prevHash = [PLCOperation calculateCIDForOperation:payload error:nil];
-        
-        if (i%5==0) [NSThread sleepForTimeInterval:0.05]; 
+        dispatch_semaphore_signal(sema);
+    }] resume];
+    
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    
+    if (!success) {
+        if (error) *error = reqError;
+        return nil;
     }
     
     return did;
