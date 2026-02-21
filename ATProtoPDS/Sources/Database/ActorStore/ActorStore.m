@@ -9,6 +9,7 @@
 #import "Auth/PDSAppleActorKeyManager.h"
 #endif
 #import <CommonCrypto/CommonCrypto.h>
+#import <Security/Security.h>
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Auth/Secp256k1.h"
@@ -1290,10 +1291,15 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         return NO;
     }
     
-    // Generate a random salt
+    // Generate a cryptographically secure random salt
     uint8_t saltBytes[16];
-    for (int i = 0; i < 16; i++) {
-        saltBytes[i] = (uint8_t)(arc4random() & 0xFF);
+    if (SecRandomCopyBytes(kSecRandomDefault, 16, saltBytes) != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                          code:-1
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate secure random salt"}];
+        }
+        return NO;
     }
     NSData *salt = [NSData dataWithBytes:saltBytes length:16];
     
@@ -1469,10 +1475,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
     // AES-256-CBC with PKCS7 padding
-    // Generate random IV
+    // Generate cryptographically secure random IV
     uint8_t ivBytes[kCCBlockSizeAES128];
-    for (int i = 0; i < kCCBlockSizeAES128; i++) {
-        ivBytes[i] = (uint8_t)(arc4random() & 0xFF);
+    if (SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, ivBytes) != errSecSuccess) {
+        return nil;
     }
     
     size_t bufferSize = data.length + kCCBlockSizeAES128;

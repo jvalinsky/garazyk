@@ -75,3 +75,14 @@ coverage/
 
 # Test logs
 testing_*_logs.txt
+testing_*_log.txt
+test_output_log_*.txt
+test_*.txt
+tests_*.txt
+*_log.txt
+
+# Test artifacts
+simulation_data/
+test_data/
+tmp_atproto/
+tmp_social_app/

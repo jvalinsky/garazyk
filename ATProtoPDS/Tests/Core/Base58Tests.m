@@ -49,4 +49,36 @@
     XCTAssertEqualObjects(decoded, data);
 }
 
+- (void)testLargeInputRejection {
+    NSMutableData *largeData = [NSMutableData dataWithCapacity:64 * 1024 + 1];
+    uint8_t byte = 0x41; // 'A'
+    for (NSUInteger i = 0; i < 64 * 1024 + 1; i++) {
+        [largeData appendBytes:&byte length:1];
+    }
+    XCTAssertNil([Base58 encode:largeData], @"Should reject input > 64KB");
+}
+
+- (void)testLargeStringRejection {
+    NSMutableString *largeString = [NSMutableString string];
+    for (NSUInteger i = 0; i < 64 * 1024 + 1; i++) {
+        [largeString appendString:@"1"];
+    }
+    XCTAssertNil([Base58 decode:largeString], @"Should reject string > 64KB");
+}
+
+- (void)testMaxValidInput {
+    // Use a reasonable size that completes quickly (Base58 is O(n²) in worst case)
+    NSMutableData *maxData = [NSMutableData dataWithCapacity:1024];
+    uint8_t byte = 0x41;
+    for (NSUInteger i = 0; i < 1024; i++) {
+        [maxData appendBytes:&byte length:1];
+    }
+    NSString *encoded = [Base58 encode:maxData];
+    XCTAssertNotNil(encoded, @"Should accept 1KB input");
+    XCTAssertGreaterThan(encoded.length, (NSUInteger)0);
+    
+    NSData *decoded = [Base58 decode:encoded];
+    XCTAssertNotNil(decoded, @"Should decode valid output");
+}
+
 @end

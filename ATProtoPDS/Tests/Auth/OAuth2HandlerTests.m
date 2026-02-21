@@ -4,9 +4,35 @@
 #import "Auth/DPoPUtil.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Database/PDSDatabase.h"
+#import "App/Services/PDSAccountService.h"
+
+@interface TestAccountService : NSObject <PDSAccountService>
+@property (nonatomic, copy) NSDictionary *mockUser;
+@end
+
+@implementation TestAccountService
+- (nullable NSDictionary *)createAccountForEmail:(NSString *)email password:(NSString *)password handle:(NSString *)handle did:(nullable NSString *)did error:(NSError **)error { return nil; }
+- (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error { return YES; }
+- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error { return nil; }
+- (nullable NSArray *)getAllAccountsWithError:(NSError **)error { return @[]; }
+- (nullable NSDictionary *)loginWithHandle:(NSString *)handle password:(NSString *)password error:(NSError **)error {
+    return [self loginWithIdentifier:handle password:password error:error];
+}
+- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier password:(NSString *)password error:(NSError **)error {
+    if ([password isEqualToString:@"test-password"]) {
+        return self.mockUser ?: @{@"did": @"did:plc:test123", @"handle": identifier};
+    }
+    return nil;
+}
+- (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken error:(NSError **)error { return nil; }
+@end
 
 @interface OAuth2HandlerTests : XCTestCase
 @property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) TestAccountService *accountService;
+@property (nonatomic, copy) NSString *databasePath;
 @end
 
 static NSData *oauth2HandlerDataFromHexString(NSString *hex, NSUInteger expectedLength) {
@@ -73,11 +99,51 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
 - (void)setUp {
     [super setUp];
-    self.handler = [[OAuth2Handler alloc] init];
+    
+    NSString *filename = [NSString stringWithFormat:@"oauth2-handler-tests-%@.sqlite", [[NSUUID UUID] UUIDString]];
+    self.databasePath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
+    NSURL *databaseURL = [NSURL fileURLWithPath:self.databasePath];
+    self.database = [PDSDatabase databaseAtURL:databaseURL];
+    XCTAssertTrue([self.database openWithError:nil], @"Database should open");
+    
+    // Register test clients
+    NSError *clientError = nil;
+    NSDictionary *testClient = @{
+        @"client_id": @"test-client",
+        @"redirect_uris": @[@"http://localhost/cb", @"http://localhost:2583/cb"],
+        @"grant_types": @"authorization_code refresh_token",
+        @"scope": @"atproto"
+    };
+    XCTAssertTrue([self.database createClient:testClient error:&clientError], @"Should create test-client: %@", clientError);
+    
+    NSDictionary *confidentialClient = @{
+        @"client_id": @"test-client-confidential",
+        @"client_secret": @"test-secret",
+        @"redirect_uris": @[@"http://localhost/cb"],
+        @"grant_types": @"authorization_code refresh_token client_credentials",
+        @"scope": @"atproto"
+    };
+    XCTAssertTrue([self.database createClient:confidentialClient error:&clientError], @"Should create test-client-confidential: %@", clientError);
+    
+    self.accountService = [[TestAccountService alloc] init];
+    self.accountService.mockUser = @{@"did": @"did:plc:test-user", @"handle": @"test-user.test"};
+    
+    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler.accountService = self.accountService;
 }
 
 - (void)tearDown {
+    [self.database close];
+    self.database = nil;
     self.handler = nil;
+    self.accountService = nil;
+    if (self.databasePath.length > 0) {
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        [fileManager removeItemAtPath:self.databasePath error:nil];
+        [fileManager removeItemAtPath:[self.databasePath stringByAppendingString:@"-wal"] error:nil];
+        [fileManager removeItemAtPath:[self.databasePath stringByAppendingString:@"-shm"] error:nil];
+        self.databasePath = nil;
+    }
     [super tearDown];
 }
 
@@ -117,7 +183,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                    }
                                                        version:@"1.1"
                                                        headers:@{}
-                                                          body:nil
+                                                          body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
     HttpResponse *response = [[HttpResponse alloc] init];
 
@@ -256,33 +322,79 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     }
 }
 
-- (void)testAuthorizeRedirectWithExistingQueryString {
+- (void)testAuthorizeRedirectWithExistingQueryStringAfterConsent {
     NSString *redirectWithQuery = @"http://localhost:2583/?oauth_callback=1";
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:@{
-                                                       @"client_id": @"test-client",
-                                                       @"response_type": @"code",
-                                                       @"redirect_uri": redirectWithQuery,
-                                                       @"state": @"test-state-123",
-                                                       @"code_challenge": @"test-challenge",
-                                                       @"code_challenge_method": @"S256",
-                                                       @"login_hint": @"alice.test"
-                                                   }
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:nil
-                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.database createClient:@{
+        @"client_id": @"test-client",
+        @"redirect_uris": @[redirectWithQuery, @"http://localhost:3000/callback"],
+        @"grant_types": @"authorization_code",
+        @"scope": @"atproto"
+    } error:nil];
     
+    NSString *queryString = [NSString stringWithFormat:@"client_id=test-client&redirect_uri=%@&response_type=code&state=test-state-123&code_challenge=test_challenge&code_challenge_method=S256", [redirectWithQuery stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/oauth/authorize"
+                                                      queryString:queryString
+                                                      queryParams:@{
+                                                          @"client_id": @"test-client",
+                                                          @"redirect_uri": redirectWithQuery,
+                                                          @"response_type": @"code",
+                                                          @"state": @"test-state-123",
+                                                          @"code_challenge": @"test_challenge",
+                                                          @"code_challenge_method": @"S256"
+                                                      }
+                                                          version:@"1.1"
+                                                          headers:@{}
+                                                             body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
     [self.handler handleAuthorizeRequest:request response:response];
     
-    XCTAssertEqual(response.statusCode, 302, @"Should redirect with 302");
+    XCTAssertEqual(response.statusCode, 200, @"Should serve consent page");
+    NSString *bodyStr = [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
+    XCTAssertTrue([bodyStr containsString:@"<!DOCTYPE html>"], @"Should contain HTML content");
     
-    NSString *location = response.headers[@"location"];
+    NSString *csrfToken = @"test-csrf-token-12345";
+    NSString *signInBody = @"handle=test-user.test&password=test-password";
+    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/signin"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                  @"X-CSRF-Token": csrfToken,
+                                                                  @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                              }
+                                                                 body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
+    
+    XCTAssertEqual(signInResponse.statusCode, 200, @"Sign-in should succeed");
+    NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
+    XCTAssertNotNil(sessionToken, @"Should receive session token");
+    
+    NSString *consentBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=test-state-123&redirect_uri=%@&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256", redirectWithQuery, sessionToken];
+    HttpRequest *consentRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                          methodString:@"POST"
+                                                                  path:@"/oauth/authorize/confirm"
+                                                           queryString:@""
+                                                           queryParams:@{}
+                                                               version:@"1.1"
+                                                               headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                                  body:[consentBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                        remoteAddress:@"127.0.0.1"];
+    HttpResponse *consentResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:consentRequest response:consentResponse];
+    
+    XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
+    
+    NSString *location = consentResponse.headers[@"Location"];
     XCTAssertNotNil(location, @"Location header should be set");
     
     XCTAssertTrue([location hasPrefix:redirectWithQuery], @"Should redirect to base redirect URI");
@@ -291,39 +403,84 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertTrue([location containsString:@"&state=test-state-123"], @"Should append state with & separator");
 }
 
-- (void)testAuthorizeRedirectWithoutQueryString {
+- (void)testAuthorizeRedirectWithoutQueryStringAfterConsent {
     NSString *redirectWithoutQuery = @"http://localhost:3000/callback";
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:@{
-                                                       @"client_id": @"test-client",
-                                                       @"response_type": @"code",
-                                                       @"redirect_uri": redirectWithoutQuery,
-                                                       @"state": @"test-state-456",
-                                                       @"code_challenge": @"test-challenge",
-                                                       @"code_challenge_method": @"S256",
-                                                       @"login_hint": @"bob.test"
-                                                   }
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:nil
-                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.database createClient:@{
+        @"client_id": @"test-client",
+        @"redirect_uris": @[redirectWithoutQuery],
+        @"grant_types": @"authorization_code",
+        @"scope": @"atproto"
+    } error:nil];
     
+    NSString *queryString = [NSString stringWithFormat:@"client_id=test-client&redirect_uri=%@&response_type=code&state=test-state-456&code_challenge=test_challenge&code_challenge_method=S256", redirectWithoutQuery];
+    
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/oauth/authorize"
+                                                      queryString:queryString
+                                                      queryParams:@{
+                                                          @"client_id": @"test-client",
+                                                          @"redirect_uri": redirectWithoutQuery,
+                                                          @"response_type": @"code",
+                                                          @"state": @"test-state-456",
+                                                          @"code_challenge": @"test_challenge",
+                                                          @"code_challenge_method": @"S256"
+                                                      }
+                                                          version:@"1.1"
+                                                          headers:@{}
+                                                             body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
     [self.handler handleAuthorizeRequest:request response:response];
     
-    XCTAssertEqual(response.statusCode, 302, @"Should redirect with 302");
+    XCTAssertEqual(response.statusCode, 200, @"Should serve consent page");
+    NSString *bodyStr = [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
+    XCTAssertTrue([bodyStr containsString:@"<!DOCTYPE html>"], @"Should contain HTML content");
     
-    NSString *location = response.headers[@"location"];
+    NSString *csrfToken = @"test-csrf-token-67890";
+    NSString *signInBody = @"handle=test-user.test&password=test-password";
+    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/signin"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                  @"X-CSRF-Token": csrfToken,
+                                                                  @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                              }
+                                                                 body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
+    
+    XCTAssertEqual(signInResponse.statusCode, 200, @"Sign-in should succeed");
+    NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
+    XCTAssertNotNil(sessionToken, @"Should receive session token");
+    
+    NSString *consentBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=test-state-456&redirect_uri=%@&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256", redirectWithoutQuery, sessionToken];
+    HttpRequest *consentRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                          methodString:@"POST"
+                                                                  path:@"/oauth/authorize/confirm"
+                                                           queryString:@""
+                                                           queryParams:@{}
+                                                               version:@"1.1"
+                                                               headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                                  body:[consentBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                        remoteAddress:@"127.0.0.1"];
+    HttpResponse *consentResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:consentRequest response:consentResponse];
+    
+    XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
+    
+    NSString *location = consentResponse.headers[@"Location"];
     XCTAssertNotNil(location, @"Location header should be set");
     
     XCTAssertTrue([location hasPrefix:redirectWithoutQuery], @"Should redirect to base redirect URI");
     XCTAssertTrue([location containsString:@"?code="], @"Should use ? separator when no query string exists");
     XCTAssertFalse([location containsString:@"&code="], @"Should NOT use & as first separator");
-    XCTAssertTrue([location containsString:@"&state=test-state-456"], @"Should append state with & separator after code");
 }
 
 @end

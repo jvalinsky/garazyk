@@ -1,8 +1,8 @@
 #import <XCTest/XCTest.h>
 #import "Admin/PDSAdminAuth.h"
-#import "Auth/JWT.h"
+#import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
-#include <stdlib.h>
+#import "Auth/JWT.h"
 
 @interface PDSAdminAuthTests : XCTestCase
 @property (nonatomic, strong) NSDictionary<NSString *, id> *savedEnvValues;
@@ -92,9 +92,31 @@
     return [controller.jwtMinter signPayload:claims error:error];
 }
 
-- (void)testAuthenticateWithPasswordSucceedsWithDefaultIssuer {
+- (void)testAuthenticateWithPasswordSucceedsWithFallbackIssuer {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
     [self setEnv:@"PDS_ISSUER" value:nil];
+    [self setEnv:@"PDS_REQUIRE_ISSUER" value:nil];
+    [self setEnv:@"PDS_ENV" value:nil];
+    [self setEnv:@"PDS_ADMIN_TOKEN_TTL_SECONDS" value:nil];
+
+    NSError *error = nil;
+    BOOL success = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+    XCTAssertTrue([PDSAdminAuth sharedAuth].adminToken.length > 0);
+
+    NSError *jwtError = nil;
+    JWT *jwt = [JWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
+    XCTAssertNotNil(jwt);
+    XCTAssertNil(jwtError);
+    XCTAssertNotNil(jwt.payload.iss, @"Should have an issuer");
+    NSString *expectedIssuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
+    XCTAssertTrue([jwt.payload.iss hasPrefix:expectedIssuer], @"Fallback issuer should start with canonical issuer");
+}
+
+- (void)testAuthenticateWithPasswordUsesExplicitIssuer {
+    [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://pds.local:8443"];
     [self setEnv:@"PDS_REQUIRE_ISSUER" value:nil];
     [self setEnv:@"PDS_ENV" value:nil];
     [self setEnv:@"PDS_ADMIN_TOKEN_TTL_SECONDS" value:nil];
