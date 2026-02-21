@@ -36,6 +36,13 @@ Production recommendation:
 - Use a unique random salt per password
 - Use high iteration counts appropriate for your deployment budget
 
+### Constant-time comparison
+
+Password verification uses constant-time comparison (`PDSAdminAuth.m:18-40`) to prevent timing attacks:
+
+- PBKDF2 hash comparison performed in constant time
+- Prevents attackers from measuring response time to brute-force passwords
+
 ### Token behavior knobs
 
 - `PDS_ADMIN_TOKEN_TTL_SECONDS`
@@ -56,6 +63,14 @@ Admin tokens minted by `authenticateWithPassword:` include:
 Admin token verification enforces issuer/audience equality against resolved issuer.
 
 ## Rotation Playbook
+
+### Admin DID Management
+
+Admin authorization supports DID-based identity verification:
+
+- Admin DIDs can be registered and managed via `PDSAdminAuth`
+- DID-based authentication provides decentralized identity verification
+- Supports both password and DID-based admin authentication flows
 
 ### Rotate admin password
 

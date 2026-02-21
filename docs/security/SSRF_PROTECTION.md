@@ -62,6 +62,7 @@ The HandleResolver validates that resolved IP addresses are public by blocking t
 | `fc00::/7` | Unique local addresses (ULA) | Yes |
 | `::1/128` | Loopback | Yes |
 | `fe80::/10` | Link-local unicast | Yes |
+| `::ffff:0:0/96` | IPv4-mapped addresses | Yes |
 
 ## Implementation
 
@@ -118,10 +119,9 @@ Tests are located in `ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m` with 
 
 ## Future Work
 
-1. **IPv6 Support**: Complete IPv6 private address detection tests
-2. **DNS Rebinding**: Add protection against DNS rebinding attacks
-3. **Rate Limiting**: Per-handle rate limits for resolution
-4. **Timeout Configuration**: Timeouts to prevent slow-loris attacks
+1. **DNS Rebinding**: Add protection against DNS rebinding attacks
+2. **Rate Limiting**: Per-handle rate limits for resolution (partially implemented via `RateLimiter.m`)
+3. **Timeout Configuration**: Timeouts to prevent slow-loris attacks
 
 ---
 

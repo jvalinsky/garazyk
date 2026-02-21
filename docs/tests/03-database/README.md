@@ -17,11 +17,25 @@ Tests for SQLite-based persistence: actor stores, service databases, and connect
 | ActorStoreTests | Tests/Database/ActorStore/ActorStoreTests.m | Per-actor storage |
 | DatabasePoolTests | Tests/Database/Pool/DatabasePoolTests.m | LRU eviction |
 | ServiceDatabasesTests | Tests/Database/Service/ServiceDatabasesTests.m | Service database manager |
-| ServiceDatabasesPruningTests | Tests/ServiceDatabasesPruningTests.m | Event pruning |
+| ServiceDatabasesPruningTests | Tests/Database/Service/ServiceDatabasesPruningTests.m | Event pruning |
 | PDSHealthCheckTests | Tests/Database/Monitoring/PDSHealthCheckTests.m | Database health |
 | PDSDatabaseIntegrationTests | Tests/Database/Integration/PDSDatabaseIntegrationTests.m | E2E database ops |
-| DatabaseMigrationTests | Tests/Database/DatabaseMigrationTests.m | Schema migrations |
-| MultiTenantDatabaseTests | Tests/Database/MultiTenantDatabaseTests.m | Tenant isolation |
+| DatabaseMigrationTests | Tests/Database/Integration/DatabaseMigrationTests.m | Schema migrations |
+| MultiTenantDatabaseTests | Tests/Database/Integration/MultiTenantDatabaseTests.m | Tenant isolation |
+| PDSNewArchitectureTests | Tests/Database/PDSNewArchitectureTests.m | New architecture validation |
+| PDSControllerTests | Tests/Database/PDSControllerTests.m | Controller database ops |
+
+## Test Fixtures
+
+| Fixture | File Location | Purpose |
+|---------|---------------|---------|
+| PDSDatabaseTestFixture | Tests/Database/Integration/PDSDatabaseTestFixture.m | Base test fixture |
+| PDSDatabaseIntegrationTestSuite | Tests/Database/Integration/PDSDatabaseIntegrationTestSuite.m | Integration test suite |
+| PDSDatabasePoolTestFixture | Tests/Database/Integration/PDSDatabasePoolTestFixture.m | Pool testing fixture |
+| PDSMigrationTestFixture | Tests/Database/Integration/PDSMigrationTestFixture.m | Migration testing fixture |
+| PDSMultiTenantTestFixture | Tests/Database/Integration/PDSMultiTenantTestFixture.m | Multi-tenant fixture |
+| PDSSchemaValidationTestFixture | Tests/Database/Integration/PDSSchemaValidationTestFixture.m | Schema validation fixture |
+| PDSConcurrentAccessTestFixture | Tests/Database/Integration/PDSConcurrentAccessTestFixture.m | Concurrent access fixture |
 
 ## Running Tests
 

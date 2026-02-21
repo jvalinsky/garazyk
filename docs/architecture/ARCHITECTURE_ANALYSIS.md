@@ -18,10 +18,10 @@ The AT Protocol (Authenticated Transfer Protocol) is a decentralized social netw
 
 | Metric | Value |
 |--------|-------|
-| Lines of Code | ~50,000+ |
-| Unit Tests | 107 passing |
+| Lines of Code | ~61,000 |
+| Unit Tests | 158 passing |
 | Main Entry Points | 2 (CLI, Server) |
-| Core Modules | 16 |
+| Core Modules | 21 |
 | Database Tables | 6+ |
 | Authentication Methods | 5 (JWT, OAuth2, TOTP, WebAuthn, DID) |
 
@@ -125,7 +125,7 @@ The central "god class" coordinating all operations:
 
 ### PDSDatabase (`ATProtoPDS/Sources/Database/PDSDatabase.h/m`)
 
-Monolithic database controller (~1500 lines):
+Monolithic database controller (~2200 lines):
 - Connection pooling
 - Transaction management
 - Account operations
@@ -336,7 +336,7 @@ WebSocket handler for firehose:
 - ✅ **Authentication Coverage**: JWT, OAuth2, TOTP, and WebAuthn flows
 - ✅ **Real-time Sync**: WebSocket firehose implementation
 - ✅ **Content-Addressable Storage**: MST + CAR for data integrity
-- ✅ **Test Coverage**: 107 unit tests passing
+- ✅ **Test Coverage**: 158 unit tests passing
 
 ### Weaknesses
 
@@ -391,9 +391,9 @@ xcodegen generate
 
 | Target | Purpose | Binary Location |
 |--------|---------|-----------------|
-| ATProtoPDS-CLI | Command-line tool | `./build/bin/kaszlak` |
+| ATProtoPDS-CLI | Command-line tool | `./build/bin/atprotopds-cli` |
 | ATProtoPDS-Server | HTTP server | Bundled in app |
-| AllTests | Unit tests (107 tests) | `./build/tests/AllTests` |
+| AllTests | Unit tests (158 tests) | `./build/tests/AllTests` |
 | Fuzzers | Security testing | `./build/fuzzing/` |
 
 ### Dependencies

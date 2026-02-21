@@ -17,14 +17,37 @@ Tests for HTTP server, XRPC protocol, WebSocket/firehose, and network transport 
 |-------|---------------|---------|
 | HttpServerTests | Tests/Network/HttpServerTests.m | HTTP server lifecycle |
 | HttpRouterTests | Tests/Network/HttpRouterTests.m | Route matching |
+| HttpBufferPoolTests | Tests/Network/HttpBufferPoolTests.m | Buffer pool management |
+| HttpChunkedBodyParserTests | Tests/Network/HttpChunkedBodyParserTests.m | Chunked transfer encoding |
+| HttpRequestParsingTests | Tests/Network/HttpRequestParsingTests.m | HTTP request parsing |
+| HttpResponseTests | Tests/Network/HttpResponseTests.m | HTTP response handling |
+| HttpRouteTrieTests | Tests/Network/HttpRouteTrieTests.m | Route trie data structure |
+| HttpStreamingBodyTests | Tests/Network/HttpStreamingBodyTests.m | Streaming body handling |
+| PDSHttpServerBuilderTests | Tests/Network/PDSHttpServerBuilderTests.m | Server builder configuration |
 | RateLimiterTests | Tests/Network/RateLimiterTests.m | Token-bucket limiting |
+| RateLimitingTests | Tests/Network/RateLimitingTests.m | Rate limiting integration |
+| PDSNetworkTransportTests | Tests/Network/PDSNetworkTransportTests.m | Network transport layer |
+| PDSNetworkTransportLinuxTests | Tests/Network/PDSNetworkTransportLinuxTests.m | Linux sockets |
+| SSLPinningTests | Tests/Network/SSLPinningTests.m | Certificate pinning |
 | XrpcHandlerTests | Tests/XRPC/XrpcHandlerTests.m | XRPC dispatch |
 | XrpcInputValidationTests | Tests/XRPC/XrpcInputValidationTests.m | Input validation |
 | LexiconValidationTests | Tests/Lexicon/LexiconValidationTests.m | Schema validation |
+| LexiconResolveXrpcTests | Tests/Network/LexiconResolveXrpcTests.m | Lexicon XRPC resolution |
+| XrpcIntegrationTests | Tests/Network/XrpcIntegrationTests.m | XRPC integration |
+| XrpcMethodRegistryTests | Tests/Network/XrpcMethodRegistryTests.m | Method registry |
+| XrpcProxyTests | Tests/Network/XrpcProxyTests.m | XRPC proxy handling |
+| XRPCErrorTests | Tests/Network/XRPCErrorTests.m | XRPC error responses |
 | WebSocketServerTests | Tests/Sync/WebSocketServerTests.m | WebSocket protocol |
+| WebSocketUpgradeHandlerTests | Tests/Network/WebSocketUpgradeHandlerTests.m | WebSocket upgrade |
 | SubscribeReposHandlerTests | Tests/Sync/SubscribeReposHandlerTests.m | Firehose streaming |
-| PDSNetworkTransportLinuxTests | Tests/Network/PDSNetworkTransportLinuxTests.m | Linux sockets |
-| SSLPinningTests | Tests/Network/SSLPinningTests.m | Certificate pinning |
+| AdminAuthModerationTests | Tests/Network/AdminAuthModerationTests.m | Admin moderation auth |
+| AdminAuthSyncTests | Tests/Network/AdminAuthSyncTests.m | Admin sync auth |
+| AdminAuthXrpcTests | Tests/Network/AdminAuthXrpcTests.m | Admin XRPC auth |
+| RepoAuthIdentityTests | Tests/Network/RepoAuthIdentityTests.m | Repo identity auth |
+| RepoAuthRepoTests | Tests/Network/RepoAuthRepoTests.m | Repo operations auth |
+| RepoAuthServerTests | Tests/Network/RepoAuthServerTests.m | Repo server auth |
+| RepoAuthTempTests | Tests/Network/RepoAuthTempTests.m | Temp repo auth |
+| SecurityHardeningTests | Tests/Network/SecurityHardeningTests.m | Security hardening |
 
 ## Running Tests
 
