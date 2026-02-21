@@ -344,19 +344,29 @@
 }
 
 - (void)registerAdminUIRoutesWithServer:(HttpServer *)server {
-    NSString *adminUIPath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"AdminUI"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:adminUIPath]) {
-        adminUIPath = [[NSBundle bundleForClass:[self class]].resourcePath stringByAppendingPathComponent:@"AdminUI"];
-    }
-    if (![[NSFileManager defaultManager] fileExistsAtPath:adminUIPath]) {
-        adminUIPath = @"/Users/jack/Software/objpds/ATProtoPDS/Sources/App/AdminUI";
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *assetsPath = nil;
+    
+    // Try multiple locations for AdminUI/Assets
+    NSArray *candidates = @[
+        [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"AdminUI/Assets"],
+        [[NSBundle bundleForClass:[self class]].resourcePath stringByAppendingPathComponent:@"AdminUI/Assets"],
+        [[fm currentDirectoryPath] stringByAppendingPathComponent:@"ATProtoPDS/Sources/App/AdminUI/Assets"],
+        @"/Users/jack/Software/objpds/ATProtoPDS/Sources/App/AdminUI/Assets"
+    ];
+    
+    for (NSString *candidate in candidates) {
+        if ([fm fileExistsAtPath:candidate]) {
+            assetsPath = candidate;
+            break;
+        }
     }
     
-    NSString *assetsPath = [adminUIPath stringByAppendingPathComponent:@"Assets"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:assetsPath]) {
-        PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin UI assets not found at %@", assetsPath);
+    if (!assetsPath) {
+        PDS_LOG_WARN(@"PDSHttpServerBuilder: Admin UI assets not found in any candidate path");
         return;
     }
+    PDS_LOG_INFO(@"PDSHttpServerBuilder: Admin UI assets found at %@", assetsPath);
     
     [server addRoute:@"GET" path:@"/admin-ui/*" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *filePath = [request.path stringByReplacingOccurrencesOfString:@"/admin-ui/" withString:@""];
