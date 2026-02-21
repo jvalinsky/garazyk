@@ -82,6 +82,12 @@ static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredBut
         return issuer;
     }
     
+    // Check if issuer is required before falling back
+    if (PDSAdminAuthIsIssuerRequired(env)) {
+        if (requiredButMissing) *requiredButMissing = YES;
+        return nil;
+    }
+    
     // Fall back to canonical issuer from PDSConfiguration.
     PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
     NSString *configIssuer = [configuration canonicalIssuerWithPortHint:0];
@@ -90,10 +96,6 @@ static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredBut
         return configIssuer;
     }
     
-    if (PDSAdminAuthIsIssuerRequired(env)) {
-        if (requiredButMissing) *requiredButMissing = YES;
-        return nil;
-    }
     if (requiredButMissing) *requiredButMissing = NO;
     return [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
 }

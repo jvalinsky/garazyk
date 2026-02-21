@@ -1,4 +1,5 @@
 #import <XCTest/XCTest.h>
+#import <sqlite3.h>
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
 
