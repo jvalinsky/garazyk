@@ -36,6 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (NSString *)databasePathForContext:(PDSCLICommandContext *)context;
 + (NSString *)pdsHostnameForContext:(PDSCLICommandContext *)context;
++ (NSString *)pdsServiceEndpointForContext:(PDSCLICommandContext *)context;
 
 @end
 
