@@ -207,25 +207,26 @@
     // Register Server DID Document (did:web support)
     [httpServer addRoute:@"GET" path:@"/.well-known/did.json" handler:^(HttpRequest *request, HttpResponse *response) {
         PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-        NSString *host = config.serverHost ?: @"localhost";
-        if ([host isEqualToString:@"0.0.0.0"]) {
-            host = @"localhost";
-        }
-
-        NSUInteger didPort = port;
+        
+        // Use issuer URL for did:web hostname (not serverHost which is bind address)
+        NSString *issuer = config.canonicalIssuer ?: config.issuer;
+        NSURL *issuerUrl = issuer ? [NSURL URLWithString:issuer] : nil;
+        NSString *host = issuerUrl.host ?: @"localhost";
+        NSString *scheme = issuerUrl.scheme ?: @"https";
+        
+        // Only include port in did:web if issuer URL explicitly has one
+        // If issuer is https://pds.example.com (no port), did:web is did:web:pds.example.com
+        // If issuer is https://pds.example.com:8443, did:web is did:web:pds.example.com%3A8443
+        NSUInteger issuerPort = issuerUrl.port ? [issuerUrl.port unsignedIntegerValue] : 0;
         NSString *didHost = host;
-        if (didPort != 80 && didPort != 443) {
-            didHost = [NSString stringWithFormat:@"%@%%3A%lu", host, (unsigned long)didPort];
+        if (issuerPort != 0 && issuerPort != 80 && issuerPort != 443) {
+            didHost = [NSString stringWithFormat:@"%@%%3A%lu", host, (unsigned long)issuerPort];
         }
 
         NSString *did = [NSString stringWithFormat:@"did:web:%@", didHost];
-        NSString *scheme = (didPort == 443) ? @"https" : @"http";
-        NSString *serviceEndpoint = nil;
-        if (didPort == 80 || didPort == 443) {
-            serviceEndpoint = [NSString stringWithFormat:@"%@://%@", scheme, host];
-        } else {
-            serviceEndpoint = [NSString stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)didPort];
-        }
+        
+        // Service endpoint uses issuer URL as-is if available
+        NSString *serviceEndpoint = issuer ?: [NSString stringWithFormat:@"%@://%@", scheme, host];
 
         NSString *publicKeyMultibase = nil;
         NSData *publicKey = controller.jwtMinter.publicKey;
