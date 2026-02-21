@@ -433,10 +433,12 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         void (^completion)(NSData * _Nullable, BOOL, NSError * _Nullable) = request.completion;
         
         if (error) {
+            // Remove BEFORE completion to prevent re-entrant double-remove
+            // (completion may call cancel → failPendingReadRequestsWithError)
+            [_readRequests removeObjectAtIndex:0];
             if (completion) {
                 completion(nil, NO, error);
             }
-            [_readRequests removeObjectAtIndex:0];
             continue;
         }
         
@@ -453,15 +455,19 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
                 _inputBuffer = [remaining mutableCopy];
             }
             
+            // Remove BEFORE completion to prevent re-entrant double-remove
+            // (completion may call cancel → failPendingReadRequestsWithError)
+            [_readRequests removeObjectAtIndex:0];
             if (completion) {
                 completion(data, isComplete, nil);
             }
-            [_readRequests removeObjectAtIndex:0];
         } else if (isComplete) {
+            // Remove BEFORE completion to prevent re-entrant double-remove
+            // (completion may call [connection cancel] → failPendingReadRequestsWithError)
+            [_readRequests removeObjectAtIndex:0];
             if (completion) {
                 completion([NSData data], YES, nil);
             }
-            [_readRequests removeObjectAtIndex:0];
         } else {
             break;
         }

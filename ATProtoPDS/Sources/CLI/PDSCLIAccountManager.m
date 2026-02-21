@@ -147,6 +147,20 @@
                               email:(NSString *)email
                             handle:(NSString *)handle
                           password:(NSString *)password {
+    // Ensure PDSConfiguration loads from the config file (otherwise defaults apply,
+    // which has debugSkipPlcOperations=YES and plcURL="mock")
+    NSLog(@"[CONFIG DEBUG] context.configPath=%@", context.configPath);
+    if (context.configPath && [[NSFileManager defaultManager] fileExistsAtPath:context.configPath]) {
+        NSError *configError = nil;
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSLog(@"[CONFIG DEBUG] Before load: debugSkipPlc=%d", config.debugSkipPlcOperations);
+        BOOL loaded = [config loadFromPath:context.configPath error:&configError];
+        NSLog(@"[CONFIG DEBUG] loadFromPath returned %d, error=%@", loaded, configError);
+        NSLog(@"[CONFIG DEBUG] After load: debugSkipPlc=%d, plcURL=%@", config.debugSkipPlcOperations, config.plcURL);
+    } else {
+        NSLog(@"[CONFIG DEBUG] Config file not found or configPath is nil");
+    }
+
     NSString *dbPath = [self databasePathForContext:context];
 
     NSError *error = nil;
@@ -296,10 +310,13 @@
     
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
+    NSLog(@"[PLC DEBUG] debugSkipPlcOperations=%d, plcUrl=%@, config.plcURL=%@", config.debugSkipPlcOperations, plcUrl, config.plcURL);
     BOOL shouldPostToPlc = (!config.debugSkipPlcOperations &&
                             plcUrl.length > 0 &&
                             ![plcUrl isEqualToString:@"mock"]);
+    NSLog(@"[PLC DEBUG] shouldPostToPlc=%d", shouldPostToPlc);
     if (!shouldPostToPlc) {
+        NSLog(@"[PLC DEBUG] SKIPPING PLC registration!");
         return did;
     }
 

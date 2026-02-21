@@ -349,7 +349,10 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
     __weak typeof(self) weakSelf = self;
 
-    dispatch_group_enter(self.taskGroup);
+    // Do NOT use dispatch_group for individual reads — the completion may fire
+    // from processReadRequests in contexts where group_enter wasn't called
+    // (e.g., when isComplete propagates through a while loop).
+    // The taskGroup is only needed for dispatchRequest and server shutdown.
     [connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(NSData * _Nullable content, BOOL isComplete, NSError * _Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
@@ -358,18 +361,14 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         if (error) {
             [connection cancel];
-            dispatch_group_leave(strongSelf.taskGroup);
             return;
         }
 
         if (content && content.length > 0) {
-            if (strongSelf) {
-                [strongSelf handleReceivedData:content onConnection:connection];
-            }
+            [strongSelf handleReceivedData:content onConnection:connection];
         } else if (isComplete) {
             [connection cancel];
         }
-        dispatch_group_leave(strongSelf.taskGroup);
     }];
 }
 
@@ -602,7 +601,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     [state.outputQueue addObject:queueItem];
     state.outputQueueSize += queueItem.queueByteSize;
 
-    while (state.outputQueueSize > kHttpOutputQueueHighWaterMark) {
+    while (state.outputQueueSize > kHttpOutputQueueHighWaterMark && state.outputQueue.count > 0) {
         HttpQueuedResponse *oldest = state.outputQueue[0];
         state.outputQueueSize -= oldest.queueByteSize;
         if (oldest.deleteBodyFileAfterSend && oldest.bodyFilePath.length > 0) {
@@ -619,17 +618,34 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     __weak id<PDSNetworkConnection> weakConnection = connection;
     HttpRequest *requestRef = request;
 
-    dispatch_group_enter(self.taskGroup);
+    // Capture dispatch objects as strong locals so they survive into the block.
+    // On Linux, dispatch_queue/semaphore/group properties are 'assign' (not ARC-managed),
+    // so we must retain them explicitly to prevent use-after-free.
+    dispatch_semaphore_t semaphore = self.concurrencySemaphore;
+    dispatch_group_t group = self.taskGroup;
+    dispatch_queue_t serverQ = self.serverQueue;
+#if !__has_feature(objc_arc)
+    dispatch_retain(semaphore);
+    dispatch_retain(group);
+    dispatch_retain(serverQ);
+#endif
+
+    dispatch_group_enter(group);
     
     // Wait for semaphore to limit concurrency
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        dispatch_semaphore_wait(weakSelf.concurrencySemaphore, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
         
         __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
-        if (!strongSelf) {
-            dispatch_semaphore_signal(weakSelf.concurrencySemaphore); // Ensure signal on early exit
-            dispatch_group_leave(weakSelf.taskGroup);
+        if (!strongSelf || !strongConnection) {
+            dispatch_semaphore_signal(semaphore);
+            dispatch_group_leave(group);
+#if !__has_feature(objc_arc)
+            dispatch_release(semaphore);
+            dispatch_release(group);
+            dispatch_release(serverQ);
+#endif
             return;
         }
 
@@ -639,10 +655,15 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
         PDS_LOG_HTTP_INFO(@"Finished dispatch for %@ %@, status %ld", requestRef.methodString, requestRef.path, (long)response.statusCode);
 
-        dispatch_async(strongSelf.serverQueue, ^{
+        dispatch_async(serverQ, ^{
             [strongSelf enqueueResponse:response forConnection:strongConnection];
-            dispatch_semaphore_signal(strongSelf.concurrencySemaphore); // Signal completion
-            dispatch_group_leave(strongSelf.taskGroup);
+            dispatch_semaphore_signal(semaphore);
+            dispatch_group_leave(group);
+#if !__has_feature(objc_arc)
+            dispatch_release(semaphore);
+            dispatch_release(group);
+            dispatch_release(serverQ);
+#endif
         });
 
         [[PDSLogger sharedLogger] clearCorrelationID];
