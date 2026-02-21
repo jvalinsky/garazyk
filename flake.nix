@@ -1,5 +1,5 @@
 {
-  description = "GNUstep Foundation development environment for Linux and nix-darwin";
+  description = "Objective-C development environment - GNUstep on Linux, native Apple SDK on darwin";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -10,12 +10,15 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        
+        isLinux = pkgs.stdenv.isLinux;
+        isDarwin = pkgs.stdenv.isDarwin;
 
-        gnustepPackages = with pkgs; [
+        gnustepPackages = pkgs.lib.optionals isLinux (with pkgs; [
           gnustep-libobjc
           gnustep-make
           gnustep-base
-        ];
+        ]);
 
         buildTools = with pkgs; [
           clang
@@ -30,28 +33,35 @@
           bear
         ];
 
-        runtimeDeps = with pkgs; [
-          libdispatch
-        ];
+        darwinFrameworks = pkgs.lib.optionals isDarwin (with pkgs; [
+          xcbuild
+        ]);
+
+        linuxShellHook = ''
+          export GNUSTEP_MAKEFILES="${pkgs.gnustep-make}/Library/Makefiles"
+          export GNUSTEP_SYSTEM_ROOT="${pkgs.gnustep-base}"
+          export LIBRARY_PATH="${pkgs.gnustep-base}/lib:$LIBRARY_PATH"
+          export CPATH="${pkgs.gnustep-base}/include:$CPATH"
+          export PKG_CONFIG_PATH="${pkgs.gnustep-base}/lib/pkgconfig:$PKG_CONFIG_PATH"
+          export LD_LIBRARY_PATH="${pkgs.gnustep-base}/lib:$LD_LIBRARY_PATH"
+          echo "GNUstep Foundation development environment loaded"
+          echo "  GNUSTEP_MAKEFILES=$GNUSTEP_MAKEFILES"
+        '';
+
+        darwinShellHook = ''
+          echo "Native Apple SDK development environment loaded"
+          echo "  Using system Foundation framework"
+        '';
 
       in {
         devShells.default = pkgs.mkShell {
-          buildInputs = gnustepPackages ++ runtimeDeps;
+          buildInputs = gnustepPackages ++ darwinFrameworks;
           nativeBuildInputs = buildTools ++ devTools;
 
           shellHook = ''
-            export GNUSTEP_MAKEFILES="${pkgs.gnustep-make}/Library/Makefiles"
-            export GNUSTEP_SYSTEM_ROOT="${pkgs.gnustep-base}"
-
-            export LIBRARY_PATH="${pkgs.gnustep-base}/lib:${pkgs.libdispatch}/lib:$LIBRARY_PATH"
-            export CPATH="${pkgs.gnustep-base}/include:${pkgs.libdispatch}/include:$CPATH"
-            export PKG_CONFIG_PATH="${pkgs.gnustep-base}/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-            export LD_LIBRARY_PATH="${pkgs.gnustep-base}/lib:${pkgs.libdispatch}/lib:$LD_LIBRARY_PATH"
-
-            echo "GNUstep Foundation development environment loaded"
-            echo "  GNUSTEP_MAKEFILES=$GNUSTEP_MAKEFILES"
+            echo "Objective-C development environment (${system})"
             echo "  clang --version: $(clang --version | head -1)"
+            ${if isLinux then linuxShellHook else darwinShellHook}
           '';
         };
       }
