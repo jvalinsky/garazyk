@@ -147,18 +147,7 @@ NSString *emailRecoverySuggestionForCode(NSInteger code) {
         return NO;
     }
     
-    // Security: Reserve 'admin' prefix
-    if ([handle.lowercaseString hasPrefix:@"admin."]) {
-        if (error) {
-            *error = [NSError errorWithDomain:ATProtoHandleErrorDomain
-                                         code:1009
-                                     userInfo:@{
-                NSLocalizedDescriptionKey: @"Handles starting with 'admin.' are reserved.",
-                NSLocalizedRecoverySuggestionErrorKey: @"Choose a different handle."
-            }];
-        }
-        return NO;
-    }
+    // Note: 'admin.' prefix reservation removed for self-hosted PDS deployments.
     
     NSString *labelPattern = @"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$";
     NSRegularExpression *labelRegex = [NSRegularExpression regularExpressionWithPattern:labelPattern options:0 error:nil];
