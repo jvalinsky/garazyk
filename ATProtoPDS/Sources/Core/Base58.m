@@ -17,6 +17,7 @@ static const int8_t kBase58Map[128] = {
 
 + (NSString *)encode:(NSData *)data {
     if (data.length == 0) return @"";
+    if (data.length > 64 * 1024) return nil;
     
     const uint8_t *bytes = data.bytes;
     NSUInteger length = data.length;
@@ -68,6 +69,7 @@ static const int8_t kBase58Map[128] = {
 
 + (NSData *)decode:(NSString *)string {
     if (string.length == 0) return [NSData data];
+    if (string.length > 64 * 1024) return nil;
     
     const char *chars = string.UTF8String;
     NSUInteger length = string.length;
