@@ -1,5 +1,9 @@
 # ATProto PDS Implementation Roadmap
 
+> **Phase Numbering Note**: This document uses phases 0-10, while `AGENTS.md` uses phases 1-6. 
+> The mapping is approximately: Phase 0-6 here ≈ Phase 1-4 in AGENTS.md. 
+> AGENTS.md Phase 5 (Linux Support) and Phase 6 (Professional Script Development) were added after Phase 10 here was completed.
+
 ## Current Status: Spec-Compliant & Verified (Feb 2026)
 
 The project has reached **Phase 10**, achieving AT Protocol specification compliance with native implementation and 901 passing conformance tests.
@@ -55,6 +59,12 @@ The project has reached **Phase 10**, achieving AT Protocol specification compli
 #### Phase 10: E2E Verification
 - [x] Native integration test suite (`scripts/run_e2e.sh`)
 - [x] Confirmed PDS+PLC interoperability
+
+#### Phase 6 (AGENTS.md): Professional Script Development - COMPLETED
+- [x] Professional bash scripting standards (`set -euo pipefail`, ShellCheck compliance)
+- [x] Core script upgrades: `simple_test.sh`, `start_server.sh`, `quality_gate.sh`, `run-tests.sh`
+- [x] E2E test scripts: `test_social_features.sh` (6 scenarios), `test_moderation.sh` (4 scenarios)
+- [x] All scripts pass ShellCheck with zero warnings
 
 ---
 

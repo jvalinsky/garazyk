@@ -209,6 +209,7 @@ PKCE utilities:
 | `atproto` | Full access to account |
 | `atproto:identify` | Identity verification |
 | `atproto:signin` | Sign-in capability |
+| `atproto:profile` | Access to profile information |
 | `atproto:repo_read` | Read repository |
 | `atproto:repo_write` | Write to repository |
 

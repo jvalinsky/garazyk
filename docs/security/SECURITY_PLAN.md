@@ -136,6 +136,14 @@ clang -fsanitize=fuzzer,address,undefined \
 ./fuzz_xrpc corpus_xrpc/ -max_len=65536 -jobs=8
 ```
 
+**Available fuzzer targets:**
+| Target | File | Purpose |
+|--------|------|---------|
+| `fuzz_xrpc` | `fuzz_xrpc.m` | XRPC method handling |
+| `fuzz_auth` | `fuzz_auth.mm` | OAuth2/JWT authentication paths |
+| `fuzz_mst` | `fuzz_mst.mm` | Merkle Search Tree operations |
+| `fuzz_lexicon` | `fuzz_lexicon.mm` | Lexicon schema validation |
+
 **Fuzz harness template:**
 ```c
 // fuzz_xrpc.m
@@ -335,6 +343,19 @@ export TSAN_OPTIONS=\
 | Certificate Validation | Bypass `NSURLSession` validation | Always validate certificates |
 | Plaintext HTTP | `http://` URLs | Use `https://` only |
 | Hostname Bypass | `validatesDomainName=NO` | Never disable |
+
+### SSRF Protection
+
+| Component | Location | Protection |
+|-----------|----------|------------|
+| Handle Resolution | `HandleResolver.m:548-564` | IPv4/IPv6 private range blocking |
+| Federation Client | `FederationClient.m:15-44` | Remote PDS endpoint validation |
+
+### Rate Limiting
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Request Rate Limiting | `RateLimiter.m` | Token bucket algorithm for API throttling |
 
 ---
 
