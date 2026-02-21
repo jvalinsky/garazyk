@@ -25,7 +25,15 @@ Tests for identity resolution, OAuth flows, JWT handling, cryptography, and mult
 | WebAuthnVerifierTests | Tests/Auth/WebAuthnVerifierTests.m | WebAuthn verification |
 | OAuth2Tests | Tests/Auth/OAuth2Tests.m | OAuth token flows |
 | OAuthDPoPTests | Tests/Auth/OAuthDPoPTests.m | DPoP proof handling |
+| OAuthConformanceTests | Tests/Auth/OAuthConformanceTests.m | OAuth spec conformance |
+| OAuthPublicClientTests | Tests/Auth/OAuthPublicClientTests.m | Public client flows |
+| OAuthSessionTests | Tests/Auth/OAuthSessionTests.m | OAuth session management |
+| OAuthIntegrationTests | Tests/Auth/OAuthIntegrationTests.m | OAuth integration |
 | SessionStoreTests | Tests/Auth/SessionStoreTests.m | Session lifecycle |
+| PDSReplayCacheTests | Tests/Auth/PDSReplayCacheTests.m | Replay attack prevention |
+| PDSOpenSSLKeyManagerTests | Tests/Auth/PDSOpenSSLKeyManagerTests.m | OpenSSL key management |
+| KeyManagerCharacterizationTests | Tests/CharacterizationTests/KeyManagerCharacterizationTests.m | Key manager behavior |
+| SessionCharacterizationTests | Tests/CharacterizationTests/SessionCharacterizationTests.m | Session behavior |
 
 ## Running Tests
 

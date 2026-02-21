@@ -624,7 +624,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     dispatch_semaphore_t semaphore = self.concurrencySemaphore;
     dispatch_group_t group = self.taskGroup;
     dispatch_queue_t serverQ = self.serverQueue;
-#if !__has_feature(objc_arc)
+#ifndef __APPLE__
     dispatch_retain(semaphore);
     dispatch_retain(group);
     dispatch_retain(serverQ);
@@ -641,7 +641,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         if (!strongSelf || !strongConnection) {
             dispatch_semaphore_signal(semaphore);
             dispatch_group_leave(group);
-#if !__has_feature(objc_arc)
+#ifndef __APPLE__
             dispatch_release(semaphore);
             dispatch_release(group);
             dispatch_release(serverQ);
@@ -659,7 +659,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
             [strongSelf enqueueResponse:response forConnection:strongConnection];
             dispatch_semaphore_signal(semaphore);
             dispatch_group_leave(group);
-#if !__has_feature(objc_arc)
+#ifndef __APPLE__
             dispatch_release(semaphore);
             dispatch_release(group);
             dispatch_release(serverQ);

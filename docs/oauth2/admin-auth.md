@@ -13,6 +13,8 @@ Admin authentication uses a simple password-based login that issues JWT tokens, 
 
 ## Authentication Flow
 
+Admin authentication uses an implicit admin DID of `did:web:<host>` (e.g., `did:web:pds.example.com`). This DID is automatically derived from the server's hostname.
+
 ```
 ┌─────────┐                    ┌─────────┐                    ┌─────────┐
 │  Admin  │                    │   PDS   │                    │  Data   │
@@ -278,6 +280,28 @@ Content-Type: application/json
 | `/admin/metrics` | GET | Server metrics (JSON or Prometheus) |
 | `/admin/health` | GET | Health check |
 | `/admin/logout` | POST | Logout (invalidates all tokens) |
+
+## Admin DID Management API
+
+The admin DID management API allows configuring which DIDs have admin privileges:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `addAdminDid` | Internal | Add a DID to admin list |
+| `removeAdminDid` | Internal | Remove a DID from admin list |
+| `listAdminDids` | Internal | List all admin DIDs |
+| `isAdminDid` | Internal | Check if DID has admin privileges |
+
+**Implementation** (`PDSAdminAuth.m:513-580`):
+
+```objc
+- (BOOL)addAdminDid:(NSString *)did error:(NSError **)error;
+- (BOOL)removeAdminDid:(NSString *)did error:(NSError **)error;
+- (NSArray<NSString *> *)listAdminDids;
+- (BOOL)isAdminDid:(NSString *)did;
+```
+
+The implicit admin DID (`did:web:<host>`) is always considered an admin and cannot be removed.
 
 ## Endpoint Protection
 

@@ -1,5 +1,7 @@
 # Production Readiness Deep-Dive (2026-02-19)
 
+> **Status Cross-Check**: As of AGENTS.md, Phases 1-6 are documented. The P0/P1 blockers below remain open - none are marked resolved in the current project status. See AGENTS.md for latest completed milestones.
+
 ## Verdict
 
 **No-Go** for internet-exposed personal selfhosters.
