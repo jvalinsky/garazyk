@@ -31,7 +31,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph "Unit Tests [107 tests]"
+    subgraph "Unit Tests [158 tests]"
         U1[Repository Tests]
         U2[Auth Tests]
         U3[Core Tests]
