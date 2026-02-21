@@ -1,8 +1,5 @@
 #import "PDSController.h"
 #import "Database/PDSDatabase.h"
-#ifdef GNUSTEP
-#import "Compat/NSFileManagerCompat.h"
-#endif
 #import "Identity/ATProtoHandleValidator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
