@@ -23,7 +23,16 @@ async function loadAdminModules() {
     }
 }
 
-const PLC_BASE = 'http://localhost:2582';
+// Derive PLC base URL from current page origin
+const PLC_BASE = (function() {
+    const loc = window.location;
+    const host = loc.hostname;
+    if (host.endsWith('garazyk.xyz')) {
+        return loc.protocol + '//plc.garazyk.xyz';
+    }
+    // For exe.dev proxy or other hosts, PLC is on port 4000
+    return loc.protocol + '//' + host + ':4000';
+})();
 
 console.log('ui.js loading...');
 
