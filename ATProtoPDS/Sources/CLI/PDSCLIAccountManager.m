@@ -41,6 +41,14 @@
 
 + (NSString *)pdsHostnameForContext:(PDSCLICommandContext *)context {
     NSDictionary *config = [context loadConfig];
+    // Prefer issuer for determining the public hostname
+    NSString *issuer = config[@"issuer"] ?: config[@"server"][@"issuer"];
+    if (issuer.length > 0) {
+        NSURLComponents *c = [NSURLComponents componentsWithString:issuer];
+        if (c.host.length > 0) {
+            return c.host;
+        }
+    }
     NSString *host = config[@"server"][@"host"];
     if (!host || host.length == 0) {
         host = @"localhost";
@@ -49,6 +57,16 @@
         host = @"localhost";
     }
     return host;
+}
+
++ (NSString *)pdsServiceEndpointForContext:(PDSCLICommandContext *)context {
+    NSDictionary *config = [context loadConfig];
+    NSString *issuer = config[@"issuer"] ?: config[@"server"][@"issuer"];
+    if (issuer.length > 0) {
+        return issuer;
+    }
+    NSString *host = [self pdsHostnameForContext:context];
+    return [NSString stringWithFormat:@"http://%@", host];
 }
 
 + (NSArray<PDSDatabaseAccount *> *)listAccountsWithContext:(PDSCLICommandContext *)context
@@ -154,6 +172,7 @@
     }
 
     NSString *pdsHostname = [self pdsHostnameForContext:context];
+    NSString *pdsEndpoint = [self pdsServiceEndpointForContext:context];
     
     // Generate Identity Keys
     Secp256k1 *signer = [Secp256k1 shared];
@@ -169,7 +188,7 @@
     }
 
     // Register with PLC
-    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname keyPair:keyPair error:&error];
+    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname pdsEndpoint:pdsEndpoint keyPair:keyPair error:&error];
     if (!did) {
         if (context.verbose) {
             PDS_LOG_ERROR(@"Failed to register DID with PLC: %@", error.localizedDescription);
@@ -249,9 +268,13 @@
 + (NSString *)registerDidWithHandle:(NSString *)handle 
                              email:(NSString *)email 
                            pdsHost:(NSString *)pdsHost 
+                       pdsEndpoint:(NSString *)pdsEndpoint
                            keyPair:(Secp256k1KeyPair *)keyPair
                              error:(NSError **)error {
     NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
+
+    // Use the full issuer/endpoint URL if available, otherwise fall back to http://host
+    NSString *serviceEndpoint = pdsEndpoint.length > 0 ? pdsEndpoint : [NSString stringWithFormat:@"http://%@", pdsHost];
 
     // 3. Genesis Op Data
     NSDictionary *opData = @{
@@ -262,7 +285,7 @@
         @"services": @{
             @"atproto_pds": @{
                 @"type": @"AtprotoPersonalDataServer",
-                @"endpoint": [NSString stringWithFormat:@"http://%@", pdsHost]
+                @"endpoint": serviceEndpoint
             }
         },
         @"prev": [NSNull null]
