@@ -887,7 +887,7 @@ static void registerServerDescribeAndResolveLexiconMethods(XrpcDispatcher *dispa
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
         NSString *hostname = [config canonicalHostname];
         NSString *serverDid = didWebIdentifierFromIssuer(issuer, hostname);
-        NSArray *availableUserDomains = hostname.length > 0 ? @[hostname] : @[];
+        NSArray *availableUserDomains = config.availableUserDomains ?: (hostname.length > 0 ? @[hostname] : @[]);
 
         NSDictionary *result = @{
             @"inviteCodeRequired": @(config.inviteCodeRequired),

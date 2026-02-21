@@ -119,6 +119,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
         _accessTokenTtlSeconds = 3600;
         _refreshTokenTtlSeconds = 604800;
         _inviteCodeRequired = NO;
+        _availableUserDomains = nil;
         _phoneVerificationProvider = @"none";
         _emailProviderType = @"none";
         _emailSmtpHost = nil;
@@ -234,6 +235,9 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
         if (server[@"port"]) _serverPort = [server[@"port"] unsignedIntegerValue];
         if (server[@"data_dir"]) _dataDirectory = [self resolveEnvOverrideForKey:@"PDS_DATA_DIR" default:server[@"data_dir"]];
         if (server[@"issuer"]) _issuer = [self resolveEnvOverrideForKey:@"PDS_ISSUER" default:server[@"issuer"]];
+        if (server[@"available_user_domains"] && [server[@"available_user_domains"] isKindOfClass:[NSArray class]]) {
+            _availableUserDomains = server[@"available_user_domains"];
+        }
     }
     
     // Top-level issuer override
@@ -260,11 +264,12 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
 
     NSDictionary *debug = config[@"debug"];
     if (debug) {
-        if (debug[@"skip_plc_operations"]) _debugSkipPlcOperations = [self boolFromEnv:@"PDS_DEBUG_SKIP_PLC" default:[debug[@"skip_plc_operations"] boolValue]];
-        if (debug[@"verbose_logging"]) _debugVerboseLogging = [self boolFromEnv:@"PDS_DEBUG_VERBOSE" default:[debug[@"verbose_logging"] boolValue]];
-        if (debug[@"in_memory_databases"]) _debugInMemoryDatabases = [self boolFromEnv:@"PDS_DEBUG_IN_MEMORY" default:[debug[@"in_memory_databases"] boolValue]];
-        if (debug[@"reset_on_startup"]) _debugResetOnStartup = [self boolFromEnv:@"PDS_DEBUG_RESET" default:[debug[@"reset_on_startup"] boolValue]];
-        if (debug[@"use_new_repository"]) _useNewRepositoryImplementation = [self boolFromEnv:@"PDS_USE_NEW_REPO" default:[debug[@"use_new_repository"] boolValue]];
+        // Use objectForKey: != nil checks instead of if(value) since @NO is falsy
+        if (debug[@"skip_plc_operations"] != nil) _debugSkipPlcOperations = [self boolFromEnv:@"PDS_DEBUG_SKIP_PLC" default:[debug[@"skip_plc_operations"] boolValue]];
+        if (debug[@"verbose_logging"] != nil) _debugVerboseLogging = [self boolFromEnv:@"PDS_DEBUG_VERBOSE" default:[debug[@"verbose_logging"] boolValue]];
+        if (debug[@"in_memory_databases"] != nil) _debugInMemoryDatabases = [self boolFromEnv:@"PDS_DEBUG_IN_MEMORY" default:[debug[@"in_memory_databases"] boolValue]];
+        if (debug[@"reset_on_startup"] != nil) _debugResetOnStartup = [self boolFromEnv:@"PDS_DEBUG_RESET" default:[debug[@"reset_on_startup"] boolValue]];
+        if (debug[@"use_new_repository"] != nil) _useNewRepositoryImplementation = [self boolFromEnv:@"PDS_USE_NEW_REPO" default:[debug[@"use_new_repository"] boolValue]];
     }
     
     // Allow env overrides even when debug section is missing.

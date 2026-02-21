@@ -1,4 +1,13 @@
-const PDS_BASE = 'http://localhost:2583';
+// Derive PDS base URL from current page origin
+const PDS_BASE = (function() {
+    const loc = window.location;
+    const host = loc.hostname;
+    if (host.endsWith('garazyk.xyz')) {
+        return loc.protocol + '//pds.garazyk.xyz';
+    }
+    // For exe.dev proxy or other hosts, PDS is on the default port (80)
+    return loc.protocol + '//' + host;
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
