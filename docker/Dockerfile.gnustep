@@ -69,6 +69,20 @@ RUN git clone --depth 1 https://github.com/gnustep/tools-make.git && \
     --with-library-combo=ng-gnu-gnu && \
     make && make install
 
+# Build libdispatch (GCD) from source (not available via apt on arm64)
+RUN git clone --depth 1 --branch swift-5.9.2-RELEASE \
+    https://github.com/apple/swift-corelibs-libdispatch.git && \
+    cd swift-corelibs-libdispatch && \
+    mkdir build && cd build && \
+    cmake .. -G Ninja \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr/GNUstep/Local \
+    -DINSTALL_PRIVATE_HEADERS=YES && \
+    ninja && ninja install && \
+    ldconfig
+
 # Source GNUstep environment and build gnustep-base
 RUN git clone --depth 1 https://github.com/gnustep/libs-base.git && \
     cd libs-base && \
@@ -90,7 +104,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang-14 \
     cmake \
     git \
-    libdispatch-dev \
     libffi-dev \
     libicu-dev \
     libqrencode-dev \
@@ -147,7 +160,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    libdispatch0 \
     libffi8 \
     libicu70 \
     libqrencode4 \
