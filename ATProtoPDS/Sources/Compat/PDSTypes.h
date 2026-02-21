@@ -12,6 +12,21 @@
 #ifndef PDSTypes_h
 #define PDSTypes_h
 
+#if !defined(__APPLE__)
+#import "Foundation/NSDataCompat.h"
+
+// CF Bridging macros for ARC (GNUstep doesn't define these)
+#ifndef CFBridgingRelease
+#define CFBridgingRelease(x) ((__bridge_transfer id)(x))
+#endif
+#ifndef CFBridgingRetain
+#define CFBridgingRetain(x) ((__bridge_retained CFTypeRef)(x))
+#endif
+#ifndef __unused
+#define __unused __attribute__((unused))
+#endif
+#endif
+
 /**
  * @def PDS_GCD_OBJC_SUPPORT
  * @brief Whether platform supports GCD Objective-C integration.
@@ -36,6 +51,18 @@
 #define PDS_DISPATCH_QUEUE_STRONG strong
 #else
 #define PDS_DISPATCH_QUEUE_STRONG assign
+#endif
+
+#ifndef DEPRECATED_MSG_ATTRIBUTE
+#if defined(__GNUC__)
+#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
+#else
+#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated))
+#endif
+#endif
+
+#ifndef NSErrorUserInfoKey
+#define NSErrorUserInfoKey NSString *
 #endif
 
 #endif /* PDSTypes_h */

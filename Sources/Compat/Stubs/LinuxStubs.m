@@ -55,27 +55,6 @@
 - (NSData *)getPublicKeyData { return nil; }
 @end
 
-// Stub for DIDResolver (macOS-only due to NSURLSession)
-@interface DIDResolver : NSObject
-+ (instancetype)sharedResolver;
-- (NSDictionary *)resolveDID:(NSString *)did error:(NSError **)error;
-@end
-
-@implementation DIDResolver
-+ (instancetype)sharedResolver {
-    static DIDResolver *shared = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        shared = [[DIDResolver alloc] init];
-    });
-    return shared;
-}
-- (NSDictionary *)resolveDID:(NSString *)did error:(NSError **)error {
-    if (error) *error = [NSError errorWithDomain:@"DIDResolver" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"DIDResolver not available on Linux"}];
-    return nil;
-}
-@end
-
 // Stub for WebSocketServer (macOS-only due to Network.framework)
 @interface WebSocketServer : NSObject
 - (instancetype)initWithPort:(uint16_t)port;

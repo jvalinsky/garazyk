@@ -1,16 +1,17 @@
 /*!
  @file SubscribeReposHandler.h
-
+ 
  @abstract Handler for com.atproto.sync.subscribeRepos endpoint.
-
+ 
  @discussion Manages WebSocket connections for the Firehose subscription
  endpoint. Broadcasts repository commits, identity changes, and account
  status updates to connected subscribers.
-
+ 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
+#import "Compat/PDSTypes.h"
 
 @class WebSocketServer;
 @class WebSocketConnection;
