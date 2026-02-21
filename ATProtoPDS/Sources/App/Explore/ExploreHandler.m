@@ -7,11 +7,9 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
+#import "Compat/Foundation/NSDataCompat.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
-#ifdef GNUSTEP
-#import "Compat/NSDataCompat.h"
-#endif
 
 #pragma mark - API Endpoint Descriptor Classes
 

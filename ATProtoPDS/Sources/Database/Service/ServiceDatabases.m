@@ -1,9 +1,6 @@
 #import "ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
-#ifdef GNUSTEP
-#import "Compat/NSFileManagerCompat.h"
-#endif
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Schema/PDSSchemaManager.h"

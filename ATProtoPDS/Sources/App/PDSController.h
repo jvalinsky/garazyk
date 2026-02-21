@@ -17,6 +17,7 @@
 #import <Foundation/Foundation.h>
 #import "Services/PDSRecordService.h"
 #import "Core/ATProtoError.h"
+#import "Compat/PDSTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

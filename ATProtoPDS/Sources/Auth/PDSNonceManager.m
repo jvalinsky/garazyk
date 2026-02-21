@@ -1,10 +1,11 @@
 #import "Auth/PDSNonceManager.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <Security/Security.h>
 
 @interface PDSNonceManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *issuedNonces;
-@property (nonatomic, strong) dispatch_queue_t lockQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t lockQueue;
 @end
 
 @implementation PDSNonceManager

@@ -1,6 +1,11 @@
 #import "PDSRelayService.h"
 #import "PDSRecordService.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
+
+#ifndef MSEC_PER_SEC
+#define MSEC_PER_SEC 1000ULL
+#endif
 
 @interface PDSRelayService ()
 
@@ -8,8 +13,8 @@
 @property (nonatomic, copy) NSString *hostname;
 @property (nonatomic, strong) NSURLSession *session;
 @property (nonatomic, strong) NSMutableSet<NSString *> *pendingDids;
-@property (nonatomic, strong) dispatch_queue_t queue;
-@property (nonatomic, strong) dispatch_source_t timer;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t timer;
 
 @end
 

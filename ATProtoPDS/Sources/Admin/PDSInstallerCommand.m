@@ -1,6 +1,7 @@
 #import "CLI/PDSCLIDefinitions.h"
 #import "Admin/PDSInstallerCommand.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/Foundation/NSDataCompat.h"
 #import <Foundation/Foundation.h>
 
 static NSString * const kDaemonPlistName = @"com.atproto.pds.plist";

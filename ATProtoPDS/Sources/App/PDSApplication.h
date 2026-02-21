@@ -1,18 +1,21 @@
 /*!
  @file PDSApplication.h
-
+ 
  @abstract Main application facade for the ATProto PDS.
-
+ 
  @discussion PDSApplication is the new recommended entry point for the PDS.
  It composes all services, controllers, and infrastructure components,
  providing a clean interface for server lifecycle management.
-
+ 
  This class replaces PDSController as the primary entry point for new code.
  PDSController remains available for backward compatibility but delegates
  to PDSApplication internally.
-
+ 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
+
+#import <Foundation/Foundation.h>
+#import "Compat/PDSTypes.h"
 
 #import <Foundation/Foundation.h>
 
