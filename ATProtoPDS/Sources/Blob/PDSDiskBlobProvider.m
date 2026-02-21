@@ -1,5 +1,6 @@
 #import "PDSDiskBlobProvider.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/Foundation/NSDataCompat.h"
 
 NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprovider";
 

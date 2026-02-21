@@ -6,14 +6,29 @@
 #import <CFNetwork/CFNetwork.h>
 #else
 // On Linux/GNUstep, we provide compatibility implementations
-#import <Foundation/Foundation.h>
-#import "Security/Security.h"
-#import "CoreFoundation/CFNetwork.h"
 
-// CFIndex type (if not already defined)
-#ifndef CFIndex
-typedef long CFIndex;
-#endif
+// Import CF types FIRST (no Foundation dependency - defines CFStringRef, etc.)
+#import "CFTypes.h"
+
+// Then import CF base (imports Foundation internally)
+#import "CFBase.h"
+#import "CFByteOrder.h"
+
+// Then import CFNetwork (depends on CF types and Security)
+#import "CFNetwork.h"
+
+// CFRange
+typedef struct {
+    CFIndex location;
+    CFIndex length;
+} CFRange;
+
+static inline CFRange CFRangeMake(CFIndex loc, CFIndex len) {
+    CFRange r;
+    r.location = loc;
+    r.length = len;
+    return r;
+}
 
 #endif
 

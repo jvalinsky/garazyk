@@ -1,4 +1,5 @@
 #import "HttpStreamingBody.h"
+#import "Compat/Foundation/NSDataCompat.h"
 
 static const NSUInteger kDefaultMemoryThreshold = 1024 * 1024;
 

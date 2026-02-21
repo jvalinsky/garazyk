@@ -164,7 +164,7 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
 @interface PDSAdminAuth ()
 @property (nonatomic, strong, nullable) NSDate *minimumTokenIssuedAt;
 @property (nonatomic, strong) NSMutableOrderedSet<NSString *> *adminDidsInternal;
-@property (nonatomic, strong) dispatch_queue_t adminQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t adminQueue;
 @end
 
 static NSString *PDSAdminAuthMinIATFilePath(NSString *dataDirectory) {

@@ -10,6 +10,38 @@
 
 #if !defined(__APPLE__)
 
+// Constant definitions
+const CFStringRef kSecClass = (CFStringRef)@"kSecClass";
+const CFStringRef kSecClassGenericPassword = (CFStringRef)@"kSecClassGenericPassword";
+const CFStringRef kSecClassInternetPassword = (CFStringRef)@"kSecClassInternetPassword";
+const CFStringRef kSecClassCertificate = (CFStringRef)@"kSecClassCertificate";
+const CFStringRef kSecClassKey = (CFStringRef)@"kSecClassKey";
+const CFStringRef kSecClassIdentity = (CFStringRef)@"kSecClassIdentity";
+
+const CFStringRef kSecAttrService = (CFStringRef)@"kSecAttrService";
+const CFStringRef kSecAttrAccount = (CFStringRef)@"kSecAttrAccount";
+const CFStringRef kSecAttrGeneric = (CFStringRef)@"kSecAttrGeneric";
+const CFStringRef kSecAttrAccessGroup = (CFStringRef)@"kSecAttrAccessGroup";
+const CFStringRef kSecAttrLabel = (CFStringRef)@"kSecAttrLabel";
+const CFStringRef kSecAttrComment = (CFStringRef)@"kSecAttrComment";
+const CFStringRef kSecAttrDescription = (CFStringRef)@"kSecAttrDescription";
+const CFStringRef kSecAttrType = (CFStringRef)@"kSecAttrType";
+const CFStringRef kSecAttrCreator = (CFStringRef)@"kSecAttrCreator";
+const CFStringRef kSecAttrAccessible = (CFStringRef)@"kSecAttrAccessible";
+
+const CFStringRef kSecValueData = (CFStringRef)@"kSecValueData";
+const CFStringRef kSecValueRef = (CFStringRef)@"kSecValueRef";
+const CFStringRef kSecValuePersistentRef = (CFStringRef)@"kSecValuePersistentRef";
+
+const CFStringRef kSecReturnData = (CFStringRef)@"kSecReturnData";
+const CFStringRef kSecReturnAttributes = (CFStringRef)@"kSecReturnAttributes";
+const CFStringRef kSecReturnRef = (CFStringRef)@"kSecReturnRef";
+const CFStringRef kSecReturnPersistentRef = (CFStringRef)@"kSecReturnPersistentRef";
+
+const CFStringRef kSecMatchLimit = (CFStringRef)@"kSecMatchLimit";
+const CFStringRef kSecMatchLimitOne = (CFStringRef)@"kSecMatchLimitOne";
+const CFStringRef kSecMatchLimitAll = (CFStringRef)@"kSecMatchLimitAll";
+
 // Simple in-memory keychain for testing/stubbing
 static NSMutableDictionary *gKeychain = nil;
 
