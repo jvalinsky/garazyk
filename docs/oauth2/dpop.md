@@ -6,7 +6,7 @@ DPoP (RFC 9449) binds OAuth 2.0 access tokens to a public/private key pair, prev
 
 | File | Purpose |
 |------|---------|
-| `Sources/Auth/OAuth2.m` | `OAuth2DPoPProof` class (lines 192-927) |
+| `Sources/Auth/OAuth2.m` | `OAuth2DPoPProof` class |
 | `Sources/Auth/DPoPUtil.m` | Helper utilities for proof creation/verification |
 | `Sources/Auth/OAuth2Handler.m` | Request-level DPoP validation |
 | `Sources/Auth/PDSNonceManager.h/m` | Server-side nonce generation and validation |
@@ -131,15 +131,16 @@ The `verifyProof:method:url:nonce:requireNonce:outThumbprint:error:` method impl
 ### Code Reference
 
 ```objc
-// OAuth2.m:712-927
 + (BOOL)verifyProof:(NSString *)dpopJwt
              method:(NSString *)method
                 url:(NSURL *)url
               nonce:(nullable NSString *)nonce
        requireNonce:(BOOL)requireNonce
       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
-              error:(NSError **)error;
+                error:(NSError **)error;
 ```
+
+**Nonce Requirement:** The implementation enforces `requireNonce:YES` in `validateDPoPForRequest` (`OAuth2Handler.m:918`).
 
 ## Nonce Challenge Flow
 
@@ -259,7 +260,6 @@ The JWK thumbprint uniquely identifies a public key for token binding.
 ### Calculation
 
 ```objc
-// OAuth2.m:383-442
 + (nullable NSString *)jwkThumbprint:(NSDictionary *)jwk error:(NSError **)error {
     // 1. Extract required members for key type:
     //    EC: crv, kty, x, y
@@ -311,7 +311,6 @@ When a client makes a request with an access token, the server verifies that the
 ### DER to Raw Conversion (Verification)
 
 ```objc
-// OAuth2.m:479-571
 + (nullable NSData *)ecdsaRawSignatureFromDER:(NSData *)der
                                  expectedSize:(size_t)expectedSize
                                         error:(NSError **)error {
@@ -329,7 +328,6 @@ When a client makes a request with an access token, the server verifies that the
 ### Raw to DER Conversion (Signing)
 
 ```objc
-// OAuth2.m:573-624
 + (nullable NSData *)ecdsaDERSignatureFromRaw:(NSData *)raw error:(NSError **)error {
     // Split raw signature into r (first 32 bytes) and s (last 32 bytes)
     // Strip leading zeros
@@ -341,7 +339,6 @@ When a client makes a request with an access token, the server verifies that the
 ### Signature Verification
 
 ```objc
-// OAuth2.m:893-917
 SecKeyRef publicKey = [self createPublicKeyFromJWK:jwk error:error];
 NSData *derSignature = [self ecdsaDERSignatureFromRaw:signatureData error:error];
 
@@ -357,7 +354,6 @@ BOOL verified = SecKeyVerifySignature(publicKey,
 ### Request Validation
 
 ```objc
-// OAuth2Handler.m:864-943
 - (BOOL)validateDPoPForRequest:(HttpRequest *)request
                        response:(HttpResponse *)response
                   outThumbprint:(NSString **)outThumbprint {
@@ -367,12 +363,12 @@ BOOL verified = SecKeyVerifySignature(publicKey,
     // 2. Construct URL from request (scheme, host, path, query)
     NSURL *dpopURL = ...;
     
-    // 3. Verify proof
+    // 3. Verify proof (nonce required)
     if (![OAuth2DPoPProof verifyProof:dpopProof
                                method:request.methodString
                                   url:dpopURL
                                 nonce:requestedNonce
-                         requireNonce:NO
+                         requireNonce:YES
                         outThumbprint:&dpopThumbprint
                                 error:&dpopError]) {
         // 4. Handle nonce challenge
