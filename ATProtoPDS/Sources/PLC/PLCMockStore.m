@@ -1,10 +1,11 @@
 #import "PLCMockStore.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCMetrics.h"
+#import "Compat/PDSTypes.h"
 
 @interface PLCMockStore ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<PLCOperation *> *> *storage;
-@property (nonatomic, strong) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
 @implementation PLCMockStore

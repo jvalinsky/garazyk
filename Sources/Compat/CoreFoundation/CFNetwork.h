@@ -5,7 +5,13 @@
 #import <CFNetwork/CFNetwork.h>
 #else
 
+// Import CF types FIRST (no Foundation dependency)
+#include "CFTypes.h"
+
+// Then import Foundation for other needs
 #include <Foundation/Foundation.h>
+
+// Then import Security (needs CF types)
 #include "Security/Security.h"
 
 // CFURL type (must be defined before use)

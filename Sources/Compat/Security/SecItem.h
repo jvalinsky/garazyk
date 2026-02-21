@@ -53,6 +53,13 @@ extern const CFStringRef kSecMatchLimit;
 extern const CFStringRef kSecMatchLimitOne;
 extern const CFStringRef kSecMatchLimitAll;
 
+extern const CFStringRef kSecAttrAccessible;
+
+// Error codes
+#define errSecAuthFailed -25293
+#define errSecParam -50
+#define errSecNotAvailable -4
+
 // Functions
 OSStatus SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result);
 OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result);

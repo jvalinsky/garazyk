@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "Compat/PDSTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -436,10 +437,10 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, strong) NSMutableDictionary *activeSessions;
 
 /*! Serial queue for thread-safe authorization code access. */
-@property (nonatomic, strong, readonly) dispatch_queue_t authorizationQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t authorizationQueue;
 
 /*! Serial queue for thread-safe session access. */
-@property (nonatomic, strong, readonly) dispatch_queue_t sessionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t sessionQueue;
 
 /*! JWT minting service. */
 @property (nonatomic, strong, nullable) JWTMinter *jwtMinter;

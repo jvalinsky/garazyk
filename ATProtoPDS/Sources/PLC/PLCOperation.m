@@ -218,11 +218,11 @@ static BOOL isBase32Char(unichar c) {
     }];
     
     NSMutableArray *services = [NSMutableArray array];
-    [self.services enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSDictionary *service, BOOL *stop) {
+    [self.services enumerateKeysAndObjectsUsingBlock:^(id key, id service, BOOL *stop) {
         [services addObject:@{
             @"id": [NSString stringWithFormat:@"#%@", key],
-            @"type": service[@"type"],
-            @"serviceEndpoint": service[@"endpoint"]
+            @"type": ((NSDictionary *)service)[@"type"],
+            @"serviceEndpoint": ((NSDictionary *)service)[@"endpoint"]
         }];
     }];
     

@@ -1,10 +1,11 @@
 /*!
  @file OAuthDemoHandler.h
-
+ 
  @abstract HTTP handler for the embedded OAuth demo UI.
  */
 
 #import <Foundation/Foundation.h>
+#import "Compat/PDSTypes.h"
 
 @class HttpRequest;
 @class HttpResponse;

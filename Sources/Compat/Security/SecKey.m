@@ -20,6 +20,7 @@
 // Constants definitions
 const CFStringRef kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256 = (CFStringRef)@"kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256";
 const CFStringRef kSecKeyAlgorithmECDSASignatureMessageX962SHA256 = (CFStringRef)@"kSecKeyAlgorithmECDSASignatureMessageX962SHA256";
+const CFStringRef kSecKeyAlgorithmECDSASignatureDigestX962SHA256 = (CFStringRef)@"kSecKeyAlgorithmECDSASignatureDigestX962SHA256";
 
 const CFStringRef kSecAttrKeyType = (CFStringRef)@"kSecAttrKeyType";
 const CFStringRef kSecAttrKeyTypeRSA = (CFStringRef)@"kSecAttrKeyTypeRSA";
@@ -55,7 +56,7 @@ SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error) {
         if (!pctx || EVP_PKEY_keygen_init(pctx) <= 0 ||
             EVP_PKEY_CTX_set_rsa_keygen_bits(pctx, keySize.intValue) <= 0 ||
             EVP_PKEY_keygen(pctx, &pkey) <= 0) {
-            if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to generate RSA key");
+            if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to generate RSA key");
             if (pctx) EVP_PKEY_CTX_free(pctx);
             return NULL;
         }
@@ -65,12 +66,12 @@ SecKeyRef SecKeyCreateRandomKey(CFDictionaryRef attributes, CFErrorRef *error) {
         if (!pctx || EVP_PKEY_keygen_init(pctx) <= 0 ||
             EVP_PKEY_CTX_set_ec_paramgen_curve_nid(pctx, NID_X9_62_prime256v1) <= 0 ||
             EVP_PKEY_keygen(pctx, &pkey) <= 0) {
-            if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to generate EC key");
+            if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to generate EC key");
             if (pctx) EVP_PKEY_CTX_free(pctx);
             return NULL;
         }
     } else {
-        if (error) *error = (CFErrorRef)[NSError errorWithDomain:@"SecKey" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Unsupported key type"}];
+        if (error) *error = (__bridge CFErrorRef)[NSError errorWithDomain:@"SecKey" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Unsupported key type"}];
         return NULL;
     }
     
@@ -135,7 +136,7 @@ CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error) {
     }
     
     if (len <= 0 || !buf) {
-        if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to export key");
+        if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to export key");
         return NULL;
     }
     
@@ -200,7 +201,7 @@ SecKeyRef SecKeyCreateWithData(CFDataRef keyData, CFDictionaryRef attributes, CF
     }
     
     if (!pkey) {
-        if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to import key");
+        if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to import key");
         return NULL;
     }
     
@@ -218,21 +219,21 @@ CFDataRef SecKeyCreateSignature(SecKeyRef key, CFStringRef algorithm, CFDataRef 
     const EVP_MD *md = EVP_sha256(); // Default to SHA256
     
     if (EVP_DigestSignInit(mdctx, &pctx, md, NULL, key->pkey) <= 0) {
-        if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to init sign");
+        if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to init sign");
         EVP_MD_CTX_free(mdctx);
         return NULL;
     }
     
     size_t sigLen = 0;
     if (EVP_DigestSign(mdctx, NULL, &sigLen, data.bytes, data.length) <= 0) {
-        if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to sign (length)");
+        if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to sign (length)");
         EVP_MD_CTX_free(mdctx);
         return NULL;
     }
     
     unsigned char *sig = malloc(sigLen);
     if (EVP_DigestSign(mdctx, sig, &sigLen, data.bytes, data.length) <= 0) {
-        if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to sign");
+        if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to sign");
         free(sig);
         EVP_MD_CTX_free(mdctx);
         return NULL;
@@ -253,7 +254,7 @@ Boolean SecKeyVerifySignature(SecKeyRef key, CFStringRef algorithm, CFDataRef si
     const EVP_MD *md = EVP_sha256();
     
     if (EVP_DigestVerifyInit(mdctx, NULL, md, NULL, key->pkey) <= 0) {
-        if (error) *error = (CFErrorRef)OpenSSLError(@"Failed to init verify");
+        if (error) *error = (__bridge CFErrorRef)OpenSSLError(@"Failed to init verify");
         EVP_MD_CTX_free(mdctx);
         return false;
     }
@@ -262,7 +263,7 @@ Boolean SecKeyVerifySignature(SecKeyRef key, CFStringRef algorithm, CFDataRef si
     EVP_MD_CTX_free(mdctx);
     
     if (ret != 1) {
-        if (error) *error = (CFErrorRef)[NSError errorWithDomain:@"SecKey" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Signature verification failed"}];
+        if (error) *error = (__bridge CFErrorRef)[NSError errorWithDomain:@"SecKey" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Signature verification failed"}];
         return false;
     }
     
