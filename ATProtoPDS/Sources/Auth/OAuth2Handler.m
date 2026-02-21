@@ -912,12 +912,12 @@ static NSMutableDictionary *sPendingConsents = nil;
     }
     
     if (![OAuth2DPoPProof verifyProof:dpopProof
-                               method:request.methodString
-                                  url:dpopURL
-                                nonce:requestedNonce
-                         requireNonce:NO
-                        outThumbprint:&dpopThumbprint
-                                error:&dpopError]) {
+                                method:request.methodString
+                                   url:dpopURL
+                                 nonce:requestedNonce
+                          requireNonce:YES
+                         outThumbprint:&dpopThumbprint
+                                 error:&dpopError]) {
         if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
             NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
             if (nonce.length > 0) {

@@ -110,13 +110,17 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testAdminAuthorizationAndEndpoints {
+    // Admin access is now granted via JWT scope validation, not account properties.
+    // isAuthorizedForAdminOperation returns NO by default - admin scope is checked in JWT.
     NSError *error = nil;
-    [self createAccountWithDid:@"did:plc:admin123" handle:@"admin.user"];
+    [self createAccountWithDid:@"did:plc:admin123" handle:@"testadmin.test"];
 
     error = nil;
     BOOL adminAllowed = [self.manager isAuthorizedForAdminOperation:@"did:plc:admin123" error:&error];
-    XCTAssertTrue(adminAllowed);
-    XCTAssertNil(error);
+    // Legacy handle-based admin escalation removed - now requires JWT scope
+    XCTAssertFalse(adminAllowed);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSAuthzErrorAdminRequired);
 
     error = nil;
     [self createAccountWithDid:@"did:plc:user123" handle:@"user.example.com"];
@@ -126,6 +130,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertFalse(userAllowed);
     XCTAssertEqual(error.code, PDSAuthzErrorAdminRequired);
 
+    // Admin endpoint detection still works
     NSArray<NSString *> *adminMethods = @[
         @"com.atproto.admin.getAccountInfo",
         @"com.atproto.admin.moderateAccount",

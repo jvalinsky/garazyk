@@ -4,6 +4,8 @@
 
 NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
 
+static const NSUInteger kMaxDecodeDepth = 64;
+
 @implementation ATProtoDagCBOR
 
 #pragma mark - Public API
@@ -27,7 +29,7 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
     }
     
     NSUInteger index = 0;
-    return [self _decodeFromBytes:data.bytes length:data.length index:&index error:error];
+    return [self _decodeFromBytes:data.bytes length:data.length index:&index depth:0 error:error];
 }
 
 + (nullable NSData *)encodeJSONObject:(id)jsonObject error:(NSError **)error {
@@ -439,7 +441,16 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
 
 #pragma mark - Decoding
 
-+ (nullable id)_decodeFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
++ (nullable id)_decodeFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+    if (depth > kMaxDecodeDepth) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CBOR nesting depth exceeded"}];
+        }
+        return nil;
+    }
+    
     if (*index >= length) {
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -469,13 +480,13 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
             return [self _decodeTextString:additionalInfo bytes:bytes length:length index:index error:error];
             
         case 4: // Array
-            return [self _decodeArray:additionalInfo bytes:bytes length:length index:index error:error];
+            return [self _decodeArray:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
             
         case 5: // Map
-            return [self _decodeMap:additionalInfo bytes:bytes length:length index:index error:error];
+            return [self _decodeMap:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
             
         case 6: // Tag
-            return [self _decodeTag:additionalInfo bytes:bytes length:length index:index error:error];
+            return [self _decodeTag:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
             
         case 7: // Special/float
             return [self _decodeSpecial:additionalInfo bytes:bytes length:length index:index error:error];
@@ -569,7 +580,7 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
     return string;
 }
 
-+ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
++ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
     NSNumber *arrayLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!arrayLength) return nil;
     
@@ -577,7 +588,7 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
     
     for (uint64_t i = 0; i < count; i++) {
-        id item = [self _decodeFromBytes:bytes length:length index:index error:error];
+        id item = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!item) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -592,7 +603,7 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
     return array;
 }
 
-+ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
++ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
     NSNumber *mapLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!mapLength) return nil;
     
@@ -600,7 +611,7 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:count];
     
     for (uint64_t i = 0; i < count; i++) {
-        id key = [self _decodeFromBytes:bytes length:length index:index error:error];
+        id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!key) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -610,7 +621,7 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
             return nil;
         }
         
-        id value = [self _decodeFromBytes:bytes length:length index:index error:error];
+        id value = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!value) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -626,14 +637,14 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
     return dict;
 }
 
-+ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
++ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
     NSNumber *tagNumber = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!tagNumber) return nil;
     
     uint64_t tag = tagNumber.unsignedLongLongValue;
     
     // Decode the tagged value
-    id taggedValue = [self _decodeFromBytes:bytes length:length index:index error:error];
+    id taggedValue = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
     if (!taggedValue) return nil;
     
     // Handle CID-link (tag 42)

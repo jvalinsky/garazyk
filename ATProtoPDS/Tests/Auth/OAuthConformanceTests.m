@@ -1,15 +1,19 @@
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
 #import "Auth/JWT.h"
+#import "Auth/DPoPUtil.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
+#import <Security/Security.h>
 
 @interface OAuthConformanceTests : XCTestCase
 @property (nonatomic, strong) OAuth2Handler *handler;
 @property (nonatomic, strong) JWTMinter *minter;
 @property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, assign) SecKeyRef privateKey;
+@property (nonatomic, assign) SecKeyRef publicKey;
 @end
 
 @implementation OAuthConformanceTests
@@ -23,16 +27,25 @@
     
     // Setup Minter with static key for testing
     self.minter = [[JWTMinter alloc] init];
-    // We need to set a key pair. Let's generate one using Secp256k1 if available or just use a mock if possible.
-    // JWTMinter expects SecKeyRef.
-    // For simplicity, we can rely on default empty state or try to set one.
-    // If minter has no keys, toJWKS returns empty keys array which is valid but empty.
     
     self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.minter = self.minter;
+    
+    // Generate P-256 key pair for DPoP
+    NSDictionary* attributes = @{
+        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
+        (id)kSecAttrKeySizeInBits: @256
+    };
+    CFErrorRef error = NULL;
+    self.privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
+    if (self.privateKey) {
+        self.publicKey = SecKeyCopyPublicKey(self.privateKey);
+    }
 }
 
 - (void)tearDown {
+    if (self.privateKey) CFRelease(self.privateKey);
+    if (self.publicKey) CFRelease(self.publicKey);
     [self.database close];
     [super tearDown];
 }
@@ -71,10 +84,21 @@
 }
 
 - (void)testPARResponse {
+    // Skip if key generation failed
+    if (!self.privateKey) {
+        XCTSkip(@"Skipping PAR test: Security key generation unavailable");
+        return;
+    }
+    
     // 1. Setup client
     [self.database createClient:@{@"client_id": @"test_client", @"client_secret": @"secret", @"redirect_uris": @[@"https://client.example.com/cb"]} error:nil];
     
-    // 2. Prepare PAR request
+    // 2. Generate DPoP proof for PAR endpoint
+    NSError *dpopError = nil;
+    DPoPToken *dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nil key:self.privateKey error:&dpopError];
+    XCTAssertNotNil(dpopToken, @"DPoP token creation failed: %@", dpopError);
+    
+    // 3. Prepare PAR request
     NSDictionary *params = @{
         @"client_id": @"test_client",
         @"client_secret": @"secret",
@@ -89,6 +113,7 @@
         if (body.length > 0) [body appendString:@"&"];
         [body appendFormat:@"%@=%@", key, params[key]];
     }
+    NSData *bodyData = [body dataUsingEncoding:NSUTF8StringEncoding];
     
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
@@ -96,15 +121,42 @@
                                                    queryString:@""
                                                    queryParams:@{}
                                                        version:@"HTTP/1.1"
-                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
-                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                       headers:@{
+        @"Content-Type": @"application/x-www-form-urlencoded",
+        @"DPoP": dpopToken.jwt ?: @"",
+        @"Host": @"localhost"
+    }
+                                                          body:bodyData
                                                  remoteAddress:@"127.0.0.1"];
     HttpResponse *response = [[HttpResponse alloc] init];
     
     // Call handlePARRequest
     [self.handler performSelector:@selector(handlePARRequest:response:) withObject:request withObject:response];
     
-    XCTAssertEqual(response.statusCode, 201);
+    // Handle DPoP Nonce Challenge
+    if (response.statusCode == 400 && [response.headers[@"DPoP-Nonce"] length] > 0) {
+        NSString *nonce = response.headers[@"DPoP-Nonce"];
+        dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nonce key:self.privateKey error:&dpopError];
+        XCTAssertNotNil(dpopToken);
+        
+        request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                      methodString:@"POST"
+                                              path:@"/oauth/par"
+                                       queryString:@""
+                                       queryParams:@{}
+                                           version:@"HTTP/1.1"
+                                           headers:@{
+            @"Content-Type": @"application/x-www-form-urlencoded",
+            @"DPoP": dpopToken.jwt ?: @"",
+            @"Host": @"localhost"
+        }
+                                              body:bodyData
+                                     remoteAddress:@"127.0.0.1"];
+        response = [[HttpResponse alloc] init];
+        [self.handler performSelector:@selector(handlePARRequest:response:) withObject:request withObject:response];
+    }
+    
+    XCTAssertEqual(response.statusCode, 201, @"Expected 201, got %d. Body: %@", response.statusCode, [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding]);
     
     NSDictionary *json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil];
     XCTAssertNotNil(json[@"request_uri"]);
@@ -113,9 +165,7 @@
     XCTAssertEqual([json[@"expires_in"] integerValue], 600);
     
     // Verify it's in DB
-    NSArray *rows = [self.database executeQuery:@"SELECT * FROM oauth_par_requests WHERE request_uri = ?" error:nil]; // query needs binding, but executeQuery:error: doesn't support it directly in this interface? 
-    // Wait, executeParameterizedQuery is available.
-    rows = [self.database executeParameterizedQuery:@"SELECT * FROM oauth_par_requests WHERE request_uri = ?" params:@[json[@"request_uri"]] error:nil];
+    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT * FROM oauth_par_requests WHERE request_uri = ?" params:@[json[@"request_uri"]] error:nil];
     XCTAssertEqual(rows.count, 1);
 }
 

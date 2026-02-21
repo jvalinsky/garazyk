@@ -67,6 +67,49 @@
     XCTAssertEqual(cid.codec, 0x55);
 }
 
+- (void)testCIDFromStringMaxLength {
+    NSMutableString *longString = [NSMutableString stringWithString:@"b"];
+    for (int i = 0; i < 300; i++) {
+        [longString appendString:@"a"];
+    }
+    XCTAssertNil([CID cidFromString:longString], @"Should reject CID string > 256 chars");
+}
+
+- (void)testCIDFromBytesMaxLength {
+    NSMutableData *longData = [NSMutableData dataWithCapacity:300];
+    uint8_t versionByte = 0x01;
+    [longData appendBytes:&versionByte length:1];
+    uint8_t codecByte = 0x71;
+    [longData appendBytes:&codecByte length:1];
+    for (int i = 0; i < 300; i++) {
+        uint8_t byte = 0x12;
+        [longData appendBytes:&byte length:1];
+    }
+    XCTAssertNil([CID cidFromBytes:longData], @"Should reject CID bytes > 256");
+}
+
+- (void)testCIDFromEmptyString {
+    XCTAssertNil([CID cidFromString:@""]);
+    XCTAssertNil([CID cidFromString:nil]);
+}
+
+- (void)testCIDFromEmptyBytes {
+    XCTAssertNil([CID cidFromBytes:[NSData data]]);
+    XCTAssertNil([CID cidFromBytes:nil]);
+}
+
+- (void)testCIDValidLength {
+    NSData *multihash = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid = [CID cidWithMultihash:multihash codec:0x71];
+    NSString *stringValue = cid.stringValue;
+    
+    XCTAssertLessThanOrEqual(stringValue.length, 256, @"Valid CID should be <= 256 chars");
+    
+    CID *parsed = [CID cidFromString:stringValue];
+    XCTAssertNotNil(parsed, @"Should parse valid CID string");
+    XCTAssertEqualObjects(parsed.stringValue, stringValue);
+}
+
 #pragma mark - TID Tests
 
 - (void)testTIDGeneration {
