@@ -345,4 +345,100 @@
     XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeDecodingFailed);
 }
 
+- (void)testTruncatedVarint {
+    NSError *error = nil;
+    
+    uint8_t data[] = {0x1b, 0x00, 0x00, 0x00};
+    NSData *truncated = [NSData dataWithBytes:data length:4];
+    
+    id decoded = [ATProtoDagCBOR decodeData:truncated error:&error];
+    XCTAssertNil(decoded, @"Should reject truncated varint");
+    XCTAssertNotNil(error);
+}
+
+- (void)testByteStringLengthExceedsData {
+    NSError *error = nil;
+    
+    uint8_t data[] = {0x5a, 0xff, 0xff, 0xff, 0xff, 0x01};
+    NSData *oversized = [NSData dataWithBytes:data length:6];
+    
+    id decoded = [ATProtoDagCBOR decodeData:oversized error:&error];
+    XCTAssertNil(decoded, @"Should reject byte string with length exceeding data");
+    XCTAssertNotNil(error);
+}
+
+- (void)testArrayLengthExceedsData {
+    NSError *error = nil;
+    
+    uint8_t data[] = {0x9a, 0x00, 0x00, 0x00, 0x10};
+    NSData *oversized = [NSData dataWithBytes:data length:5];
+    
+    id decoded = [ATProtoDagCBOR decodeData:oversized error:&error];
+    XCTAssertNil(decoded, @"Should reject array with count exceeding available items");
+    XCTAssertNotNil(error);
+}
+
+- (void)testMapLengthExceedsData {
+    NSError *error = nil;
+    
+    uint8_t data[] = {0xba, 0x00, 0x00, 0x00, 0x10};
+    NSData *oversized = [NSData dataWithBytes:data length:5];
+    
+    id decoded = [ATProtoDagCBOR decodeData:oversized error:&error];
+    XCTAssertNil(decoded, @"Should reject map with count exceeding available items");
+    XCTAssertNotNil(error);
+}
+
+- (void)testDeeplyNestedArray {
+    NSError *error = nil;
+    
+    NSMutableData *nested = [NSMutableData data];
+    for (int i = 0; i < 70; i++) {
+        uint8_t byte = 0x81;
+        [nested appendBytes:&byte length:1];
+    }
+    uint8_t innermost = 0x00;
+    [nested appendBytes:&innermost length:1];
+    
+    id decoded = [ATProtoDagCBOR decodeData:nested error:&error];
+    XCTAssertNil(decoded, @"Should reject deeply nested structures (> 64 levels)");
+    XCTAssertNotNil(error);
+}
+
+- (void)testDeeplyNestedMap {
+    NSError *error = nil;
+    
+    NSMutableData *nested = [NSMutableData data];
+    for (int i = 0; i < 70; i++) {
+        uint8_t byte = 0xa1;
+        [nested appendBytes:&byte length:1];
+        uint8_t key = 0x61;
+        [nested appendBytes:&key length:1];
+        uint8_t keyChar = 'a';
+        [nested appendBytes:&keyChar length:1];
+    }
+    uint8_t innermost = 0x00;
+    [nested appendBytes:&innermost length:1];
+    
+    id decoded = [ATProtoDagCBOR decodeData:nested error:&error];
+    XCTAssertNil(decoded, @"Should reject deeply nested maps (> 64 levels)");
+    XCTAssertNotNil(error);
+}
+
+- (void)testValidNestingDepth {
+    NSError *error = nil;
+    
+    NSMutableData *nested = [NSMutableData data];
+    for (int i = 0; i < 50; i++) {
+        uint8_t byte = 0x81;
+        [nested appendBytes:&byte length:1];
+    }
+    uint8_t innermost = 0x00;
+    [nested appendBytes:&innermost length:1];
+    
+    id decoded = [ATProtoDagCBOR decodeData:nested error:&error];
+    XCTAssertNotNil(decoded, @"Should accept nesting <= 64 levels");
+    XCTAssertNil(error);
+}
+
 @end

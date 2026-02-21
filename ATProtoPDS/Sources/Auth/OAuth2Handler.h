@@ -65,6 +65,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeSignIn:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeConfirm:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
 

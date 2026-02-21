@@ -189,13 +189,58 @@
     DPoPToken *dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
     XCTAssertNotNil(dpopToken, @"Failed to create DPoP token");
     
+    NSString *body = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode, verifier];
+
+    // Step 1: Send initial token request without nonce to get DPoP-Nonce from server
+    NSMutableURLRequest *nonceRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:tokenUri]];
+    nonceRequest.HTTPMethod = @"POST";
+    [nonceRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    [nonceRequest setValue:dpopToken.jwt forHTTPHeaderField:@"DPoP"];
+    nonceRequest.HTTPBody = [body dataUsingEncoding:NSUTF8StringEncoding];
+
+    __block BOOL nonceFinished = NO;
+    __block NSString *dpopNonce = nil;
+
+    [[self.session dataTaskWithRequest:nonceRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        dpopNonce = [httpResponse valueForHTTPHeaderField:@"DPoP-Nonce"];
+        NSLog(@"[TEST] Nonce challenge response: status=%ld, nonce=%@", (long)httpResponse.statusCode, dpopNonce);
+        nonceFinished = YES;
+    }] resume];
+
+    NSDate *nonceTimeout = [NSDate dateWithTimeIntervalSinceNow:10.0];
+    while (!nonceFinished && [nonceTimeout timeIntervalSinceNow] > 0) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+
+    XCTAssertNotNil(dpopNonce, @"Server should return DPoP-Nonce header");
+
+    // Re-seed authorization code since the first attempt consumed it
+    NSString *authCode2 = [[NSUUID UUID] UUIDString];
+    NSDictionary *codeData2 = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": @"http://127.0.0.1:3000/callback",
+        @"scope": @"atproto:identify",
+        @"state": @"test123",
+        @"code_challenge": challenge,
+        @"code_challenge_method": @"S256",
+        @"login_hint": @"test-user.test",
+        @"login_hint_did": @"did:plc:test-user-did",
+        @"created_at": @([[NSDate date] timeIntervalSince1970])
+    };
+    self.oauthServer.authorizationCodes[authCode2] = codeData2;
+
+    // Step 2: Retry with nonce-bound DPoP proof
+    DPoPToken *dpopToken2 = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:dpopNonce key:privateKey error:nil];
+    XCTAssertNotNil(dpopToken2, @"Failed to create DPoP token with nonce");
+
+    NSString *body2 = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode2, verifier];
+
     NSMutableURLRequest *tokenRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:tokenUri]];
     tokenRequest.HTTPMethod = @"POST";
     [tokenRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
-    [tokenRequest setValue:dpopToken.jwt forHTTPHeaderField:@"DPoP"];
-    
-    NSString *body = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode, verifier];
-    tokenRequest.HTTPBody = [body dataUsingEncoding:NSUTF8StringEncoding];
+    [tokenRequest setValue:dpopToken2.jwt forHTTPHeaderField:@"DPoP"];
+    tokenRequest.HTTPBody = [body2 dataUsingEncoding:NSUTF8StringEncoding];
     
     __block BOOL tokenFinished = NO;
     __block NSString *accessToken = nil;
@@ -206,6 +251,7 @@
         
         if (data) {
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            NSLog(@"[TEST] Token response: %@", json);
             XCTAssertEqualObjects(json[@"token_type"], @"DPoP", @"Token type should be DPoP");
             accessToken = json[@"access_token"];
             XCTAssertNotNil(accessToken, @"Should have received access token");

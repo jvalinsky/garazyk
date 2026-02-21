@@ -19,7 +19,11 @@
         @"did": @"did:plc:abcdefghijklmnopqrstuvwx",
         @"prev": @"cid:456",
         @"sig": @"sig789",
-        @"type": @"plc_operation"
+        @"type": @"plc_operation",
+        @"rotationKeys": @[@"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"],
+        @"verificationMethods": @{@"atproto": @"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"},
+        @"alsoKnownAs": @[@"at://handle.example.com"],
+        @"services": @{}
     };
     
     NSError *error = nil;
@@ -37,7 +41,11 @@
     NSDictionary *json = @{
         @"did": @"did:plc:abcdefghijklmnopqrstuvwx",
         @"sig": @"sig789",
-        @"type": @"plc_operation"
+        @"type": @"plc_operation",
+        @"rotationKeys": @[@"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"],
+        @"verificationMethods": @{@"atproto": @"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"},
+        @"alsoKnownAs": @[@"at://handle.example.com"],
+        @"services": @{}
     };
     
     NSError *error = nil;

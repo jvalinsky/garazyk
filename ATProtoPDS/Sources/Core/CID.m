@@ -65,6 +65,9 @@ static const NSUInteger kMaxVarintSize = 9;
     if (!string || string.length == 0) {
         return nil;
     }
+    if (string.length > 256) {
+        return nil;
+    }
 
     // For now, assume base32 encoding (most common for ATProto)
     if ([string characterAtIndex:0] != 'b') {
@@ -82,6 +85,9 @@ static const NSUInteger kMaxVarintSize = 9;
 
 + (nullable instancetype)cidFromBytes:(NSData *)data {
     if (!data || data.length < 2) {
+        return nil;
+    }
+    if (data.length > 256) {
         return nil;
     }
 
