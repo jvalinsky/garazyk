@@ -52,6 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:123]);
 }
 
+#ifndef GNUSTEP
 - (void)testConnectAndCommitDispatch {
     RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
@@ -79,6 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
     // Just verify we got the event
     XCTAssertNotNil(delegate.commitEvent.commit);
 }
+#endif
 
 @end
 

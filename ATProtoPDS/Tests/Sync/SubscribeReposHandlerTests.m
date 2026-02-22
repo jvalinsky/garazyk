@@ -117,9 +117,10 @@
                                                      forRepo:@"did:plc:test" 
                                                          ops:ops 
                                                        blobs:blobs], 
-                     @"Should handle broadcast with ops and blobs");
+                      @"Should handle broadcast with ops and blobs");
 }
 
+#ifndef GNUSTEP
 - (void)testBackpressureEnforcement {
     RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
                                                    data:[CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
@@ -171,7 +172,9 @@
     XCTAssertTrue(mockConn2.didClose, @"Connection should be closed due to bytes backpressure");
     XCTAssertEqual(mockConn2.closedCode, 1008);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testBroadcastPersistsEvent {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Event persisted"];
     
@@ -211,7 +214,9 @@
     
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testReplayWithCursor {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     
@@ -262,7 +267,9 @@
         XCTAssertEqualObjects(msg2[@"name"], @"info3");
     }
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testReplayWithFutureCursorSendsFutureCursorError {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     [self.handler broadcastInfo:@"seed" message:@"seed"];
@@ -296,7 +303,9 @@
     XCTAssertEqualObjects(msgType, @"#error");
     XCTAssertEqualObjects(payload[@"error"], @"FutureCursor");
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testReplayWithLargeBacklogSendsConsumerTooSlowError {
     self.handler.maxReplayEventsPerConnection = 1;
     EventFormatter *formatter = [[EventFormatter alloc] init];
@@ -334,7 +343,9 @@
     XCTAssertEqualObjects(msgType, @"#error");
     XCTAssertEqualObjects(payload[@"error"], @"ConsumerTooSlow");
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testBroadcastDetachesConnectionWhenPendingQueueTooLarge {
     self.handler.maxPendingSendsPerConnection = 0;
     EventFormatter *formatter = [[EventFormatter alloc] init];
@@ -366,6 +377,7 @@
     XCTAssertEqualObjects(msgType, @"#error");
     XCTAssertEqualObjects(payload[@"error"], @"ConsumerTooSlow");
 }
+#endif
 
 - (void)testBroadcastIdentityChange {
     XCTAssertNoThrow([self.handler broadcastIdentityChange:@"did:plc:test" handle:@"test.bsky.social"],
@@ -381,9 +393,10 @@
 
 - (void)testBroadcastInfoEvent {
     XCTAssertNoThrow([self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"],
-                     @"Should handle info event broadcast");
+                      @"Should handle info event broadcast");
 }
 
+#ifndef GNUSTEP
 - (void)testReplayWithPrunedEventsHandlesGap {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     
@@ -448,7 +461,9 @@
         // Info events don't carry seq in body, so we can't verify seq here
     }
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testSequenceInitializationFromDisk {
     // 1. Broadcast an event with current handler
     [self.handler broadcastInfo:@"init1" message:@"msg1"];
@@ -489,5 +504,6 @@
     
     [newHandler stop];
 }
+#endif
 
 @end

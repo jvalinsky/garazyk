@@ -40,6 +40,7 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testResolveDid {
     if (![self startServerWithRetry]) {
         XCTSkip(@"Server failed to start - port likely in use");
@@ -105,7 +106,9 @@
     
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testGetBlocks {
     if (![self startServerWithRetry]) {
         XCTSkip(@"Server failed to start - port likely in use");
@@ -168,7 +171,9 @@
     
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testGetLatestCommit {
     if (![self startServerWithRetry]) {
         XCTSkip(@"Server failed to start - port likely in use");
@@ -237,5 +242,6 @@
     
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 @end

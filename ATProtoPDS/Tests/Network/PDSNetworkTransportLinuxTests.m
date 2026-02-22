@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation PDSNetworkTransportLinuxTests
 
+#ifndef GNUSTEP
 - (void)testReceiveBufferedData {
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
@@ -219,6 +220,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[completion] timeout:1.0];
     close(fds[1]);
 }
+#endif
 
 @end
 

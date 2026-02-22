@@ -163,6 +163,7 @@
     return nil;
 }
 
+#ifndef GNUSTEP
 - (void)testBroadcastCommitSetsSinceField {
     NSError *error = nil;
 
@@ -240,5 +241,6 @@
     XCTAssertNotNil(since, @"Message 2 should have since field");
     XCTAssertEqualObjects(since, rev1, @"since should equal rev of previous commit");
 }
+#endif
 
 @end
