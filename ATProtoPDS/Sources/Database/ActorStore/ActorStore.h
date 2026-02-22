@@ -200,6 +200,24 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Exports the raw private key bytes to be used in migration operations */
 - (nullable NSData *)exportSigningKeyWithError:(NSError **)error;
 
+#pragma mark - Rotation Key Management
+
+/*! Stores the rotation key encrypted with the given password. */
+- (BOOL)storeRotationKeyPrivate:(NSData *)privateKey
+                      publicKey:(NSData *)compressedPublicKey
+           encryptedWithPassword:(NSString *)password
+                           error:(NSError **)error;
+
+/*! Retrieves the decrypted rotation key. */
+- (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
+                                                error:(NSError **)error;
+
+/*! Gets the compressed public key for the rotation key. */
+- (nullable NSData *)rotationKeyCompressedPublicKeyWithError:(NSError **)error;
+
+/*! Checks if a rotation key exists for this actor. */
+- (BOOL)hasRotationKey;
+
 @end
 
 NS_ASSUME_NONNULL_END
