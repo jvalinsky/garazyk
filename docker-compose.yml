@@ -1,10 +1,10 @@
-version: '3.8'
+version: "3.8"
 
 services:
   pds:
     build:
       context: .
-      dockerfile: Dockerfile.exe.dev
+      dockerfile: docker/Dockerfile.exe.dev
     image: nspds:local
     container_name: nspds
     ports:
@@ -47,6 +47,6 @@ services:
       plc-db:
         condition: service_healthy
     restart: unless-stopped
-    volumes:
-      plc_data:
-      - DEPLOY_DIR/plc_data:/var/lib/postgresql/data
+
+volumes:
+  plc_data:
