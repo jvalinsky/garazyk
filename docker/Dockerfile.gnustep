@@ -191,7 +191,10 @@ COPY --from=builder /src/build/bin/kaszlak /usr/local/bin/kaszlak
 COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
 
 # Copy web assets (HTML/CSS/JS for the PDS UI)
-COPY --from=builder /src/ATProtoPDS/Sources/App/Assets /usr/share/atprotopds/assets
+COPY --from=builder /src/ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprotopds/assets/Explore
+COPY --from=builder /src/ATProtoPDS/Sources/App/MSTViewer/Assets /usr/share/atprotopds/assets/MSTViewer
+COPY --from=builder /src/ATProtoPDS/Sources/App/OAuthDemo/Assets /usr/share/atprotopds/assets/OAuthDemo
+COPY --from=builder /src/ATProtoPDS/Sources/App/AdminUI/Assets /usr/share/atprotopds/assets/AdminUI
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
