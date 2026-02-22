@@ -489,7 +489,15 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Changelog
 
-### v1.1.0 (Current)
+### v1.2.0 (Current)
+- **PLC Hardening**: Spec-compliant operation signing with correct prev CID calculation
+- **Server Rotation Key**: Dedicated PLC signing key with persistent storage
+- **DID Resolution Security**: Redirect rejection, proper Accept headers
+- **submitPlcOperation Validation**: Full validation before forwarding to PLC directory
+- **Email Token Flow**: Email-based confirmation for PLC operations (with testing fallback)
+- **CI/CD Improvements**: Caching, job dependencies, PLC module clang-tidy, ShellCheck
+
+### v1.1.0
 - **Full ATProto Compliance**: Canonical DAG-CBOR encoding, CAR v1 emission, correct CID-link framing
 - **Firehose V2**: Spec-compliant `subscribeRepos` stream with real back-fill and cursor support
 - **Advanced Security**: OAuth 2.0 Request Object signing, DPoP, and Biometric Keychain integration
