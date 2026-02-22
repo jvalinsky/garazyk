@@ -3270,6 +3270,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         }
 
         NSMutableDictionary *operation = [operationData mutableCopy];
+        operation[@"did"] = did;
         operation[@"sig"] = [CryptoUtils base64URLEncode:sig];
 
         response.statusCode = HttpStatusOK;
@@ -3396,6 +3397,13 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             [opToSubmit removeObjectForKey:@"did"];
         }
         opToSubmit[@"did"] = did;
+
+        if (config.debugSkipPlcOperations || [config.plcURL isEqualToString:@"mock"]) {
+            PDS_LOG_INFO(@"Skipping PLC submission (mock mode) for DID %@", did);
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
+            return;
+        }
 
         NSData *postData = [NSJSONSerialization dataWithJSONObject:opToSubmit options:0 error:&auditError];
         if (!postData) {
@@ -3969,13 +3977,14 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
-                                                   JWTMinter *jwtMinter,
-                                                   id<PDSAdminController> adminController,
-                                                   id<PDSAccountService> accountService,
-                                                   PDSServiceDatabases *serviceDatabases,
-                                                   PDSDatabasePool *userDatabasePool,
-                                                   PDSConfiguration *config,
-                                                   BOOL enforceDidWebServiceAuth) {
+                                                    JWTMinter *jwtMinter,
+                                                    id<PDSAdminController> adminController,
+                                                    id<PDSAccountService> accountService,
+                                                    PDSRepositoryService *repositoryService,
+                                                    PDSServiceDatabases *serviceDatabases,
+                                                    PDSDatabasePool *userDatabasePool,
+                                                    PDSConfiguration *config,
+                                                    BOOL enforceDidWebServiceAuth) {
     [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *email = body[@"email"];
@@ -4032,6 +4041,14 @@ static void registerServerAccountAndSessionMethods(XrpcDispatcher *dispatcher,
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"AccountCreationFailed", @"message": error.localizedDescription}];
             return;
+        }
+
+        NSString *createdDid = result[@"did"];
+        if (createdDid && repositoryService) {
+            NSError *initError = nil;
+            if (![repositoryService initializeRepoForDid:createdDid error:&initError]) {
+                PDS_LOG_ERROR(@"Failed to initialize repo for DID %@: %@", createdDid, initError);
+            }
         }
 
         response.statusCode = HttpStatusOK;
@@ -5618,6 +5635,7 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                                            jwtMinter,
                                            adminController,
                                            accountService,
+                                           repositoryService,
                                            serviceDatabases,
                                            userDatabasePool,
                                            config,
