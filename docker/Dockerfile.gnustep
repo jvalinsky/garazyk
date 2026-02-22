@@ -149,7 +149,8 @@ RUN mkdir build && cd build && \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS=OFF \
     -DBUILD_FUZZERS=OFF \
-    -DGNUSTEP_PREFIX=/usr/GNUstep/Local && \
+    -DGNUSTEP_PREFIX=/usr/GNUstep/Local \
+    -DCMAKE_OBJC_FLAGS="-I/usr/GNUstep/Local/Library/Headers" && \
     cmake --build . --parallel $(nproc)
 
 # ---------------------------------------------------------------------------
