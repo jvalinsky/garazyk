@@ -13,6 +13,7 @@
 #define SecRandom_h
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifdef __APPLE__
 #import <Security/SecRandom.h>
