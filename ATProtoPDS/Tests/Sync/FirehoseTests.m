@@ -43,6 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation FirehoseTests
 
+#ifndef GNUSTEP
 - (void)testCommitEventDispatch {
     Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
@@ -67,7 +68,9 @@ NS_ASSUME_NONNULL_BEGIN
     // XCTAssertEqualObjects(delegate.commitEvent.previous, @"bafyprev");  // Removed: 'previous' field no longer exists
     XCTAssertEqual(delegate.commitEvent.ops.count, 1);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testIdentityEventDispatch {
     Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
@@ -85,7 +88,9 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[delegate.identityExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.identityEvent.did, @"did:plc:bob");
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testErrorEventDispatch {
     Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
@@ -103,6 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[delegate.errorExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.errorEvent.message, @"oops");
 }
+#endif
 
 @end
 

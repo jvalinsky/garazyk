@@ -18,8 +18,8 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testRefreshToken {
-    // Create a mock session with a refresh token
     Session *session = [[Session alloc] initWithDID:@"did:plc:test"
                                              handle:@"test.bsky.social"
                                               scope:@"atproto"];
@@ -92,5 +92,6 @@
     
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 @end

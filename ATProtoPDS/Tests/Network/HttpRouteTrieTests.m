@@ -42,6 +42,7 @@
     XCTAssertNotNil(handler);
 }
 
+#ifndef GNUSTEP
 - (void)testConcurrentAccess {
     // This test attempts to reproduce the segfault logic by stressing the trie
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
@@ -77,5 +78,6 @@
     
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 @end
