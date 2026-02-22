@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  pds:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.gnustep
+    image: nspds:local
+    container_name: nspds
+    ports:
+      - "3000:3000"
+    volumes:
+      - pds_data:/var/lib/atprotopds
+    environment:
+      - PDS_PORT=3000
+    restart: unless-stopped
+
+volumes:
+  pds_data:
