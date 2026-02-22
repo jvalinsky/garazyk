@@ -52,6 +52,14 @@ uint32_t arc4random(void);
  */
 uint32_t arc4random_uniform(uint32_t upper_bound);
 
+/**
+ * @brief Fill a buffer with cryptographically secure random bytes.
+ *
+ * @param buf Buffer to fill.
+ * @param nbytes Number of bytes to generate.
+ */
+void arc4random_buf(void *buf, size_t nbytes);
+
 #endif
 
 #endif /* SecRandom_h */

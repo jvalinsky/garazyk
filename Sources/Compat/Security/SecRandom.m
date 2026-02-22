@@ -1,20 +1,12 @@
-/**
- * @file SecRandom.m
- * @brief SecRandomCopyBytes implementation for Linux
- *
- * Provides arc4random_buf and arc4random_uniform implementations
- * for Linux platforms without BSD/macOS functions.
- */
+#if !defined(__APPLE__)
 
 #import "SecRandom.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
-#if !defined(__APPLE__)
-
-// arc4random implementation
 uint32_t arc4random(void) {
-    uint32_t value;
+    uint32_t value = 0;
     int fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {
         read(fd, &value, sizeof(value));
@@ -23,16 +15,25 @@ uint32_t arc4random(void) {
     return value;
 }
 
-// arc4random_uniform implementation
 uint32_t arc4random_uniform(uint32_t upper_bound) {
-    uint32_t value;
+    if (upper_bound == 0) return 0;
+    return arc4random() % upper_bound;
+}
+
+void arc4random_buf(void *buf, size_t nbytes) {
     int fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {
-        read(fd, &value, sizeof(value));
+        read(fd, buf, nbytes);
         close(fd);
+    } else {
+        memset(buf, 0, nbytes);
     }
-    // Scale to [0, upper_bound) avoiding modulo bias
-    return value % upper_bound;
+}
+
+int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
+    (void)drbg;
+    arc4random_buf(bytes, count);
+    return 0; // errSecSuccess
 }
 
 #endif
