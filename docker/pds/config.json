@@ -1,7 +1,7 @@
 {
   "server": {
     "host": "0.0.0.0",
-    "port": 3000,
+    "port": 2583,
     "data_dir": "/var/lib/atprotopds",
     "issuer": "https://pds.garazyk.xyz"
   },
