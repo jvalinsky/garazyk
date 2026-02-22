@@ -7,6 +7,7 @@
 #import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
 #import "PLC/PLCOperation.h"
+#import "PLC/PLCRotationKeyManager.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
 #import "Core/CID.h"
@@ -149,6 +150,12 @@
         if (store) {
             if (![store importSigningKey:userKeyPair.privateKey error:&storeError]) {
                 PDS_LOG_ERROR(@"Failed to import signing key for DID %@: %@", resolvedDid, storeError);
+            }
+            if (![store storeRotationKeyPrivate:rotationKeyPair.privateKey
+                                      publicKey:rotationKeyPair.compressedPublicKey
+                           encryptedWithPassword:password
+                                       error:&storeError]) {
+                PDS_LOG_ERROR(@"Failed to store rotation key for DID %@: %@", resolvedDid, storeError);
             }
         } else {
              PDS_LOG_ERROR(@"Failed to get store for DID %@ to import key: %@", resolvedDid, storeError);
@@ -413,26 +420,36 @@
 #pragma mark - PLC Registration
 
 - (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
-                                          signingKey:(Secp256k1KeyPair *)signingKey
-                                         rotationKey:(Secp256k1KeyPair *)rotationKey
-                                               error:(NSError **)error {
+                                           signingKey:(Secp256k1KeyPair *)signingKey
+                                          rotationKey:(Secp256k1KeyPair *)rotationKey
+                                                error:(NSError **)error {
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *plcURLString = config.plcURL;
     
-    // Fallback to default if not configured or "mock"
     if ([plcURLString isEqualToString:@"mock"] || plcURLString.length == 0) {
         plcURLString = @"http://127.0.0.1:2582";
     }
     
     NSString *pdsURL = config.canonicalIssuer;
     
-    // Format keys as did:key multibase
     NSString *signingKeyMultibase = [signingKey didKeyString];
     NSString *rotationKeyMultibase = [rotationKey didKeyString];
     
+    PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+    NSError *keyLoadError = nil;
+    if (![keyManager loadOrGenerateKeyWithError:&keyLoadError]) {
+        if (error) {
+            *error = keyLoadError;
+        }
+        return nil;
+    }
+    NSString *serverRotationKey = keyManager.rotationKeyDidKey;
+    
+    NSArray *rotationKeys = @[serverRotationKey, rotationKeyMultibase];
+    
     NSDictionary *plcData = @{
         @"type": @"plc_operation",
-        @"rotationKeys": @[rotationKeyMultibase],
+        @"rotationKeys": rotationKeys,
         @"verificationMethods": @{
             @"atproto": signingKeyMultibase
         },
@@ -448,13 +465,15 @@
     
     NSString *did = [PLCOperation calculateDIDForData:plcData];
     
-    // Sign the operation data (CBOR encoded)
     NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:plcData error:error];
     if (!cborData) return nil;
     
     NSLog(@"[PDS ACCOUNT] CBOR Data (%lu bytes): %@", (unsigned long)cborData.length, [CryptoUtils hexStringFromData:cborData]);
     NSData *hash = [CID rawSha256:cborData];
-    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:rotationKey.privateKey error:error];
+    NSData *sig = nil;
+    if (![keyManager signHash:hash result:&sig error:error]) {
+        return nil;
+    }
     if (!sig) return nil;
     
     PLCOperation *op = [[PLCOperation alloc] init];
