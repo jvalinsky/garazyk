@@ -49,3 +49,4 @@ services:
     restart: unless-stopped
     volumes:
       plc_data:
+      - DEPLOY_DIR/plc_data:/var/lib/postgresql/data
