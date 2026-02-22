@@ -19,6 +19,7 @@
     XCTAssertEqualObjects(provider.keyPrefix, @"");
 }
 
+#ifndef GNUSTEP
 - (void)testSecretForKeyWithSetVariable {
     NSString *testKey = @"PDSEnvironmentSecretsProvider_TEST_KEY";
     NSString *testValue = @"test_secret_value_12345";
@@ -36,7 +37,9 @@
     XCTAssertNil(error);
     XCTAssertEqualObjects(value, testValue);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testSecretForKeyWithPrefix {
     NSString *testKey = @"API_KEY";
     NSString *testValue = @"prefixed_secret_value";
@@ -55,6 +58,7 @@
     XCTAssertNil(error);
     XCTAssertEqualObjects(value, testValue);
 }
+#endif
 
 - (void)testSecretForKeyWithMissingVariable {
     NSString *testKey = @"PDSEnvironmentSecretsProvider_NONEXISTENT_KEY_12345";
