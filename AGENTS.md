@@ -29,30 +29,47 @@
   - Fixed CBOR boolean encoding bug where all NSNumbers were treated as booleans (ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m:47-54)
 - **CLI Verification**: Application runs successfully with all commands functional
 
-### Phase 5: Linux Support & Reliability Improvements - IN PROGRESS
-- **Linux Porting**: `PDSNetworkTransportLinux` implements non-blocking connect + read/write and uses `getaddrinfo()` for hostname + IPv4/IPv6 resolution; remaining work is Linux/GNUstep validation, fallback behavior, and additional hardening.
+### Phase 5: Linux Support & Reliability Improvements - COMPLETED
+- **Linux Porting**: `PDSNetworkTransportLinux` implements non-blocking connect + read/write and uses `getaddrinfo()` for hostname + IPv4/IPv6 resolution.
 - **CLI Enhancements**: Added unit tests for CLI commands.
-- **Handle Resolution**: COMPLETED. Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
-- **Moderation**: COMPLETED. Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
-- **Explore**: COMPLETED. Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
-
-- **Linux Client Connections**: COMPLETED. Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification (`ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`).
-- **Handle Verification**: `resolveIdentity` validates the requested handle against the DID document `alsoKnownAs` list and returns a `HandleMismatch` error when they disagree (ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:1069-1092).
-- **Follower Counts**: `ActorService` uses a SQL count query for followers; remaining work is correctness/perf hardening (ensuring `subject_did` is populated and indexed) (ATProtoPDS/Sources/AppView/ActorService.m:183-195).
-- **PLC `did:key` Parsing**: COMPLETED. `PLCDIDKey.parseFromString:` implements base58btc multibase decoding and multicodec parsing for secp256k1 + P-256 keys (ATProtoPDS/Sources/PLC/PLCDIDKey.m:27-141).
+- **Handle Resolution**: Full implementation in `HandleResolver.m` including HTTPS resolution, DNS TXT fallback, caching, and rate limiting.
+- **Moderation**: Implemented `admin.disableAccount`, `admin.enableAccount`, `createLabel`, and `getLabels` logic in `PDSController` and `PDSDatabase`.
+- **Explore**: Implemented Base58BTC decoding in `Base58` and `CID` classes to support `z`-prefixed CIDs.
+- **Linux Client Connections**: Implemented non-blocking `connect()` with `DISPATCH_SOURCE_TYPE_WRITE` for async completion notification.
+- **Handle Verification**: `resolveIdentity` validates the requested handle against the DID document `alsoKnownAs` list.
+- **Follower Counts**: `ActorService` uses a SQL count query for followers.
+- **PLC `did:key` Parsing**: `PLCDIDKey.parseFromString:` implements base58btc multibase decoding and multicodec parsing for secp256k1 + P-256 keys.
 
 ### Phase 6: Professional Script Development - COMPLETED
 - **Professional Bash Scripting Standards**: Core repository scripts follow structured error handling, input validation, and maintainable shell scripting practices.
-- **Script Quality Improvements**: Upgraded core shell scripts following professional bash scripting standards:
-  - `simple_test.sh`: Complete overhaul with proper error handling, structured logging, input validation, and dependency checking
-  - `start_server.sh`: Signal handling, PID file management, graceful shutdown with 10s timeout
-  - `quality_gate.sh`: Improved error handling, validation, and structured logging
-  - `run-tests.sh`: Added professional structure with proper validation and logging
-- **New E2E Test Scripts**: End-to-end tests for social (6 scenarios) and moderation (4 scenarios) workflows:
-  - `test_social_features.sh`: Complete social features testing (feeds, follows, likes, profiles, search, timelines)
-  - `test_moderation.sh`: Full moderation testing (reports, account moderation, content labeling)
-- **Script Ecosystem Enhancement**: Shell scripts use `set -euo pipefail`, colored output via `log_info`/`log_error` functions, and pass ShellCheck with zero warnings.
-- **Script Validation**: All scripts (existing and new) pass ShellCheck linting with zero warnings and follow SC2155 best practices for variable declaration.
+- **Script Quality Improvements**: Upgraded core shell scripts following professional bash scripting standards.
+- **New E2E Test Scripts**: End-to-end tests for social (6 scenarios) and moderation (4 scenarios) workflows.
+- **Script Validation**: All scripts pass ShellCheck linting with zero warnings.
+
+### Phase 7: PLC Directory Interaction - COMPLETED
+- **PLCRotationKeyManager**: Server-level signing key for PLC operations with persistent storage (`ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m`).
+- **DID Resolution Protocol Compliance**:
+  - Added `Accept: application/did+ld+json,application/json` header
+  - Implemented redirect rejection via `NSURLSessionTaskDelegate` for security
+- **signPlcOperation**:
+  - Fetches last PLC operation from audit log
+  - Detects and rejects tombstoned accounts
+  - Calculates correct `prev` CID from last operation
+  - Signs with server rotation key (not actor signing key)
+  - Removed `did` field from operation body (spec compliance)
+- **submitPlcOperation**:
+  - Validates server rotation key is in `rotationKeys`
+  - Validates `services.atproto_pds.type` is `AtprotoPersonalDataServer`
+  - Validates `services.atproto_pds.endpoint` matches server URL
+  - Validates `alsoKnownAs` contains account's handle
+  - Validates `prev` matches last operation CID (prevents replay attacks)
+  - Actually forwards operations to PLC directory via POST
+- **requestPlcOperationSignature**: Email-based token flow with testing fallback
+- **PLC Server**: Returns correct `Content-Type: application/did+ld+json` for DID documents
+- **Bug Fixes**:
+  - Fixed `DIDPLCResolver executeRawRequest` never calling completion on success (line 271-273)
+  - Removed `sig = hash` fallback that returned invalid signatures
+  - Removed `did:key:placeholder` fallback, now returns proper error
 
 ### Database Layer
 - **Actor Store**: `PDSActorStore` provides SQLite-based persistence for actor data, employing WAL mode and prepared statements for performance.
@@ -135,23 +152,34 @@ clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 
 ## CI/CD Pipeline
 
-The project uses GitHub Actions for continuous integration, defined in `.github/workflows/ci.yml`.
+The project uses GitHub Actions for continuous integration.
 
 ### Workflows
 
 | Workflow | File | Purpose |
 |----------|------|---------|
-| **CI** | `.github/workflows/ci.yml` | Build, test, coverage, lint |
-| **Security** | `.github/workflows/security.yml` | Static analysis, fuzzing, dependency scan |
+| **CI** | `.github/workflows/ci.yml` | macOS/Linux build, test, PLC integration |
+| **Security** | `.github/workflows/security.yml` | Static analysis, fuzzing, dependency scan, PLC module clang-tidy |
+| **Static Analysis** | `.github/workflows/static-analysis.yml` | Code quality, ShellCheck, secrets scan |
+| **Linux Release** | `.github/workflows/linux.yml` | Docker image builds for tagged releases |
 
 ### CI Workflow Jobs
 
 | Job | Trigger | Purpose |
 |-----|---------|---------|
-| `build-and-test` | Every PR/push | Build project and run tests |
-| `coverage` | After build | Generate code coverage report |
-| `lint` | Every PR/push | Code formatting and linting |
-| `dependencies` | Every PR/push | Dependency verification |
+| `macos-build-and-test` | Every PR/push | Build and run tests on macOS |
+| `linux-gnustep-build-and-test` | After macOS passes | Build and run tests on Linux/GNUstep |
+| `linux-docker-build` | After macOS passes | Build Docker image |
+| `plc-integration-tests` | After macOS passes | Run PLC-specific integration tests |
+
+### Security Workflow Jobs
+
+| Job | Trigger | Purpose |
+|-----|---------|---------|
+| `clang-tidy` | Every PR/push | Static analysis (core + PLC modules) |
+| `fuzzing` | Every PR/push + weekly | LibFuzzer tests |
+| `dependency-scan` | Every PR/push | OSV vulnerability scan |
+| `secret-scan` | Every PR/push | TruffleHog secret detection |
 
 ### Quality Gates
 
