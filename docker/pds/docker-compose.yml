@@ -6,15 +6,15 @@ services:
     image: nspds:local
     container_name: nspds
     ports:
-      - "3000:3000"
+      - "2583:2583"
     volumes:
       - pds_data:/var/lib/atprotopds
       - ./config.json:/var/lib/atprotopds/config.json:ro
     environment:
-      - PDS_PORT=3000
+      - PDS_PORT=2583
       - PDS_HOST=0.0.0.0
       - PDS_ISSUER=https://pds.garazyk.xyz
-    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--port", "3000", "--foreground"]
+    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--port", "2583", "--foreground"]
     restart: unless-stopped
 
 volumes:
