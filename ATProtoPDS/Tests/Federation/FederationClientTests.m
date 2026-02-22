@@ -356,6 +356,8 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[done] timeout:1.0];
 }
 
+#endif
+
 @end
 
 NS_ASSUME_NONNULL_END
