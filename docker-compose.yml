@@ -49,3 +49,4 @@ services:
     restart: unless-stopped
     volumes:
       plc_data:
+      - /home/exedev/plc_data:/var/lib/postgresql/data
