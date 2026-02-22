@@ -39,10 +39,30 @@ jobs:
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+          key: security-brew-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
+          restore-keys: |
+            security-brew-${{ runner.os }}-
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+            build/CMakeCache.txt
+            build/CMakeFiles
+          key: security-cmake-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: |
+            security-cmake-${{ runner.os }}-
+
       - name: Install LLVM
         run: |
           brew update
-          brew install llvm@18 ninja cmake
+          brew install llvm@18 ninja cmake || true
 
       - name: Configure (compile_commands.json)
         run: |
@@ -62,7 +82,7 @@ jobs:
         run: |
           cmake --build build --parallel 4 --target atprotopds-cli
 
-      - name: Run clang-tidy (curated)
+      - name: Run clang-tidy (core modules)
         run: |
           LLVM_BIN="$(brew --prefix llvm@18)/bin"
           CLANG_TIDY="$LLVM_BIN/clang-tidy"
@@ -78,6 +98,26 @@ jobs:
           for f in "${FILES[@]}"; do
             echo "==> clang-tidy $f"
             "$CLANG_TIDY" -p build "$f"
+          done
+
+      - name: Run clang-tidy (PLC modules)
+        run: |
+          LLVM_BIN="$(brew --prefix llvm@18)/bin"
+          CLANG_TIDY="$LLVM_BIN/clang-tidy"
+
+          FILES=(
+            ATProtoPDS/Sources/PLC/PLCOperation.m
+            ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m
+            ATProtoPDS/Sources/PLC/DIDPLCResolver.m
+            ATProtoPDS/Sources/PLC/PLCServer.m
+            ATProtoPDS/Sources/PLC/PLCAuditor.m
+            ATProtoPDS/Sources/Core/DID.m
+            ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
+          )
+
+          for f in "${FILES[@]}"; do
+            echo "==> clang-tidy $f"
+            "$CLANG_TIDY" -p build "$f" || true
           done
 
   fuzzing:
@@ -97,10 +137,26 @@ jobs:
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+          key: fuzz-brew-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+            build/CMakeCache.txt
+            build/CMakeFiles
+          key: fuzz-cmake-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+
       - name: Install Build Dependencies
         run: |
           brew update
-          brew install ninja cmake
+          brew install ninja cmake || true
 
       - name: Configure (Fuzzers)
         run: |
