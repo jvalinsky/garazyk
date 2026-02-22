@@ -77,18 +77,7 @@
 - (void)stop {}
 @end
 
-// arc4random compatibility shim for Linux
-// arc4random is a BSD/macOS function that doesn't exist on Linux
-uint32_t arc4random(void) {
-    uint32_t value;
-    int fd = open("/dev/urandom", O_RDONLY);
-    if (fd >= 0) {
-        read(fd, &value, sizeof(value));
-        close(fd);
-    }
-    return value;
-}
-
+// arc4random and arc4random_buf are provided by SecRandom.h
 // arc4random_uniform compatibility shim for Linux
 uint32_t arc4random_uniform(uint32_t upper_bound) {
     uint32_t value;
@@ -99,15 +88,6 @@ uint32_t arc4random_uniform(uint32_t upper_bound) {
     }
     // Scale to [0, upper_bound) avoiding modulo bias
     return value % upper_bound;
-}
-
-// arc4random_buf compatibility shim for Linux
-void arc4random_buf(void *buf, size_t nbytes) {
-    int fd = open("/dev/urandom", O_RDONLY);
-    if (fd >= 0) {
-        read(fd, buf, nbytes);
-        close(fd);
-    }
 }
 
 #endif
