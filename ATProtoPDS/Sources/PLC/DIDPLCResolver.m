@@ -2,11 +2,13 @@
 #import "PLCOperation.h"
 
 NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
+static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/json";
 
-@interface DIDPLCResolver ()
+@interface DIDPLCResolver () <NSURLSessionTaskDelegate>
 
 @property (nonatomic, copy) NSString *plcUrl;
 @property (nonatomic, strong) NSCache<NSString *, NSDictionary *> *cache;
+@property (nonatomic, strong) NSURLSession *session;
 
 @end
 
@@ -16,11 +18,19 @@ NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
     self = [super init];
     if (self) {
         _plcUrl = [url copy];
-        _timeout = 5.0; // Default timeout
+        _timeout = 5.0;
         _cache = [[NSCache alloc] init];
         _cache.countLimit = 1000;
+        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+        config.timeoutIntervalForRequest = _timeout;
+        config.timeoutIntervalForResource = _timeout * 2;
+        _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
     }
     return self;
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
+    completionHandler(nil);
 }
 
 - (nullable NSDictionary *)resolveDID:(NSString *)did error:(NSError **)error {
@@ -92,7 +102,7 @@ NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.timeoutInterval = self.timeout;
-    [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+    [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
     [self executeRequest:request retries:3 currentDelay:0.5 completion:^(NSDictionary *doc, NSError *err) {
         if (doc) {
@@ -103,9 +113,7 @@ NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
 }
 
 - (void)executeRequest:(NSURLRequest *)request retries:(NSInteger)retries currentDelay:(NSTimeInterval)delay completion:(void (^)(NSDictionary * _Nullable, NSError * _Nullable))completion {
-    NSURLSession *session = [NSURLSession sharedSession];
-    
-    NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         
@@ -206,7 +214,7 @@ NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.timeoutInterval = self.timeout;
-    [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+    [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
     [self executeRawRequest:request retries:3 currentDelay:0.5 completion:^(NSData *data, NSError *err) {
         if (err || !data) {
@@ -239,9 +247,7 @@ NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
 }
 
 - (void)executeRawRequest:(NSURLRequest *)request retries:(NSInteger)retries currentDelay:(NSTimeInterval)delay completion:(void (^)(NSData * _Nullable, NSError * _Nullable))completion {
-    NSURLSession *session = [NSURLSession sharedSession];
-    
-    NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         
@@ -270,6 +276,7 @@ NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
             return;
         }
         
+        completion(data, nil);
     }];
     
     [task resume];

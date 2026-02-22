@@ -34,6 +34,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/PLCOperation.h"
+#import "PLC/PLCRotationKeyManager.h"
 #import "Database/PDSDatabase.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -3125,35 +3126,38 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         id servicesValue = body[@"services"];
         id prevValue = body[@"prev"];
 
-        NSString *derivedDidKey = nil;
-        Secp256k1KeyPair *fallbackKeyPair = nil;
-
         NSError *storeError = nil;
         PDSActorStore *store = [userDatabasePool storeForDid:did error:&storeError];
         
+        NSString *signingDidKey = nil;
         if (store) {
             NSError *keyError = nil;
-            derivedDidKey = [store didKeyStringWithError:&keyError];
+            signingDidKey = [store didKeyStringWithError:&keyError];
         }
 
-        if (!derivedDidKey) {
-            NSError *fallbackError = nil;
-            fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
-            derivedDidKey = fallbackKeyPair.didKeyString;
+        if (!signingDidKey) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": @"Unable to determine signing key for PLC operation"}];
+            return;
         }
 
-        if (![derivedDidKey isKindOfClass:[NSString class]] || derivedDidKey.length == 0) {
-            derivedDidKey = @"did:key:placeholder";
+        PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+        NSError *keyLoadError = nil;
+        if (![keyManager loadOrGenerateKeyWithError:&keyLoadError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": keyLoadError.localizedDescription ?: @"Failed to load PLC rotation key"}];
+            return;
         }
+        NSString *serverRotationKey = keyManager.rotationKeyDidKey;
 
         NSArray *rotationKeys = [rotationKeysValue isKindOfClass:[NSArray class]] ? rotationKeysValue : nil;
         if (rotationKeys.count == 0) {
-            rotationKeys = @[derivedDidKey];
+            rotationKeys = @[serverRotationKey];
         }
 
         NSDictionary *verificationMethods = [verificationMethodsValue isKindOfClass:[NSDictionary class]] ? verificationMethodsValue : nil;
         if (verificationMethods.count == 0) {
-            verificationMethods = @{@"atproto": derivedDidKey};
+            verificationMethods = @{@"atproto": signingDidKey};
         }
 
         NSArray *alsoKnownAs = [alsoKnownAsValue isKindOfClass:[NSArray class]] ? alsoKnownAsValue : nil;
@@ -3196,20 +3200,13 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         NSError *signError = nil;
         NSData *sig = nil;
         
-        if (store && !fallbackKeyPair) {
-            // Store uses signData which hashes internally, so pass raw cborData
-            sig = [store signData:cborData error:&signError];
-        } else if (fallbackKeyPair) {
-            // Fallback key pair signs hash directly
-            sig = [fallbackKeyPair signHash:hash error:&signError];
-        }
-        
-        if (!sig) {
-            sig = hash;
+        if (![keyManager signHash:hash result:&sig error:&signError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"SigningFailed", @"message": signError.localizedDescription ?: @"Failed to sign PLC operation"}];
+            return;
         }
 
         NSMutableDictionary *operation = [operationData mutableCopy];
-        operation[@"did"] = did;
         operation[@"sig"] = [CryptoUtils base64URLEncode:sig];
 
         response.statusCode = HttpStatusOK;
