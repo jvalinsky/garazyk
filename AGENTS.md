@@ -230,6 +230,53 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug
 make -j$(nproc)
 ```
 
+## Production Deployment (pds.garazyk.xyz)
+
+### Secure Defaults — MANDATORY
+
+When generating, modifying, or reviewing PDS configuration for production deployment, enforce these security defaults. Agents MUST NOT weaken these without explicit user approval.
+
+| Setting | Secure Default | Rationale |
+|---------|---------------|-----------|
+| `session.invite_code_required` | `true` | Prevent open registration spam/abuse |
+| `nodeinfo.open_registrations` | `false` | Consistent with invite-only policy |
+| `plc.url` | `"https://plc.directory"` | Never use `"mock"` in production |
+| `debug.skip_plc_operations` | `false` | Must register DIDs with real PLC directory |
+| `debug.verbose_logging` | `false` | Avoid leaking sensitive data in logs |
+| `debug.in_memory_databases` | `false` | Data must persist across restarts |
+| `debug.reset_on_startup` | `false` | Never destroy production data |
+| `server.host` | `"0.0.0.0"` | Bind address (nginx handles TLS) |
+| `server.issuer` | `"https://pds.garazyk.xyz"` | Public-facing origin for DIDs/JWTs |
+| `rate_limit.enabled` | `true` | Protect against abuse |
+
+### Production Config Location
+
+- **Docker**: `docker/pds/config.json` (mounted read-only into container)
+- **Docker Compose**: `docker/pds/docker-compose.yml`
+- **VM**: `crimson-comet.exe.xyz` (exe.dev)
+- **Architecture**: `exe.dev HTTPS → nginx:3000 → PDS:2583`
+
+### Deployment Commands
+
+```bash
+# On the VM (crimson-comet.exe.xyz):
+cd /home/exedev/objpds/docker/pds
+docker compose up -d        # Start
+docker compose logs -f pds  # Monitor
+docker compose restart pds  # Restart after config change
+
+# Create invite codes (required for account creation):
+docker exec nspds kaszlak invite create
+```
+
+### What Agents Must NEVER Do
+
+- Set `invite_code_required` to `false` in production configs
+- Use `plc.url: "mock"` outside of test/dev configs
+- Enable any `debug.*` flags in production
+- Expose the PDS port (2583) directly to the internet (nginx handles this)
+- Store secrets or keys in config files committed to git
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
