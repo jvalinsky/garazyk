@@ -2,6 +2,16 @@
 
 Tests for PLC DID operations, server, and key parsing.
 
+## CI Integration
+
+The `plc-integration-tests` job in `.github/workflows/ci.yml` runs PLC-specific tests after the main build passes:
+
+```yaml
+- name: Run PLC-specific tests
+  run: |
+    ctest --test-dir build --output-on-failure -R "PLC|DID|Identity"
+```
+
 ## Test Classes
 
 ### PDSPLCIntegrationTests
@@ -95,6 +105,35 @@ NSString *didKey = @"did:key:zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N";
 NSData *keyBytes = [PLCDIDKey publicKeyFromDidKey:didKey error:nil];
 XCTAssertEqual(keyBytes.length, 33);  // Compressed secp256k1
 ```
+
+---
+
+### PLCRotationKeyManager (Integration)
+**File:** `Sources/PLC/PLCRotationKeyManager.m`
+
+**Purpose:** Server-level rotation key management for PLC operations.
+
+#### How It Works
+
+- Generates and persists a secp256k1 key for signing PLC operations
+- Key stored at `data/plc_rotation_key.bin`
+- Used by `signPlcOperation` and account registration
+
+---
+
+### signPlcOperation / submitPlcOperation (E2E)
+**Purpose:** End-to-end PLC operation signing and submission.
+
+#### Validation Checks
+
+| Check | Error Code |
+|-------|------------|
+| Server rotation key in rotationKeys | `InvalidRequest` |
+| services.atproto_pds.type correct | `InvalidRequest` |
+| services.atproto_pds.endpoint matches | `InvalidRequest` |
+| alsoKnownAs contains handle | `InvalidRequest` |
+| prev matches last op CID | `InvalidRequest` |
+| Account tombstoned | `AccountTombstoned` |
 
 ---
 
