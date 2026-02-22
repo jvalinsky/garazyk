@@ -108,6 +108,10 @@
             if (config.serverPort > 0) {
                 port = config.serverPort;
             }
+            // Update data directory from config if not overridden by CLI
+            if (config.dataDirectory.length > 0 && [context.dataDir isEqualToString:@"./data"]) {
+                context.dataDir = config.dataDirectory;
+            }
         }
     }
 

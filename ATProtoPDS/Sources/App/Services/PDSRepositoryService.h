@@ -186,6 +186,20 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  */
 - (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method initializeRepoForDid:error:
+ 
+ @abstract Initialize an empty repository for a new account.
+ 
+ @discussion Creates an initial empty commit for the repository, allowing
+ the account to be visible via listRepos and sync endpoints.
+ 
+ @param did Decentralized identifier of repository owner.
+ @param error Error pointer for initialization failures.
+ @return YES if initialization succeeded, NO on failure.
+ */
+- (BOOL)initializeRepoForDid:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

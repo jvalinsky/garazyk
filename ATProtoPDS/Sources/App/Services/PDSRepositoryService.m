@@ -972,4 +972,84 @@
     return [CBORValue tag:42 value:[CBORValue byteString:cidBytes]];
 }
 
+- (BOOL)initializeRepoForDid:(NSString *)did error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DID"}];
+        }
+        return NO;
+    }
+
+    NSData *existingRoot = [self getRepoRoot:did error:nil];
+    if (existingRoot && existingRoot.length > 0) {
+        return YES;
+    }
+
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to get store for DID"}];
+        }
+        return NO;
+    }
+
+    MST *mst = [[MST alloc] init];
+    CID *dataCID = mst.rootCID;
+    if (!dataCID) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute empty MST root"}];
+        }
+        return NO;
+    }
+
+    NSString *rev = [[TID tid] stringValue];
+    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                    data:dataCID
+                                                     rev:rev
+                                                    prev:nil];
+
+    NSData *signature = [store signData:[commit serialize] error:error];
+    if (!signature) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to sign initial commit"}];
+        }
+        return NO;
+    }
+    commit.signature = signature;
+
+    CID *commitCID = [commit computeCID];
+    NSData *commitData = [commit serializeSigned];
+    if (!commitData) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize initial commit"}];
+        }
+        return NO;
+    }
+
+    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    block.cid = [commitCID bytes];
+    block.blockData = commitData;
+    block.size = commitData.length;
+
+    __block BOOL success = NO;
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        if (![transactor putBlock:block forDid:did error:blockError]) {
+            return;
+        }
+        success = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
+    } error:error];
+
+    if (!success && error && !*error) {
+        *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to store initial commit"}];
+    }
+
+    return success;
+}
+
 @end
