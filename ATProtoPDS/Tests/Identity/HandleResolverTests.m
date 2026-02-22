@@ -88,7 +88,6 @@
 
 @end
 
-#ifndef GNUSTEP
 @implementation HandleResolverTests
 
 - (void)setUp {
@@ -101,12 +100,14 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testHandleResolverInitialization {
     XCTAssertNotNil(self.resolver, @"Resolver should be initialized");
     XCTAssertNotNil(self.resolver.session, @"Session should be initialized");
     XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForRequest, 10.0, @"Request timeout should be 10s");
     XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForResource, 30.0, @"Resource timeout should be 30s");
 }
+#endif
 
 #ifndef GNUSTEP
 - (void)testHandleValidationEmpty {
@@ -348,12 +349,14 @@
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
+#ifndef GNUSTEP
 - (void)testSessionTimeoutConfiguration {
     HandleResolver *timeoutResolver = [[HandleResolver alloc] init];
 
     XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForRequest, 10.0, @"Request timeout should be 10s");
     XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForResource, 30.0, @"Resource timeout should be 30s");
 }
+#endif
 
 #ifndef GNUSTEP
 - (void)testConcurrentResolutions {
@@ -548,7 +551,5 @@
     }];
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
-
-#endif
 
 @end

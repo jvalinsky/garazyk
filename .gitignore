@@ -13,6 +13,8 @@ node_modules/
 *.tmp
 *.temp
 
+letta.js
+
 # Xcode
 *.xcodeproj/
 *.xcworkspace/
