@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(git shortlog:*)",
+      "Bash(find:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(./scripts/clean.sh && xcodegen generate && xcodebuild -scheme ATProtoPDS-CLI build)",
+      "Bash(./build/tests/AllTests 2>&1 | tail -20)",
+      "Bash(xcodebuild -scheme ATProtoPDS-CLI -configuration Debug build 2>&1 | tail -50)"
+    ]
+  }
+}
