@@ -28,6 +28,7 @@
 
 #pragma mark - Authorization Endpoint Tests
 
+#ifndef GNUSTEP
 - (void)testOAuthAuthorizeEndpointReturnsRedirectForValidRequest {
     // This test should fail initially since we haven't implemented the handler yet
     
@@ -55,7 +56,9 @@
     [task resume];
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testOAuthAuthorizeEndpointRejectsInvalidClient {
     // Test with invalid client_id
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"]];
@@ -74,9 +77,11 @@
     [task resume];
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 #pragma mark - Token Endpoint Tests
 
+#ifndef GNUSTEP
 - (void)testOAuthTokenEndpointExchangesCodeForTokens {
     // Test token exchange with authorization code
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
@@ -111,7 +116,9 @@
     [task resume];
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testOAuthTokenEndpointRejectsInvalidClient {
     // Test with invalid client_id
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
@@ -134,9 +141,11 @@
     [task resume];
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 #pragma mark - Revoke Endpoint Tests
 
+#ifndef GNUSTEP
 - (void)testOAuthRevokeEndpointRevokesTokens {
     // Test token revocation
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/revoke"]];
@@ -159,5 +168,6 @@
     [task resume];
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 @end

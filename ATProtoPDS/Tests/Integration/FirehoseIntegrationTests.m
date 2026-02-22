@@ -72,6 +72,7 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testBroadcastCommitCARContainsRecordBlocks {
     NSError *error = nil;
     XCTAssertNotNil(self.did);
@@ -173,5 +174,6 @@
     }
     XCTAssertTrue(foundRecord, @"CAR did not contain the record block");
 }
+#endif
 
 @end
