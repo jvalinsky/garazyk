@@ -900,7 +900,8 @@ static void registerServerDescribeAndResolveLexiconMethods(XrpcDispatcher *dispa
                 @"privacyPolicy": config.privacyPolicyURL ?: @"",
                 @"termsOfService": config.termsOfServiceURL ?: @""
             },
-            @"did": serverDid
+            @"did": serverDid,
+            @"version": @"0.1.0"
         };
 
         response.statusCode = HttpStatusOK;
