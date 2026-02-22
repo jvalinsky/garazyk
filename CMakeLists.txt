@@ -54,6 +54,8 @@ if(NOT APPLE)
 
     # Link directories
     link_directories(BEFORE ${GNUSTEP_PREFIX}/Library/Libraries)
+    link_directories(BEFORE /usr/GNUstep/Local/Library/Libraries)
+    link_directories(BEFORE /usr/GNUstep/Local/lib)
 endif()
 
 #=============================
