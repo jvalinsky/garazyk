@@ -1,6 +1,9 @@
 #if !defined(__APPLE__)
 
 #import <Foundation/Foundation.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 // Stub for PDSMetrics (macOS-only due to os_unfair_lock)
 @interface PDSMetrics : NSObject
@@ -73,5 +76,17 @@
 }
 - (void)stop {}
 @end
+
+// arc4random compatibility shim for Linux
+// arc4random is a BSD/macOS function that doesn't exist on Linux
+uint32_t arc4random(void) {
+    uint32_t value;
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd >= 0) {
+        read(fd, &value, sizeof(value));
+        close(fd);
+    }
+    return value;
+}
 
 #endif
