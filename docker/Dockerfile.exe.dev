@@ -1,0 +1,41 @@
+# Simplified Dockerfile for NSPds on exe.dev VM
+# Uses pre-built GNUstep runtime for faster builds
+
+# Stage 1: Runtime image with GNUstep
+FROM ubuntu:22.04 AS runtime
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libffi8 \
+    libicu70 \
+    libqrencode4 \
+    libsqlite3 \
+    libssl3 \
+    libxml2 \
+    libxslt1.1 \
+    zlib1g
+
+# Copy built PDS binaries
+COPY build/bin /usr/local/bin
+
+# Copy web assets
+COPY ATProtoPDS/Sources/App/Assets /usr/share/atprotopds/assets
+
+# Create data directory
+RUN mkdir -p /var/lib/atprotopds
+
+# Create non-root user
+RUN useradd -r -s /usr/sbin/nologin pds
+
+# Set ownership
+RUN chown -R pds:pds /var/lib/atprotopds /usr/local/bin /usr/share/atprotopds/assets
+
+USER pds
+WORKDIR /var/lib/atprotopds
+
+# Default PDS port
+EXPOSE 3000
+
+ENTRYPOINT ["/usr/local/bin/kaszlak"]
+CMD ["serve"]
