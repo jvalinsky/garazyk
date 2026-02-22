@@ -198,28 +198,33 @@ static const NSUInteger kMaxDecodeDepth = 64;
         return YES;
     }
     
-    // Check for float (reject per DRISL-CBOR spec)
-    CFNumberType type = CFNumberGetType((__bridge CFNumberRef)number);
-    if (type == kCFNumberFloat32Type || type == kCFNumberFloat64Type || 
-        type == kCFNumberFloatType || type == kCFNumberDoubleType) {
-        if (error) {
-            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
-                                         code:ATProtoDagCBORErrorCodeFloatsNotAllowed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DRISL-CBOR forbids IEEE 754 floats"}];
+    // Check if the value is actually an integer (even if stored as float type)
+    // On GNUstep, boxed expressions like @(integerValue) may report as float types
+    double doubleValue = number.doubleValue;
+    int64_t intValue = number.longLongValue;
+    
+    // Check if the value is a whole number that fits in int64
+    if (doubleValue == (double)intValue && 
+        doubleValue >= (double)INT64_MIN && 
+        doubleValue <= (double)INT64_MAX) {
+        // It's an integer value, encode as integer
+        if (intValue < 0) {
+            // Negative integer (major type 1)
+            uint64_t val = (uint64_t)(-intValue - 1);
+            return [self _encodeInteger:val majorType:1 toData:data];
+        } else {
+            // Unsigned integer (major type 0)
+            return [self _encodeInteger:(uint64_t)intValue majorType:0 toData:data];
         }
-        return NO;
     }
     
-    // Integer encoding
-    int64_t intValue = number.longLongValue;
-    if (intValue < 0) {
-        // Negative integer (major type 1)
-        uint64_t val = (uint64_t)(-intValue - 1);
-        return [self _encodeInteger:val majorType:1 toData:data];
-    } else {
-        // Unsigned integer (major type 0)
-        return [self _encodeInteger:(uint64_t)intValue majorType:0 toData:data];
+    // Reject non-integer floats per DRISL-CBOR spec
+    if (error) {
+        *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                     code:ATProtoDagCBORErrorCodeFloatsNotAllowed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DRISL-CBOR forbids IEEE 754 floats"}];
     }
+    return NO;
 }
 
 + (BOOL)_encodeInteger:(uint64_t)value majorType:(uint8_t)majorType toData:(NSMutableData *)data {
