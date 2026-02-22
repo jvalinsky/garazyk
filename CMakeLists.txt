@@ -44,10 +44,12 @@ if(NOT APPLE)
     # Set Objective-C flags for GNUstep ng runtime with ARC support
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fblocks -fobjc-runtime=gnustep-2.2 -fobjc-arc")
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I${GNUSTEP_PREFIX}/Library/Headers")
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I${GNUSTEP_PREFIX}/include")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GNUSTEP_PREFIX}/Library/Libraries")
 
     # Add GNUstep include directories
     include_directories(${GNUSTEP_PREFIX}/Library/Headers)
+    include_directories(${GNUSTEP_PREFIX}/include)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
 
     # Link directories
