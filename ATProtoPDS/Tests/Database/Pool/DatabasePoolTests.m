@@ -242,6 +242,7 @@
     XCTAssertEqual(self.pool.currentSize, 1);
 }
 
+#ifndef GNUSTEP
 - (void)testConcurrentAccessPatterns {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Concurrent access"];
 
@@ -270,6 +271,7 @@
 
     [self waitForExpectations:@[expectation] timeout:5.0];
 }
+#endif
 
 - (void)testPoolExhaustionHandling {
     PDSDatabasePool *tinyPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:3];
@@ -299,6 +301,7 @@
     [tinyPool closeAll];
 }
 
+#ifndef GNUSTEP
 - (void)testEvictionUnderLoad {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Eviction under load"];
 
@@ -326,5 +329,6 @@
     // Verify pool is still functional
     XCTAssertLessThanOrEqual(self.pool.currentSize, self.pool.maxSize);
 }
+#endif
 
 @end

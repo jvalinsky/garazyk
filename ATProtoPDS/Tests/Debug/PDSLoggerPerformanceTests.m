@@ -20,6 +20,7 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testAsyncLoggingPerformance {
     PDSLogger *logger = [PDSLogger sharedLogger];
     logger.logFilePath = self.testLogPath;
@@ -34,7 +35,9 @@
         [logger flush];
     }];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testSyncLoggingPerformance {
     PDSLogger *logger = [PDSLogger sharedLogger];
     logger.logFilePath = self.testLogPath;
@@ -48,7 +51,9 @@
         }
     }];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testFilteredLoggingPerformance {
     PDSLogger *logger = [PDSLogger sharedLogger];
     logger.logLevel = PDSLogLevelError; // We will log at INFO level, so all should be filtered
@@ -60,7 +65,9 @@
         }
     }];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testComponentFilteringPerformance {
     PDSLogger *logger = [PDSLogger sharedLogger];
     logger.logLevel = PDSLogLevelDebug;
@@ -73,5 +80,6 @@
         }
     }];
 }
+#endif
 
 @end
