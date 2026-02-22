@@ -29,5 +29,8 @@
     "url": "https://plc.directory",
     "retry_count": 5,
     "retry_delay_ms": 2000
+  },
+  "debug": {
+    "skip_plc_operations": false
   }
 }
