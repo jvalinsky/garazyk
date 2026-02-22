@@ -35,6 +35,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCRotationKeyManager.h"
+#import "PLC/DIDPLCResolver.h"
 #import "Database/PDSDatabase.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -3124,7 +3125,6 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         id alsoKnownAsValue = body[@"alsoKnownAs"];
         id verificationMethodsValue = body[@"verificationMethods"];
         id servicesValue = body[@"services"];
-        id prevValue = body[@"prev"];
 
         NSError *storeError = nil;
         PDSActorStore *store = [userDatabasePool storeForDid:did error:&storeError];
@@ -3178,7 +3178,44 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             services = @{};
         }
 
-        id prev = [prevValue isKindOfClass:[NSString class]] ? prevValue : [NSNull null];
+        id prev = [NSNull null];
+        NSString *plcUrl = config.plcURL;
+        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
+            plcUrl = @"http://127.0.0.1:2582";
+        }
+        
+        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+        NSError *auditError = nil;
+        NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
+        
+        if (auditLog && auditLog.count > 0) {
+            NSMutableArray *ops = [NSMutableArray array];
+            for (id opDict in auditLog) {
+                if ([opDict isKindOfClass:[NSDictionary class]]) {
+                    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+                    if (op) [ops addObject:op];
+                }
+            }
+            
+            if (ops.count > 0) {
+                NSError *replayError = nil;
+                PLCDIDState *state = [PLCStateReplayer replayHistory:ops error:&replayError];
+                if (state && state.tombstoned) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"AccountTombstoned", @"message": @"Cannot update tombstoned DID"}];
+                    return;
+                }
+                
+                PLCOperation *lastOp = ops.lastObject;
+                if (lastOp) {
+                    NSString *lastCid = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+                    if (lastCid) {
+                        prev = lastCid;
+                    }
+                }
+            }
+        }
+
         NSDictionary *operationData = @{
             @"type": @"plc_operation",
             @"rotationKeys": rotationKeys,
@@ -3239,12 +3276,143 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        NSError *validationError = nil;
-        if (![PLCOperation operationFromDictionary:operation error:&validationError]) {
+        NSDictionary *opData = operation[@"data"] ?: operation;
+        NSString *opType = opData[@"type"];
+        if (![opType isEqualToString:@"plc_operation"]) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": validationError.localizedDescription ?: @"Invalid PLC operation"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Operation must be type plc_operation"}];
             return;
         }
+
+        PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+        NSError *keyLoadError = nil;
+        if (![keyManager loadOrGenerateKeyWithError:&keyLoadError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": @"Server rotation key not available"}];
+            return;
+        }
+        NSString *serverRotationKey = keyManager.rotationKeyDidKey;
+
+        NSArray *rotationKeys = opData[@"rotationKeys"];
+        if (![rotationKeys isKindOfClass:[NSArray class]] || rotationKeys.count == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Operation must include rotationKeys"}];
+            return;
+        }
+        if (![rotationKeys containsObject:serverRotationKey]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Server rotation key must be included in rotationKeys"}];
+            return;
+        }
+
+        NSDictionary *services = opData[@"services"];
+        if ([services isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *atprotoPds = services[@"atproto_pds"];
+            if ([atprotoPds isKindOfClass:[NSDictionary class]]) {
+                NSString *endpoint = atprotoPds[@"endpoint"];
+                NSString *serviceType = atprotoPds[@"type"];
+                if (![serviceType isEqualToString:@"AtprotoPersonalDataServer"]) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"services.atproto_pds.type must be AtprotoPersonalDataServer"}];
+                    return;
+                }
+                NSString *expectedEndpoint = config.canonicalIssuer;
+                if (endpoint && ![endpoint isEqualToString:expectedEndpoint]) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": [NSString stringWithFormat:@"services.atproto_pds.endpoint must match server URL %@", expectedEndpoint]}];
+                    return;
+                }
+            }
+        }
+
+        NSArray *alsoKnownAs = opData[@"alsoKnownAs"];
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+        if (account.handle.length > 0) {
+            NSString *expectedAka = [NSString stringWithFormat:@"at://%@", account.handle];
+            if (![alsoKnownAs isKindOfClass:[NSArray class]] || ![alsoKnownAs containsObject:expectedAka]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": [NSString stringWithFormat:@"alsoKnownAs must include %@", expectedAka]}];
+                return;
+            }
+        }
+
+        NSString *plcUrl = config.plcURL;
+        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
+            plcUrl = @"http://127.0.0.1:2582";
+        }
+
+        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+        NSError *auditError = nil;
+        NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
+
+        if (auditLog && auditLog.count > 0) {
+            NSMutableArray *ops = [NSMutableArray array];
+            for (id opDict in auditLog) {
+                if ([opDict isKindOfClass:[NSDictionary class]]) {
+                    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+                    if (op) [ops addObject:op];
+                }
+            }
+            if (ops.count > 0) {
+                PLCOperation *lastOp = ops.lastObject;
+                NSString *expectedPrev = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+                id submittedPrev = opData[@"prev"];
+                if (expectedPrev && submittedPrev != [NSNull null] && ![submittedPrev isEqualToString:expectedPrev]) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"prev does not match last operation CID"}];
+                    return;
+                }
+            }
+        }
+
+        NSMutableDictionary *opToSubmit = [operation mutableCopy];
+        if (opToSubmit[@"did"]) {
+            [opToSubmit removeObjectForKey:@"did"];
+        }
+        opToSubmit[@"did"] = did;
+
+        NSData *postData = [NSJSONSerialization dataWithJSONObject:opToSubmit options:0 error:&auditError];
+        if (!postData) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to serialize operation"}];
+            return;
+        }
+
+        NSURL *submitUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", plcUrl, did]];
+        NSMutableURLRequest *submitRequest = [NSMutableURLRequest requestWithURL:submitUrl];
+        submitRequest.HTTPMethod = @"POST";
+        [submitRequest setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        submitRequest.HTTPBody = postData;
+
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+        __block NSInteger statusCode = 0;
+        __block NSData *responseData = nil;
+        __block NSError *submitError = nil;
+
+        [[[NSURLSession sharedSession] dataTaskWithRequest:submitRequest completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+            NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)resp;
+            statusCode = httpResp.statusCode;
+            responseData = data;
+            submitError = err;
+            dispatch_semaphore_signal(sema);
+        }] resume];
+
+        dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+        if (submitError) {
+            response.statusCode = HttpStatusServiceUnavailable;
+            [response setJsonBody:@{@"error": @"UpstreamError", @"message": submitError.localizedDescription}];
+            return;
+        }
+
+        if (statusCode != 200 && statusCode != 202) {
+            NSString *bodyStr = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
+            response.statusCode = HttpStatusServiceUnavailable;
+            [response setJsonBody:@{@"error": @"UpstreamError", @"message": [NSString stringWithFormat:@"PLC directory returned %ld: %@", (long)statusCode, bodyStr]}];
+            return;
+        }
+
+        PDS_LOG_INFO(@"Submitted PLC operation for DID %@", did);
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
