@@ -1,0 +1,27 @@
+{
+  "database": {
+    "service_pool_max_size": 20,
+    "user_pool_max_size": 200
+  },
+  "logging": {
+    "format": "text",
+    "level": "info"
+  },
+  "session": {
+    "access_token_ttl_seconds": 1800,
+    "refresh_token_ttl_seconds": 259200,
+    "invite_code_required": false
+  },
+  "server": {
+    "data_dir": "./data",
+    "host": "garazyk.xyz",
+    "port": 2583
+  },
+  "links": {
+    "privacy_policy": "",
+    "terms_of_service": ""
+  },
+  "relays": [
+    "https://bsky.network"
+  ]
+}
