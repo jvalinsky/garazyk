@@ -60,9 +60,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface FederationClientTests : XCTestCase
 @end
 
+#ifndef GNUSTEP
 @implementation FederationClientTests
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcRequestFailsWhenDIDResolutionFails {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -84,9 +84,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcNonSuccessStatusReturnsError {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -113,9 +111,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcGetMethodIsGET {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -146,9 +142,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[captured, done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcPostMethodIsPOST {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -179,9 +173,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[captured, done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcIncludesContentTypeHeader {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -212,9 +204,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[captured, done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcParsesJSONResponse {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -243,9 +233,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcHandlesNSURLSessionError {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -269,9 +257,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcHandlesBadJSONResponse {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -297,9 +283,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcUnauthorizedStatusReturnsError {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -326,9 +310,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self waitForExpectations:@[done] timeout:1.0];
 }
-#endif
 
-#ifndef GNUSTEP
 - (void)testForwardXrpcForbiddenStatusReturnsError {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
@@ -356,8 +338,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[done] timeout:1.0];
 }
 
-#endif
-
 @end
+#endif
 
 NS_ASSUME_NONNULL_END
