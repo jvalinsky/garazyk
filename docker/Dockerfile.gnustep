@@ -148,7 +148,8 @@ RUN mkdir build && cd build && \
     cmake -S /src -B . \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS=OFF \
-    -DBUILD_FUZZERS=OFF && \
+    -DBUILD_FUZZERS=OFF \
+    -DGNUSTEP_PREFIX=/usr/GNUstep/Local && \
     cmake --build . --parallel $(nproc)
 
 # ---------------------------------------------------------------------------
