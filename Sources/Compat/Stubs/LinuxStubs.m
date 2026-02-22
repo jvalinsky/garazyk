@@ -89,4 +89,16 @@ uint32_t arc4random(void) {
     return value;
 }
 
+// arc4random_uniform compatibility shim for Linux
+uint32_t arc4random_uniform(uint32_t upper_bound) {
+    uint32_t value;
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd >= 0) {
+        read(fd, &value, sizeof(value));
+        close(fd);
+    }
+    // Scale to [0, upper_bound) avoiding modulo bias
+    return value % upper_bound;
+}
+
 #endif
