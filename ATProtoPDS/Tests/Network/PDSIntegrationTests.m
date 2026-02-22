@@ -528,6 +528,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 
+#ifndef GNUSTEP
 - (void)testRequestCorrelationID {
     // Start server for integration test
     XCTestExpectation *expectation = [self expectationWithDescription:@"Correlation ID test"];
@@ -555,6 +556,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 @end
 

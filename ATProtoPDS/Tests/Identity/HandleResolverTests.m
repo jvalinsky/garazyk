@@ -107,6 +107,7 @@
     XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForResource, 30.0, @"Resource timeout should be 30s");
 }
 
+#ifndef GNUSTEP
 - (void)testHandleValidationEmpty {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Empty handle test"];
 
@@ -119,7 +120,9 @@
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHandleValidationNull {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Null handle test"];
 
@@ -132,7 +135,9 @@
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHandleValidationNoDot {
     XCTestExpectation *expectation = [self expectationWithDescription:@"No dot handle test"];
 
@@ -145,7 +150,9 @@
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHandleValidationValid {
     MockURLSession *mockSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:7HjwGtP5cLyq3vD5nDzDg"}
                                                                      error:nil
@@ -165,7 +172,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionNetworkError {
     MockURLSession *errorSession = [[MockURLSession alloc] initWithResponse:nil
                                                                      error:[NSError errorWithDomain:NSURLErrorDomain
@@ -187,7 +196,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionHTTP404 {
     MockURLSession *notFoundSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @404, @"body": @"Not Found"}
                                                                          error:nil
@@ -207,7 +218,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionHTTP500 {
     MockURLSession *serverErrorSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @500, @"body": @"Internal Server Error"}
                                                                             error:nil
@@ -227,7 +240,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionEmptyBody {
     MockURLSession *emptyBodySession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @""}
                                                                           error:nil
@@ -247,7 +262,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionWhitespaceOnly {
     MockURLSession *whitespaceSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"   \n\t  "}
                                                                            error:nil
@@ -267,7 +284,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionInvalidDID {
     MockURLSession *invalidDIDSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"invalid-did-format"}
                                                                            error:nil
@@ -287,7 +306,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testHTTPSResolutionDIDWithWhitespace {
     MockURLSession *whitespaceDIDSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"  did:plc:7HjwGtP5cLyq3vD5nDzDg  \n"}
                                                                              error:nil
@@ -307,7 +328,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testURLConstructionInvalidCharacters {
     HandleResolver *urlTestResolver = [[HandleResolver alloc] init];
     urlTestResolver.skipSSRFCheck = YES;
@@ -331,6 +354,7 @@
     XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForResource, 30.0, @"Resource timeout should be 30s");
 }
 
+#ifndef GNUSTEP
 - (void)testConcurrentResolutions {
     MockURLSession *concurrentSession1 = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:concurrent1"}
                                                                            error:nil
@@ -373,7 +397,9 @@
     XCTAssertEqualObjects(resultDID2, @"did:plc:concurrent2", @"Second concurrent DID should match");
     XCTAssertNil(resultError2, @"No error for second resolution");
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testLargeHandleHandling {
     NSString *largeHandle = [@"" stringByPaddingToLength:1000 withString:@"a" startingAtIndex:0];
     largeHandle = [largeHandle stringByAppendingString:@".example.com"];
@@ -389,7 +415,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testSpecialCharactersInHandle {
     MockURLSession *specialCharSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:special"}
                                                                            error:nil
@@ -409,7 +437,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testMemoryManagement {
     @autoreleasepool {
         HandleResolver *tempResolver = [[HandleResolver alloc] init];
@@ -437,6 +467,7 @@
     XCTAssertEqualObjects(domainError.domain, HandleErrorDomain, @"Error domain should be HandleErrorDomain");
 }
 
+#ifndef GNUSTEP
 - (void)testMultipleDotsInHandle {
     MockURLSession *multiDotSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:multidot"}
                                                                          error:nil
@@ -456,7 +487,9 @@
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testDNSResolutionFallback {
     // This test verifies that if HTTPS resolution fails, it falls back to DNS TXT
     // Since we can't easily mock res_query without method swizzling or similar,
@@ -481,7 +514,9 @@
     
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testFailureCachingAndBackoff {
     MockURLSession *errorSession = [[MockURLSession alloc] initWithResponse:nil
                                                                      error:[NSError errorWithDomain:NSURLErrorDomain

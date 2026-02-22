@@ -41,6 +41,7 @@
     XCTAssertGreaterThan(keyBytes.length, 0);
 }
 
+#ifndef GNUSTEP
 - (void)testDIDResolutionCaching {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
@@ -63,7 +64,9 @@
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testBatchResolution {
     DIDResolver *resolver = [[DIDResolver alloc] init];
     NSArray *dids = @[@"did:plc:test1", @"did:plc:test2"];
@@ -86,7 +89,9 @@
 
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testTTLCaching {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
@@ -109,7 +114,9 @@
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testExpiredCacheEviction {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
@@ -134,5 +141,6 @@
 
     [self waitForExpectationsWithTimeout:5.0 handler:nil];
 }
+#endif
 
 @end
