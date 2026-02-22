@@ -122,6 +122,7 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testConnectivity {
     NSUInteger port = self.server.port;
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%lu/health", (unsigned long)port]];
@@ -279,5 +280,6 @@
     
     if (privateKey) CFRelease(privateKey);
 }
+#endif
 
 @end
