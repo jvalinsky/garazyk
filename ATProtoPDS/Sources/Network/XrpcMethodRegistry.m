@@ -36,6 +36,7 @@
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCRotationKeyManager.h"
 #import "PLC/DIDPLCResolver.h"
+#import "Email/PDSEmailProvider.h"
 #import "Database/PDSDatabase.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -2972,7 +2973,8 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
                                                      id<PDSAdminController> adminController,
                                                      PDSServiceDatabases *serviceDatabases,
                                                      PDSDatabasePool *userDatabasePool,
-                                                     PDSConfiguration *config) {
+                                                     PDSConfiguration *config,
+                                                     id<PDSEmailProvider> emailProvider) {
     [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *identifier = body[@"identifier"] ?: [request queryParamForKey:@"identifier"];
@@ -3085,6 +3087,13 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": @"Account not found"}];
+            return;
+        }
+
         NSString *alphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         NSMutableString *token = [NSMutableString stringWithCapacity:8];
         for (int i = 0; i < 8; i++) {
@@ -3093,8 +3102,24 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         [XrpcMethodRegistry storePlcOperationToken:token forDid:did];
         PDS_LOG_INFO(@"Generated PLC operation token for DID %@", did);
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"token": token}];
+        if (emailProvider && account.email.length > 0) {
+            NSString *subject = @"PLC Operation Confirmation Code";
+            NSString *body = [NSString stringWithFormat:@"Your confirmation code for updating your PLC identity is: %@\n\nIf you did not request this change, you can safely ignore this email.", token];
+            
+            NSError *emailError = nil;
+            if (![emailProvider sendEmailTo:account.email subject:subject body:body error:&emailError]) {
+                PDS_LOG_ERROR(@"Failed to send PLC operation email to %@: %@", account.email, emailError);
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"EmailFailed", @"message": @"Failed to send confirmation email"}];
+                return;
+            }
+            
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
+        } else {
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"token": token}];
+        }
     }];
 
     [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
@@ -5573,16 +5598,17 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 }
 
 static void registerMethodsWithDispatcherUsingServices(Class registryClass,
-                                                       XrpcDispatcher *dispatcher,
-                                                       id<PDSAccountService> accountService,
-                                                       PDSRecordService *recordService,
-                                                       PDSBlobService *blobService,
-                                                       PDSRepositoryService *repositoryService,
-                                                       id<PDSAdminController> adminController,
-                                                       PDSServiceDatabases *serviceDatabases,
-                                                       PDSDatabasePool *userDatabasePool,
-                                                       JWTMinter *jwtMinter,
-                                                       PDSConfiguration *config) {
+                                                        XrpcDispatcher *dispatcher,
+                                                        id<PDSAccountService> accountService,
+                                                        PDSRecordService *recordService,
+                                                        PDSBlobService *blobService,
+                                                        PDSRepositoryService *repositoryService,
+                                                        id<PDSAdminController> adminController,
+                                                        PDSServiceDatabases *serviceDatabases,
+                                                        PDSDatabasePool *userDatabasePool,
+                                                        JWTMinter *jwtMinter,
+                                                        PDSConfiguration *config,
+                                                        id<PDSEmailProvider> emailProvider) {
 
     installXrpcProxyInterceptor(dispatcher, config);
 
@@ -5754,7 +5780,8 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                                             adminController,
                                             serviceDatabases,
                                             userDatabasePool,
-                                            config);
+                                            config,
+                                            emailProvider);
     registerRepoCoreMethods(dispatcher,
                             jwtMinter,
                             adminController,
@@ -6195,40 +6222,42 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                           controller:(PDSController *)controller {
+                            controller:(PDSController *)controller {
     if (!dispatcher || !controller) {
         return;
     }
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     registerMethodsWithDispatcherUsingServices(self,
-                                               dispatcher,
-                                               controller.accountService,
-                                               controller.recordService,
-                                               controller.blobService,
-                                               controller.repositoryService,
-                                               controller.adminController,
-                                               controller.serviceDatabases,
-                                               controller.userDatabasePool,
-                                               controller.jwtMinter,
-                                               config);
+                                                dispatcher,
+                                                controller.accountService,
+                                                controller.recordService,
+                                                controller.blobService,
+                                                controller.repositoryService,
+                                                controller.adminController,
+                                                controller.serviceDatabases,
+                                                controller.userDatabasePool,
+                                                controller.jwtMinter,
+                                                config,
+                                                nil);
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                          application:(PDSApplication *)application {
+                           application:(PDSApplication *)application {
     if (!dispatcher || !application) {
         return;
     }
     registerMethodsWithDispatcherUsingServices(self,
-                                               dispatcher,
-                                               application.accountService,
-                                               application.recordService,
-                                               application.blobService,
-                                               application.repositoryService,
-                                               application.adminController,
-                                               application.serviceDatabases,
-                                               application.userDatabasePool,
-                                               application.jwtMinter,
-                                               application.configuration);
+                                                dispatcher,
+                                                application.accountService,
+                                                application.recordService,
+                                                application.blobService,
+                                                application.repositoryService,
+                                                application.adminController,
+                                                application.serviceDatabases,
+                                                application.userDatabasePool,
+                                                application.jwtMinter,
+                                                application.configuration,
+                                                application.emailProvider);
 }
 
 @end
