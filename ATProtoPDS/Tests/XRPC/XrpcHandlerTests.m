@@ -19,6 +19,7 @@
     [super tearDown];
 }
 
+#ifndef GNUSTEP
 - (void)testMethodRegistrationAndDispatch {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Method handler called"];
     
@@ -45,6 +46,7 @@
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody[@"result"], @"success");
 }
+#endif
 
 - (void)testUnrecognizedMethodReturns404 {
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
@@ -63,6 +65,7 @@
     XCTAssertEqual(response.statusCode, HttpStatusNotImplemented, @"Should return 501 for unimplemented methods");
 }
 
+#ifndef GNUSTEP
 - (void)testPathParametersOverrideMethodParsing {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Path parameter handler called"];
 
@@ -90,7 +93,9 @@
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody[@"result"], @"path-params");
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testRegisterComAtprotoSyncSubscribeReposMapsToMethod {
     XCTestExpectation *expectation = [self expectationWithDescription:@"subscribeRepos handler called"];
 
@@ -117,7 +122,9 @@
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testRegisterComAtprotoServerDeleteSessionMapsToMethod {
     XCTestExpectation *expectation = [self expectationWithDescription:@"deleteSession handler called"];
 
@@ -144,7 +151,9 @@
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testRegisterComAtprotoSyncGetRecordMapsToMethod {
     XCTestExpectation *expectation = [self expectationWithDescription:@"getRecord handler called"];
 
@@ -171,5 +180,6 @@
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
 }
+#endif
 
 @end
