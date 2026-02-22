@@ -1,11 +1,10 @@
 /**
  * @file SecRandom.h
- *
  * @brief SecRandomCopyBytes compatibility shim.
  *
  * Provides SecRandomCopyBytes implementation for platforms without Security framework:
  * - macOS: Native Security framework SecRandom
- * - Linux: arc4random_buf wrapper
+ * - Linux: arc4random_buf and arc4random_uniform wrapper
  *
  * @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -35,11 +34,22 @@
  * @param bytes Buffer to receive random bytes.
  * @return errSecSuccess (always succeeds).
  */
-static inline int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
-    (void)drbg;
-    arc4random_buf(bytes, count);
-    return 0;
-}
+int SecRandomCopyBytes(int *drbg, size_t count, void *bytes);
+
+/**
+ * @brief Generate a random 32-bit integer.
+ *
+ * @return Random 32-bit integer.
+ */
+uint32_t arc4random(void);
+
+/**
+ * @brief Generate a random 32-bit integer in range [0, upper_bound].
+ *
+ * @param upper_bound Upper bound (exclusive).
+ * @return Random integer in [0, upper_bound].
+ */
+uint32_t arc4random_uniform(uint32_t upper_bound);
 
 #endif
 
