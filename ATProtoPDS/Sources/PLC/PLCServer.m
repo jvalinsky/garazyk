@@ -444,13 +444,14 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }
     
     if (state.tombstoned) {
-        resp.statusCode = 410; // Gone
+        resp.statusCode = 410;
         [resp setJsonBody:@{@"message": [NSString stringWithFormat:@"DID not available: %@", did]}];
         return;
     }
     
     resp.statusCode = HttpStatusOK;
     [resp setJsonBody:[state toDIDDocument]];
+    resp.contentType = @"application/did+ld+json; charset=utf-8";
 }
 
 - (void)handleGetLog:(HttpRequest *)req

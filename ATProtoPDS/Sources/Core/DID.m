@@ -16,6 +16,10 @@
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
+static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/json";
+
+@interface DIDResolver () <NSURLSessionTaskDelegate>
+@end
 
 @implementation DIDDocument
 
@@ -102,17 +106,23 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
         config.timeoutIntervalForRequest = 30.0;
         config.timeoutIntervalForResource = 60.0;
-        _session = [NSURLSession sessionWithConfiguration:config];
+        _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
 
         _cache = [[NSCache alloc] init];
-        _cache.countLimit = 1000; // Cache up to 1000 DIDs
+        _cache.countLimit = 1000;
         _cacheTimestamps = [[NSMutableDictionary alloc] init];
-        _staleTTL = 3600.0; // 1 hour
-        _maxTTL = 86400.0; // 1 day
+        _staleTTL = 3600.0;
+        _maxTTL = 86400.0;
         NSString *envPlc = NSProcessInfo.processInfo.environment[@"PDS_PLC_URL"];
         _plcURL = envPlc ?: @"https://plc.directory";
     }
     return self;
+}
+
+#pragma mark - NSURLSessionTaskDelegate
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
+    completionHandler(nil);
 }
 
 - (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
@@ -450,6 +460,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
+    [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
     NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
                                           completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
@@ -525,6 +536,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
+    [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
     NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
                                           completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
