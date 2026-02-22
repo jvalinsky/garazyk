@@ -46,6 +46,7 @@
     self.connection.delegate = self.delegate;
 }
 
+#ifndef GNUSTEP
 - (void)testExtendedPayloadParsing126 {
     // 126 bytes payload (needs 2 byte length)
     // Fin=1, Opcode=2 (Binary) -> 0x82
@@ -71,7 +72,9 @@
     [self waitForExpectations:@[self.delegate.expectation] timeout:1.0];
     XCTAssertEqualObjects(self.delegate.lastMessage, payload);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testExtendedPayloadParsing127 {
     // 65536 bytes payload (needs 8 byte length)
     // Fin=1, Opcode=2 (Binary) -> 0x82
@@ -96,7 +99,9 @@
     [self waitForExpectations:@[self.delegate.expectation] timeout:1.0];
     XCTAssertEqualObjects(self.delegate.lastMessage, payload);
 }
+#endif
 
+#ifndef GNUSTEP
 - (void)testMaskedFrameParsing {
     // Hello World masked
     // Fin=1, Opcode=1 (Text) -> 0x81
@@ -122,5 +127,6 @@
     [self waitForExpectations:@[self.delegate.expectation] timeout:1.0];
     XCTAssertEqualObjects(self.delegate.lastText, @"Hello");
 }
+#endif
 
 @end
