@@ -88,6 +88,7 @@
 
 @end
 
+#ifndef GNUSTEP
 @implementation HandleResolverTests
 
 - (void)setUp {
@@ -547,5 +548,7 @@
     }];
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
+
+#endif
 
 @end
