@@ -101,4 +101,13 @@ uint32_t arc4random_uniform(uint32_t upper_bound) {
     return value % upper_bound;
 }
 
+// arc4random_buf compatibility shim for Linux
+void arc4random_buf(void *buf, size_t nbytes) {
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd >= 0) {
+        read(fd, buf, nbytes);
+        close(fd);
+    }
+}
+
 #endif
