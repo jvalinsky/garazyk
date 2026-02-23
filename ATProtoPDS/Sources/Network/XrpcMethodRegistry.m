@@ -4482,26 +4482,49 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
                                     id<PDSAccountService> accountService,
                                     PDSRecordService *recordService,
                                     PDSBlobService *blobService,
-                                    PDSRepositoryService *repositoryService) {
+                                    PDSRepositoryService *repositoryService,
+                                    PDSServiceDatabases *serviceDatabases) {
     [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
-            return;
-        }
-
+        NSString *repo = [request queryParamForKey:@"repo"];
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *limitStr = [request queryParamForKey:@"limit"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
+        if (!repo) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo parameter"}];
+            return;
+        }
+
         if (!collection) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection parameter"}];
+            return;
+        }
+
+        NSString *did = nil;
+        if ([repo hasPrefix:@"did:"]) {
+            did = repo;
+        } else {
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:repo error:nil];
+            if (account) {
+                did = account.did;
+            } else {
+                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                __block NSString *resolvedDid = nil;
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                [handleResolver resolveHandle:repo completion:^(NSString * _Nullable resolved, NSError * _Nullable error) {
+                    resolvedDid = resolved;
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+                did = resolvedDid;
+            }
+        }
+
+        if (!did) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": [NSString stringWithFormat:@"Could not find repo: %@", repo]}];
             return;
         }
 
@@ -4522,23 +4545,45 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoRepoGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
-            return;
-        }
-
+        NSString *repo = [request queryParamForKey:@"repo"];
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *rkey = [request queryParamForKey:@"rkey"];
+
+        if (!repo) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo parameter"}];
+            return;
+        }
 
         if (!collection || !rkey) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey parameter"}];
+            return;
+        }
+
+        NSString *did = nil;
+        if ([repo hasPrefix:@"did:"]) {
+            did = repo;
+        } else {
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:repo error:nil];
+            if (account) {
+                did = account.did;
+            } else {
+                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                __block NSString *resolvedDid = nil;
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                [handleResolver resolveHandle:repo completion:^(NSString * _Nullable resolved, NSError * _Nullable error) {
+                    resolvedDid = resolved;
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+                did = resolvedDid;
+            }
+        }
+
+        if (!did) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": [NSString stringWithFormat:@"Could not find repo: %@", repo]}];
             return;
         }
 
@@ -5807,7 +5852,8 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                             accountService,
                             recordService,
                             blobService,
-                            repositoryService);
+                            repositoryService,
+                            serviceDatabases);
 
     [dispatcher registerComAtprotoRepoUpdateRecord:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
