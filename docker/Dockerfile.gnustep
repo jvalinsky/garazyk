@@ -195,6 +195,7 @@ COPY --from=builder /src/ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprot
 COPY --from=builder /src/ATProtoPDS/Sources/App/MSTViewer/Assets /usr/share/atprotopds/assets/MSTViewer
 COPY --from=builder /src/ATProtoPDS/Sources/App/OAuthDemo/Assets /usr/share/atprotopds/assets/OAuthDemo
 COPY --from=builder /src/ATProtoPDS/Sources/App/AdminUI/Assets /usr/share/atprotopds/assets/AdminUI
+COPY --from=builder /src/ATProtoPDS/Sources/Auth/Assets /usr/share/atprotopds/assets/Auth
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
