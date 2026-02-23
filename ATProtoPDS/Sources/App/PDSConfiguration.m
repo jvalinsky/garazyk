@@ -99,7 +99,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
 
         _serverHost = @"0.0.0.0";
         _serverPort = 8080;
-        _dataDirectory = @"./data";
+        _dataDirectory = [[self class] defaultDataDirectory];
         
         _issuer = nil;
 
@@ -231,6 +231,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
 }
 
 - (void)applyConfig:(NSDictionary *)config {
+    _dataPaths = nil; // Reset cached data paths so they are re-evaluated
     NSDictionary *server = config[@"server"];
     if (server) {
         if (server[@"host"]) _serverHost = [self resolveEnvOverrideForKey:@"PDS_HOST" default:server[@"host"]];

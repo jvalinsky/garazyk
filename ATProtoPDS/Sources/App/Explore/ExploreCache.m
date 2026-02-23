@@ -5,10 +5,10 @@
 
 @interface ExploreCache ()
 @property (nonatomic, strong) NSCache *memoryCache;
-@property (nonatomic, copy) NSString *cacheDirectory;
-@property (nonatomic, copy) NSString *didCacheDir;
-@property (nonatomic, copy) NSString *plcCacheDir;
-@property (nonatomic, copy) NSString *accountCachePath;
+@property (nonatomic, readonly) NSString *cacheDirectory;
+@property (nonatomic, readonly) NSString *didCacheDir;
+@property (nonatomic, readonly) NSString *plcCacheDir;
+@property (nonatomic, readonly) NSString *accountCachePath;
 @end
 
 @implementation ExploreCache
@@ -32,15 +32,6 @@ static NSInteger const kMaxMemoryItems = 200;
     if (self) {
         _memoryCache = [[NSCache alloc] init];
         _memoryCache.countLimit = kMaxMemoryItems;
-        
-        NSString *baseDir = [self defaultCacheDirectory];
-        _cacheDirectory = baseDir;
-        _didCacheDir = [baseDir stringByAppendingPathComponent:@"did-docs"];
-        _plcCacheDir = [baseDir stringByAppendingPathComponent:@"plc-logs"];
-        _accountCachePath = [baseDir stringByAppendingPathComponent:@"accounts.json"];
-        
-        [self createDirectoryIfNeeded:_didCacheDir];
-        [self createDirectoryIfNeeded:_plcCacheDir];
     }
     return self;
 }
@@ -57,6 +48,27 @@ static NSInteger const kMaxMemoryItems = 200;
     }
 
     return [[PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]] exploreCacheDirectory];
+}
+
+- (NSString *)cacheDirectory {
+    return [self defaultCacheDirectory];
+}
+
+- (NSString *)didCacheDir {
+    NSString *path = [self.cacheDirectory stringByAppendingPathComponent:@"did-docs"];
+    [self createDirectoryIfNeeded:path];
+    return path;
+}
+
+- (NSString *)plcCacheDir {
+    NSString *path = [self.cacheDirectory stringByAppendingPathComponent:@"plc-logs"];
+    [self createDirectoryIfNeeded:path];
+    return path;
+}
+
+- (NSString *)accountCachePath {
+    NSString *path = [self.cacheDirectory stringByAppendingPathComponent:@"accounts.json"];
+    return path;
 }
 
 - (void)createDirectoryIfNeeded:(NSString *)path {
