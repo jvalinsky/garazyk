@@ -196,6 +196,8 @@ COPY --from=builder /src/ATProtoPDS/Sources/App/MSTViewer/Assets /usr/share/atpr
 COPY --from=builder /src/ATProtoPDS/Sources/App/OAuthDemo/Assets /usr/share/atprotopds/assets/OAuthDemo
 COPY --from=builder /src/ATProtoPDS/Sources/App/AdminUI/Assets /usr/share/atprotopds/assets/AdminUI
 COPY --from=builder /src/ATProtoPDS/Sources/Auth/Assets /usr/share/atprotopds/assets/Auth
+COPY --from=builder /src/ATProtoPDS/Sources/PLC/Assets /usr/share/atprotopds/assets/PLC
+COPY --from=builder /src/lexicons /usr/share/atprotopds/lexicons
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
