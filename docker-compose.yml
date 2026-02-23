@@ -8,11 +8,11 @@ services:
     image: nspds:local
     container_name: nspds
     ports:
-      - "2582:3000"
+      - "2583:2583"
     volumes:
-      - ./data:/var/lib/atprotopds
+      - pds_data:/var/lib/atprotopds
     environment:
-      - PDS_PORT=2582
+      - PDS_PORT=2583
     labels:
       - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
     restart: unless-stopped
@@ -29,7 +29,7 @@ services:
     volumes:
       - plc_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U plc -d plc"]
+      test: [ "CMD-SHELL", "pg_isready -U plc -d plc" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,4 +51,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  pds_data:
   plc_data:
