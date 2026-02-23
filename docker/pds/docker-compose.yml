@@ -14,7 +14,8 @@ services:
       - PDS_PORT=2583
       - PDS_HOST=0.0.0.0
       - PDS_ISSUER=https://pds.garazyk.xyz
-    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--port", "2583", "--foreground"]
+      - HOME=/var/lib/atprotopds
+    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"]
     restart: unless-stopped
 
 volumes:
