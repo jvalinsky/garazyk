@@ -13,6 +13,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSDataPaths;
+
 // Forward declarations for logging types
 typedef NS_ENUM(NSInteger, PDSLogLevel);
 typedef NS_ENUM(NSInteger, PDSLogFormat);
@@ -57,6 +59,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 
 /*! Path to data directory. */
 @property (nonatomic, readonly) NSString *dataDirectory;
+
+/*! Lazily-created path configuration derived from dataDirectory. */
+@property (nonatomic, strong, readonly) PDSDataPaths *dataPaths;
 
 /*! PLC directory server URL. */
 @property (nonatomic, copy) NSString *plcURL;
