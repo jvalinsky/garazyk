@@ -3,13 +3,26 @@
 #import "Admin/PDSInstallerCommand.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
+#import "App/PDSConfiguration.h"
 
 @implementation PDSCLICommandContext
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _dataDir = @"./data";
+        _dataDir = [PDSConfiguration defaultDataDirectory];
+        
+        // If we're using the platform default, but it's not writable (common in restricted containers),
+        // fallback to the current directory.
+        NSFileManager *fm = [NSFileManager defaultManager];
+        if (![fm isWritableFileAtPath:_dataDir]) {
+            // Check if we can create it
+            NSError *error = nil;
+            if (![fm createDirectoryAtPath:_dataDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+                _dataDir = @".";
+            }
+        }
+
         _configPath = @"./config.json";
         _verbose = NO;
         _jsonOutput = NO;

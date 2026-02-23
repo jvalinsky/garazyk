@@ -84,16 +84,25 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         if (path) {
             _databasePath = [path copy];
         } else {
-            PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-            NSString *baseDir = config ? config.dataPaths.serviceDirectory
-                                       : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
-            [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
-            _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
+            _databasePath = nil; // Will be determined on-demand
         }
-        
-        [self initializeDatabase];
     }
     return self;
+}
+
+- (BOOL)ensureDatabaseOpened {
+    if (_db) return YES;
+    
+    if (!_databasePath) {
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *baseDir = config ? config.dataPaths.serviceDirectory
+                                   : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
+        [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
+        _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
+    }
+    
+    [self initializeDatabase];
+    return _db != NULL;
 }
 
 - (void)initializeDatabase {
@@ -191,6 +200,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                                                      type:(RateLimitType)type
                                                     limit:(NSInteger)limit
                                               windowSeconds:(NSTimeInterval)windowSeconds {
+    if (![self ensureDatabaseOpened]) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
     
@@ -260,6 +272,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                                               type:(RateLimitType)type
                                              limit:(NSInteger)limit
                                       windowSeconds:(NSTimeInterval)windowSeconds {
+    if (![self ensureDatabaseOpened]) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
+    }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
     NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
@@ -303,6 +318,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 - (RateLimitResult *)checkBlobRateLimitInternalForDid:(NSString *)did
                                                  limit:(NSInteger)limit
                                            windowSeconds:(NSTimeInterval)windowSeconds {
+    if (![self ensureDatabaseOpened]) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
+    }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
     
@@ -364,6 +382,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 - (RateLimitResult *)currentBlobRateLimitForDid:(NSString *)did
                                           limit:(NSInteger)limit
                                    windowSeconds:(NSTimeInterval)windowSeconds {
+    if (![self ensureDatabaseOpened]) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
+    }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
     NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
