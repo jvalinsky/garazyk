@@ -15,7 +15,9 @@ services:
       - PDS_HOST=0.0.0.0
       - PDS_ISSUER=https://pds.garazyk.xyz
       - HOME=/var/lib/atprotopds
-    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"]
+    command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
+    labels:
+      - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
     restart: unless-stopped
 
 volumes:

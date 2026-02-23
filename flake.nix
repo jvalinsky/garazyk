@@ -31,6 +31,7 @@
           clang-tools
           lldb
           bear
+          valgrind
         ];
 
         darwinFrameworks = pkgs.lib.optionals isDarwin (with pkgs; [

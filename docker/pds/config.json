@@ -30,6 +30,16 @@
     "retry_count": 5,
     "retry_delay_ms": 2000
   },
+  "cors": {
+    "allowed_origins": [
+      "https://witchsky.app",
+      "https://bsky.app",
+      "https://pds.garazyk.xyz"
+    ],
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+    "allowed_headers": ["DPoP", "Authorization", "Content-Type", "*"],
+    "max_age": 86400
+  },
   "debug": {
     "skip_plc_operations": false
   }

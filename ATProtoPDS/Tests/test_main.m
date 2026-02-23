@@ -178,6 +178,7 @@ int main(int argc, char * argv[]) {
             @"ExploreCacheTests",
             @"ExploreHandlerTests",
             @"HttpServerTests",
+            @"PDSHttpServerBuilderTests",
             @"WebSocketServerTests",
             @"MSTPersistenceTests",
             @"HttpResponseTests",

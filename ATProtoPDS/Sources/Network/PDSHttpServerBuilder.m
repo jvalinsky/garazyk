@@ -19,6 +19,7 @@
 #import "../Auth/JWT.h"
 #import "../Auth/OAuth2Handler.h"
 #import "../Database/Service/ServiceDatabases.h"
+#import "../Database/PDSDatabase.h"
 #import "../App/Explore/ExploreHandler.h"
 #import "../App/OAuthDemo/OAuthDemoHandler.h"
 #import "../App/MSTViewer/MSTViewerHandler.h"
@@ -60,6 +61,34 @@
         }
     }
     return self;
+}
+
+- (NSArray<NSString *> *)getCorsAllowedOrigins {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSArray<NSString *> *defaultOrigins = @[@"*"];
+    NSArray<NSString *> *origins = [config stringForKey:@"cors.allowed_origins"];
+    return origins ?: defaultOrigins;
+}
+
+- (NSString *)getCorsAllowedMethods {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *defaultMethods = @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
+    NSString *methods = [config stringForKey:@"cors.allowed_methods"];
+    return methods ?: defaultMethods;
+}
+
+- (NSString *)getCorsAllowedHeaders {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *defaultHeaders = @"DPoP, Authorization, Content-Type, *";
+    NSString *headers = [config stringForKey:@"cors.allowed_headers"];
+    return headers ?: defaultHeaders;
+}
+
+- (NSString *)getCorsMaxAge {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSInteger defaultMaxAge = 86400;
+    NSInteger maxAge = [config integerForKey:@"cors.max_age"];
+    return [NSString stringWithFormat:@"%ld", (long)(maxAge > 0 ? maxAge : defaultMaxAge)];
 }
 
 #pragma mark - Building
@@ -114,6 +143,9 @@
     if (self.enableNodeInfo) {
         [self registerNodeInfoRoutesWithServer:server];
     }
+    
+    // Register .well-known routes (handle resolution)
+    [self registerWellKnownRoutesWithServer:server];
 
     // Register Admin routes
     [self registerAdminRoutesWithServer:server];
@@ -316,6 +348,78 @@
     [nodeInfoHandler registerRoutesWithServer:server];
 
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: NodeInfo routes registered");
+}
+
+- (void)registerWellKnownRoutesWithServer:(HttpServer *)server {
+    __weak PDSServiceDatabases *weakServiceDatabases = self.serviceDatabases;
+    __weak PDSController *weakController = self.controller;
+    
+    [server addRoute:@"GET" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *handle = request.queryParams[@"handle"];
+        
+        // Validate handle parameter is present
+        if (!handle || ![handle isKindOfClass:[NSString class]] || handle.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"Bad Request", @"message": @"Missing handle parameter"}];
+            return;
+        }
+        
+        // Only respond if this PDS owns the handle
+        // Default to canonical hostname if availableUserDomains is not configured
+        NSString *hostname = [config canonicalHostname];
+        NSArray<NSString *> *availableDomains = config.availableUserDomains ?: (hostname.length > 0 ? @[hostname] : @[]);
+        BOOL isOwnedHandle = NO;
+        for (NSString *domain in availableDomains) {
+            if ([handle hasSuffix:domain]) {
+                isOwnedHandle = YES;
+                break;
+            }
+        }
+        
+        if (!isOwnedHandle) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found", @"message": @"This PDS does not own the requested handle"}];
+            return;
+        }
+        
+        // Look up the DID for this handle in the database
+        // Try to get serviceDatabases from builder property or controller
+        PDSServiceDatabases *strongServiceDatabases = weakServiceDatabases;
+        if (!strongServiceDatabases) {
+            PDSController *strongController = weakController;
+            strongServiceDatabases = strongController.serviceDatabases;
+        }
+        
+        if (!strongServiceDatabases) {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"Internal Server Error", @"message": @"Service databases not available"}];
+            return;
+        }
+        
+        NSError *dbError = nil;
+        PDSDatabaseAccount *account = [strongServiceDatabases getAccountByHandle:handle error:&dbError];
+        
+        if (dbError) {
+            PDS_LOG_ERROR(@"Database error looking up handle %@: %@", handle, dbError.localizedDescription ?: @"unknown error");
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"Internal Server Error", @"message": @"Database error"}];
+            return;
+        }
+        
+        if (!account) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found", @"message": @"Handle not found"}];
+            return;
+        }
+        
+        // Return the DID as plain text
+        response.statusCode = 200;
+        [response setHeader:@"text/plain; charset=utf-8" forKey:@"Content-Type"];
+        [response setBodyString:account.did];
+    }];
+    
+    PDS_LOG_DEBUG(@"PDSHttpServerBuilder: .well-known routes registered");
 }
 
 - (void)registerAdminRoutesWithServer:(HttpServer *)server {
