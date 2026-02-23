@@ -203,7 +203,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, N
         }
 
         _dataDirectory = [directory copy];
-        PDS_LOG_DEBUG(@"[PDSController] Initializing with dataDirectory: %@", directory);
+        NSLog(@"[PDSController] Initializing with dataDirectory: %@", directory);
         
         _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:directory
                                                               serviceMaxSize:serviceMaxSize
@@ -211,8 +211,8 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, N
                                                           sequencerMaxSize:100];
         _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:directory maxSize:userDatabaseSize];
         
-        PDS_LOG_DEBUG(@"[PDSController] userDatabasePool.dbDirectory: %@", _userDatabasePool.dbDirectory);
-        PDS_LOG_DEBUG(@"[PDSController] Expected actor store path for 'did:plc:test': %@", 
+        NSLog(@"[PDSController] userDatabasePool.dbDirectory: %@", _userDatabasePool.dbDirectory);
+        NSLog(@"[PDSController] Expected actor store path for 'did:plc:test': %@", 
                       [_userDatabasePool.dbDirectory stringByAppendingPathComponent:@"di/did:plc:test"]);
         
         // Setup Service Container
