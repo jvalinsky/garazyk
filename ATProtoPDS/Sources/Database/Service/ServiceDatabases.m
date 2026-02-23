@@ -5,6 +5,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Core/PDSDataPaths.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "App/PDSConfiguration.h"
 #import <CommonCrypto/CommonCrypto.h>
@@ -95,14 +96,12 @@ static NSString *appPasswordGenerateSecret(void) {
                  sequencerMaxSize:(NSUInteger)sequencerMaxSize {
     self = [super init];
     if (self) {
-        NSFileManager *fm = [NSFileManager defaultManager];
-        if (![fm fileExistsAtPath:directory]) {
-            [fm createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
-        }
-        
-        _serviceDbPath = [directory stringByAppendingPathComponent:@"service"];
-        _didCacheDbPath = [directory stringByAppendingPathComponent:@"did_cache"];
-        _sequencerDbPath = [directory stringByAppendingPathComponent:@"sequencer"];
+        PDSDataPaths *paths = [PDSDataPaths pathsForBaseDirectory:directory];
+        [paths createDirectoriesWithError:nil];
+
+        _serviceDbPath = paths.serviceDirectory;
+        _didCacheDbPath = paths.didCacheDirectory;
+        _sequencerDbPath = paths.sequencerDirectory;
         
         _servicePool = [[PDSDatabasePool alloc] initWithDbDirectory:_serviceDbPath maxSize:serviceMaxSize];
         _didCachePool = [[PDSDatabasePool alloc] initWithDbDirectory:_didCacheDbPath maxSize:didCacheMaxSize];

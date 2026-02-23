@@ -1,6 +1,8 @@
 #import "Network/RateLimiter.h"
 #import "Compat/PDSTypes.h"
 #import "Network/HttpResponse.h"
+#import "Core/PDSDataPaths.h"
+#import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
@@ -82,10 +84,11 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         if (path) {
             _databasePath = [path copy];
         } else {
-            NSString *appSupport = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject;
-            NSString *appDir = [appSupport stringByAppendingPathComponent:@"ATProtoPDS"];
-            [[NSFileManager defaultManager] createDirectoryAtPath:appDir withIntermediateDirectories:YES attributes:nil error:nil];
-            _databasePath = [appDir stringByAppendingPathComponent:@"ratelimits.db"];
+            PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+            NSString *baseDir = config ? config.dataPaths.serviceDirectory
+                                       : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
+            [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
+            _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
         }
         
         [self initializeDatabase];

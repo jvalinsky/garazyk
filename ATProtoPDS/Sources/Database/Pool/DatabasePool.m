@@ -63,18 +63,37 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         return [self.dbDirectory stringByAppendingPathComponent:@"service.db"];
     }
 
-    NSString *didPrefix = [did substringToIndex:MIN(2, did.length)];
-    NSString *prefixDir = [self.dbDirectory stringByAppendingPathComponent:didPrefix];
-    
+    // Shard by DID method and 2-char prefix of the method-specific identifier:
+    // did:plc:z72i7h... → {dbDir}/plc/z7/did:plc:z72i7h...
+    NSString *method = nil;
+    NSString *identifier = nil;
+    NSRange firstColon = [did rangeOfString:@":"];
+    if (firstColon.location != NSNotFound) {
+        NSRange rest = NSMakeRange(firstColon.location + 1, did.length - firstColon.location - 1);
+        NSRange secondColon = [did rangeOfString:@":" options:0 range:rest];
+        if (secondColon.location != NSNotFound) {
+            method = [did substringWithRange:NSMakeRange(firstColon.location + 1,
+                                                         secondColon.location - firstColon.location - 1)];
+            identifier = [did substringFromIndex:secondColon.location + 1];
+        }
+    }
+
+    NSString *prefixDir;
+    if (method.length > 0 && identifier.length > 0) {
+        NSString *prefix = [identifier substringToIndex:MIN(2, identifier.length)];
+        NSString *methodDir = [self.dbDirectory stringByAppendingPathComponent:method];
+        prefixDir = [methodDir stringByAppendingPathComponent:prefix];
+    } else {
+        NSString *prefix = [did substringToIndex:MIN(2, did.length)];
+        prefixDir = [self.dbDirectory stringByAppendingPathComponent:prefix];
+    }
+
     NSFileManager *fm = [NSFileManager defaultManager];
     if (![fm fileExistsAtPath:prefixDir]) {
         [fm createDirectoryAtPath:prefixDir withIntermediateDirectories:YES attributes:nil error:nil];
     }
-    
-    NSString *result = [prefixDir stringByAppendingPathComponent:did];
-    NSLog(@"[dbPathForDid] dbDirectory=%@, did=%@, prefixDir=%@, result=%@", 
-                  self.dbDirectory, did, prefixDir, result);
-    return result;
+
+    return [prefixDir stringByAppendingPathComponent:did];
 }
 
 - (nullable PDSActorStore *)storeForDid:(NSString *)did error:(NSError **)error {
@@ -95,9 +114,9 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         }
 
         dbPath = [self dbPathForDid:did];
-        BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:dbPath];
-        NSLog(@"[storeForDid] Opening store at path: %@ (exists: %d)", dbPath, exists);
-        
+        PDS_LOG_DB_DEBUG(@"Opening store at path: %@ (exists: %d)", dbPath,
+                         [[NSFileManager defaultManager] fileExistsAtPath:dbPath]);
+
         store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&blockError];
 
         if (store) {
@@ -105,7 +124,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
         } else {
-            NSLog(@"[storeForDid] Failed to open store for %@: %@", did, blockError);
+            PDS_LOG_DB_ERROR(@"Failed to open store for %@: %@", did, blockError);
         }
     });
 
@@ -250,64 +269,51 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
     NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
-    
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSError *dirError = nil;
-    NSArray<NSString *> *prefixDirs = [fm contentsOfDirectoryAtPath:self.dbDirectory error:&dirError];
-    
-    if (dirError) {
-        if (error) *error = dirError;
-        return @[];
-    }
-    
-    for (NSString *prefixDir in prefixDirs) {
-        NSString *fullPath = [self.dbDirectory stringByAppendingPathComponent:prefixDir];
-        NSArray<NSString *> *files = [fm contentsOfDirectoryAtPath:fullPath error:nil];
-        
-        for (NSString *file in files) {
-            // Skip SQLite auxiliary files (-shm, -wal, -journal)
-            if ([file hasSuffix:@"-shm"] || [file hasSuffix:@"-wal"] || [file hasSuffix:@"-journal"]) {
-                continue;
-            }
-            if ([file hasPrefix:@"did:"]) {
-                NSString *did = file;
-                PDSDatabaseAccount *account = [self getAccount:did error:nil];
-                if (account) {
-                    [accounts addObject:account];
-                }
-            }
+    [self enumerateDidFiles:^(NSString *did) {
+        PDSDatabaseAccount *account = [self getAccount:did error:nil];
+        if (account) {
+            [accounts addObject:account];
         }
-    }
-    
+    }];
     return accounts;
 }
 
 - (NSArray<PDSDatabaseRepo *> *)getAllReposWithError:(NSError **)error {
     NSMutableArray<PDSDatabaseRepo *> *repos = [NSMutableArray array];
-    
+    [self enumerateDidFiles:^(NSString *did) {
+        PDSDatabaseRepo *repo = [self getRepo:did error:nil];
+        if (repo) {
+            [repos addObject:repo];
+        }
+    }];
+    return repos;
+}
+
+// Walks {dbDir}/{method}/{prefix}/{did} looking for files starting with "did:".
+- (void)enumerateDidFiles:(void (^)(NSString *did))block {
     NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray<NSString *> *prefixDirs = [fm contentsOfDirectoryAtPath:self.dbDirectory error:nil];
-    
-    for (NSString *prefixDir in prefixDirs) {
-        NSString *fullPath = [self.dbDirectory stringByAppendingPathComponent:prefixDir];
-        NSArray<NSString *> *files = [fm contentsOfDirectoryAtPath:fullPath error:nil];
-        
-        for (NSString *file in files) {
-            // Skip SQLite auxiliary files (-shm, -wal, -journal)
-            if ([file hasSuffix:@"-shm"] || [file hasSuffix:@"-wal"] || [file hasSuffix:@"-journal"]) {
-                continue;
-            }
-            if ([file hasPrefix:@"did:"]) {
-                NSString *did = file;
-                PDSDatabaseRepo *repo = [self getRepo:did error:nil];
-                if (repo) {
-                    [repos addObject:repo];
+    NSArray<NSString *> *methodDirs = [fm contentsOfDirectoryAtPath:self.dbDirectory error:nil];
+    for (NSString *methodEntry in methodDirs) {
+        NSString *methodPath = [self.dbDirectory stringByAppendingPathComponent:methodEntry];
+        BOOL isDir = NO;
+        if (![fm fileExistsAtPath:methodPath isDirectory:&isDir] || !isDir) continue;
+
+        NSArray<NSString *> *prefixDirs = [fm contentsOfDirectoryAtPath:methodPath error:nil];
+        for (NSString *prefixEntry in prefixDirs) {
+            NSString *prefixPath = [methodPath stringByAppendingPathComponent:prefixEntry];
+            if (![fm fileExistsAtPath:prefixPath isDirectory:&isDir] || !isDir) continue;
+
+            NSArray<NSString *> *files = [fm contentsOfDirectoryAtPath:prefixPath error:nil];
+            for (NSString *file in files) {
+                if ([file hasSuffix:@"-shm"] || [file hasSuffix:@"-wal"] || [file hasSuffix:@"-journal"]) {
+                    continue;
+                }
+                if ([file hasPrefix:@"did:"]) {
+                    block(file);
                 }
             }
         }
     }
-    
-    return repos;
 }
 
 #pragma mark - Metrics
