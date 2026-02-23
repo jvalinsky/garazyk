@@ -105,50 +105,50 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     return _db != NULL;
 }
 
+// Called from ensureDatabaseOpened which is always invoked inside a dbQueue block.
+// Must NOT dispatch_sync to dbQueue here — that would deadlock.
 - (void)initializeDatabase {
-    dispatch_sync(self.dbQueue, ^{
-        int result = sqlite3_open(self.databasePath.UTF8String, &_db);
-        if (result != SQLITE_OK) {
-            PDS_LOG_DB_ERROR(@"Failed to open rate limit database: %s (SQLite code: %d)",
-                             sqlite3_errmsg(_db), result);
-            return;
-        }
-        
-        NSString *createTableSQL = @"CREATE TABLE IF NOT EXISTS rate_limits ("
-            @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            @"identifier TEXT NOT NULL, "
-            @"type INTEGER NOT NULL, "
-            @"request_count INTEGER NOT NULL DEFAULT 0, "
-            @"window_start INTEGER NOT NULL, "
-            @"UNIQUE(identifier, type)"
-            @")";
-        
-        char *errMsg = NULL;
-        result = sqlite3_exec(_db, createTableSQL.UTF8String, NULL, NULL, &errMsg);
-        if (result != SQLITE_OK) {
-            PDS_LOG_DB_ERROR(@"Failed to create rate limit table: %s (SQLite code: %d)",
-                             errMsg, result);
-            sqlite3_free(errMsg);
-        }
-        
-        NSString *createIndexSQL = @"CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier)";
-        sqlite3_exec(_db, createIndexSQL.UTF8String, NULL, NULL, NULL);
-        
-        NSString *createBlobTableSQL = @"CREATE TABLE IF NOT EXISTS blob_rate_limits ("
-            @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            @"did TEXT NOT NULL, "
-            @"upload_count INTEGER NOT NULL DEFAULT 0, "
-            @"window_start INTEGER NOT NULL, "
-            @"UNIQUE(did)"
-            @")";
-        
-        result = sqlite3_exec(_db, createBlobTableSQL.UTF8String, NULL, NULL, &errMsg);
-        if (result != SQLITE_OK) {
-            PDS_LOG_DB_ERROR(@"Failed to create blob rate limit table: %s (SQLite code: %d)",
-                             errMsg, result);
-            sqlite3_free(errMsg);
-        }
-    });
+    int result = sqlite3_open(self.databasePath.UTF8String, &_db);
+    if (result != SQLITE_OK) {
+        PDS_LOG_DB_ERROR(@"Failed to open rate limit database: %s (SQLite code: %d)",
+                         sqlite3_errmsg(_db), result);
+        return;
+    }
+
+    NSString *createTableSQL = @"CREATE TABLE IF NOT EXISTS rate_limits ("
+        @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        @"identifier TEXT NOT NULL, "
+        @"type INTEGER NOT NULL, "
+        @"request_count INTEGER NOT NULL DEFAULT 0, "
+        @"window_start INTEGER NOT NULL, "
+        @"UNIQUE(identifier, type)"
+        @")";
+
+    char *errMsg = NULL;
+    result = sqlite3_exec(_db, createTableSQL.UTF8String, NULL, NULL, &errMsg);
+    if (result != SQLITE_OK) {
+        PDS_LOG_DB_ERROR(@"Failed to create rate limit table: %s (SQLite code: %d)",
+                         errMsg, result);
+        sqlite3_free(errMsg);
+    }
+
+    NSString *createIndexSQL = @"CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier)";
+    sqlite3_exec(_db, createIndexSQL.UTF8String, NULL, NULL, NULL);
+
+    NSString *createBlobTableSQL = @"CREATE TABLE IF NOT EXISTS blob_rate_limits ("
+        @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        @"did TEXT NOT NULL, "
+        @"upload_count INTEGER NOT NULL DEFAULT 0, "
+        @"window_start INTEGER NOT NULL, "
+        @"UNIQUE(did)"
+        @")";
+
+    result = sqlite3_exec(_db, createBlobTableSQL.UTF8String, NULL, NULL, &errMsg);
+    if (result != SQLITE_OK) {
+        PDS_LOG_DB_ERROR(@"Failed to create blob rate limit table: %s (SQLite code: %d)",
+                         errMsg, result);
+        sqlite3_free(errMsg);
+    }
 }
 
 - (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
