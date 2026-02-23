@@ -32,7 +32,7 @@
     return @"Start the PDS HTTP server.\n\n"
            @"Options:\n"
            @"  --port <port>         Port to listen on (default: 2583)\n"
-           @"  --data-dir <path>     Data directory (default: ./data)\n"
+           @"  --data-dir <path>     Data directory\n"
            @"  --config <path>       Config file path (default: ./config.json)\n"
            @"  --log-level <level>   Log level: debug, info, warn, error (default: info)\n"
            @"  --log-components <c>  Comma-separated list of components to enable\n"
@@ -109,7 +109,7 @@
                 port = config.serverPort;
             }
             // Update data directory from config if not overridden by CLI
-            if (config.dataDirectory.length > 0 && [context.dataDir isEqualToString:@"./data"]) {
+            if (config.dataDirectory.length > 0 && [context.dataDir isEqualToString:[PDSConfiguration defaultDataDirectory]]) {
                 context.dataDir = config.dataDirectory;
             }
         }
@@ -155,6 +155,9 @@
 
     // Initialize PDS controller with specified data directory
     NSString *dataDir = context.dataDir;
+    if ([dataDir isEqualToString:[PDSConfiguration defaultDataDirectory]] || [dataDir isEqualToString:@"./data"]) {
+        dataDir = @".";
+    }
     PDS_LOG_INFO_C(PDSLogComponentCLI, @"Initializing PDS controller with data directory: %@", dataDir);
     PDSController *controller = [[PDSController alloc] initWithDirectory:dataDir
                                                          serviceMaxSize:100
@@ -264,38 +267,6 @@
         [response setJsonBody:doc];
     }];
     
-    // Register ATProto handle resolution endpoint
-    [httpServer addRoute:@"GET" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-        NSString *handle = request.queryParams[@"handle"];
-        
-        if (!handle || ![handle isKindOfClass:[NSString class]] || handle.length == 0) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"Missing handle parameter", @"message": @"handle query parameter is required"}];
-            return;
-        }
-        
-        // Only respond if this PDS owns the handle
-        NSArray<NSString *> *availableDomains = config.availableUserDomains ?: @[];
-        BOOL isOwnedHandle = NO;
-        for (NSString *domain in availableDomains) {
-            if ([handle hasSuffix:domain]) {
-                isOwnedHandle = YES;
-                break;
-            }
-        }
-        
-        if (!isOwnedHandle) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found", @"message": @"This PDS does not own the requested handle"}];
-            return;
-        }
-        
-        // Return the DID for this handle (did:web for now)
-        NSString *did = [NSString stringWithFormat:@"did:web:%@", handle];
-        response.statusCode = 200;
-        [response setBodyString:did];
-    }];
 
     // Start HTTP server
     NSError *serverError = nil;

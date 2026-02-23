@@ -25,10 +25,10 @@
 
 + (NSString *)dataDirForContext:(PDSCLICommandContext *)context {
     NSDictionary *config = [context loadConfig];
-    NSString *dataDir = config[@"server"][@"data_dir"] ?: @"./data";
+    NSString *dataDir = config[@"server"][@"data_dir"] ?: [PDSConfiguration defaultDataDirectory];
     
     // Command line flag should override config file
-    if (context.dataDir && ![context.dataDir isEqualToString:@"./data"]) {
+    if (context.dataDir && ![context.dataDir isEqualToString:[PDSConfiguration defaultDataDirectory]] && ![context.dataDir isEqualToString:@"./data"]) {
         dataDir = context.dataDir;
     }
     return dataDir;
