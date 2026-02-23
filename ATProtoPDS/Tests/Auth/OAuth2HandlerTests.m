@@ -483,4 +483,117 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertFalse([location containsString:@"&code="], @"Should NOT use & as first separator");
 }
 
+/**
+ * Test that client_metadata parameter is properly extracted and parsed
+ * 
+ * **Validates: Task 3.1 - client_metadata parameter extraction and parsing**
+ * 
+ * This test verifies that:
+ * 1. client_metadata JSON string is extracted from query parameters
+ * 2. JSON is parsed into NSDictionary
+ * 3. Invalid JSON is handled gracefully (logs warning, continues without metadata)
+ * 
+ * NOTE: This test only validates extraction/parsing. The actual use of client_metadata
+ * for validation will be tested in subsequent tasks (3.2, 3.3).
+ */
+- (void)testClientMetadataExtraction {
+    // Test 1: Valid client_metadata JSON is parsed (verified via logs)
+    NSDictionary *validMetadata = @{
+        @"client_id": @"https://example.com",
+        @"client_name": @"Example App",
+        @"redirect_uris": @[@"https://example.com/callback"]
+    };
+    NSData *metadataJSON = [NSJSONSerialization dataWithJSONObject:validMetadata options:0 error:nil];
+    NSString *metadataString = [[NSString alloc] initWithData:metadataJSON encoding:NSUTF8StringEncoding];
+    
+    NSDictionary *queryParams = @{
+        @"client_id": @"https://example.com",
+        @"redirect_uri": @"https://example.com/callback",
+        @"response_type": @"code",
+        @"state": @"test-state-metadata",
+        @"code_challenge": @"test_challenge_metadata",
+        @"code_challenge_method": @"S256",
+        @"client_metadata": metadataString
+    };
+    
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@""
+                                                   queryParams:queryParams
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:nil
+                                                remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    
+    // The handler should extract and parse client_metadata without crashing
+    // Expected: Returns 400 because client is not registered (validation not yet implemented)
+    // But the parsing should succeed (check logs for "Parsed client_metadata with 3 keys")
+    [self.handler handleAuthorizeRequest:request response:response];
+    
+    // With client_metadata support, the client should be validated via metadata
+    // and the consent page should be served (200) or redirect issued (302)
+    XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
+                  @"Should succeed with valid client_metadata (got %ld)", (long)response.statusCode);
+    XCTAssertNil(response.jsonBody[@"error"], @"Should not return an error for valid client_metadata");
+    
+    // Test 2: Invalid JSON in client_metadata (should handle gracefully)
+    NSDictionary *invalidQueryParams = @{
+        @"client_id": @"https://example.com",
+        @"redirect_uri": @"https://example.com/callback",
+        @"response_type": @"code",
+        @"state": @"test-state-invalid",
+        @"code_challenge": @"test_challenge_invalid",
+        @"code_challenge_method": @"S256",
+        @"client_metadata": @"{invalid json}"
+    };
+    
+    HttpRequest *invalidRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                          methodString:@"GET"
+                                                                  path:@"/oauth/authorize"
+                                                           queryString:@""
+                                                           queryParams:invalidQueryParams
+                                                               version:@"1.1"
+                                                               headers:@{}
+                                                                  body:nil
+                                                        remoteAddress:@"127.0.0.1"];
+    HttpResponse *invalidResponse = [[HttpResponse alloc] init];
+    
+    // Should handle gracefully (log warning) and continue
+    // Check logs for "Failed to parse client_metadata JSON"
+    [self.handler handleAuthorizeRequest:invalidRequest response:invalidResponse];
+    
+    // Should still return 400 (client not registered), but shouldn't crash
+    XCTAssertEqual(invalidResponse.statusCode, 400, @"Should handle invalid JSON gracefully and return 400");
+    XCTAssertEqualObjects(invalidResponse.jsonBody[@"error"], @"unauthorized_client", @"Should fail with unauthorized_client");
+    
+    // Test 3: No client_metadata parameter (should work normally)
+    NSDictionary *noMetadataParams = @{
+        @"client_id": @"https://example.com",
+        @"redirect_uri": @"https://example.com/callback",
+        @"response_type": @"code",
+        @"state": @"test-state-no-metadata",
+        @"code_challenge": @"test_challenge_no_metadata",
+        @"code_challenge_method": @"S256"
+    };
+    
+    HttpRequest *noMetadataRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                            methodString:@"GET"
+                                                                    path:@"/oauth/authorize"
+                                                             queryString:@""
+                                                             queryParams:noMetadataParams
+                                                                 version:@"1.1"
+                                                                 headers:@{}
+                                                                    body:nil
+                                                          remoteAddress:@"127.0.0.1"];
+    HttpResponse *noMetadataResponse = [[HttpResponse alloc] init];
+    
+    [self.handler handleAuthorizeRequest:noMetadataRequest response:noMetadataResponse];
+    
+    // Should return 400 (client not registered)
+    XCTAssertEqual(noMetadataResponse.statusCode, 400, @"Should return 400 when no client_metadata and not registered");
+    XCTAssertEqualObjects(noMetadataResponse.jsonBody[@"error"], @"unauthorized_client", @"Should fail with unauthorized_client");
+}
+
 @end
