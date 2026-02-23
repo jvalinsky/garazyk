@@ -1,0 +1,200 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - ATProto Client Authorization Without Database Registration
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: Scope the property to concrete failing cases (bsky.app, witchsky.app, loopback redirects)
+  - Test that OAuth2Handler rejects ATProto clients providing valid client_metadata but not in database
+  - Test cases:
+    - bsky.app authorization with client_id=https://bsky.app and valid client_metadata
+    - witchsky.app authorization with client_id=https://witchsky.app and valid client_metadata
+    - Native app with loopback redirect_uri=http://127.0.0.1:8080/callback
+    - Client with redirect_uri=http://[::1]:3000/callback (IPv6 loopback)
+  - The test assertions should match Expected Behavior: authorization succeeds, no "unauthorized_client" error
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS with "unauthorized_client" error (this is correct - it proves the bug exists)
+  - Document counterexamples found:
+    - validateClient returns nil because client_id not in database
+    - validateRedirectURI rejects loopback HTTP redirects
+    - No client_metadata parameter extraction occurs
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Registered Client Behavior Unchanged
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for registered clients (clients in oauth_clients table)
+  - Write property-based tests capturing observed behavior patterns:
+    - Registered clients continue to authenticate successfully
+    - PKCE validation (code_challenge required, S256 method, code_verifier validation) works identically
+    - DPoP proof validation for token requests works identically
+    - CSRF protection (state parameter validation) works identically
+    - Token lifecycle operations (issuance, refresh, revocation) work identically
+    - Security validations (nonce, replay protection, signature verification) work identically
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [ ] 3. Fix for ATProto OAuth client_metadata support
+
+  - [x] 3.1 Add client_metadata parameter extraction and parsing
+    - In OAuth2Handler.m `handleAuthorizeRequest`, extract `client_metadata` query parameter
+    - Parse JSON string to NSDictionary
+    - Store in OAuth2AuthorizationRequest.clientMetadata property
+    - Add `@property (nonatomic, copy, nullable) NSDictionary *clientMetadata;` to OAuth2.h OAuth2AuthorizationRequest interface
+    - Handle JSON parsing errors gracefully
+    - _Bug_Condition: isBugCondition(input) where input.clientID NOT IN database AND input.client_metadata is provided_
+    - _Expected_Behavior: client_metadata is extracted and available for validation_
+    - _Preservation: Registered clients don't provide client_metadata, so this is additive_
+    - _Requirements: 2.1_
+
+  - [x] 3.2 Implement client metadata validation method
+    - Create new method `validateClientMetadata:error:` in OAuth2Handler.m
+    - Validate client_id is HTTPS URL (required by ATProto spec)
+    - Validate redirect_uris array is present, non-empty, and contains valid URIs
+    - Validate client_name is present (optional but recommended)
+    - Validate grant_types if provided (default to "authorization_code refresh_token")
+    - Validate scope if provided (default to "atproto")
+    - Return normalized client dictionary matching database format for consistency
+    - Return nil with descriptive error for invalid metadata
+    - _Bug_Condition: isBugCondition(input) where input.client_metadata contains valid ATProto client metadata_
+    - _Expected_Behavior: validateClientMetadata returns normalized client dictionary_
+    - _Preservation: This is a new method, doesn't affect existing paths_
+    - _Requirements: 2.2, 2.3_
+
+  - [-] 3.3 Implement dual-path client validation
+    - Modify `validateClient:error:` in OAuth2Handler.m to support both database and metadata validation
+    - First attempt: Query database (existing path - preserve this exactly)
+    - If not found AND client_metadata provided: Call validateClientMetadata
+    - If not found AND no client_metadata: Return existing "unauthorized_client" error
+    - Return unified client dictionary format for both paths
+    - Add `@property (nonatomic, strong, nullable) NSDictionary *clientMetadata;` to OAuth2Handler.h if needed for state
+    - _Bug_Condition: isBugCondition(input) where input.clientID NOT IN database AND input.client_metadata is provided_
+    - _Expected_Behavior: validateClient succeeds using client_metadata when database lookup fails_
+    - _Preservation: Database lookup path unchanged, metadata path only activates when database returns nil_
+    - _Requirements: 2.1, 2.2_
+
+  - [ ] 3.4 Implement loopback redirect validation
+    - Create helper method `isLoopbackRedirect:` in OAuth2Handler.m
+    - Detect http://127.0.0.1:* (IPv4 loopback)
+    - Detect http://localhost:* (localhost alias)
+    - Detect http://[::1]:* (IPv6 loopback)
+    - Return YES for loopback patterns, NO otherwise
+    - _Bug_Condition: isBugCondition(input) where redirect_uri is loopback pattern_
+    - _Expected_Behavior: isLoopbackRedirect correctly identifies loopback URIs per RFC 8252_
+    - _Preservation: This is a new helper method, doesn't affect existing validation_
+    - _Requirements: 2.4_
+
+  - [ ] 3.5 Update redirect_uri validation logic
+    - Modify `validateRedirectURI:forClient:error:` in OAuth2Handler.m
+    - For loopback redirects (http://127.0.0.1:*, http://[::1]:*, http://localhost:*):
+      - Allow if client's redirect_uris contains loopback pattern with wildcard port
+      - Allow exact match
+      - Support port wildcard matching (http://127.0.0.1:8080 matches http://127.0.0.1:*)
+    - For non-loopback HTTP: Maintain existing strict validation (reject)
+    - For HTTPS: Validate against client's redirect_uris list (exact match or pattern match)
+    - Preserve existing validation logic for registered clients
+    - _Bug_Condition: isBugCondition(input) where redirect_uri is loopback or in client_metadata.redirect_uris_
+    - _Expected_Behavior: validateRedirectURI allows loopback redirects and client_metadata redirect_uris per ATProto spec_
+    - _Preservation: Registered clients' redirect_uri validation unchanged (database path preserved)_
+    - _Requirements: 2.4_
+
+  - [ ] 3.6 Add OPTIONS handlers for CORS preflight
+    - In `registerRoutesWithServer:` in OAuth2Handler.m, add OPTIONS handlers:
+      - /oauth/authorize - Return 204 with CORS headers (Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers)
+      - /oauth/token - Return 204 with CORS headers
+      - /oauth/par - Return 204 with CORS headers
+      - /oauth/revoke - Return 204 with CORS headers
+    - Use existing CORS header patterns from GET/POST handlers
+    - Set Access-Control-Allow-Methods to match endpoint methods (GET, POST, OPTIONS)
+    - Set Access-Control-Allow-Headers to include common OAuth headers (Authorization, Content-Type, DPoP)
+    - _Bug_Condition: Not directly related to bug condition, but required for ATProto client compatibility_
+    - _Expected_Behavior: OPTIONS requests return 204 with proper CORS headers_
+    - _Preservation: OPTIONS handlers are new, don't affect existing GET/POST handlers_
+    - _Requirements: 2.5 (implied by ATProto OAuth spec CORS requirements)_
+
+  - [ ] 3.7 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - ATProto Client Authorization Succeeds
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify all test cases pass:
+      - bsky.app authorization succeeds
+      - witchsky.app authorization succeeds
+      - Loopback redirect_uri validation succeeds
+      - IPv6 loopback redirect_uri validation succeeds
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [ ] 3.8 Verify preservation tests still pass
+    - **Property 2: Preservation** - Registered Client Behavior Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Verify all preservation test cases pass:
+      - Registered clients authenticate successfully
+      - PKCE validation works identically
+      - DPoP proof validation works identically
+      - CSRF protection works identically
+      - Token lifecycle operations work identically
+      - Security validations work identically
+    - Confirm all tests still pass after fix (no regressions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [ ] 4. Integration testing on live PDS
+
+  - [ ] 4.1 Test bsky.app OAuth flow on pds.garazyk.xyz
+    - Use bsky.app client to initiate OAuth authorization against https://pds.garazyk.xyz
+    - Verify authorization request with client_metadata succeeds
+    - Verify redirect to bsky.app with authorization code
+    - Verify token exchange succeeds
+    - Verify authenticated API calls work
+    - Document any issues or unexpected behavior
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [ ] 4.2 Test witchsky.app OAuth flow on pds.garazyk.xyz
+    - Use witchsky.app client to initiate OAuth authorization against https://pds.garazyk.xyz
+    - Verify authorization request with client_metadata succeeds
+    - Verify redirect to witchsky.app with authorization code
+    - Verify token exchange succeeds
+    - Verify authenticated API calls work
+    - Document any issues or unexpected behavior
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [ ] 4.3 Test native app with loopback redirect on pds.garazyk.xyz
+    - Create test native app using loopback redirect (http://127.0.0.1:8080/callback)
+    - Initiate OAuth authorization with client_metadata
+    - Verify authorization succeeds with loopback redirect
+    - Verify token exchange succeeds
+    - Verify authenticated API calls work
+    - _Requirements: 2.4_
+
+  - [ ] 4.4 Verify existing registered clients still work on pds.garazyk.xyz
+    - Test any existing registered OAuth clients in the production database
+    - Verify full OAuth flow works identically to before the fix
+    - Verify no regressions in PKCE, DPoP, or CSRF protection
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+  - [ ] 4.5 Test CORS preflight requests on pds.garazyk.xyz
+    - Send OPTIONS request to https://pds.garazyk.xyz/oauth/authorize
+    - Verify 204 response with correct CORS headers
+    - Send OPTIONS request to https://pds.garazyk.xyz/oauth/token
+    - Verify 204 response with correct CORS headers
+    - Send OPTIONS request to https://pds.garazyk.xyz/oauth/par
+    - Verify 204 response with correct CORS headers
+    - _Requirements: 2.5 (implied)_
+
+- [ ] 5. Checkpoint - Ensure all tests pass
+  - Run full test suite: `./build/tests/AllTests`
+  - Verify 0 failures
+  - Run bug condition exploration test - verify PASSES
+  - Run preservation property tests - verify PASSES
+  - Review integration test results from pds.garazyk.xyz
+  - Ask user if any questions or issues arise
+  - Confirm all acceptance criteria met
