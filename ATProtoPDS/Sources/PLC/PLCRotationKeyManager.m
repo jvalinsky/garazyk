@@ -1,5 +1,6 @@
 #import "PLCRotationKeyManager.h"
 #import "Auth/Secp256k1.h"
+#import "Core/PDSDataPaths.h"
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
 
@@ -21,8 +22,10 @@ static PLCRotationKeyManager *_sharedManager = nil;
 + (instancetype)sharedManager {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSString *defaultPath = [PDSConfiguration defaultDataDirectory];
-        _sharedManager = [[PLCRotationKeyManager alloc] initWithStoragePath:defaultPath];
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *keysDir = config ? config.dataPaths.keysDirectory
+                                   : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].keysDirectory;
+        _sharedManager = [[PLCRotationKeyManager alloc] initWithStoragePath:keysDir];
     });
     return _sharedManager;
 }
