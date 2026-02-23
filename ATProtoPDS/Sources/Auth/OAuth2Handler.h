@@ -35,6 +35,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Account service for sign-in credential validation. */
 @property (nonatomic, strong, nullable) id<PDSAccountService> accountService;
 
+/*! Client metadata for dynamic client validation (ATProto OAuth). */
+@property (nonatomic, strong, nullable) NSDictionary *clientMetadata;
+
 /*!
  @method initWithDatabase:
  
