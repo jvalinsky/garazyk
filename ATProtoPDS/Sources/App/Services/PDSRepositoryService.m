@@ -100,20 +100,17 @@
 }
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
-    NSLog(@"[getRepoRoot] Looking up repo root for DID: %@", did);
-    NSLog(@"[getRepoRoot] databasePool.dbDirectory: %@", _databasePool.dbDirectory);
-    
+    PDS_LOG_DB_DEBUG(@"Looking up repo root for DID: %@", did);
+
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) {
-        NSLog(@"[getRepoRoot] storeForDid returned nil for: %@", did);
+        PDS_LOG_DB_DEBUG(@"storeForDid returned nil for: %@", did);
         return nil;
     }
     
     __block NSData *rootData = nil;
-    __block NSData *rootCidBytes = nil;
     [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
-        rootCidBytes = [reader getRepoRootForDid:did error:blockError];
-        NSLog(@"[getRepoRoot] rootCidBytes for %@: %@", did, rootCidBytes ? [CryptoUtils hexStringFromData:rootCidBytes] : @"nil");
+        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
         if (rootCidBytes) {
             NSData *blockData = [reader getBlockForCID:rootCidBytes forDid:did error:blockError];
             if (blockData) {
@@ -121,8 +118,7 @@
             }
         }
     } error:error];
-    
-    NSLog(@"[getRepoRoot] Returning rootData for %@: %@", did, rootData ? [NSString stringWithFormat:@"%lu bytes", (unsigned long)rootData.length] : @"nil");
+
     return rootData;
 }
 
