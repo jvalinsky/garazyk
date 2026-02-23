@@ -212,11 +212,8 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
                                                 error:(NSError **)error;
 
-/*! Gets the compressed public key for the rotation key. */
-- (nullable NSData *)rotationKeyCompressedPublicKeyWithError:(NSError **)error;
-
-/*! Checks if a rotation key exists for this actor. */
-- (BOOL)hasRotationKey;
+/*! Clears the repo_root table for re-initialization. */
+- (BOOL)clearRepoRootWithError:(NSError **)error;
 
 @end
 
