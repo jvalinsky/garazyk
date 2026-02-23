@@ -200,6 +200,21 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  */
 - (BOOL)initializeRepoForDid:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method forceReinitializeRepoForDid:error:
+ 
+ @abstract Force re-initialize a repository, clearing any corrupted state.
+ 
+ @discussion Deletes the existing repo_root entry and creates a new initial
+ commit. Use this to repair repositories with missing blocks or other
+ corruption.
+ 
+ @param did Decentralized identifier of repository owner.
+ @param error Error pointer for initialization failures.
+ @return YES if initialization succeeded, NO on failure.
+ */
+- (BOOL)forceReinitializeRepoForDid:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
