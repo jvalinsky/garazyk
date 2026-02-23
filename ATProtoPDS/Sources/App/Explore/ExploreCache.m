@@ -1,4 +1,6 @@
 #import "ExploreCache.h"
+#import "Core/PDSDataPaths.h"
+#import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
 
 @interface ExploreCache ()
@@ -49,14 +51,12 @@ static NSInteger const kMaxMemoryItems = 200;
         return override;
     }
 
-    NSString *libraryPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
-    if (libraryPath.length == 0) {
-        NSString *tempRoot = [NSTemporaryDirectory() stringByAppendingPathComponent:@"com.atproto.pds"];
-        return [tempRoot stringByAppendingPathComponent:@"explore-cache"];
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    if (config) {
+        return config.dataPaths.exploreCacheDirectory;
     }
 
-    NSString *appSupportPath = [libraryPath stringByAppendingPathComponent:@"com.atproto.pds"];
-    return [appSupportPath stringByAppendingPathComponent:@"explore-cache"];
+    return [[PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]] exploreCacheDirectory];
 }
 
 - (void)createDirectoryIfNeeded:(NSString *)path {
