@@ -4,6 +4,9 @@
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/TID.h"
+#import "Repository/MST.h"
+#import "Repository/RepoCommit.h"
 #import "Debug/PDSLogger.h"
 
 @interface PDSCLIRepoCommand : PDSBaseCommand
@@ -30,11 +33,12 @@
            @"  list <did>             List all records in the user's repository\n"
            @"  get <did> <uri>        Fetch a specific record\n"
            @"  root <did>             Return the current root CID of the repository\n"
-           @"  create-record <did> <col> <rkey> <json>  Create a new record";
+           @"  create-record <did> <col> <rkey> <json>  Create a new record\n"
+           @"  repair <did>           Force reinitialize a corrupted repository";
 }
 
 - (NSArray<NSString *> *)subcommands {
-    return @[@"list", @"get", @"root", @"create-record"];
+    return @[@"list", @"get", @"root", @"create-record", @"repair"];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -54,6 +58,8 @@
         [self executeRootWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"create-record"]) {
         [self executeCreateRecordWithArgs:subArgs context:context];
+    } else if ([subcommand isEqualToString:@"repair"]) {
+        [self executeRepairWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
     }
@@ -249,6 +255,91 @@
     } else {
         printf("DID:      %s\n", [did UTF8String]);
         printf("Root CID: %s\n", [cidString UTF8String]);
+    }
+}
+
+- (void)executeRepairWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+    if (args.count < 1) {
+        [context printError:@"Usage: pds repo repair <did>"];
+        return;
+    }
+
+    NSString *did = args[0];
+    
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+    NSError *error = nil;
+    
+    PDSActorStore *store = [pool storeForDid:did error:&error];
+    if (!store) {
+        [context printError:[NSString stringWithFormat:@"Failed to open store for %@: %@", did, error.localizedDescription ?: @"unknown error"]];
+        return;
+    }
+    
+    printf("Clearing repo_root for %s...\n", [did UTF8String]);
+    
+    if (![store clearRepoRootWithError:&error]) {
+        [context printError:[NSString stringWithFormat:@"Failed to clear repo_root: %@", error.localizedDescription ?: @"unknown error"]];
+        return;
+    }
+    
+    printf("Re-initializing repository...\n");
+    
+    // Create empty MST and commit
+    MST *mst = [[MST alloc] init];
+    CID *dataCID = mst.rootCID;
+    if (!dataCID) {
+        [context printError:@"Failed to compute empty MST root"];
+        return;
+    }
+    
+    NSString *rev = [[TID tid] stringValue];
+    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                    data:dataCID
+                                                     rev:rev
+                                                    prev:nil];
+    
+    NSData *signature = [store signData:[commit serialize] error:&error];
+    if (!signature) {
+        [context printError:[NSString stringWithFormat:@"Failed to sign commit: %@", error.localizedDescription ?: @"unknown error"]];
+        return;
+    }
+    commit.signature = signature;
+    
+    CID *commitCID = [commit computeCID];
+    NSData *commitData = [commit serializeSigned];
+    if (!commitData) {
+        [context printError:@"Failed to serialize commit"];
+        return;
+    }
+    
+    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    block.cid = [commitCID bytes];
+    block.blockData = commitData;
+    block.size = commitData.length;
+    
+    __block BOOL success = NO;
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        if (![transactor putBlock:block forDid:did error:blockError]) {
+            return;
+        }
+        success = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
+    } error:&error];
+    
+    if (!success) {
+        [context printError:[NSString stringWithFormat:@"Failed to store commit: %@", error.localizedDescription ?: @"unknown error"]];
+        return;
+    }
+    
+    if (context.jsonOutput) {
+        [context printJSON:@{
+            @"did": did,
+            @"status": @"repaired",
+            @"commit": [commitCID stringValue] ?: @""
+        }];
+    } else {
+        printf("Repository repaired successfully.\n");
+        printf("DID:    %s\n", [did UTF8String]);
+        printf("Commit: %s\n", [[commitCID stringValue] UTF8String]);
     }
 }
 
