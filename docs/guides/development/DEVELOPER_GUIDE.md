@@ -1,9 +1,151 @@
 # Developer Guide: ATProto PDS API Extension
 
-This guide provides procedures for adding new endpoints, modifying existing functionality, and contributing to the ATProto PDS server codebase.
+This guide provides procedures for adding new endpoints, modifying existing functionality, and contributing to the ATProto PDS server codebase with a focus on Objective-C best practices.
 
 ## Project Structure
 
+```
+ATProtoPDS/
+├── Sources/
+│   ├── App/Explore/           # Web interface and API
+│   │   ├── Assets/           # HTML/CSS/JS frontend
+│   │   └── ExploreHandler.*  # Backend API handlers
+│   ├── CLI/                  # Command-line interface
+│   ├── Core/                 # AT Protocol business logic
+│   ├── Database/             # SQLite persistence layer
+│   └── Network/              # HTTP server implementation
+├── Tests/                    # Unit and integration tests
+├── docs/                     # Documentation
+├── scripts/                  # Professional build and utility scripts
+│   ├── simple_test.sh        # AT Proto PDS integration tests
+│   ├── start_server.sh      # Production server startup script
+│   ├── quality_gate.sh       # Code quality and static analysis
+│   └── run-tests.sh         # Test suite runner
+├── skills/                   # Development skills and best practices
+├── CMakeLists.txt            # Main build configuration
+└── project.yml               # Xcode project configuration
+```
+
+## Build System
+
+The project uses a unified **CMake** build system wrapped by **XcodeGen** for Xcode integration.
+
+### Generating the Project
+
+To generate the Xcode project (required before building):
+
+```bash
+xcodegen generate
+```
+
+This creates `ATProtoPDS.xcodeproj` configured to use CMake for all build targets.
+
+### Building Targets
+
+You can build targets using `xcodebuild` or from within Xcode.
+
+**Main CLI Tool:**
+```bash
+xcodebuild -scheme ATProtoPDS-CLI build
+```
+
+## Objective-C Development Guidelines
+
+### Memory Management
+- Use ARC for automatic memory management
+- Follow proper Core Foundation ownership rules
+- Avoid retain cycles with weak references
+- Use `dispatch_once` for thread-safe singletons
+
+### Thread Safety
+- Use dispatch queues for concurrent operations
+- Follow proper synchronization patterns
+- Avoid blocking main thread in UI operations
+- Use `@synchronized` for critical sections when needed
+
+### Error Handling
+- Use NSError patterns for error propagation
+- Validate all input parameters
+- Handle edge cases and failure scenarios
+- Log errors appropriately without exposing sensitive data
+
+### Security Best Practices
+- Validate all user input
+- Use secure coding practices
+- Avoid hardcoded credentials
+- Follow principle of least privilege
+
+## Adding New Endpoints
+
+### XRPC Method Registration
+
+To add a new XRPC endpoint, follow these steps:
+
+1. **Define the method signature** in the appropriate handler
+2. **Register the method** with the XRPC server
+3. **Implement the handler logic** following Objective-C patterns
+4. **Add validation** for input parameters
+5. **Handle errors** appropriately with NSError
+6. **Add unit tests** for the new functionality
+
+### Code Organization
+
+- Place new handlers in `Sources/App/Explore/`
+- Follow existing naming conventions
+- Use appropriate dispatch queues for concurrency
+- Maintain consistent error handling patterns
+
+## Common Development Patterns
+
+### Repository Pattern
+
+```objc
+// Example repository pattern implementation
+@interface PDSRepository : NSObject
+
+@property (nonatomic, strong, readonly) dispatch_queue_t queue;
+@property (nonatomic, strong, readonly) PDSDatabase *database;
+
+- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (void)performOperationWithCompletion:(void (^)(NSError *error))completion;
+
+@end
+
+@implementation PDSRepository
+
+- (instancetype)initWithDatabase:(PDSDatabase *)database {
+    self = [super init];
+    if (self) {
+        _database = database;
+        _queue = dispatch_queue_create("com.atproto.pds.repository", DISPATCH_QUEUE_SERIAL);
+    }
+    return self;
+}
+
+- (void)performOperationWithCompletion:(void (^)(NSError *error))completion {
+    dispatch_async(self.queue, ^{
+        NSError *error = nil;
+        
+        // Perform database operation
+        if (![self.database executeOperationWithError:&error]) {
+            // Handle error appropriately
+            if (completion) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    completion(error);
+                });
+            }
+            return;
+        }
+        
+        if (completion) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(nil);
+            });
+        }
+    });
+}
+
+@end
 ```
 ATProtoPDS/
 ├── Sources/

@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Docker Config Sync Check",
+  "description": "Validates that docker/pds/config.json follows secure defaults and is consistent with code changes when configuration-related files are modified",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the Docker configuration in docker/pds/config.json and verify: 1) All secure defaults are enforced (invite_code_required=true, plc.url=\"https://plc.directory\", all debug flags=false, rate_limit.enabled=true), 2) Configuration structure matches PDSConfiguration code, 3) No secrets are hardcoded. Report any violations or inconsistencies."
+  },
+  "workspaceFolderName": "garazyk",
+  "shortName": "docker-config-sync"
+}
