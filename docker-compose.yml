@@ -13,6 +13,7 @@ services:
       - pds_data:/var/lib/atprotopds
     environment:
       - PDS_PORT=2583
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
     labels:
       - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
     restart: unless-stopped
