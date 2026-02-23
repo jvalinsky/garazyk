@@ -1063,4 +1063,32 @@
     return success;
 }
 
+- (BOOL)forceReinitializeRepoForDid:(NSString *)did error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DID"}];
+        }
+        return NO;
+    }
+
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to get store for DID"}];
+        }
+        return NO;
+    }
+
+    NSLog(@"[forceReinitializeRepoForDid] Clearing repo_root for DID: %@", did);
+    
+    if (![store clearRepoRootWithError:error]) {
+        NSLog(@"[forceReinitializeRepoForDid] Failed to clear repo_root: %@", error ? *error : @"unknown");
+        return NO;
+    }
+
+    return [self initializeRepoForDid:did error:error];
+}
+
 @end
