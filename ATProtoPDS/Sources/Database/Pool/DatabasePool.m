@@ -72,7 +72,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
     }
     
     NSString *result = [prefixDir stringByAppendingPathComponent:did];
-    PDS_LOG_DEBUG(@"[dbPathForDid] dbDirectory=%@, did=%@, prefixDir=%@, result=%@", 
+    NSLog(@"[dbPathForDid] dbDirectory=%@, did=%@, prefixDir=%@, result=%@", 
                   self.dbDirectory, did, prefixDir, result);
     return result;
 }
@@ -96,7 +96,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 
         dbPath = [self dbPathForDid:did];
         BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:dbPath];
-        PDS_LOG_DEBUG(@"[storeForDid] Opening store at path: %@ (exists: %d)", dbPath, exists);
+        NSLog(@"[storeForDid] Opening store at path: %@ (exists: %d)", dbPath, exists);
         
         store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&blockError];
 
@@ -105,7 +105,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
         } else {
-            PDS_LOG_DEBUG(@"[storeForDid] Failed to open store for %@: %@", did, blockError);
+            NSLog(@"[storeForDid] Failed to open store for %@: %@", did, blockError);
         }
     });
 
