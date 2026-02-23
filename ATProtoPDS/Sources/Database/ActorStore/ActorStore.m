@@ -682,6 +682,23 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return YES;
 }
 
+- (BOOL)clearRepoRootWithError:(NSError **)error {
+    NSString *sql = @"DELETE FROM repo_root";
+    char *errMsg = NULL;
+    int result = sqlite3_exec(self.db, sql.UTF8String, NULL, NULL, &errMsg);
+    if (result != SQLITE_OK) {
+        if (error) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown error";
+            *error = [NSError errorWithDomain:@"PDSActorStore" code:result
+                                     userInfo:@{NSLocalizedDescriptionKey: msg}];
+            sqlite3_free(errMsg);
+        }
+        return NO;
+    }
+    NSLog(@"[clearRepoRoot] Cleared repo_root table");
+    return YES;
+}
+
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM repo_root";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
