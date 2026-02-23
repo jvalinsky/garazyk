@@ -13,6 +13,8 @@ services:
       - ./data:/var/lib/atprotopds
     environment:
       - PDS_PORT=2582
+    labels:
+      - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
     restart: unless-stopped
 
   plc-db:

@@ -263,6 +263,39 @@
         response.statusCode = 200;
         [response setJsonBody:doc];
     }];
+    
+    // Register ATProto handle resolution endpoint
+    [httpServer addRoute:@"GET" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *handle = request.queryParams[@"handle"];
+        
+        if (!handle || ![handle isKindOfClass:[NSString class]] || handle.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"Missing handle parameter", @"message": @"handle query parameter is required"}];
+            return;
+        }
+        
+        // Only respond if this PDS owns the handle
+        NSArray<NSString *> *availableDomains = config.availableUserDomains ?: @[];
+        BOOL isOwnedHandle = NO;
+        for (NSString *domain in availableDomains) {
+            if ([handle hasSuffix:domain]) {
+                isOwnedHandle = YES;
+                break;
+            }
+        }
+        
+        if (!isOwnedHandle) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"Not Found", @"message": @"This PDS does not own the requested handle"}];
+            return;
+        }
+        
+        // Return the DID for this handle (did:web for now)
+        NSString *did = [NSString stringWithFormat:@"did:web:%@", handle];
+        response.statusCode = 200;
+        [response setBodyString:did];
+    }];
 
     // Start HTTP server
     NSError *serverError = nil;
