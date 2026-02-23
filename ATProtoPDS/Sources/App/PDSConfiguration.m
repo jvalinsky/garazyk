@@ -1,4 +1,5 @@
 #import "PDSConfiguration.h"
+#import "Core/PDSDataPaths.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 
@@ -59,6 +60,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
 @implementation PDSConfiguration {
     NSDictionary *_config;
     NSString *_phoneVerificationProvider;
+    PDSDataPaths *_dataPaths;
 }
 
 + (instancetype)sharedConfiguration {
@@ -588,6 +590,13 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
         return @"localhost";
     }
     return fallbackHost.length > 0 ? fallbackHost : @"localhost";
+}
+
+- (PDSDataPaths *)dataPaths {
+    if (!_dataPaths) {
+        _dataPaths = [PDSDataPaths pathsForBaseDirectory:self.dataDirectory];
+    }
+    return _dataPaths;
 }
 
 - (NSString *)phoneVerificationProvider {
