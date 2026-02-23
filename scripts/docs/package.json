@@ -1,0 +1,38 @@
+{
+  "name": "atprotopds-docs-tooling",
+  "version": "1.0.0",
+  "description": "Documentation consolidation and validation tooling for ATProtoPDS",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "node --test",
+    "migrate": "node migrate.js",
+    "validate": "node validate.js",
+    "validate-config": "node validate-config.js",
+    "archive": "node archive.js"
+  },
+  "keywords": [
+    "documentation",
+    "migration",
+    "validation",
+    "atproto"
+  ],
+  "author": "ATProtoPDS Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "marked": "^11.1.1",
+    "minimatch": "^10.2.2"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^10.6.1",
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
