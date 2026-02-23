@@ -173,9 +173,27 @@
     __weak XrpcDispatcher *weakDispatcher = dispatcher;
     __weak SubscribeReposHandler *weakSubscribeReposHandler = self.subscribeReposHandler;
 
+    // OPTIONS preflight for XRPC prefix
+    [server addRoute:@"OPTIONS" path:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization, DPoP" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        response.statusCode = HttpStatusOK;
+    }];
+
     // Handler for /xrpc (prefix match for all XRPC methods)
     [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
         [dispatcher handleRequest:request response:response];
+    }];
+
+    // OPTIONS preflight for XRPC methods
+    [server addRoute:@"OPTIONS" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization, DPoP" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        response.statusCode = HttpStatusOK;
     }];
 
     // Handler for /xrpc/:method
@@ -184,6 +202,15 @@
     }];
 
     if (self.subscribeReposHandler) {
+        // OPTIONS preflight for WebSocket upgrade
+        [server addRoute:@"OPTIONS" path:@"/xrpc/com.atproto.sync.subscribeRepos" handler:^(HttpRequest *request, HttpResponse *response) {
+            [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+            [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+            [response setHeader:@"Content-Type, Authorization, DPoP" forKey:@"Access-Control-Allow-Headers"];
+            [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+            response.statusCode = HttpStatusOK;
+        }];
+        
         [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos" handler:^(HttpRequest *request, HttpResponse *response, id<PDSNetworkConnection> connection) {
             SubscribeReposHandler *strongSubscribeReposHandler = weakSubscribeReposHandler;
             if (!strongSubscribeReposHandler) {
