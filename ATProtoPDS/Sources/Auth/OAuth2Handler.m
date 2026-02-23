@@ -26,6 +26,8 @@
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
 - (BOOL)validateDPoPForRequest:(HttpRequest *)request response:(HttpResponse *)response outThumbprint:(NSString **)outThumbprint;
+- (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata error:(NSError **)error;
+- (BOOL)isLoopbackRedirect:(NSString *)redirectURI;
 - (NSString *)assetsPath;
 - (NSString *)escapeHtml:(NSString *)input;
 - (void)serveAuthorizePage:(HttpResponse *)response params:(NSDictionary *)params;
@@ -95,15 +97,169 @@ static NSMutableDictionary *sPendingConsents = nil;
         return nil;
     }
 
+    // First attempt: Query database (existing path - preserve this exactly)
     NSDictionary *client = [self.database getClientWithID:clientID error:error];
-    if (!client) {
+    if (client) {
+        // Database lookup succeeded - return the client
+        return client;
+    }
+    
+    // Database lookup failed - check if client_metadata is available
+    if (self.clientMetadata) {
+        PDS_LOG_AUTH_INFO(@"Client not in database, attempting validation via client_metadata for client_id: %@", clientID);
+        
+        // Validate using client_metadata
+        NSError *metadataError = nil;
+        NSDictionary *validatedClient = [self validateClientMetadata:self.clientMetadata error:&metadataError];
+        
+        if (validatedClient) {
+            PDS_LOG_AUTH_INFO(@"Client validated successfully via client_metadata: %@", clientID);
+            return validatedClient;
+        } else {
+            // Metadata validation failed
+            if (error) {
+                *error = metadataError;
+            }
+            return nil;
+        }
+    }
+    
+    // Not found in database AND no client_metadata provided
+    if (error) {
+        *error = [NSError errorWithDomain:@"OAuth2" code:401 userInfo:@{NSLocalizedDescriptionKey: @"Invalid client"}];
+    }
+    return nil;
+}
+
+- (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata error:(NSError **)error {
+    if (!metadata || ![metadata isKindOfClass:[NSDictionary class]]) {
         if (error) {
-            *error = [NSError errorWithDomain:@"OAuth2" code:401 userInfo:@{NSLocalizedDescriptionKey: @"Invalid client"}];
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"client_metadata must be a JSON object"}];
         }
         return nil;
     }
+    
+    // Validate client_id is HTTPS URL (required by ATProto spec)
+    NSString *clientID = metadata[@"client_id"];
+    if (!clientID || ![clientID isKindOfClass:[NSString class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"client_id is required in client_metadata"}];
+        }
+        return nil;
+    }
+    
+    if (![clientID hasPrefix:@"https://"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"client_id must be an HTTPS URL per ATProto OAuth specification"}];
+        }
+        return nil;
+    }
+    
+    // Validate it's a valid URL
+    NSURL *clientIDURL = [NSURL URLWithString:clientID];
+    if (!clientIDURL || !clientIDURL.host) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"client_id must be a valid HTTPS URL"}];
+        }
+        return nil;
+    }
+    
+    // Validate redirect_uris array is present, non-empty, and contains valid URIs
+    NSArray *redirectURIs = metadata[@"redirect_uris"];
+    if (!redirectURIs || ![redirectURIs isKindOfClass:[NSArray class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"redirect_uris array is required in client_metadata"}];
+        }
+        return nil;
+    }
+    
+    if (redirectURIs.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"redirect_uris array must contain at least one URI"}];
+        }
+        return nil;
+    }
+    
+    // Validate each redirect_uri is a valid URI string
+    for (id redirectURI in redirectURIs) {
+        if (![redirectURI isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"All redirect_uris must be strings"}];
+            }
+            return nil;
+        }
+        
+        NSString *uriString = (NSString *)redirectURI;
+        NSURL *uri = [NSURL URLWithString:uriString];
+        if (!uri || !uri.scheme) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid redirect_uri: %@", uriString]}];
+            }
+            return nil;
+        }
+    }
+    
+    // Extract client_name (optional but recommended)
+    NSString *clientName = metadata[@"client_name"];
+    if (clientName && ![clientName isKindOfClass:[NSString class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"client_name must be a string"}];
+        }
+        return nil;
+    }
+    
+    // Extract grant_types (optional, default to "authorization_code refresh_token")
+    id grantTypes = metadata[@"grant_types"];
+    NSString *grantTypesString = nil;
+    if (grantTypes) {
+        if ([grantTypes isKindOfClass:[NSArray class]]) {
+            // Convert array to space-separated string
+            grantTypesString = [(NSArray *)grantTypes componentsJoinedByString:@" "];
+        } else if ([grantTypes isKindOfClass:[NSString class]]) {
+            grantTypesString = (NSString *)grantTypes;
+        } else {
+            if (error) {
+                *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"grant_types must be an array or string"}];
+            }
+            return nil;
+        }
+    } else {
+        grantTypesString = @"authorization_code refresh_token";
+    }
+    
+    // Extract scope (optional, default to "atproto")
+    NSString *scope = metadata[@"scope"];
+    if (scope && ![scope isKindOfClass:[NSString class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"scope must be a string"}];
+        }
+        return nil;
+    }
+    if (!scope) {
+        scope = @"atproto";
+    }
+    
+    // Return normalized client dictionary matching database format for consistency
+    return @{
+        @"client_id": clientID,
+        @"redirect_uris": redirectURIs,
+        @"client_name": clientName ?: clientID,
+        @"grant_types": grantTypesString,
+        @"scope": scope
+    };
+}
 
-    return client;
+- (BOOL)isLoopbackRedirect:(NSString *)redirectURI {
+    if (!redirectURI) return NO;
+    NSURL *url = [NSURL URLWithString:redirectURI];
+    if (!url || !url.host) return NO;
+    if (![[url.scheme lowercaseString] isEqualToString:@"http"]) return NO;
+    
+    NSString *host = [url.host lowercaseString];
+    return ([host isEqualToString:@"127.0.0.1"] ||
+            [host isEqualToString:@"localhost"] ||
+            [host isEqualToString:@"::1"] ||
+            [host isEqualToString:@"[::1]"]);
 }
 
 - (BOOL)validateRedirectURI:(NSString *)redirectURI forClient:(NSDictionary *)client error:(NSError **)error {
@@ -114,7 +270,6 @@ static NSMutableDictionary *sPendingConsents = nil;
         return NO;
     }
 
-    // Validate URL scheme (HTTPS required in production, HTTP allowed for localhost in debug)
     NSURL *url = [NSURL URLWithString:redirectURI];
     if (!url) {
         if (error) {
@@ -123,26 +278,29 @@ static NSMutableDictionary *sPendingConsents = nil;
         return NO;
     }
 
-    #ifndef DEBUG
-    // Production: require HTTPS
-    if (![url.scheme isEqualToString:@"https"]) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"redirect_uri must use HTTPS in production"}];
-        }
-        return NO;
-    }
-    #else
-    // Development: allow HTTP for localhost only
-    if ([url.scheme isEqualToString:@"http"]) {
-        NSString *host = url.host;
-        if (![host isEqualToString:@"localhost"] && ![host isEqualToString:@"127.0.0.1"]) {
+    BOOL isLoopback = [self isLoopbackRedirect:redirectURI];
+
+    // Scheme validation: HTTPS required unless it's a loopback redirect (RFC 8252)
+    if (!isLoopback) {
+        #ifndef DEBUG
+        if (![url.scheme isEqualToString:@"https"]) {
             if (error) {
-                *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"HTTP redirect_uri only allowed for localhost in development"}];
+                *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"redirect_uri must use HTTPS in production"}];
             }
             return NO;
         }
+        #else
+        if ([url.scheme isEqualToString:@"http"]) {
+            NSString *host = url.host;
+            if (![host isEqualToString:@"localhost"] && ![host isEqualToString:@"127.0.0.1"]) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"OAuth2" code:400 userInfo:@{NSLocalizedDescriptionKey: @"HTTP redirect_uri only allowed for localhost in development"}];
+                }
+                return NO;
+            }
+        }
+        #endif
     }
-    #endif
 
     // Check if the redirect URI is in the client's registered URIs
     NSArray *allowedURIs = client[@"redirect_uris"];
@@ -153,12 +311,25 @@ static NSMutableDictionary *sPendingConsents = nil;
         return NO;
     }
 
-    // Exact match required (OAuth 2.0 security best practice)
     PDS_LOG_AUTH_DEBUG(@"Validating redirect_uri: '%@' against allowed: %@", redirectURI, allowedURIs);
+
     for (NSString *allowedURI in allowedURIs) {
+        // Exact match (standard OAuth 2.0 security best practice)
         if ([redirectURI isEqualToString:allowedURI]) {
             PDS_LOG_AUTH_DEBUG(@"Successfully matched redirect_uri: %@", allowedURI);
             return YES;
+        }
+
+        // Loopback port wildcard matching per RFC 8252 §7.3:
+        // If the allowed URI is a loopback address, match ignoring port.
+        if (isLoopback && [self isLoopbackRedirect:allowedURI]) {
+            NSURL *allowedURL = [NSURL URLWithString:allowedURI];
+            if (allowedURL &&
+                [[url.host lowercaseString] isEqualToString:[allowedURL.host lowercaseString]] &&
+                [[url.path ?: @"/" lowercaseString] isEqualToString:[allowedURL.path ?: @"/" lowercaseString]]) {
+                PDS_LOG_AUTH_DEBUG(@"Loopback port-wildcard matched redirect_uri: %@ (allowed: %@)", redirectURI, allowedURI);
+                return YES;
+            }
         }
     }
     
@@ -208,6 +379,19 @@ static NSMutableDictionary *sPendingConsents = nil;
     [httpServer addRoute:@"POST" path:@"/oauth/par" handler:^(HttpRequest *request, HttpResponse *response) {
         [self handlePARRequest:request response:response];
     }];
+
+    // CORS preflight handlers for ATProto OAuth client compatibility
+    void (^corsPreflightHandler)(HttpRequest *, HttpResponse *) = ^(HttpRequest *req, HttpResponse *resp) {
+        [resp setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [resp setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
+        [resp setHeader:@"Authorization, Content-Type, DPoP, DPoP-Nonce" forKey:@"Access-Control-Allow-Headers"];
+        [resp setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        resp.statusCode = 204;
+    };
+    [httpServer addRoute:@"OPTIONS" path:@"/oauth/authorize" handler:corsPreflightHandler];
+    [httpServer addRoute:@"OPTIONS" path:@"/oauth/token" handler:corsPreflightHandler];
+    [httpServer addRoute:@"OPTIONS" path:@"/oauth/par" handler:corsPreflightHandler];
+    [httpServer addRoute:@"OPTIONS" path:@"/oauth/revoke" handler:corsPreflightHandler];
 }
 
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request response:(HttpResponse *)response {
@@ -265,6 +449,29 @@ static NSMutableDictionary *sPendingConsents = nil;
     PDS_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
     // Use request.queryParams if available, otherwise parse manually
     NSMutableDictionary *params = [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
+
+    // Extract and parse client_metadata parameter if provided
+    NSString *clientMetadataString = params[@"client_metadata"];
+    NSDictionary *clientMetadata = nil;
+    if (clientMetadataString && clientMetadataString.length > 0) {
+        NSError *jsonError = nil;
+        NSData *jsonData = [clientMetadataString dataUsingEncoding:NSUTF8StringEncoding];
+        if (jsonData) {
+            id parsedJSON = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+            if (jsonError) {
+                PDS_LOG_AUTH_WARN(@"Failed to parse client_metadata JSON: %@", jsonError.localizedDescription);
+                // Continue without metadata - will be handled by validation
+            } else if ([parsedJSON isKindOfClass:[NSDictionary class]]) {
+                clientMetadata = (NSDictionary *)parsedJSON;
+                PDS_LOG_AUTH_INFO(@"Parsed client_metadata with %lu keys", (unsigned long)clientMetadata.count);
+            } else {
+                PDS_LOG_AUTH_WARN(@"client_metadata is not a JSON object");
+            }
+        }
+    }
+    
+    // Store clientMetadata in handler for use by validateClient
+    self.clientMetadata = clientMetadata;
 
     // Validate client from database
     NSString *clientID = params[@"client_id"];
@@ -327,6 +534,7 @@ static NSMutableDictionary *sPendingConsents = nil;
     authRequest.codeChallengeMethod = params[@"code_challenge_method"];
     authRequest.nonce = params[@"nonce"];
     authRequest.loginHint = params[@"login_hint"];
+    authRequest.clientMetadata = clientMetadata;
     
     // RFC 7636: Public clients must use PKCE
     // A client is considered public if it has no secret
