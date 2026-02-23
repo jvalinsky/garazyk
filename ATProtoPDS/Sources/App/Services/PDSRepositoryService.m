@@ -10,6 +10,8 @@
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Core/TID.h"
+#import "Auth/CryptoUtils.h"
+#import "Debug/PDSLogger.h"
 
 @interface PDSRepositoryService ()
 
@@ -98,12 +100,20 @@
 }
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
+    PDS_LOG_DEBUG(@"[getRepoRoot] Looking up repo root for DID: %@", did);
+    PDS_LOG_DEBUG(@"[getRepoRoot] databasePool.dbDirectory: %@", _databasePool.dbDirectory);
+    
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
-    if (!store) return nil;
+    if (!store) {
+        PDS_LOG_DEBUG(@"[getRepoRoot] storeForDid returned nil for: %@", did);
+        return nil;
+    }
     
     __block NSData *rootData = nil;
+    __block NSData *rootCidBytes = nil;
     [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
-        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
+        rootCidBytes = [reader getRepoRootForDid:did error:blockError];
+        PDS_LOG_DEBUG(@"[getRepoRoot] rootCidBytes for %@: %@", did, rootCidBytes ? [CryptoUtils hexStringFromData:rootCidBytes] : @"nil");
         if (rootCidBytes) {
             NSData *blockData = [reader getBlockForCID:rootCidBytes forDid:did error:blockError];
             if (blockData) {
@@ -112,6 +122,7 @@
         }
     } error:error];
     
+    PDS_LOG_DEBUG(@"[getRepoRoot] Returning rootData for %@: %@", did, rootData ? [NSString stringWithFormat:@"%lu bytes", (unsigned long)rootData.length] : @"nil");
     return rootData;
 }
 
