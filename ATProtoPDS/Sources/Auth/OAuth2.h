@@ -171,6 +171,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! Login hint for pre-filling user identifier. */
 @property (nonatomic, copy, nullable) NSString *loginHint;
 
+/*! Client metadata provided dynamically by ATProto clients (JSON dictionary). */
+@property (nonatomic, copy, nullable) NSDictionary *clientMetadata;
+
 /*!
  @method authorizationURL
  
