@@ -447,7 +447,8 @@
     
     NSArray *rotationKeys = @[serverRotationKey, rotationKeyMultibase];
     
-    NSDictionary *plcData = @{
+    // Step 1: Create unsigned operation (no sig field)
+    NSDictionary *unsignedData = @{
         @"type": @"plc_operation",
         @"rotationKeys": rotationKeys,
         @"verificationMethods": @{
@@ -463,23 +464,30 @@
         @"prev": [NSNull null]
     };
     
-    NSString *did = [PLCOperation calculateDIDForData:plcData];
+    // Step 2: Encode unsigned operation as DAG-CBOR and sign
+    NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
+    if (!unsignedCBOR) return nil;
     
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:plcData error:error];
-    if (!cborData) return nil;
-    
-    NSLog(@"[PDS ACCOUNT] CBOR Data (%lu bytes): %@", (unsigned long)cborData.length, [CryptoUtils hexStringFromData:cborData]);
-    NSData *hash = [CID rawSha256:cborData];
+    NSLog(@"[PDS ACCOUNT] Unsigned CBOR Data (%lu bytes): %@", (unsigned long)unsignedCBOR.length, [CryptoUtils hexStringFromData:unsignedCBOR]);
+    NSData *hash = [CID rawSha256:unsignedCBOR];
     NSData *sig = nil;
     if (![keyManager signHash:hash result:&sig error:error]) {
         return nil;
     }
     if (!sig) return nil;
     
+    // Step 3: Create signed operation (with sig field)
+    NSMutableDictionary *signedData = [unsignedData mutableCopy];
+    signedData[@"sig"] = [CryptoUtils base64URLEncode:sig];
+    
+    // Step 4: Calculate DID from the SIGNED operation
+    NSString *did = [PLCOperation calculateDIDForData:signedData];
+    
+    // Step 5: Create operation object for submission
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
-    op.data = plcData;
-    op.sig = [CryptoUtils base64URLEncode:sig];
+    op.data = [signedData copy];
+    op.sig = signedData[@"sig"];
     op.prev = nil;
     
     NSDictionary *opDict = [op toDictionary];
