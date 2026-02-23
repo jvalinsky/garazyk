@@ -1180,6 +1180,12 @@ static NSMutableDictionary *sPendingConsents = nil;
         }
     }
     
+    // Check standard install path (Docker/packaged deployments)
+    NSString *installPath = @"/usr/share/atprotopds/assets/Auth";
+    if ([[NSFileManager defaultManager] fileExistsAtPath:installPath]) {
+        return installPath;
+    }
+
     // Fallback to project structure if running from source
     NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
     NSString *sourcePath = [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/Auth/Assets"];
