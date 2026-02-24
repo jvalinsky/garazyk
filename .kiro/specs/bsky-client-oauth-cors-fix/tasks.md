@@ -4,22 +4,22 @@
 
 This implementation plan follows the bugfix requirements-first workflow to fix ATProto OAuth client_metadata support. The bug prevents standard ATProto clients (bsky.app, witchsky.app) from authenticating because they are not pre-registered in the database.
 
-**Current Status**: Implementation is mostly complete. Core functionality (tasks 1-3.6) is implemented and ready for testing.
+**Current Status**: Implementation and unit testing complete (tasks 1-3.9). Ready for integration testing on live PDS.
 
 **What's Done**:
-- ✅ Bug condition exploration test (Task 1)
-- ✅ Preservation property tests (Task 2)
+- ✅ Bug condition exploration test (Task 1) - All 4 test cases passing
+- ✅ Preservation property tests (Task 2) - All 7 property tests passing
 - ✅ client_metadata extraction and parsing (Task 3.1)
 - ✅ Client metadata validation method (Task 3.2)
 - ✅ Dual-path client validation (Task 3.3)
 - ✅ Loopback redirect validation (Task 3.4)
 - ✅ Redirect URI validation logic (Task 3.5)
 - ✅ OPTIONS handlers for CORS (Task 3.6)
+- ✅ Verification tests (Tasks 3.7-3.9) - All tests passing
 
 **What's Next**:
-- ⏭️ Run verification tests to confirm fix works (Tasks 3.7-3.9)
-- ⏭️ Integration testing on live PDS (Task 4)
-- ⏭️ Final checkpoint and deployment (Task 5)
+- ⏭️ Integration testing on live PDS pds.garazyk.xyz (Task 4) - 5 subtasks
+- ⏭️ Final checkpoint and deployment verification (Task 5)
 
 **Key Files Modified**:
 - `ATProtoPDS/Sources/Auth/OAuth2Handler.m` - Core OAuth handler with client_metadata support
@@ -202,6 +202,17 @@ This implementation plan follows the bugfix requirements-first workflow to fix A
 
 - [ ] 4. Integration testing on live PDS
 
+  **Remote VM Access**: The production PDS runs on the VM at `crimson-comet.exe.xyz`. Execute commands on the remote VM using SSH:
+  ```bash
+  ssh crimson-comet.exe.xyz "<command>"
+  ```
+  
+  **Common Remote Commands**:
+  - View PDS logs: `ssh crimson-comet.exe.xyz "docker compose logs -f pds"`
+  - Query database: `ssh crimson-comet.exe.xyz "docker exec nspds sqlite3 /data/pds.db 'SELECT client_id FROM oauth_clients;'"`
+  - Restart PDS: `ssh crimson-comet.exe.xyz "cd /home/exedev/objpds/docker/pds && docker compose restart pds"`
+  - Check container status: `ssh crimson-comet.exe.xyz "docker ps"`
+
   - [ ] 4.1 Test bsky.app OAuth flow on pds.garazyk.xyz
     - **Goal**: Verify bsky.app can authenticate against the production PDS
     - **Prerequisites**: 
@@ -223,7 +234,7 @@ This implementation plan follows the bugfix requirements-first workflow to fix A
       - Full OAuth flow completes successfully
       - User can interact with PDS through bsky.app
     - **Troubleshooting**:
-      - Check PDS logs: `docker compose logs -f pds`
+      - Check PDS logs: `ssh crimson-comet.exe.xyz "docker compose logs -f pds"`
       - Check browser console for errors
       - Verify CORS headers in network tab
     - Document any issues or unexpected behavior
@@ -282,9 +293,9 @@ This implementation plan follows the bugfix requirements-first workflow to fix A
     - **Goal**: Ensure backward compatibility - registered clients unaffected by changes
     - **Prerequisites**: 
       - At least one OAuth client registered in production database
-      - If none exist, register a test client: `docker exec nspds kaszlak oauth register-client --client-id test-client --redirect-uri https://example.com/callback`
+      - If none exist, register a test client: `ssh crimson-comet.exe.xyz "docker exec nspds kaszlak oauth register-client --client-id test-client --redirect-uri https://example.com/callback"`
     - **Test Steps**:
-      1. Query database to list registered clients: `docker exec nspds sqlite3 /data/pds.db "SELECT client_id FROM oauth_clients;"`
+      1. Query database to list registered clients: `ssh crimson-comet.exe.xyz "docker exec nspds sqlite3 /data/pds.db 'SELECT client_id FROM oauth_clients;'"`
       2. For each registered client, test full OAuth flow:
          - Initiate authorization with registered client_id
          - Complete authorization
@@ -300,7 +311,9 @@ This implementation plan follows the bugfix requirements-first workflow to fix A
     - Document any issues or unexpected behavior
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 4.5 Test CORS preflight requests on pds.garazyk.xyz
+  - [x] 4.5 Test CORS preflight requests on pds.garazyk.xyz
+    - **Goal**: Verify OPTIONS handlers work correctly for browser-based OAuth flows
+    - **Test Steps**:  - [ ] 4.5 Test CORS preflight requests on pds.garazyk.xyz
     - **Goal**: Verify OPTIONS handlers work correctly for browser-based OAuth flows
     - **Test Steps**:
       1. Send OPTIONS request to https://pds.garazyk.xyz/oauth/authorize

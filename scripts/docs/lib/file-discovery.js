@@ -35,33 +35,22 @@ function matchGlob(filePath, pattern, options = {}) {
   }
 
   // Convert glob pattern to regex
-  // Use a unique placeholder that won't appear in paths
-  const GLOBSTAR_PLACEHOLDER = '\uFFFF';
-  const STAR_PLACEHOLDER = '\uFFFE';
-  const QUESTION_PLACEHOLDER = '\uFFFD';
+  // Use unique placeholders that won't appear in paths
+  const GLOBSTAR_PLACEHOLDER = '\x00GLOBSTAR\x00';
+  const STAR_PLACEHOLDER = '\x00STAR\x00';
+  const QUESTION_PLACEHOLDER = '\x00QUESTION\x00';
 
   let regexPattern = testPattern
-    // Replace glob wildcards with placeholders
+    // Replace glob wildcards with placeholders (order matters: ** before *)
     .replace(/\*\*/g, GLOBSTAR_PLACEHOLDER)
     .replace(/\*/g, STAR_PLACEHOLDER)
     .replace(/\?/g, QUESTION_PLACEHOLDER)
-    // Escape special regex characters
+    // Escape special regex characters (but not our placeholders)
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     // Replace placeholders with regex patterns
-    // ** should match zero or more path segments (including empty)
-    .replace(new RegExp(GLOBSTAR_PLACEHOLDER, 'g'), '(?:.*?)')
-    .replace(new RegExp(STAR_PLACEHOLDER, 'g'), '[^/]*')
-    .replace(new RegExp(QUESTION_PLACEHOLDER, 'g'), '[^/]');
-
-  // Handle leading ** to match from start
-  if (regexPattern.startsWith('^(?:.*?)/')) {
-    regexPattern = '^(?:(?:.*?)/)?'  + regexPattern.slice('^(?:.*?)/'.length);
-  }
-  
-  // Handle trailing ** to match to end
-  if (regexPattern.endsWith('/(?:.*?)$')) {
-    regexPattern = regexPattern.slice(0, -'/(?:.*?)$'.length) + '/(?:.*)?$';
-  }
+    .replace(/\x00GLOBSTAR\x00/g, '.*')  // ** matches anything including /
+    .replace(/\x00STAR\x00/g, '[^/]*')   // * matches anything except /
+    .replace(/\x00QUESTION\x00/g, '[^/]'); // ? matches single char except /
 
   // Anchor the pattern
   regexPattern = `^${regexPattern}$`;

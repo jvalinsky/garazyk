@@ -12,77 +12,77 @@ This plan implements a comprehensive documentation reorganization system using J
   - Set up ESLint configuration for documentation scripts
   - _Requirements: 14.1, 14.2_
 
-- [ ] 2. Implement core migration tool
+- [x] 2. Implement core migration tool
   - [x] 2.1 Create migration configuration schema
     - Define JSON schema for migration mappings (source, destination, file patterns)
     - Implement configuration validator
     - Create example migration config for plan/ and plans/ directories
     - _Requirements: 14.1, 14.2_
 
-  - [-] 2.2 Implement file discovery and filtering
+  - [x] 2.2 Implement file discovery and filtering
     - Write function to recursively scan source directories
     - Implement glob pattern matching for file selection
     - Add exclusion patterns for .git, node_modules, etc.
     - _Requirements: 1.1, 14.3_
 
-  - [ ] 2.3 Implement git mv operations
+  - [x] 2.3 Implement git mv operations
     - Write function to execute git mv commands for history preservation
     - Add batch processing for multiple files
     - Implement error handling and rollback on failure
     - _Requirements: 1.4, 14.3, 14.6_
 
-  - [ ] 2.4 Write property test for file consolidation completeness
+  - [x] 2.4 Write property test for file consolidation completeness
     - **Property 1: File Consolidation Completeness**
     - **Validates: Requirements 1.1**
 
-  - [ ] 2.5 Write property test for git history preservation
+  - [x] 2.5 Write property test for git history preservation
     - **Property 2: Git History Preservation**
     - **Validates: Requirements 1.4, 14.3**
 
-- [ ] 3. Implement link and reference updating
-  - [ ] 3.1 Create Markdown link parser
+- [x] 3. Implement link and reference updating
+  - [x] 3.1 Create Markdown link parser
     - Parse Markdown files to extract all links (relative, absolute, anchors)
     - Identify internal vs external links
     - Extract cross-references and file paths
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 3.2 Implement path resolution logic
+  - [x] 3.2 Implement path resolution logic
     - Calculate new relative paths based on file moves
     - Handle different link formats ([text](path), <path>, bare URLs)
     - Update anchor links to reflect new file locations
     - _Requirements: 2.1, 2.2, 2.5_
 
-  - [ ] 3.3 Implement file content updater
+  - [x] 3.3 Implement file content updater
     - Read file content, update links, write back atomically
     - Preserve file permissions and timestamps
     - Handle UTF-8 encoding correctly
     - _Requirements: 2.1, 2.4, 14.4_
 
-  - [ ] 3.4 Write property test for link resolution after migration
+  - [x] 3.4 Write property test for link resolution after migration
     - **Property 3: Link Resolution After Migration**
     - **Validates: Requirements 2.1, 2.2, 2.5**
 
-  - [ ] 3.5 Write property test for cross-reference update correctness
+  - [x] 3.5 Write property test for cross-reference update correctness
     - **Property 6: Cross-Reference Update Correctness**
     - **Validates: Requirements 2.1, 14.4**
 
-- [ ] 4. Implement migration mapping and reporting
-  - [ ] 4.1 Create migration mapping generator
+- [x] 4. Implement migration mapping and reporting
+  - [x] 4.1 Create migration mapping generator
     - Generate JSON file mapping old paths to new paths
     - Include file metadata (size, last modified, git commit)
     - _Requirements: 1.5, 14.5_
 
-  - [ ] 4.2 Implement migration report generator
+  - [x] 4.2 Implement migration report generator
     - Create detailed report with statistics (files moved, links updated, errors)
     - Include validation results for all moved files
     - Generate human-readable summary
     - _Requirements: 14.5_
 
-  - [ ] 4.3 Write property test for migration mapping completeness
+  - [x] 4.3 Write property test for migration mapping completeness
     - **Property 5: Migration Mapping Completeness**
     - **Validates: Requirements 1.5**
 
-  - [ ] 4.4 Write property test for migration report generation
+  - [x] 4.4 Write property test for migration report generation
     - **Property 27: Migration Report Generation**
     - **Validates: Requirements 14.5**
 

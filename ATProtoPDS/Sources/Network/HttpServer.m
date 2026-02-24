@@ -1065,6 +1065,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
     // First try exact path match
     RequestHandler handler = self.pathHandlers[path];
+    PDS_LOG_HTTP_INFO(@"Path %@, pathHandlers: %@, exact handler: %@", path, self.pathHandlers.allKeys, handler ? @"found" : @"nil");
 
     // Then try prefix matching for pathHandlers (e.g., /explore matches /explore/css/style.css)
     if (!handler) {

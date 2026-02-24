@@ -14,6 +14,10 @@
 #import "Sync/SubscribeReposHandler.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Auth/JWT.h"
+#import <sys/socket.h>
+#import <netinet/in.h>
+#import <arpa/inet.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 @interface PDSHttpServerBuilderTests : XCTestCase
 @end
@@ -41,8 +45,8 @@
  **Property 1: Fault Condition** - Well-Known Endpoint Returns 404
  
  The bug manifests when a client requests GET /.well-known/atproto-did for a handle
- that exists in the PDS database. The PDSHttpServerBuilder does not register this route,
- causing the HTTP server to return 404 with "No handler for GET /.well-known/atproto-did".
+ that exists in the PDS database. Per ATProto spec, the handle is determined by the
+ Host header in the HTTP request, not a query parameter.
  
  **EXPECTED OUTCOME ON UNFIXED CODE**: Test FAILS (this is correct - it proves the bug exists)
  
@@ -75,10 +79,6 @@
         XCTSkip(@"Could not create test account: %@", createError);
         return;
     }
-    
-    // Configure available user domains to include garazyk.xyz
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    [config setValue:@[@"garazyk.xyz"] forKey:@"availableUserDomains"];
     
     // Build HTTP server with PDSHttpServerBuilder
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
@@ -122,51 +122,103 @@
     // Get the actual port the server is listening on
     UInt16 actualPort = server.port;
     
-    // Make HTTP request to /.well-known/atproto-did?handle=test5.garazyk.xyz
-    NSString *urlString = [NSString stringWithFormat:@"http://localhost:%d/.well-known/atproto-did?handle=%@", actualPort, testHandle];
-    NSURL *url = [NSURL URLWithString:urlString];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.HTTPMethod = @"GET";
-    request.timeoutInterval = 5.0;
+    // Make HTTP request to /.well-known/atproto-did with Host header set to the handle
+    // Per ATProto spec: The handle is determined by the Host header, not a query parameter
+    // Example: GET https://test5.garazyk.xyz/.well-known/atproto-did
+    // 
+    // NOTE: We craft a raw HTTP request because NSURLSession overrides the Host header
+    // when connecting to localhost. In production, the Host header is set correctly by
+    // the HTTP client based on the domain in the URL.
+    NSString *rawRequest = [NSString stringWithFormat:
+        @"GET /.well-known/atproto-did HTTP/1.1\r\n"
+        @"Host: %@\r\n"
+        @"Connection: close\r\n"
+        @"\r\n", testHandle];
     
-    XCTestExpectation *expectation = [self expectationWithDescription:@"Well-known endpoint request"];
+    NSData *requestData = [rawRequest dataUsingEncoding:NSUTF8StringEncoding];
     
-    __block NSInteger statusCode = 0;
-    __block NSString *responseBody = nil;
+    // Connect to the server and send raw HTTP request
+    CFSocketRef socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL);
     
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        if (error) {
-            XCTFail(@"Network error: %@", error);
-            [expectation fulfill];
-            return;
-        }
-        
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        statusCode = httpResponse.statusCode;
-        
-        if (data) {
-            responseBody = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        }
-        
-        [expectation fulfill];
-    }];
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_len = sizeof(addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(actualPort);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     
-    [task resume];
+    NSData *addressData = [NSData dataWithBytes:&addr length:sizeof(addr)];
+    CFSocketError connectResult = CFSocketConnectToAddress(socket, (__bridge CFDataRef)addressData, 5.0);
     
-    [self waitForExpectationsWithTimeout:10.0 handler:nil];
+    if (connectResult != kCFSocketSuccess) {
+        CFRelease(socket);
+        [server stop];
+        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        XCTFail(@"Failed to connect to server");
+        return;
+    }
     
-    // Stop the server
+    // Send the request
+    CFSocketNativeHandle nativeSocket = CFSocketGetNative(socket);
+    ssize_t sent = send(nativeSocket, requestData.bytes, requestData.length, 0);
+    
+    if (sent != (ssize_t)requestData.length) {
+        CFRelease(socket);
+        [server stop];
+        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        XCTFail(@"Failed to send request");
+        return;
+    }
+    
+    // Read the response
+    NSMutableData *responseData = [NSMutableData data];
+    char buffer[4096];
+    ssize_t received;
+    
+    while ((received = recv(nativeSocket, buffer, sizeof(buffer), 0)) > 0) {
+        [responseData appendBytes:buffer length:received];
+    }
+    
+    CFRelease(socket);
     [server stop];
-    
-    // Clean up
     [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    
+    // Parse the HTTP response
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+    NSArray *lines = [responseString componentsSeparatedByString:@"\r\n"];
+    
+    // Parse status line
+    NSInteger statusCode = 0;
+    if (lines.count > 0) {
+        NSString *statusLine = lines[0];
+        NSArray *parts = [statusLine componentsSeparatedByString:@" "];
+        if (parts.count >= 2) {
+            statusCode = [parts[1] integerValue];
+        }
+    }
+    
+    // Find the body (after empty line)
+    NSString *responseBody = nil;
+    BOOL foundEmptyLine = NO;
+    NSMutableString *body = [NSMutableString string];
+    for (NSString *line in lines) {
+        if (foundEmptyLine) {
+            if (body.length > 0) {
+                [body appendString:@"\r\n"];
+            }
+            [body appendString:line];
+        } else if (line.length == 0) {
+            foundEmptyLine = YES;
+        }
+    }
+    responseBody = body;
     
     // ASSERTIONS: This test encodes the EXPECTED behavior after the fix
     // On UNFIXED code, this test will FAIL (which is correct - it proves the bug exists)
     // On FIXED code, this test will PASS (which confirms the bug is fixed)
     
-    // Expected behavior: GET /.well-known/atproto-did?handle=test5.garazyk.xyz should return 200 with DID
-    XCTAssertEqual(statusCode, 200, @"Expected 200 OK for valid handle, but got %ld. On unfixed code, this returns 404 'No handler' - this failure confirms the bug exists.", (long)statusCode);
+    // Expected behavior: GET /.well-known/atproto-did with Host: test5.garazyk.xyz should return 200 with DID
+    XCTAssertEqual(statusCode, 200, @"Expected 200 OK for valid handle, but got %ld. On unfixed code, this returns 400 'Missing Host header' - this failure confirms the bug exists.", (long)statusCode);
     
     XCTAssertNotNil(responseBody, @"Expected response body with DID");
     
@@ -174,12 +226,12 @@
         // Trim whitespace from response
         NSString *trimmedResponse = [responseBody stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         
-        XCTAssertEqualObjects(trimmedResponse, testDID, @"Expected DID '%@' in response body, but got '%@'. On unfixed code, this returns 404 error message.", testDID, trimmedResponse);
+        XCTAssertEqualObjects(trimmedResponse, testDID, @"Expected DID '%@' in response body, but got '%@'. On unfixed code, this returns error message.", testDID, trimmedResponse);
     }
     
     // Document the counterexample for unfixed code:
-    // GET /.well-known/atproto-did?handle=test5.garazyk.xyz returns 404 with message
-    // "No handler for GET /.well-known/atproto-did" instead of 200 with "did:plc:5rpam44qoj2eeisejtxmke7e"
+    // GET /.well-known/atproto-did with Host: test5.garazyk.xyz returns 400 with message
+    // "Missing Host header" instead of 200 with "did:plc:5rpam44qoj2eeisejtxmke7e"
 }
 
 #pragma mark - Initialization Tests
