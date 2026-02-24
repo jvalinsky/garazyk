@@ -1,0 +1,140 @@
+# Implementation Plan
+
+- [ ] 1. Write bug condition exploration tests (BEFORE implementing fix)
+  - **Property 1: Fault Condition A2** - sync.getHead Returns Block Data Instead of CID
+  - **Property 1: Fault Condition C1** - Sync Endpoints Hardcode Active Status
+  - **CRITICAL**: These tests MUST FAIL on unfixed code - failure confirms the bugs exist
+  - **DO NOT attempt to fix the tests or the code when they fail**
+  - **NOTE**: These tests encode the expected behavior - they will validate the fixes when they pass after implementation
+  - **GOAL**: Surface counterexamples that demonstrate both bugs exist
+  - **Scoped PBT Approach**: For deterministic bugs, scope properties to concrete failing cases to ensure reproducibility
+
+  - [ ] 1.1 Write fault condition test for Issue A2 (sync.getHead returns wrong data type)
+    - Create a repository with one commit
+    - Call `sync.getHead` for the repository
+    - Capture the returned string
+    - Attempt to parse it as a CID using `[CID cidFromString:]`
+    - Verify the parsed CID does NOT match the actual repository root CID (from database)
+    - Base32-decode the returned string and verify it decodes to commit block data (CBOR-encoded commit object, not CID bytes)
+    - Verify decoded bytes are larger than 100 bytes (CID bytes are ~36 bytes, commit blocks are much larger)
+    - Run test on UNFIXED code
+    - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+    - Document counterexamples found (e.g., "sync.getHead returns base32-encoded commit block data instead of base32-encoded CID bytes")
+    - Mark task complete when test is written, run, and failure is documented
+    - _Requirements: 2.1, 2.2, 2.3_
+
+  - [ ] 1.2 Write fault condition test for Issue C1 (sync endpoints hardcode active status)
+    - Create an account via `com.atproto.server.createAccount`
+    - Create a repository with one commit for the account
+    - Apply a takedown via `com.atproto.admin.disableAccount`
+    - Verify `isAccountTakedownActive` returns true for the account (confirms takedown is active)
+    - Call `sync.listRepos` and verify the response includes `active: true` for the taken down account
+    - Call `sync.getRepoStatus` for the taken down account and verify the response includes `active: true`
+    - Run test on UNFIXED code
+    - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+    - Document counterexamples found (e.g., "sync.listRepos returns active: true for account with active takedown")
+    - Mark task complete when test is written, run, and failure is documented
+    - _Requirements: 2.4, 2.5, 2.6_
+
+- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation A2** - Other getRepoRoot Callers Receive CID Bytes
+  - **Property 2: Preservation C1** - Other Response Fields Remain Correct
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+
+  - [ ] 2.1 Write preservation test for Issue A2 (other getRepoRoot callers)
+    - **IMPORTANT**: Observe behavior on UNFIXED code first
+    - Test PDSRecordService.applyWrites with swapCommit (uses getRepoRoot at line 381)
+    - Test PDSController.describeRepo (uses getRepoRoot at line 514)
+    - Observe: Both callers expect CID bytes that can be parsed with `[CID cidFromBytes:]`
+    - Write property-based test: for all repositories, getRepoRoot returns data that can be parsed as a CID
+    - Write property-based test: for all repositories, describeRepo returns correct root CID
+    - Write property-based test: for all write operations with swapCommit, the operation succeeds when providing correct root CID
+    - Verify tests pass on UNFIXED code (note: unfixed code may have issues here due to returning block data)
+    - _Requirements: 3.1, 3.2, 3.3_
+
+  - [ ] 2.2 Write preservation test for Issue C1 (other response fields)
+    - **IMPORTANT**: Observe behavior on UNFIXED code first
+    - Observe: sync.listRepos returns correct did, head, rev for all accounts
+    - Observe: sync.getRepoStatus returns correct did, rev for all accounts
+    - Observe: sync.listRepos returns active: true for accounts without takedowns
+    - Write property-based test: for all active accounts (no takedown), sync.listRepos returns active: true
+    - Write property-based test: for all accounts, sync.listRepos returns correct did, head, rev fields
+    - Write property-based test: for all accounts, sync.getRepoStatus returns correct did, rev fields
+    - Write property-based test: for all pagination parameters, sync.listRepos preserves pagination logic
+    - Verify tests pass on UNFIXED code
+    - _Requirements: 3.4, 3.5, 3.6_
+
+- [ ] 3. Fix for sync endpoint spec compliance issues
+
+  - [ ] 3.1 Implement fix for Issue A2 (sync.getHead returns wrong data type)
+    - Open `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m`
+    - Locate the `getRepoRoot` method (lines 103-122)
+    - Remove lines 117-119 that fetch block data for the root CID
+    - Change the method to return `rootCidBytes` directly instead of `blockData`
+    - Simplify the logic: fetch root CID bytes from database and return them immediately
+    - Do NOT fetch block data - the caller needs CID bytes, not block data
+    - _Bug_Condition: isBugCondition_A2(input) where input.method == "com.atproto.sync.getHead" AND getRepoRoot returns block data instead of CID bytes_
+    - _Expected_Behavior: sync.getHead returns base32-encoded CID string that can be parsed as valid CID and matches repository root CID_
+    - _Preservation: Other callers of getRepoRoot (PDSRecordService, PDSController) continue to receive CID bytes parseable with [CID cidFromBytes:]_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3_
+
+  - [ ] 3.2 Implement fix for Issue C1 (sync endpoints hardcode active status)
+    - Open `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+    - Locate the `com.atproto.sync.listRepos` handler (around line 5126)
+    - Before constructing the response dictionary, query account status: `BOOL isTakedown = [adminController isAccountTakedownActive:account.did error:&error];`
+    - Replace `@"active": @YES` with `@"active": @(!isTakedown)`
+    - Add error handling: if status query fails, log warning and default to `active: true` (fail-safe)
+    - Locate the `com.atproto.sync.getRepoStatus` handler (around line 5166)
+    - Before constructing the response dictionary, query account status: `BOOL isTakedown = [adminController isAccountTakedownActive:did error:&error];`
+    - Replace `@YES, @"active"` with `@(!isTakedown), @"active"`
+    - Add error handling: if status query fails, log warning and default to `active: true` (fail-safe)
+    - _Bug_Condition: isBugCondition_C1(input) where (input.method == "sync.listRepos" OR "sync.getRepoStatus") AND account has active takedown AND response.active == true (hardcoded)_
+    - _Expected_Behavior: sync endpoints query database using isAccountTakedownActive and return active: false for taken down accounts_
+    - _Preservation: sync endpoints continue to return correct did, head, rev fields; active accounts continue to return active: true_
+    - _Requirements: 2.4, 2.5, 2.6, 3.4, 3.5, 3.6_
+
+  - [ ] 3.3 Verify bug condition exploration tests now pass
+    - **Property 1: Expected Behavior A2** - sync.getHead Returns Valid CID String
+    - **Property 1: Expected Behavior C1** - Sync Endpoints Return Correct Account Status
+    - **IMPORTANT**: Re-run the SAME tests from task 1 - do NOT write new tests
+    - The tests from task 1 encode the expected behavior
+    - When these tests pass, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1.1 (Issue A2)
+    - Verify sync.getHead now returns a valid CID string that matches the repository root CID
+    - Verify the returned string is NOT base32-encoded block data
+    - Run bug condition exploration test from step 1.2 (Issue C1)
+    - Verify sync.listRepos now returns active: false for taken down accounts
+    - Verify sync.getRepoStatus now returns active: false for taken down accounts
+    - **EXPECTED OUTCOME**: Tests PASS (confirms bugs are fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+
+  - [ ] 3.4 Verify preservation tests still pass
+    - **Property 2: Preservation A2** - Other getRepoRoot Callers Receive CID Bytes
+    - **Property 2: Preservation C1** - Other Response Fields Remain Correct
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2.1 (Issue A2)
+    - Verify PDSRecordService.applyWrites with swapCommit still works correctly
+    - Verify PDSController.describeRepo still returns correct root CID
+    - Verify all callers can parse getRepoRoot result with [CID cidFromBytes:]
+    - Run preservation property tests from step 2.2 (Issue C1)
+    - Verify sync.listRepos returns correct did, head, rev for all accounts
+    - Verify sync.getRepoStatus returns correct did, rev for all accounts
+    - Verify sync.listRepos returns active: true for accounts without takedowns
+    - Verify pagination logic is unchanged
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all tests still pass after fix (no regressions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Run all unit tests: `./build/tests/AllTests`
+  - Verify all bug condition exploration tests pass (task 1 tests should now pass)
+  - Verify all preservation tests pass (task 2 tests should still pass)
+  - Verify no regressions in existing test suite
+  - If any tests fail, investigate and fix before proceeding
+  - Ask the user if questions arise

@@ -10,6 +10,12 @@
 // Maximum recursion depth for nested objects
 static const NSInteger kMaxRecursionDepth = 32;
 
+// Cached character set for record-key validation
+static NSCharacterSet *sValidRecordKeyCharacters;
+
+// Cached regex for language tag validation
+static NSRegularExpression *sLanguageTagRegex;
+
 @interface ATProtoLexiconValidator ()
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
@@ -17,6 +23,19 @@ static const NSInteger kMaxRecursionDepth = 32;
 @end
 
 @implementation ATProtoLexiconValidator
+
++ (void)initialize {
+    if (self == [ATProtoLexiconValidator class]) {
+        sValidRecordKeyCharacters = [NSCharacterSet characterSetWithCharactersInString:
+            @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_~.:-"];
+        
+        NSError *error = nil;
+        sLanguageTagRegex = [NSRegularExpression
+            regularExpressionWithPattern:@"^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$"
+                                 options:0
+                                   error:&error];
+    }
+}
 
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry {
     self = [super init];
@@ -58,8 +77,13 @@ static const NSInteger kMaxRecursionDepth = 32;
         return NO;
     }
 
-    // Verify $type matches collection
-    if (![recordType isEqualToString:collection]) {
+    // Verify $type matches collection (supports NSID prefix matching)
+    // ATProto allows $type to be full NSID (e.g., "app.bsky.feed.post#main") 
+    // which should match collection "app.bsky.feed.post"
+    BOOL typeMatches = [recordType isEqualToString:collection] || 
+                       [recordType hasPrefix:[collection stringByAppendingString:@"#"]];
+    
+    if (!typeMatches) {
         if (error) {
             *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorTypeMismatch
                                                 message:[NSString stringWithFormat:@"Record $type '%@' does not match collection '%@'",
@@ -390,12 +414,21 @@ static const NSInteger kMaxRecursionDepth = 32;
             return NO;
         }
     } else if ([format isEqualToString:@"uri"]) {
-        // Basic URI validation
+        // Basic URI validation - ATProto spec requires http or https
         NSURL *url = [NSURL URLWithString:str];
         if (!url || !url.scheme) {
             if (error) {
                 *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
                                                     message:[NSString stringWithFormat:@"Invalid URI format in '%@'", context]
+                                                    context:context];
+            }
+            return NO;
+        }
+        NSString *scheme = [url.scheme lowercaseString];
+        if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
+            if (error) {
+                *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
+                                                    message:[NSString stringWithFormat:@"Invalid URI scheme in '%@': must be http or https", context]
                                                     context:context];
             }
             return NO;
@@ -428,9 +461,7 @@ static const NSInteger kMaxRecursionDepth = 32;
             }
             return NO;
         }
-        NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:
-            @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_~.:-"];
-        NSRange invalid = [str rangeOfCharacterFromSet:validChars.invertedSet];
+        NSRange invalid = [str rangeOfCharacterFromSet:sValidRecordKeyCharacters.invertedSet];
         if (invalid.location != NSNotFound) {
             if (error) {
                 *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
@@ -442,11 +473,7 @@ static const NSInteger kMaxRecursionDepth = 32;
     } else if ([format isEqualToString:@"language"]) {
         // BCP-47 language tag (simplified): primary subtag + optional subtags
         // e.g. "en", "en-US", "zh-Hant-TW"
-        NSRegularExpression *langRegex = [NSRegularExpression
-            regularExpressionWithPattern:@"^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$"
-                                 options:0
-                                   error:nil];
-        NSUInteger matches = [langRegex numberOfMatchesInString:str
+        NSUInteger matches = [sLanguageTagRegex numberOfMatchesInString:str
                                                         options:0
                                                           range:NSMakeRange(0, str.length)];
         if (matches == 0) {
