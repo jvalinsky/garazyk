@@ -1,5 +1,6 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcAuthHelper.h"
+#import "Network/XrpcIdentityHelper.h"
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "App/Services/PDSAccountService.h"
@@ -160,54 +161,10 @@ static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
 // Implementation of resolveDid — resolves via PLC directory for did:plc DIDs,
 // falls back to local account data when PLC is unreachable.
 static NSDictionary *resolveDid(NSString *did, PDSServiceDatabases *dbs, PDSConfiguration *config, NSError **error) {
-    if (![did hasPrefix:@"did:"]) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.identity" code:1
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID format"}];
-        }
-        return nil;
-    }
-
-    if ([did hasPrefix:@"did:plc:"]) {
-        NSString *plcUrl = config.plcURL;
-        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
-            plcUrl = @"http://127.0.0.1:2582";
-        }
-        DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
-        resolver.timeout = 10.0;
-        NSError *plcError = nil;
-        NSDictionary *doc = [resolver resolveDID:did error:&plcError];
-        if (doc) {
-            return doc;
-        }
-        // PLC unreachable or DID not found there — try local account as fallback
-        PDSDatabaseAccount *account = [dbs getAccountByDid:did error:nil];
-        if (account && account.handle.length > 0) {
-            NSString *serviceEndpoint = [config canonicalIssuerWithPortHint:0];
-            return @{
-                @"@context": @[@"https://www.w3.org/ns/did/v1"],
-                @"id": did,
-                @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", account.handle]],
-                @"service": @[
-                    @{
-                        @"id": @"#atproto_pds",
-                        @"type": @"AtprotoPersonalDataServer",
-                        @"serviceEndpoint": serviceEndpoint
-                    }
-                ]
-            };
-        }
-        if (error) *error = plcError;
-        return nil;
-    }
-
-    // Unsupported DID method
-    if (error) {
-        *error = [NSError errorWithDomain:@"com.atproto.identity" code:1
-                                userInfo:@{NSLocalizedDescriptionKey:
-                                    [NSString stringWithFormat:@"Unsupported DID method: %@", did]}];
-    }
-    return nil;
+    return [XrpcIdentityHelper resolveDid:did
+                         serviceDatabases:dbs
+                            configuration:config
+                                    error:error];
 }
 
 static NSDictionary *loadLexiconJSONForNSID(NSString *nsid,
@@ -1157,43 +1114,10 @@ static BOOL resolveAccountIdentifierToDid(PDSServiceDatabases *serviceDatabases,
                                           NSString *accountIdentifier,
                                           NSString **outDid,
                                           NSError **error) {
-    if (![accountIdentifier isKindOfClass:[NSString class]] || accountIdentifier.length == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.temp"
-                                         code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing account identifier"}];
-        }
-        return NO;
-    }
-
-    PDSDatabaseAccount *account = nil;
-    NSError *lookupError = nil;
-    if ([ATProtoValidator validateDID:accountIdentifier error:nil]) {
-        account = [serviceDatabases getAccountByDid:accountIdentifier error:&lookupError];
-    } else if ([ATProtoHandleValidator validateHandle:accountIdentifier error:nil]) {
-        account = [serviceDatabases getAccountByHandle:accountIdentifier error:&lookupError];
-    } else {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.temp"
-                                         code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid account identifier"}];
-        }
-        return NO;
-    }
-
-    if (!account) {
-        if (error) {
-            *error = lookupError ?: [NSError errorWithDomain:@"com.atproto.temp"
-                                                        code:404
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
-        }
-        return NO;
-    }
-
-    if (outDid) {
-        *outDid = account.did;
-    }
-    return YES;
+    return [XrpcIdentityHelper resolveAccountIdentifierToDid:accountIdentifier
+                                            serviceDatabases:serviceDatabases
+                                                      outDid:outDid
+                                                       error:error];
 }
 
 static NSString *currentISO8601String(void) {
