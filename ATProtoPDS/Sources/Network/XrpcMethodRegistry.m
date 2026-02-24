@@ -4851,45 +4851,23 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSString *did = nil;
-        NSString *handle = nil;
-
+        PDSDatabaseAccount *localAccount = nil;
         if ([identifier hasPrefix:@"did:"]) {
             did = identifier;
+            localAccount = [serviceDatabases getAccountByDid:did error:nil];
         } else {
             NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:identifier];
-            PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:normalizedHandle error:nil];
-            if (account.did.length > 0) {
-                did = account.did;
-                handle = account.handle.length > 0 ? [account.handle lowercaseString] : normalizedHandle;
-            } else {
-                // Fall back to external handle resolution.
-                HandleResolver *handleResolver = [[HandleResolver alloc] init];
-                __block NSString *resolvedDid = nil;
-                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-                [handleResolver resolveHandle:normalizedHandle completion:^(NSString * _Nullable handleDid, NSError * _Nullable resolveError) {
-                    resolvedDid = handleDid;
-                    (void)resolveError;
-                    dispatch_semaphore_signal(semaphore);
-                }];
-                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
-                did = resolvedDid;
-                handle = normalizedHandle;
-            }
+            localAccount = [serviceDatabases getAccountByHandle:normalizedHandle error:nil];
+            did = localAccount.did;
         }
 
-        if (did.length == 0) {
+        if (!localAccount) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
             return;
         }
 
         NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
-        PDSDatabaseAccount *localAccount = [serviceDatabases getAccountByDid:did error:nil];
-        if (!localAccount) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
-            return;
-        }
 
         // Resolve full DID document (required by lexicon).
         DIDResolver *didResolver = [[DIDResolver alloc] init];
@@ -4897,17 +4875,9 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         DIDDocument *doc = [didResolver resolveDIDSync:did error:nil];
         NSDictionary *didDocJson = doc.jsonDictionary ?: @{};
 
-        if (handle.length == 0) {
-            // Prefer local account handle if present, otherwise infer from DID doc.
-            if (localAccount.handle.length > 0) {
-                handle = [localAccount.handle lowercaseString];
-            } else {
-                handle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
-            }
-        }
-        if (handle.length == 0) {
-            handle = @"handle.invalid";
-        }
+        NSString *handleFromDidDoc = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
+        NSString *accountHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : @"handle.invalid";
+        BOOL handleIsCorrect = (handleFromDidDoc.length > 0 && [handleFromDidDoc isEqualToString:accountHandle]);
 
         NSMutableArray *collections = [NSMutableArray array];
         if ([stats[@"collections"] isKindOfClass:[NSArray class]]) {
@@ -4918,35 +4888,9 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
             }
         }
 
-        BOOL handleIsCorrect = NO;
-        if (doc && ![handle isEqualToString:@"handle.invalid"]) {
-            BOOL didDocMatches = didDocumentContainsHandle(doc, handle);
-            if (didDocMatches) {
-                // For local accounts, the DID doc "alsoKnownAs" is authoritative enough.
-                // Avoid network-based handle resolution, which can produce false negatives in restricted environments.
-                NSString *localHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : nil;
-                if (localHandle.length > 0 && [localHandle isEqualToString:[handle lowercaseString]]) {
-                    handleIsCorrect = YES;
-                } else {
-                    // Best-effort confirm handle -> DID resolution without failing the request on timeout.
-                    HandleResolver *handleResolver = [[HandleResolver alloc] init];
-                    __block NSString *resolvedDid = nil;
-                    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-                    [handleResolver resolveHandle:handle completion:^(NSString * _Nullable handleDid, NSError * _Nullable resolveError) {
-                        resolvedDid = handleDid;
-                        (void)resolveError;
-                        dispatch_semaphore_signal(semaphore);
-                    }];
-                    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
-                    long waited = dispatch_semaphore_wait(semaphore, timeout);
-                    handleIsCorrect = (waited != 0) ? YES : (resolvedDid.length > 0 && [resolvedDid isEqualToString:did]);
-                }
-            }
-        }
-
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
-            @"handle": handle,
+            @"handle": accountHandle,
             @"did": did,
             @"didDoc": didDocJson,
             @"collections": collections,
