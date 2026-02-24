@@ -48,6 +48,10 @@ export async function removeEmptyDirectories(rootDir, options = {}) {
 
     if (!dryRun) {
       const absDir = path.resolve(repoRoot, dir);
+      if (!await fs.pathExists(absDir)) {
+        skipped.push({ dir, reason: 'missing' });
+        continue;
+      }
       const entries = await fs.readdir(absDir);
       if (entries.length > 0) {
         skipped.push({ dir, reason: 'not physically empty' });
@@ -63,9 +67,14 @@ export async function removeEmptyDirectories(rootDir, options = {}) {
   }
 
   if (removeRoot) {
+    const absRoot = path.resolve(repoRoot, rootDir);
+    if (!await fs.pathExists(absRoot)) {
+      skipped.push({ dir: rootDir, reason: 'missing' });
+      return { candidates, removed, skipped };
+    }
+
     const rootEmpty = await isDirectoryEmpty(rootDir, { excludePatterns, repoRoot });
     if (rootEmpty) {
-      const absRoot = path.resolve(repoRoot, rootDir);
       if (!dryRun) {
         const entries = await fs.readdir(absRoot);
         if (entries.length > 0) {
