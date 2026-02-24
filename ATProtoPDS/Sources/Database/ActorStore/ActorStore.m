@@ -27,6 +27,18 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
 @implementation PDSActorStore
 
+#if defined(GNUSTEP)
+static NSString *PDSActorStoreBaseDirectoryFromDBPath(NSString *dbPath) {
+    if (dbPath.length == 0) return @"";
+    // dbPath is {base}/{method}/{prefix}/{did}
+    // base = dirname(dirname(dirname(dbPath)))
+    NSString *prefixDir = [dbPath stringByDeletingLastPathComponent];
+    NSString *methodDir = [prefixDir stringByDeletingLastPathComponent];
+    NSString *baseDir = [methodDir stringByDeletingLastPathComponent];
+    return baseDir ?: @"";
+}
+#endif
+
 + (instancetype)storeWithDid:(NSString *)did 
                     dbPath:(NSString *)dbPath
                       error:(NSError **)error {
@@ -45,7 +57,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         _did = [did copy];
         _dbPath = [dbPath copy];
 #if defined(GNUSTEP)
-        NSString *keystorePath = [[dbPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"keys"];
+        // Keys are stored under {base}/keys (shared across actor stores), not under the per-prefix shard directory.
+        NSString *baseDir = PDSActorStoreBaseDirectoryFromDBPath(dbPath);
+        NSString *keystorePath = [[baseDir stringByAppendingPathComponent:@"keys"] copy];
         _keyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:did keystorePath:keystorePath];
 #else
         _keyManager = [[PDSAppleActorKeyManager alloc] initWithDid:did];
@@ -1252,7 +1266,8 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 - (BOOL)generateSigningKeyForDid:(NSString *)targetDid error:(NSError **)error {
     if (![targetDid isEqualToString:self.did]) {
 #if defined(GNUSTEP)
-        NSString *keystorePath = [[self.dbPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"keys"];
+        NSString *baseDir = PDSActorStoreBaseDirectoryFromDBPath(self.dbPath);
+        NSString *keystorePath = [[baseDir stringByAppendingPathComponent:@"keys"] copy];
         id<PDSActorKeyManager> manager = [[PDSOpenSSLKeyManager alloc] initWithDid:targetDid keystorePath:keystorePath];
 #else
         id<PDSActorKeyManager> manager = [[PDSAppleActorKeyManager alloc] initWithDid:targetDid];
