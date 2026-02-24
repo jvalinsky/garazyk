@@ -433,11 +433,25 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, N
                                             handle:(NSString *)handle
                                                 did:(nullable NSString *)did
                                                error:(NSError **)error {
-    return [_accountService createAccountForEmail:email
-                                         password:password
-                                          handle:handle
-                                              did:did
-                                             error:error];
+    NSDictionary *result = [_accountService createAccountForEmail:email
+                                                        password:password
+                                                         handle:handle
+                                                             did:did
+                                                           error:error];
+    if (!result) {
+        return nil;
+    }
+
+    // Create the initial empty repo commit so the account is discoverable via sync/listRepos.
+    NSString *createdDid = result[@"did"];
+    if ([createdDid isKindOfClass:[NSString class]] && createdDid.length > 0) {
+        NSError *initError = nil;
+        if (![_repositoryService initializeRepoForDid:createdDid error:&initError]) {
+            PDS_LOG_ERROR(@"Failed to initialize repo for DID %@ during account creation: %@", createdDid, initError.localizedDescription ?: @"unknown error");
+        }
+    }
+
+    return result;
 }
 
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error {
