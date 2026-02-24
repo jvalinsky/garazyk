@@ -1,5 +1,6 @@
 #import "Core/TID.h"
 #import <Security/Security.h>
+#include <string.h>
 
 @interface TID ()
 @property (nonatomic, strong) NSString *internalStringValue;
@@ -60,18 +61,45 @@
 }
 
 + (nullable instancetype)tidFromString:(NSString *)string {
-    NSString *normalized = [[string stringByReplacingOccurrencesOfString:@"-" withString:@""] lowercaseString];
-    if (normalized.length != 13) {
+    NSString *normalized = string;
+    if (![self isValidTIDString:normalized]) {
         return nil;
     }
 
     uint64_t timestamp = [self decodeTimestamp:normalized];
-    if (timestamp == 0) return nil;
 
     TID *tid = [[TID alloc] init];
     tid.internalTimestamp = timestamp;
     tid.internalStringValue = normalized;
     return tid;
+}
+
++ (BOOL)isValidTIDString:(NSString *)normalized {
+    if (!normalized || normalized.length != 13) {
+        return NO;
+    }
+
+    const char *alphabet = kTIDBase32Alphabet;
+    unichar firstUC = [normalized characterAtIndex:0];
+    char first = (char)firstUC;
+    const char *firstPos = strchr(alphabet, first);
+    if (!firstPos) {
+        return NO;
+    }
+    // "high bit can't be high": the timestamp must fit in 53 bits, which means the most significant base32 digit must be < 8.
+    if ((firstPos - alphabet) >= 8) {
+        return NO;
+    }
+
+    for (NSUInteger i = 0; i < normalized.length; i++) {
+        unichar uc = [normalized characterAtIndex:i];
+        char c = (char)uc;
+        if (!strchr(alphabet, c)) {
+            return NO;
+        }
+    }
+
+    return YES;
 }
 
 + (NSString *)encodeBase32Sortable:(uint64_t)value {
