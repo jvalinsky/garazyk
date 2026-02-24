@@ -200,6 +200,14 @@ NS_ASSUME_NONNULL_END
         }
     }
 
+    /*! 204 No Content MUST NOT have Content-Type, Content-Length, or Transfer-Encoding */
+    if (self.statusCode == HttpStatusNoContent) {
+        [_headers removeObjectForKey:@"Content-Type"];
+        [_headers removeObjectForKey:@"Content-Length"];
+        [_headers removeObjectForKey:@"Transfer-Encoding"];
+        return;
+    }
+
     /*! Ensure Content-Type is set for JSON responses */
     if (!self.contentType && self.jsonBody) {
         self.contentType = @"application/json; charset=utf-8";
@@ -256,7 +264,8 @@ NS_ASSUME_NONNULL_END
     NSData *headerData = [self serializeHeadersForBodyLength:bodyData ? bodyData.length : 0];
     NSMutableData *result = [NSMutableData dataWithData:headerData];
 
-    if (bodyData) {
+    /*! 204 No Content MUST NOT include a message body */
+    if (bodyData && self.statusCode != HttpStatusNoContent) {
         [result appendData:bodyData];
     }
 
