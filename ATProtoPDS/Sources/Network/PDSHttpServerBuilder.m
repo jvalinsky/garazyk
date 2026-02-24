@@ -26,6 +26,7 @@
 #import "../App/NodeInfo/NodeInfoHandler.h"
 #import "../Admin/PDSAdminHandler.h"
 #import "../Debug/PDSLogger.h"
+#import "../Identity/ATProtoHandleValidator.h"
 #import "../Sync/SubscribeReposHandler.h"
 
 @interface PDSHttpServerBuilder ()
@@ -355,61 +356,143 @@
 - (void)registerWellKnownRoutesWithServer:(HttpServer *)server {
     __weak PDSServiceDatabases *weakServiceDatabases = self.serviceDatabases;
     __weak PDSController *weakController = self.controller;
+    __weak PDSConfiguration *weakConfiguration = self.configuration;
     
-    [server addRoute:@"GET" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
-        // Per ATProto spec: The handle is determined by the Host header in the HTTP request
-        // Example: GET https://test5.garazyk.xyz/.well-known/atproto-did
-        // The Host header will be "test5.garazyk.xyz"
-        NSString *handle = [request.headers objectForKey:@"Host"];
-        
-        // Strip port number if present (e.g., "localhost:2583" -> "localhost")
-        if (handle && [handle containsString:@":"]) {
-            NSArray *parts = [handle componentsSeparatedByString:@":"];
-            handle = parts[0];
+    NSString* _Nullable (^normalizedHostFromHostHeader)(NSString * _Nullable) = ^NSString* _Nullable (NSString * _Nullable hostHeader) {
+        if (![hostHeader isKindOfClass:[NSString class]]) {
+            return nil;
         }
-        
-        // Validate handle is present
-        if (!handle || ![handle isKindOfClass:[NSString class]] || handle.length == 0) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"Bad Request", @"message": @"Missing Host header"}];
+
+        NSString *host = [hostHeader stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (host.length == 0) {
+            return nil;
+        }
+
+        // Remove any trailing dot(s).
+        while ([host hasSuffix:@"."] && host.length > 1) {
+            host = [host substringToIndex:host.length - 1];
+        }
+
+        // Strip port if present (e.g., "example.com:443" -> "example.com").
+        // Keep IPv6 literal support ("[::1]:2583" -> "::1") even though handles are domains.
+        if ([host hasPrefix:@"["]) {
+            NSRange closingBracket = [host rangeOfString:@"]"];
+            if (closingBracket.location != NSNotFound && closingBracket.location > 1) {
+                host = [host substringWithRange:NSMakeRange(1, closingBracket.location - 1)];
+            }
+        } else {
+            NSRange lastColon = [host rangeOfString:@":" options:NSBackwardsSearch];
+            if (lastColon.location != NSNotFound) {
+                // Only treat as host:port if there's a single colon.
+                if ([host rangeOfString:@":" options:0 range:NSMakeRange(0, lastColon.location)].location == NSNotFound) {
+                    host = [host substringToIndex:lastColon.location];
+                }
+            }
+        }
+
+        host = [ATProtoHandleValidator normalizeHandle:host];
+        return host.length > 0 ? host : nil;
+    };
+
+    BOOL (^hostMatchesAllowedDomains)(NSString *host, NSArray<NSString *> *allowedDomains) = ^BOOL (NSString *host, NSArray<NSString *> *allowedDomains) {
+        if (allowedDomains.count == 0) {
+            return YES;
+        }
+
+        for (NSString *domain in allowedDomains) {
+            NSString *normalizedDomain = [normalizedHostFromHostHeader(domain) ?: @"" copy];
+            if (normalizedDomain.length == 0) {
+                continue;
+            }
+            if ([host isEqualToString:normalizedDomain]) {
+                return YES;
+            }
+            NSString *suffix = [@"." stringByAppendingString:normalizedDomain];
+            if ([host hasSuffix:suffix]) {
+                return YES;
+            }
+        }
+        return NO;
+    };
+
+    void (^handleWellKnownAtprotoDid)(HttpRequest *request, HttpResponse *response, BOOL includeBody) = ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
+        // Per ATProto spec: The handle is determined by the Host header in the HTTP request.
+        NSString *hostHeader = [request headerForKey:@"Host"];
+        NSString *handle = normalizedHostFromHostHeader(hostHeader);
+
+        if (handle.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            response.contentType = @"text/plain; charset=utf-8";
+            if (includeBody) {
+                [response setBodyString:@"missing host header\n"];
+            }
             return;
         }
-        
-        // Look up the DID for this handle in the database
-        // Try to get serviceDatabases from builder property or controller
+
+        // Optionally scope to configured available user domains.
+        PDSConfiguration *config = weakConfiguration;
+        NSArray<NSString *> *allowedDomains = config.availableUserDomains ?: @[];
+        if (!hostMatchesAllowedDomains(handle, allowedDomains)) {
+            response.statusCode = HttpStatusNotFound;
+            response.contentType = @"text/plain; charset=utf-8";
+            if (includeBody) {
+                [response setBodyString:@"not found\n"];
+            }
+            return;
+        }
+
+        // Look up the DID for this handle in the database.
         PDSServiceDatabases *strongServiceDatabases = weakServiceDatabases;
         if (!strongServiceDatabases) {
             PDSController *strongController = weakController;
             strongServiceDatabases = strongController.serviceDatabases;
         }
-        
+
         if (!strongServiceDatabases) {
-            response.statusCode = 500;
-            [response setJsonBody:@{@"error": @"Internal Server Error", @"message": @"Service databases not available"}];
+            response.statusCode = HttpStatusInternalServerError;
+            response.contentType = @"text/plain; charset=utf-8";
+            if (includeBody) {
+                [response setBodyString:@"internal error\n"];
+            }
             return;
         }
-        
+
         NSError *dbError = nil;
         PDSDatabaseAccount *account = [strongServiceDatabases getAccountByHandle:handle error:&dbError];
-        
         if (dbError) {
             PDS_LOG_ERROR(@"Database error looking up handle %@: %@", handle, dbError.localizedDescription ?: @"unknown error");
-            response.statusCode = 500;
-            [response setJsonBody:@{@"error": @"Internal Server Error", @"message": @"Database error"}];
+            response.statusCode = HttpStatusInternalServerError;
+            response.contentType = @"text/plain; charset=utf-8";
+            if (includeBody) {
+                [response setBodyString:@"internal error\n"];
+            }
             return;
         }
-        
-        if (!account) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found", @"message": @"Handle not found"}];
+
+        if (!account || account.did.length == 0) {
+            response.statusCode = HttpStatusNotFound;
+            response.contentType = @"text/plain; charset=utf-8";
+            if (includeBody) {
+                [response setBodyString:@"not found\n"];
+            }
             return;
         }
-        
-        // Return the DID as plain text per ATProto spec
-        // "Content-Type header set to text/plain, and include the DID as the HTTP body"
-        response.statusCode = 200;
-        [response setHeader:@"text/plain; charset=utf-8" forKey:@"Content-Type"];
-        [response setBodyString:account.did];
+
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"text/plain; charset=utf-8";
+        [response setHeader:@"Host" forKey:@"Vary"];
+        [response setHeader:@"max-age=300" forKey:@"Cache-Control"];
+        if (includeBody) {
+            [response setBodyString:[account.did stringByAppendingString:@"\n"]];
+        }
+    };
+
+    [server addRoute:@"GET" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
+        handleWellKnownAtprotoDid(request, response, YES);
+    }];
+
+    [server addRoute:@"HEAD" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
+        handleWellKnownAtprotoDid(request, response, NO);
     }];
     
     PDS_LOG_DEBUG(@"PDSHttpServerBuilder: .well-known routes registered");
