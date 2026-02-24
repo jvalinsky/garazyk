@@ -31,6 +31,16 @@
     self.repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:self.pool];
     self.testDID = @"did:web:test.repositoryservice.example.com";
     self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
+    
+    // Generate signing key for test DID
+    NSError *storeError = nil;
+    PDSActorStore *store = [self.pool storeForDid:self.testDID error:&storeError];
+    if (store) {
+        NSError *keyError = nil;
+        if (![store generateSigningKeyWithError:&keyError]) {
+            NSLog(@"Warning: Failed to generate signing key for test: %@", keyError);
+        }
+    }
 }
 
 - (void)tearDown {

@@ -1,4 +1,5 @@
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcAuthHelper.h"
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "App/Services/PDSAccountService.h"
@@ -91,36 +92,11 @@ static BOOL authorizeAdminRequest(HttpRequest *request, HttpResponse *response,
                                    PDSServiceDatabases *serviceDatabases,
                                    JWTMinter *jwtMinter,
                                    id<PDSAdminController> adminController) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader
-                                                      jwtMinter:jwtMinter
-                                                adminController:adminController
-                                                        request:request];
-    if (!did) {
-        if (response.statusCode == HttpStatusOK) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Admin authentication required"}];
-        }
-        return NO;
-    }
-
-    NSError *dbError = nil;
-    PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
-    if (!db) {
-        response.statusCode = HttpStatusInternalServerError;
-        [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": dbError.localizedDescription ?: @"Failed to open service database"}];
-        return NO;
-    }
-
-    PDSAdminAuth *adminAuth = [PDSAdminAuth sharedAuth];
-    NSError *authError = nil;
-    if (![adminAuth isAuthenticatedWithRequest:request.headers]) {
-        response.statusCode = HttpStatusForbidden;
-        [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Admin privileges required (valid admin token)"}];
-        return NO;
-    }
-    
-    return YES;
+    return [XrpcAuthHelper authorizeAdminRequest:request
+                                        response:response
+                                serviceDatabases:serviceDatabases
+                                       jwtMinter:jwtMinter
+                                 adminController:adminController];
 }
 
 static NSString *didWebIdentifierFromIssuer(NSString *issuer, NSString *fallbackHost) {
@@ -181,54 +157,57 @@ static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
     return algorithms.count > 0 ? algorithms.array : nil;
 }
 
-// Implementation of resolveDid
+// Implementation of resolveDid — resolves via PLC directory for did:plc DIDs,
+// falls back to local account data when PLC is unreachable.
 static NSDictionary *resolveDid(NSString *did, PDSServiceDatabases *dbs, PDSConfiguration *config, NSError **error) {
-    fprintf(stderr, "[resolveDid] Resolving DID: %s\n", did.UTF8String);
-    PDSDatabaseAccount *account = [dbs getAccountByDid:did error:error];
-    if (!account) {
-        fprintf(stderr, "[resolveDid] Account not found for DID: %s\n", did.UTF8String);
-        if (error && *error) {
-            fprintf(stderr, "[resolveDid] DB Error: %s\n", (*error).description.UTF8String);
-        }
-        return nil;
-    }
-    fprintf(stderr, "[resolveDid] Found account handle: %s\n", account.handle.UTF8String);
-
-    
-    NSString *handle = account.handle;
-    if (handle.length == 0) {
+    if (![did hasPrefix:@"did:"]) {
         if (error) {
-           *error = [NSError errorWithDomain:@"com.atproto.identity" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Account has no handle"}];
+            *error = [NSError errorWithDomain:@"com.atproto.identity" code:1
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID format"}];
         }
         return nil;
     }
-    
-    NSString *serviceEndpoint = [config canonicalIssuerWithPortHint:0];
-    
-    return @{
-        @"@context": @[
-            @"https://www.w3.org/ns/did/v1",
-            @"https://w3id.org/security/multikey/v1",
-            @"https://w3id.org/security/suites/secp256k1-2019/v1"
-        ],
-        @"id": did,
-        @"alsoKnownAs": @[[@"at://" stringByAppendingString:handle]],
-        @"verificationMethod": @[
-            @{
-                @"id": [NSString stringWithFormat:@"%@#atproto", did],
-                @"type": @"Multikey",
-                @"controller": did,
-                @"publicKeyMultibase": @"zQ3sh...", // Placeholder
-            }
-        ],
-        @"service": @[
-            @{
-                @"id": @"#atproto_pds",
-                @"type": @"AtprotoPersonalDataServer",
-                @"serviceEndpoint": serviceEndpoint
-            }
-        ]
-    };
+
+    if ([did hasPrefix:@"did:plc:"]) {
+        NSString *plcUrl = config.plcURL;
+        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
+            plcUrl = @"http://127.0.0.1:2582";
+        }
+        DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+        resolver.timeout = 10.0;
+        NSError *plcError = nil;
+        NSDictionary *doc = [resolver resolveDID:did error:&plcError];
+        if (doc) {
+            return doc;
+        }
+        // PLC unreachable or DID not found there — try local account as fallback
+        PDSDatabaseAccount *account = [dbs getAccountByDid:did error:nil];
+        if (account && account.handle.length > 0) {
+            NSString *serviceEndpoint = [config canonicalIssuerWithPortHint:0];
+            return @{
+                @"@context": @[@"https://www.w3.org/ns/did/v1"],
+                @"id": did,
+                @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", account.handle]],
+                @"service": @[
+                    @{
+                        @"id": @"#atproto_pds",
+                        @"type": @"AtprotoPersonalDataServer",
+                        @"serviceEndpoint": serviceEndpoint
+                    }
+                ]
+            };
+        }
+        if (error) *error = plcError;
+        return nil;
+    }
+
+    // Unsupported DID method
+    if (error) {
+        *error = [NSError errorWithDomain:@"com.atproto.identity" code:1
+                                userInfo:@{NSLocalizedDescriptionKey:
+                                    [NSString stringWithFormat:@"Unsupported DID method: %@", did]}];
+    }
+    return nil;
 }
 
 static NSDictionary *loadLexiconJSONForNSID(NSString *nsid,
@@ -1215,40 +1194,6 @@ static BOOL resolveAccountIdentifierToDid(PDSServiceDatabases *serviceDatabases,
         *outDid = account.did;
     }
     return YES;
-}
-
-static void setSubscribeLabelsUpgradeRequired(HttpRequest *request, HttpResponse *response) {
-    if (request.method != HttpMethodGET) {
-        response.statusCode = HttpStatusMethodNotAllowed;
-        [response setHeader:@"GET" forKey:@"Allow"];
-        [response setJsonBody:@{
-            @"error": @"MethodNotAllowed",
-            @"message": @"subscribeLabels only supports GET"
-        }];
-        return;
-    }
-
-    NSString *cursorString = [request queryParamForKey:@"cursor"];
-    if (cursorString.length > 0) {
-        NSInteger cursor = 0;
-        if (!parseStrictIntegerString(cursorString, &cursor) || cursor < 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{
-                @"error": @"InvalidRequest",
-                @"message": @"Invalid cursor"
-            }];
-            return;
-        }
-    }
-
-    response.statusCode = 426;
-    [response setHeader:@"websocket" forKey:@"Upgrade"];
-    [response setHeader:@"Upgrade" forKey:@"Connection"];
-    [response setJsonBody:@{
-        @"error": @"UpgradeRequired",
-        @"message": @"WebSocket upgrade required for subscribeLabels"
-    }];
-    response.keepAlive = NO;
 }
 
 static NSString *currentISO8601String(void) {
@@ -2877,10 +2822,8 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoLabelSubscribeLabels:^(HttpRequest *request, HttpResponse *response) {
-        setSubscribeLabelsUpgradeRequired(request, response);
-    }];
 }
+
 
 static NSDictionary *resolveIdentityInfoForIdentifier(NSString *identifier,
                                                        PDSServiceDatabases *serviceDatabases,
@@ -3674,10 +3617,6 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"SigningKeyUnavailable", @"message": error.localizedDescription ?: @"Failed to reserve signing key"}];
             return;
-        }
-
-        if (signingKey.length == 0) {
-            signingKey = @"did:key:placeholder"; // Should not happen if store works
         }
 
         response.statusCode = HttpStatusOK;
@@ -4837,8 +4776,8 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
+        response.statusCode = 501;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"repo.importRepo is not yet supported"}];
     }];
 
     [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
@@ -5061,15 +5000,15 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *error = nil;
-        NSData *root = [repositoryService getRepoRoot:did error:&error];
-        if (error || !root) {
+        NSDictionary *latest = [repositoryService getLatestCommitForDid:did error:&error];
+        if (error || !latest) {
             response.statusCode = 404;
             [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"root": [CID base32Encode:root]}];
+        [response setJsonBody:@{@"root": latest[@"cid"] ?: @""}];
     }];
 
     [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request, HttpResponse *response) {
@@ -5219,8 +5158,13 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             return;
         }
 
+        NSDictionary *latest = [repositoryService getLatestCommitForDid:did error:nil];
+        NSMutableDictionary *body = [NSMutableDictionary dictionaryWithObjectsAndKeys:did, @"did", @YES, @"active", nil];
+        if (latest[@"rev"]) {
+            body[@"rev"] = latest[@"rev"];
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"did": did, @"active": @YES}];
+        [response setJsonBody:body];
     }];
 
     [dispatcher registerComAtprotoSyncListReposByCollection:^(HttpRequest *request, HttpResponse *response) {
@@ -5505,11 +5449,10 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                              jwtMinter:(JWTMinter *)jwtMinter
                        adminController:(id<PDSAdminController>)adminController
                                request:(HttpRequest *)request {
-    return [self extractDIDFromAuthHeader:authHeader
-                               jwtMinter:jwtMinter
-                         adminController:adminController
-                                 request:request
-                                response:nil];
+    return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                         jwtMinter:jwtMinter
+                                   adminController:adminController
+                                           request:request];
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
@@ -5517,166 +5460,18 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
                        adminController:(id<PDSAdminController>)adminController
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response {
-    if (!authHeader) return nil;
-    NSString *token = nil;
-    BOOL isDPoP = NO;
-    if ([authHeader hasPrefix:@"Bearer "]) {
-        token = [authHeader substringFromIndex:7];
-    } else if ([authHeader hasPrefix:@"DPoP "]) {
-        token = [authHeader substringFromIndex:5];
-        isDPoP = YES;
-    } else {
-        return nil;
-    }
-
-    NSString *dpopThumbprint = nil;
-    if (isDPoP) {
-        NSString *dpopProof = [request headerForKey:@"DPoP"];
-        if (dpopProof.length == 0) {
-            PDS_LOG_AUTH_WARN(@"Missing DPoP header for DPoP authorization");
-            return nil;
-        }
-
-        NSString *host = [request headerForKey:@"Host"] ?: @"";
-        NSString *scheme = nil;
-        NSString *forwardedProto = [request headerForKey:@"X-Forwarded-Proto"];
-        if (forwardedProto.length > 0) {
-            scheme = forwardedProto;
-        } else {
-            NSString *lowercaseHost = [host lowercaseString];
-            if ([lowercaseHost containsString:@"localhost"] || [lowercaseHost hasPrefix:@"127.0.0.1"] || [lowercaseHost hasPrefix:@"::1"]) {
-                scheme = @"http";
-            } else {
-                scheme = @"https";
-            }
-        }
-
-        NSMutableString *urlString = [NSMutableString string];
-        if (host.length > 0) {
-            [urlString appendFormat:@"%@://%@%@", scheme, host, request.path ?: @"/"];
-            if (request.queryString.length > 0) {
-                [urlString appendFormat:@"?%@", request.queryString];
-            }
-        }
-
-        NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
-        if (!dpopURL) {
-            PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
-            return nil;
-        }
-
-        NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
-        if (requestedNonce.length == 0) {
-            requestedNonce = nil;
-        }
-
-        NSError *dpopError = nil;
-        if (![OAuth2DPoPProof verifyProof:dpopProof
-                                   method:request.methodString
-                                      url:dpopURL
-                                    nonce:requestedNonce
-                             requireNonce:YES
-                            outThumbprint:&dpopThumbprint
-                                    error:&dpopError]) {
-            if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
-                if (response) {
-                    response.statusCode = HttpStatusUnauthorized;
-                    NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
-                    if (nonce.length > 0) {
-                        [response setHeader:nonce forKey:@"DPoP-Nonce"];
-                    }
-                    [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
-                    [response setJsonBody:@{
-                        @"error": @"use_dpop_nonce",
-                        @"message": dpopError.localizedDescription ?: @"DPoP nonce required"
-                    }];
-                }
-                return nil;
-            }
-            PDS_LOG_AUTH_WARN(@"Invalid DPoP proof: %@", dpopError.localizedDescription ?: @"unknown error");
-            return nil;
-        }
-    }
-
-    // Parse the JWT token
-    NSError *parseError = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&parseError];
-    if (!jwt || parseError) {
-        PDS_LOG_HTTP_WARN(@"Failed to parse JWT token from authorization header");
-        return nil;
-    }
-
-    // Create verifier and set expected issuer
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
-    if (jwtMinter) {
-        verifier.keyManager = jwtMinter.keyManager;
-        verifier.publicKey = jwtMinter.publicKey;
-    }
-
-    // Use configurable issuer from PDSConfiguration, default to localhost
-    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
-    NSString *expectedIssuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
-    verifier.expectedIssuer = expectedIssuer;
-    verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
-    verifier.allowedAlgorithms = jwtAllowedAlgorithmsForMinter(jwtMinter);
-
-    // Verify the JWT
-    NSError *verifyError = nil;
-    BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
-    if (!isValid || verifyError) {
-        NSLog(@"[AuthRegistry] JWT verification failed: %@. Expected issuer: %@, JWT issuer: %@, subject: %@", verifyError.localizedDescription, expectedIssuer, jwt.payload.iss, jwt.payload.sub);
-        PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
-        return nil;
-    }
-
-    // Phase 4: Enforce DPoP binding
-    NSString *tokenJkt = jwt.payload.cnf[@"jkt"];
-    if (isDPoP) {
-        if (!tokenJkt) {
-            NSLog(@"[AuthRegistry] DPoP used but token not bound");
-            PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
-            return nil;
-        }
-        if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
-            NSLog(@"[AuthRegistry] DPoP thumbprint mismatch");
-            PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
-            return nil;
-        }
-    } else if (tokenJkt) {
-        NSLog(@"[AuthRegistry] DPoP-bound token sent as Bearer");
-        PDS_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
-        return nil;
-    }
-
-    // Extract DID from subject claim
-    NSString *did = jwt.payload.sub;
-    NSLog(@"[AuthRegistry] Validated JWT for subject: %@", did);
-    if (!did || ![did hasPrefix:@"did:"]) {
-        NSLog(@"[AuthRegistry] Invalid DID in subject: %@", did);
-        PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim: %@", did);
-        return nil;
-    }
-
-    NSError *takedownError = nil;
-    BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
-    if (takedownError) {
-        PDS_LOG_AUTH_WARN(@"Failed to check takedown status for %@: %@", did, takedownError.localizedDescription);
-        return nil;
-    }
-    if (isTakedown) {
-        PDS_LOG_AUTH_WARN(@"Rejected request for suspended account %@", did);
-        return nil;
-    }
-
-    return did;
+    return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                         jwtMinter:jwtMinter
+                                   adminController:adminController
+                                           request:request
+                                          response:response];
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader controller:(PDSController *)controller request:(HttpRequest *)request response:(HttpResponse *)response {
-    return [self extractDIDFromAuthHeader:authHeader
-                               jwtMinter:controller.jwtMinter
-                         adminController:controller.adminController
-                                 request:request
-                                response:response];
+    return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                         controller:controller
+                                            request:request
+                                           response:response];
 }
 
 static void registerMethodsWithDispatcherUsingServices(Class registryClass,
@@ -5706,7 +5501,6 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                                            NO);
     
     [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
-        fprintf(stderr, "[resolveDid] Handler invoked\n");
         NSString *did = [request queryParamForKey:@"did"];
         if (!did) {
             response.statusCode = HttpStatusBadRequest;
@@ -6036,7 +5830,6 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
     }];
 
     [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
-        fprintf(stderr, "[getLatestCommit] Handler invoked\n");
         NSString *did = [request queryParamForKey:@"did"];
         if (!did) {
             response.statusCode = HttpStatusBadRequest;

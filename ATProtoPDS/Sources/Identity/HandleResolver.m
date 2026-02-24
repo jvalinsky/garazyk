@@ -362,11 +362,21 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
             const unsigned char *txt_data = ns_rr_rdata(rr);
             if (txt_data == NULL) continue;
             
-            int txt_len = txt_data[0];
-            NSString *txt_str = [[NSString alloc] initWithBytes:txt_data + 1 length:txt_len encoding:NSUTF8StringEncoding];
+            int rdlen = ns_rr_rdlen(rr);
+            NSMutableString *fullTxt = [NSMutableString string];
+            int offset = 0;
+            while (offset < rdlen) {
+                int seg_len = txt_data[offset];
+                if (seg_len == 0 || offset + 1 + seg_len > rdlen) break;
+                NSString *seg = [[NSString alloc] initWithBytes:txt_data + offset + 1
+                                                         length:seg_len
+                                                       encoding:NSUTF8StringEncoding];
+                if (seg) [fullTxt appendString:seg];
+                offset += 1 + seg_len;
+            }
             
-            if ([txt_str hasPrefix:@"did="]) {
-                NSString *did = [txt_str substringFromIndex:4];
+            if ([fullTxt hasPrefix:@"did="]) {
+                NSString *did = [fullTxt substringFromIndex:4];
                 completion(did, nil);
                 return;
             }
@@ -384,10 +394,17 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         NSDate *now = [NSDate date];
         NSTimeInterval oneMinuteAgo = [now timeIntervalSince1970] - 60.0;
 
-        // Remove timestamps older than 1 minute
-        [self.requestTimestamps filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDate *timestamp, NSDictionary *bindings) {
-            return [timestamp timeIntervalSince1970] > oneMinuteAgo;
-        }]];
+        // Remove timestamps older than 1 minute (from front, O(n) but with early break)
+        NSMutableIndexSet *toRemove = [NSMutableIndexSet indexSet];
+        for (NSUInteger i = 0; i < self.requestTimestamps.count; i++) {
+            if ([self.requestTimestamps[i] timeIntervalSince1970] > oneMinuteAgo) {
+                break;
+            }
+            [toRemove addIndex:i];
+        }
+        if (toRemove.count > 0) {
+            [self.requestTimestamps removeObjectsAtIndexes:toRemove];
+        }
 
         // Check if we're under the limit
         if (self.requestTimestamps.count >= self.rateLimitPerMinute) {
