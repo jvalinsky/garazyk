@@ -61,14 +61,6 @@
         return NO;
     }
 
-    // Check reserved TLDs
-    NSArray *reservedTLDs = @[@"alt", @"arpa", @"example", @"internal", @"invalid", @"local", @"localhost", @"onion"];
-    NSString *tld = [[handle componentsSeparatedByString:@"."] lastObject];
-    if ([reservedTLDs containsObject:[tld lowercaseString]]) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:7 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Reserved TLD: .%@", tld]}];
-        return NO;
-    }
-
     return YES;
 }
 
@@ -115,11 +107,21 @@
         return NO;
     }
 
-    // Regex: ^[2-7a-z]{13}$
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[2-7a-z]{13}$" options:0 error:nil];
-    if ([regex numberOfMatchesInString:tid options:0 range:NSMakeRange(0, tid.length)] == 0) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format (must be base32-sortable)"}];
+    // TIDs are base32-sortable using alphabet: 234567abcdefghijklmnopqrstuvwxyz
+    // Plus: the "high bit can't be high" (timestamp must fit in 53 bits), which restricts the first char to index < 8.
+    static NSString * const alphabet = @"234567abcdefghijklmnopqrstuvwxyz";
+    static NSString * const allowedFirstChars = @"234567ab";
+    unichar first = [tid characterAtIndex:0];
+    if ([allowedFirstChars rangeOfString:[NSString stringWithCharacters:&first length:1]].location == NSNotFound) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format (high bit cannot be set)"}];
         return NO;
+    }
+    for (NSUInteger i = 0; i < tid.length; i++) {
+        unichar c = [tid characterAtIndex:i];
+        if ([alphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format (must be base32-sortable)"}];
+            return NO;
+        }
     }
 
     return YES;
