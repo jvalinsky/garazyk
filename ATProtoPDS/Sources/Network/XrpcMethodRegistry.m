@@ -1,6 +1,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcIdentityHelper.h"
+#import "Network/XrpcErrorHelper.h"
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "App/Services/PDSAccountService.h"

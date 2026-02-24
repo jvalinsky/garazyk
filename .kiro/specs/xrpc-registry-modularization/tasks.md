@@ -96,8 +96,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 3. Extract XrpcErrorHelper module
-  - [ ] 3.1 Create XrpcErrorHelper class with error construction methods
+- [x] 3. Extract XrpcErrorHelper module
+  - [x] 3.1 Create XrpcErrorHelper class with error construction methods
     - Create ATProtoPDS/Sources/Network/XrpcErrorHelper.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcErrorHelper.m with implementation
     - Implement setAuthenticationError (401)
@@ -110,22 +110,22 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Standardize JSON format: `{"error": "<code>", "message": "<message>"}`
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
   
-  - [ ] 3.2 Write property test for error response format
+  - [x] 3.2 Write property test for error response format
     - **Property 6: Error Response Format Consistency**
     - **Validates: Requirements 3.6**
     - Generate random error codes and messages
     - Verify JSON response contains correct fields
   
-  - [ ] 3.3 Update XrpcMethodRegistry to use XrpcErrorHelper
+  - [x] 3.3 Update XrpcMethodRegistry to use XrpcErrorHelper
     - Replace inline error construction with XrpcErrorHelper calls
     - Standardize all error responses across endpoints
     - _Requirements: 3.7_
   
-  - [ ] 3.4 Update CMakeLists.txt to include XrpcErrorHelper sources
+  - [x] 3.4 Update CMakeLists.txt to include XrpcErrorHelper sources
     - Add Sources/Network/XrpcErrorHelper.m to ATPROTOPDS_SOURCES
     - _Requirements: 3.1_
   
-  - [ ] 3.5 Verify all tests pass after XrpcErrorHelper extraction
+  - [x] 3.5 Verify all tests pass after XrpcErrorHelper extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
