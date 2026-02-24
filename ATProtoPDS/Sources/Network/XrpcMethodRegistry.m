@@ -4842,41 +4842,111 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     }];
 
     [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
+        // Per lexicon: does not require auth.
+        NSString *identifier = [request queryParamForKey:@"repo"] ?: @"";
+        if (identifier.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repo"}];
             return;
         }
 
-        NSError *error = nil;
-        NSData *root = [repositoryService getRepoRoot:did error:&error];
-        NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
-        NSDictionary *account = [accountService getAccountForDid:did error:nil];
+        NSString *did = nil;
+        NSString *handle = nil;
 
-        NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        result[@"did"] = did;
-        if (root) {
-            result[@"root"] = [root base64EncodedStringWithOptions:0];
+        if ([identifier hasPrefix:@"did:"]) {
+            did = identifier;
+        } else {
+            NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:identifier];
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:normalizedHandle error:nil];
+            if (account.did.length > 0) {
+                did = account.did;
+                handle = account.handle.length > 0 ? [account.handle lowercaseString] : normalizedHandle;
+            } else {
+                // Fall back to external handle resolution.
+                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                __block NSString *resolvedDid = nil;
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                [handleResolver resolveHandle:normalizedHandle completion:^(NSString * _Nullable handleDid, NSError * _Nullable resolveError) {
+                    resolvedDid = handleDid;
+                    (void)resolveError;
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+                did = resolvedDid;
+                handle = normalizedHandle;
+            }
         }
-        if (account[@"handle"]) {
-            result[@"handle"] = account[@"handle"];
+
+        if (did.length == 0) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
+            return;
         }
-        if (stats[@"collections"]) {
-            NSMutableArray *colNames = [NSMutableArray array];
+
+        NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
+        NSError *rootError = nil;
+        NSData *root = [repositoryService getRepoRoot:did error:&rootError];
+        if (!root) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": rootError.localizedDescription ?: @"Repository not found"}];
+            return;
+        }
+
+        // Resolve full DID document (required by lexicon).
+        DIDResolver *didResolver = [[DIDResolver alloc] init];
+        didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+        DIDDocument *doc = [didResolver resolveDIDSync:did error:nil];
+        NSDictionary *didDocJson = doc.jsonDictionary ?: @{};
+
+        if (handle.length == 0) {
+            // Prefer local account handle if present, otherwise infer from DID doc.
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+            if (account.handle.length > 0) {
+                handle = [account.handle lowercaseString];
+            } else {
+                handle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
+            }
+        }
+        if (handle.length == 0) {
+            handle = @"handle.invalid";
+        }
+
+        NSMutableArray *collections = [NSMutableArray array];
+        if ([stats[@"collections"] isKindOfClass:[NSArray class]]) {
             for (NSDictionary *col in stats[@"collections"]) {
-                if (col[@"collection"]) {
-                    [colNames addObject:col[@"collection"]];
+                if ([col isKindOfClass:[NSDictionary class]] && [col[@"collection"] isKindOfClass:[NSString class]]) {
+                    [collections addObject:col[@"collection"]];
                 }
             }
-            result[@"collections"] = colNames;
+        }
+
+        BOOL handleIsCorrect = NO;
+        if (doc && ![handle isEqualToString:@"handle.invalid"]) {
+            BOOL didDocMatches = didDocumentContainsHandle(doc, handle);
+            if (didDocMatches) {
+                // Try to confirm handle -> DID resolution without failing the request on timeout.
+                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                __block NSString *resolvedDid = nil;
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                [handleResolver resolveHandle:handle completion:^(NSString * _Nullable handleDid, NSError * _Nullable resolveError) {
+                    resolvedDid = handleDid;
+                    (void)resolveError;
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
+                long waited = dispatch_semaphore_wait(semaphore, timeout);
+                handleIsCorrect = (waited != 0) ? YES : (resolvedDid.length > 0 && [resolvedDid isEqualToString:did]);
+            }
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:@{
+            @"handle": handle,
+            @"did": did,
+            @"didDoc": didDocJson,
+            @"collections": collections,
+            @"handleIsCorrect": @(handleIsCorrect)
+        }];
     }];
 
     [dispatcher registerComAtprotoRepoPutRecord:^(HttpRequest *request, HttpResponse *response) {
