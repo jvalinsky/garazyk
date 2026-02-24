@@ -4884,11 +4884,10 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         }
 
         NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
-        NSError *rootError = nil;
-        NSData *root = [repositoryService getRepoRoot:did error:&rootError];
-        if (!root) {
+        PDSDatabaseAccount *localAccount = [serviceDatabases getAccountByDid:did error:nil];
+        if (!localAccount) {
             response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": rootError.localizedDescription ?: @"Repository not found"}];
+            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
             return;
         }
 
@@ -4900,9 +4899,8 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
 
         if (handle.length == 0) {
             // Prefer local account handle if present, otherwise infer from DID doc.
-            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
-            if (account.handle.length > 0) {
-                handle = [account.handle lowercaseString];
+            if (localAccount.handle.length > 0) {
+                handle = [localAccount.handle lowercaseString];
             } else {
                 handle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
             }
