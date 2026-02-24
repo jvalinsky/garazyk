@@ -216,7 +216,9 @@
 
     // Handler for /xrpc (prefix match for all XRPC methods)
     [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        PDS_LOG_HTTP_INFO(@"About to call dispatcher handleRequest for %@", request.path);
         [dispatcher handleRequest:request response:response];
+        PDS_LOG_HTTP_INFO(@"dispatcher handleRequest returned for %@", request.path);
     }];
 
     // OPTIONS preflight for XRPC methods
@@ -355,31 +357,21 @@
     __weak PDSController *weakController = self.controller;
     
     [server addRoute:@"GET" path:@"/.well-known/atproto-did" handler:^(HttpRequest *request, HttpResponse *response) {
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-        NSString *handle = request.queryParams[@"handle"];
+        // Per ATProto spec: The handle is determined by the Host header in the HTTP request
+        // Example: GET https://test5.garazyk.xyz/.well-known/atproto-did
+        // The Host header will be "test5.garazyk.xyz"
+        NSString *handle = [request.headers objectForKey:@"Host"];
         
-        // Validate handle parameter is present
+        // Strip port number if present (e.g., "localhost:2583" -> "localhost")
+        if (handle && [handle containsString:@":"]) {
+            NSArray *parts = [handle componentsSeparatedByString:@":"];
+            handle = parts[0];
+        }
+        
+        // Validate handle is present
         if (!handle || ![handle isKindOfClass:[NSString class]] || handle.length == 0) {
             response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"Bad Request", @"message": @"Missing handle parameter"}];
-            return;
-        }
-        
-        // Only respond if this PDS owns the handle
-        // Default to canonical hostname if availableUserDomains is not configured
-        NSString *hostname = [config canonicalHostname];
-        NSArray<NSString *> *availableDomains = config.availableUserDomains ?: (hostname.length > 0 ? @[hostname] : @[]);
-        BOOL isOwnedHandle = NO;
-        for (NSString *domain in availableDomains) {
-            if ([handle hasSuffix:domain]) {
-                isOwnedHandle = YES;
-                break;
-            }
-        }
-        
-        if (!isOwnedHandle) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"Not Found", @"message": @"This PDS does not own the requested handle"}];
+            [response setJsonBody:@{@"error": @"Bad Request", @"message": @"Missing Host header"}];
             return;
         }
         
@@ -413,7 +405,8 @@
             return;
         }
         
-        // Return the DID as plain text
+        // Return the DID as plain text per ATProto spec
+        // "Content-Type header set to text/plain, and include the DID as the HTTP body"
         response.statusCode = 200;
         [response setHeader:@"text/plain; charset=utf-8" forKey:@"Content-Type"];
         [response setBodyString:account.did];

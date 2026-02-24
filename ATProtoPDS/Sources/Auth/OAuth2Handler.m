@@ -387,6 +387,7 @@ static NSMutableDictionary *sPendingConsents = nil;
         [resp setHeader:@"Authorization, Content-Type, DPoP, DPoP-Nonce" forKey:@"Access-Control-Allow-Headers"];
         [resp setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
         resp.statusCode = 204;
+        resp.statusMessage = @"No Content";
     };
     [httpServer addRoute:@"OPTIONS" path:@"/oauth/authorize" handler:corsPreflightHandler];
     [httpServer addRoute:@"OPTIONS" path:@"/oauth/token" handler:corsPreflightHandler];
