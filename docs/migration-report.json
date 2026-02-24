@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-24T02:16:40.673Z",
+  "repoRoot": "/Users/jack/Software/garazyk",
+  "statistics": {
+    "totalFilesMoved": 1,
+    "successfulMoves": 1,
+    "failedMoves": 0,
+    "totalLinksUpdated": 0,
+    "totalErrors": 0,
+    "validationPassed": true
+  },
+  "movedFiles": [
+    {
+      "source": "plan/20260220-admin-control-panel.md",
+      "destination": "docs/plans/20260220-admin-control-panel.md",
+      "status": "success"
+    }
+  ],
+  "updatedLinks": [],
+  "errors": [],
+  "errorsByType": {},
+  "validation": {
+    "passed": true
+  },
+  "summary": "Migration Summary\n=================\n\nFiles Moved: 1\n  - Successful: 1\n  - Failed: 0\n\nLinks Updated: 0\n\nValidation: PASSED\n\nOverall Status: SUCCESS"
+}
