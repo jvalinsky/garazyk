@@ -5155,7 +5155,6 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
 
         NSError *accountsError = nil;
         NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
-        NSLog(@"[listRepos] Loaded %lu accounts", (unsigned long)accounts.count);
         if (!accounts) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
@@ -5166,19 +5165,21 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
         NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
         while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
             PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-            NSLog(@"[listRepos] Scanning account: %@", account.did);
             if (account.did.length > 0) {
-                NSError *rootError = nil;
-                NSData *root = [repositoryService getRepoRoot:account.did error:&rootError];
-                NSLog(@"[listRepos] Root data for %@: %@", account.did, root ? [NSString stringWithFormat:@"%lu bytes", (unsigned long)root.length] : @"NIL");
-                NSString *head = root ? [CID base32Encode:root] : nil;
+                NSDictionary *latest = [repositoryService getLatestCommitForDid:account.did error:nil];
+                if (!latest) {
+                    // Ensure empty repos are visible by creating the initial empty commit if needed.
+                    (void)[repositoryService initializeRepoForDid:account.did error:nil];
+                    latest = [repositoryService getLatestCommitForDid:account.did error:nil];
+                }
 
+                NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]] ? latest[@"cid"] : nil;
+                NSString *rev = [latest[@"rev"] isKindOfClass:[NSString class]] ? latest[@"rev"] : @"";
                 if (head.length > 0) {
-                    NSString *rev = [[TID tid] stringValue];
                     [repos addObject:@{
                         @"did": account.did,
                         @"head": head,
-                        @"rev": rev ?: @"",
+                        @"rev": rev,
                         @"active": @YES
                     }];
                 }
@@ -5186,7 +5187,6 @@ static void registerSyncCoreMethods(XrpcDispatcher *dispatcher,
             scanIndex += 1;
         }
 
-        NSLog(@"[listRepos] Found %lu repos", (unsigned long)repos.count);
         NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
         if (scanIndex < (NSInteger)accounts.count) {
             result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
