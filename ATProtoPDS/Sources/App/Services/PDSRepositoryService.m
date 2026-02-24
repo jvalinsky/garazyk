@@ -153,33 +153,44 @@
 }
 
 - (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error {
+    // Ensure the stored repo root is a signed Commit CID (not an MST root CID).
+    // This is required for atproto sync endpoints and for external crawlers/validators.
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) {
         if (error && !*error) {
-             *error = [NSError errorWithDomain:@"com.atproto.sync" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Repo not found"}];
+            *error = [NSError errorWithDomain:@"com.atproto.sync"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Repo not found"}];
         }
         return nil;
     }
-    
-    __block NSString *cidStr = nil;
-    __block NSString *rev = nil;
-    
-    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        id<PDSActorStoreReader> reader = (id<PDSActorStoreReader>)transactor;
-        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
-        if (rootCidBytes) {
-            CID *cid = [CID cidFromBytes:rootCidBytes];
-            cidStr = cid.stringValue;
-            rev = [reader getRepoRevisionForDid:did error:blockError];
-        }
-    } error:error];
-    
-    if (!cidStr) {
-        if (error && !*error) *error = [NSError errorWithDomain:@"com.atproto.sync" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Repo root not found"}];
+
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
+    NSArray<NSString *> *recordCIDStrings = nil;
+    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+
+    if (![self prepareRepoExportForDid:did
+                                 since:nil
+                                 store:&store
+                                   mst:&mst
+                             commitCID:&commitCID
+                           commitBlock:&commitBlock
+                        noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
+                       recordCIDStrings:&recordCIDStrings
+                            recordByCID:&recordByCID
+                                 error:error]) {
         return nil;
     }
-    
-    return @{@"cid": cidStr, @"rev": rev ?: @""};
+
+    NSString *rev = [store getRepoRevisionForDid:did error:nil] ?: @"";
+    return @{@"cid": commitCID.stringValue ?: @"", @"rev": rev};
 }
 
 - (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error {
@@ -502,12 +513,44 @@
         return NO;
     }
 
-    NSData *storedRoot = [store getRepoRootForDid:did error:nil];
+    NSData *storedRootBytes = [store getRepoRootForDid:did error:nil];
     NSString *storedRev = [store getRepoRevisionForDid:did error:nil];
     NSString *latestMutationRev = [store latestMutationRevisionWithError:nil];
 
-    NSData *newRootBytes = mstRootCID.bytes;
-    BOOL rootChanged = !storedRoot || ![storedRoot isEqualToData:newRootBytes];
+    // Determine whether the *repo state* has changed by comparing the stored head commit's "data" CID
+    // against the newly computed MST root CID.
+    CID *storedCommitCID = storedRootBytes ? [CID cidFromBytes:storedRootBytes] : nil;
+    NSData *storedCommitBlock = storedCommitCID ? [store getBlockForCID:storedCommitCID.bytes forDid:did error:nil] : nil;
+    CID *storedDataCID = nil;
+    BOOL storedCommitIsSigned = NO;
+
+    if (storedCommitBlock.length > 0) {
+        NSError *decodeError = nil;
+        id decoded = [ATProtoDagCBOR decodeData:storedCommitBlock error:&decodeError];
+        if ([decoded isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *map = (NSDictionary *)decoded;
+            id versionVal = map[@"version"];
+            id didVal = map[@"did"];
+            id revVal = map[@"rev"];
+            if ([versionVal respondsToSelector:@selector(integerValue)] &&
+                [didVal isKindOfClass:[NSString class]] &&
+                [revVal isKindOfClass:[NSString class]]) {
+                id dataVal = map[@"data"];
+                if ([dataVal isKindOfClass:[CID class]]) {
+                    storedDataCID = (CID *)dataVal;
+                } else if ([dataVal isKindOfClass:[NSString class]]) {
+                    storedDataCID = [CID cidFromString:(NSString *)dataVal];
+                }
+
+                id sigVal = map[@"sig"];
+                if ([sigVal isKindOfClass:[NSData class]] && ((NSData *)sigVal).length > 0) {
+                    storedCommitIsSigned = YES;
+                }
+            }
+        }
+    }
+
+    BOOL rootChanged = (storedDataCID == nil) || ![storedDataCID isEqual:mstRootCID];
     BOOL revMissing = (storedRev.length == 0);
     NSString *currentRev = storedRev;
     if (rootChanged || revMissing) {
@@ -611,14 +654,11 @@
         }
     }
 
-    if (rootChanged || revMissing || newRecordBlocks.count > 0 || recordsNeedingRevBackfill.count > 0) {
+    // Persist any newly materialized record blocks and rev backfills.
+    // NOTE: We do *not* update repo_root here. The repo root must point at a signed Commit CID.
+    if (newRecordBlocks.count > 0 || recordsNeedingRevBackfill.count > 0) {
         __block BOOL persisted = NO;
         [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-            if (![transactor updateRepoRoot:did rootCid:newRootBytes rev:currentRev error:blockError]) {
-                persisted = NO;
-                return;
-            }
-
             if (newRecordBlocks.count > 0 && ![transactor putBlocks:newRecordBlocks forDid:did error:blockError]) {
                 persisted = NO;
                 return;
@@ -640,68 +680,52 @@
 
     // Try to load existing commit from repo_root
     // We expect repo_root to be the head Commit CID.
-    NSData *rootBytes = [store getRepoRootForDid:did error:nil];
-    CID *storedCommitCID = rootBytes ? [CID cidFromBytes:rootBytes] : nil;
-    NSData *storedCommitBlock = nil;
-
-    if (storedCommitCID) {
-        // Fetch the block
-        storedCommitBlock = [store getBlockForCID:[storedCommitCID bytes] forDid:did error:nil];
-        if (storedCommitBlock) {
-             // Decode and verify data CID matches our computed MST
-             NSError *decodeError = nil;
-             id decoded = [ATProtoDagCBOR decodeData:storedCommitBlock error:&decodeError];
-             if ([decoded isKindOfClass:[NSDictionary class]]) {
-                 NSDictionary *map = (NSDictionary *)decoded;
-                 id dataVal = map[@"data"];
-                 CID *storedDataCID = nil;
-                 if ([dataVal isKindOfClass:[CID class]]) {
-                     storedDataCID = (CID *)dataVal;
-                 } else if ([dataVal isKindOfClass:[NSString class]]) {
-                     storedDataCID = [CID cidFromString:(NSString *)dataVal];
-                 }
-                 
-                 // If the stored commit's MST matches our computed MST, use the stored commit
-                 if ((!storedDataCID && !mstRootCID) || [storedDataCID isEqual:mstRootCID]) {
-                     // Match! Keep storedCommitBlock.
-                 } else {
-                     // Mismatch - likely concurrent update or non-deterministic MST.
-                     // Fallback to creating a new commit.
-                     storedCommitBlock = nil;
-                 }
-             } else {
-                 storedCommitBlock = nil; // Invalid block
-             }
-        }
-    }
-
     RepoCommit *commit = nil;
     NSData *commitBlock = nil;
     CID *commitCID = nil;
 
-    if (storedCommitBlock && storedCommitCID) {
-        commitBlock = storedCommitBlock;
+    // If we have a signed stored commit and it matches the computed MST root, reuse it.
+    if (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned && storedDataCID && [storedDataCID isEqual:mstRootCID]) {
         commitCID = storedCommitCID;
+        commitBlock = storedCommitBlock;
     } else {
-        // Fallback: Create new commit
-        commit = [RepoCommit createCommitWithDid:did
-                                            data:mstRootCID
-                                             rev:currentRev
-                                            prev:storedCommitCID]; // Use stored ID (even if data mismatch) as prev
-        
-        // Attempt to sign with store key
-        // Attempt to sign with store key
-        NSData *signature = [store signData:[commit serialize] error:nil];
-        if (signature) {
-             commit.signature = signature;
+        // Create and persist a signed commit that points at the computed MST root.
+        // If the stored root was a valid signed commit, use it as "prev"; otherwise, start a new chain.
+        CID *prevCommitCID = (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned) ? storedCommitCID : nil;
+
+        // Choose a revision that does not go backwards.
+        NSString *revCandidate = currentRev;
+        NSString *freshRev = [TID tid].stringValue;
+        if (freshRev.length > 0 && [freshRev compare:revCandidate] == NSOrderedDescending) {
+            revCandidate = freshRev;
         }
-        
-        commitBlock = [commit serialize];
+        if (storedRev.length > 0 && [storedRev compare:revCandidate] == NSOrderedDescending) {
+            revCandidate = storedRev;
+        }
+        if (latestMutationRev.length > 0 && [latestMutationRev compare:revCandidate] == NSOrderedDescending) {
+            revCandidate = latestMutationRev;
+        }
+
+        commit = [RepoCommit createCommitWithDid:did data:mstRootCID rev:revCandidate prev:prevCommitCID];
+
+        NSError *signError = nil;
+        NSData *signature = [store signData:[commit serialize] error:&signError];
+        if (!signature) {
+            if (error) {
+                *error = signError ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                         code:3
+                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to sign commit"}];
+            }
+            return NO;
+        }
+        commit.signature = signature;
+
+        commitBlock = [commit serializeSigned];
         if (!commitBlock) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo"
                                              code:3
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to build commit block"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
             }
             return NO;
         }
@@ -712,6 +736,31 @@
                 *error = [NSError errorWithDomain:@"com.atproto.repo"
                                              code:4
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute commit CID"}];
+            }
+            return NO;
+        }
+
+        PDSDatabaseBlock *commitDBBlock = [[PDSDatabaseBlock alloc] init];
+        commitDBBlock.cid = commitCID.bytes;
+        commitDBBlock.repoDid = did;
+        commitDBBlock.blockData = commitBlock;
+        commitDBBlock.contentType = @"application/vnd.ipld.dag-cbor";
+        commitDBBlock.size = (NSInteger)commitBlock.length;
+        commitDBBlock.createdAt = [NSDate date];
+
+        __block BOOL updated = NO;
+        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+            if (![transactor putBlock:commitDBBlock forDid:did error:blockError]) {
+                return;
+            }
+            updated = [transactor updateRepoRoot:did rootCid:commitCID.bytes rev:revCandidate error:blockError];
+        } error:error];
+
+        if (!updated) {
+            if (error && !*error) {
+                *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                             code:5
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to persist new commit"}];
             }
             return NO;
         }
