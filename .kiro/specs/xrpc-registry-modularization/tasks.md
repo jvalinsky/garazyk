@@ -56,8 +56,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Verify 0 failures (all 1012 tests pass)
     - _Requirements: 13.1, 13.3_
 
-- [ ] 2. Extract XrpcIdentityHelper module
-  - [ ] 2.1 Create XrpcIdentityHelper class with resolution methods
+- [x] 2. Extract XrpcIdentityHelper module
+  - [x] 2.1 Create XrpcIdentityHelper class with resolution methods
     - Create ATProtoPDS/Sources/Network/XrpcIdentityHelper.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcIdentityHelper.m with implementation
     - Implement resolveHandleToDid method
@@ -68,29 +68,29 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Maintain PLC directory resolution with local fallback
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
   
-  - [ ] 2.2 Write property test for handle resolution round trip
+  - [x] 2.2 Write property test for handle resolution round trip
     - **Property 4: Handle Resolution Round Trip**
     - **Validates: Requirements 2.2**
     - Generate random valid handles
     - Resolve to DID, then resolve DID document
     - Verify handle in `alsoKnownAs`
   
-  - [ ] 2.3 Write property test for invalid handle resolution
+  - [x] 2.3 Write property test for invalid handle resolution
     - **Property 5: Invalid Handle Resolution Fails**
     - **Validates: Requirements 2.3**
     - Generate random invalid handles
     - Verify error return for all invalid inputs
   
-  - [ ] 2.4 Update XrpcMethodRegistry to use XrpcIdentityHelper
+  - [x] 2.4 Update XrpcMethodRegistry to use XrpcIdentityHelper
     - Replace inline handle resolution with XrpcIdentityHelper calls
     - Update all endpoints that perform handle resolution
     - _Requirements: 2.5_
   
-  - [ ] 2.5 Update CMakeLists.txt to include XrpcIdentityHelper sources
+  - [x] 2.5 Update CMakeLists.txt to include XrpcIdentityHelper sources
     - Add Sources/Network/XrpcIdentityHelper.m to ATPROTOPDS_SOURCES
     - _Requirements: 2.1_
   
-  - [ ] 2.6 Verify all tests pass after XrpcIdentityHelper extraction
+  - [x] 2.6 Verify all tests pass after XrpcIdentityHelper extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
