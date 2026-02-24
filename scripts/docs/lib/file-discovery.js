@@ -8,10 +8,10 @@
 
 import fs from 'fs-extra';
 import path from 'path';
+import { minimatch } from 'minimatch';
 
 /**
- * Simple glob pattern matcher
- * Supports: *, **, ?, [abc], {a,b,c}
+ * Glob pattern matcher (minimatch)
  *
  * @param {string} filePath - File path to test
  * @param {string} pattern - Glob pattern
@@ -21,42 +21,13 @@ import path from 'path';
 function matchGlob(filePath, pattern, options = {}) {
   const { dot = true, nocase = false } = options;
 
-  // Normalize paths to use forward slashes
   const normalizedPath = filePath.split(path.sep).join('/');
   const normalizedPattern = pattern.split(path.sep).join('/');
 
-  // Handle case sensitivity
-  const testPath = nocase ? normalizedPath.toLowerCase() : normalizedPath;
-  const testPattern = nocase ? normalizedPattern.toLowerCase() : normalizedPattern;
-
-  // Don't match dotfiles unless dot option is true or pattern explicitly includes them
-  if (!dot && !testPattern.includes('/.') && testPath.includes('/.')) {
-    return false;
-  }
-
-  // Convert glob pattern to regex
-  // Use unique placeholders that won't appear in paths
-  const GLOBSTAR_PLACEHOLDER = '\x00GLOBSTAR\x00';
-  const STAR_PLACEHOLDER = '\x00STAR\x00';
-  const QUESTION_PLACEHOLDER = '\x00QUESTION\x00';
-
-  let regexPattern = testPattern
-    // Replace glob wildcards with placeholders (order matters: ** before *)
-    .replace(/\*\*/g, GLOBSTAR_PLACEHOLDER)
-    .replace(/\*/g, STAR_PLACEHOLDER)
-    .replace(/\?/g, QUESTION_PLACEHOLDER)
-    // Escape special regex characters (but not our placeholders)
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    // Replace placeholders with regex patterns
-    .replace(/\x00GLOBSTAR\x00/g, '.*')  // ** matches anything including /
-    .replace(/\x00STAR\x00/g, '[^/]*')   // * matches anything except /
-    .replace(/\x00QUESTION\x00/g, '[^/]'); // ? matches single char except /
-
-  // Anchor the pattern
-  regexPattern = `^${regexPattern}$`;
-
-  const regex = new RegExp(regexPattern);
-  return regex.test(testPath);
+  return minimatch(normalizedPath, normalizedPattern, {
+    dot,
+    nocase
+  });
 }
 
 /**
@@ -248,12 +219,13 @@ export async function findEmptyDirectories(rootDir, options = {}) {
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       const relativePath = path.relative(repoRoot, fullPath);
+      const normalizedRelativePath = relativePath.split(path.sep).join('/');
 
       // Check if this path should be excluded
-      const shouldExclude = matchesAnyPattern(
-        relativePath.split(path.sep).join('/'),
-        excludePatterns
-      );
+      const shouldExclude =
+        matchesAnyPattern(normalizedRelativePath, excludePatterns) ||
+        (entry.isDirectory() &&
+          matchesAnyPattern(`${normalizedRelativePath}/**`, excludePatterns));
 
       if (shouldExclude) {
         continue;
