@@ -20,7 +20,7 @@ import { batchGitMv } from './lib/git-operations.js';
 import { parseMarkdownLinks, filterInternalLinks } from './lib/link-parser.js';
 import { splitHref } from './lib/path-resolver.js';
 import { updateFileLinks } from './lib/content-updater.js';
-import { generateAndWriteMapping } from './lib/migration-mapping.js';
+import { generateAndWriteMapping, readMigrationMapping } from './lib/migration-mapping.js';
 import { createMigrationData, generateAndWriteReport } from './lib/migration-report.js';
 import { removeEmptyDirectories } from './lib/directory-cleanup.js';
 
@@ -90,13 +90,14 @@ function computeUpdatedHref({
   }
 
   // Relative internal links
+  const originalHadDotSlash = linkPath.startsWith('./');
   const oldDir = path.posix.dirname(oldFile);
   const oldTarget = normalizeRepoPath(path.posix.normalize(path.posix.join(oldDir, linkPath)));
   const newTarget = movedPathMap.get(oldTarget) || oldTarget;
 
   const newDir = path.posix.dirname(newFile);
   let newRel = path.posix.relative(newDir, newTarget);
-  if (!newRel.startsWith('../') && !newRel.startsWith('./')) {
+  if (originalHadDotSlash && !newRel.startsWith('../') && !newRel.startsWith('./')) {
     newRel = `./${newRel}`;
   }
 
@@ -129,6 +130,7 @@ async function updateReferencesAcrossRepo({
 
   for (const currentFilePath of markdownFiles) {
     const newFilePath = normalizeRepoPath(currentFilePath);
+    const fileMoved = reverseMovedPathMap.has(newFilePath);
     const oldFilePath = reverseMovedPathMap.get(newFilePath) || newFilePath;
 
     const absPath = path.resolve(repoRoot, newFilePath);
@@ -140,6 +142,25 @@ async function updateReferencesAcrossRepo({
     const pathMap = new Map();
 
     for (const link of internalLinks) {
+      // Only update links in-place for non-moved files when they point at a moved target.
+      // For moved files, all relative links may need updating due to directory changes.
+      const { path: linkPath } = splitHref(link.href);
+      let targetOldPath = null;
+
+      if (linkPath) {
+        if (linkPath.startsWith('/')) {
+          targetOldPath = normalizeRepoPath(linkPath.slice(1));
+        } else if (!/^[a-z][a-z0-9+.-]*:/i.test(linkPath) && !linkPath.startsWith('#')) {
+          const oldDir = path.posix.dirname(normalizeRepoPath(oldFilePath));
+          targetOldPath = normalizeRepoPath(path.posix.normalize(path.posix.join(oldDir, linkPath)));
+        }
+      }
+
+      const targetMoved = targetOldPath ? movedPathMap.has(targetOldPath) : false;
+      if (!fileMoved && !targetMoved) {
+        continue;
+      }
+
       const newHref = computeUpdatedHref({
         oldFilePath,
         newFilePath,
@@ -182,6 +203,7 @@ async function runMigration(configPath) {
   const dryRun = config.options?.dryRun === true;
   const verbose = config.options?.verbose === true;
   const continueOnError = config.options?.continueOnError === true;
+  const mappingOutputPath = path.resolve(repoRoot, config.options?.mappingPath || 'migration-mapping.json');
 
   if (config.description) {
     console.log(config.description);
@@ -227,18 +249,38 @@ async function runMigration(configPath) {
     }
   }
 
+  let skipMoves = false;
+  if (allFileList.length === 0) {
+    // Resume support: if a previous run wrote a mapping, re-use it to finish
+    // reference updates / cleanup / report generation.
+    if (await fs.pathExists(mappingOutputPath)) {
+      const mapping = await readMigrationMapping(mappingOutputPath);
+      if (mapping?.mappings?.length > 0) {
+        if (verbose) {
+          console.log(`No sources found; resuming from mapping: ${path.relative(repoRoot, mappingOutputPath)}`);
+        }
+        for (const entry of mapping.mappings) {
+          if (!entry?.oldPath || !entry?.newPath) {
+            continue;
+          }
+          allFileList.push({ source: normalizeRepoPath(entry.oldPath), destination: normalizeRepoPath(entry.newPath) });
+        }
+        skipMoves = true;
+      }
+    }
+  }
+
   if (allFileList.length === 0) {
     console.log('No files to migrate.');
     return { repoRoot, config, operations: { moves: [], linkUpdates: [], errors: [], validation: { passed: true } } };
   }
 
   // Generate mapping before moving (captures metadata at old paths)
-  const mappingOutputPath = path.resolve(repoRoot, config.options?.mappingPath || 'migration-mapping.json');
   if (config.options?.generateReport !== false) {
     if (verbose) {
       console.log(`Generating mapping: ${path.relative(repoRoot, mappingOutputPath)}`);
     }
-    if (!dryRun) {
+    if (!dryRun && !skipMoves) {
       await generateAndWriteMapping(allFileList, mappingOutputPath, { repoRoot });
     }
   }
@@ -252,19 +294,30 @@ async function runMigration(configPath) {
   }
 
   try {
-    const batch = await batchGitMv(allFileList, {
-      repoRoot,
-      dryRun,
-      verbose,
-      continueOnError
-    });
-
-    for (const result of batch.results) {
-      moveResults.push({
-        source: result.sourcePath,
-        destination: result.destPath,
-        error: result.success ? null : result.message
+    if (skipMoves) {
+      for (const entry of allFileList) {
+        moveResults.push({
+          source: entry.source,
+          destination: entry.destination,
+          error: null,
+          resumed: true
+        });
+      }
+    } else {
+      const batch = await batchGitMv(allFileList, {
+        repoRoot,
+        dryRun,
+        verbose,
+        continueOnError
       });
+
+      for (const result of batch.results) {
+        moveResults.push({
+          source: result.sourcePath,
+          destination: result.destPath,
+          error: result.success ? null : result.message
+        });
+      }
     }
   } catch (error) {
     errors.push({ type: 'git', message: error.message, details: error.stderr?.toString?.() });
