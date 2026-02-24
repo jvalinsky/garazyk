@@ -86,14 +86,22 @@ static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
         return nil;
     }
 
-    NSData *cidBytes = value.tagValue.byteString;
-    if (!cidBytes || cidBytes.length == 0) {
+    NSData *taggedCIDBytes = value.tagValue.byteString;
+    if (!taggedCIDBytes || taggedCIDBytes.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-11
                                      userInfo:@{NSLocalizedDescriptionKey: @"CAR header CID bytes are empty"}];
         }
         return nil;
+    }
+
+    // Dag-CBOR CID tag (42) is encoded as a byte string with a leading 0x00 marker,
+    // followed by the raw CID bytes.
+    NSData *cidBytes = taggedCIDBytes;
+    const uint8_t *bytes = cidBytes.bytes;
+    if (cidBytes.length > 0 && bytes[0] == 0x00) {
+        cidBytes = [cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)];
     }
 
     CID *cid = [CID cidFromBytes:cidBytes];
@@ -465,8 +473,13 @@ static NSData *CARHeaderDataForRootCID(CID *rootCID) {
         return nil;
     }
 
+    NSMutableData *taggedCIDBytes = [NSMutableData dataWithCapacity:1 + rootCID.bytes.length];
+    uint8_t marker = 0x00;
+    [taggedCIDBytes appendBytes:&marker length:1];
+    [taggedCIDBytes appendData:rootCID.bytes];
+
     CBORValue *rootsArray = [CBORValue array:@[
-        [CBORValue tag:42 value:[CBORValue byteString:[rootCID bytes]]]
+        [CBORValue tag:42 value:[CBORValue byteString:taggedCIDBytes]]
     ]];
 
     CBORValue *headerMap = [CBORValue map:@{
