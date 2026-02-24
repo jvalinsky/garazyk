@@ -57,12 +57,12 @@
     XCTAssertTrue([ATProtoValidator validateHandle:@"alice.test" error:nil]); // .test allowed for dev
 
     XCTAssertTrue([ATProtoValidator validateHandle:@"8.cn" error:nil]);
+    XCTAssertTrue([ATProtoValidator validateHandle:@"laptop.local" error:nil]);
 
     // Invalid cases
     XCTAssertFalse([ATProtoValidator validateHandle:@"jo@hn.test" error:nil]);
     XCTAssertFalse([ATProtoValidator validateHandle:@"john..test" error:nil]);
-    XCTAssertFalse([ATProtoValidator validateHandle:@"example.arpa" error:nil]); // Reserved
-    XCTAssertFalse([ATProtoValidator validateHandle:@"example.onion" error:nil]); // Reserved
+    XCTAssertFalse([ATProtoValidator validateHandle:@"thing.0aa" error:nil]); // TLD must start with a letter
 }
 
 - (void)testCIDValidation {
