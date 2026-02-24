@@ -22,6 +22,8 @@
 - (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
 - (void)split:(NSString *)key left:(MSTNode **)leftOut right:(MSTNode **)rightOut;
 - (MSTNode *)trim;
+- (NSInteger)binarySearchIndexForKey:(NSString *)key;
+- (MSTNode *)subtreeAtIndex:(NSInteger)idx;
 @end
 
 @implementation MSTEntry
@@ -185,6 +187,30 @@
 
 - (NSArray<MSTNodeEntry *> *)entries {
     return [self.internalEntries copy];
+}
+
+- (NSInteger)binarySearchIndexForKey:(NSString *)key {
+    NSInteger left = 0, right = (NSInteger)self.internalEntries.count;
+    while (left < right) {
+        NSInteger mid = left + (right - left) / 2;
+        NSComparisonResult cmp = [self.internalEntries[mid].fullKey compare:key];
+        if (cmp == NSOrderedAscending) {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+    return left;
+}
+
+- (MSTNode *)subtreeAtIndex:(NSInteger)idx {
+    if (idx == 0) {
+        return self.internalLeft;
+    }
+    if (idx - 1 < (NSInteger)self.internalEntries.count) {
+        return self.internalEntries[idx - 1].internalTree;
+    }
+    return nil;
 }
 
 - (CID *)left {
@@ -392,14 +418,9 @@
     return [self.root getCID:[NSMapTable strongToStrongObjectsMapTable]];
 }
 
-+ (NSUInteger)keyDepthString:(NSString *)key {
-    return (NSUInteger)[self keyDepth:key];
-}
-
-+ (uint32_t)keyDepth:(NSString *)key {
-    const char *utf8 = [key UTF8String];
++ (uint32_t)keyDepthFromBytes:(const uint8_t *)bytes length:(NSUInteger)len {
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(utf8, (CC_LONG)strlen(utf8), hash);
+    CC_SHA256(bytes, (CC_LONG)len, hash);
 
     uint32_t zeroCount = 0;
     for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
@@ -408,47 +429,26 @@
             zeroCount += 4;
             continue;
         }
-        if ((byte & 0xC0) != 0) {
-            break;
-        }
-        if ((byte & 0xFC) == 0) {
-            zeroCount += 3;
-        } else if ((byte & 0xF0) == 0) {
-            zeroCount += 2;
-        } else {
-            zeroCount += 1;
-        }
+        if ((byte & 0xC0) != 0) break;
+        if ((byte & 0xFC) == 0) zeroCount += 3;
+        else if ((byte & 0xF0) == 0) zeroCount += 2;
+        else zeroCount += 1;
         break;
     }
-
     return zeroCount;
 }
 
++ (NSUInteger)keyDepthString:(NSString *)key {
+    NSData *keyData = [key dataUsingEncoding:NSUTF8StringEncoding];
+    return [self keyDepthFromBytes:keyData.bytes length:keyData.length];
+}
+
++ (uint32_t)keyDepth:(NSString *)key {
+    return [self keyDepthString:key];
+}
+
 + (NSUInteger)keyDepthBytes:(NSData *)keyBytes {
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(keyBytes.bytes, (CC_LONG)keyBytes.length, hash);
-
-    NSUInteger zeroCount = 0;
-    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
-        uint8_t byte = hash[i];
-        if (byte == 0) {
-            zeroCount += 4;
-            continue;
-        }
-        if ((byte & 0xC0) != 0) {
-            break;
-        }
-        if ((byte & 0xFC) == 0) {
-            zeroCount += 3;
-        } else if ((byte & 0xF0) == 0) {
-            zeroCount += 2;
-        } else {
-            zeroCount += 1;
-        }
-        break;
-    }
-
-    return zeroCount;
+    return [self keyDepthFromBytes:keyBytes.bytes length:keyBytes.length];
 }
 
 - (nullable CID *)get:(NSString *)key {
@@ -462,16 +462,13 @@
 
 - (CID *)getRecursive:(MSTNode *)node key:(NSString *)key {
     if (!node) return nil;
-    NSInteger idx = 0;
-    while (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
-        idx++;
-    }
+    NSInteger idx = [node binarySearchIndexForKey:key];
     
-    if (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
         return node.internalEntries[idx].value;
     }
     
-    MSTNode *subtree = (idx == 0) ? node.internalLeft : node.internalEntries[idx-1].internalTree;
+    MSTNode *subtree = [node subtreeAtIndex:idx];
     return [self getRecursive:subtree key:key];
 }
 
@@ -506,12 +503,9 @@
         return [[MSTNode alloc] initWithLevel:depth left:left entries:@[newEntry]];
     }
     
-    NSInteger idx = 0;
-    while (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
-        idx++;
-    }
+    NSInteger idx = [node binarySearchIndexForKey:key];
     
-    if (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
         MSTNodeEntry *oldEntry = node.internalEntries[idx];
         MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:oldEntry.internalTree];
         NSMutableArray *newEntries = [node.internalEntries mutableCopy];
@@ -520,7 +514,7 @@
     }
     
     if (depth == node.level) {
-        MSTNode *subtree = (idx == 0) ? node.internalLeft : node.internalEntries[idx-1].internalTree;
+        MSTNode *subtree = [node subtreeAtIndex:idx];
         MSTNode *splitLeft = nil;
         MSTNode *splitRight = nil;
         if (subtree) {
@@ -570,14 +564,11 @@
 
 - (MSTNode *)deleteRecursive:(MSTNode *)node key:(NSString *)key {
     if (!node) return nil;
-    NSInteger idx = 0;
-    while (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
-        idx++;
-    }
+    NSInteger idx = [node binarySearchIndexForKey:key];
     
-    if (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
         MSTNodeEntry *entryToDelete = node.internalEntries[idx];
-        MSTNode *leftSubtree = (idx == 0) ? node.internalLeft : node.internalEntries[idx-1].internalTree;
+        MSTNode *leftSubtree = [node subtreeAtIndex:idx];
         MSTNode *rightSubtree = entryToDelete.internalTree;
         
         MSTNode *merged = [self merge:leftSubtree and:rightSubtree];
@@ -597,7 +588,7 @@
         return [newNode trim];
     }
     
-    MSTNode *subtree = (idx == 0) ? node.internalLeft : node.internalEntries[idx-1].internalTree;
+    MSTNode *subtree = [node subtreeAtIndex:idx];
     if (subtree) {
         MSTNode *newSubtree = [self deleteRecursive:subtree key:key];
         NSMutableArray *newEntries = [node.internalEntries mutableCopy];

@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/Services/PDSAccountService.h"
+#import "Auth/JWT.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
@@ -20,7 +21,12 @@
     
     self.pool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:5];
     self.service = [[PDSAccountService alloc] initWithDatabasePool:self.pool];
-    
+
+    JWTMinter *minter = [[JWTMinter alloc] init];
+    minter.issuer = @"http://localhost:8080";
+    minter.signingAlgorithm = @"ES256";
+    self.service.minter = minter;
+
     self.service.serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:self.testDirectory
                                                                    serviceMaxSize:1024*1024
                                                                  didCacheMaxSize:1000
