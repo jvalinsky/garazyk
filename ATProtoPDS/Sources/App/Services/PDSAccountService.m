@@ -139,8 +139,11 @@
     if (self.minter) {
         JWT *jwt = [self.minter mintAccessTokenForDID:resolvedDid handle:handle scopes:@[@"atproto"] error:nil];
         accessToken = [jwt encodedToken];
-    } else {
-        accessToken = [[NSUUID UUID] UUIDString];
+    }
+    if (!accessToken) {
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.server" code:1
+                                            userInfo:@{NSLocalizedDescriptionKey: @"JWT minter unavailable"}];
+        return nil;
     }
 
     // Import signing key into ActorStore (ensures it is available for signing commits)
@@ -258,8 +261,11 @@
     if (self.minter) {
         JWT *jwt = [self.minter mintAccessTokenForDID:account.did handle:account.handle scopes:@[@"atproto"] error:nil];
         accessToken = [jwt encodedToken];
-    } else {
-        accessToken = [[NSUUID UUID] UUIDString];
+    }
+    if (!accessToken) {
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.server" code:1
+                                            userInfo:@{NSLocalizedDescriptionKey: @"JWT minter unavailable"}];
+        return nil;
     }
     NSString *refreshToken = [[NSUUID UUID] UUIDString];
 
@@ -318,8 +324,11 @@
     if (self.minter) {
         JWT *jwt = [self.minter mintAccessTokenForDID:account.did handle:account.handle scopes:@[@"atproto"] error:nil];
         accessToken = [jwt encodedToken];
-    } else {
-        accessToken = [[NSUUID UUID] UUIDString];
+    }
+    if (!accessToken) {
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.server" code:1
+                                            userInfo:@{NSLocalizedDescriptionKey: @"JWT minter unavailable"}];
+        return nil;
     }
 
     // Generate new refresh token

@@ -792,10 +792,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     NSMutableArray<NSData *> *queue = [NSMutableArray arrayWithObject:[rootCID bytes]];
     NSMutableSet<NSString *> *visited = [NSMutableSet set];
     NSUInteger count = 0;
+    NSUInteger queueHead = 0;
 
-    while (queue.count > 0) {
-        NSData *cidBytes = queue.firstObject;
-        [queue removeObjectAtIndex:0];
+    while (queueHead < queue.count) {
+        NSData *cidBytes = queue[queueHead++];
 
         CID *nodeCID = [CID cidFromBytes:cidBytes];
         if (!nodeCID) continue;

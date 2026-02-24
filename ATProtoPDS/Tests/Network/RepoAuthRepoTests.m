@@ -115,7 +115,7 @@
     XCTAssertEqual(response.statusCode, 400);
 }
 
-- (void)testRepoImportRepoAcceptsCARPayload {
+- (void)testRepoImportRepoReturnsNotImplemented {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
     HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
@@ -125,9 +125,9 @@
                                                           @"content-type": @"application/vnd.ipld.car",
                                                           @"content-length": [NSString stringWithFormat:@"%lu", (unsigned long)carData.length]
                                                       }];
-    XCTAssertEqual(response.statusCode, 200);
-    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
-    XCTAssertEqual(((NSDictionary *)response.jsonBody).count, 0U);
+    XCTAssertEqual(response.statusCode, 501);
+    NSDictionary *body = (NSDictionary *)response.jsonBody;
+    XCTAssertEqualObjects(body[@"error"], @"NotImplemented");
 }
 
 @end

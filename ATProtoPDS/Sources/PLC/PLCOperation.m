@@ -196,8 +196,6 @@ static BOOL isBase32Char(unichar c) {
     dict[@"sig"] = self.sig;
     if (self.prev) {
         dict[@"prev"] = self.prev;
-    } else {
-        dict[@"prev"] = [NSNull null];
     }
     return [dict copy];
 }

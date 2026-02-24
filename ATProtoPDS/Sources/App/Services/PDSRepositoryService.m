@@ -35,6 +35,7 @@
                  changedMSTKeys:(NSArray<NSString *> * _Nullable * _Nonnull)changedMSTKeysOut
                 recordCIDStrings:(NSArray<NSString *> * _Nullable * _Nonnull)recordCIDStringsOut
                      recordByCID:(NSDictionary<NSString *, PDSDatabaseRecord *> * _Nullable * _Nonnull)recordByCIDOut
+             materializedBlocks:(NSDictionary<NSString *, NSData *> * _Nullable * _Nonnull)materializedBlocksOut
                           error:(NSError **)error;
 - (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
                                        includeAllMST:(BOOL)includeAllMST
@@ -173,6 +174,7 @@
     NSArray<NSString *> *changedMSTKeys = nil;
     NSArray<NSString *> *recordCIDStrings = nil;
     NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
 
     if (![self prepareRepoExportForDid:did
                                  since:nil
@@ -185,6 +187,7 @@
                         changedMSTKeys:&changedMSTKeys
                        recordCIDStrings:&recordCIDStrings
                             recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
                                  error:error]) {
         return nil;
     }
@@ -211,6 +214,7 @@
     NSArray<NSString *> *changedMSTKeys = nil;
     NSArray<NSString *> *recordCIDStrings = nil;
     NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
     if (![self prepareRepoExportForDid:did
                                  since:sinceRev
                                  store:&store
@@ -222,6 +226,7 @@
                         changedMSTKeys:&changedMSTKeys
                        recordCIDStrings:&recordCIDStrings
                             recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
                                  error:error]) {
         return NO;
     }
@@ -295,7 +300,11 @@
                 continue;
             }
 
-            NSData *data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+            // Check materialized blocks first, then fall back to database
+            NSData *data = materializedBlocks[cidString];
+            if (!data) {
+                data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+            }
             if (!data) {
                 PDSDatabaseRecord *record = recordByCID[cidString];
                 data = record ? [self recordBlockDataForRecord:record] : nil;
@@ -338,6 +347,7 @@
     NSArray<NSString *> *changedMSTKeys = nil;
     NSArray<NSString *> *recordCIDStrings = nil;
     NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
     if (![self prepareRepoExportForDid:did
                                  since:sinceRev
                                  store:&store
@@ -349,6 +359,7 @@
                         changedMSTKeys:&changedMSTKeys
                        recordCIDStrings:&recordCIDStrings
                             recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
                                  error:error]) {
         return nil;
     }
@@ -415,6 +426,7 @@
     NSArray<NSData *> *capturedMSTChunks = [mstChunks copy];
     NSArray<NSString *> *capturedRecordCIDs = [remainingRecordCIDs copy];
     NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
+    NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
     __weak typeof(self) weakSelf = self;
     __block NSUInteger phase = 0; // 0=header, 1=commit, 2=MST, 3=records, 4=done
     __block NSUInteger mstIndex = 0;
@@ -464,7 +476,11 @@
                     continue;
                 }
 
-                NSData *data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+                // Check materialized blocks first, then fall back to database
+                NSData *data = capturedMaterializedBlocks[cidString];
+                if (!data) {
+                    data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+                }
                 if (!data) {
                     PDSDatabaseRecord *record = capturedRecordByCID[cidString];
                     data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
@@ -493,6 +509,7 @@
                  changedMSTKeys:(NSArray<NSString *> * _Nullable * _Nonnull)changedMSTKeysOut
                 recordCIDStrings:(NSArray<NSString *> * _Nullable * _Nonnull)recordCIDStringsOut
                      recordByCID:(NSDictionary<NSString *, PDSDatabaseRecord *> * _Nullable * _Nonnull)recordByCIDOut
+             materializedBlocks:(NSDictionary<NSString *, NSData *> * _Nullable * _Nonnull)materializedBlocksOut
                           error:(NSError **)error {
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) return NO;
@@ -775,6 +792,19 @@
     if (changedMSTKeysOut) *changedMSTKeysOut = [changedMSTKeys.array copy];
     if (recordCIDStringsOut) *recordCIDStringsOut = [recordCIDStrings copy];
     if (recordByCIDOut) *recordByCIDOut = [recordByCID copy];
+    
+    // Build dictionary of materialized blocks (CID string -> block data)
+    if (materializedBlocksOut) {
+        NSMutableDictionary<NSString *, NSData *> *materializedBlocks = [NSMutableDictionary dictionary];
+        for (PDSDatabaseBlock *block in newRecordBlocks) {
+            CID *cid = [CID cidFromBytes:block.cid];
+            if (cid && block.blockData) {
+                materializedBlocks[cid.stringValue] = block.blockData;
+            }
+        }
+        *materializedBlocksOut = [materializedBlocks copy];
+    }
+    
     return YES;
 }
 
@@ -790,6 +820,7 @@
     NSArray<NSString *> *changedMSTKeys = nil;
     NSArray<NSString *> *recordCIDStrings = nil;
     NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
     if (![self prepareRepoExportForDid:did
                                  since:sinceRev
                                  store:&store
@@ -801,6 +832,7 @@
                         changedMSTKeys:&changedMSTKeys
                        recordCIDStrings:&recordCIDStrings
                             recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
                                  error:error]) {
         return nil;
     }
@@ -839,7 +871,11 @@
             continue;
         }
 
-        NSData *data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+        // Check materialized blocks first, then fall back to database
+        NSData *data = materializedBlocks[cidString];
+        if (!data) {
+            data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+        }
         if (!data) {
             PDSDatabaseRecord *record = recordByCID[cidString];
             data = record ? [self recordBlockDataForRecord:record] : nil;
