@@ -4922,18 +4922,25 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
         if (doc && ![handle isEqualToString:@"handle.invalid"]) {
             BOOL didDocMatches = didDocumentContainsHandle(doc, handle);
             if (didDocMatches) {
-                // Try to confirm handle -> DID resolution without failing the request on timeout.
-                HandleResolver *handleResolver = [[HandleResolver alloc] init];
-                __block NSString *resolvedDid = nil;
-                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-                [handleResolver resolveHandle:handle completion:^(NSString * _Nullable handleDid, NSError * _Nullable resolveError) {
-                    resolvedDid = handleDid;
-                    (void)resolveError;
-                    dispatch_semaphore_signal(semaphore);
-                }];
-                dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
-                long waited = dispatch_semaphore_wait(semaphore, timeout);
-                handleIsCorrect = (waited != 0) ? YES : (resolvedDid.length > 0 && [resolvedDid isEqualToString:did]);
+                // For local accounts, the DID doc "alsoKnownAs" is authoritative enough.
+                // Avoid network-based handle resolution, which can produce false negatives in restricted environments.
+                NSString *localHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : nil;
+                if (localHandle.length > 0 && [localHandle isEqualToString:[handle lowercaseString]]) {
+                    handleIsCorrect = YES;
+                } else {
+                    // Best-effort confirm handle -> DID resolution without failing the request on timeout.
+                    HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                    __block NSString *resolvedDid = nil;
+                    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                    [handleResolver resolveHandle:handle completion:^(NSString * _Nullable handleDid, NSError * _Nullable resolveError) {
+                        resolvedDid = handleDid;
+                        (void)resolveError;
+                        dispatch_semaphore_signal(semaphore);
+                    }];
+                    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
+                    long waited = dispatch_semaphore_wait(semaphore, timeout);
+                    handleIsCorrect = (waited != 0) ? YES : (resolvedDid.length > 0 && [resolvedDid isEqualToString:did]);
+                }
             }
         }
 
