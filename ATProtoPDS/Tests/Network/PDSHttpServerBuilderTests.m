@@ -20,9 +20,26 @@
 #import <CoreFoundation/CoreFoundation.h>
 
 @interface PDSHttpServerBuilderTests : XCTestCase
+@property (nonatomic, strong) HttpServer *testServer;
+@property (nonatomic, strong) NSString *testDirectory;
 @end
 
 @implementation PDSHttpServerBuilderTests
+
+- (void)tearDown {
+    // Ensure server is stopped and cleaned up after each test
+    if (self.testServer) {
+        [self.testServer stop];
+        self.testServer = nil;
+    }
+    
+    if (self.testDirectory) {
+        [[NSFileManager defaultManager] removeItemAtPath:self.testDirectory error:nil];
+        self.testDirectory = nil;
+    }
+    
+    [super tearDown];
+}
 
 - (NSString *)makeTemporaryDirectory {
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"pds-builder-tests-%@", NSUUID.UUID.UUIDString]];
@@ -56,8 +73,8 @@
  */
 - (void)testWellKnownAtprotoDIDEndpointReturns404OnUnfixedCode {
     // Setup: Create a temporary directory and controller
-    NSString *tempDir = [self makeTemporaryDirectory];
-    PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
+    self.testDirectory = [self makeTemporaryDirectory];
+    PDSController *controller = [[PDSController alloc] initWithDirectory:self.testDirectory serviceMaxSize:10 userDatabaseSize:10];
     
     // Create an account in the database so we have a valid handle to test
     NSError *createError = nil;
@@ -75,7 +92,6 @@
     
     if (!accountResult) {
         // If account creation fails, skip the test
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
         XCTSkip(@"Could not create test account: %@", createError);
         return;
     }
@@ -93,21 +109,18 @@
     builder.enableNodeInfo = NO;
     
     NSError *buildError = nil;
-    HttpServer *server = [builder buildWithError:&buildError];
+    self.testServer = [builder buildWithError:&buildError];
     
-    if (!server) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    if (!self.testServer) {
         XCTFail(@"Failed to build HTTP server: %@", buildError);
         return;
     }
     
     // Start the server
     NSError *startError = nil;
-    BOOL started = [server startWithError:&startError];
+    BOOL started = [self.testServer startWithError:&startError];
     
     if (!started) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
-        
         // Check if this is a permission error (EPERM) and skip if so
         NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
         if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
@@ -120,7 +133,7 @@
     }
     
     // Get the actual port the server is listening on
-    UInt16 actualPort = server.port;
+    UInt16 actualPort = self.testServer.port;
     
     // Make HTTP request to /.well-known/atproto-did with Host header set to the handle
     // Per ATProto spec: The handle is determined by the Host header, not a query parameter
@@ -152,20 +165,23 @@
     
     if (connectResult != kCFSocketSuccess) {
         CFRelease(socket);
-        [server stop];
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
         XCTFail(@"Failed to connect to server");
         return;
     }
     
     // Send the request
     CFSocketNativeHandle nativeSocket = CFSocketGetNative(socket);
+    
+    // Set receive timeout to avoid hanging
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    setsockopt(nativeSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    
     ssize_t sent = send(nativeSocket, requestData.bytes, requestData.length, 0);
     
     if (sent != (ssize_t)requestData.length) {
         CFRelease(socket);
-        [server stop];
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
         XCTFail(@"Failed to send request");
         return;
     }
@@ -180,8 +196,6 @@
     }
     
     CFRelease(socket);
-    [server stop];
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
     
     // Parse the HTTP response
     NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
