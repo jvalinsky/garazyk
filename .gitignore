@@ -89,3 +89,6 @@ test_data/
 tmp_atproto/
 tmp_social_app/
 source.tar.gz
+
+# Cadmus build data
+.cadmus/

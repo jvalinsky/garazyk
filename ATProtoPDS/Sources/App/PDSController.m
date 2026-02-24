@@ -549,10 +549,9 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, N
 }
 
 - (nullable NSString *)getRepoHeadForDid:(NSString *)did error:(NSError **)error {
-    NSData *root = [self getRepoRoot:did error:error];
-    if (!root) return nil;
-    // Use CID's base32 encoding utility
-    return [CID base32Encode:root];
+    NSDictionary *latest = [_repositoryService getLatestCommitForDid:did error:error];
+    if (!latest) return nil;
+    return latest[@"cid"];
 }
 
 #pragma mark - Record Operations

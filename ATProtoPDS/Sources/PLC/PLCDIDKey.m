@@ -33,6 +33,18 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
 
 @implementation PLCDIDKey
 
++ (nullable NSData *)compressP256PublicKey:(NSData *)uncompressedKey {
+    if (uncompressedKey.length != 65 || ((const uint8_t *)uncompressedKey.bytes)[0] != 0x04) {
+        return nil;
+    }
+
+    const uint8_t *pub = uncompressedKey.bytes;
+    uint8_t compressed[33];
+    compressed[0] = 0x02 | (pub[63] & 0x01);
+    memcpy(compressed + 1, pub + 1, 32);
+    return [NSData dataWithBytes:compressed length:33];
+}
+
 + (nullable instancetype)parseFromString:(NSString *)didKey error:(NSError **)error {
     if (![didKey hasPrefix:@"did:key:"]) {
         if (error) {
@@ -102,17 +114,42 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
         return nil;
     }
 
-    if (publicKeyBytes.length != 33) {
+    if (type == PLCDIDKeyTypeSecp256k1 && publicKeyBytes.length != 33) {
         if (error) {
             *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
                                          code:7
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Unexpected public key length (expected 33-byte compressed key)"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unexpected secp256k1 public key length (expected 33-byte compressed key)"}];
         }
         return nil;
     }
 
+    if (type == PLCDIDKeyTypeP256) {
+        const uint8_t first = ((const uint8_t *)publicKeyBytes.bytes)[0];
+        if (publicKeyBytes.length == 33 && (first == 0x02 || first == 0x03)) {
+            // Compressed key - OK
+        } else if (publicKeyBytes.length == 65 && first == 0x04) {
+            // Uncompressed key - OK, convert to compressed for storage
+            publicKeyBytes = [self compressP256PublicKey:publicKeyBytes];
+            if (!publicKeyBytes) {
+                if (error) {
+                    *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
+                                                 code:9
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to compress P-256 public key"}];
+                }
+                return nil;
+            }
+        } else {
+            if (error) {
+                *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
+                                             code:7
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Unexpected P-256 public key length (expected 33-byte compressed or 65-byte uncompressed)"}];
+            }
+            return nil;
+        }
+    }
+
     const uint8_t first = ((const uint8_t *)publicKeyBytes.bytes)[0];
-    if (first != 0x02 && first != 0x03) {
+    if (publicKeyBytes.length == 33 && first != 0x02 && first != 0x03) {
         if (error) {
             *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
                                          code:8

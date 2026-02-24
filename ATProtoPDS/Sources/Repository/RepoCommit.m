@@ -24,26 +24,31 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 }
 
 - (NSData *)serialize {
-    // Create map for unsigned commit (without signature)
+    return [self serializeWithSignature:NO];
+}
+
+- (NSData *)serializeSigned {
+    return [self serializeWithSignature:YES];
+}
+
+- (NSData *)serializeWithSignature:(BOOL)includeSignature {
     NSMutableDictionary *commitDict = [NSMutableDictionary dictionary];
 
-    // did (required)
     commitDict[@"did"] = self.did;
-
-    // version (required)
     commitDict[@"version"] = @(self.version);
 
-    // data (optional) - CID-link (tag 42)
     if (self.dataCID) {
         commitDict[@"data"] = self.dataCID;
     }
 
-    // rev (required)
     commitDict[@"rev"] = self.rev;
 
-    // prev (optional) - CID-link (tag 42)
     if (self.prevCID) {
         commitDict[@"prev"] = self.prevCID;
+    }
+
+    if (includeSignature && self.signature) {
+        commitDict[@"sig"] = self.signature;
     }
 
     NSError *error = nil;
@@ -60,48 +65,10 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     return [CID rawSha256:serialized];
 }
 
-- (NSData *)serializeSigned {
-    NSMutableDictionary *commitDict = [NSMutableDictionary dictionary];
-
-    // did
-    commitDict[@"did"] = self.did;
-
-    // version
-    commitDict[@"version"] = @(self.version);
-
-    // data (optional) - CID-link (tag 42)
-    if (self.dataCID) {
-        commitDict[@"data"] = self.dataCID;
-    }
-
-    // rev
-    commitDict[@"rev"] = self.rev;
-
-    // prev (optional) - CID-link (tag 42)
-    if (self.prevCID) {
-        commitDict[@"prev"] = self.prevCID;
-    }
-
-    // sig (required for signed commit)
-    if (self.signature) {
-        commitDict[@"sig"] = self.signature;
-    }
-
-    NSError *error = nil;
-    NSData *encoded = [ATProtoDagCBOR encodeObject:commitDict error:&error];
-    if (!encoded) {
-        NSLog(@"Failed to encode signed commit: %@", error);
-        return nil;
-    }
-    return encoded;
-}
-
 - (CID *)computeCID {
     NSData *serialized = [self serializeSigned];
-    // Compute SHA-256 hash and create CID with DAG-CBOR codec (0x71)
-    NSData *hash = [CID sha256Digest:serialized];
-    CID *cid = [CID cidWithDigest:hash codec:0x71]; // DAG-CBOR codec
-    NSLog(@"[RepoCommit] computeCID: %@ (hash: %@, signed data length: %lu)", cid.stringValue, [hash description], (unsigned long)serialized.length);
+    NSData *hash = [CID rawSha256:serialized];
+    CID *cid = [CID cidWithDigest:hash codec:0x71];
     return cid;
 }
 
