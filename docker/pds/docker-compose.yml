@@ -14,10 +14,11 @@ services:
       - PDS_PORT=2583
       - PDS_HOST=0.0.0.0
       - PDS_ISSUER=https://pds.garazyk.xyz
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
     command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
     labels:
-      - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
+      - "com.garazyk.git_commit=bee1acb4e5c8f9a7d3b2e1f0c9d8a7b6c5d4e3f2"
     restart: unless-stopped
 
 volumes:
