@@ -13,19 +13,52 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  @header XrpcMethodRegistry.h
 
- @abstract XRPC method registration utilities.
+ @abstract XRPC method registration orchestration.
 
- @discussion This header defines the XrpcMethodRegistry class for
- registering all standard ATProto XRPC methods with a dispatcher.
+ @discussion This header defines the XrpcMethodRegistry class which orchestrates
+ the registration of all ATProto XRPC methods with a dispatcher by delegating to
+ domain-specific modules.
+ 
+ Architecture:
+ XrpcMethodRegistry is a thin orchestration layer that:
+ 1. Extracts services from PDSApplication or PDSController
+ 2. Delegates endpoint registration to domain modules:
+    - XrpcServerMethods: com.atproto.server.* endpoints
+    - XrpcRepoMethods: com.atproto.repo.* endpoints
+    - XrpcSyncMethods: com.atproto.sync.* endpoints
+    - XrpcIdentityMethods: com.atproto.identity.* endpoints
+    - XrpcAdminMethods: com.atproto.admin.* endpoints
+    - XrpcLabelMethods: com.atproto.label.* and com.atproto.temp.* endpoints
+    - XrpcAppBskyMethods: app.bsky.* endpoints
+ 3. Installs proxy interceptor for request forwarding
+ 
+ Domain modules use helper modules for shared functionality:
+ - XrpcAuthHelper: JWT and DPoP authentication
+ - XrpcIdentityHelper: Handle and DID resolution
+ - XrpcErrorHelper: Standardized error responses
+ 
+ Service Dependency Injection:
+ All required services are extracted from PDSApplication and passed to domain
+ modules as parameters. This explicit dependency injection makes service
+ requirements clear and avoids hidden state.
+ 
+ Module Registration Order:
+ Domain modules are registered in a specific order to ensure dependencies are
+ satisfied. Some endpoints may depend on others being registered first.
  */
 
 /**
  @class XrpcMethodRegistry
 
- @abstract Registers all ATProto XRPC methods with a dispatcher.
+ @abstract Orchestrates registration of all ATProto XRPC methods.
 
- @discussion XrpcMethodRegistry provides a convenient way to register
- all standard ATProto XRPC method handlers with an XrpcDispatcher.
+ @discussion XrpcMethodRegistry is a thin orchestration layer (~250 lines) that
+ delegates endpoint registration to domain-specific modules. It extracts services
+ from PDSApplication, passes them to domain modules via dependency injection, and
+ ensures modules are registered in the correct order.
+ 
+ The registry maintains backward compatibility with the original monolithic
+ implementation while providing a modular architecture for maintainability.
  */
 @interface XrpcMethodRegistry : NSObject
 
