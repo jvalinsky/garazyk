@@ -843,14 +843,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
   CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
 
-  // Extract the signed commit block from the single-block CAR that exportCAR
-  // produces
-  NSData *singleBlockCAR = [commit exportCAR];
-  if (singleBlockCAR) {
-    CARReader *reader = [CARReader readFromData:singleBlockCAR error:nil];
-    CARBlock *commitBlock = reader.blocks.firstObject;
-    if (commitBlock) {
-      [writer addBlock:commitBlock];
+  NSData *commitBlockData = [commit serializeSigned];
+  if (commitBlockData.length > 0) {
+    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
+  } else {
+    // Fallback for legacy paths that may only populate exportCAR.
+    NSData *singleBlockCAR = [commit exportCAR];
+    if (singleBlockCAR) {
+      CARReader *reader = [CARReader readFromData:singleBlockCAR error:nil];
+      CARBlock *commitBlock = reader.blocks.firstObject;
+      if (commitBlock) {
+        [writer addBlock:commitBlock];
+      }
     }
   }
 
@@ -865,10 +869,15 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (![recordCBOR isKindOfClass:[NSData class]] || recordCBOR.length == 0)
       continue;
 
-    // Compute the CID for the record block from its DAG-CBOR bytes
-    // CIDv1, dag-cbor codec (0x71), SHA-256 multihash
-    NSData *digest = [CID rawSha256:recordCBOR];
-    CID *recordCID = digest ? [CID cidWithDigest:digest codec:0x71] : nil;
+    NSString *recordCIDString =
+        [op[@"cid"] isKindOfClass:[NSString class]] ? op[@"cid"] : nil;
+    CID *recordCID =
+        (recordCIDString.length > 0) ? [CID cidFromString:recordCIDString] : nil;
+    if (!recordCID) {
+      // Fallback: compute CID from bytes if op didn't carry one.
+      NSData *digest = [CID rawSha256:recordCBOR];
+      recordCID = digest ? [CID cidWithDigest:digest codec:0x71] : nil;
+    }
     if (recordCID) {
       [writer addBlock:[CARBlock blockWithCID:recordCID data:recordCBOR]];
       recordBlockCount++;
