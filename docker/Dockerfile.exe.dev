@@ -3,6 +3,9 @@ FROM ubuntu:24.04 AS runtime
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    gnustep-base-runtime \
+    libavahi-client3 \
+    libavahi-common3 \
     libcurl4 \
     libffi8 \
     libicu74 \
