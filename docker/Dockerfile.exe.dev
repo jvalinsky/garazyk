@@ -10,17 +10,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi8 \
     libicu70 \
     libqrencode4 \
-    libsqlite3 \
+    libsqlite3-0 \
     libssl3 \
     libxml2 \
     libxslt1.1 \
-    zlib1g
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy built PDS binaries
 COPY build/bin /usr/local/bin
 
+# Copy custom libraries
+COPY docker/lib/* /usr/local/lib/
+RUN ldconfig
+
 # Copy web assets
-COPY ATProtoPDS/Sources/App/Assets /usr/share/atprotopds/assets
+COPY ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprotopds/assets
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
@@ -29,7 +34,7 @@ RUN mkdir -p /var/lib/atprotopds
 RUN useradd -r -s /usr/sbin/nologin pds
 
 # Set ownership
-RUN chown -R pds:pds /var/lib/atprotopds /usr/local/bin /usr/share/atprotopds/assets
+RUN chown -R pds:pds /var/lib/atprotopds /usr/local/bin /usr/share/atprotopds/assets /usr/local/lib
 
 USER pds
 WORKDIR /var/lib/atprotopds
