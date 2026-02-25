@@ -68,6 +68,10 @@
   NSDictionary *json =
       [NSJSONSerialization JSONObjectWithData:body options:0 error:&error];
   if (error || ![json isKindOfClass:[NSDictionary class]]) {
+    NSLog(@"HttpRequest: JSON parsing failed: %@", error);
+    NSString *bodyStr =
+        [[NSString alloc] initWithData:body encoding:NSUTF8StringEncoding];
+    NSLog(@"HttpRequest: Failed body content: [%@]", bodyStr);
     return nil;
   }
   return json;
@@ -366,11 +370,16 @@
 
   NSUInteger bodyStart = separatorRange.location + separatorRange.length;
   if (bodyStart >= data.length) {
+    NSLog(@"HttpRequest: bodyStart (%lu) >= data.length (%lu)",
+          (unsigned long)bodyStart, (unsigned long)data.length);
     return [NSData data];
   }
 
-  return
+  NSData *body =
       [data subdataWithRange:NSMakeRange(bodyStart, data.length - bodyStart)];
+  NSLog(@"HttpRequest: Extracted body of length %lu",
+        (unsigned long)body.length);
+  return body;
 }
 
 - (NSDictionary<NSString *, NSString *> *)parseQueryParams:
