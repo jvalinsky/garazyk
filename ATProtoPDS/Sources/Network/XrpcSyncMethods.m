@@ -1180,7 +1180,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   // com.atproto.sync.getRepoStatus
   [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request,
                                                     HttpResponse *response) {
-    NSString *did = request.query[@"did"];
+    NSString *did = [request queryParamForKey:@"did"];
     if (did.length == 0) {
       response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
