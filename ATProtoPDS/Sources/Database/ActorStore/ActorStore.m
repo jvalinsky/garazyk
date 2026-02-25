@@ -277,6 +277,69 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         return NO;
     }
 
+    // Backward-compatible schema evolution for block revision tracking.
+    tableInfoSQL = @"PRAGMA table_info(ipld_blocks)";
+    tableInfoStmt = NULL;
+    tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
+    if (tableInfoResult != SQLITE_OK) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:@"Failed to inspect ipld_blocks schema"
+                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
+        }
+        return NO;
+    }
+
+    BOOL hasBlockRevColumn = NO;
+    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
+        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
+        if (columnName && strcmp(columnName, "rev") == 0) {
+            hasBlockRevColumn = YES;
+            break;
+        }
+    }
+    sqlite3_finalize(tableInfoStmt);
+
+    if (!hasBlockRevColumn) {
+        char *alterErrMsg = NULL;
+        int alterResult = sqlite3_exec(self.db,
+                                       "ALTER TABLE ipld_blocks ADD COLUMN rev TEXT",
+                                       NULL,
+                                       NULL,
+                                       &alterErrMsg);
+        if (alterResult != SQLITE_OK) {
+            if (error) {
+                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add ipld_blocks.rev column";
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:msg
+                                          userInfo:@{@"sqlite_code": @(alterResult)}];
+            }
+            if (alterErrMsg) {
+                sqlite3_free(alterErrMsg);
+            }
+            return NO;
+        }
+    }
+
+    indexErrMsg = NULL;
+    indexResult = sqlite3_exec(self.db,
+                               "CREATE INDEX IF NOT EXISTS idx_ipld_blocks_rev ON ipld_blocks(rev)",
+                               NULL,
+                               NULL,
+                               &indexErrMsg);
+    if (indexResult != SQLITE_OK) {
+        if (error) {
+            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create ipld_blocks.rev index";
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:msg
+                                      userInfo:@{@"sqlite_code": @(indexResult)}];
+        }
+        if (indexErrMsg) {
+            sqlite3_free(indexErrMsg);
+        }
+        return NO;
+    }
+
     return YES;
 }
 
@@ -623,6 +686,35 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
         sqlite3_bind_text(tombstonesStmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
         exists = (sqlite3_step(tombstonesStmt) == SQLITE_ROW);
+    };
+
+    [self safeExecuteSync:workBlock];
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return exists;
+}
+
+- (BOOL)blockRevisionExists:(NSString *)rev error:(NSError **)error {
+    if (rev.length == 0) {
+        return NO;
+    }
+
+    __block BOOL exists = NO;
+    __block NSError *blockError = nil;
+
+    void (^workBlock)(void) = ^{
+        NSString *sql = @"SELECT 1 FROM ipld_blocks WHERE rev = ? LIMIT 1";
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        sqlite3_bind_text(stmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        exists = (sqlite3_step(stmt) == SQLITE_ROW);
     };
 
     [self safeExecuteSync:workBlock];
@@ -1074,6 +1166,87 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 #pragma mark - Block Operations
 
+- (NSArray<NSData *> *)listBlockCIDsSinceRev:(nullable NSString *)rev
+                                        limit:(NSUInteger)limit
+                                        error:(NSError **)error {
+    __block NSMutableArray<NSData *> *cids = [NSMutableArray array];
+    __block NSError *blockError = nil;
+
+    [self safeExecuteSync:^{
+        BOOL hasRevFilter = (rev.length > 0);
+        NSString *sql = hasRevFilter
+            ? @"SELECT cid FROM ipld_blocks WHERE rev > ? ORDER BY rev, cid LIMIT ?"
+            : @"SELECT cid FROM ipld_blocks ORDER BY cid LIMIT ?";
+
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        int bindIndex = 1;
+        if (hasRevFilter) {
+            sqlite3_bind_text(stmt, bindIndex++, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        }
+        sqlite3_bind_int(stmt, bindIndex, (int)limit);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const void *cidBytes = sqlite3_column_blob(stmt, 0);
+            int cidLength = sqlite3_column_bytes(stmt, 0);
+            if (!cidBytes || cidLength <= 0) {
+                continue;
+            }
+            NSData *cid = [NSData dataWithBytes:cidBytes length:(NSUInteger)cidLength];
+            [cids addObject:cid];
+        }
+    }];
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return [cids copy];
+}
+
+- (NSArray<NSData *> *)listBlockCIDsForRevision:(NSString *)rev
+                                           limit:(NSUInteger)limit
+                                           error:(NSError **)error {
+    if (rev.length == 0) {
+        return @[];
+    }
+
+    __block NSMutableArray<NSData *> *cids = [NSMutableArray array];
+    __block NSError *blockError = nil;
+
+    [self safeExecuteSync:^{
+        NSString *sql = @"SELECT cid FROM ipld_blocks WHERE rev = ? ORDER BY cid LIMIT ?";
+        NSError *prepError = nil;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
+        if (!stmt) {
+            blockError = prepError;
+            return;
+        }
+
+        sqlite3_bind_text(stmt, 1, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 2, (int)limit);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const void *cidBytes = sqlite3_column_blob(stmt, 0);
+            int cidLength = sqlite3_column_bytes(stmt, 0);
+            if (!cidBytes || cidLength <= 0) {
+                continue;
+            }
+            NSData *cid = [NSData dataWithBytes:cidBytes length:(NSUInteger)cidLength];
+            [cids addObject:cid];
+        }
+    }];
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return [cids copy];
+}
+
 - (nullable NSData *)getBlockForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error {
     __block NSData *blockData = nil;
     __block NSError *blockError = nil;
@@ -1109,7 +1282,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     __block NSError *blockError = nil;
     
     [self safeExecuteSync:^{
-        NSString *sql = @"SELECT cid, size FROM ipld_blocks LIMIT ? OFFSET ?";
+        NSString *sql = @"SELECT cid, size, rev FROM ipld_blocks LIMIT ? OFFSET ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
@@ -1125,6 +1298,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
             block.cid = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                        length:sqlite3_column_bytes(stmt, 0)];
             block.size = sqlite3_column_int64(stmt, 1);
+            const char *revText = (const char *)sqlite3_column_text(stmt, 2);
+            if (revText) {
+                block.rev = [NSString stringWithUTF8String:revText];
+            }
             block.repoDid = did;
             [blocks addObject:block];
         }
@@ -1137,7 +1314,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size) VALUES (?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size, rev) VALUES (?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
@@ -1148,6 +1325,11 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         sqlite3_bind_blob(stmt, 2, block.blockData.bytes, (int)block.blockData.length, SQLITE_TRANSIENT);
     }
     sqlite3_bind_int64(stmt, 3, block.size);
+    if (block.rev.length > 0) {
+        sqlite3_bind_text(stmt, 4, block.rev.UTF8String, -1, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_null(stmt, 4);
+    }
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
     if (!success) {
@@ -1157,7 +1339,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putBlocks:(NSArray<PDSDatabaseBlock *> *)blocks forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size) VALUES (?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size, rev) VALUES (?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
     
@@ -1172,6 +1354,11 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
             sqlite3_bind_blob(stmt, 2, block.blockData.bytes, (int)block.blockData.length, SQLITE_TRANSIENT);
         }
         sqlite3_bind_int64(stmt, 3, block.size);
+        if (block.rev.length > 0) {
+            sqlite3_bind_text(stmt, 4, block.rev.UTF8String, -1, SQLITE_TRANSIENT);
+        } else {
+            sqlite3_bind_null(stmt, 4);
+        }
         
         if (sqlite3_step(stmt) != SQLITE_DONE) {
             // handle error?

@@ -64,6 +64,10 @@ static NSString *const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 - (NSData *)buildCARBlocksForCommit:(RepoCommit *)commit
                                 ops:(NSArray<NSDictionary *> *)ops;
 - (nullable CID *)extractCIDFromCBORTag:(CBORValue *)tagValue;
+- (NSUInteger)addBlocksForRevision:(NSString *)rev
+                                did:(NSString *)repoDid
+                           toWriter:(CARWriter *)writer
+                     skippingCIDs:(NSMutableSet<NSString *> *)seenCIDs;
 - (NSUInteger)addMSTNodeBlocksForRootCID:(CID *)rootCID
                                      did:(NSString *)repoDid
                                 toWriter:(CARWriter *)writer;
@@ -829,11 +833,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (NSData *)buildCARBlocksForCommit:(RepoCommit *)commit
                                 ops:(NSArray<NSDictionary *> *)ops {
-  // Build a CAR file containing commit block + record blocks for changed
-  // records. Per ATProto spec, firehose CAR must contain:
+  // Build a CAR file containing commit block + changed blocks for this
+  // revision. Per ATProto spec, firehose CAR must contain:
   //  1. The signed commit block (root)
   //  2. Record blocks for create/update ops
-  //  3. MST node blocks reachable from the new MST root (commit.dataCID)
+  //  3. MST node blocks (and other referenced blocks) needed by consumers
 
   CID *commitCID = commit.computeCID;
   if (!commitCID) {
@@ -842,6 +846,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 
   CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+  NSMutableSet<NSString *> *seenCIDs = [NSMutableSet set];
+  if (commitCID.stringValue.length > 0) {
+    [seenCIDs addObject:commitCID.stringValue];
+  }
 
   NSData *commitBlockData = [commit serializeSigned];
   if (commitBlockData.length > 0) {
@@ -878,25 +886,38 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       NSData *digest = [CID rawSha256:recordCBOR];
       recordCID = digest ? [CID cidWithDigest:digest codec:0x71] : nil;
     }
-    if (recordCID) {
+    NSString *recordCIDKey = recordCID.stringValue;
+    if (recordCID && recordCIDKey.length > 0 &&
+        ![seenCIDs containsObject:recordCIDKey]) {
+      [seenCIDs addObject:recordCIDKey];
       [writer addBlock:[CARBlock blockWithCID:recordCID data:recordCBOR]];
       recordBlockCount++;
     }
   }
 
-  // Add MST node blocks reachable from the new MST root
+  // Prefer revision-indexed changed blocks when available.
+  NSUInteger revisionBlockCount = 0;
+  if (commit.rev.length > 0 && commit.did.length > 0) {
+    revisionBlockCount = [self addBlocksForRevision:commit.rev
+                                                did:commit.did
+                                           toWriter:writer
+                                       skippingCIDs:seenCIDs];
+  }
+
+  // Fallback for older stores without block revision metadata.
   NSUInteger mstBlockCount = 0;
-  if (commit.dataCID && commit.did.length > 0) {
+  if (revisionBlockCount == 0 && commit.dataCID && commit.did.length > 0) {
     mstBlockCount = [self addMSTNodeBlocksForRootCID:commit.dataCID
                                                  did:commit.did
                                             toWriter:writer];
   }
 
   NSData *carData = [writer serialize];
-  PDS_LOG_SYNC_DEBUG(@"Built CAR blocks: %lu bytes (commit + %lu record blocks "
-                     @"+ %lu MST node blocks)",
+  PDS_LOG_SYNC_DEBUG(
+      @"Built CAR blocks: %lu bytes (commit + %lu record blocks + %lu revision blocks + %lu MST fallback blocks)",
                      (unsigned long)carData.length,
                      (unsigned long)recordBlockCount,
+                     (unsigned long)revisionBlockCount,
                      (unsigned long)mstBlockCount);
 
   return carData ?: [NSData data];
@@ -912,6 +933,55 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   NSData *cidBytes = [inner.byteString
       subdataWithRange:NSMakeRange(1, inner.byteString.length - 1)];
   return [CID cidFromBytes:cidBytes];
+}
+
+- (NSUInteger)addBlocksForRevision:(NSString *)rev
+                                did:(NSString *)repoDid
+                           toWriter:(CARWriter *)writer
+                     skippingCIDs:(NSMutableSet<NSString *> *)seenCIDs {
+  if (rev.length == 0 || repoDid.length == 0 || !writer || !self.userDatabasePool) {
+    return 0;
+  }
+
+  NSError *dbError = nil;
+  PDSActorStore *store =
+      [self.userDatabasePool storeForDid:repoDid error:&dbError];
+  if (!store || dbError) {
+    PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ to load rev blocks: %@",
+                      repoDid, dbError);
+    return 0;
+  }
+
+  NSArray<NSData *> *cids = [store listBlockCIDsForRevision:rev
+                                                      limit:200000
+                                                      error:&dbError];
+  if (!cids || dbError) {
+    if (dbError) {
+      PDS_LOG_SYNC_WARN(@"Failed to list blocks for rev %@ (did=%@): %@",
+                        rev, repoDid, dbError);
+    }
+    return 0;
+  }
+
+  NSUInteger count = 0;
+  for (NSData *cidBytes in cids) {
+    CID *cid = [CID cidFromBytes:cidBytes];
+    NSString *cidKey = cid.stringValue;
+    if (!cid || cidKey.length == 0 || [seenCIDs containsObject:cidKey]) {
+      continue;
+    }
+
+    NSData *blockData = [store getBlockForCID:cidBytes forDid:repoDid error:nil];
+    if (blockData.length == 0) {
+      continue;
+    }
+
+    [seenCIDs addObject:cidKey];
+    [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
+    count++;
+  }
+
+  return count;
 }
 
 // BFS traversal of MST blocks from rootCID, loading each block from the actor
