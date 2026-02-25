@@ -1737,14 +1737,16 @@ static const NSUInteger kMaxPendingConsents = 1024;
 
   NSDate *now = [NSDate date];
   NSMutableArray<NSString *> *expired = [NSMutableArray array];
-  [sPendingConsents enumerateKeysAndObjectsUsingBlock:^(
-                        NSString *key, NSDictionary *session, BOOL *stop) {
-    NSDate *expires = session[@"expires"];
-    if (![expires isKindOfClass:[NSDate class]] ||
-        [expires compare:now] != NSOrderedDescending) {
-      [expired addObject:key];
-    }
-  }];
+  [sPendingConsents
+      enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        NSDictionary *session = (NSDictionary *)obj;
+        NSString *sessionKey = (NSString *)key;
+        NSDate *expires = session[@"expires"];
+        if (![expires isKindOfClass:[NSDate class]] ||
+            [expires compare:now] != NSOrderedDescending) {
+          [expired addObject:sessionKey];
+        }
+      }];
   [sPendingConsents removeObjectsForKeys:expired];
 }
 
