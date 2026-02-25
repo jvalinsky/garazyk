@@ -1191,6 +1191,18 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSError *error = nil;
+    id account = [serviceDatabases getAccountByDid:did error:&error];
+    if (!account) {
+      PDS_LOG_DEBUG_C(@"Sync", @"Account not registered globally for DID: %@",
+                      did);
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : @"Repository not found"
+      }];
+      return;
+    }
+
     PDSActorStore *store = [userDatabasePool storeForDid:did error:&error];
     if (!store) {
       PDS_LOG_DEBUG_C(@"Sync", @"Actor store not found for request DID: %@",
