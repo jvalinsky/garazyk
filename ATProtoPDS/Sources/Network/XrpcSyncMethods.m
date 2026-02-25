@@ -1106,9 +1106,6 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           NSString *mstKey =
               [NSString stringWithFormat:@"%@/%@", collection, rkey];
           NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey];
-          NSLog(@"[sync.getRecord] MST loaded for %@, key: %@, proof nodes "
-                @"count: %lu",
-                did, mstKey, (unsigned long)proofNodes.count);
 
           NSMapTable<MSTNode *, CID *> *cache =
               [NSMapTable strongToStrongObjectsMapTable];
@@ -1118,13 +1115,9 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
               NSData *nodeData = [node serializeToCBOR:cache];
               if (nodeData) {
                 [writer addBlock:[CARBlock blockWithCID:nodeCID data:nodeData]];
-                NSLog(@"[sync.getRecord] Added MST node block: %@",
-                      nodeCID.stringValue);
               }
             }
           }
-        } else {
-          NSLog(@"[sync.getRecord] FAILED to load MST for %@", did);
         }
       }
     }
