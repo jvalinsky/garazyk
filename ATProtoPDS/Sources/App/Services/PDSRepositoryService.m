@@ -21,6 +21,13 @@
 - (MST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records;
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
 - (CBORValue *)cidLinkValueForCID:(CID *)cid;
+- (BOOL)loadStoredHeadCommitForDid:(NSString *)did
+                              store:(PDSActorStore *)store
+                          commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                        commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
+                            dataCID:(CID * _Nullable * _Nonnull)dataCIDOut
+                                rev:(NSString * _Nullable * _Nonnull)revOut
+                           isSigned:(BOOL *)isSignedOut;
 - (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
                                          since:(nullable NSString *)sinceRev
                                          error:(NSError **)error;
@@ -154,8 +161,6 @@
 }
 
 - (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error {
-    // Ensure the stored repo root is a signed Commit CID (not an MST root CID).
-    // This is required for atproto sync endpoints and for external crawlers/validators.
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) {
         if (error && !*error) {
@@ -166,6 +171,28 @@
         return nil;
     }
 
+    // Fast path: use already-persisted signed head commit metadata.
+    CID *storedCommitCID = nil;
+    NSData *unusedCommitBlock = nil;
+    CID *unusedDataCID = nil;
+    NSString *storedCommitRev = nil;
+    BOOL storedCommitIsSigned = NO;
+    BOOL hasStoredHead = [self loadStoredHeadCommitForDid:did
+                                                    store:store
+                                                commitCID:&storedCommitCID
+                                              commitBlock:&unusedCommitBlock
+                                                  dataCID:&unusedDataCID
+                                                      rev:&storedCommitRev
+                                                 isSigned:&storedCommitIsSigned];
+    if (hasStoredHead && storedCommitIsSigned && storedCommitCID.stringValue.length > 0) {
+        NSString *rev = [store getRepoRevisionForDid:did error:nil];
+        if (rev.length == 0) {
+            rev = storedCommitRev ?: @"";
+        }
+        return @{@"cid": storedCommitCID.stringValue, @"rev": rev ?: @""};
+    }
+
+    // Slow path: rebuild export state, self-heal head commit if needed.
     MST *mst = nil;
     CID *commitCID = nil;
     NSData *commitBlock = nil;
@@ -530,41 +557,22 @@
         return NO;
     }
 
-    NSData *storedRootBytes = [store getRepoRootForDid:did error:nil];
     NSString *storedRev = [store getRepoRevisionForDid:did error:nil];
     NSString *latestMutationRev = [store latestMutationRevisionWithError:nil];
-
-    // Determine whether the *repo state* has changed by comparing the stored head commit's "data" CID
-    // against the newly computed MST root CID.
-    CID *storedCommitCID = storedRootBytes ? [CID cidFromBytes:storedRootBytes] : nil;
-    NSData *storedCommitBlock = storedCommitCID ? [store getBlockForCID:storedCommitCID.bytes forDid:did error:nil] : nil;
+    CID *storedCommitCID = nil;
+    NSData *storedCommitBlock = nil;
     CID *storedDataCID = nil;
+    NSString *storedCommitRev = nil;
     BOOL storedCommitIsSigned = NO;
-
-    if (storedCommitBlock.length > 0) {
-        NSError *decodeError = nil;
-        id decoded = [ATProtoDagCBOR decodeData:storedCommitBlock error:&decodeError];
-        if ([decoded isKindOfClass:[NSDictionary class]]) {
-            NSDictionary *map = (NSDictionary *)decoded;
-            id versionVal = map[@"version"];
-            id didVal = map[@"did"];
-            id revVal = map[@"rev"];
-            if ([versionVal respondsToSelector:@selector(integerValue)] &&
-                [didVal isKindOfClass:[NSString class]] &&
-                [revVal isKindOfClass:[NSString class]]) {
-                id dataVal = map[@"data"];
-                if ([dataVal isKindOfClass:[CID class]]) {
-                    storedDataCID = (CID *)dataVal;
-                } else if ([dataVal isKindOfClass:[NSString class]]) {
-                    storedDataCID = [CID cidFromString:(NSString *)dataVal];
-                }
-
-                id sigVal = map[@"sig"];
-                if ([sigVal isKindOfClass:[NSData class]] && ((NSData *)sigVal).length > 0) {
-                    storedCommitIsSigned = YES;
-                }
-            }
-        }
+    [self loadStoredHeadCommitForDid:did
+                               store:store
+                           commitCID:&storedCommitCID
+                         commitBlock:&storedCommitBlock
+                             dataCID:&storedDataCID
+                                 rev:&storedCommitRev
+                            isSigned:&storedCommitIsSigned];
+    if (storedRev.length == 0 && storedCommitRev.length > 0) {
+        storedRev = storedCommitRev;
     }
 
     BOOL rootChanged = (storedDataCID == nil) || ![storedDataCID isEqual:mstRootCID];
@@ -805,6 +813,90 @@
         *materializedBlocksOut = [materializedBlocks copy];
     }
     
+    return YES;
+}
+
+- (BOOL)loadStoredHeadCommitForDid:(NSString *)did
+                              store:(PDSActorStore *)store
+                          commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                        commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
+                            dataCID:(CID * _Nullable * _Nonnull)dataCIDOut
+                                rev:(NSString * _Nullable * _Nonnull)revOut
+                           isSigned:(BOOL *)isSignedOut {
+    if (commitCIDOut) {
+        *commitCIDOut = nil;
+    }
+    if (commitBlockOut) {
+        *commitBlockOut = nil;
+    }
+    if (dataCIDOut) {
+        *dataCIDOut = nil;
+    }
+    if (revOut) {
+        *revOut = nil;
+    }
+    if (isSignedOut) {
+        *isSignedOut = NO;
+    }
+
+    NSData *storedRootBytes = [store getRepoRootForDid:did error:nil];
+    CID *storedCommitCID = storedRootBytes ? [CID cidFromBytes:storedRootBytes] : nil;
+    if (!storedCommitCID) {
+        return NO;
+    }
+
+    NSData *storedCommitBlock = [store getBlockForCID:storedCommitCID.bytes forDid:did error:nil];
+    if (storedCommitBlock.length == 0) {
+        return NO;
+    }
+
+    NSError *decodeError = nil;
+    id decoded = [ATProtoDagCBOR decodeData:storedCommitBlock error:&decodeError];
+    if (![decoded isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSDictionary *map = (NSDictionary *)decoded;
+    id versionVal = map[@"version"];
+    NSString *commitDid = [map[@"did"] isKindOfClass:[NSString class]] ? map[@"did"] : nil;
+    NSString *commitRev = [map[@"rev"] isKindOfClass:[NSString class]] ? map[@"rev"] : nil;
+    if (![versionVal respondsToSelector:@selector(integerValue)] ||
+        commitDid.length == 0 ||
+        commitRev.length == 0 ||
+        (did.length > 0 && ![commitDid isEqualToString:did])) {
+        return NO;
+    }
+
+    CID *commitDataCID = nil;
+    id dataVal = map[@"data"];
+    if ([dataVal isKindOfClass:[CID class]]) {
+        commitDataCID = (CID *)dataVal;
+    } else if ([dataVal isKindOfClass:[NSString class]]) {
+        commitDataCID = [CID cidFromString:(NSString *)dataVal];
+    }
+
+    BOOL isSigned = NO;
+    id sigVal = map[@"sig"];
+    if ([sigVal isKindOfClass:[NSData class]] && ((NSData *)sigVal).length > 0) {
+        isSigned = YES;
+    }
+
+    if (commitCIDOut) {
+        *commitCIDOut = storedCommitCID;
+    }
+    if (commitBlockOut) {
+        *commitBlockOut = storedCommitBlock;
+    }
+    if (dataCIDOut) {
+        *dataCIDOut = commitDataCID;
+    }
+    if (revOut) {
+        *revOut = commitRev;
+    }
+    if (isSignedOut) {
+        *isSignedOut = isSigned;
+    }
+
     return YES;
 }
 
