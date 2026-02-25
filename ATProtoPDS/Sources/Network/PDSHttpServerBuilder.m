@@ -486,8 +486,6 @@
         // HTTP request.
         NSString *hostHeader = [request headerForKey:@"Host"];
         NSString *handle = normalizedHostFromHostHeader(hostHeader);
-        PDS_LOG_INFO(@"Well-known: Resolving handle [%@] from Host header [%@]",
-                     handle ?: @"nil", hostHeader ?: @"nil");
 
         if (handle.length == 0) {
           response.statusCode = HttpStatusBadRequest;
