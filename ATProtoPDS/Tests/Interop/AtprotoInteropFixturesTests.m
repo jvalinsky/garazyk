@@ -231,4 +231,151 @@ static NSData *InteropBase64URLDecode(NSString *string) {
     }
 }
 
+/**
+ * Bug Condition Exploration Test for DAG-CBOR Canonical Encoding
+ * 
+ * **Validates: Requirements 1.1, 1.2, 1.3, 2.1, 2.2, 2.3**
+ * 
+ * This test MUST FAIL on unfixed code to confirm the bug exists.
+ * The bug: ATProtoCBORSerialization sorts map keys by string value instead of
+ * by CBOR-encoded byte representation (length-first, then lexicographic).
+ * 
+ * When this test FAILS, it proves the bug exists and provides counterexamples.
+ * When this test PASSES (after the fix), it confirms correct canonical encoding.
+ */
+- (void)testDAGCBORCanonicalKeyOrdering {
+    // Test case 1: Keys that sort differently under string vs CBOR-byte comparison
+    // String sort: ["$type", "createdAt", "text"]
+    // CBOR byte sort: ["text", "$type", "createdAt"] (4-byte, 5-byte, 9-byte keys)
+    NSDictionary *record1 = @{
+        @"text": @"hello world",
+        @"$type": @"app.bsky.feed.post",
+        @"createdAt": @"2024-01-01T00:00:00Z"
+    };
+    
+    NSError *error1 = nil;
+    NSData *cbor1 = [ATProtoCBORSerialization encodeDataWithJSONObject:record1 error:&error1];
+    XCTAssertNotNil(cbor1, @"Failed to encode record1: %@", error1);
+    
+    // Manually verify key ordering by checking CBOR structure
+    // In canonical DAG-CBOR, shorter keys must come before longer keys
+    // We can verify this by checking that "text" (4 bytes encoded) comes before "$type" (5 bytes)
+    // and "$type" comes before "createdAt" (9 bytes)
+    
+    // Test case 2: Simple case from design doc
+    // String sort: ["aa", "z"]
+    // CBOR byte sort: ["z", "aa"] (1-byte key before 2-byte key)
+    NSDictionary *record2 = @{
+        @"z": @(1),
+        @"aa": @(2)
+    };
+    
+    NSError *error2 = nil;
+    NSData *cbor2 = [ATProtoCBORSerialization encodeDataWithJSONObject:record2 error:&error2];
+    XCTAssertNotNil(cbor2, @"Failed to encode record2: %@", error2);
+    
+    // Expected CBOR for {"z": 1, "aa": 2} with canonical ordering:
+    // Map with 2 entries: 0xA2
+    // Key "z" (1 char): 0x61 0x7A
+    // Value 1: 0x01
+    // Key "aa" (2 chars): 0x62 0x61 0x61
+    // Value 2: 0x02
+    // Total: A2 61 7A 01 62 61 61 02
+    NSData *expectedCBOR2 = [NSData dataWithBytes:(unsigned char[]){0xA2, 0x61, 0x7A, 0x01, 0x62, 0x61, 0x61, 0x02} length:8];
+    
+    XCTAssertEqualObjects(cbor2, expectedCBOR2, 
+        @"CBOR encoding does not match canonical DAG-CBOR. "
+        @"Expected keys sorted by byte length (z before aa), "
+        @"but got incorrect ordering. "
+        @"This confirms the bug: keys are sorted by string value instead of CBOR-encoded byte length.");
+    
+    // Test case 3: Use actual AT Protocol test fixtures
+    // Re-run the data model fixtures test but with explicit failure documentation
+    NSString *path = [self interopFixturePath:@"data-model/data-model-fixtures.json"];
+    if (!path) {
+        XCTFail(@"Could not find data-model fixtures");
+        return;
+    }
+    
+    NSData *fixtureData = [NSData dataWithContentsOfFile:path];
+    if (!fixtureData) {
+        XCTFail(@"Could not load data-model fixtures");
+        return;
+    }
+    
+    NSError *jsonError = nil;
+    NSArray *fixtures = [NSJSONSerialization JSONObjectWithData:fixtureData options:0 error:&jsonError];
+    XCTAssertNotNil(fixtures, @"Failed to parse fixtures: %@", jsonError);
+    
+    NSInteger failureCount = 0;
+    NSMutableArray *failedFixtures = [NSMutableArray array];
+    
+    for (NSDictionary *fixture in fixtures) {
+        if (![fixture isKindOfClass:[NSDictionary class]]) continue;
+        
+        NSDictionary *json = fixture[@"json"];
+        NSString *cborBase64 = fixture[@"cbor_base64"];
+        NSString *expectedCID = fixture[@"cid"];
+        
+        if (!json || !cborBase64 || !expectedCID) continue;
+        
+        NSData *expectedCBOR = [[NSData alloc] initWithBase64EncodedString:cborBase64 options:0];
+        if (!expectedCBOR) continue;
+        
+        NSError *encodeError = nil;
+        NSData *actualCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:json error:&encodeError];
+        
+        if (!actualCBOR) {
+            [failedFixtures addObject:@{@"error": @"encoding failed", @"json": json}];
+            failureCount++;
+            continue;
+        }
+        
+        // Check if CBOR bytes match
+        if (![actualCBOR isEqualToData:expectedCBOR]) {
+            CID *actualCID = [CID cidWithDigest:[CID sha256Digest:actualCBOR] codec:0x71];
+            [failedFixtures addObject:@{
+                @"expectedCID": expectedCID,
+                @"actualCID": actualCID.stringValue ?: @"<nil>",
+                @"cborMatch": @NO,
+                @"json": json
+            }];
+            failureCount++;
+        } else {
+            // Even if CBOR matches, verify CID
+            CID *actualCID = [CID cidWithDigest:[CID sha256Digest:actualCBOR] codec:0x71];
+            if (![actualCID.stringValue isEqualToString:expectedCID]) {
+                [failedFixtures addObject:@{
+                    @"expectedCID": expectedCID,
+                    @"actualCID": actualCID.stringValue ?: @"<nil>",
+                    @"cborMatch": @YES,
+                    @"cidMatch": @NO,
+                    @"json": json
+                }];
+                failureCount++;
+            }
+        }
+    }
+    
+    // Document the failures
+    if (failureCount > 0) {
+        NSLog(@"\n=== DAG-CBOR Canonical Encoding Bug Detected ===");
+        NSLog(@"Failed %ld out of %lu test fixtures", (long)failureCount, (unsigned long)fixtures.count);
+        NSLog(@"\nCounterexamples:");
+        for (NSDictionary *failure in failedFixtures) {
+            NSLog(@"  - Expected CID: %@", failure[@"expectedCID"] ?: @"N/A");
+            NSLog(@"    Actual CID: %@", failure[@"actualCID"] ?: @"N/A");
+            NSLog(@"    CBOR Match: %@", failure[@"cborMatch"] ?: @"N/A");
+            NSLog(@"    JSON: %@", failure[@"json"]);
+            NSLog(@"");
+        }
+        NSLog(@"=== End Bug Report ===\n");
+    }
+    
+    XCTAssertEqual(failureCount, 0, 
+        @"DAG-CBOR canonical encoding bug detected: %ld fixtures failed. "
+        @"Keys are being sorted by string value instead of CBOR-encoded byte length. "
+        @"See log output above for counterexamples.", (long)failureCount);
+}
+
 @end
