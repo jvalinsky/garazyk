@@ -38,6 +38,9 @@
 @implementation PDSReadRequest
 @end
 
+static const void *kPDSNetworkConnectionQueueSpecificKey =
+    &kPDSNetworkConnectionQueueSpecificKey;
+
 static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     NSString *raw = [[NSProcessInfo processInfo] environment][@"PDS_LINUX_CONNECT_TIMEOUT_MS"];
     if (![raw isKindOfClass:[NSString class]] || raw.length == 0) {
@@ -61,6 +64,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     NSMutableArray<PDSReadRequest *> *_readRequests;
     NSMutableData *_writeBuffer;
     NSUInteger _writeOffset;
+    NSMutableArray *_pendingSendCompletions;
     NSString *_host;
     NSUInteger _port;
     struct addrinfo *_connectAddrInfo;
@@ -88,6 +92,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
         _writeBuffer = [NSMutableData data];
+        _pendingSendCompletions = [NSMutableArray array];
         _connectFailures = [NSMutableArray array];
         _writeOffset = 0;
         _isCancelled = NO;
@@ -103,6 +108,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _inputBuffer = [NSMutableData data];
         _readRequests = [NSMutableArray array];
         _writeBuffer = [NSMutableData data];
+        _pendingSendCompletions = [NSMutableArray array];
         _connectFailures = [NSMutableArray array];
         _writeOffset = 0;
         _connectTimeoutMilliseconds = connectTimeoutMillisecondsFromEnvironment();
@@ -114,9 +120,55 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     return self;
 }
 
+- (BOOL)isOnTransportQueue {
+    if (_queue == NULL) {
+        return NO;
+    }
+    return dispatch_get_specific(kPDSNetworkConnectionQueueSpecificKey) ==
+           (__bridge void *)self;
+}
+
+- (void)enqueueSendCompletion:(void (^ _Nullable)(NSError * _Nullable error))completion {
+    if (!completion) {
+        return;
+    }
+    [_pendingSendCompletions addObject:[completion copy]];
+}
+
+- (void)flushPendingSendCompletionsWithError:(NSError * _Nullable)error {
+    if (_pendingSendCompletions.count == 0) {
+        return;
+    }
+
+    NSArray *pending = [_pendingSendCompletions copy];
+    [_pendingSendCompletions removeAllObjects];
+    for (id completionObj in pending) {
+        void (^completion)(NSError * _Nullable) = completionObj;
+        completion(error);
+    }
+}
+
+- (void)ensureWriteSource {
+    if (_writeSource || _sockfd == -1 || _queue == NULL) {
+        return;
+    }
+
+    __weak typeof(self) weakSelf = self;
+    _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+    dispatch_source_set_event_handler(_writeSource, ^{
+        [weakSelf handleWrite];
+    });
+    dispatch_resume(_writeSource);
+}
+
 - (void)startWithQueue:(dispatch_queue_t)queue {
     _queue = queue;
     _isCancelled = NO;
+    if (_queue) {
+        dispatch_queue_set_specific(_queue,
+                                    kPDSNetworkConnectionQueueSpecificKey,
+                                    (__bridge void *)self, NULL);
+    }
     
     if (_sockfd == -1) {
         dispatch_async(queue, ^{
@@ -367,13 +419,6 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     });
     dispatch_resume(_readSource);
     
-    _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
-    dispatch_source_set_event_handler(_writeSource, ^{
-        [weakSelf handleWrite];
-    });
-    dispatch_resume(_writeSource);
-    
-    dispatch_source_cancel(_writeSource);
     _writeSource = nil;
 }
 
@@ -399,6 +444,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
 
 - (void)handleWrite {
     if (_writeBuffer.length == 0) {
+        [self flushPendingSendCompletionsWithError:nil];
         dispatch_source_cancel(_writeSource);
         _writeSource = nil;
         return;
@@ -413,6 +459,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
         [_writeBuffer setLength:0];
         _writeOffset = 0;
+        [self flushPendingSendCompletionsWithError:error];
         if (self.stateChangedHandler) {
             self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
         }
@@ -421,6 +468,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         if (_writeOffset >= _writeBuffer.length) {
             [_writeBuffer setLength:0];
             _writeOffset = 0;
+            [self flushPendingSendCompletionsWithError:nil];
             dispatch_source_cancel(_writeSource);
             _writeSource = nil;
         }
@@ -484,19 +532,20 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     while (_readRequests.count > 0) {
         PDSReadRequest *request = _readRequests.firstObject;
         void (^completion)(NSData * _Nullable, BOOL, NSError * _Nullable) = request.completion;
+        [_readRequests removeObjectAtIndex:0];
         if (completion) {
             completion(nil, NO, error);
         }
-        [_readRequests removeObjectAtIndex:0];
     }
 }
 
-- (void)cancel {
+- (void)cancelOnTransportQueue {
     if (_isCancelled) {
         return;
     }
     _isCancelled = YES;
 
+    [self flushPendingSendCompletionsWithError:[self cancellationError]];
     [self failPendingReadRequestsWithError:[self cancellationError]];
     [self cleanupConnectState];
 
@@ -518,7 +567,27 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     }
 }
 
+- (void)cancel {
+    if ([self isOnTransportQueue] || _queue == NULL) {
+        [self cancelOnTransportQueue];
+        return;
+    }
+
+    dispatch_async(_queue, ^{
+        [self cancelOnTransportQueue];
+    });
+}
+
 - (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
+    if (![self isOnTransportQueue] && _queue != NULL) {
+        NSData *copiedData = [data copy];
+        void (^copiedCompletion)(NSError * _Nullable) = completion ? [completion copy] : nil;
+        dispatch_async(_queue, ^{
+            [self sendData:copiedData completion:copiedCompletion];
+        });
+        return;
+    }
+
     if (_isCancelled) {
         if (completion) {
             completion([self cancellationError]);
@@ -534,48 +603,52 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         return;
     }
 
+    [self enqueueSendCompletion:completion];
+
     if (_writeBuffer.length > 0 || _writeOffset > 0) {
         [_writeBuffer appendData:data];
         return;
     }
-    
+
     ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
     if (sent == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             [_writeBuffer setData:data];
             _writeOffset = 0;
-            
-            __weak typeof(self) weakSelf = self;
-            _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
-            dispatch_source_set_event_handler(_writeSource, ^{
-                [weakSelf handleWrite];
-            });
-            dispatch_resume(_writeSource);
+            [self ensureWriteSource];
             return;
         }
-        if (completion) {
-            completion([NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]);
+        NSError *sendError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        [_writeBuffer setLength:0];
+        _writeOffset = 0;
+        [self flushPendingSendCompletionsWithError:sendError];
+        if (self.stateChangedHandler) {
+            self.stateChangedHandler(PDSNetworkConnectionStateFailed, sendError);
         }
+        return;
     } else if ((NSUInteger)sent < data.length) {
         [_writeBuffer setData:data];
         _writeOffset = sent;
-        
-        __weak typeof(self) weakSelf = self;
-        _writeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
-        dispatch_source_set_event_handler(_writeSource, ^{
-            [weakSelf handleWrite];
-        });
-        dispatch_resume(_writeSource);
-    } else {
-        if (completion) {
-            completion(nil);
-        }
+        [self ensureWriteSource];
+        return;
     }
+
+    [self flushPendingSendCompletionsWithError:nil];
 }
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+    if (![self isOnTransportQueue] && _queue != NULL) {
+        void (^copiedCompletion)(NSData * _Nullable, BOOL, NSError * _Nullable) = completion ? [completion copy] : nil;
+        dispatch_async(_queue, ^{
+            [self receiveWithMinimumLength:minLength maximumLength:maxLength completion:copiedCompletion];
+        });
+        return;
+    }
+
     if (_isCancelled) {
-        completion(nil, NO, [self cancellationError]);
+        if (completion) {
+            completion(nil, NO, [self cancellationError]);
+        }
         return;
     }
 
