@@ -91,6 +91,56 @@ NS_ASSUME_NONNULL_BEGIN
                         configuration:(PDSConfiguration *)configuration
                                 error:(NSError **)error;
 
+/**
+ * Get default PDS service configuration for a given configuration.
+ *
+ * Returns a dictionary with atproto_pds service endpoint.
+ *
+ * @param configuration PDS configuration
+ * @return Service dictionary
+ */
++ (NSDictionary *)defaultPdsServiceForConfig:(PDSConfiguration *)configuration;
+
+/**
+ * Resolve identity information for an identifier (handle or DID).
+ *
+ * This method:
+ * 1. Checks local database first
+ * 2. Falls back to handle resolution and DID resolution
+ * 3. Returns identity info with DID, handle, and DID document
+ *
+ * @param identifier Account identifier (DID or handle)
+ * @param serviceDatabases Service databases for account lookups
+ * @param errorName Output parameter for error name
+ * @param error Error output parameter
+ * @return Identity info dictionary or nil on failure
+ */
++ (nullable NSDictionary *)resolveIdentityInfoForIdentifier:(NSString *)identifier
+                                           serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                                  errorName:(NSString * _Nullable * _Nullable)errorName
+                                                      error:(NSError **)error;
+
+/**
+ * Update account handle in the database.
+ *
+ * @param serviceDatabases Service databases
+ * @param did Account DID
+ * @param handle New handle
+ * @param error Error output parameter
+ * @return YES if update succeeded, NO on failure
+ */
++ (BOOL)updateAccountHandle:(PDSServiceDatabases *)serviceDatabases
+                        did:(NSString *)did
+                     handle:(NSString *)handle
+                      error:(NSError **)error;
+
+/**
+ * Get current ISO8601 timestamp string.
+ *
+ * @return ISO8601 formatted timestamp
+ */
++ (NSString *)currentISO8601String;
+
 @end
 
 NS_ASSUME_NONNULL_END
