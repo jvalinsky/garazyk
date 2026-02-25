@@ -9,16 +9,16 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
+#import "Network/PDSNetworkTransport.h"
 #import <Foundation/Foundation.h>
 #import <stdint.h>
-#import "Network/PDSNetworkTransport.h"
 
 @class WebSocketConnection;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*! Error domain for WebSocket connection errors. */
-extern NSString * const WebSocketConnectionErrorDomain;
+extern NSString *const WebSocketConnectionErrorDomain;
 
 /*! Error code when connection is closed. */
 extern NSInteger const WebSocketConnectionErrorCodeConnectionClosed;
@@ -40,10 +40,10 @@ extern NSInteger const WebSocketConnectionErrorCodeWriteFailed;
  @constant WebSocketConnectionStateClosed Connection is closed.
  */
 typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
-    WebSocketConnectionStateConnecting,
-    WebSocketConnectionStateConnected,
-    WebSocketConnectionStateClosing,
-    WebSocketConnectionStateClosed
+  WebSocketConnectionStateConnecting,
+  WebSocketConnectionStateConnected,
+  WebSocketConnectionStateClosing,
+  WebSocketConnectionStateClosed
 };
 
 /*!
@@ -53,10 +53,15 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
  */
 @protocol WebSocketConnectionDelegate <NSObject>
 @optional
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)message;
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text;
-- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason;
-- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error;
+- (void)webSocketConnection:(WebSocketConnection *)connection
+          didReceiveMessage:(NSData *)message;
+- (void)webSocketConnection:(WebSocketConnection *)connection
+             didReceiveText:(NSString *)text;
+- (void)webSocketConnection:(WebSocketConnection *)connection
+           didCloseWithCode:(NSInteger)code
+                     reason:(NSString *)reason;
+- (void)webSocketConnection:(WebSocketConnection *)connection
+           didFailWithError:(NSError *)error;
 - (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection;
 @end
 
@@ -70,51 +75,58 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 @interface WebSocketConnection : NSObject
 
 /*! Remote host address. */
-@property (nonatomic, readonly) NSString *host;
+@property(nonatomic, readonly) NSString *host;
+
+/*! Remote IP address of the client. */
+@property(nonatomic, readonly) NSString *remoteAddress;
 
 /*! Remote port. */
-@property (nonatomic, readonly) uint16_t port;
+@property(nonatomic, readonly) uint16_t port;
 
 /*! WebSocket path. */
-@property (nonatomic, readonly) NSString *path;
+@property(nonatomic, readonly) NSString *path;
 
 /*! Query string from the URL. */
-@property (nonatomic, readonly, copy) NSString *queryString;
+@property(nonatomic, readonly, copy) NSString *queryString;
 
-/*! Parsed query parameters. Single values are NSString, repeated values are NSArray<NSString *>. */
-@property (nonatomic, readonly, copy, nullable) NSDictionary<NSString *, id> *queryParams;
+/*! Parsed query parameters. Single values are NSString, repeated values are
+ * NSArray<NSString *>. */
+@property(nonatomic, readonly, copy, nullable)
+    NSDictionary<NSString *, id> *queryParams;
 
 /*! Current connection state. */
-@property (nonatomic, readonly) WebSocketConnectionState state;
+@property(nonatomic, readonly) WebSocketConnectionState state;
 
 /*! Delegate for connection events. */
-@property (nonatomic, weak, nullable) id<WebSocketConnectionDelegate> delegate;
+@property(nonatomic, weak, nullable) id<WebSocketConnectionDelegate> delegate;
 
 /*! Interval between heartbeat pings. */
-@property (nonatomic, assign) NSTimeInterval heartbeatInterval;
+@property(nonatomic, assign) NSTimeInterval heartbeatInterval;
 
 /*! Timeout for heartbeat responses. */
-@property (nonatomic, assign) NSTimeInterval heartbeatTimeout;
+@property(nonatomic, assign) NSTimeInterval heartbeatTimeout;
 
 /*! Negotiated subprotocol. */
-@property (nonatomic, copy, nullable) NSString *subprotocol;
+@property(nonatomic, copy, nullable) NSString *subprotocol;
 
 /*! Unique connection identifier. */
-@property (nonatomic, readonly) NSUUID *identifier;
+@property(nonatomic, readonly) NSUUID *identifier;
 
 /*! Close code from close frame. */
-@property (nonatomic, assign) NSInteger closeCode;
+@property(nonatomic, assign) NSInteger closeCode;
 
 /*! Close reason from close frame. */
-@property (nonatomic, copy, nullable) NSString *closeReason;
+@property(nonatomic, copy, nullable) NSString *closeReason;
 
 /*! Number of queued outbound frames waiting to be flushed. */
-@property (nonatomic, readonly) NSUInteger pendingSendCount;
+@property(nonatomic, readonly) NSUInteger pendingSendCount;
 
 /*! Approximate number of bytes queued for sending. */
-@property (nonatomic, readonly) NSUInteger pendingSendBytes;
+@property(nonatomic, readonly) NSUInteger pendingSendBytes;
 
-- (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path;
+- (instancetype)initWithHost:(NSString *)host
+                        port:(uint16_t)port
+                        path:(NSString *)path;
 - (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection;
 
 /*! Establishes the WebSocket connection. */
@@ -139,10 +151,10 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 - (void)sendText:(NSString *)text;
 
 /*! Sends a ping frame. */
-- (void)sendPing:(NSData * _Nullable)payload;
+- (void)sendPing:(NSData *_Nullable)payload;
 
 /*! Sends a pong frame. */
-- (void)sendPong:(NSData * _Nullable)payload;
+- (void)sendPong:(NSData *_Nullable)payload;
 
 @end
 
