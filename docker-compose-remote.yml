@@ -8,6 +8,7 @@ services:
       - "2583:2583"
     volumes:
       - pds_data:/var/lib/atprotopds
+      - ./config.json:/var/lib/atprotopds/config.json:ro
     environment:
       - PDS_PORT=2583
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons

@@ -27,6 +27,9 @@ RUN ldconfig
 # Copy web assets
 COPY ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprotopds/assets
 
+# Copy lexicons
+COPY lexicons/whitewind /usr/share/atprotopds/lexicons
+
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
 
