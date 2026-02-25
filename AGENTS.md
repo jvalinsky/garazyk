@@ -75,7 +75,7 @@
 - **Actor Store**: `PDSActorStore` provides SQLite-based persistence for actor data, employing WAL mode and prepared statements for performance.
 
 ### Development Tools
-- **PLC Server**: `tool-plc` contains a local PLC server for ATProto development/testing.
+- **PLC Server**: The standalone PLC server binary is `campagnola` (CMake target: `atproto-plc`), located at `./build/bin/campagnola`.
 
 ## Build & Test Instructions
 
@@ -91,7 +91,7 @@ xcodegen generate
 **CLI Tool:**
 ```bash
 xcodebuild -scheme ATProtoPDS-CLI build
-# Binary at: ./build/bin/atprotopds-cli
+# Binary at: ./build/bin/kaszlak
 ```
 
 **Unit Tests:**
@@ -111,7 +111,7 @@ xcodebuild -scheme Fuzzers build
 **Unit Tests:**
 ```bash
 ./build/tests/AllTests
-# Expected output includes: Failures: 0
+# Expected output includes: 1017 tests, Failures: 0
 ```
 
 **Fuzzers:**
@@ -187,7 +187,7 @@ Before pushing, ensure:
 1. `xcodegen generate` succeeds
 2. `xcodebuild -scheme AllTests build` succeeds
 3. `./build/tests/AllTests` passes (0 failures)
-4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
+4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds (binary: `kaszlak`)
 5. Fuzzers build successfully
 
 ## Linux/GNUstep Compatibility
@@ -258,15 +258,38 @@ When generating, modifying, or reviewing PDS configuration for production deploy
 
 ### Deployment Commands
 
+**CRITICAL**: Always run `docker compose` from `docker/pds/`, NEVER from the repo root. The repo root has a separate `docker-compose.yml` for local dev/testing that mounts the dev `config.json` (localhost, mock PLC). Running from the wrong directory will cause the PDS to serve `did:web:localhost%3A2583` instead of `did:web:pds.garazyk.xyz`.
+
 ```bash
 # On the VM (crimson-comet.exe.xyz):
-cd /home/exedev/objpds/docker/pds
+cd /home/exedev/objpds/docker/pds   # <-- MUST be this directory, NOT repo root
 docker compose up -d        # Start
 docker compose logs -f pds  # Monitor
 docker compose restart pds  # Restart after config change
 
 # Create invite codes (required for account creation):
 docker exec nspds kaszlak invite create
+
+# Verify correct config is loaded after any restart:
+curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer
+# MUST show: "did":"did:web:pds.garazyk.xyz" and "availableUserDomains":["garazyk.xyz"]
+```
+
+### Production Volume Backup
+
+- **Backup directory on VM**: `/home/exedev/backup`
+- **Current backup artifact pattern**: `/home/exedev/backup/pds_pds_data-YYYYMMDD-HHMMSS.tar.gz`
+- **Latest known backup (Feb 25, 2026)**: `/home/exedev/backup/pds_pds_data-20260225-195508.tar.gz`
+- **Volume name to protect**: `pds_pds_data` (Docker external volume mounted at `/var/lib/atprotopds` in `nspds`)
+
+```bash
+# Create a non-destructive backup tarball of the production volume:
+mkdir -p /home/exedev/backup
+TS=$(date +%Y%m%d-%H%M%S)
+docker run --rm \
+  -v pds_pds_data:/data \
+  -v /home/exedev/backup:/backup \
+  busybox sh -c "cd /data && tar -czf /backup/pds_pds_data-$TS.tar.gz ."
 ```
 
 ### What Agents Must NEVER Do
@@ -276,6 +299,7 @@ docker exec nspds kaszlak invite create
 - Enable any `debug.*` flags in production
 - Expose the PDS port (2583) directly to the internet (nginx handles this)
 - Store secrets or keys in config files committed to git
+- Run `docker compose` from the repo root on the production VM (use `docker/pds/` only)
 
 ## Landing the Plane (Session Completion)
 
