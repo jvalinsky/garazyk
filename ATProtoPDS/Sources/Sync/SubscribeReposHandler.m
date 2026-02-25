@@ -182,6 +182,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
   WebSocketConnection *webSocketConnection =
       [[WebSocketConnection alloc] initWithConnection:connection];
+  if (request.remoteAddress.length > 0) {
+    webSocketConnection.remoteAddress = request.remoteAddress;
+  }
   webSocketConnection.delegate = self;
   @synchronized(self.attachedConnections) {
     [self.attachedConnections addObject:webSocketConnection];
