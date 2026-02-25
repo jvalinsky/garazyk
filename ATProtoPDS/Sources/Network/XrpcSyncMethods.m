@@ -5,6 +5,7 @@
 #import "App/Services/PDSRepositoryService.h"
 #import "Auth/JWT.h"
 #import "Compat/PDSTypes.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
@@ -15,6 +16,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Repository/CAR.h"
 
 static NSString *trimmedNonEmptyString(NSString *value);
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
