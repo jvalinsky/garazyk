@@ -5,8 +5,7 @@
 @class PDSRecordService;
 @class PDSBlobService;
 @class PDSRepositoryService;
-@class PDSServiceDatabases;
-@class PDSDatabasePool;
+@class PDSRelayService;
 @class PDSConfiguration;
 @protocol PDSAdminController;
 
@@ -38,6 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param recordService Record service for record operations
  * @param blobService Blob service for blob storage
  * @param repositoryService Repository service for MST operations
+ * @param relayService Relay service for crawl notifications
  * @param config Server configuration
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -48,6 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
                  recordService:(PDSRecordService *)recordService
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
+                  relayService:(PDSRelayService *)relayService
                  configuration:(PDSConfiguration *)config;
 
 @end

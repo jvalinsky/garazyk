@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  pds:
+    image: nspds:local
+    container_name: nspds
+    ports:
+      - "2583:2583"
+    volumes:
+      - pds_data:/var/lib/atprotopds
+    environment:
+      - PDS_PORT=2583
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - PDS_HOSTNAME=pds.garazyk.xyz
+      - PDS_DID_METHOD=did:web:pds.garazyk.xyz
+      - PDS_AVAILABLE_USER_DOMAINS=garazyk.xyz
+    labels:
+      - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
+    restart: unless-stopped
+
+  plc-db:
+    image: postgres:15-alpine
+    container_name: plc_db
+    environment:
+      POSTGRES_USER: plc
+      POSTGRES_PASSWORD: plc_secret
+      POSTGRES_DB: plc
+    ports:
+      - "5432:5432"
+    volumes:
+      - plc_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U plc -d plc" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  plc-server:
+    build:
+      context: ./ATProtoPDS/Tests/plc_e2e
+      dockerfile: Dockerfile
+    container_name: plc_server
+    environment:
+      DATABASE_URL: postgresql://plc:plc_secret@plc-db:5432/plc?sslmode=disable
+      LOG_LEVEL: debug
+      PORT: 2582
+    ports:
+      - "2582:2582"
+    depends_on:
+      plc-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pds_data:
+    name: pds_pds_data
+    external: true
+  plc_data:
