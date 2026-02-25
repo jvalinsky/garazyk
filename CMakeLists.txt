@@ -35,25 +35,36 @@ endif()
 
 # Platform Specific Configuration
 if(NOT APPLE)
-
     add_compile_definitions(GNUSTEP LINUX)
     
-    # GNUstep Configuration - use source-built installation
+    # GNUstep Configuration - defaults to common locations
     set(GNUSTEP_PREFIX "/home/exedev/GNUstep/install" CACHE PATH "GNUstep installation prefix")
+    
+    # Add common custom library search paths
+    list(APPEND CMAKE_PREFIX_PATH "/usr/local" "${GNUSTEP_PREFIX}")
+    
+    # Find ObjC Runtime
+    find_library(OBJC_LIBRARY NAMES objc-2 objc NAMES_PER_DIR
+                 PATHS "/usr/local/lib" "${GNUSTEP_PREFIX}/lib" "${GNUSTEP_PREFIX}/Library/Libraries"
+                 NO_DEFAULT_PATH)
+    if(NOT OBJC_LIBRARY)
+        find_library(OBJC_LIBRARY NAMES objc)
+    endif()
+    message(STATUS "Using ObjC library: ${OBJC_LIBRARY}")
 
-    # Set Objective-C flags for GNUstep ng runtime with ARC support
+    # Set Objective-C flags for modern runtime with ARC support
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fblocks -fobjc-runtime=gnustep-2.2 -fobjc-arc")
-    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I${GNUSTEP_PREFIX}/Library/Headers")
-    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -I${GNUSTEP_PREFIX}/include")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GNUSTEP_PREFIX}/Library/Libraries")
-
-    # Add GNUstep include directories
-    include_directories(${GNUSTEP_PREFIX}/Library/Headers)
-    include_directories(${GNUSTEP_PREFIX}/include)
+    
+    # Include Directories
+    include_directories(SYSTEM "/usr/local/include")
+    include_directories(SYSTEM "${GNUSTEP_PREFIX}/include")
+    include_directories(SYSTEM "${GNUSTEP_PREFIX}/Library/Headers")
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
 
-    # Link directories
-    link_directories(BEFORE ${GNUSTEP_PREFIX}/Library/Libraries)
+    # Link Directories
+    link_directories(BEFORE "/usr/local/lib")
+    link_directories(BEFORE "${GNUSTEP_PREFIX}/lib")
+    link_directories(BEFORE "${GNUSTEP_PREFIX}/Library/Libraries")
     link_directories(BEFORE /usr/GNUstep/Local/Library/Libraries)
     link_directories(BEFORE /usr/GNUstep/Local/lib)
 endif()
