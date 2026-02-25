@@ -2,6 +2,7 @@
 #import "App/PDSConfiguration.h"
 #import "App/Services/PDSBlobService.h"
 #import "App/Services/PDSRecordService.h"
+#import "App/Services/PDSRelayService.h"
 #import "App/Services/PDSRepositoryService.h"
 #import "Auth/JWT.h"
 #import "Compat/PDSTypes.h"
