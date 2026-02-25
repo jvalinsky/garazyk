@@ -14,5 +14,6 @@
  * @return Normalized client dictionary matching database format, or nil if validation fails
  */
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata error:(NSError **)error;
+- (NSUInteger)pendingConsentCountForTesting;
 
 @end

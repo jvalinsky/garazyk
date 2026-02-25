@@ -8,6 +8,18 @@ static NSString *const kXContentTypeOptions = @"nosniff";
 static NSString *const kXFrameOptions = @"DENY";
 static NSString *const kContentSecurityPolicy = @"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
 
+static NSDateFormatter *HttpResponseDateFormatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT"];
+        formatter.dateFormat = @"EEE, dd MMM yyyy HH:mm:ss 'GMT'";
+    });
+    return formatter;
+}
+
 NS_ASSUME_NONNULL_END
 
 @implementation HttpResponse
@@ -228,11 +240,7 @@ NS_ASSUME_NONNULL_END
     }
 
     /*! Add Date header */
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    dateFormatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-    dateFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT"];
-    dateFormatter.dateFormat = @"EEE, dd MMM yyyy HH:mm:ss 'GMT'";
-    [self setHeader:[dateFormatter stringFromDate:[NSDate date]] forKey:@"Date"];
+    [self setHeader:[HttpResponseDateFormatter() stringFromDate:[NSDate date]] forKey:@"Date"];
 }
 
 - (NSData *)serializeHeadersForBodyLength:(NSUInteger)bodyLength {
@@ -241,10 +249,6 @@ NS_ASSUME_NONNULL_END
     /*! Build status line: HTTP/1.1 CODE MESSAGE\r\n */
     NSString *statusLine = [NSString stringWithFormat:@"HTTP/1.1 %ld %@\r\n", (long)self.statusCode, self.statusMessage];
     [result appendData:[statusLine dataUsingEncoding:NSUTF8StringEncoding]];
-
-    if (self.statusCode == 302 || self.statusCode == 429) {
-        NSLog(@"[HTTP RESPONSE] Status: %ld, Headers: %@", (long)self.statusCode, self.headers);
-    }
 
     [self prepareCommonHeadersForBodyLength:bodyLength];
 
