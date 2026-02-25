@@ -26,6 +26,22 @@
 #define kCCSuccess 0
 #endif
 
+static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
+    if (!a || !b) {
+        return NO;
+    }
+    if (a.length != b.length) {
+        return NO;
+    }
+    const uint8_t *aBytes = (const uint8_t *)a.bytes;
+    const uint8_t *bBytes = (const uint8_t *)b.bytes;
+    uint8_t diff = 0;
+    for (NSUInteger i = 0; i < a.length; i++) {
+        diff |= (uint8_t)(aBytes[i] ^ bBytes[i]);
+    }
+    return diff == 0;
+}
+
 @interface PDSAccountService ()
 @end
 
@@ -239,7 +255,7 @@
                                       error:(NSError **)error {
     // Verify password using the current PBKDF2 policy only.
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
-    BOOL isPasswordCorrect = [passwordHash isEqualToData:account.passwordHash];
+    BOOL isPasswordCorrect = PDSConstantTimeEqualData(passwordHash, account.passwordHash);
 
     if (!isPasswordCorrect && self.serviceDatabases) {
         NSError *appPasswordError = nil;
@@ -362,7 +378,7 @@
 
     // Verify password
     NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
-    if (![passwordHash isEqualToData:account.passwordHash]) {
+    if (!PDSConstantTimeEqualData(passwordHash, account.passwordHash)) {
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeUnauthorized
                                        message:@"Invalid password"];
@@ -477,7 +493,8 @@
     NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
-    NSLog(@"[PDS ACCOUNT] Unsigned CBOR Data (%lu bytes): %@", (unsigned long)unsignedCBOR.length, [CryptoUtils hexStringFromData:unsignedCBOR]);
+    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Prepared unsigned PLC operation (%lu bytes)",
+                       (unsigned long)unsignedCBOR.length);
     NSData *hash = [CID rawSha256:unsignedCBOR];
     NSData *sig = nil;
     if (![keyManager signHash:hash result:&sig error:error]) {
@@ -500,7 +517,7 @@
     op.prev = nil;
     
     NSDictionary *opDict = [op toDictionary];
-    NSLog(@"[PDS ACCOUNT] Registering DID %@ with PLC at %@. Payload: %@", did, plcURLString, opDict);
+    PDS_LOG_AUTH_INFO(@"[PDS ACCOUNT] Registering DID %@ with PLC at %@", did, plcURLString);
     NSData *postData = [NSJSONSerialization dataWithJSONObject:opDict options:0 error:error];
     if (!postData) return nil;
     

@@ -1,6 +1,6 @@
-# NSPds - ATProto Personal Data Server
+# September - ATProto Personal Data Server
 
-Standards-compliant AT Protocol Personal Data Server (PDS) implementation written in Objective-C for macOS.
+Standards-compliant AT Protocol Personal Data Server (PDS) implementation written in Objective-C for macOS and Linux/GNUstep.
 
 ## Features
 
@@ -12,7 +12,7 @@ Standards-compliant AT Protocol Personal Data Server (PDS) implementation writte
 - **Interactive Explorer** - Web-based UI for exploring AT Protocol data
 - **Auto-Generated API Docs** - OpenAPI 3.0 specification with interactive Swagger UI
 - **Unified Logging** - Structured JSON logging with component filtering and request correlation
-- **Test Coverage** - 900+ tests across protocol, auth, repository, and integration layers
+- **Test Coverage** - 1017 tests across protocol, auth, repository, and integration layers
 
 ## Table of Contents
 
@@ -29,37 +29,39 @@ Standards-compliant AT Protocol Personal Data Server (PDS) implementation writte
 
 ### Prerequisites
 
-- macOS 14.0 or later
-- Xcode 15.0 or later
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- macOS 14.0+ with Xcode 15.0+, or Linux with GNUstep
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) (macOS)
 - CMake 3.21 or later (`brew install cmake`)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/jvalinsky/NSPds.git
-cd NSPds
+git clone https://github.com/jvalinsky/September.git
+cd September
 
-# Generate the project
+# Generate the project (macOS)
 xcodegen generate
 
 # Build the CLI tool
 xcodebuild -scheme ATProtoPDS-CLI build
 
 # Start the server
-./build/bin/atprotopds-cli serve
+./build/bin/kaszlak serve
 ```
 
 The server will start on `http://localhost:2583` by default.
 
 ### First Steps
 
-1. **Show Help**: `./build/bin/atprotopds-cli help`
-2. **Check Health**: `./build/bin/atprotopds-cli health --verbose`
-3. **List Accounts**: `./build/bin/atprotopds-cli account list`
-4. **Create Record**: `./build/bin/atprotopds-cli repo create-record <did> <col> <rkey> <json>`
-5. **Open the Explorer**: Visit `http://localhost:2583/explore/`
+1. **Show Help**: `kaszlak help`
+2. **Check Health**: `kaszlak health`
+3. **List Accounts**: `kaszlak account list`
+4. **Create Invite Code**: `kaszlak invite create`
+5. **Repository Operations**: `kaszlak repo`
+6. **Open the Explorer**: Visit `http://localhost:2583/explore/`
+
+**Available commands**: `account`, `admin`, `daemon`, `health`, `help`, `init`, `install`, `invite`, `nuke-data`, `oauth`, `repo`, `serve`, `version`
 
 ## Building from Source
 
@@ -73,12 +75,12 @@ xcodegen generate
 
 # Build CLI Tool
 xcodebuild -scheme ATProtoPDS-CLI build
-# Binary at: ./build/bin/atprotopds-cli
+# Binary at: ./build/bin/kaszlak
 
 # Build & Run Unit Tests
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-# Output: Tests run: <current suite count>, Failures: 0
+# Output: Tests run: 1017, Failures: 0
 
 # Build Fuzzers
 xcodebuild -scheme Fuzzers build
@@ -87,15 +89,22 @@ xcodebuild -scheme Fuzzers build
 ./scripts/wipe_and_rebuild.sh
 ```
 
-### Using Make (Legacy Support)
+### Direct CMake (Linux / GNUstep)
 
 ```bash
-# Build all targets
-make build
-
-# Run tests
-make test
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+make -j$(nproc)
+# Binaries at: ./build/bin/kaszlak, ./build/bin/campagnola, ./build/tests/AllTests
 ```
+
+### Executables
+
+| Binary | CMake Target | Description |
+|--------|-------------|-------------|
+| `kaszlak` | `september` | PDS CLI (`./build/bin/kaszlak`) |
+| `campagnola` | `atproto-plc` | Standalone PLC server on port 2582 (`./build/bin/campagnola`) |
+| `AllTests` | `AllTests` | Test runner (`./build/tests/AllTests`) |
 
 ### Dependencies
 
@@ -240,28 +249,39 @@ graph TB
 ### Project Structure
 
 ```
-NSPds/
-├── ATProtoPDS/                    # Main Xcode project
+September/
+├── ATProtoPDS/
 │   ├── Sources/
-│   │   ├── App/Explore/           # Web explorer
-│   │   │   ├── Assets/            # HTML/CSS/JS
-│   │   │   └── ExploreHandler.m   # Web routes
-│   │   ├── CLI/                   # Command-line interface
-│   │   ├── Core/                  # Core AT Protocol logic
-│   │   └── Network/               # HTTP server
+│   │   ├── Admin/                 # Admin endpoints
+│   │   ├── App/                   # App view & explorer
+│   │   ├── AppView/               # App view service
+│   │   ├── Auth/                  # OAuth 2.0 & DPoP
+│   │   ├── Blob/                  # Blob storage
+│   │   ├── CLI/                   # Command-line interface (kaszlak)
+│   │   ├── Compat/                # Linux/GNUstep compatibility layer
+│   │   ├── Core/                  # Core AT Protocol (CBOR, CAR, MST)
+│   │   ├── Database/              # SQLite persistence
+│   │   ├── Debug/                 # Debug utilities
+│   │   ├── Email/                 # Email services
+│   │   ├── Federation/            # Federation support
+│   │   ├── Identity/              # DID & handle resolution
+│   │   ├── Lexicon/               # Lexicon validation
+│   │   ├── Metrics/               # Metrics collection
+│   │   ├── Network/               # HTTP & WebSocket server
+│   │   ├── PLC/                   # PLC directory interaction
+│   │   ├── Repository/            # Repository & MST
+│   │   ├── Security/              # Key management & crypto
+│   │   ├── Services/              # Service layer
+│   │   └── Sync/                  # Firehose & repo sync
 │   └── Tests/                     # Unit and integration tests
+├── Tests/e2e/                     # End-to-end tests (Node.js/Playwright)
 ├── docs/                          # Documentation
-│   ├── LOGGING.md                 # Detailed logging system documentation
-│   ├── guides/                    # Setup, user, and developer guides
-│   ├── architecture/              # System diagrams and data models
-│   ├── security/                  # Security plans, reports, and audits
-│   ├── plans/                     # Historical implementation plans
-│   └── research/                  # Research and reference material
-├── tests/                         # Test suites
-│   └── fixtures/                  # Test data files
+├── docker/                        # Docker configs & deployment
+├── scripts/                       # ~55 shell scripts
+├── skills/                        # Audit skills
+├── lexicons/                      # AT Protocol lexicons
 ├── fuzzing/                       # Fuzz testing infrastructure
-├── scripts/                       # Build and utility scripts
-└── README.md                      # This file
+└── README.md
 ```
 
 ### Adding New Endpoints
@@ -297,23 +317,17 @@ NSPds/
 ### Testing
 
 ```bash
-# Run all tests
-make test
-
-# Build and run unit tests with xcodebuild
-xcodebuild -scheme AllTests -project ATProtoPDS.xcodeproj build
+# Build and run unit tests
+xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-# Expected: Failures: 0
-
-# Run specific test suite
-xcodebuild -project ATProtoPDS.xcodeproj -scheme AllTests test
+# Expected: Tests run: 1017, Failures: 0
 
 # Integration testing
 ./scripts/test_server.sh
 ```
 
 **Test Status:**
-- `./build/tests/AllTests` passing (suite count varies by build/config)
+- `./build/tests/AllTests` passing with 1017 tests
 - CLI functionality verified
 - Integration tests passing
 
@@ -334,7 +348,7 @@ xcodebuild -project ATProtoPDS.xcodeproj -scheme AllTests test
 lsof -i :2583
 
 # Kill existing process
-pkill -f "atprotopds"
+pkill -f "kaszlak"
 
 # Check server logs
 tail -f server.log
@@ -344,19 +358,16 @@ tail -f server.log
 ```bash
 # Reset database
 rm -f data/pds.db
-./scripts/start_server.sh  # Will recreate database
+./build/bin/kaszlak serve  # Will recreate database
 ```
 
 #### Build Failures
 ```bash
-# Clean and rebuild
-make clean && make build
+# Wipe and rebuild
+./scripts/wipe_and_rebuild.sh
 
 # Check Xcode version
 xcodebuild -version
-
-# Update dependencies
-make deps
 ```
 
 #### Performance Issues
@@ -368,7 +379,7 @@ make deps
 
 ```bash
 # Run with verbose logging
-./atprotopds-cli serve --verbose
+./build/bin/kaszlak serve --verbose
 
 # Check cache status
 curl http://localhost:2583/explore/api/debug
@@ -382,7 +393,7 @@ tail -f server.log | grep "handleApi"
 1. **Check Logs**: `tail -f server.log`
 2. **API Status**: `curl http://localhost:2583/explore/api/accounts`
 3. **Documentation**: `http://localhost:2583/explore/api/docs`
-4. **Issues**: [GitHub Issues](https://github.com/jvalinsky/NSPds/issues)
+4. **Issues**: [GitHub Issues](https://github.com/jvalinsky/September/issues)
 
 ## Security
 
@@ -398,11 +409,12 @@ tail -f server.log | grep "handleApi"
 ### Security Testing
 
 ```bash
-# Run security tests
-make security-test
+# Static analysis
+cd build && cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cd ..
+clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
 
-# Check for vulnerabilities
-make audit
+# Fuzz testing
+./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/xrpc_valid_create.txt
 ```
 
 ### Reporting Security Issues
@@ -450,6 +462,25 @@ A database dump utility is provided to inspect PDS data:
 ./scripts/db_dump.sh did:plc:1234... record
 ```
 
+## Deployment
+
+### Docker
+
+The Docker image is built as `nspds:local` with container name `nspds`. Production Docker Compose lives at `docker/pds/docker-compose.yml`.
+
+```bash
+# Build Docker image
+docker build -t nspds:local .
+
+# Production deployment (from docker/pds/ directory)
+cd docker/pds
+docker compose up -d
+docker compose logs -f pds
+
+# Create invite codes
+docker exec nspds kaszlak invite create
+```
+
 ## Contributing
 
 ### Development Workflow
@@ -457,7 +488,7 @@ A database dump utility is provided to inspect PDS data:
 1. **Fork** the repository
 2. **Create** a feature branch: `git checkout -b feature/your-feature`
 3. **Make** your changes with tests
-4. **Run** tests: `make test`
+4. **Run** tests: `./build/tests/AllTests`
 5. **Commit** with clear messages
 6. **Push** and create pull request
 
@@ -489,7 +520,7 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Changelog
 
-### v1.2.0 (Current)
+### Latest
 - **PLC Hardening**: Spec-compliant operation signing with correct prev CID calculation
 - **Server Rotation Key**: Dedicated PLC signing key with persistent storage
 - **DID Resolution Security**: Redirect rejection, proper Accept headers
@@ -502,4 +533,4 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 - **Firehose V2**: Spec-compliant `subscribeRepos` stream with real back-fill and cursor support
 - **Advanced Security**: OAuth 2.0 Request Object signing, DPoP, and Biometric Keychain integration
 - **Performance**: Reduced MST rebuild cost and request fan-out latency on hot paths
-- **Testing**: Expanded suite to 901+ tests covering all edge cases
+- **Testing**: Expanded suite to 1017 tests covering all edge cases
