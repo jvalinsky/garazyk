@@ -1135,7 +1135,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request,
                                                    HttpResponse *response) {
     NSDictionary *body = request.jsonBody ?: @{};
-    PDS_LOG_INFO_C(@"Sync", @"requestCrawl headers: %@", request.allHeaderFields);
+    PDS_LOG_INFO_C(@"Sync", @"requestCrawl headers: %@", request.headers);
     PDS_LOG_INFO_C(@"Sync", @"requestCrawl body: %@", request.jsonBody);
     NSString *hostname = body[@"hostname"];
     if (![hostname isKindOfClass:[NSString class]] ||
