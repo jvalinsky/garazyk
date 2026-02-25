@@ -7,6 +7,7 @@
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
+#import "Core/CID.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
@@ -17,6 +18,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Repository/CAR.h"
+#import "Repository/MST.h"
 
 static NSString *trimmedNonEmptyString(NSString *value);
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
