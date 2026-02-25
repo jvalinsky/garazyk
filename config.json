@@ -13,19 +13,21 @@
     "invite_code_required": false
   },
   "server": {
-    "data_dir": "./data",
-    "host": "localhost",
-    "port": 2583
+    "data_dir": ".",
+    "host": "pds.garazyk.xyz",
+    "port": 2583,
+    "issuer": "https://pds.garazyk.xyz",
+    "available_user_domains": ["garazyk.xyz"]
   },
   "links": {
-    "privacy_policy": "https://example.com/privacy",
-    "terms_of_service": "https://example.com/terms"
+    "privacy_policy": "https://pds.garazyk.xyz/privacy",
+    "terms_of_service": "https://pds.garazyk.xyz/terms"
   },
   "relays": [
     "https://bsky.network"
   ],
   "plc": {
-    "url": "mock",
+    "url": "https://plc.directory",
     "retry_count": 5,
     "retry_delay_ms": 2000
   }
