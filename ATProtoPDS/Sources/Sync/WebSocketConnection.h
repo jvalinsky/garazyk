@@ -78,7 +78,7 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 @property(nonatomic, readonly) NSString *host;
 
 /*! Remote IP address of the client. */
-@property(nonatomic, readonly) NSString *remoteAddress;
+@property(nonatomic, copy) NSString *remoteAddress;
 
 /*! Remote port. */
 @property(nonatomic, readonly) uint16_t port;
