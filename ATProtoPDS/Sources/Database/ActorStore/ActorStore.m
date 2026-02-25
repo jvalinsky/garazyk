@@ -13,6 +13,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Auth/Secp256k1.h"
+#import "Debug/PDSLogger.h"
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"
 #import "PDSActorStore+Blob.h"
@@ -1091,9 +1092,6 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             blockData = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                        length:sqlite3_column_bytes(stmt, 0)];
-            NSLog(@"[ActorStore] getBlockForCID SUCCESS: %@, data length: %lu", [cid description], (unsigned long)blockData.length);
-        } else {
-            NSLog(@"[ActorStore] getBlockForCID FAILED: %@ (not found)", [cid description]);
         }
     }];
 
@@ -1152,10 +1150,8 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     sqlite3_bind_int64(stmt, 3, block.size);
     
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
-    if (success) {
-        NSLog(@"[ActorStore] putBlock SUCCESS: %@, size: %lld", [block.cid description], (long long)block.size);
-    } else {
-        NSLog(@"[ActorStore] putBlock FAILED: %@, error: %s", [block.cid description], sqlite3_errmsg(self.db));
+    if (!success) {
+        PDS_LOG_DB_ERROR(@"putBlock failed for cid %@: %s", [block.cid description], sqlite3_errmsg(self.db));
     }
     return success;
 }
