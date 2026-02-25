@@ -2,6 +2,13 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcIdentityHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Network/XrpcServerMethods.h"
+#import "Network/XrpcRepoMethods.h"
+#import "Network/XrpcSyncMethods.h"
+#import "Network/XrpcIdentityMethods.h"
+#import "Network/XrpcAdminMethods.h"
+#import "Network/XrpcLabelMethods.h"
+#import "Network/XrpcAppBskyMethods.h"
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "App/Services/PDSAccountService.h"
@@ -159,8 +166,7 @@ static NSArray<NSString *> *jwtAllowedAlgorithmsForMinter(JWTMinter *minter) {
     return algorithms.count > 0 ? algorithms.array : nil;
 }
 
-// Implementation of resolveDid — resolves via PLC directory for did:plc DIDs,
-// falls back to local account data when PLC is unreachable.
+// Implementation of resolveDid — now delegates to XrpcIdentityHelper
 static NSDictionary *resolveDid(NSString *did, PDSServiceDatabases *dbs, PDSConfiguration *config, NSError **error) {
     return [XrpcIdentityHelper resolveDid:did
                          serviceDatabases:dbs
@@ -1121,10 +1127,6 @@ static BOOL resolveAccountIdentifierToDid(PDSServiceDatabases *serviceDatabases,
                                                        error:error];
 }
 
-static NSString *currentISO8601String(void) {
-    return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-}
-
 static NSString *iso8601StringFromUnixTimestamp(NSTimeInterval timestamp) {
     NSDate *date = timestamp > 0 ? [NSDate dateWithTimeIntervalSince1970:timestamp] : [NSDate date];
     return [NSDateFormatter atproto_stringFromDate:date];
@@ -1463,16 +1465,6 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
     return docHandle.length > 0 && [docHandle isEqualToString:normalizedHandle];
 }
 
-static NSDictionary *defaultPdsServiceForConfig(PDSConfiguration *config) {
-    NSString *serviceEndpoint = [config canonicalIssuerWithPortHint:0];
-    return @{
-        @"atproto_pds": @{
-            @"type": @"AtprotoPersonalDataServer",
-            @"endpoint": serviceEndpoint
-        }
-    };
-}
-
 static BOOL updateAccountEmail(PDSServiceDatabases *serviceDatabases,
                                NSString *did,
                                NSString *email,
@@ -1482,19 +1474,6 @@ static BOOL updateAccountEmail(PDSServiceDatabases *serviceDatabases,
         return NO;
     }
     account.email = email;
-    account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    return [serviceDatabases updateAccount:account error:error];
-}
-
-static BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
-                                NSString *did,
-                                NSString *handle,
-                                NSError **error) {
-    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:error];
-    if (!account) {
-        return NO;
-    }
-    account.handle = handle;
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     return [serviceDatabases updateAccount:account error:error];
 }
@@ -1590,326 +1569,6 @@ static BOOL updateAccountSigningKey(PDSServiceDatabases *serviceDatabases,
 
     PDS_LOG_WARN(@"updateAccountSigningKey accepted but no DID document persistence is configured for DID %@ (signingKey=%@)", did, signingKey);
     return YES;
-}
-
-static void registerTempUtilityMethods(XrpcDispatcher *dispatcher,
-                                       PDSServiceDatabases *serviceDatabases,
-                                       JWTMinter *jwtMinter,
-                                       id<PDSAdminController> adminController) {
-    [dispatcher registerMethod:@"com.atproto.temp.addReservedHandle" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *handle = body[@"handle"];
-        NSError *handleError = nil;
-        if (![ATProtoHandleValidator validateHandle:handle error:&handleError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidHandle", @"message": handleError.localizedDescription ?: @"Invalid handle"}];
-            return;
-        }
-
-        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
-        NSError *reserveError = nil;
-        if (!reserveHandle(normalizedHandle, serviceDatabases, &reserveError)) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"PersistenceFailed", @"message": reserveError.localizedDescription ?: @"Failed to reserve handle"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
-    [dispatcher registerMethod:@"com.atproto.temp.checkHandleAvailability" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSString *handle = [request queryParamForKey:@"handle"];
-        NSError *handleError = nil;
-        if (![ATProtoHandleValidator validateHandle:handle error:&handleError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": handleError.localizedDescription ?: @"Invalid handle"}];
-            return;
-        }
-        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
-
-        NSString *email = [request queryParamForKey:@"email"];
-        if (email.length > 0 && !isLikelyEmail(email)) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidEmail", @"message": @"Invalid email"}];
-            return;
-        }
-
-        NSError *reservedError = nil;
-        BOOL unavailable = ([serviceDatabases getAccountByHandle:normalizedHandle error:nil] != nil)
-            || isReservedHandle(normalizedHandle, serviceDatabases, &reservedError);
-        if (reservedError) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": reservedError.localizedDescription ?: @"Failed to check reserved handles"}];
-            return;
-        }
-
-        NSDictionary *result = nil;
-        if (unavailable) {
-            NSArray<NSDictionary *> *suggestions = buildHandleAvailabilitySuggestions(normalizedHandle, serviceDatabases);
-            result = @{@"suggestions": suggestions ?: @[]};
-        } else {
-            result = @{};
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"handle": normalizedHandle,
-            @"result": result
-        }];
-    }];
-
-    [dispatcher registerMethod:@"com.atproto.temp.checkSignupQueue" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"activated": @YES}];
-    }];
-
-    [dispatcher registerMethod:@"com.atproto.temp.dereferenceScope" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSString *scopeReference = [request queryParamForKey:@"scope"];
-        if (![scopeReference isKindOfClass:[NSString class]] || scopeReference.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing scope"}];
-            return;
-        }
-        if (![scopeReference hasPrefix:@"ref:"]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidScopeReference", @"message": @"scope must start with ref:"}];
-            return;
-        }
-
-        NSString *resolvedScope = [scopeReference substringFromIndex:4];
-        if (resolvedScope.length == 0
-            || [resolvedScope rangeOfCharacterFromSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].location != NSNotFound) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidScopeReference", @"message": @"Invalid scope reference"}];
-            return;
-        }
-
-        NSString *mappedScope = scopeReferenceMap()[resolvedScope];
-        if (![mappedScope isKindOfClass:[NSString class]] || mappedScope.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidScopeReference", @"message": @"Unknown scope reference"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"scope": mappedScope}];
-    }];
-
-    [dispatcher registerMethod:@"com.atproto.temp.fetchLabels" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSInteger limit = 50;
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 250)) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 250"}];
-            return;
-        }
-
-        NSInteger sinceSeconds = 0;
-        BOOL hasSince = NO;
-        NSString *sinceParam = [request queryParamForKey:@"since"];
-        if (sinceParam.length > 0) {
-            hasSince = YES;
-            if (!parseStrictIntegerString(sinceParam, &sinceSeconds) || sinceSeconds < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"since must be a non-negative integer"}];
-                return;
-            }
-        }
-
-        NSError *queryError = nil;
-        NSArray<NSDictionary *> *labels = loadFetchedLabels(serviceDatabases, hasSince, sinceSeconds, limit, &queryError);
-        if (!labels) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": queryError.localizedDescription ?: @"Failed to fetch labels"}];
-            return;
-        }
-
-        [response setHeader:@"true" forKey:@"Deprecation"];
-        [response setHeader:kTempFetchLabelsSunsetDate forKey:@"Sunset"];
-        [response setHeader:kTempFetchLabelsSuccessorLink forKey:@"Link"];
-        [response setHeader:kTempFetchLabelsDeprecationWarning forKey:@"Warning"];
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"labels": labels ?: @[]}];
-    }];
-
-    [dispatcher registerMethod:@"com.atproto.temp.requestPhoneVerification" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *phoneNumber = body[@"phoneNumber"];
-        if (!isLikelyPhoneNumber(phoneNumber)) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid phoneNumber"}];
-            return;
-        }
-
-        NSError *providerError = nil;
-        NSString *providerName = [PDSConfiguration sharedConfiguration].phoneVerificationProvider ?: @"none";
-        id<PDSPhoneVerificationProvider> provider = [PDSPhoneVerificationProviderFactory providerWithName:providerName
-                                                                                                     error:&providerError];
-        if (!provider) {
-            if ([providerError.domain isEqualToString:PDSPhoneVerificationProviderErrorDomain]
-                && providerError.code == PDSPhoneVerificationProviderErrorNotConfigured) {
-                response.statusCode = HttpStatusNotImplemented;
-                [response setJsonBody:@{
-                    @"error": @"PhoneVerificationNotConfigured",
-                    @"message": providerError.localizedDescription ?: @"Phone verification provider is not configured"
-                }];
-                return;
-            }
-            if ([providerError.domain isEqualToString:PDSPhoneVerificationProviderErrorDomain]
-                && providerError.code == PDSPhoneVerificationProviderErrorUnsupportedProvider) {
-                response.statusCode = HttpStatusNotImplemented;
-                [response setJsonBody:@{
-                    @"error": @"UnsupportedPhoneVerificationProvider",
-                    @"message": providerError.localizedDescription ?: @"Unsupported phone verification provider"
-                }];
-                return;
-            }
-
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{
-                @"error": @"PhoneVerificationProviderError",
-                @"message": providerError.localizedDescription ?: @"Failed to initialize phone verification provider"
-            }];
-            return;
-        }
-
-        NSError *requestError = nil;
-        if (![provider requestVerificationForPhoneNumber:phoneNumber error:&requestError]) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{
-                @"error": @"PhoneVerificationRequestFailed",
-                @"message": requestError.localizedDescription ?: @"Failed to request phone verification"
-            }];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-}
-
-static void registerTempRevokeAccountCredentialsMethod(XrpcDispatcher *dispatcher,
-                                                       PDSServiceDatabases *serviceDatabases,
-                                                       JWTMinter *jwtMinter,
-                                                       id<PDSAdminController> adminController) {
-    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *accountIdentifier = body[@"account"];
-        NSString *targetDid = nil;
-        NSError *resolveError = nil;
-        if (!resolveAccountIdentifierToDid(serviceDatabases, accountIdentifier, &targetDid, &resolveError)) {
-            if (resolveError.code == 404) {
-                response.statusCode = HttpStatusNotFound;
-                [response setJsonBody:@{@"error": @"AccountNotFound", @"message": resolveError.localizedDescription ?: @"Account not found"}];
-            } else {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": resolveError.localizedDescription ?: @"Invalid account identifier"}];
-            }
-            return;
-        }
-
-        if (![targetDid isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
-            return;
-        }
-
-        NSError *deleteError = nil;
-        if (![serviceDatabases deleteRefreshTokensForAccount:targetDid error:&deleteError]) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
-            return;
-        }
-
-        NSError *listError = nil;
-        NSArray<NSDictionary *> *appPasswords = [serviceDatabases listAppPasswordsForAccount:targetDid error:&listError];
-        if (listError) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": listError.localizedDescription ?: @"Failed to list app passwords"}];
-            return;
-        }
-
-        for (NSDictionary *entry in appPasswords) {
-            NSString *name = entry[@"name"];
-            if (name.length == 0) {
-                continue;
-            }
-
-            NSError *revokeError = nil;
-            BOOL revoked = [serviceDatabases revokeAppPasswordForAccount:targetDid name:name error:&revokeError];
-            if (!revoked && revokeError) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
-                return;
-            }
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
 }
 
 static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
@@ -2123,7 +1782,10 @@ static void registerAdminAccountMaintenanceMethods(XrpcDispatcher *dispatcher,
         }
 
         NSError *updateError = nil;
-        if (!updateAccountHandle(serviceDatabases, did, normalizedHandle, &updateError)) {
+        if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
+                                                 did:did
+                                              handle:normalizedHandle
+                                               error:&updateError]) {
             if (updateError.code == 404) {
                 response.statusCode = HttpStatusNotFound;
                 [response setJsonBody:@{@"error": @"AccountNotFound", @"message": updateError.localizedDescription ?: @"Account not found"}];
@@ -2610,74 +2272,6 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (enforceMethodChecks && request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = [request.jsonBody isKindOfClass:[NSDictionary class]] ? request.jsonBody : nil;
-        if (enforceMethodChecks && !body) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
-            return;
-        }
-        if (!body) {
-            body = @{};
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController moderateAccount:body error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription ?: @"Moderation failed"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (enforceMethodChecks && request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = [request.jsonBody isKindOfClass:[NSDictionary class]] ? request.jsonBody : nil;
-        if (enforceMethodChecks && !body) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
-            return;
-        }
-        if (!body) {
-            body = @{};
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController moderateRecord:body error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription ?: @"Moderation failed"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
     [dispatcher registerComAtprotoLabelCreateLabel:^(HttpRequest *request, HttpResponse *response) {
         if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
             return;
@@ -2750,93 +2344,6 @@ static void registerAdminModerationAndLabelMethods(XrpcDispatcher *dispatcher,
 }
 
 
-static NSDictionary *resolveIdentityInfoForIdentifier(NSString *identifier,
-                                                       PDSServiceDatabases *serviceDatabases,
-                                                       NSString **errorName,
-                                                       NSError **error) {
-    if ([identifier hasPrefix:@"did:"]) {
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:identifier error:nil];
-        if (account) {
-            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
-            NSDictionary *didDoc = @{
-                @"id": account.did ?: identifier,
-                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
-            };
-            return @{
-                @"did": account.did ?: identifier,
-                @"handle": handle,
-                @"didDoc": didDoc
-            };
-        }
-    } else {
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:identifier error:nil];
-        if (account) {
-            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
-            NSDictionary *didDoc = @{
-                @"id": account.did ?: @"",
-                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
-            };
-            return @{
-                @"did": account.did ?: @"",
-                @"handle": handle,
-                @"didDoc": didDoc
-            };
-        }
-    }
-
-    DIDResolver *didResolver = [[DIDResolver alloc] init];
-    didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
-
-    if ([identifier hasPrefix:@"did:"]) {
-        DIDDocument *doc = [didResolver resolveDIDSync:identifier error:error];
-        if (!doc) {
-            if (errorName) *errorName = @"DidNotFound";
-            return nil;
-        }
-        NSString *handle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs) ?: @"handle.invalid";
-        return @{
-            @"did": identifier,
-            @"handle": handle,
-            @"didDoc": doc.jsonDictionary ?: @{}
-        };
-    }
-
-    HandleResolver *handleResolver = [[HandleResolver alloc] init];
-    __block NSString *did = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    [handleResolver resolveHandle:identifier completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable resolveError) {
-        did = resolvedDid;
-        if (!did && resolveError && error && !*error) {
-            *error = resolveError;
-        }
-        dispatch_semaphore_signal(semaphore);
-    }];
-
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-    if (did.length == 0) {
-        if (errorName) *errorName = @"HandleNotFound";
-        if (error && !*error) {
-            *error = [NSError errorWithDomain:@"com.atproto.identity"
-                                         code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
-        }
-        return nil;
-    }
-
-    DIDDocument *doc = [didResolver resolveDIDSync:did error:error];
-    if (!doc) {
-        if (errorName) *errorName = @"DidNotFound";
-        return nil;
-    }
-
-    NSString *resolvedHandle = didDocumentContainsHandle(doc, identifier) ? [identifier lowercaseString] : @"handle.invalid";
-    return @{
-        @"did": did,
-        @"handle": resolvedHandle,
-        @"didDoc": doc.jsonDictionary ?: @{}
-    };
-}
-
 static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
                                                      JWTMinter *jwtMinter,
                                                      id<PDSAdminController> adminController,
@@ -2855,7 +2362,10 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         NSError *error = nil;
         NSString *errorName = nil;
-        NSDictionary *result = resolveIdentityInfoForIdentifier(identifier, serviceDatabases, &errorName, &error);
+        NSDictionary *result = [XrpcIdentityHelper resolveIdentityInfoForIdentifier:identifier
+                                                                   serviceDatabases:serviceDatabases
+                                                                          errorName:&errorName
+                                                                              error:&error];
         if (!result) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
@@ -2912,7 +2422,10 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         NSError *error = nil;
         NSString *errorName = nil;
-        NSDictionary *result = resolveIdentityInfoForIdentifier(identifier, serviceDatabases, &errorName, &error);
+        NSDictionary *result = [XrpcIdentityHelper resolveIdentityInfoForIdentifier:identifier
+                                                                   serviceDatabases:serviceDatabases
+                                                                          errorName:&errorName
+                                                                              error:&error];
         if (!result) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{
@@ -3066,7 +2579,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
 
         NSDictionary *services = [servicesValue isKindOfClass:[NSDictionary class]] ? servicesValue : nil;
         if (services.count == 0) {
-            services = defaultPdsServiceForConfig(config);
+            services = [XrpcIdentityHelper defaultPdsServiceForConfig:config];
         }
         if (!services) {
             services = @{};
@@ -3348,7 +2861,10 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
 
         NSError *error = nil;
-        if (!updateAccountHandle(serviceDatabases, did, normalizedHandle, &error)) {
+        if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
+                                                 did:did
+                                              handle:normalizedHandle
+                                               error:&error]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"HandleUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update handle"}];
             return;
@@ -3385,7 +2901,7 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
                 @"disabled": @NO,
                 @"forAccount": did,
                 @"createdBy": did,
-                @"createdAt": currentISO8601String(),
+                @"createdAt": [XrpcIdentityHelper currentISO8601String],
                 @"uses": @[]
             }];
         }
@@ -3598,9 +3114,6 @@ static void registerPhase1IdentityAndAccountMethods(XrpcDispatcher *dispatcher,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
-
-    registerTempUtilityMethods(dispatcher, serviceDatabases, jwtMinter, adminController);
-    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, jwtMinter, adminController);
 
     [dispatcher registerComAtprotoServerUpdateEmail:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -5412,615 +4925,65 @@ static void registerMethodsWithDispatcherUsingServices(Class registryClass,
                                                         PDSConfiguration *config,
                                                         id<PDSEmailProvider> emailProvider) {
 
+    // Install proxy interceptor for AppView delegation
     installXrpcProxyInterceptor(dispatcher, config);
 
+    // Register lexicon resolution methods
     registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
-    registerServerAccountAndSessionMethods(dispatcher,
-                                           jwtMinter,
-                                           adminController,
-                                           accountService,
-                                           repositoryService,
-                                           serviceDatabases,
-                                           userDatabasePool,
-                                           config,
-                                           NO);
     
-    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *doc = resolveDid(did, serviceDatabases, config, &error);
-        if (error) {
-             response.statusCode = HttpStatusNotFound;
-             [response setJsonBody:@{@"error": @"NotFound", @"message": error.localizedDescription ?: @"DID not found"}];
-             return;
-        }
-        if (!doc) {
-             response.statusCode = HttpStatusNotFound;
-             [response setJsonBody:@{@"error": @"NotFound", @"message": @"DID not found"}];
-             return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:doc];
-    }];
-
-    registerTempUtilityMethods(dispatcher, serviceDatabases, jwtMinter, adminController);
-    registerTempRevokeAccountCredentialsMethod(dispatcher, serviceDatabases, jwtMinter, adminController);
-
-    [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *account = [accountService getAccountForDid:did error:&error];
-
-        if (error || !account) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": @"Account not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:account];
-    }];
-
-    [dispatcher registerComAtprotoServerDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
-        NSString *password = body[@"password"];
-
-        if (!did || !password) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or password"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [accountService deleteAccount:did password:password error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete account"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoServerCheckAccountStatus:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *account = [accountService getAccountForDid:did error:&error];
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        result[@"valid"] = @(account != nil && !error);
-
-        if (account[@"takedown"]) {
-            result[@"takedown"] = account[@"takedown"];
-        }
-
-        if (error) {
-            result[@"error"] = error.localizedDescription;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoServerActivateAccount:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [adminController reinstateAccount:did error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"ActivationFailed", @"message": error.localizedDescription ?: @"Failed to activate account"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *reason = body[@"reason"];
-
-        NSError *error = nil;
-        BOOL success = [adminController takeDownAccount:did reason:reason ?: @"User deactivation" error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"DeactivationFailed", @"message": error.localizedDescription ?: @"Failed to deactivate account"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    registerPhase1IdentityAndAccountMethods(dispatcher,
-                                            jwtMinter,
-                                            adminController,
-                                            serviceDatabases,
-                                            userDatabasePool,
-                                            config,
-                                            emailProvider);
-    registerRepoCoreMethods(dispatcher,
-                            jwtMinter,
-                            adminController,
-                            accountService,
-                            recordService,
-                            blobService,
-                            repositoryService,
-                            serviceDatabases);
-
-    [dispatcher registerComAtprotoRepoUpdateRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-        NSDictionary *record = body[@"record"];
-        BOOL validate = [body[@"validate"] boolValue];
-
-        if (!collection || !rkey || !record) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection, rkey, or record"}];
-            return;
-        }
-
-        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
-        NSError *error = nil;
-        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"RecordUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update record"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSDictionary *updatedRecord = [recordService getRecord:uri forDid:did error:nil];
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:updatedRecord ?: @{@"uri": uri}];
-    }];
-
-    [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [registryClass extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSString *cid = [request queryParamForKey:@"cid"];
-        if (!cid) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *blobResult = [blobService getBlobWithCID:cid did:did error:&error];
-
-        if (error || !blobResult) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"BlobNotFound", @"message": @"Blob not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:blobResult];
-    }];
-
-    registerSyncCoreMethods(dispatcher,
-                            jwtMinter,
-                            adminController,
-                            serviceDatabases,
-                            userDatabasePool,
-                            recordService,
-                            blobService,
-                            repositoryService,
-                            config);
-
-    NSError *appViewDbError = nil;
-    PDSDatabase *appViewDatabase = [serviceDatabases serviceDatabaseWithError:&appViewDbError];
-    if (!appViewDatabase && appViewDbError) {
-        PDS_LOG_WARN(@"Failed to open service database for app.bsky handlers: %@",
-                     appViewDbError.localizedDescription ?: @"unknown error");
-    }
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
-    [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actor = [request queryParamForKey:@"actor"];
-        if (!actor) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing actor parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *profile = [actorService getProfileForActor:actor error:&error];
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"ProfileNotFound", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:profile];
-    }];
-
-    [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request, HttpResponse *response) {
-        fprintf(stderr, "[getBlocks] Handler invoked\n");
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *cidsStr = [request queryParamForKey:@"cids"];
-        if (!did || !cidsStr) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or cids"}];
-            return;
-        }
-        
-        // Split cids string (assuming multiple cids are passed as repeating param or comma separated?)
-        // Spec says array of strings. HttpRequest parser usually returns array if repeated?
-        // Our XrpcDispatcher/HttpRequest might support `queryParamsForKey:`?
-        // Or if it's "cids[]=..."
-        // Or simply repeated "cids=...&cids=..."
-        // HttpRequest `queryParamForKey` usually returns first or joined?
-        // Let's assume it returns one if single, or we need to handle array.
-        // If HttpRequest doesn't support array, we might fail conformant tests if multiple are passed.
-        // But for now, let's assume one CID or check if we can get all values.
-        // Assuming we parse comma separated?
-        
-        NSArray *cids = [request.queryParams[cidsStr] isKindOfClass:[NSArray class]] 
-            ? (NSArray *)request.queryParams[@"cids"] 
-            : @[cidsStr];
-            
-        // Wait, typical XRPC arrays are repeated params: `?cids=...&cids=...`
-        // Inspect `HttpRequest.h`.
-        // If `queryParamForKey` returns string, maybe `queryParams` dict contains array?
-        // If we can't be sure, assume we handle single for now, or check implementation.
-        // Let's assume request.queryParams (NSDictionary) holds arrays for duplicate keys if the parser supports it.
-        // If not, we rely on "," separator as fallback.
-        
-        if (![cids isKindOfClass:[NSArray class]]) {
-             // Maybe it's in the dict as a single object?
-             id val = request.queryParams[@"cids"];
-             if ([val isKindOfClass:[NSArray class]]) {
-                 cids = val;
-             } else if (val) {
-                 cids = @[val];
-             }
-        }
-        
-        NSError *error = nil;
-        NSData *carData = [repositoryService getBlocksForDid:did cids:cids error:&error];
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"GetBlocksFailed", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        response.body = carData;
-    }];
-
-    [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *result = [repositoryService getLatestCommitForDid:did error:&error];
-        if (error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": error.localizedDescription}];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-
-    [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        if (!body) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController moderateAccount:body error:&error];
-
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        if (!body) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
-            return;
-        }
-
-        NSString *did = body[@"subject"][@"did"];
-        NSString *reason = body[@"reason"];
-
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing subject DID"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [adminController takeDownAccount:did reason:reason error:&error];
-
-        if (!success) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"UpdateFailed", @"message": error.localizedDescription ?: @"Failed to update status"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoAdminGetSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSString *did = [request queryParamForKey:@"did"];
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL isTakedown = [adminController isAccountTakedownActive:did error:&error];
-
-        if (error) {
-            response.statusCode = 500;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"subject": @{@"did": did},
-            @"takedown": @(isTakedown)
-        }];
-    }];
-
-    [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *did = body[@"did"];
-        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL isTakedown = [adminController isAccountTakedownActive:did error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"did": did,
-            @"applied": @(isTakedown)
-        }];
-    }];
-
-    registerAdminAccountMaintenanceMethods(dispatcher,
-                                           serviceDatabases,
-                                           jwtMinter,
-                                           adminController);
-    registerAdminAccountAndInviteMethods(dispatcher,
-                                         serviceDatabases,
-                                         jwtMinter,
-                                         adminController);
-    registerAdminModerationAndLabelMethods(dispatcher,
-                                           serviceDatabases,
-                                           jwtMinter,
-                                           adminController,
-                                           YES);
-
-    [dispatcher registerComAtprotoAdminGetModerationReports:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSMutableDictionary *filters = [NSMutableDictionary dictionary];
-        NSString *status = [request queryParamForKey:@"status"];
-        NSString *reasonType = [request queryParamForKey:@"reasonType"];
-        NSString *subjectDid = [request queryParamForKey:@"subjectDid"];
-        NSString *reportedBy = [request queryParamForKey:@"reportedBy"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-
-        if (status) filters[@"status"] = status;
-        if (reasonType) filters[@"reason_type"] = reasonType;
-        if (subjectDid) filters[@"subject_did"] = subjectDid;
-        if (reportedBy) filters[@"reported_by_did"] = reportedBy;
-
-        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
-        if (limit > 100) limit = 100;
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController queryReports:filters limit:limit cursor:cursor error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    [dispatcher registerComAtprotoAdminResolveReport:^(HttpRequest *request, HttpResponse *response) {
-        if (!authorizeAdminRequest(request, response, serviceDatabases, jwtMinter, adminController)) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody;
-        if (!body) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
-            return;
-        }
-
-        NSString *reportId = body[@"id"];
-        NSString *status = body[@"status"];
-        NSString *notes = body[@"notes"];
-        NSString *adminDid = body[@"createdBy"];
-
-        if (!reportId || !status) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing id or status"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [adminController resolveReport:reportId status:status resolvedBy:adminDid notes:notes error:&error];
-
-        if (!success) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ResolveFailed", @"message": error.localizedDescription ?: @"Failed to resolve report"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    [dispatcher registerComAtprotoLabelQueryLabels:^(HttpRequest *request, HttpResponse *response) {
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSString *since = [request queryParamForKey:@"since"];
-
-        NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
-        if (limit > 100) limit = 100;
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController getLabels:@{
-            @"collection": collection ?: @"",
-            @"cursor": cursor ?: @"",
-            @"limit": @(limit),
-            @"since": since ?: @""
-        } error:&error];
-
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
+    // Register domain modules in order
+    [XrpcServerMethods registerWithDispatcher:dispatcher
+                                    jwtMinter:jwtMinter
+                              adminController:adminController
+                               accountService:accountService
+                            repositoryService:repositoryService
+                             serviceDatabases:serviceDatabases
+                             userDatabasePool:userDatabasePool
+                                configuration:config
+                   enforceDidWebServiceAuth:NO];
+    
+    [XrpcIdentityMethods registerWithDispatcher:dispatcher
+                                      jwtMinter:jwtMinter
+                                adminController:adminController
+                               serviceDatabases:serviceDatabases
+                               userDatabasePool:userDatabasePool
+                                  configuration:config
+                                  emailProvider:emailProvider];
+    
+    [XrpcRepoMethods registerWithDispatcher:dispatcher
+                                  jwtMinter:jwtMinter
+                            adminController:adminController
+                             accountService:accountService
+                              recordService:recordService
+                                blobService:blobService
+                          repositoryService:repositoryService
+                           serviceDatabases:serviceDatabases];
+    
+    [XrpcSyncMethods registerWithDispatcher:dispatcher
+                                  jwtMinter:jwtMinter
+                            adminController:adminController
+                           serviceDatabases:serviceDatabases
+                           userDatabasePool:userDatabasePool
+                              recordService:recordService
+                                blobService:blobService
+                          repositoryService:repositoryService
+                              configuration:config];
+    
+    [XrpcAppBskyMethods registerWithDispatcher:dispatcher
+                              serviceDatabases:serviceDatabases
+                                     jwtMinter:jwtMinter
+                               adminController:adminController];
+    
+    [XrpcAdminMethods registerWithDispatcher:dispatcher
+                            serviceDatabases:serviceDatabases
+                                   jwtMinter:jwtMinter
+                             adminController:adminController];
+    
+    [XrpcLabelMethods registerWithDispatcher:dispatcher
+                            serviceDatabases:serviceDatabases
+                                   jwtMinter:jwtMinter
+                             adminController:adminController
+                               configuration:config];
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
