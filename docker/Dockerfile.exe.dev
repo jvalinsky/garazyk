@@ -1,18 +1,14 @@
-# Simplified Dockerfile for NSPds on exe.dev VM
-# Uses pre-built GNUstep runtime for faster builds
-
-# Stage 1: Runtime image with GNUstep
-FROM ubuntu:22.04 AS runtime
+FROM ubuntu:24.04 AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libcurl4 \
     libffi8 \
-    libicu70 \
+    libicu74 \
     libqrencode4 \
     libsqlite3-0 \
-    libssl3 \
+    libssl3t64 \
     libxml2 \
     libxslt1.1 \
     zlib1g \
