@@ -3,6 +3,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import "Core/ATProtoBase32.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
@@ -21,12 +22,28 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 @interface PDSRecordService ()
 
 - (BOOL)checkAuthorizationForDid:(NSString *)targetDid actorDid:(NSString *)actorDid error:(NSError **)error;
+- (nullable MST *)loadRepoMSTForDid:(NSString *)did
+                               store:(PDSActorStore *)store
+                               error:(NSError **)error;
 - (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error;
 - (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
                                                                      preferredRev:(nullable NSString *)preferredRev
+                                                               mutationCIDsByKey:(nullable NSDictionary<NSString *, id> *)mutationCIDsByKey
+                                                                       changedKeys:(nullable NSArray<NSString *> *)changedKeys
                                                                             error:(NSError **)error;
+- (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(MST *)mst
+                                                       changedKeys:(NSArray<NSString *> *)changedKeys
+                                                              rev:(NSString *)rev
+                                                            error:(NSError **)error;
+
+@property (nonatomic, strong) NSMutableDictionary<NSString *, MST *> *mstCacheByDid;
+#if defined(GNUSTEP)
+@property (nonatomic, assign) dispatch_queue_t mstCacheQueue;
+#else
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t mstCacheQueue;
+#endif
 
 @end
 
@@ -35,6 +52,8 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
         _databasePool = databasePool;
+        _mstCacheByDid = [NSMutableDictionary dictionary];
+        _mstCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.mstcache", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -239,7 +258,16 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         NSData *prevRootData = [store getRepoRootForDid:did error:nil];
         CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
 
-        NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did preferredRev:writeRev error:nil];
+        NSString *recordKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+        NSDictionary<NSString *, id> *mutationCIDsByKey = @{
+            recordKey: cidString ?: [NSNull null]
+        };
+
+        NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did
+                                                           preferredRev:writeRev
+                                                    mutationCIDsByKey:mutationCIDsByKey
+                                                            changedKeys:@[ recordKey ]
+                                                                  error:nil];
         NSString *newRootCID = newRootMeta[@"cid"];
         NSString *newRev = newRootMeta[@"rev"];
 
@@ -332,7 +360,16 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         NSData *prevRootData = [store getRepoRootForDid:did error:nil];
         CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
 
-        NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did preferredRev:writeRev error:nil];
+        NSString *recordKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+        NSDictionary<NSString *, id> *mutationCIDsByKey = @{
+            recordKey: [NSNull null]
+        };
+
+        NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did
+                                                           preferredRev:writeRev
+                                                    mutationCIDsByKey:mutationCIDsByKey
+                                                            changedKeys:@[ recordKey ]
+                                                                  error:nil];
         NSString *newRootCID = newRootMeta[@"cid"];
         NSString *newRev = newRootMeta[@"rev"];
 
@@ -696,8 +733,35 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     NSData *prevRootData = [store getRepoRootForDid:did error:nil];
     CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
 
+    NSMutableDictionary<NSString *, id> *mutationCIDsByKey = [NSMutableDictionary dictionary];
+    NSMutableOrderedSet<NSString *> *changedKeys = [NSMutableOrderedSet orderedSet];
+    for (NSDictionary *op in preparedOps) {
+        NSString *action = [op[@"action"] isKindOfClass:[NSString class]] ? op[@"action"] : @"";
+        if ([action isEqualToString:@"delete"]) {
+            NSString *collection = [op[@"collection"] isKindOfClass:[NSString class]] ? op[@"collection"] : nil;
+            NSString *rkey = [op[@"rkey"] isKindOfClass:[NSString class]] ? op[@"rkey"] : nil;
+            if (collection.length == 0 || rkey.length == 0) {
+                continue;
+            }
+            NSString *key = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+            mutationCIDsByKey[key] = [NSNull null];
+            [changedKeys addObject:key];
+            continue;
+        }
+
+        PDSDatabaseRecord *record = op[@"record"];
+        if (!record || record.collection.length == 0 || record.rkey.length == 0) {
+            continue;
+        }
+        NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
+        mutationCIDsByKey[key] = record.cid ?: [NSNull null];
+        [changedKeys addObject:key];
+    }
+
     NSDictionary<NSString *, NSString *> *commitMeta = [self refreshRepoRootMetadataForDid:did
                                                                                preferredRev:batchRev
+                                                                        mutationCIDsByKey:mutationCIDsByKey
+                                                                                changedKeys:changedKeys.array
                                                                                       error:nil];
     NSString *commitCID = commitMeta[@"cid"];
     NSString *commitRev = commitMeta[@"rev"];
@@ -807,6 +871,23 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 - (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error {
+    MST *mst = [self loadRepoMSTForDid:did store:store error:error];
+    if (!mst) {
+        return nil;
+    }
+
+    CID *rootCID = mst.rootCID;
+    if (!rootCID && error && !*error) {
+        *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                     code:9
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute repository root"}];
+    }
+    return rootCID;
+}
+
+- (nullable MST *)loadRepoMSTForDid:(NSString *)did
+                               store:(PDSActorStore *)store
+                               error:(NSError **)error {
     MST *mst = [[MST alloc] init];
     const NSUInteger pageSize = 1000;
     NSUInteger offset = 0;
@@ -844,17 +925,74 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         offset += pageSize;
     }
 
-    CID *rootCID = mst.rootCID;
-    if (!rootCID && error && !*error) {
-        *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
-                                     code:9
-                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute repository root"}];
+    return mst;
+}
+
+- (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(MST *)mst
+                                                       changedKeys:(NSArray<NSString *> *)changedKeys
+                                                              rev:(NSString *)rev
+                                                            error:(NSError **)error {
+    if (!mst) {
+        return @[];
     }
-    return rootCID;
+
+    NSMutableDictionary<NSString *, PDSDatabaseBlock *> *blocksByCID = [NSMutableDictionary dictionary];
+
+    BOOL (^appendBlock)(CID *, NSData *) = ^BOOL(CID *cid, NSData *data) {
+        NSString *cidString = cid.stringValue ?: @"";
+        if (cidString.length == 0 || data.length == 0) {
+            return YES;
+        }
+        if (blocksByCID[cidString]) {
+            return YES;
+        }
+        PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+        block.cid = cid.bytes;
+        block.blockData = data;
+        block.size = (NSInteger)data.length;
+        block.createdAt = [NSDate date];
+        block.rev = rev;
+        blocksByCID[cidString] = block;
+        return YES;
+    };
+
+    CID *rootCID = mst.rootCID;
+    NSData *rootData = [mst serializeToCBOR];
+    if (!rootCID || rootData.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRecordService"
+                                         code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize MST root"}];
+        }
+        return nil;
+    }
+    appendBlock(rootCID, rootData);
+
+    for (NSString *key in changedKeys ?: @[]) {
+        if (key.length == 0) {
+            continue;
+        }
+        NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:key];
+        for (MSTNode *node in proofNodes ?: @[]) {
+            NSData *nodeData = [mst serializeNode:node];
+            if (nodeData.length == 0) {
+                continue;
+            }
+            CID *nodeCID = [CID cidWithDigest:[CID sha256Digest:nodeData] codec:0x71];
+            if (!nodeCID) {
+                continue;
+            }
+            appendBlock(nodeCID, nodeData);
+        }
+    }
+
+    return [blocksByCID.allValues copy];
 }
 
 - (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
                                                                      preferredRev:(nullable NSString *)preferredRev
+                                                               mutationCIDsByKey:(nullable NSDictionary<NSString *, id> *)mutationCIDsByKey
+                                                                       changedKeys:(nullable NSArray<NSString *> *)changedKeys
                                                                             error:(NSError **)error {
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) {
@@ -862,72 +1000,127 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         return nil;
     }
 
-    // 1. Compute MST Root (Data CID)
-    CID *dataCID = [self computeRepoRootCIDForDid:did store:store error:error];
-    if (!dataCID) {
-        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to compute repo root for DID %@", did);
-        return nil;
-    }
+    __block NSDictionary<NSString *, NSString *> *result = nil;
+    __block NSError *queueError = nil;
 
-    // 2. Resolve Revision
-    NSString *rev = [store latestMutationRevisionWithError:nil];
-    if (rev.length == 0) {
-        rev = preferredRev;
-    }
-    if (rev.length == 0) {
-        rev = [TID tid].stringValue;
-    }
-
-    // 3. Get Previous Commit CID (Head)
-    NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
-    CID *prevCommitCID = prevCommitBytes ? [CID cidFromBytes:prevCommitBytes] : nil;
-
-    // 4. Create Commit Object
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did
-                                                    data:dataCID
-                                                     rev:rev
-                                                    prev:prevCommitCID];
-    
-    // 5. Sign Commit
-    NSData *signature = [store signData:[commit serialize] error:error];
-    if (!signature) {
-        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to sign commit for DID %@", did);
-        return nil;
-    }
-    commit.signature = signature;
-    
-    // 6. Store Commit Block
-    CID *commitCID = [commit computeCID];
-    NSData *commitData = [commit serializeSigned];
-    if (!commitData) {
-        if (error) *error = [NSError errorWithDomain:@"PDSRecordService" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize commit"}];
-        return nil;
-    }
-
-    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
-    block.cid = [commitCID bytes];
-    block.blockData = commitData;
-    block.size = commitData.length;
-
-    // 7. Update Repo Root and Store Block in Transaction
-    __block BOOL updated = NO;
-    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        if (![transactor putBlock:block forDid:did error:blockError]) {
-             return;
+    dispatch_sync(self.mstCacheQueue, ^{
+        MST *mst = self.mstCacheByDid[did];
+        if (!mst) {
+            mst = [self loadRepoMSTForDid:did store:store error:&queueError];
+            if (!mst) {
+                return;
+            }
         }
-        updated = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
-    } error:error];
 
-    if (!updated) {
-        NSLog(@"[PDSRecordService] refreshRepoRootMetadata: FAILED to update database for DID %@", did);
-        return nil;
+        [mutationCIDsByKey enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
+            (void)stop;
+            if (key.length == 0) {
+                return;
+            }
+
+            if ([obj isKindOfClass:[NSNull class]]) {
+                [mst delete:key];
+                return;
+            }
+
+            NSString *cidString = [obj isKindOfClass:[NSString class]] ? (NSString *)obj : nil;
+            CID *recordCID = (cidString.length > 0) ? [CID cidFromString:cidString] : nil;
+            if (!recordCID) {
+                return;
+            }
+            [mst put:key valueCID:recordCID subKey:nil];
+        }];
+
+        CID *dataCID = mst.rootCID;
+        if (!dataCID) {
+            queueError = [NSError errorWithDomain:@"PDSRecordService"
+                                             code:-3
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
+            [self.mstCacheByDid removeObjectForKey:did];
+            return;
+        }
+
+        NSString *rev = [store latestMutationRevisionWithError:nil];
+        if (rev.length == 0) {
+            rev = preferredRev;
+        }
+        if (rev.length == 0) {
+            rev = [TID tid].stringValue;
+        }
+
+        NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
+        CID *prevCommitCID = prevCommitBytes ? [CID cidFromBytes:prevCommitBytes] : nil;
+
+        RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                        data:dataCID
+                                                         rev:rev
+                                                        prev:prevCommitCID];
+
+        NSData *signature = [store signData:[commit serialize] error:&queueError];
+        if (!signature) {
+            [self.mstCacheByDid removeObjectForKey:did];
+            return;
+        }
+        commit.signature = signature;
+
+        CID *commitCID = [commit computeCID];
+        NSData *commitData = [commit serializeSigned];
+        if (!commitCID || commitData.length == 0) {
+            queueError = [NSError errorWithDomain:@"PDSRecordService"
+                                             code:-1
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
+            [self.mstCacheByDid removeObjectForKey:did];
+            return;
+        }
+
+        PDSDatabaseBlock *commitBlock = [[PDSDatabaseBlock alloc] init];
+        commitBlock.cid = [commitCID bytes];
+        commitBlock.blockData = commitData;
+        commitBlock.size = commitData.length;
+        commitBlock.createdAt = [NSDate date];
+        commitBlock.rev = rev;
+
+        NSArray<PDSDatabaseBlock *> *mstBlocks = [self changedMSTBlocksForMST:mst
+                                                                    changedKeys:changedKeys ?: @[]
+                                                                           rev:rev
+                                                                         error:&queueError];
+        if (!mstBlocks) {
+            [self.mstCacheByDid removeObjectForKey:did];
+            return;
+        }
+
+        NSMutableArray<PDSDatabaseBlock *> *blocksToPersist = [NSMutableArray arrayWithObject:commitBlock];
+        [blocksToPersist addObjectsFromArray:mstBlocks];
+
+        __block BOOL updated = NO;
+        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+            if (![transactor putBlocks:blocksToPersist forDid:did error:blockError]) {
+                return;
+            }
+            updated = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
+        } error:&queueError];
+
+        if (!updated) {
+            [self.mstCacheByDid removeObjectForKey:did];
+            if (!queueError) {
+                queueError = [NSError errorWithDomain:@"PDSRecordService"
+                                                 code:-4
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to update repository head"}];
+            }
+            return;
+        }
+
+        self.mstCacheByDid[did] = mst;
+        result = @{
+            @"cid": commitCID.stringValue ?: @"",
+            @"rev": rev ?: @""
+        };
+    });
+
+    if (!result && error && queueError) {
+        *error = queueError;
     }
-
-    NSLog(@"[PDSRecordService] refreshRepoRootMetadata: SUCCESS for DID %@, CID: %@", did, commitCID.stringValue);
-    return @{
-        @"cid": commitCID.stringValue ?: @"",
-        @"rev": rev ?: @""
-    };
+    return result;
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {

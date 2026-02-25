@@ -594,9 +594,34 @@
         if (!knownSince) {
             knownSince = [store mutationRevisionExists:sinceRev error:nil];
         }
+        if (!knownSince) {
+            knownSince = [store blockRevisionExists:sinceRev error:nil];
+        }
     }
     BOOL noChangesSince = (hasSince && [sinceRev isEqualToString:currentRev]);
     BOOL deltaMode = (hasSince && knownSince && !noChangesSince);
+
+    NSMutableSet<NSString *> *changedBlockCIDSet = [NSMutableSet set];
+    if (deltaMode) {
+        NSError *blockListError = nil;
+        NSArray<NSData *> *changedBlockCIDs = [store listBlockCIDsSinceRev:sinceRev
+                                                                      limit:200000
+                                                                      error:&blockListError];
+        if (!changedBlockCIDs) {
+            if (error) {
+                *error = blockListError ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                                code:13
+                                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to list changed blocks"}];
+            }
+            return NO;
+        }
+        for (NSData *cidBytes in changedBlockCIDs) {
+            CID *cid = [CID cidFromBytes:cidBytes];
+            if (cid.stringValue.length > 0) {
+                [changedBlockCIDSet addObject:cid.stringValue];
+            }
+        }
+    }
 
     NSMutableArray<PDSDatabaseBlock *> *newRecordBlocks = [NSMutableArray array];
     NSMutableArray<PDSDatabaseRecord *> *recordsNeedingRevBackfill = [NSMutableArray array];
@@ -612,12 +637,13 @@
         }
 
         BOOL recordChangedSince = (deltaMode && [record.rev compare:sinceRev] == NSOrderedDescending);
+        BOOL blockChangedSince = (deltaMode && record.cid.length > 0 && [changedBlockCIDSet containsObject:record.cid]);
         if (recordChangedSince && record.collection.length > 0 && record.rkey.length > 0) {
             NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
             [changedMSTKeys addObject:key];
         }
 
-        if (deltaMode && !recordChangedSince) {
+        if (deltaMode && !(recordChangedSince || blockChangedSince)) {
             continue;
         }
 
@@ -642,6 +668,7 @@
                 block.contentType = @"application/vnd.ipld.dag-cbor";
                 block.size = (NSInteger)blockData.length;
                 block.createdAt = [NSDate date];
+                block.rev = record.rev;
                 [newRecordBlocks addObject:block];
             }
         }
@@ -772,6 +799,7 @@
         commitDBBlock.contentType = @"application/vnd.ipld.dag-cbor";
         commitDBBlock.size = (NSInteger)commitBlock.length;
         commitDBBlock.createdAt = [NSDate date];
+        commitDBBlock.rev = revCandidate;
 
         __block BOOL updated = NO;
         [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
@@ -1219,6 +1247,7 @@
     block.cid = [commitCID bytes];
     block.blockData = commitData;
     block.size = commitData.length;
+    block.rev = rev;
 
     __block BOOL success = NO;
     [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
