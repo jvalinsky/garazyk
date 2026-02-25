@@ -199,8 +199,7 @@
   serverBuilder.jwtMinter = controller.jwtMinter;
   serverBuilder.serviceDatabases = controller.serviceDatabases;
   serverBuilder.subscribeReposHandler = subscribeReposHandler;
-  serverBuilder.issuer =
-      [NSString stringWithFormat:@"https://localhost:%ld", (long)port];
+  serverBuilder.issuer = [config canonicalIssuerWithPortHint:port];
 
   NSError *builderError = nil;
   if (![serverBuilder configureServer:httpServer error:&builderError]) {

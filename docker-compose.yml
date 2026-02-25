@@ -2,24 +2,24 @@ services:
   pds:
     build:
       context: .
-      dockerfile: docker/Dockerfile.gnustep
+      dockerfile: docker/Dockerfile.exe.dev
     image: nspds:local
     container_name: nspds
     ports:
       - "2583:2583"
     volumes:
       - pds_data:/var/lib/atprotopds
-      - ./docker/pds/config.json:/var/lib/atprotopds/config.json:ro
+      - ./config.json:/var/lib/atprotopds/config.json:ro
     environment:
       - TZ=UTC
       - PDS_PORT=2583
       - PDS_HOST=0.0.0.0
       - PDS_ISSUER=https://pds.garazyk.xyz
+      - PDS_HOSTNAME=pds.garazyk.xyz
+      - PDS_AVAILABLE_USER_DOMAINS=garazyk.xyz
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
     command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
-    labels:
-      - "com.garazyk.git_commit=579d3fec8ceb0ac788d735a56c3f758f3f4a166f"
     restart: unless-stopped
 
 volumes:
