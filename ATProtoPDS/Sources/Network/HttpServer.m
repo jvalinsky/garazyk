@@ -748,10 +748,14 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                                              requestRef.queryString]
                 : requestRef.path;
         PDS_LOG_HTTP_INFO(@"Starting dispatch for %@ %@",
-                          requestRef.methodString, logPath);
+                          requestRef.methodString,
+                          [logPath stringByReplacingOccurrencesOfString:@"%"
+                                                             withString:@"%%"]);
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
         PDS_LOG_HTTP_INFO(@"Finished dispatch for %@ %@, status %ld",
-                          requestRef.methodString, logPath,
+                          requestRef.methodString,
+                          [logPath stringByReplacingOccurrencesOfString:@"%"
+                                                             withString:@"%%"],
                           (long)response.statusCode);
 
         dispatch_async(serverQ, ^{
@@ -1225,7 +1229,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                           ? [NSString stringWithFormat:@"%@?%@", request.path,
                                                        request.queryString]
                           : request.path;
-  PDS_LOG_HTTP_INFO(@"%@ %@", request.methodString, logPath);
+  PDS_LOG_HTTP_INFO(
+      @"%@ %@", request.methodString,
+      [logPath stringByReplacingOccurrencesOfString:@"%" withString:@"%%"]);
   HttpResponse *response = [HttpResponse response];
 
   if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
