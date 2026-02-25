@@ -198,6 +198,11 @@
         [response setJsonBody:@{@"status": @"ok"}];
     }];
 
+    [httpServer addHandlerForPath:@"/xrpc/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 200;
+        [response setJsonBody:@{@"version": @"0.1.0"}];
+    }];
+
     [httpServer addRoute:@"GET" path:@"/robots.txt" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"text/plain";
