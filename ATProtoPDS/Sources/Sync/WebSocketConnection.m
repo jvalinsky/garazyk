@@ -23,7 +23,6 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 @interface WebSocketConnection ()
 
 @property(nonatomic, assign, readwrite) WebSocketConnectionState state;
-@property(nonatomic, copy, readwrite) NSString *remoteAddress;
 @property(nonatomic, copy, readwrite) NSString *queryString;
 @property(nonatomic, copy, readwrite, nullable)
     NSDictionary<NSString *, id> *queryParams;
