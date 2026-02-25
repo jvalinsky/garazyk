@@ -1030,18 +1030,75 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    NSError *repoError = nil;
-    NSData *carData =
-        [repositoryService getRepoContents:did since:nil error:&repoError];
-    if (!carData || repoError) {
+    // Build a lightweight CAR with just the commit block + record block.
+    // This matches the reference TS PDS behaviour where getRecord returns
+    // a narrow slice of the repo containing only the requested record.
+    NSError *commitError = nil;
+    NSDictionary *latestCommit =
+        [repositoryService getLatestCommitForDid:did error:&commitError];
+    if (!latestCommit) {
       response.statusCode = HttpStatusNotFound;
       [response setJsonBody:@{
         @"error" : @"RepoNotFound",
-        @"message" : repoError.localizedDescription ?: @"Repository not found"
+        @"message" : @"Repository not found"
       }];
       return;
     }
 
+    CID *commitCID = [CID cidFromString:latestCommit[@"cid"]];
+    if (!commitCID) {
+      response.statusCode = HttpStatusInternalServerError;
+      [response setJsonBody:@{
+        @"error" : @"InternalError",
+        @"message" : @"Invalid commit CID"
+      }];
+      return;
+    }
+
+    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+
+    // Add the commit block
+    PDSActorStore *store = [userDatabasePool storeForDid:did error:nil];
+    if (store) {
+      NSData *commitBlock =
+          [store getBlockForCID:[commitCID bytes] forDid:did error:nil];
+      if (commitBlock) {
+        [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
+      }
+    }
+
+    // Add the record block
+    NSString *recordCIDStr = record[@"cid"];
+    if (recordCIDStr) {
+      CID *recordCID = [CID cidFromString:recordCIDStr];
+      if (recordCID && store) {
+        NSData *blockData =
+            [store getBlockForCID:[recordCID bytes] forDid:did error:nil];
+        if (!blockData) {
+          // Fallback: encode the record value to DAG-CBOR
+          NSString *valueJSON = record[@"value"];
+          if (valueJSON) {
+            NSData *jsonData =
+                [valueJSON dataUsingEncoding:NSUTF8StringEncoding];
+            id jsonObj = jsonData
+                             ? [NSJSONSerialization JSONObjectWithData:jsonData
+                                                               options:0
+                                                                 error:nil]
+                             : nil;
+            if (jsonObj) {
+              blockData =
+                  [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObj
+                                                               error:nil];
+            }
+          }
+        }
+        if (blockData) {
+          [writer addBlock:[CARBlock blockWithCID:recordCID data:blockData]];
+        }
+      }
+    }
+
+    NSData *carData = [writer serialize];
     response.statusCode = HttpStatusOK;
     response.contentType = @"application/vnd.ipld.car";
     [response setBodyData:carData];
