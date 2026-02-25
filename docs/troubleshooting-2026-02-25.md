@@ -31,3 +31,11 @@ This document captures the errors, protocol subtleties, and infrastructure anoma
 **Error:** Random file mounting conflicts or build failures when using OrbStack/local docker clients against remote servers.
 **Cause:** Mismatches between local client daemon paths and the deployed Linux target architecture.
 **Fix:** Executing `docker compose build pds` natively over SSH to the Linux VM rather than tunnelling remote build contexts.
+
+### 7. Relay Federation Crawl Timeline (`subscribeRepos` behavior)
+**Observation:** When sending a `requestCrawl` to a relay (like `bsky.network`), the relay immediately calls `GET /xrpc/com.atproto.server.describeServer`, but does not immediately connect to the `subscribeRepos` WebSocket.
+**Explanation:** This is expected behavior dictated by the Indigo relay's crawler architecture (specifically `cmd/relay/relay/slurper.go`). 
+1. **Verification:** Upon receiving a `requestCrawl`, the relay synchronously fires a `CheckHost` API call to `describeServer` to ensure the host is actually an online PDS.
+2. **Queueing:** If the check passes, the relay adds the PDS to its internal database with `status = active`. 
+3. **Connection:** A background process (`Slurper`) pulls active hosts from the database and dials the `subscribeRepos` WebSocket. However, this is subject to the relay's `HostPerDayLimiter`, concurrent connection limits, and connection polling intervals.
+**Conclusion:** It is completely normal for a relay to take several minutes (or even hours depending on the global queue) to actually connect to the `subscribeRepos` firehose after a successful `requestCrawl`. Once connected, it will backfill all events starting from the requested cursor.
