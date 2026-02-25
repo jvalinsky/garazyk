@@ -18,6 +18,7 @@ services:
       - PDS_HOSTNAME=pds.garazyk.xyz
       - PDS_AVAILABLE_USER_DOMAINS=garazyk.xyz
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - PDS_TRUST_PROXY_HEADERS=1
       - HOME=/var/lib/atprotopds
     command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
     restart: unless-stopped
