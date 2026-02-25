@@ -7,6 +7,7 @@ FROM ubuntu:22.04 AS runtime
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    libcurl4 \
     libffi8 \
     libicu70 \
     libqrencode4 \
