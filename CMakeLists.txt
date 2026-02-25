@@ -257,7 +257,7 @@ set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES} ${COMP
 # Main Executables
 #=============================
 
-# CLI Tool (september)
+# CLI Tool (september → kaszlak)
 add_executable(september
   ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/CLI/main.m
