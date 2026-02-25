@@ -148,7 +148,7 @@ RUN test -f secp256k1/CMakeLists.txt || \
 # Do NOT pass -DCMAKE_C_COMPILER or -DCMAKE_OBJC_COMPILER here;
 # CMakeLists.txt handles compiler detection via find_program to avoid
 # an infinite configure loop caused by cache invalidation.
-RUN mkdir -p build && cd build && \
+RUN rm -rf build && mkdir build && cd build && \
     cmake -S /src -B . \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS=OFF \
