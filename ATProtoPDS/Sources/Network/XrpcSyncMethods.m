@@ -379,6 +379,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                  recordService:(PDSRecordService *)recordService
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
+                  relayService:(PDSRelayService *)relayService
                  configuration:(PDSConfiguration *)config {
 
   // com.atproto.sync.getRepo
@@ -1144,6 +1145,9 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       }];
       return;
     }
+
+    PDS_LOG_INFO(@"Sync", @"requestCrawl received for hostname: %@", hostname);
+    [relayService notifyRelay:hostname];
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{}];
