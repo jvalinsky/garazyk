@@ -7,6 +7,8 @@
 @class PDSRepositoryService;
 @class PDSRelayService;
 @class PDSConfiguration;
+@class PDSServiceDatabases;
+@class PDSDatabasePool;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
