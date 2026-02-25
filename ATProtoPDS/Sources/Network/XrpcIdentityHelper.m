@@ -248,8 +248,7 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
         }
     }
 
-    DIDResolver *didResolver = [[DIDResolver alloc] init];
-    didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+    DIDResolver *didResolver = [DIDResolver sharedResolver];
 
     if ([identifier hasPrefix:@"did:"]) {
         DIDDocument *doc = [didResolver resolveDIDSync:identifier error:error];

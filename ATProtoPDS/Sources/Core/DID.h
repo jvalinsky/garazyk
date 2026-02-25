@@ -85,6 +85,13 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
  */
 @interface DIDResolver : NSObject
 
+/*!
+ @method sharedResolver
+ @abstract Returns a shared resolver configured with the PLC URL from PDSConfiguration.
+ @discussion Reuses a single NSURLSession and DID document cache across all callers.
+ */
++ (instancetype)sharedResolver;
+
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, strong) NSMutableDictionary *cacheTimestamps; /*! Exposed for testing. */
 @property (nonatomic, assign) NSTimeInterval staleTTL; /*! Exposed for testing. */
