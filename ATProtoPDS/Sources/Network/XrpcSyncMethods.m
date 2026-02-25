@@ -1176,6 +1176,64 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{}];
   }];
+
+  // com.atproto.sync.getRepoStatus
+  [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request,
+                                                    HttpResponse *response) {
+    NSString *did = request.query[@"did"];
+    if (did.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did parameter"
+      }];
+      return;
+    }
+
+    NSError *error = nil;
+    PDSActorStore *store =
+        [weakSelf.serviceDatabases storeForDid:did error:&error];
+    if (!store) {
+      PDS_LOG_DEBUG_C(@"Sync", @"Actor store not found for request DID: %@",
+                      did);
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : @"Repo not found"
+      }];
+      return;
+    }
+
+    __block NSString *latestRev = nil;
+    [store readWithBlock:^(
+               id<PDSActorStoreReader> _Nonnull reader,
+               NSError *_Nullable __autoreleasing *_Nullable innerError) {
+      latestRev = [reader latestMutationRevisionWithError:innerError];
+    }
+                   error:&error];
+
+    if (error) {
+      PDS_LOG_ERROR_C(@"Sync", @"Error reading actor store: %@",
+                      error.localizedDescription);
+      response.statusCode = HttpStatusInternalServerError;
+      [response setJsonBody:@{
+        @"error" : @"InternalServerError",
+        @"message" : @"Internal server error"
+      }];
+      return;
+    }
+
+    NSMutableDictionary *jsonBody = [NSMutableDictionary dictionary];
+    jsonBody[@"did"] = did;
+    jsonBody[@"active"] = @YES;
+
+    if (latestRev) {
+      jsonBody[@"rev"] = latestRev;
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:jsonBody];
+  }];
 }
 
 @end
