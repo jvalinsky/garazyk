@@ -648,9 +648,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         NSDictionary *latest =
             [repositoryService getLatestCommitForDid:account.did error:nil];
         if (!latest) {
-          (void)[repositoryService initializeRepoForDid:account.did error:nil];
-          latest =
-              [repositoryService getLatestCommitForDid:account.did error:nil];
+          scanIndex += 1;
+          continue;
         }
 
         NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]]
