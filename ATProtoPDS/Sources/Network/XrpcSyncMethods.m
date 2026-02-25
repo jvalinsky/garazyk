@@ -13,6 +13,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
