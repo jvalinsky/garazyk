@@ -541,6 +541,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection
                                         cursor:(nullable NSString *)cursor {
+  PDS_LOG_SYNC_INFO(@"New connection from %@ (requested path: %@)", connection.remoteAddress, connection.path);
   PDS_LOG_SYNC_INFO(@"Sending initial repository state to new connection");
 
   if (!cursor) {
@@ -568,10 +569,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       PDS_LOG_SYNC_WARN(@"Client requested resumption from invalid cursor: %@", cursor);
     }
   } else {
-    PDS_LOG_SYNC_INFO(@"No cursor requested by client, providing live updates only");
+    PDS_LOG_SYNC_INFO(@"No cursor requested by client, connection will start in live update mode");
   }
 
   dispatch_async(self.eventQueue, ^{
+    PDS_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);
     [self ensureSequenceInitialized];
 
     if (hasCursor && !cursorValid) {
@@ -638,6 +640,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     connection", (unsigned long)repos.count);
     }
     */
+
+    if (cursorSeq == 0) {
+      PDS_LOG_SYNC_INFO(@"Cursor is 0; skipping initial identity broadcast per ATProto spec. Client is now listening for live events.");
+    }
 
     if (cursorSeq > 0) {
       NSUInteger backlog = self.sequenceNumber - cursorSeq;
