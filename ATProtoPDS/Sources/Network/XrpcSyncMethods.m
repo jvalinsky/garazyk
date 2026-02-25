@@ -1191,7 +1191,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSError *error = nil;
-    PDSActorStore *store = [serviceDatabases storeForDid:did error:&error];
+    PDSActorStore *store = [userDatabasePool storeForDid:did error:&error];
     if (!store) {
       PDS_LOG_DEBUG_C(@"Sync", @"Actor store not found for request DID: %@",
                       did);
