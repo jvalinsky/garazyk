@@ -39,9 +39,8 @@ services:
       retries: 5
 
   plc-server:
-    build:
-      context: ./ATProtoPDS/Tests/plc_e2e
-      dockerfile: Dockerfile
+    image: alpine:latest
+    command: tail -f /dev/null
     container_name: plc_server
     environment:
       DATABASE_URL: postgresql://plc:plc_secret@plc-db:5432/plc?sslmode=disable
