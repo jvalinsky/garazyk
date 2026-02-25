@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   pds:
     build:
@@ -11,51 +9,20 @@ services:
       - "2583:2583"
     volumes:
       - pds_data:/var/lib/atprotopds
-      - ./pds-config.json:/var/lib/atprotopds/config.json:ro
+      - ./docker/pds/config.json:/var/lib/atprotopds/config.json:ro
     environment:
+      - TZ=UTC
       - PDS_PORT=2583
+      - PDS_HOST=0.0.0.0
+      - PDS_ISSUER=https://pds.garazyk.xyz
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
-      - PDS_HOSTNAME=pds.garazyk.xyz
-      - PDS_DID_METHOD=did:web:pds.garazyk.xyz
-      - PDS_AVAILABLE_USER_DOMAINS=garazyk.xyz
+      - HOME=/var/lib/atprotopds
+    command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
     labels:
-      - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
-    restart: unless-stopped
-
-  plc-db:
-    image: postgres:15-alpine
-    container_name: plc_db
-    environment:
-      POSTGRES_USER: plc
-      POSTGRES_PASSWORD: plc_secret
-      POSTGRES_DB: plc
-    ports:
-      - "5432:5432"
-    volumes:
-      - plc_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U plc -d plc" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  plc-server:
-    image: alpine:latest
-    command: tail -f /dev/null
-    container_name: plc_server
-    environment:
-      DATABASE_URL: postgresql://plc:plc_secret@plc-db:5432/plc?sslmode=disable
-      LOG_LEVEL: debug
-      PORT: 2582
-    ports:
-      - "2582:2582"
-    depends_on:
-      plc-db:
-        condition: service_healthy
+      - "com.garazyk.git_commit=579d3fec8ceb0ac788d735a56c3f758f3f4a166f"
     restart: unless-stopped
 
 volumes:
   pds_data:
     name: pds_pds_data
     external: true
-  plc_data:

@@ -24,3 +24,5 @@ services:
 
 volumes:
   pds_data:
+    name: pds_pds_data
+    external: true
