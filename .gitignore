@@ -14,7 +14,7 @@ node_modules/
 *.temp
 
 letta.js
-
+indigo_research
 # Xcode
 *.xcodeproj/
 *.xcworkspace/
