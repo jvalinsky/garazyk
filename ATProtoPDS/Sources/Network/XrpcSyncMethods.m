@@ -1148,7 +1148,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    PDS_LOG_INFO(@"Sync", @"requestCrawl received for hostname: %@", hostname);
+    PDS_LOG_INFO_C(@"Sync", @"requestCrawl received for hostname: %@",
+                   hostname);
     [relayService notifyRelay:hostname];
 
     response.statusCode = HttpStatusOK;
