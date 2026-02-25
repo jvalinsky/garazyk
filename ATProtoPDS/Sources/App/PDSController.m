@@ -589,16 +589,19 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
 
 - (nullable NSDictionary *)describeRepo:(NSString *)repo
                                   error:(NSError **)error {
-  NSData *root = [self getRepoRoot:repo error:error];
-
+  NSDictionary *latest =
+      [_repositoryService getLatestCommitForDid:repo error:error];
   NSDictionary *stats = [_recordService getRepoStatsForDid:repo error:nil];
   NSDictionary *account = [_accountService getAccountForDid:repo error:nil];
 
   NSMutableDictionary *result = [NSMutableDictionary dictionary];
-  [result setObject:repo forKey:@"did"];
-  if (root) {
-    CID *cid = [CID cidFromBytes:root];
-    [result setObject:cid.stringValue forKey:@"root"];
+  if (repo) {
+    [result setObject:repo forKey:@"did"];
+  }
+
+  NSString *rootCid = latest[@"cid"];
+  if (rootCid) {
+    [result setObject:rootCid forKey:@"root"];
   }
 
   if (account[@"handle"]) {
