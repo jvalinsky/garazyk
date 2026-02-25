@@ -107,6 +107,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 @property(nonatomic, assign) NSUInteger maxPipelinedRequests;
 @property(nonatomic, assign) BOOL sendingActive;
 @property(nonatomic, assign) BOOL upgradedToWebSocket;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
+    dispatch_queue_t transportQueue;
 
 @end
 
@@ -142,6 +144,12 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     CFRelease(_message);
     _message = NULL;
   }
+#if !defined(__APPLE__)
+  if (_transportQueue) {
+    dispatch_release(_transportQueue);
+    _transportQueue = NULL;
+  }
+#endif
   [[HttpBufferPool sharedPool] releaseBuffer:_buffer];
 }
 
@@ -324,6 +332,11 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     [self->_activeConnections addObject:connection];
   });
 
+  HttpConnectionState *connectionState =
+      [self connectionStateForConnection:connection];
+  dispatch_queue_t transportQueue =
+      connectionState.transportQueue ?: self.serverQueue;
+
   __weak typeof(self) weakSelf = self;
   __weak id<PDSNetworkConnection> weakConnection = connection;
 
@@ -360,7 +373,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
         }
       };
 
-  [connection startWithQueue:self.serverQueue];
+  [connection startWithQueue:transportQueue];
 }
 
 - (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
@@ -430,6 +443,13 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     if (!state) {
       state = [[HttpConnectionState alloc] init];
       [self.connectionStates setObject:state forKey:connection];
+    }
+    if (!state.transportQueue) {
+      NSString *queueLabel = [NSString
+          stringWithFormat:@"com.atproto.pds.httpserver.connection.%p",
+                           connection];
+      state.transportQueue =
+          dispatch_queue_create([queueLabel UTF8String], DISPATCH_QUEUE_SERIAL);
     }
   });
   return state;
