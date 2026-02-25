@@ -6,282 +6,298 @@
 #else
 #import "Compat/XCTest/XCTest.h"
 #endif
-#import <objc/runtime.h>
-#import "Network/RateLimiter.h"
-#import "Network/HttpResponse.h"
+#import "App/PDSConfiguration.h"
 #import "Auth/OAuthConformanceTests.h"
 #import "Auth/OAuthPublicClientTests.h"
-#import "App/PDSConfiguration.h"
+#import "Network/HttpResponse.h"
+#import "Network/RateLimiter.h"
+#import <objc/runtime.h>
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
-@property (nonatomic, assign) int failureCount;
-@property (nonatomic, assign) int testCount;
-@property (nonatomic, assign) int unexpectedFailureCount;
+@property(nonatomic, assign) int failureCount;
+@property(nonatomic, assign) int testCount;
+@property(nonatomic, assign) int unexpectedFailureCount;
 @end
 
 #ifdef __APPLE__
 @implementation SimpleTestObserver
 - (instancetype)init {
-    self = [super init];
-    if (self) {
-        _failureCount = 0;
-        _testCount = 0;
-        _unexpectedFailureCount = 0;
-    }
-    return self;
+  self = [super init];
+  if (self) {
+    _failureCount = 0;
+    _testCount = 0;
+    _unexpectedFailureCount = 0;
+  }
+  return self;
 }
 
 - (void)testCaseWillStart:(XCTestCase *)testCase {
-    self.testCount++;
+  self.testCount++;
 }
 
-- (void)testCase:(XCTestCase *)testCase didFailWithDescription:(NSString *)description inFile:(nullable NSString *)filePath atLine:(NSUInteger)lineNumber {
-    self.failureCount++;
+- (void)testCase:(XCTestCase *)testCase
+    didFailWithDescription:(NSString *)description
+                    inFile:(nullable NSString *)filePath
+                    atLine:(NSUInteger)lineNumber {
+  self.failureCount++;
 }
 @end
 #else
 @implementation SimpleTestObserver
 - (instancetype)init {
-    self = [super init];
-    if (self) {
-        _failureCount = 0;
-        _testCount = 0;
-        _unexpectedFailureCount = 0;
-    }
-    return self;
+  self = [super init];
+  if (self) {
+    _failureCount = 0;
+    _testCount = 0;
+    _unexpectedFailureCount = 0;
+  }
+  return self;
 }
 @end
 #endif
 
 NSArray *discoverTestMethodsForClass(Class testClass) {
-    NSMutableArray *methods = [NSMutableArray array];
-    unsigned int methodCount;
-    Method *methodList = class_copyMethodList(testClass, &methodCount);
-    for (unsigned int i = 0; i < methodCount; i++) {
-        Method method = methodList[i];
-        SEL selector = method_getName(method);
-        NSString *methodName = NSStringFromSelector(selector);
-        if ([methodName hasPrefix:@"test"]) {
-            char *returnType = method_copyReturnType(method);
-            int numArgs = method_getNumberOfArguments(method);
-            if (returnType && strcmp(returnType, "v") == 0 && numArgs == 2) {
-                [methods addObject:methodName];
-            }
-            free(returnType);
-        }
+  NSMutableArray *methods = [NSMutableArray array];
+  unsigned int methodCount;
+  Method *methodList = class_copyMethodList(testClass, &methodCount);
+  for (unsigned int i = 0; i < methodCount; i++) {
+    Method method = methodList[i];
+    SEL selector = method_getName(method);
+    NSString *methodName = NSStringFromSelector(selector);
+    if ([methodName hasPrefix:@"test"]) {
+      char *returnType = method_copyReturnType(method);
+      int numArgs = method_getNumberOfArguments(method);
+      if (returnType && strcmp(returnType, "v") == 0 && numArgs == 2) {
+        [methods addObject:methodName];
+      }
+      free(returnType);
     }
-    free(methodList);
-    return [methods copy];
+  }
+  free(methodList);
+  return [methods copy];
 }
 
-int main(int argc, char * argv[]) {
-    fprintf(stderr, "test_main started\n");
-    @autoreleasepool {
-        // Disable rate limiting for tests
-        RateLimiterSetDisabledGlobally(YES);
-        [RateLimiter sharedLimiter].enabled = NO;
+int main(int argc, char *argv[]) {
+  fprintf(stderr, "test_main started\n");
+  @autoreleasepool {
+    // Disable rate limiting for tests
+    RateLimiterSetDisabledGlobally(YES);
+    [RateLimiter sharedLimiter].enabled = NO;
 
-        // Disable biometric protection for tests
-        [PDSConfiguration sharedConfiguration].useBiometricProtection = NO;
-        // Disable keychain usage for tests (use in-memory/ephemeral keys)
-        [PDSConfiguration sharedConfiguration].useKeychain = NO;
+    // Disable biometric protection for tests
+    [PDSConfiguration sharedConfiguration].useBiometricProtection = NO;
+    // Disable keychain usage for tests (use in-memory/ephemeral keys)
+    [PDSConfiguration sharedConfiguration].useKeychain = NO;
 
-        // Ensure listeners bind to loopback by default in tests to avoid macOS Local Network permission prompts.
-        if (getenv("PDS_LISTEN_HOST") == NULL) {
-            setenv("PDS_LISTEN_HOST", "127.0.0.1", 1);
-        }
+    // Ensure listeners bind to loopback by default in tests to avoid macOS
+    // Local Network permission prompts.
+    if (getenv("PDS_LISTEN_HOST") == NULL) {
+      setenv("PDS_LISTEN_HOST", "127.0.0.1", 1);
+    }
 
-        // Avoid CFNetwork trying to create a default on-disk cache under ~/Library/Caches/AllTests.
-        NSString *cacheDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"objpds-alltests-urlcache"];
-        [[NSFileManager defaultManager] createDirectoryAtPath:cacheDir withIntermediateDirectories:YES attributes:nil error:nil];
-        NSURLCache *urlCache = [[NSURLCache alloc] initWithMemoryCapacity:4 * 1024 * 1024
-                                                            diskCapacity:4 * 1024 * 1024
-                                                                diskPath:cacheDir];
-        [NSURLCache setSharedURLCache:urlCache];
+    // Avoid CFNetwork trying to create a default on-disk cache under
+    // ~/Library/Caches/AllTests.
+    NSString *cacheDir = [NSTemporaryDirectory()
+        stringByAppendingPathComponent:@"objpds-alltests-urlcache"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:cacheDir
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
+    NSURLCache *urlCache =
+        [[NSURLCache alloc] initWithMemoryCapacity:4 * 1024 * 1024
+                                      diskCapacity:4 * 1024 * 1024
+                                          diskPath:cacheDir];
+    [NSURLCache setSharedURLCache:urlCache];
 
-        if ([[[NSProcessInfo processInfo] environment][@"PDS_USE_NEW_REPOS"] isEqualToString:@"1"]) {
-            [PDSConfiguration sharedConfiguration].useNewRepositoryImplementation = YES;
-            fprintf(stderr, "TESTING: Enabled new repository implementation\n");
-        }
+    if ([[[NSProcessInfo processInfo] environment][@"PDS_USE_NEW_REPOS"]
+            isEqualToString:@"1"]) {
+      [PDSConfiguration sharedConfiguration].useNewRepositoryImplementation =
+          YES;
+      fprintf(stderr, "TESTING: Enabled new repository implementation\n");
+    }
 
-        NSArray *testClasses = @[
-            @"MSTViewerHandlerTests",
-            @"PDSAccountServiceTests",
-            @"MSTInteropTests",
-            @"CARInteropTests",
-            @"RepoCommitTests",
-            @"PDSNetworkTransportTests",
-            @"PLCOperationTests",
-            @"PLCStoreTests",
-            @"PLCAuditorTests",
-            @"PLCServerTests",
-            @"OAuthPKCETests",
-            @"OAuthConformanceTests",
-            @"OAuthPublicClientTests",
-            @"OAuthDPoPTests",
-            @"JWTTests",
-            @"OAuth2Tests",
-            @"SubscribeReposHandlerTests",
-            @"GetServiceAuthMethodTests",
-            @"XrpcHandlerTests",
-            @"XrpcMethodRegistryTests",
-            @"XrpcProxyTests",
-            @"AdminAuthSyncTests",
-            @"AdminAuthModerationTests",
-            @"AdminAuthXrpcTests",
-            @"LexiconResolveXrpcTests",
-            @"RepoAuthRepoTests",
-            @"RepoAuthServerTests",
-            @"RepoAuthIdentityTests",
-            @"RepoAuthTempTests",
-            @"PDSCLITests",
-            @"PDSCLIServiceStubTests",
-            @"ActorStoreTests",
-            @"DatabasePoolTests",
-            @"PDSControllerTests",
-            @"PDSPLCIntegrationTests",
-            @"PDSAdminServiceTests",
-            @"PDSAdminControllerTests",
-            @"PDSAdminAuthTests",
-            @"PDSAuthzManagerTests",
-            @"AdminMiddlewareTests",
-            @"ServiceDatabasesTests",
-            @"RateLimiterTests",
-            @"DIDResolverTests",
-            @"HandleResolverTests",
-            @"ATProtoHandleValidatorTests",
-            @"IdentifierTests",
-            @"TOTPTests",
-            @"CryptoTests",
-            @"OAuth2HandlerTests",
-            @"OAuth2PreservationTests",
-            @"OAuth2ATProtoClientTests",
-            @"OAuth2ClientMetadataValidationTests",
-            @"OAuth2OPTIONSHandlerTests",
-            @"LexiconValidationTests",
-            @"RecordPathValidationTests",
-            @"XrpcInputValidationTests",
-            @"XrpcErrorResponseTests",
-            @"BlobXrpcTests",
-            @"CBORSecurityTests",
-            @"JWTSecurityTests",
-            @"HandleResolverSecurityTests",
-            @"HandleResolverSSRFTests",
-            @"WebSocketUpgradeHandlerTests",
-            @"HttpRouterTests",
-            @"HttpRouteTrieTests",
-            @"HttpRequestParsingTests",
-            @"HttpBufferPoolTests",
-            @"HttpChunkedBodyParserTests",
-            @"FirehoseTests",
-            @"RelayClientTests",
-            @"SessionStoreTests",
-            @"ExploreCacheTests",
-            @"ExploreHandlerTests",
-            @"HttpServerTests",
-            @"PDSHttpServerBuilderTests",
-            @"WebSocketServerTests",
-            @"MSTPersistenceTests",
-            @"HttpResponseTests",
-            @"PDSConfigurationTests",
-            @"PDSPhoneVerificationProviderTests",
-            @"EventFormatterTests",
-            @"PDSBlobServiceTests",
-            @"PDSRecordServiceTests",
-            @"PDSRecordTombstoneTests",
-            @"PDSRepositoryServiceTests",
-            @"ActorServiceTests",
-            @"FeedServiceTests",
-            @"NotificationServiceTests",
-            @"PDSCLIAccountCommandTests",
-            @"PDSCLIInviteCommandTests",
-            @"PDSHealthCheckTests",
-            @"OAuthServerMetadataTests",
-            @"OAuthSessionTests",
-            @"NodeInfoTests",
-            @"ActorStoreCharacterizationTests",
-            @"XrpcMethodRegistryCharacterizationTests",
-            @"MSTCharacterizationTests",
-            @"SessionCharacterizationTests",
-            @"KeyManagerCharacterizationTests",
-            @"ATProtoErrorTests",
-            @"ProtocolCompileTests",
-            @"PDSServiceContainerTests",
-            @"PDSAccountManagerTests",
-            @"Base58Tests",
-            @"WebSocketFrameParsingTests",
-            @"AdminModerationAuthTests",
-            @"OAuthIntegrationTests",
-            @"OAuthDemoHandlerConfigurationTests",
-            @"CommitChainTests",
-            @"FirehoseIntegrationTests",
-            @"PDSReplayCacheTests",
-            @"PDSEmailHTTPClientTests",
-            @"PDSResendEmailProviderTests",
-            @"ProductionSecurityTests",
-            @"FirehoseConformanceTests",
-            @"ServiceDatabasesPruningTests",
-            @"CoverageGapTests",
-            @"DIDPLCResolverTests"
-        ];
+    NSArray *testClasses = @[
+      @"MSTViewerHandlerTests",
+      @"PDSAccountServiceTests",
+      @"MSTInteropTests",
+      @"CARInteropTests",
+      @"RepoCommitTests",
+      @"PDSNetworkTransportTests",
+      @"PLCOperationTests",
+      @"PLCStoreTests",
+      @"PLCAuditorTests",
+      @"PLCServerTests",
+      @"OAuthPKCETests",
+      @"OAuthConformanceTests",
+      @"OAuthPublicClientTests",
+      @"OAuthDPoPTests",
+      @"JWTTests",
+      @"OAuth2Tests",
+      @"SubscribeReposHandlerTests",
+      @"GetServiceAuthMethodTests",
+      @"XrpcHandlerTests",
+      @"XrpcMethodRegistryTests",
+      @"XrpcProxyTests",
+      @"AdminAuthSyncTests",
+      @"AdminAuthModerationTests",
+      @"AdminAuthXrpcTests",
+      @"LexiconResolveXrpcTests",
+      @"RepoAuthRepoTests",
+      @"RepoAuthServerTests",
+      @"RepoAuthIdentityTests",
+      @"RepoAuthTempTests",
+      @"PDSCLITests",
+      @"PDSCLIServiceStubTests",
+      @"ActorStoreTests",
+      @"DatabasePoolTests",
+      @"PDSControllerTests",
+      @"PDSPLCIntegrationTests",
+      @"PDSAdminServiceTests",
+      @"PDSAdminControllerTests",
+      @"PDSAdminAuthTests",
+      @"PDSAuthzManagerTests",
+      @"AdminMiddlewareTests",
+      @"ServiceDatabasesTests",
+      @"RateLimiterTests",
+      @"DIDResolverTests",
+      @"HandleResolverTests",
+      @"ATProtoHandleValidatorTests",
+      @"IdentifierTests",
+      @"TOTPTests",
+      @"CryptoTests",
+      @"OAuth2HandlerTests",
+      @"OAuth2PreservationTests",
+      @"OAuth2ATProtoClientTests",
+      @"OAuth2ClientMetadataValidationTests",
+      @"OAuth2OPTIONSHandlerTests",
+      @"LexiconValidationTests",
+      @"RecordPathValidationTests",
+      @"XrpcInputValidationTests",
+      @"XrpcErrorResponseTests",
+      @"BlobXrpcTests",
+      @"CBORSecurityTests",
+      @"JWTSecurityTests",
+      @"HandleResolverSecurityTests",
+      @"HandleResolverSSRFTests",
+      @"WebSocketUpgradeHandlerTests",
+      @"HttpRouterTests",
+      @"HttpRouteTrieTests",
+      @"HttpRequestParsingTests",
+      @"HttpBufferPoolTests",
+      @"HttpChunkedBodyParserTests",
+      @"FirehoseTests",
+      @"RelayClientTests",
+      @"SessionStoreTests",
+      @"ExploreCacheTests",
+      @"ExploreHandlerTests",
+      @"HttpServerTests",
+      @"PDSHttpServerBuilderTests",
+      @"WebSocketServerTests",
+      @"MSTPersistenceTests",
+      @"HttpResponseTests",
+      @"PDSConfigurationTests",
+      @"PDSPhoneVerificationProviderTests",
+      @"EventFormatterTests",
+      @"PDSBlobServiceTests",
+      @"PDSRecordServiceTests",
+      @"PDSRecordTombstoneTests",
+      @"PDSRepositoryServiceTests",
+      @"ActorServiceTests",
+      @"FeedServiceTests",
+      @"NotificationServiceTests",
+      @"PDSCLIAccountCommandTests",
+      @"PDSCLIInviteCommandTests",
+      @"PDSHealthCheckTests",
+      @"OAuthServerMetadataTests",
+      @"OAuthSessionTests",
+      @"NodeInfoTests",
+      @"ActorStoreCharacterizationTests",
+      @"XrpcMethodRegistryCharacterizationTests",
+      @"MSTCharacterizationTests",
+      @"SessionCharacterizationTests",
+      @"KeyManagerCharacterizationTests",
+      @"ATProtoErrorTests",
+      @"ProtocolCompileTests",
+      @"PDSServiceContainerTests",
+      @"PDSAccountManagerTests",
+      @"Base58Tests",
+      @"WebSocketFrameParsingTests",
+      @"AdminModerationAuthTests",
+      @"OAuthIntegrationTests",
+      @"OAuthDemoHandlerConfigurationTests",
+      @"CommitChainTests",
+      @"FirehoseIntegrationTests",
+      @"PDSReplayCacheTests",
+      @"PDSEmailHTTPClientTests",
+      @"PDSResendEmailProviderTests",
+      @"ProductionSecurityTests",
+      @"FirehoseConformanceTests",
+      @"ServiceDatabasesPruningTests",
+      @"CoverageGapTests",
+      @"DIDPLCResolverTests",
+      @"RepoDescribeRepoTests"
+    ];
 
-        SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
+    SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
 
 #ifdef __APPLE__
-        XCTestObservationCenter *center = [XCTestObservationCenter sharedTestObservationCenter];
-        [center addTestObserver:observer];
+    XCTestObservationCenter *center =
+        [XCTestObservationCenter sharedTestObservationCenter];
+    [center addTestObserver:observer];
 #endif
 
-        // Parse command line arguments for filtering
-        NSString *testFilter = nil;
-        for (int i = 1; i < argc; i++) {
-            NSString *arg = [NSString stringWithUTF8String:argv[i]];
-            if ([arg isEqualToString:@"-XCTest"] && i + 1 < argc) {
-                testFilter = [NSString stringWithUTF8String:argv[i+1]];
-                break;
-            }
-        }
-
-        XCTestSuite *mainSuite = [XCTestSuite testSuiteWithName:@"All Tests"];
-
-        for (NSString *className in testClasses) {
-            // Apply filter if present
-            if (testFilter) {
-                NSArray *filters = [testFilter componentsSeparatedByString:@","];
-                if (![filters containsObject:className]) {
-                    continue;
-                }
-            }
-
-            Class testClass = NSClassFromString(className);
-            if (testClass) {
-                NSArray *methodNames = discoverTestMethodsForClass(testClass);
-                if (methodNames.count > 0) {
-                    XCTestSuite *classSuite = [XCTestSuite testSuiteWithName:className];
-                    for (NSString *methodName in methodNames) {
-                        SEL selector = NSSelectorFromString(methodName);
-                        XCTestCase *testCase = [[testClass alloc] initWithSelector:selector];
-                        [classSuite addTest:testCase];
-                    }
-                    [mainSuite addTest:classSuite];
-                }
-            } else {
-                // Only warn if we are not filtering, or if this is the specific class we asked for
-                if (!testFilter || [className isEqualToString:testFilter]) {
-                     NSLog(@"Warning: Test class %@ not found", className);
-                }
-            }
-        }
-
-        NSLog(@"\n=== Starting Test Suite: %@ ===", mainSuite.name);
-        NSLog(@"Test suites: %lu", (unsigned long)mainSuite.tests.count);
-
-        [mainSuite performTest:nil];
-
-        NSLog(@"\n=== Test Suite Finished ===");
-        NSLog(@"Tests run: %d", observer.testCount);
-        NSLog(@"Failures: %d\n", observer.failureCount);
-
-        return observer.failureCount > 0 ? 1 : 0;
+    // Parse command line arguments for filtering
+    NSString *testFilter = nil;
+    for (int i = 1; i < argc; i++) {
+      NSString *arg = [NSString stringWithUTF8String:argv[i]];
+      if ([arg isEqualToString:@"-XCTest"] && i + 1 < argc) {
+        testFilter = [NSString stringWithUTF8String:argv[i + 1]];
+        break;
+      }
     }
+
+    XCTestSuite *mainSuite = [XCTestSuite testSuiteWithName:@"All Tests"];
+
+    for (NSString *className in testClasses) {
+      // Apply filter if present
+      if (testFilter) {
+        NSArray *filters = [testFilter componentsSeparatedByString:@","];
+        if (![filters containsObject:className]) {
+          continue;
+        }
+      }
+
+      Class testClass = NSClassFromString(className);
+      if (testClass) {
+        NSArray *methodNames = discoverTestMethodsForClass(testClass);
+        if (methodNames.count > 0) {
+          XCTestSuite *classSuite = [XCTestSuite testSuiteWithName:className];
+          for (NSString *methodName in methodNames) {
+            SEL selector = NSSelectorFromString(methodName);
+            XCTestCase *testCase =
+                [[testClass alloc] initWithSelector:selector];
+            [classSuite addTest:testCase];
+          }
+          [mainSuite addTest:classSuite];
+        }
+      } else {
+        // Only warn if we are not filtering, or if this is the specific class
+        // we asked for
+        if (!testFilter || [className isEqualToString:testFilter]) {
+          NSLog(@"Warning: Test class %@ not found", className);
+        }
+      }
+    }
+
+    NSLog(@"\n=== Starting Test Suite: %@ ===", mainSuite.name);
+    NSLog(@"Test suites: %lu", (unsigned long)mainSuite.tests.count);
+
+    [mainSuite performTest:nil];
+
+    NSLog(@"\n=== Test Suite Finished ===");
+    NSLog(@"Tests run: %d", observer.testCount);
+    NSLog(@"Failures: %d\n", observer.failureCount);
+
+    return observer.failureCount > 0 ? 1 : 0;
+  }
 }
