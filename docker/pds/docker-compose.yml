@@ -11,6 +11,7 @@ services:
       - pds_data:/var/lib/atprotopds
       - ./config.json:/var/lib/atprotopds/config.json:ro
     environment:
+      - TZ=UTC
       - PDS_PORT=2583
       - PDS_HOST=0.0.0.0
       - PDS_ISSUER=https://pds.garazyk.xyz

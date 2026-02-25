@@ -12,6 +12,7 @@
 
 #import "Core/DID.h"
 #import "Core/CID.h"
+#import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
@@ -100,12 +101,22 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 @synthesize staleTTL = _staleTTL;
 @synthesize maxTTL = _maxTTL;
 
++ (instancetype)sharedResolver {
+    static DIDResolver *shared;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        shared = [[DIDResolver alloc] init];
+        shared.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+    });
+    return shared;
+}
+
 - (instancetype)init {
     self = [super init];
     if (self) {
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        config.timeoutIntervalForRequest = 30.0;
-        config.timeoutIntervalForResource = 60.0;
+        config.timeoutIntervalForRequest = 10.0;
+        config.timeoutIntervalForResource = 15.0;
         _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
 
         _cache = [[NSCache alloc] init];
@@ -249,7 +260,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         dispatch_semaphore_signal(semaphore);
     }];
     
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 15 * NSEC_PER_SEC));
     
     if (error) {
         *error = resultError;

@@ -174,8 +174,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     libxml2 \
     libxslt1.1 \
+    tzdata \
     zlib1g \
     && rm -rf /var/lib/apt/lists/*
+
+ENV TZ=UTC
 
 # Copy GNUstep runtime libraries
 COPY --from=builder-gnustep /usr/GNUstep /usr/GNUstep
@@ -197,7 +200,7 @@ COPY --from=builder /src/ATProtoPDS/Sources/App/OAuthDemo/Assets /usr/share/atpr
 COPY --from=builder /src/ATProtoPDS/Sources/App/AdminUI/Assets /usr/share/atprotopds/assets/AdminUI
 COPY --from=builder /src/ATProtoPDS/Sources/Auth/Assets /usr/share/atprotopds/assets/Auth
 COPY --from=builder /src/ATProtoPDS/Sources/PLC/Assets /usr/share/atprotopds/assets/PLC
-COPY --from=builder /src/lexicons /usr/share/atprotopds/lexicons
+COPY --from=builder /src/ATProtoPDS/Resources/lexicons /usr/share/atprotopds/lexicons
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
