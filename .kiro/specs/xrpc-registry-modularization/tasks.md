@@ -131,17 +131,17 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Extract XrpcServerMethods domain module
-  - [ ] 5.1 Create XrpcServerMethods class
+- [x] 5. Extract XrpcServerMethods domain module
+  - [x] 5.1 Create XrpcServerMethods class
     - Create ATProtoPDS/Sources/Network/XrpcServerMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcServerMethods.m with implementation
     - Define registerWithDispatcher class method with all service parameters
     - _Requirements: 4.1_
   
-  - [ ] 5.2 Move com.atproto.server.* endpoint handlers to XrpcServerMethods
+  - [x] 5.2 Move com.atproto.server.* endpoint handlers to XrpcServerMethods
     - Move describeServer endpoint
     - Move createAccount endpoint
     - Move createSession, refreshSession, getSession, deleteSession endpoints
@@ -157,30 +157,30 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~1200 lines or less
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.6_
   
-  - [ ] 5.3 Update XrpcMethodRegistry to call XrpcServerMethods.register
+  - [x] 5.3 Update XrpcMethodRegistry to call XrpcServerMethods.register
     - Remove moved endpoint code from XrpcMethodRegistry
     - Add XrpcServerMethods.registerWithDispatcher call
     - Pass all required services as parameters
     - _Requirements: 4.5, 11.4, 11.5_
   
-  - [ ] 5.4 Update CMakeLists.txt to include XrpcServerMethods sources
+  - [x] 5.4 Update CMakeLists.txt to include XrpcServerMethods sources
     - Add Sources/Network/XrpcServerMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 4.1_
   
-  - [ ] 5.5 Verify all tests pass after XrpcServerMethods extraction
+  - [x] 5.5 Verify all tests pass after XrpcServerMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 6. Extract XrpcRepoMethods domain module
-  - [ ] 6.1 Create XrpcRepoMethods class
+- [x] 6. Extract XrpcRepoMethods domain module
+  - [x] 6.1 Create XrpcRepoMethods class
     - Create ATProtoPDS/Sources/Network/XrpcRepoMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcRepoMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 5.1_
   
-  - [ ] 6.2 Move com.atproto.repo.* endpoint handlers to XrpcRepoMethods
+  - [x] 6.2 Move com.atproto.repo.* endpoint handlers to XrpcRepoMethods
     - Move createRecord, putRecord, deleteRecord endpoints
     - Move getRecord, listRecords, describeRepo endpoints
     - Move uploadBlob endpoint
@@ -190,29 +190,29 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~800 lines or less
     - _Requirements: 5.1, 5.2, 5.3, 5.5_
   
-  - [ ] 6.3 Update XrpcMethodRegistry to call XrpcRepoMethods.register
+  - [x] 6.3 Update XrpcMethodRegistry to call XrpcRepoMethods.register
     - Remove moved endpoint code
     - Add XrpcRepoMethods.registerWithDispatcher call
     - _Requirements: 5.4, 11.4, 11.5_
   
-  - [ ] 6.4 Update CMakeLists.txt to include XrpcRepoMethods sources
+  - [x] 6.4 Update CMakeLists.txt to include XrpcRepoMethods sources
     - Add Sources/Network/XrpcRepoMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 5.1_
   
-  - [ ] 6.5 Verify all tests pass after XrpcRepoMethods extraction
+  - [x] 6.5 Verify all tests pass after XrpcRepoMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
 - [ ] 7. Extract XrpcSyncMethods domain module
-  - [ ] 7.1 Create XrpcSyncMethods class
+  - [x] 7.1 Create XrpcSyncMethods class
     - Create ATProtoPDS/Sources/Network/XrpcSyncMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcSyncMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 6.1_
   
-  - [ ] 7.2 Move com.atproto.sync.* endpoint handlers to XrpcSyncMethods
+  - [x] 7.2 Move com.atproto.sync.* endpoint handlers to XrpcSyncMethods
     - Move getBlob, getBlocks, getCheckout endpoints
     - Move getCommitPath, getHead, getLatestCommit endpoints
     - Move getRecord, getRepo endpoints
@@ -223,32 +223,32 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~600 lines or less
     - _Requirements: 6.1, 6.2, 6.3, 6.5_
   
-  - [ ] 7.3 Update XrpcMethodRegistry to call XrpcSyncMethods.register
+  - [x] 7.3 Update XrpcMethodRegistry to call XrpcSyncMethods.register
     - Remove moved endpoint code
     - Add XrpcSyncMethods.registerWithDispatcher call
     - _Requirements: 6.4, 11.4, 11.5_
   
-  - [ ] 7.4 Update CMakeLists.txt to include XrpcSyncMethods sources
+  - [x] 7.4 Update CMakeLists.txt to include XrpcSyncMethods sources
     - Add Sources/Network/XrpcSyncMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 6.1_
   
-  - [ ] 7.5 Verify all tests pass after XrpcSyncMethods extraction
+  - [x] 7.5 Verify all tests pass after XrpcSyncMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 8. Checkpoint - Ensure all tests pass
+- [x] 8. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Extract XrpcIdentityMethods domain module
-  - [ ] 9.1 Create XrpcIdentityMethods class
+- [x] 9. Extract XrpcIdentityMethods domain module
+  - [x] 9.1 Create XrpcIdentityMethods class
     - Create ATProtoPDS/Sources/Network/XrpcIdentityMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcIdentityMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 7.1_
   
-  - [ ] 9.2 Move com.atproto.identity.* endpoint handlers to XrpcIdentityMethods
+  - [x] 9.2 Move com.atproto.identity.* endpoint handlers to XrpcIdentityMethods
     - Move resolveHandle, updateHandle endpoints
     - Move getRecommendedDidCredentials endpoint
     - Move requestPlcOperationSignature, signPlcOperation, submitPlcOperation endpoints
@@ -259,29 +259,29 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~400 lines or less
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.6_
   
-  - [ ] 9.3 Update XrpcMethodRegistry to call XrpcIdentityMethods.register
+  - [x] 9.3 Update XrpcMethodRegistry to call XrpcIdentityMethods.register
     - Remove moved endpoint code
     - Add XrpcIdentityMethods.registerWithDispatcher call
     - _Requirements: 7.5, 11.4, 11.5_
   
-  - [ ] 9.4 Update CMakeLists.txt to include XrpcIdentityMethods sources
+  - [x] 9.4 Update CMakeLists.txt to include XrpcIdentityMethods sources
     - Add Sources/Network/XrpcIdentityMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 7.1_
   
-  - [ ] 9.5 Verify all tests pass after XrpcIdentityMethods extraction
+  - [x] 9.5 Verify all tests pass after XrpcIdentityMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 10. Extract XrpcAdminMethods domain module
-  - [ ] 10.1 Create XrpcAdminMethods class
+- [x] 10. Extract XrpcAdminMethods domain module
+  - [x] 10.1 Create XrpcAdminMethods class
     - Create ATProtoPDS/Sources/Network/XrpcAdminMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcAdminMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 8.1_
   
-  - [ ] 10.2 Move com.atproto.admin.* endpoint handlers to XrpcAdminMethods
+  - [x] 10.2 Move com.atproto.admin.* endpoint handlers to XrpcAdminMethods
     - Move disableAccountInvites, enableAccountInvites endpoints
     - Move getAccountInfo, getAccountInfos endpoints
     - Move getInviteCodes, getSubjectStatus endpoints
@@ -294,29 +294,29 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~400 lines or less
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.6_
   
-  - [ ] 10.3 Update XrpcMethodRegistry to call XrpcAdminMethods.register
+  - [x] 10.3 Update XrpcMethodRegistry to call XrpcAdminMethods.register
     - Remove moved endpoint code
     - Add XrpcAdminMethods.registerWithDispatcher call
     - _Requirements: 8.5, 11.4, 11.5_
   
-  - [ ] 10.4 Update CMakeLists.txt to include XrpcAdminMethods sources
+  - [x] 10.4 Update CMakeLists.txt to include XrpcAdminMethods sources
     - Add Sources/Network/XrpcAdminMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 8.1_
   
-  - [ ] 10.5 Verify all tests pass after XrpcAdminMethods extraction
+  - [x] 10.5 Verify all tests pass after XrpcAdminMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 11. Extract XrpcLabelMethods domain module
-  - [ ] 11.1 Create XrpcLabelMethods class
+- [x] 11. Extract XrpcLabelMethods domain module
+  - [x] 11.1 Create XrpcLabelMethods class
     - Create ATProtoPDS/Sources/Network/XrpcLabelMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcLabelMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 9.1_
   
-  - [ ] 11.2 Move com.atproto.label.* and com.atproto.temp.* endpoint handlers to XrpcLabelMethods
+  - [x] 11.2 Move com.atproto.label.* and com.atproto.temp.* endpoint handlers to XrpcLabelMethods
     - Move queryLabels endpoint
     - Move subscribeLabels WebSocket endpoint
     - Move temp.fetchLabels endpoint (with deprecation warnings)
@@ -326,29 +326,29 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~200 lines or less
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6_
   
-  - [ ] 11.3 Update XrpcMethodRegistry to call XrpcLabelMethods.register
+  - [x] 11.3 Update XrpcMethodRegistry to call XrpcLabelMethods.register
     - Remove moved endpoint code
     - Add XrpcLabelMethods.registerWithDispatcher call
     - _Requirements: 9.5, 11.4, 11.5_
   
-  - [ ] 11.4 Update CMakeLists.txt to include XrpcLabelMethods sources
+  - [x] 11.4 Update CMakeLists.txt to include XrpcLabelMethods sources
     - Add Sources/Network/XrpcLabelMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 9.1_
   
-  - [ ] 11.5 Verify all tests pass after XrpcLabelMethods extraction
+  - [x] 11.5 Verify all tests pass after XrpcLabelMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 12. Extract XrpcAppBskyMethods domain module
-  - [ ] 12.1 Create XrpcAppBskyMethods class
+- [x] 12. Extract XrpcAppBskyMethods domain module
+  - [x] 12.1 Create XrpcAppBskyMethods class
     - Create ATProtoPDS/Sources/Network/XrpcAppBskyMethods.h with interface
     - Create ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 10.1_
   
-  - [ ] 12.2 Move app.bsky.* endpoint handlers to XrpcAppBskyMethods
+  - [x] 12.2 Move app.bsky.* endpoint handlers to XrpcAppBskyMethods
     - Move actor.getProfile, actor.getProfiles endpoints
     - Move actor.searchActors, actor.searchActorsTypeahead endpoints
     - Move feed.getAuthorFeed, feed.getTimeline, feed.getActorLikes endpoints
@@ -360,26 +360,26 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~500 lines or less
     - _Requirements: 10.1, 10.2, 10.3, 10.5_
   
-  - [ ] 12.3 Update XrpcMethodRegistry to call XrpcAppBskyMethods.register
+  - [x] 12.3 Update XrpcMethodRegistry to call XrpcAppBskyMethods.register
     - Remove moved endpoint code
     - Add XrpcAppBskyMethods.registerWithDispatcher call
     - _Requirements: 10.4, 11.4, 11.5_
   
-  - [ ] 12.4 Update CMakeLists.txt to include XrpcAppBskyMethods sources
+  - [x] 12.4 Update CMakeLists.txt to include XrpcAppBskyMethods sources
     - Add Sources/Network/XrpcAppBskyMethods.m to ATPROTOPDS_SOURCES
     - _Requirements: 10.1_
   
-  - [ ] 12.5 Verify all tests pass after XrpcAppBskyMethods extraction
+  - [x] 12.5 Verify all tests pass after XrpcAppBskyMethods extraction
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
     - _Requirements: 13.1, 13.3_
 
-- [ ] 13. Checkpoint - Ensure all tests pass
+- [x] 13. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 14. Simplify XrpcMethodRegistry to orchestration-only
-  - [ ] 14.1 Remove all extracted code from XrpcMethodRegistry.m
+- [x] 14. Simplify XrpcMethodRegistry to orchestration-only
+  - [x] 14.1 Remove all extracted code from XrpcMethodRegistry.m
     - Remove all moved helper functions
     - Remove all moved endpoint registration functions
     - Keep only orchestration logic
@@ -387,24 +387,24 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Target ~250 lines
     - _Requirements: 11.1, 11.6_
   
-  - [ ] 14.2 Update XrpcMethodRegistry.h with forward declarations if needed
+  - [x] 14.2 Update XrpcMethodRegistry.h with forward declarations if needed
     - Add forward declarations for helper modules if required
     - Maintain unchanged public interface
     - _Requirements: 11.1, 12.1, 12.4_
   
-  - [ ] 14.3 Verify registerMethodsWithDispatcherUsingServices orchestration
+  - [x] 14.3 Verify registerMethodsWithDispatcherUsingServices orchestration
     - Verify all domain modules called in correct order
     - Verify all services passed correctly
     - Verify installXrpcProxyInterceptor still called
     - _Requirements: 11.5, 15.3_
   
-  - [ ] 14.4 Verify backward compatibility
+  - [x] 14.4 Verify backward compatibility
     - Verify public API unchanged
     - Verify extractDIDFromAuthHeader delegates to XrpcAuthHelper
     - Verify publicKeyBytesFromMultibase still works
     - _Requirements: 12.1, 12.2_
   
-  - [ ] 14.5 Verify all tests pass after registry simplification
+  - [x] 14.5 Verify all tests pass after registry simplification
     - Run `xcodebuild -scheme AllTests build`
     - Run `./build/tests/AllTests`
     - Verify 0 failures
@@ -412,37 +412,37 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
     - Verify CLI build succeeds
     - _Requirements: 13.1, 13.2, 13.3_
 
-- [ ] 15. Add module documentation
-  - [ ] 15.1 Document XrpcAuthHelper responsibilities
+- [x] 15. Add module documentation
+  - [x] 15.1 Document XrpcAuthHelper responsibilities
     - Add header comments describing authentication responsibilities
     - Document JWT and DPoP verification behavior
     - Document DPoP nonce challenge flow
     - _Requirements: 16.1_
   
-  - [ ] 15.2 Document XrpcIdentityHelper responsibilities
+  - [x] 15.2 Document XrpcIdentityHelper responsibilities
     - Add header comments describing identity resolution responsibilities
     - Document handle resolution behavior
     - Document DID resolution (PLC and local fallback)
     - _Requirements: 16.2_
   
-  - [ ] 15.3 Document XrpcErrorHelper responsibilities
+  - [x] 15.3 Document XrpcErrorHelper responsibilities
     - Add header comments describing error response construction
     - Document standard error codes and formats
     - _Requirements: 16.3_
   
-  - [ ] 15.4 Document domain module responsibilities
+  - [x] 15.4 Document domain module responsibilities
     - Add header comments to each domain module
     - Document which XRPC namespaces each module handles
     - List all endpoints registered by each module
     - _Requirements: 16.4_
   
-  - [ ] 15.5 Document XrpcMethodRegistry orchestration flow
+  - [x] 15.5 Document XrpcMethodRegistry orchestration flow
     - Update header comments describing orchestration responsibilities
     - Document module registration order
     - Document service dependency injection pattern
     - _Requirements: 16.5_
 
-- [ ] 16. Final checkpoint - Ensure all tests pass
+- [x] 16. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

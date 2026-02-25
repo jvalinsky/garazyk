@@ -6,49 +6,43 @@
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSServiceDatabases;
-@class PDSDatabasePool;
-@class PDSConfiguration;
+@protocol PDSAccountService;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcSyncMethods registers all com.atproto.sync.* endpoint handlers.
+ * XrpcRepoMethods registers all com.atproto.repo.* endpoint handlers.
  *
- * This module handles repository synchronization operations including:
- * - Repository export: getRepo, getCheckout
- * - Commit operations: getHead, getLatestCommit
- * - Record sync: getRecord
- * - Blob sync: getBlob, listBlobs
- * - Repository listing: listRepos
- * - Host management: getHostStatus, listHosts
- * - Crawl notifications: requestCrawl, notifyOfUpdate
- * - WebSocket subscriptions: subscribeRepos
+ * This module handles repository operations including:
+ * - Record CRUD: createRecord, putRecord, deleteRecord, getRecord, listRecords
+ * - Repository metadata: describeRepo
+ * - Blob operations: uploadBlob, deleteBlob, listMissingBlobs
+ * - Batch operations: applyWrites
+ * - Repository import: importRepo
  */
-@interface XrpcSyncMethods : NSObject
+@interface XrpcRepoMethods : NSObject
 
 /**
- * Register all com.atproto.sync.* endpoint handlers with the dispatcher.
+ * Register all com.atproto.repo.* endpoint handlers with the dispatcher.
  *
  * @param dispatcher The XRPC dispatcher to register handlers with
  * @param jwtMinter JWT token minter for authentication
  * @param adminController Admin controller for authorization checks
- * @param serviceDatabases Service-level database access
- * @param userDatabasePool User-level database pool
+ * @param accountService Account service for account lookups
  * @param recordService Record service for record operations
  * @param blobService Blob service for blob storage
  * @param repositoryService Repository service for MST operations
- * @param config Server configuration
+ * @param serviceDatabases Service-level database access
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                      jwtMinter:(JWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-              userDatabasePool:(PDSDatabasePool *)userDatabasePool
+                accountService:(id<PDSAccountService>)accountService
                  recordService:(PDSRecordService *)recordService
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
-                 configuration:(PDSConfiguration *)config;
+              serviceDatabases:(PDSServiceDatabases *)serviceDatabases;
 
 @end
 
