@@ -107,7 +107,9 @@
     XCTAssertEqual(op, 1);
     XCTAssertEqualObjects(msgType, @"#commit");
     XCTAssertEqualObjects(decoded[@"repo"], @"did:plc:abc123");
-    // XCTAssertEqualObjects(decoded[@"commit"], ...);  // TODO: verify CID encoding
+    CID *originalCID = event.commit;
+    CID *decodedCID = decoded[@"commit"];
+    XCTAssertEqualObjects(decodedCID, originalCID, @"Decoded CID should match original CID");
 }
 
 - (void)testDecodeIdentityEvent {
