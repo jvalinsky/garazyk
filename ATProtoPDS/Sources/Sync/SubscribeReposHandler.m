@@ -958,22 +958,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (!nodeMap || nodeMap.type != CBORTypeMap)
       continue;
 
-    CID *lCID =
-        [self extractCIDFromCBORTag:nodeMap.map[[CBORValue textString:@"l"]]];
-    if (lCID)
-      [queue addObject:[lCID bytes]];
-
-    CBORValue *eArray = nodeMap.map[[CBORValue textString:@"e"]];
-    if (eArray && eArray.type == CBORTypeArray) {
-      for (CBORValue *entry in eArray.array) {
-        if (entry.type != CBORTypeMap)
-          continue;
-        CID *tCID =
-            [self extractCIDFromCBORTag:entry.map[[CBORValue textString:@"t"]]];
-        if (tCID)
-          [queue addObject:[tCID bytes]];
-      }
-    }
+    // DO NOT RECURSE! The ATProto spec requires only *new* MST blocks for the
+    // commit. Traversing the entire tree here (O(N) operations) causes the PDS
+    // to deadlock/OOM on large repositories during high-frequency deleteRecord
+    // calls from crawlers. Missing blocks will be re-fetched by the crawler if
+    // necessary.
   }
 
   return count;
