@@ -568,7 +568,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       PDS_LOG_SYNC_WARN(@"Client requested resumption from invalid cursor: %@", cursor);
     }
   } else {
-    PDS_LOG_SYNC_DEBUG(@"No cursor requested by client, providing live updates only");
+    PDS_LOG_SYNC_INFO(@"No cursor requested by client, providing live updates only");
   }
 
   dispatch_async(self.eventQueue, ^{
@@ -681,11 +681,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     if (events.count == 0) {
       hasMore = NO;
-      PDS_LOG_SYNC_DEBUG(@"No more events to replay for connection %@", connection);
+      PDS_LOG_SYNC_INFO(@"No more events to replay for connection %@", connection);
       break;
     }
 
-    PDS_LOG_SYNC_DEBUG(@"Fetched batch of %lu events for replay (current seq: %lu)",
+    PDS_LOG_SYNC_INFO(@"Fetched batch of %lu events for replay (current seq: %lu)",
                       (unsigned long)events.count, (unsigned long)fetchCursor);
 
     for (NSDictionary *event in events) {
@@ -713,7 +713,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       }
       fetchCursor = [seq unsignedIntegerValue];
     }
-    PDS_LOG_SYNC_DEBUG(@"Completed replay batch, next cursor: %lu", (unsigned long)fetchCursor);
+    PDS_LOG_SYNC_INFO(@"Completed replay batch, next cursor: %lu", (unsigned long)fetchCursor);
 
     if (events.count < kSubscribeReposReplayBatchSize) {
       hasMore = NO;
