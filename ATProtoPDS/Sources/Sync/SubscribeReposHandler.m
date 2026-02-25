@@ -562,9 +562,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (hasCursor) {
     cursorValid = [self parseCursorString:cursor outValue:&parsedCursor];
     if (cursorValid) {
-      PDS_LOG_SYNC_INFO(@"Client requested resumption from cursor %@ (seq %lu)",
+      PDS_LOG_SYNC_INFO(@"Client requested resumption from cursor %@ (parsed as seq %lu)",
                         cursor, (unsigned long)parsedCursor);
+    } else {
+      PDS_LOG_SYNC_WARN(@"Client requested resumption from invalid cursor: %@", cursor);
     }
+  } else {
+    PDS_LOG_SYNC_DEBUG(@"No cursor requested by client, providing live updates only");
   }
 
   dispatch_async(self.eventQueue, ^{
@@ -638,6 +642,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (cursorSeq > 0) {
       NSUInteger backlog = self.sequenceNumber - cursorSeq;
       if (backlog > self.maxReplayEventsPerConnection) {
+        PDS_LOG_SYNC_WARN(@"Backlog (%lu) exceeds replay window (%lu) for connection %@",
+                         (unsigned long)backlog, (unsigned long)self.maxReplayEventsPerConnection, connection);
         [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
                              message:@"cursor backlog exceeds replay window"
                         toConnection:connection];
@@ -646,6 +652,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                            reason:kSubscribeReposErrorConsumerTooSlow];
         return;
       }
+      PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@", (unsigned long)backlog, connection);
       [self replayEventsAfterCursor:cursorSeq toConnection:connection];
     }
   });
@@ -674,8 +681,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     if (events.count == 0) {
       hasMore = NO;
+      PDS_LOG_SYNC_DEBUG(@"No more events to replay for connection %@", connection);
       break;
     }
+
+    PDS_LOG_SYNC_DEBUG(@"Fetched batch of %lu events for replay (current seq: %lu)",
+                      (unsigned long)events.count, (unsigned long)fetchCursor);
 
     for (NSDictionary *event in events) {
       NSNumber *seq = event[@"seq"];
@@ -683,6 +694,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
       replayedCount++;
       if (replayedCount > self.maxReplayEventsPerConnection) {
+        PDS_LOG_SYNC_WARN(@"Replay limit exceeded (%lu) during backfill for connection %@",
+                         (unsigned long)replayedCount, connection);
         [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
                              message:@"replay window exceeded while backfilling"
                         toConnection:connection];
@@ -694,10 +707,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
       if (![self sendEventData:data
               toConnectionWithBackpressureCheck:connection]) {
+        PDS_LOG_SYNC_WARN(@"Failed to send event %lu during replay (backpressure or closed)",
+                         (unsigned long)[seq unsignedIntegerValue]);
         return;
       }
       fetchCursor = [seq unsignedIntegerValue];
     }
+    PDS_LOG_SYNC_DEBUG(@"Completed replay batch, next cursor: %lu", (unsigned long)fetchCursor);
 
     if (events.count < kSubscribeReposReplayBatchSize) {
       hasMore = NO;
