@@ -14,6 +14,9 @@ services:
     environment:
       - PDS_PORT=2583
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - PDS_HOSTNAME=pds.garazyk.xyz
+      - PDS_DID_METHOD=did:web:pds.garazyk.xyz
+      - PDS_AVAILABLE_USER_DOMAINS=garazyk.xyz
     labels:
       - "com.garazyk.git_commit=2cbca362c315fe7184fdd2df508f0b3f7a0bff97"
     restart: unless-stopped
@@ -53,4 +56,6 @@ services:
 
 volumes:
   pds_data:
+    name: pds_pds_data
+    external: true
   plc_data:
