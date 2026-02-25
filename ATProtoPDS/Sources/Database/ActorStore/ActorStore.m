@@ -161,13 +161,26 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     int result = sqlite3_exec(self.db, [schemaSQL UTF8String], NULL, NULL, &errMsg);
 
     if (result != SQLITE_OK) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:[NSString stringWithUTF8String:errMsg]
-                                      userInfo:@{@"sqlite_code": @(result)}];
+        NSString *schemaError = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Failed to apply schema";
+        BOOL recoverableRevMigrationError = [schemaError rangeOfString:@"no such column: rev"].location != NSNotFound;
+        if (!recoverableRevMigrationError) {
+            if (error) {
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:schemaError
+                                          userInfo:@{@"sqlite_code": @(result)}];
+            }
+            if (errMsg) {
+                sqlite3_free(errMsg);
+            }
+            return NO;
         }
+
+        PDS_LOG_DB_WARN(@"Actor store schema needs revision migration for %@: %@",
+                        self.did,
+                        schemaError);
+    }
+    if (errMsg) {
         sqlite3_free(errMsg);
-        return NO;
     }
 
     // Backward-compatible schema evolution for repo revision tracking.
@@ -258,6 +271,71 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
     }
 
+    // Backward-compatible schema evolution for tombstone revision tracking.
+    tableInfoSQL = @"PRAGMA table_info(record_tombstones)";
+    tableInfoStmt = NULL;
+    tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
+    if (tableInfoResult != SQLITE_OK) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:@"Failed to inspect record_tombstones schema"
+                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
+        }
+        return NO;
+    }
+
+    BOOL hasTombstoneRevColumn = NO;
+    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
+        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
+        if (columnName && strcmp(columnName, "rev") == 0) {
+            hasTombstoneRevColumn = YES;
+            break;
+        }
+    }
+    sqlite3_finalize(tableInfoStmt);
+
+    if (!hasTombstoneRevColumn) {
+        char *alterErrMsg = NULL;
+        int alterResult = sqlite3_exec(self.db,
+                                       "ALTER TABLE record_tombstones ADD COLUMN rev TEXT",
+                                       NULL,
+                                       NULL,
+                                       &alterErrMsg);
+        if (alterResult != SQLITE_OK) {
+            if (error) {
+                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add record_tombstones.rev column";
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:msg
+                                          userInfo:@{@"sqlite_code": @(alterResult)}];
+            }
+            if (alterErrMsg) {
+                sqlite3_free(alterErrMsg);
+            }
+            return NO;
+        }
+
+        char *backfillErrMsg = NULL;
+        int backfillResult = sqlite3_exec(self.db,
+                                          "UPDATE record_tombstones "
+                                          "SET rev = COALESCE(rev, indexed_at) "
+                                          "WHERE rev IS NULL OR rev = ''",
+                                          NULL,
+                                          NULL,
+                                          &backfillErrMsg);
+        if (backfillResult != SQLITE_OK) {
+            if (error) {
+                NSString *msg = backfillErrMsg ? [NSString stringWithUTF8String:backfillErrMsg] : @"Failed to backfill record_tombstones.rev";
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                           message:msg
+                                          userInfo:@{@"sqlite_code": @(backfillResult)}];
+            }
+            if (backfillErrMsg) {
+                sqlite3_free(backfillErrMsg);
+            }
+            return NO;
+        }
+    }
+
     char *indexErrMsg = NULL;
     int indexResult = sqlite3_exec(self.db,
                                    "CREATE INDEX IF NOT EXISTS idx_records_rev ON records(rev)",
@@ -267,6 +345,44 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     if (indexResult != SQLITE_OK) {
         if (error) {
             NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create records.rev index";
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:msg
+                                      userInfo:@{@"sqlite_code": @(indexResult)}];
+        }
+        if (indexErrMsg) {
+            sqlite3_free(indexErrMsg);
+        }
+        return NO;
+    }
+
+    indexErrMsg = NULL;
+    indexResult = sqlite3_exec(self.db,
+                               "CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev)",
+                               NULL,
+                               NULL,
+                               &indexErrMsg);
+    if (indexResult != SQLITE_OK) {
+        if (error) {
+            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create record_tombstones.rev index";
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                       message:msg
+                                      userInfo:@{@"sqlite_code": @(indexResult)}];
+        }
+        if (indexErrMsg) {
+            sqlite3_free(indexErrMsg);
+        }
+        return NO;
+    }
+
+    indexErrMsg = NULL;
+    indexResult = sqlite3_exec(self.db,
+                               "CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev)",
+                               NULL,
+                               NULL,
+                               &indexErrMsg);
+    if (indexResult != SQLITE_OK) {
+        if (error) {
+            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create record_tombstones.did,rev index";
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
                                        message:msg
                                       userInfo:@{@"sqlite_code": @(indexResult)}];
