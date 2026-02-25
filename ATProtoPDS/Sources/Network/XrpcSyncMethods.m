@@ -1,347 +1,368 @@
 #import "Network/XrpcSyncMethods.h"
-#import "Network/XrpcHandler.h"
-#import "Network/XrpcAuthHelper.h"
-#import "Network/XrpcMethodRegistry.h"
-#import "App/Services/PDSRecordService.h"
+#import "App/PDSConfiguration.h"
 #import "App/Services/PDSBlobService.h"
+#import "App/Services/PDSRecordService.h"
 #import "App/Services/PDSRepositoryService.h"
-#import "Database/Service/ServiceDatabases.h"
-#import "Database/Pool/DatabasePool.h"
+#import "Auth/JWT.h"
+#import "Compat/PDSTypes.h"
+#import "Core/ATProtoValidator.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
-#import "App/PDSConfiguration.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Core/ATProtoValidator.h"
-#import "Auth/JWT.h"
+#import "Network/XrpcAuthHelper.h"
+#import "Network/XrpcHandler.h"
+#import "Network/XrpcMethodRegistry.h"
 
 static NSString *trimmedNonEmptyString(NSString *value);
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
-static BOOL parseUnsignedLongLongString(NSString *value, unsigned long long *result);
+static BOOL parseUnsignedLongLongString(NSString *value,
+                                        unsigned long long *result);
 static BOOL parseByteRangeHeader(NSString *rangeHeader,
-                                 unsigned long long totalLength,
-                                 BOOL *hasRange,
-                                 BOOL *satisfiable,
-                                 unsigned long long *start,
+                                 unsigned long long totalLength, BOOL *hasRange,
+                                 BOOL *satisfiable, unsigned long long *start,
                                  unsigned long long *end,
                                  NSString **failureReason);
-static HttpResponseBodyChunkProducer blobFileChunkProducer(NSString *path,
-                                                           unsigned long long startOffset,
-                                                           unsigned long long endOffset,
-                                                           NSError **error);
-static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse *response);
+static HttpResponseBodyChunkProducer
+blobFileChunkProducer(NSString *path, unsigned long long startOffset,
+                      unsigned long long endOffset, NSError **error);
+static void setSubscribeReposUpgradeRequired(HttpRequest *request,
+                                             HttpResponse *response);
 static NSString *normalizedHostnameString(NSString *hostInput);
-static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases, PDSConfiguration *config);
+static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
+                                        PDSConfiguration *config);
 
 static NSString *trimmedNonEmptyString(NSString *value) {
-    if (![value isKindOfClass:[NSString class]]) {
-        return nil;
-    }
-    NSString *trimmed = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return trimmed.length > 0 ? trimmed : nil;
+  if (![value isKindOfClass:[NSString class]]) {
+    return nil;
+  }
+  NSString *trimmed = [value
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]];
+  return trimmed.length > 0 ? trimmed : nil;
 }
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result) {
-    NSString *trimmed = trimmedNonEmptyString(value);
-    if (trimmed.length == 0) {
-        return NO;
-    }
+  NSString *trimmed = trimmedNonEmptyString(value);
+  if (trimmed.length == 0) {
+    return NO;
+  }
 
-    NSScanner *scanner = [NSScanner scannerWithString:trimmed];
-    scanner.charactersToBeSkipped = nil;
-    
-    NSInteger parsed = 0;
-    if (![scanner scanInteger:&parsed] || !scanner.isAtEnd) {
-        return NO;
-    }
+  NSScanner *scanner = [NSScanner scannerWithString:trimmed];
+  scanner.charactersToBeSkipped = nil;
 
-    if (result) {
-        *result = parsed;
-    }
-    return YES;
+  NSInteger parsed = 0;
+  if (![scanner scanInteger:&parsed] || !scanner.isAtEnd) {
+    return NO;
+  }
+
+  if (result) {
+    *result = parsed;
+  }
+  return YES;
 }
 
-static BOOL parseUnsignedLongLongString(NSString *value, unsigned long long *result) {
-    NSString *trimmed = trimmedNonEmptyString(value);
-    if (trimmed.length == 0) {
-        return NO;
-    }
+static BOOL parseUnsignedLongLongString(NSString *value,
+                                        unsigned long long *result) {
+  NSString *trimmed = trimmedNonEmptyString(value);
+  if (trimmed.length == 0) {
+    return NO;
+  }
 
-    errno = 0;
-    char *end = NULL;
-    unsigned long long parsed = strtoull(trimmed.UTF8String, &end, 10);
-    if (errno != 0 || !end || end == trimmed.UTF8String || *end != '\0') {
-        return NO;
-    }
+  errno = 0;
+  char *end = NULL;
+  unsigned long long parsed = strtoull(trimmed.UTF8String, &end, 10);
+  if (errno != 0 || !end || end == trimmed.UTF8String || *end != '\0') {
+    return NO;
+  }
 
-    if (result) {
-        *result = parsed;
-    }
-    return YES;
+  if (result) {
+    *result = parsed;
+  }
+  return YES;
 }
 
 static BOOL parseByteRangeHeader(NSString *rangeHeader,
-                                 unsigned long long totalLength,
-                                 BOOL *hasRange,
-                                 BOOL *satisfiable,
-                                 unsigned long long *start,
+                                 unsigned long long totalLength, BOOL *hasRange,
+                                 BOOL *satisfiable, unsigned long long *start,
                                  unsigned long long *end,
                                  NSString **failureReason) {
-    if (hasRange) {
-        *hasRange = NO;
-    }
-    if (satisfiable) {
-        *satisfiable = YES;
-    }
-    if (start) {
-        *start = 0;
-    }
-    if (end) {
-        *end = totalLength > 0 ? (totalLength - 1) : 0;
-    }
+  if (hasRange) {
+    *hasRange = NO;
+  }
+  if (satisfiable) {
+    *satisfiable = YES;
+  }
+  if (start) {
+    *start = 0;
+  }
+  if (end) {
+    *end = totalLength > 0 ? (totalLength - 1) : 0;
+  }
+  if (failureReason) {
+    *failureReason = nil;
+  }
+
+  NSString *trimmedRange = trimmedNonEmptyString(rangeHeader);
+  if (trimmedRange.length == 0) {
+    return YES;
+  }
+
+  if (hasRange) {
+    *hasRange = YES;
+  }
+
+  if (![trimmedRange.lowercaseString hasPrefix:@"bytes="]) {
     if (failureReason) {
-        *failureReason = nil;
+      *failureReason = @"Range header must use bytes units";
     }
+    return NO;
+  }
 
-    NSString *trimmedRange = trimmedNonEmptyString(rangeHeader);
-    if (trimmedRange.length == 0) {
-        return YES;
+  NSString *spec = [trimmedRange substringFromIndex:6];
+  if ([spec containsString:@","]) {
+    if (failureReason) {
+      *failureReason = @"Multiple ranges are not supported";
     }
+    return NO;
+  }
 
-    if (hasRange) {
-        *hasRange = YES;
+  NSRange dashRange = [spec rangeOfString:@"-"];
+  if (dashRange.location == NSNotFound) {
+    if (failureReason) {
+      *failureReason = @"Range header is malformed";
     }
+    return NO;
+  }
 
-    if (![trimmedRange.lowercaseString hasPrefix:@"bytes="]) {
-        if (failureReason) {
-            *failureReason = @"Range header must use bytes units";
-        }
-        return NO;
+  NSString *startPart = [spec substringToIndex:dashRange.location];
+  NSString *endPart = [spec substringFromIndex:dashRange.location + 1];
+  if (startPart.length == 0 && endPart.length == 0) {
+    if (failureReason) {
+      *failureReason = @"Range header is malformed";
     }
+    return NO;
+  }
 
-    NSString *spec = [trimmedRange substringFromIndex:6];
-    if ([spec containsString:@","]) {
-        if (failureReason) {
-            *failureReason = @"Multiple ranges are not supported";
-        }
-        return NO;
-    }
-
-    NSRange dashRange = [spec rangeOfString:@"-"];
-    if (dashRange.location == NSNotFound) {
-        if (failureReason) {
-            *failureReason = @"Range header is malformed";
-        }
-        return NO;
-    }
-
-    NSString *startPart = [spec substringToIndex:dashRange.location];
-    NSString *endPart = [spec substringFromIndex:dashRange.location + 1];
-    if (startPart.length == 0 && endPart.length == 0) {
-        if (failureReason) {
-            *failureReason = @"Range header is malformed";
-        }
-        return NO;
-    }
-
-    if (totalLength == 0) {
-        if (satisfiable) {
-            *satisfiable = NO;
-        }
-        return YES;
-    }
-
-    if (startPart.length > 0) {
-        unsigned long long parsedStart = 0;
-        if (!parseUnsignedLongLongString(startPart, &parsedStart)) {
-            if (failureReason) {
-                *failureReason = @"Range start is invalid";
-            }
-            return NO;
-        }
-
-        unsigned long long parsedEnd = totalLength - 1;
-        if (endPart.length > 0) {
-            if (!parseUnsignedLongLongString(endPart, &parsedEnd)) {
-                if (failureReason) {
-                    *failureReason = @"Range end is invalid";
-                }
-                return NO;
-            }
-        }
-
-        if (parsedStart >= totalLength) {
-            if (satisfiable) {
-                *satisfiable = NO;
-            }
-            return YES;
-        }
-        if (parsedEnd < parsedStart) {
-            if (satisfiable) {
-                *satisfiable = NO;
-            }
-            return YES;
-        }
-        if (parsedEnd >= totalLength) {
-            parsedEnd = totalLength - 1;
-        }
-
-        if (start) {
-            *start = parsedStart;
-        }
-        if (end) {
-            *end = parsedEnd;
-        }
-        return YES;
-    }
-
-    unsigned long long suffixLength = 0;
-    if (!parseUnsignedLongLongString(endPart, &suffixLength) || suffixLength == 0) {
-        if (satisfiable) {
-            *satisfiable = NO;
-        }
-        return YES;
-    }
-
-    unsigned long long parsedStart = (suffixLength >= totalLength) ? 0 : (totalLength - suffixLength);
-    if (start) {
-        *start = parsedStart;
-    }
-    if (end) {
-        *end = totalLength - 1;
+  if (totalLength == 0) {
+    if (satisfiable) {
+      *satisfiable = NO;
     }
     return YES;
-}
+  }
 
-static HttpResponseBodyChunkProducer blobFileChunkProducer(NSString *path,
-                                                           unsigned long long startOffset,
-                                                           unsigned long long endOffset,
-                                                           NSError **error) {
-    NSFileHandle *fileHandle = [NSFileHandle fileHandleForReadingAtPath:path];
-    if (!fileHandle) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"XrpcBlobStream"
-                                         code:1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open blob file for streaming"}];
-        }
-        return nil;
+  if (startPart.length > 0) {
+    unsigned long long parsedStart = 0;
+    if (!parseUnsignedLongLongString(startPart, &parsedStart)) {
+      if (failureReason) {
+        *failureReason = @"Range start is invalid";
+      }
+      return NO;
     }
 
+    unsigned long long parsedEnd = totalLength - 1;
+    if (endPart.length > 0) {
+      if (!parseUnsignedLongLongString(endPart, &parsedEnd)) {
+        if (failureReason) {
+          *failureReason = @"Range end is invalid";
+        }
+        return NO;
+      }
+    }
+
+    if (parsedStart >= totalLength) {
+      if (satisfiable) {
+        *satisfiable = NO;
+      }
+      return YES;
+    }
+    if (parsedEnd < parsedStart) {
+      if (satisfiable) {
+        *satisfiable = NO;
+      }
+      return YES;
+    }
+    if (parsedEnd >= totalLength) {
+      parsedEnd = totalLength - 1;
+    }
+
+    if (start) {
+      *start = parsedStart;
+    }
+    if (end) {
+      *end = parsedEnd;
+    }
+    return YES;
+  }
+
+  unsigned long long suffixLength = 0;
+  if (!parseUnsignedLongLongString(endPart, &suffixLength) ||
+      suffixLength == 0) {
+    if (satisfiable) {
+      *satisfiable = NO;
+    }
+    return YES;
+  }
+
+  unsigned long long parsedStart =
+      (suffixLength >= totalLength) ? 0 : (totalLength - suffixLength);
+  if (start) {
+    *start = parsedStart;
+  }
+  if (end) {
+    *end = totalLength - 1;
+  }
+  return YES;
+}
+
+static HttpResponseBodyChunkProducer
+blobFileChunkProducer(NSString *path, unsigned long long startOffset,
+                      unsigned long long endOffset, NSError **error) {
+  NSFileHandle *fileHandle = [NSFileHandle fileHandleForReadingAtPath:path];
+  if (!fileHandle) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"XrpcBlobStream"
+                                   code:1
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Failed to open blob file for streaming"
+                               }];
+    }
+    return nil;
+  }
+
+  @try {
+    [fileHandle seekToFileOffset:startOffset];
+  } @catch (NSException *exception) {
     @try {
-        [fileHandle seekToFileOffset:startOffset];
-    } @catch (NSException *exception) {
+      [fileHandle closeFile];
+    } @catch (__unused NSException *closeException) {
+    }
+    if (error) {
+      *error = [NSError errorWithDomain:@"XrpcBlobStream"
+                                   code:2
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey : exception.reason
+                                     ?: @"Failed to seek blob file"
+                               }];
+    }
+    return nil;
+  }
+
+  __block NSFileHandle *capturedHandle = fileHandle;
+  __block unsigned long long bytesRemaining =
+      (endOffset >= startOffset) ? (endOffset - startOffset + 1) : 0;
+  static const NSUInteger kBlobChunkSize = 64 * 1024;
+
+  return ^NSData *_Nullable(NSError **producerError) {
+    if (!capturedHandle || bytesRemaining == 0) {
+      if (capturedHandle) {
         @try {
-            [fileHandle closeFile];
+          [capturedHandle closeFile];
         } @catch (__unused NSException *closeException) {
         }
-        if (error) {
-            *error = [NSError errorWithDomain:@"XrpcBlobStream"
-                                         code:2
-                                     userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Failed to seek blob file"}];
-        }
-        return nil;
+        capturedHandle = nil;
+      }
+      return nil;
     }
 
-    __block NSFileHandle *capturedHandle = fileHandle;
-    __block unsigned long long bytesRemaining = (endOffset >= startOffset) ? (endOffset - startOffset + 1) : 0;
-    static const NSUInteger kBlobChunkSize = 64 * 1024;
+    NSUInteger readLength =
+        (NSUInteger)MIN((unsigned long long)kBlobChunkSize, bytesRemaining);
+    NSData *chunk = [capturedHandle readDataOfLength:readLength];
+    if (chunk.length == 0) {
+      @try {
+        [capturedHandle closeFile];
+      } @catch (__unused NSException *closeException) {
+      }
+      capturedHandle = nil;
+      if (producerError && bytesRemaining > 0) {
+        *producerError =
+            [NSError errorWithDomain:@"XrpcBlobStream"
+                                code:3
+                            userInfo:@{
+                              NSLocalizedDescriptionKey :
+                                  @"Unexpected end-of-file while streaming blob"
+                            }];
+      }
+      bytesRemaining = 0;
+      return nil;
+    }
 
-    return ^NSData * _Nullable (NSError **producerError) {
-        if (!capturedHandle || bytesRemaining == 0) {
-            if (capturedHandle) {
-                @try {
-                    [capturedHandle closeFile];
-                } @catch (__unused NSException *closeException) {
-                }
-                capturedHandle = nil;
-            }
-            return nil;
-        }
+    bytesRemaining -= (unsigned long long)chunk.length;
+    if (bytesRemaining == 0) {
+      @try {
+        [capturedHandle closeFile];
+      } @catch (__unused NSException *closeException) {
+      }
+      capturedHandle = nil;
+    }
 
-        NSUInteger readLength = (NSUInteger)MIN((unsigned long long)kBlobChunkSize, bytesRemaining);
-        NSData *chunk = [capturedHandle readDataOfLength:readLength];
-        if (chunk.length == 0) {
-            @try {
-                [capturedHandle closeFile];
-            } @catch (__unused NSException *closeException) {
-            }
-            capturedHandle = nil;
-            if (producerError && bytesRemaining > 0) {
-                *producerError = [NSError errorWithDomain:@"XrpcBlobStream"
-                                                     code:3
-                                                 userInfo:@{NSLocalizedDescriptionKey: @"Unexpected end-of-file while streaming blob"}];
-            }
-            bytesRemaining = 0;
-            return nil;
-        }
-
-        bytesRemaining -= (unsigned long long)chunk.length;
-        if (bytesRemaining == 0) {
-            @try {
-                [capturedHandle closeFile];
-            } @catch (__unused NSException *closeException) {
-            }
-            capturedHandle = nil;
-        }
-
-        return chunk;
-    };
+    return chunk;
+  };
 }
 
-static void setSubscribeReposUpgradeRequired(HttpRequest *request, HttpResponse *response) {
-    if (request.method != HttpMethodGET) {
-        response.statusCode = HttpStatusMethodNotAllowed;
-        [response setHeader:@"GET" forKey:@"Allow"];
-        [response setJsonBody:@{
-            @"error": @"MethodNotAllowed",
-            @"message": @"subscribeRepos only supports GET"
-        }];
-        return;
-    }
-
-    response.statusCode = 426;
-    [response setHeader:@"websocket" forKey:@"Upgrade"];
-    [response setHeader:@"Upgrade" forKey:@"Connection"];
+static void setSubscribeReposUpgradeRequired(HttpRequest *request,
+                                             HttpResponse *response) {
+  if (request.method != HttpMethodGET) {
+    response.statusCode = HttpStatusMethodNotAllowed;
+    [response setHeader:@"GET" forKey:@"Allow"];
     [response setJsonBody:@{
-        @"error": @"UpgradeRequired",
-        @"message": @"WebSocket upgrade required for subscribeRepos"
+      @"error" : @"MethodNotAllowed",
+      @"message" : @"subscribeRepos only supports GET"
     }];
-    response.keepAlive = NO;
+    return;
+  }
+
+  response.statusCode = 426;
+  [response setHeader:@"websocket" forKey:@"Upgrade"];
+  [response setHeader:@"Upgrade" forKey:@"Connection"];
+  [response setJsonBody:@{
+    @"error" : @"UpgradeRequired",
+    @"message" : @"WebSocket upgrade required for subscribeRepos"
+  }];
+  response.keepAlive = NO;
 }
 
 static NSString *normalizedHostnameString(NSString *hostInput) {
-    if (![hostInput isKindOfClass:[NSString class]]) {
-        return @"localhost";
-    }
+  if (![hostInput isKindOfClass:[NSString class]]) {
+    return @"localhost";
+  }
 
-    NSString *trimmed = [hostInput stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    if (trimmed.length == 0) {
-        return @"localhost";
-    }
+  NSString *trimmed = [hostInput
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]];
+  if (trimmed.length == 0) {
+    return @"localhost";
+  }
 
-    NSString *urlString = trimmed;
-    if ([trimmed rangeOfString:@"://"].location == NSNotFound) {
-        urlString = [@"https://" stringByAppendingString:trimmed];
-    }
+  NSString *urlString = trimmed;
+  if ([trimmed rangeOfString:@"://"].location == NSNotFound) {
+    urlString = [@"https://" stringByAppendingString:trimmed];
+  }
 
-    NSURLComponents *components = [NSURLComponents componentsWithString:urlString];
-    NSString *hostname = components.host ?: trimmed;
-    if ([[hostname lowercaseString] isEqualToString:@"0.0.0.0"]) {
-        return @"localhost";
-    }
-    return [hostname lowercaseString];
+  NSURLComponents *components =
+      [NSURLComponents componentsWithString:urlString];
+  NSString *hostname = components.host ?: trimmed;
+  if ([[hostname lowercaseString] isEqualToString:@"0.0.0.0"]) {
+    return @"localhost";
+  }
+  return [hostname lowercaseString];
 }
 
-static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases, PDSConfiguration *config) {
-    NSError *accountsError = nil;
-    NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
-    NSInteger accountCount = accounts ? (NSInteger)accounts.count : 0;
-    return @{
-        @"hostname": normalizedHostnameString(config.serverHost ?: @"localhost"),
-        @"seq": @0,
-        @"accountCount": @(MAX(accountCount, 0)),
-        @"status": @"active"
-    };
+static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
+                                        PDSConfiguration *config) {
+  NSError *accountsError = nil;
+  NSArray<PDSDatabaseAccount *> *accounts =
+      [serviceDatabases getAllAccountsWithError:&accountsError];
+  NSInteger accountCount = accounts ? (NSInteger)accounts.count : 0;
+  return @{
+    @"hostname" : normalizedHostnameString(config.serverHost ?: @"localhost"),
+    @"seq" : @0,
+    @"accountCount" : @(MAX(accountCount, 0)),
+    @"status" : @"active"
+  };
 }
 
 @implementation XrpcSyncMethods
@@ -355,527 +376,685 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases, P
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
                  configuration:(PDSConfiguration *)config {
-    
-    // com.atproto.sync.getRepo
-    [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *sinceRev = [request queryParamForKey:@"since"];
-        if (did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
+
+  // com.atproto.sync.getRepo
+  [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request,
+                                              HttpResponse *response) {
+    NSString *did = [request queryParamForKey:@"did"];
+    NSString *sinceRev = [request queryParamForKey:@"since"];
+    if (did.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did"
+      }];
+      return;
+    }
+
+    NSError *exportError = nil;
+    PDSRepoChunkProducer producer =
+        [repositoryService repoContentsChunkProducer:did
+                                               since:sinceRev
+                                               error:&exportError];
+    if (!producer) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : exportError.localizedDescription ?: @"Repository not found"
+      }];
+      return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    response.contentType = @"application/vnd.ipld.car";
+    [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+  }];
+
+  // com.atproto.sync.getCheckout
+  [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request,
+                                                  HttpResponse *response) {
+    NSString *did = [request queryParamForKey:@"did"];
+    if (did.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did"
+      }];
+      return;
+    }
+
+    NSError *error = nil;
+    NSData *repoData =
+        [repositoryService getRepoContents:did since:nil error:&error];
+    if (!repoData || error) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : error.localizedDescription ?: @"Repository not found"
+      }];
+      return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    response.contentType = @"application/vnd.ipld.car";
+    [response setBodyData:repoData];
+  }];
+
+  // com.atproto.sync.getHead
+  [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request,
+                                              HttpResponse *response) {
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                   jwtMinter:jwtMinter
+                                             adminController:adminController
+                                                     request:request
+                                                    response:response];
+    if (!did) {
+      if (response.statusCode == HttpStatusOK) {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+          @"error" : @"AuthRequired",
+          @"message" : @"Valid authorization required"
+        }];
+      }
+      return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *latest =
+        [repositoryService getLatestCommitForDid:did error:&error];
+    if (error || !latest) {
+      response.statusCode = 404;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : @"Repository not found"
+      }];
+      return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{@"root" : latest[@"cid"] ?: @""}];
+  }];
+
+  // com.atproto.sync.getHostStatus
+  [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request,
+                                                    HttpResponse *response) {
+    NSString *hostnameParam = [request queryParamForKey:@"hostname"];
+    if (hostnameParam.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing hostname"
+      }];
+      return;
+    }
+
+    NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
+    NSString *requested = normalizedHostnameString(hostnameParam);
+    NSString *local = hostEntry[@"hostname"];
+    if (![requested isEqualToString:local]) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"HostNotFound",
+        @"message" : @"Host not found"
+      }];
+      return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:hostEntry];
+  }];
+
+  // com.atproto.sync.listHosts
+  [dispatcher registerComAtprotoSyncListHosts:^(HttpRequest *request,
+                                                HttpResponse *response) {
+    NSString *limitParam = [request queryParamForKey:@"limit"];
+    NSInteger limit = 200;
+    if (limitParam.length > 0) {
+      if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 ||
+          limit > 1000) {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+          @"error" : @"InvalidRequest",
+          @"message" : @"limit must be an integer between 1 and 1000"
+        }];
+        return;
+      }
+    }
+
+    NSString *cursorParam = [request queryParamForKey:@"cursor"];
+    NSInteger startIndex = 0;
+    if (cursorParam.length > 0) {
+      if (!parseStrictIntegerString(cursorParam, &startIndex) ||
+          startIndex < 0) {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+          @"error" : @"InvalidRequest",
+          @"message" : @"cursor must be a non-negative integer"
+        }];
+        return;
+      }
+    }
+
+    NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
+    NSMutableArray<NSDictionary *> *hosts = [NSMutableArray array];
+    NSInteger totalHosts = 1;
+    NSInteger scanIndex = MIN(startIndex, totalHosts);
+    while (scanIndex < totalHosts && hosts.count < (NSUInteger)limit) {
+      [hosts addObject:hostEntry];
+      scanIndex += 1;
+    }
+
+    NSMutableDictionary *result =
+        [NSMutableDictionary dictionaryWithObject:hosts forKey:@"hosts"];
+    if (scanIndex < totalHosts) {
+      result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:result];
+  }];
+
+  // com.atproto.sync.listRepos
+  [dispatcher registerComAtprotoSyncListRepos:^(HttpRequest *request,
+                                                HttpResponse *response) {
+    NSString *limitParam = [request queryParamForKey:@"limit"];
+    NSInteger limit = 500;
+    if (limitParam.length > 0) {
+      if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 ||
+          limit > 1000) {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+          @"error" : @"InvalidRequest",
+          @"message" : @"limit must be an integer between 1 and 1000"
+        }];
+        return;
+      }
+    }
+
+    NSString *cursorParam = [request queryParamForKey:@"cursor"];
+    NSInteger startIndex = 0;
+    if (cursorParam.length > 0) {
+      if (!parseStrictIntegerString(cursorParam, &startIndex) ||
+          startIndex < 0) {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+          @"error" : @"InvalidRequest",
+          @"message" : @"cursor must be a non-negative integer"
+        }];
+        return;
+      }
+    }
+
+    NSError *accountsError = nil;
+    NSArray<PDSDatabaseAccount *> *accounts =
+        [serviceDatabases getAllAccountsWithError:&accountsError];
+    if (!accounts) {
+      response.statusCode = HttpStatusInternalServerError;
+      [response setJsonBody:@{
+        @"error" : @"DatabaseUnavailable",
+        @"message" : accountsError.localizedDescription
+            ?: @"Failed to load accounts"
+      }];
+      return;
+    }
+
+    NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
+    NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
+    while (scanIndex < (NSInteger)accounts.count &&
+           repos.count < (NSUInteger)limit) {
+      PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
+      if (account.did.length > 0) {
+        NSDictionary *latest =
+            [repositoryService getLatestCommitForDid:account.did error:nil];
+        if (!latest) {
+          (void)[repositoryService initializeRepoForDid:account.did error:nil];
+          latest =
+              [repositoryService getLatestCommitForDid:account.did error:nil];
         }
 
-        NSError *exportError = nil;
-        PDSRepoChunkProducer producer = [repositoryService repoContentsChunkProducer:did
-                                                                               since:sinceRev
-                                                                               error:&exportError];
-        if (!producer) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound",
-                                    @"message": exportError.localizedDescription ?: @"Repository not found"}];
-            return;
+        NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]]
+                             ? latest[@"cid"]
+                             : nil;
+        NSString *rev = [latest[@"rev"] isKindOfClass:[NSString class]]
+                            ? latest[@"rev"]
+                            : @"";
+        if (head.length > 0) {
+          [repos addObject:@{
+            @"did" : account.did,
+            @"head" : head,
+            @"rev" : rev,
+            @"active" : @YES
+          }];
         }
+      }
+      scanIndex += 1;
+    }
 
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
-    }];
+    NSMutableDictionary *result =
+        [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
+    if (scanIndex < (NSInteger)accounts.count) {
+      result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+    }
 
-    // com.atproto.sync.getCheckout
-    [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:result];
+  }];
+
+  // com.atproto.sync.getRepoStatus
+  [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request,
+                                                    HttpResponse *response) {
+    NSString *did = [request queryParamForKey:@"did"];
+    if (did.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did"
+      }];
+      return;
+    }
+
+    NSError *validateError = nil;
+    if (![ATProtoValidator validateDID:did error:&validateError]) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : validateError.localizedDescription ?: @"Invalid did"
+      }];
+      return;
+    }
+
+    NSError *accountError = nil;
+    PDSDatabaseAccount *account =
+        [serviceDatabases getAccountByDid:did error:&accountError];
+    if (!account) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : accountError.localizedDescription
+            ?: @"Repository not found"
+      }];
+      return;
+    }
+
+    NSDictionary *latest =
+        [repositoryService getLatestCommitForDid:did error:nil];
+    NSMutableDictionary *body = [NSMutableDictionary
+        dictionaryWithObjectsAndKeys:did, @"did", @YES, @"active", nil];
+    if (latest[@"rev"]) {
+      body[@"rev"] = latest[@"rev"];
+    }
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:body];
+  }];
+
+  // com.atproto.sync.listReposByCollection
+  [dispatcher registerComAtprotoSyncListReposByCollection:^(
+                  HttpRequest *request, HttpResponse *response) {
+    NSString *collection = [request queryParamForKey:@"collection"];
+    if (collection.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing collection"
+      }];
+      return;
+    }
+
+    NSError *nsidError = nil;
+    if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : nsidError.localizedDescription ?: @"Invalid collection"
+      }];
+      return;
+    }
+
+    NSString *limitParam = [request queryParamForKey:@"limit"];
+    NSInteger limit = 500;
+    if (limitParam.length > 0) {
+      if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 ||
+          limit > 2000) {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+          @"error" : @"InvalidRequest",
+          @"message" : @"limit must be an integer between 1 and 2000"
+        }];
+        return;
+      }
+    }
+
+    NSString *cursorParam = [request queryParamForKey:@"cursor"];
+    NSInteger startIndex = 0;
+    if (cursorParam.length > 0) {
+      if (!parseStrictIntegerString(cursorParam, &startIndex) ||
+          startIndex < 0) {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+          @"error" : @"InvalidRequest",
+          @"message" : @"cursor must be a non-negative integer"
+        }];
+        return;
+      }
+    }
+
+    NSError *accountsError = nil;
+    NSArray<PDSDatabaseAccount *> *accounts =
+        [serviceDatabases getAllAccountsWithError:&accountsError];
+    if (!accounts) {
+      response.statusCode = HttpStatusInternalServerError;
+      [response setJsonBody:@{
+        @"error" : @"DatabaseUnavailable",
+        @"message" : accountsError.localizedDescription
+            ?: @"Failed to load accounts"
+      }];
+      return;
+    }
+
+    NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
+    NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
+    while (scanIndex < (NSInteger)accounts.count &&
+           repos.count < (NSUInteger)limit) {
+      PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
+      if (account.did.length > 0) {
+        NSError *storeError = nil;
+        PDSActorStore *store =
+            [userDatabasePool storeForDid:account.did error:&storeError];
+        if (store) {
+          NSArray<PDSDatabaseRecord *> *records =
+              [store listRecordsForDid:account.did
+                            collection:collection
+                                 limit:1
+                                offset:0
+                                 error:nil];
+          if (records.count > 0) {
+            [repos addObject:@{@"did" : account.did}];
+          }
         }
+      }
+      scanIndex += 1;
+    }
 
-        NSError *error = nil;
-        NSData *repoData = [repositoryService getRepoContents:did since:nil error:&error];
-        if (!repoData || error) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": error.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
+    NSMutableDictionary *result =
+        [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
+    if (scanIndex < (NSInteger)accounts.count) {
+      result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+    }
 
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyData:repoData];
-    }];
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:result];
+  }];
 
-    // com.atproto.sync.getHead
-    [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
-                                                         request:request
-                                                        response:response];
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
-            return;
-        }
+  // com.atproto.sync.listBlobs
+  [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request,
+                                                HttpResponse *response) {
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                   jwtMinter:jwtMinter
+                                             adminController:adminController
+                                                     request:request
+                                                    response:response];
+    if (!did) {
+      if (response.statusCode == HttpStatusOK) {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+          @"error" : @"AuthRequired",
+          @"message" : @"Valid authorization required"
+        }];
+      }
+      return;
+    }
 
-        NSError *error = nil;
-        NSDictionary *latest = [repositoryService getLatestCommitForDid:did error:&error];
-        if (error || !latest) {
-            response.statusCode = 404;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
-            return;
-        }
+    NSString *limitStr = [request queryParamForKey:@"limit"];
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+    NSUInteger limit = limitStr ? [limitStr integerValue] : 500;
+    if (limit > 1000) {
+      limit = 1000;
+    }
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"root": latest[@"cid"] ?: @""}];
-    }];
+    NSError *error = nil;
+    NSArray *blobs = [blobService listBlobsForDID:did
+                                            limit:limit
+                                           cursor:cursor
+                                            error:&error];
+    if (error) {
+      response.statusCode = 400;
+      [response setJsonBody:@{
+        @"error" : @"ListBlobsFailed",
+        @"message" : error.localizedDescription
+      }];
+      return;
+    }
 
-    // com.atproto.sync.getHostStatus
-    [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request, HttpResponse *response) {
-        NSString *hostnameParam = [request queryParamForKey:@"hostname"];
-        if (hostnameParam.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
-            return;
-        }
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{@"blobs" : blobs ?: @[]}];
+  }];
 
-        NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
-        NSString *requested = normalizedHostnameString(hostnameParam);
-        NSString *local = hostEntry[@"hostname"];
-        if (![requested isEqualToString:local]) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"HostNotFound", @"message": @"Host not found"}];
-            return;
-        }
+  // com.atproto.sync.getBlob
+  [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request,
+                                              HttpResponse *response) {
+    NSString *did = [request queryParamForKey:@"did"];
+    NSString *cid = [request queryParamForKey:@"cid"];
+    if (did.length == 0 || cid.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did or cid"
+      }];
+      return;
+    }
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:hostEntry];
-    }];
+    NSError *blobError = nil;
+    NSDictionary *result =
+        [blobService getBlobStreamWithCID:cid did:did error:&blobError];
+    if (!result && !blobError) {
+      result = [blobService getBlobWithCID:cid did:did error:&blobError];
+    }
+    if (!result) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"BlobRetrievalFailed",
+        @"message" : blobError.localizedDescription ?: @"Blob not found"
+      }];
+      return;
+    }
 
-    // com.atproto.sync.listHosts
-    [dispatcher registerComAtprotoSyncListHosts:^(HttpRequest *request, HttpResponse *response) {
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        NSInteger limit = 200;
-        if (limitParam.length > 0) {
-            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 1000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
-                return;
-            }
-        }
+    NSString *mimeType = result[@"mimeType"] ?: @"application/octet-stream";
+    NSString *filePath = result[@"filePath"];
+    NSData *blobData = result[@"blob"];
+    unsigned long long totalLength = [result[@"size"] unsignedLongLongValue];
 
-        NSString *cursorParam = [request queryParamForKey:@"cursor"];
-        NSInteger startIndex = 0;
-        if (cursorParam.length > 0) {
-            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
-                return;
-            }
-        }
+    if (totalLength == 0 && [filePath isKindOfClass:[NSString class]] &&
+        filePath.length > 0) {
+      NSDictionary *attributes =
+          [[NSFileManager defaultManager] attributesOfItemAtPath:filePath
+                                                           error:nil];
+      totalLength = [attributes[NSFileSize] unsignedLongLongValue];
+    }
+    if (totalLength == 0 && [blobData isKindOfClass:[NSData class]]) {
+      totalLength = blobData.length;
+    }
 
-        NSDictionary *hostEntry = localSyncHostEntry(serviceDatabases, config);
-        NSMutableArray<NSDictionary *> *hosts = [NSMutableArray array];
-        NSInteger totalHosts = 1;
-        NSInteger scanIndex = MIN(startIndex, totalHosts);
-        while (scanIndex < totalHosts && hosts.count < (NSUInteger)limit) {
-            [hosts addObject:hostEntry];
-            scanIndex += 1;
-        }
+    response.contentType = mimeType;
+    [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
 
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:hosts forKey:@"hosts"];
-        if (scanIndex < totalHosts) {
-            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
-        }
+    BOOL hasRange = NO;
+    BOOL satisfiable = YES;
+    unsigned long long start = 0;
+    unsigned long long end = totalLength > 0 ? (totalLength - 1) : 0;
+    NSString *rangeFailureReason = nil;
+    BOOL validRange = parseByteRangeHeader([request headerForKey:@"Range"],
+                                           totalLength, &hasRange, &satisfiable,
+                                           &start, &end, &rangeFailureReason);
+    if (!validRange) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRange",
+        @"message" : rangeFailureReason ?: @"Range header is invalid"
+      }];
+      return;
+    }
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
+    if (hasRange && !satisfiable) {
+      response.statusCode = 416;
+      response.statusMessage = @"Range Not Satisfiable";
+      [response
+          setHeader:[NSString stringWithFormat:@"bytes */%llu", totalLength]
+             forKey:@"Content-Range"];
+      return;
+    }
 
-    // com.atproto.sync.listRepos
-    [dispatcher registerComAtprotoSyncListRepos:^(HttpRequest *request, HttpResponse *response) {
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        NSInteger limit = 500;
-        if (limitParam.length > 0) {
-            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 1000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 1000"}];
-                return;
-            }
-        }
+    if (hasRange) {
+      response.statusCode = 206;
+      response.statusMessage = @"Partial Content";
+      [response setHeader:[NSString stringWithFormat:@"bytes %llu-%llu/%llu",
+                                                     start, end, totalLength]
+                   forKey:@"Content-Range"];
+    } else {
+      response.statusCode = HttpStatusOK;
+    }
 
-        NSString *cursorParam = [request queryParamForKey:@"cursor"];
-        NSInteger startIndex = 0;
-        if (cursorParam.length > 0) {
-            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
-                return;
-            }
-        }
+    if ([filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
+      NSError *streamError = nil;
+      HttpResponseBodyChunkProducer producer =
+          blobFileChunkProducer(filePath, start, end, &streamError);
+      if (!producer) {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+          @"error" : @"BlobReadFailed",
+          @"message" : streamError.localizedDescription
+              ?: @"Failed to stream blob"
+        }];
+        return;
+      }
+      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+      return;
+    }
 
-        NSError *accountsError = nil;
-        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
-        if (!accounts) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
-            return;
-        }
+    if (![blobData isKindOfClass:[NSData class]]) {
+      response.statusCode = HttpStatusInternalServerError;
+      [response setJsonBody:@{
+        @"error" : @"BlobReadFailed",
+        @"message" : @"Blob payload unavailable"
+      }];
+      return;
+    }
 
-        NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-        NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
-        while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
-            PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-            if (account.did.length > 0) {
-                NSDictionary *latest = [repositoryService getLatestCommitForDid:account.did error:nil];
-                if (!latest) {
-                    (void)[repositoryService initializeRepoForDid:account.did error:nil];
-                    latest = [repositoryService getLatestCommitForDid:account.did error:nil];
-                }
+    if (hasRange) {
+      NSUInteger offset = (NSUInteger)start;
+      NSUInteger length = (NSUInteger)(end - start + 1);
+      [response
+          setBodyData:[blobData subdataWithRange:NSMakeRange(offset, length)]];
+      return;
+    }
 
-                NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]] ? latest[@"cid"] : nil;
-                NSString *rev = [latest[@"rev"] isKindOfClass:[NSString class]] ? latest[@"rev"] : @"";
-                if (head.length > 0) {
-                    [repos addObject:@{
-                        @"did": account.did,
-                        @"head": head,
-                        @"rev": rev,
-                        @"active": @YES
-                    }];
-                }
-            }
-            scanIndex += 1;
-        }
+    [response setBodyData:blobData];
+  }];
 
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
-        if (scanIndex < (NSInteger)accounts.count) {
-            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
-        }
+  // com.atproto.sync.subscribeRepos
+  [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request,
+                                                     HttpResponse *response) {
+    setSubscribeReposUpgradeRequired(request, response);
+  }];
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
+  // com.atproto.sync.getRecord
+  [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request,
+                                                HttpResponse *response) {
+    if (request.method != HttpMethodGET) {
+      response.statusCode = HttpStatusMethodNotAllowed;
+      [response setHeader:@"GET" forKey:@"Allow"];
+      [response setJsonBody:@{
+        @"error" : @"MethodNotAllowed",
+        @"message" : @"Expected GET"
+      }];
+      return;
+    }
 
-    // com.atproto.sync.getRepoStatus
-    [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
+    NSString *did = [request queryParamForKey:@"did"];
+    NSString *collection = [request queryParamForKey:@"collection"];
+    NSString *rkey = [request queryParamForKey:@"rkey"];
+    if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did, collection, or rkey"
+      }];
+      return;
+    }
 
-        NSError *validateError = nil;
-        if (![ATProtoValidator validateDID:did error:&validateError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": validateError.localizedDescription ?: @"Invalid did"}];
-            return;
-        }
+    NSString *uri =
+        [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSError *recordError = nil;
+    NSDictionary *record =
+        [recordService getRecord:uri forDid:did error:&recordError];
+    if (!record) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RecordNotFound",
+        @"message" : recordError.localizedDescription ?: @"Record not found"
+      }];
+      return;
+    }
 
-        NSError *accountError = nil;
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
-        if (!account) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound", @"message": accountError.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
+    NSError *repoError = nil;
+    NSData *carData =
+        [repositoryService getRepoContents:did since:nil error:&repoError];
+    if (!carData || repoError) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : repoError.localizedDescription ?: @"Repository not found"
+      }];
+      return;
+    }
 
-        NSDictionary *latest = [repositoryService getLatestCommitForDid:did error:nil];
-        NSMutableDictionary *body = [NSMutableDictionary dictionaryWithObjectsAndKeys:did, @"did", @YES, @"active", nil];
-        if (latest[@"rev"]) {
-            body[@"rev"] = latest[@"rev"];
-        }
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:body];
-    }];
+    response.statusCode = HttpStatusOK;
+    response.contentType = @"application/vnd.ipld.car";
+    [response setBodyData:carData];
+  }];
 
-    // com.atproto.sync.listReposByCollection
-    [dispatcher registerComAtprotoSyncListReposByCollection:^(HttpRequest *request, HttpResponse *response) {
-        NSString *collection = [request queryParamForKey:@"collection"];
-        if (collection.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection"}];
-            return;
-        }
+  // com.atproto.sync.requestCrawl
+  [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request,
+                                                   HttpResponse *response) {
+    NSDictionary *body = request.jsonBody ?: @{};
+    NSString *hostname = body[@"hostname"];
+    if (![hostname isKindOfClass:[NSString class]] ||
+        [[hostname stringByTrimmingCharactersInSet:
+                       [NSCharacterSet whitespaceAndNewlineCharacterSet]]
+            length] == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing hostname"
+      }];
+      return;
+    }
 
-        NSError *nsidError = nil;
-        if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": nsidError.localizedDescription ?: @"Invalid collection"}];
-            return;
-        }
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{}];
+  }];
 
-        NSString *limitParam = [request queryParamForKey:@"limit"];
-        NSInteger limit = 500;
-        if (limitParam.length > 0) {
-            if (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 2000) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"limit must be an integer between 1 and 2000"}];
-                return;
-            }
-        }
+  // com.atproto.sync.notifyOfUpdate
+  [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request,
+                                                     HttpResponse *response) {
+    NSDictionary *body = request.jsonBody ?: @{};
+    NSString *hostname = body[@"hostname"];
+    if (![hostname isKindOfClass:[NSString class]] ||
+        [[hostname stringByTrimmingCharactersInSet:
+                       [NSCharacterSet whitespaceAndNewlineCharacterSet]]
+            length] == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing hostname"
+      }];
+      return;
+    }
 
-        NSString *cursorParam = [request queryParamForKey:@"cursor"];
-        NSInteger startIndex = 0;
-        if (cursorParam.length > 0) {
-            if (!parseStrictIntegerString(cursorParam, &startIndex) || startIndex < 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
-                return;
-            }
-        }
-
-        NSError *accountsError = nil;
-        NSArray<PDSDatabaseAccount *> *accounts = [serviceDatabases getAllAccountsWithError:&accountsError];
-        if (!accounts) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": accountsError.localizedDescription ?: @"Failed to load accounts"}];
-            return;
-        }
-
-        NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-        NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
-        while (scanIndex < (NSInteger)accounts.count && repos.count < (NSUInteger)limit) {
-            PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-            if (account.did.length > 0) {
-                NSError *storeError = nil;
-                PDSActorStore *store = [userDatabasePool storeForDid:account.did error:&storeError];
-                if (store) {
-                    NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:account.did
-                                                                           collection:collection
-                                                                                limit:1
-                                                                               offset:0
-                                                                                error:nil];
-                    if (records.count > 0) {
-                        [repos addObject:@{@"did": account.did}];
-                    }
-                }
-            }
-            scanIndex += 1;
-        }
-
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
-        if (scanIndex < (NSInteger)accounts.count) {
-            result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
-    }];
-
-    // com.atproto.sync.listBlobs
-    [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
-                                                         request:request
-                                                        response:response];
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
-            return;
-        }
-
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSUInteger limit = limitStr ? [limitStr integerValue] : 500;
-        if (limit > 1000) {
-            limit = 1000;
-        }
-
-        NSError *error = nil;
-        NSArray *blobs = [blobService listBlobsForDID:did limit:limit cursor:cursor error:&error];
-        if (error) {
-            response.statusCode = 400;
-            [response setJsonBody:@{@"error": @"ListBlobsFailed", @"message": error.localizedDescription}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"blobs": blobs ?: @[]}];
-    }];
-
-    // com.atproto.sync.getBlob
-    [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *cid = [request queryParamForKey:@"cid"];
-        if (did.length == 0 || cid.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or cid"}];
-            return;
-        }
-
-        NSError *blobError = nil;
-        NSDictionary *result = [blobService getBlobStreamWithCID:cid did:did error:&blobError];
-        if (!result && !blobError) {
-            result = [blobService getBlobWithCID:cid did:did error:&blobError];
-        }
-        if (!result) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"BlobRetrievalFailed",
-                                    @"message": blobError.localizedDescription ?: @"Blob not found"}];
-            return;
-        }
-
-        NSString *mimeType = result[@"mimeType"] ?: @"application/octet-stream";
-        NSString *filePath = result[@"filePath"];
-        NSData *blobData = result[@"blob"];
-        unsigned long long totalLength = [result[@"size"] unsignedLongLongValue];
-
-        if (totalLength == 0 && [filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
-            NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil];
-            totalLength = [attributes[NSFileSize] unsignedLongLongValue];
-        }
-        if (totalLength == 0 && [blobData isKindOfClass:[NSData class]]) {
-            totalLength = blobData.length;
-        }
-
-        response.contentType = mimeType;
-        [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
-
-        BOOL hasRange = NO;
-        BOOL satisfiable = YES;
-        unsigned long long start = 0;
-        unsigned long long end = totalLength > 0 ? (totalLength - 1) : 0;
-        NSString *rangeFailureReason = nil;
-        BOOL validRange = parseByteRangeHeader([request headerForKey:@"Range"],
-                                               totalLength,
-                                               &hasRange,
-                                               &satisfiable,
-                                               &start,
-                                               &end,
-                                               &rangeFailureReason);
-        if (!validRange) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRange",
-                                    @"message": rangeFailureReason ?: @"Range header is invalid"}];
-            return;
-        }
-
-        if (hasRange && !satisfiable) {
-            response.statusCode = 416;
-            response.statusMessage = @"Range Not Satisfiable";
-            [response setHeader:[NSString stringWithFormat:@"bytes */%llu", totalLength] forKey:@"Content-Range"];
-            return;
-        }
-
-        if (hasRange) {
-            response.statusCode = 206;
-            response.statusMessage = @"Partial Content";
-            [response setHeader:[NSString stringWithFormat:@"bytes %llu-%llu/%llu", start, end, totalLength]
-                         forKey:@"Content-Range"];
-        } else {
-            response.statusCode = HttpStatusOK;
-        }
-
-        if ([filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
-            NSError *streamError = nil;
-            HttpResponseBodyChunkProducer producer = blobFileChunkProducer(filePath, start, end, &streamError);
-            if (!producer) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"BlobReadFailed",
-                                        @"message": streamError.localizedDescription ?: @"Failed to stream blob"}];
-                return;
-            }
-            [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
-            return;
-        }
-
-        if (![blobData isKindOfClass:[NSData class]]) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"BlobReadFailed", @"message": @"Blob payload unavailable"}];
-            return;
-        }
-
-        if (hasRange) {
-            NSUInteger offset = (NSUInteger)start;
-            NSUInteger length = (NSUInteger)(end - start + 1);
-            [response setBodyData:[blobData subdataWithRange:NSMakeRange(offset, length)]];
-            return;
-        }
-
-        [response setBodyData:blobData];
-    }];
-
-    // com.atproto.sync.subscribeRepos
-    [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
-        setSubscribeReposUpgradeRequired(request, response);
-    }];
-
-    // com.atproto.sync.getRecord
-    [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodGET) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"GET" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
-            return;
-        }
-
-        NSString *did = [request queryParamForKey:@"did"];
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *rkey = [request queryParamForKey:@"rkey"];
-        if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did, collection, or rkey"}];
-            return;
-        }
-
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSError *recordError = nil;
-        NSDictionary *record = [recordService getRecord:uri forDid:did error:&recordError];
-        if (!record) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RecordNotFound",
-                                    @"message": recordError.localizedDescription ?: @"Record not found"}];
-            return;
-        }
-
-        NSError *repoError = nil;
-        NSData *carData = [repositoryService getRepoContents:did since:nil error:&repoError];
-        if (!carData || repoError) {
-            response.statusCode = HttpStatusNotFound;
-            [response setJsonBody:@{@"error": @"RepoNotFound",
-                                    @"message": repoError.localizedDescription ?: @"Repository not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"application/vnd.ipld.car";
-        [response setBodyData:carData];
-    }];
-
-    // com.atproto.sync.requestCrawl
-    [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *hostname = body[@"hostname"];
-        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
-    // com.atproto.sync.notifyOfUpdate
-    [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *hostname = body[@"hostname"];
-        if (![hostname isKindOfClass:[NSString class]] || [[hostname stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing hostname"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{}];
+  }];
 }
 
 @end
