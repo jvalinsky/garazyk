@@ -742,18 +742,14 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         [[PDSLogger sharedLogger] setCorrelationID:requestRef.correlationID];
 
-        NSString *logPath = requestRef.queryString.length > 0
-            ? [NSString
-                  stringWithFormat:
-                      @"%@?%@", requestRef.path,
-                      requestRef
-                          .queryString] PDS_LOG_HTTP_INFO(@"Starting dispatch "
-                                                          @"for [%@] %@ %@",
-                                                          requestRef
-                                                              .remoteAddress,
-                                                          requestRef
-                                                              .methodString,
-                                                          logPath);
+        NSString *logPath =
+            requestRef.queryString.length > 0
+                ? [NSString stringWithFormat:@"%@?%@", requestRef.path,
+                                             requestRef.queryString]
+                : requestRef.path;
+        PDS_LOG_HTTP_INFO(@"Starting dispatch for [%@] %@ %@",
+                          requestRef.remoteAddress, requestRef.methodString,
+                          logPath);
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
         PDS_LOG_HTTP_INFO(@"Finished dispatch for [%@] %@ %@, status %ld",
                           requestRef.remoteAddress, requestRef.methodString,
