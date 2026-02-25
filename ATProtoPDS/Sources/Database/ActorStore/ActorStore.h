@@ -70,6 +70,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (nullable NSString *)latestMutationRevisionWithError:(NSError **)error;
 - (BOOL)repoRevisionExists:(NSString *)rev error:(NSError **)error;
 - (BOOL)mutationRevisionExists:(NSString *)rev error:(NSError **)error;
+- (BOOL)blockRevisionExists:(NSString *)rev error:(NSError **)error;
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
 - (NSArray<NSDictionary<NSString *, id> *> *)listRecordTombstonesSinceRev:(nullable NSString *)rev
                                                                      limit:(NSUInteger)limit
@@ -79,6 +80,12 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                                limit:(NSUInteger)limit
                                               offset:(NSUInteger)offset
                                                error:(NSError **)error;
+- (NSArray<NSData *> *)listBlockCIDsSinceRev:(nullable NSString *)rev
+                                        limit:(NSUInteger)limit
+                                        error:(NSError **)error;
+- (NSArray<NSData *> *)listBlockCIDsForRevision:(NSString *)rev
+                                           limit:(NSUInteger)limit
+                                           error:(NSError **)error;
 - (nullable NSData *)getBlockForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 - (NSArray<PDSDatabaseBlock *> *)listBlocksForDid:(NSString *)did 
                                             limit:(NSUInteger)limit 
