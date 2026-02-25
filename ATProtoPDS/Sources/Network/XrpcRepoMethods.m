@@ -495,9 +495,7 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
         NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
 
         // Resolve full DID document (required by lexicon).
-        DIDResolver *didResolver = [[DIDResolver alloc] init];
-        didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
-        DIDDocument *doc = [didResolver resolveDIDSync:did error:nil];
+        DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:nil];
         NSDictionary *didDocJson = doc.jsonDictionary ?: @{};
 
         NSString *handleFromDidDoc = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
