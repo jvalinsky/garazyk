@@ -28,6 +28,7 @@ RUN ldconfig
 COPY ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprotopds/assets
 
 # Copy lexicons
+RUN mkdir -p /usr/share/atprotopds/lexicons
 COPY lexicons/whitewind /usr/share/atprotopds/lexicons
 
 # Create data directory
@@ -37,7 +38,7 @@ RUN mkdir -p /var/lib/atprotopds
 RUN useradd -r -s /usr/sbin/nologin pds
 
 # Set ownership
-RUN chown -R pds:pds /var/lib/atprotopds /usr/local/bin /usr/share/atprotopds/assets /usr/local/lib
+RUN chown -R pds:pds /var/lib/atprotopds /usr/local/bin /usr/share/atprotopds/assets /usr/share/atprotopds/lexicons /usr/local/lib
 
 USER pds
 WORKDIR /var/lib/atprotopds
