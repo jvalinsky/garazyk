@@ -6369,7 +6369,7 @@ static void registerMethodsWithDispatcherUsingServices(
     Class registryClass, XrpcDispatcher *dispatcher,
     id<PDSAccountService> accountService, PDSRecordService *recordService,
     PDSBlobService *blobService, PDSRepositoryService *repositoryService,
-    id<PDSAdminController> adminController,
+    PDSRelayService *relayService, id<PDSAdminController> adminController,
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
     JWTMinter *jwtMinter, PDSConfiguration *config,
     id<PDSEmailProvider> emailProvider) {
@@ -6416,6 +6416,7 @@ static void registerMethodsWithDispatcherUsingServices(
                             recordService:recordService
                               blobService:blobService
                         repositoryService:repositoryService
+                              relayService:relayService
                             configuration:config];
 
   [XrpcAppBskyMethods registerWithDispatcher:dispatcher
@@ -6444,8 +6445,9 @@ static void registerMethodsWithDispatcherUsingServices(
   registerMethodsWithDispatcherUsingServices(
       self, dispatcher, controller.accountService, controller.recordService,
       controller.blobService, controller.repositoryService,
-      controller.adminController, controller.serviceDatabases,
-      controller.userDatabasePool, controller.jwtMinter, config, nil);
+      controller.relayService, controller.adminController,
+      controller.serviceDatabases, controller.userDatabasePool,
+      controller.jwtMinter, config, nil);
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -6456,9 +6458,10 @@ static void registerMethodsWithDispatcherUsingServices(
   registerMethodsWithDispatcherUsingServices(
       self, dispatcher, application.accountService, application.recordService,
       application.blobService, application.repositoryService,
-      application.adminController, application.serviceDatabases,
-      application.userDatabasePool, application.jwtMinter,
-      application.configuration, application.emailProvider);
+      application.relayService, application.adminController,
+      application.serviceDatabases, application.userDatabasePool,
+      application.jwtMinter, application.configuration,
+      application.emailProvider);
 }
 
 @end
