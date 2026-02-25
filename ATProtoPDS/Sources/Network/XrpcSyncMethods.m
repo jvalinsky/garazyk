@@ -476,6 +476,39 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     [response setJsonBody:@{@"root" : latest[@"cid"] ?: @""}];
   }];
 
+  // com.atproto.sync.getLatestCommit
+  [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request,
+                                                      HttpResponse *response) {
+    NSString *did = [request queryParamForKey:@"did"];
+    if (did.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing required parameter: did"
+      }];
+      return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *latest =
+        [repositoryService getLatestCommitForDid:did error:&error];
+    if (error || !latest) {
+      response.statusCode = 404;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" :
+            [NSString stringWithFormat:@"Could not find root for DID: %@", did]
+      }];
+      return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{
+      @"cid" : latest[@"cid"] ?: @"",
+      @"rev" : latest[@"rev"] ?: @""
+    }];
+  }];
+
   // com.atproto.sync.getHostStatus
   [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request,
                                                     HttpResponse *response) {
