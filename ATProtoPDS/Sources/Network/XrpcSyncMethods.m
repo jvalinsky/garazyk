@@ -681,53 +681,6 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     [response setJsonBody:result];
   }];
 
-  // com.atproto.sync.getRepoStatus
-  [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request,
-                                                    HttpResponse *response) {
-    NSString *did = [request queryParamForKey:@"did"];
-    if (did.length == 0) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Missing did"
-      }];
-      return;
-    }
-
-    NSError *validateError = nil;
-    if (![ATProtoValidator validateDID:did error:&validateError]) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : validateError.localizedDescription ?: @"Invalid did"
-      }];
-      return;
-    }
-
-    NSError *accountError = nil;
-    PDSDatabaseAccount *account =
-        [serviceDatabases getAccountByDid:did error:&accountError];
-    if (!account) {
-      response.statusCode = HttpStatusNotFound;
-      [response setJsonBody:@{
-        @"error" : @"RepoNotFound",
-        @"message" : accountError.localizedDescription
-            ?: @"Repository not found"
-      }];
-      return;
-    }
-
-    NSDictionary *latest =
-        [repositoryService getLatestCommitForDid:did error:nil];
-    NSMutableDictionary *body = [NSMutableDictionary
-        dictionaryWithObjectsAndKeys:did, @"did", @YES, @"active", nil];
-    if (latest[@"rev"]) {
-      body[@"rev"] = latest[@"rev"];
-    }
-    response.statusCode = HttpStatusOK;
-    [response setJsonBody:body];
-  }];
-
   // com.atproto.sync.listReposByCollection
   [dispatcher registerComAtprotoSyncListReposByCollection:^(
                   HttpRequest *request, HttpResponse *response) {
