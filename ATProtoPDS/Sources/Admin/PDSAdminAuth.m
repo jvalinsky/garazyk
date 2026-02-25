@@ -288,7 +288,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSError *parseError = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token: %@", parseError.localizedDescription);
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token");
         if (error) {
             *error = parseError ?: [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Invalid token format"}];
         }
@@ -298,7 +298,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSString *issuerClaim = [jwt.payload.iss stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *audienceClaim = [jwt.payload.aud stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (issuerClaim.length == 0 || audienceClaim.length == 0) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Missing issuer (%@) or audience (%@) in token", issuerClaim, audienceClaim);
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Missing issuer or audience in token");
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Missing issuer or audience in token"}];
         }
@@ -348,9 +348,8 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 
     NSError *verifyError = nil;
     if (![verifier verifyJWT:jwt error:&verifyError]) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed: %@ (Issuer: %@, Expected: %@, Alg: %@)", 
-                         verifyError.localizedDescription, issuerClaim, expectedIssuer, jwt.header.alg);
-        PDS_LOG_AUTH_DEBUG(@"PDSAdminAuth: Rejected JWT Payload: %@", [jwt.payload toDictionary]);
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed: %@",
+                         verifyError.localizedDescription ?: @"unknown error");
         if (error) {
             *error = verifyError;
         }
@@ -487,7 +486,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     claims[@"exp"] = @([expiresAt timeIntervalSince1970]);
     claims[@"iat"] = @([issuedAt timeIntervalSince1970]);
 
-    PDS_LOG_AUTH_DEBUG(@"PDSAdminAuth: Signing admin token with claims: %@", claims);
+    PDS_LOG_AUTH_DEBUG(@"PDSAdminAuth: Signing admin token");
     NSError *signError = nil;
     NSString *token = [controller.jwtMinter signPayload:claims error:&signError];
     if (token) {
