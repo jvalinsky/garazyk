@@ -3,8 +3,9 @@
  *
  * @brief Platform compatibility type definitions.
  *
- * Defines macros for cross-platform compatibility between macOS and Linux/GNUstep.
- * Handles differences in GCD (Grand Central Dispatch) Objective-C support.
+ * Defines macros for cross-platform compatibility between macOS and
+ * Linux/GNUstep. Handles differences in GCD (Grand Central Dispatch)
+ * Objective-C support.
  *
  * @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -61,8 +62,10 @@
 #endif
 #endif
 
+#if !defined(__APPLE__)
 #ifndef NSErrorUserInfoKey
 #define NSErrorUserInfoKey NSString *
+#endif
 #endif
 
 #endif /* PDSTypes_h */
