@@ -1069,7 +1069,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       }
     }
 
-    // Add the record block
+    // Add the record block and MST proof path
     NSString *recordCIDStr = record[@"cid"];
     if (recordCIDStr) {
       CID *recordCID = [CID cidFromString:recordCIDStr];
@@ -1096,6 +1096,26 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         }
         if (blockData) {
           [writer addBlock:[CARBlock blockWithCID:recordCID data:blockData]];
+        }
+
+        // Add MST proof path
+        MST *mst = [repositoryService loadMSTForDid:did error:nil];
+        if (mst) {
+          NSString *mstKey =
+              [NSString stringWithFormat:@"%@/%@", collection, rkey];
+          NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey];
+
+          NSMapTable<MSTNode *, CID *> *cache =
+              [NSMapTable strongToStrongObjectsMapTable];
+          for (MSTNode *node in proofNodes) {
+            CID *nodeCID = [node getCID:cache];
+            if (nodeCID) {
+              NSData *nodeData = [node serializeToCBOR:cache];
+              if (nodeData) {
+                [writer addBlock:[CARBlock blockWithCID:nodeCID data:nodeData]];
+              }
+            }
+          }
         }
       }
     }
