@@ -36,8 +36,10 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t writeQueue;
 @property(nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
 @property(nonatomic, assign) NSUInteger queuedSendBytes;
-@property(nonatomic, strong, nullable) dispatch_source_t heartbeatTimer;
-@property(nonatomic, strong, nullable) dispatch_source_t heartbeatTimeoutTimer;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable)
+    dispatch_source_t heartbeatTimer;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable)
+    dispatch_source_t heartbeatTimeoutTimer;
 @property(nonatomic, assign) BOOL waitingForPong;
 
 @end
