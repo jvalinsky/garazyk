@@ -199,7 +199,7 @@
   serverBuilder.jwtMinter = controller.jwtMinter;
   serverBuilder.serviceDatabases = controller.serviceDatabases;
   serverBuilder.subscribeReposHandler = subscribeReposHandler;
-  serverBuilder.issuer = [config canonicalIssuerWithPortHint:port];
+  serverBuilder.issuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
 
   NSError *builderError = nil;
   if (![serverBuilder configureServer:httpServer error:&builderError]) {
