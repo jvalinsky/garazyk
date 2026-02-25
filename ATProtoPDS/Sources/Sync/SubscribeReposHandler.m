@@ -199,7 +199,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketServer:(WebSocketServer *)server
     didAcceptConnection:(WebSocketConnection *)connection {
-  PDS_LOG_SYNC_INFO(@"Accepted new WebSocket connection for subscribeRepos");
+  PDS_LOG_SYNC_INFO(
+      @"[%@] Accepted new WebSocket connection for subscribeRepos",
+      connection.remoteAddress);
 
   @synchronized(self.attachedConnections) {
     [self.attachedConnections addObject:connection];
@@ -215,7 +217,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketServer:(WebSocketServer *)server
      didCloseConnection:(WebSocketConnection *)connection {
-  PDS_LOG_SYNC_INFO(@"Closed WebSocket connection for subscribeRepos");
+  PDS_LOG_SYNC_INFO(@"[%@] Closed WebSocket connection for subscribeRepos",
+                    connection.remoteAddress);
   [self detachConnection:connection];
 
   if ([self.delegate respondsToSelector:@selector
@@ -240,8 +243,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason {
   PDS_LOG_SYNC_INFO(
-      @"Main-port WebSocket connection closed (code=%ld, reason=%@)",
-      (long)code, reason ?: @"");
+      @"[%@] Main-port WebSocket connection closed (code=%ld, reason=%@)",
+      connection.remoteAddress, (long)code, reason ?: @"");
   [self detachConnection:connection];
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didCloseConnection:)]) {
@@ -251,7 +254,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketConnection:(WebSocketConnection *)connection
            didFailWithError:(NSError *)error {
-  PDS_LOG_SYNC_ERROR(@"Main-port WebSocket connection failed: %@", error);
+  PDS_LOG_SYNC_ERROR(@"[%@] Main-port WebSocket connection failed: %@",
+                     connection.remoteAddress, error);
   [self detachConnection:connection];
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didCloseConnection:)]) {
