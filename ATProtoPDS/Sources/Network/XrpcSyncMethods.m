@@ -1035,19 +1035,20 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
             [store getBlockForCID:[recordCID bytes] forDid:did error:nil];
         if (!blockData) {
           // Fallback: encode the record value to DAG-CBOR
-          NSString *valueJSON = record[@"value"];
-          if (valueJSON) {
-            NSData *jsonData =
-                [valueJSON dataUsingEncoding:NSUTF8StringEncoding];
-            id jsonObj = jsonData
-                             ? [NSJSONSerialization JSONObjectWithData:jsonData
-                                                               options:0
-                                                                 error:nil]
-                             : nil;
+          id valueObj = record[@"value"];
+          if (valueObj) {
+            id jsonObj = nil;
+            if ([valueObj isKindOfClass:[NSDictionary class]]) {
+              jsonObj = valueObj;
+            } else if ([valueObj isKindOfClass:[NSString class]]) {
+              NSData *jsonData = [valueObj dataUsingEncoding:NSUTF8StringEncoding];
+              if (jsonData) {
+                jsonObj = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+              }
+            }
+
             if (jsonObj) {
-              blockData =
-                  [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObj
-                                                               error:nil];
+              blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObj error:nil];
             }
           }
         }
