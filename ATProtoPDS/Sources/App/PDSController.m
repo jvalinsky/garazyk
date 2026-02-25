@@ -37,6 +37,7 @@
 #import "Services/PDSAccountService.h"
 #import "Services/PDSBlobService.h"
 #import "Services/PDSRecordService.h"
+#import "Services/PDSRelayService.h"
 #import "Services/PDSRepositoryService.h"
 #import "Sync/SubscribeReposHandler.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -95,6 +96,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
   PDSBlobService *_blobService;
   PDSRecordService *_serviceRecordService;
   PDSRepositoryService *_repositoryService;
+  PDSRelayService *_relayService;
   PDSAdminController *_adminController;
   JWTMinter *_jwtMinter;
   NSMutableDictionary<NSString *, MST *> *_repos;
@@ -114,6 +116,10 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
 
 - (PDSAdminController *)adminController {
   return _adminController;
+}
+
+- (PDSRelayService *)relayService {
+  return _relayService;
 }
 
 - (BOOL)isRunning {
@@ -144,6 +150,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
     _recordService = application.recordService;
     _blobService = application.blobService;
     _repositoryService = application.repositoryService;
+    _relayService = application.relayService;
     _adminController = (PDSAdminController *)application.adminController;
     _jwtMinter = application.jwtMinter;
     _httpPort = application.httpPort;
@@ -339,6 +346,11 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
     _repositoryService =
         [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
 
+    // Initialize Relay Service
+    _relayService = [[PDSRelayService alloc]
+        initWithRelays:config.crawlRelays
+              hostname:[config canonicalIssuerWithPortHint:_httpPort]];
+
     // Initialize Admin Controller
     _adminController =
         [[PDSAdminController alloc] initWithServiceDatabases:_serviceDatabases
@@ -447,6 +459,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
       (unsigned long)_httpPort);
 
   _running = YES;
+  [_relayService start];
   return YES;
 }
 
@@ -465,6 +478,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
 
   [_httpServer stop];
   [_subscribeReposHandler stop];
+  [_relayService stop];
 
   // Close databases
   [_userDatabasePool closeAll];
