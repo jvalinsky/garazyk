@@ -13,7 +13,40 @@
 #import "Core/ATProtoValidator.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/DIDPLCResolver.h"
+#import "Core/DID.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
+
+// Helper function to extract normalized handle from alsoKnownAs array
+static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray *alsoKnownAs) {
+    if (![alsoKnownAs isKindOfClass:[NSArray class]]) {
+        return nil;
+    }
+
+    for (id value in alsoKnownAs) {
+        if (![value isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        NSString *candidate = (NSString *)value;
+        if ([candidate hasPrefix:@"at://"]) {
+            candidate = [candidate substringFromIndex:5];
+        }
+        if ([candidate hasSuffix:@"/"]) {
+            candidate = [candidate substringToIndex:candidate.length - 1];
+        }
+        if (candidate.length > 0) {
+            return [candidate lowercaseString];
+        }
+    }
+    return nil;
+}
+
+// Helper function to check if DID document contains a handle
+static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
+    NSString *normalizedHandle = [handle lowercaseString];
+    NSString *docHandle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
+    return docHandle.length > 0 && [docHandle isEqualToString:normalizedHandle];
+}
 
 @implementation XrpcIdentityHelper
 
@@ -169,6 +202,120 @@
                                      [NSString stringWithFormat:@"Unsupported DID method: %@", did]}];
     }
     return nil;
+}
+
++ (NSDictionary *)defaultPdsServiceForConfig:(PDSConfiguration *)configuration {
+    NSString *serviceEndpoint = [configuration canonicalIssuerWithPortHint:0];
+    return @{
+        @"atproto_pds": @{
+            @"type": @"AtprotoPersonalDataServer",
+            @"endpoint": serviceEndpoint
+        }
+    };
+}
+
++ (NSDictionary *)resolveIdentityInfoForIdentifier:(NSString *)identifier
+                                   serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                          errorName:(NSString **)errorName
+                                              error:(NSError **)error {
+    if ([identifier hasPrefix:@"did:"]) {
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:identifier error:nil];
+        if (account) {
+            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
+            NSDictionary *didDoc = @{
+                @"id": account.did ?: identifier,
+                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
+            };
+            return @{
+                @"did": account.did ?: identifier,
+                @"handle": handle,
+                @"didDoc": didDoc
+            };
+        }
+    } else {
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:identifier error:nil];
+        if (account) {
+            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
+            NSDictionary *didDoc = @{
+                @"id": account.did ?: @"",
+                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
+            };
+            return @{
+                @"did": account.did ?: @"",
+                @"handle": handle,
+                @"didDoc": didDoc
+            };
+        }
+    }
+
+    DIDResolver *didResolver = [[DIDResolver alloc] init];
+    didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+
+    if ([identifier hasPrefix:@"did:"]) {
+        DIDDocument *doc = [didResolver resolveDIDSync:identifier error:error];
+        if (!doc) {
+            if (errorName) *errorName = @"DidNotFound";
+            return nil;
+        }
+        NSString *handle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs) ?: @"handle.invalid";
+        return @{
+            @"did": identifier,
+            @"handle": handle,
+            @"didDoc": doc.jsonDictionary ?: @{}
+        };
+    }
+
+    HandleResolver *handleResolver = [[HandleResolver alloc] init];
+    __block NSString *did = nil;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    [handleResolver resolveHandle:identifier completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable resolveError) {
+        did = resolvedDid;
+        if (!did && resolveError && error && !*error) {
+            *error = resolveError;
+        }
+        dispatch_semaphore_signal(semaphore);
+    }];
+
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    if (did.length == 0) {
+        if (errorName) *errorName = @"HandleNotFound";
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"com.atproto.identity"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
+        }
+        return nil;
+    }
+
+    DIDDocument *doc = [didResolver resolveDIDSync:did error:error];
+    if (!doc) {
+        if (errorName) *errorName = @"DidNotFound";
+        return nil;
+    }
+
+    NSString *resolvedHandle = didDocumentContainsHandle(doc, identifier) ? [identifier lowercaseString] : @"handle.invalid";
+    return @{
+        @"did": did,
+        @"handle": resolvedHandle,
+        @"didDoc": doc.jsonDictionary ?: @{}
+    };
+}
+
++ (BOOL)updateAccountHandle:(PDSServiceDatabases *)serviceDatabases
+                        did:(NSString *)did
+                     handle:(NSString *)handle
+                      error:(NSError **)error {
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:error];
+    if (!account) {
+        return NO;
+    }
+    account.handle = handle;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    return [serviceDatabases updateAccount:account error:error];
+}
+
++ (NSString *)currentISO8601String {
+    return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
 @end

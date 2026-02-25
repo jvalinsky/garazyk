@@ -1,3 +1,12 @@
+//
+//  XrpcAdminMethods.h
+//  ATProtoPDS
+//
+//  Domain module for com.atproto.admin.* XRPC endpoints.
+//  Handles administrative operations including account management,
+//  invite code management, and moderation actions.
+//
+
 #import <Foundation/Foundation.h>
 
 @class XrpcDispatcher;
@@ -7,23 +16,43 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * XrpcAdminMethods registers all com.atproto.admin.* endpoint handlers.
+ *
+ * Endpoints handled:
+ * - com.atproto.admin.disableAccountInvites: Disable invite code creation for an account
+ * - com.atproto.admin.enableAccountInvites: Enable invite code creation for an account
+ * - com.atproto.admin.getAccountInfo: Get detailed account information
+ * - com.atproto.admin.getAccountInfos: Get information for multiple accounts
+ * - com.atproto.admin.getInviteCodes: List all invite codes with filtering
+ * - com.atproto.admin.getSubjectStatus: Get moderation status for a subject
+ * - com.atproto.admin.searchAccounts: Search accounts by email or other criteria
+ * - com.atproto.admin.sendEmail: Send email to an account
+ * - com.atproto.admin.updateAccountEmail: Update account email address
+ * - com.atproto.admin.updateAccountHandle: Update account handle
+ * - com.atproto.admin.updateAccountPassword: Update account password
+ * - com.atproto.admin.updateSubjectStatus: Update moderation status (takedown)
+ *
+ * All endpoints require admin authorization via XrpcAuthHelper.authorizeAdminRequest.
+ *
+ * This module uses:
+ * - XrpcAuthHelper for authentication and admin authorization
+ * - XrpcErrorHelper for error responses
+ */
 @interface XrpcAdminMethods : NSObject
 
-+ (void)registerAdminAccountMaintenanceWithDispatcher:(XrpcDispatcher *)dispatcher
-                                    serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                                           jwtMinter:(JWTMinter *)jwtMinter
-                                     adminController:(id<PDSAdminController>)adminController;
-
-+ (void)registerAdminAccountAndInviteWithDispatcher:(XrpcDispatcher *)dispatcher
-                                  serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                                         jwtMinter:(JWTMinter *)jwtMinter
-                                   adminController:(id<PDSAdminController>)adminController;
-
-+ (void)registerAdminModerationAndLabelWithDispatcher:(XrpcDispatcher *)dispatcher
-                                    serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                                           jwtMinter:(JWTMinter *)jwtMinter
-                                     adminController:(id<PDSAdminController>)adminController
-                                    includeExtraLabel:(BOOL)includeExtraLabel;
+/**
+ * Register all com.atproto.admin.* endpoint handlers with the dispatcher.
+ *
+ * @param dispatcher The XRPC dispatcher to register endpoints with
+ * @param serviceDatabases Service-level database access
+ * @param jwtMinter JWT token minter for authentication
+ * @param adminController Admin controller for authorization and operations
+ */
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                     jwtMinter:(JWTMinter *)jwtMinter
+               adminController:(id<PDSAdminController>)adminController;
 
 @end
 
