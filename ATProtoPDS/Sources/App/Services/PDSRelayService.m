@@ -145,7 +145,7 @@
             PDS_LOG_WARN(@"PDSRelayService: Relay %@ returned status %ld",
                          relayHost, (long)httpResponse.statusCode);
           } else {
-            PDS_LOG_DEBUG(@"PDSRelayService: Successfully notified relay %@",
+            PDS_LOG_INFO(@"PDSRelayService: Successfully notified relay %@",
                           relayHost);
           }
         }];
