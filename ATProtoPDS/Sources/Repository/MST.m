@@ -694,10 +694,10 @@
     NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
     NSMutableArray<MSTNode *> *queue = [NSMutableArray arrayWithObject:self.root];
     NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
+    NSUInteger queueHead = 0;
 
-    while (queue.count > 0) {
-        MSTNode *node = queue.firstObject;
-        [queue removeObjectAtIndex:0];
+    while (queueHead < queue.count) {
+        MSTNode *node = queue[queueHead++];
 
         CID *cid = [node getCID:cache];
         if (!cid) {
