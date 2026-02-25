@@ -505,6 +505,20 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     NSDictionary *headers = [self headersFromMessage:state.message];
     NSString *transferEncoding =
         [[headers objectForKey:@"transfer-encoding"] lowercaseString];
+    NSString *contentLengthHeader = headers[@"content-length"];
+
+    if (transferEncoding.length > 0 && contentLengthHeader.length > 0) {
+      HttpResponse *response =
+          [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
+      response.keepAlive = NO;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequestFraming",
+        @"message" : @"Transfer-Encoding and Content-Length cannot both be present"
+      }];
+      [self queueResponse:response forState:state connection:connection];
+      return YES;
+    }
+
     state.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
 
     if (state.isChunkedEncoding) {

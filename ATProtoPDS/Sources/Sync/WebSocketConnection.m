@@ -36,8 +36,8 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t writeQueue;
 @property(nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
 @property(nonatomic, assign) NSUInteger queuedSendBytes;
-@property(nonatomic, strong, nullable) NSTimer *heartbeatTimer;
-@property(nonatomic, strong, nullable) NSTimer *heartbeatTimeoutTimer;
+@property(nonatomic, strong, nullable) dispatch_source_t heartbeatTimer;
+@property(nonatomic, strong, nullable) dispatch_source_t heartbeatTimeoutTimer;
 @property(nonatomic, assign) BOOL waitingForPong;
 
 @end
@@ -114,8 +114,13 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
     return;
   }
   __weak typeof(self) weakSelf = self;
+  void (^originalHandler)(PDSNetworkConnectionState, NSError *) =
+      self.connection.stateChangedHandler;
   self.connection.stateChangedHandler =
       ^(PDSNetworkConnectionState state, NSError *_Nullable error) {
+        if (originalHandler) {
+          originalHandler(state, error);
+        }
         [weakSelf handlePDSStateChange:state error:error];
       };
   [self startReading];
@@ -263,9 +268,24 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
                         });
                       }
 
-                      if (!error) {
-                        [strongSelf startReading];
+                      if (error) {
+                        return;
                       }
+
+                      if (isComplete) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                          if (strongSelf.state !=
+                              WebSocketConnectionStateClosed) {
+                            strongSelf.state = WebSocketConnectionStateClosed;
+                            [strongSelf
+                                notifyCloseWithCode:1000
+                                             reason:@"Connection closed"];
+                          }
+                        });
+                        return;
+                      }
+
+                      [strongSelf startReading];
                     }];
 }
 
@@ -574,17 +594,25 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 
 - (void)startHeartbeat {
   [self stopHeartbeat];
-  self.heartbeatTimer =
-      [NSTimer scheduledTimerWithTimeInterval:self.heartbeatInterval
-                                       target:self
-                                     selector:@selector(sendHeartbeat)
-                                     userInfo:nil
-                                      repeats:YES];
+  self.heartbeatTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+                                               dispatch_get_main_queue());
+  dispatch_source_set_timer(
+      self.heartbeatTimer,
+      dispatch_walltime(NULL, self.heartbeatInterval * NSEC_PER_SEC),
+      self.heartbeatInterval * NSEC_PER_SEC, 1 * NSEC_PER_SEC);
+
+  __weak typeof(self) weakSelf = self;
+  dispatch_source_set_event_handler(self.heartbeatTimer, ^{
+    [weakSelf sendHeartbeat];
+  });
+  dispatch_resume(self.heartbeatTimer);
 }
 
 - (void)stopHeartbeat {
-  [self.heartbeatTimer invalidate];
-  self.heartbeatTimer = nil;
+  if (self.heartbeatTimer) {
+    dispatch_source_cancel(self.heartbeatTimer);
+    self.heartbeatTimer = nil;
+  }
 }
 
 - (void)sendHeartbeat {
@@ -596,17 +624,25 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
   self.waitingForPong = YES;
   [self sendPing:nil];
 
-  self.heartbeatTimeoutTimer =
-      [NSTimer scheduledTimerWithTimeInterval:self.heartbeatTimeout
-                                       target:self
-                                     selector:@selector(handleHeartbeatTimeout)
-                                     userInfo:nil
-                                      repeats:NO];
+  self.heartbeatTimeoutTimer = dispatch_source_create(
+      DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+  dispatch_source_set_timer(
+      self.heartbeatTimeoutTimer,
+      dispatch_walltime(NULL, self.heartbeatTimeout * NSEC_PER_SEC),
+      DISPATCH_TIME_FOREVER, 1 * NSEC_PER_SEC);
+
+  __weak typeof(self) weakSelf = self;
+  dispatch_source_set_event_handler(self.heartbeatTimeoutTimer, ^{
+    [weakSelf handleHeartbeatTimeout];
+  });
+  dispatch_resume(self.heartbeatTimeoutTimer);
 }
 
 - (void)stopHeartbeatTimeout {
-  [self.heartbeatTimeoutTimer invalidate];
-  self.heartbeatTimeoutTimer = nil;
+  if (self.heartbeatTimeoutTimer) {
+    dispatch_source_cancel(self.heartbeatTimeoutTimer);
+    self.heartbeatTimeoutTimer = nil;
+  }
 }
 
 - (void)handleHeartbeatTimeout {

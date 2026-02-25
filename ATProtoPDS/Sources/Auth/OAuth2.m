@@ -1032,14 +1032,27 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
                        @(request.dpopJWK != nil),
                        @(request.loginHint.length > 0));
 
-    NSMutableString *redirectURL = [request.redirectURI mutableCopy];
-    NSString *separator = [redirectURL containsString:@"?"] ? @"&" : @"?";
-    [redirectURL appendFormat:@"%@code=%@", separator, code];
-    if (request.state) {
-        [redirectURL appendFormat:@"&state=%@", request.state];
+    NSURLComponents *redirectComponents = [NSURLComponents componentsWithString:request.redirectURI];
+    if (!redirectComponents) {
+        NSError *invalidRedirectError = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                            code:OAuth2ErrorInvalidRequest
+                                                        userInfo:@{NSLocalizedDescriptionKey: @"Invalid redirect URI"}];
+        completion(nil, nil, invalidRedirectError);
+        return;
     }
 
-    completion([NSURL URLWithString:redirectURL], code, nil);
+    NSMutableArray<NSURLQueryItem *> *queryItems =
+        [redirectComponents.queryItems mutableCopy] ?: [NSMutableArray array];
+    [queryItems addObject:[NSURLQueryItem queryItemWithName:@"code" value:code]];
+    if (request.state) {
+        [queryItems addObject:[NSURLQueryItem queryItemWithName:@"state" value:request.state]];
+    }
+    if (self.issuer.length > 0) {
+        [queryItems addObject:[NSURLQueryItem queryItemWithName:@"iss" value:self.issuer]];
+    }
+    redirectComponents.queryItems = queryItems;
+
+    completion(redirectComponents.URL, code, nil);
 }
 
 - (void)handleTokenRequest:(OAuth2TokenRequest *)request
