@@ -509,7 +509,11 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 }
             }
 
-            [preparedOps addObject:@{@"action": action, @"record": dbRecord}];
+            [preparedOps addObject:@{
+                @"action": action,
+                @"record": dbRecord,
+                @"recordCBOR": cborData
+            }];
             [resultOps addObject:@{
                 @"action": action,
                 @"uri": uri,
@@ -599,7 +603,11 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 }
             }
 
-            [preparedOps addObject:@{@"action": action, @"record": dbRecord}];
+            [preparedOps addObject:@{
+                @"action": action,
+                @"record": dbRecord,
+                @"recordCBOR": cborData
+            }];
             [resultOps addObject:@{
                 @"action": action,
                 @"uri": uri,
@@ -694,49 +702,58 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     NSString *commitCID = commitMeta[@"cid"];
     NSString *commitRev = commitMeta[@"rev"];
 
+    NSMutableDictionary<NSString *, NSString *> *resultCIDByURI = [NSMutableDictionary dictionaryWithCapacity:resultOps.count];
+    for (NSDictionary *res in resultOps) {
+        NSString *uri = [res[@"uri"] isKindOfClass:[NSString class]] ? res[@"uri"] : nil;
+        NSString *cid = [res[@"cid"] isKindOfClass:[NSString class]] ? res[@"cid"] : nil;
+        if (uri.length > 0 && cid.length > 0) {
+            resultCIDByURI[uri] = cid;
+        }
+    }
+
+    NSMutableDictionary<NSString *, NSData *> *recordCBORByURI = [NSMutableDictionary dictionaryWithCapacity:preparedOps.count];
+    for (NSDictionary *op in preparedOps) {
+        NSString *action = op[@"action"];
+        if ([action isEqualToString:@"delete"]) {
+            continue;
+        }
+
+        PDSDatabaseRecord *rec = op[@"record"];
+        if (!rec || rec.uri.length == 0) {
+            continue;
+        }
+
+        NSData *recordCBOR = [op[@"recordCBOR"] isKindOfClass:[NSData class]] ? op[@"recordCBOR"] : nil;
+        if (!recordCBOR && rec.value.length > 0) {
+            NSData *jsonData = [rec.value dataUsingEncoding:NSUTF8StringEncoding];
+            NSDictionary *value = jsonData ? [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil] : nil;
+            if (value) {
+                recordCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:nil];
+            }
+        }
+
+        if (recordCBOR.length > 0) {
+            recordCBORByURI[rec.uri] = recordCBOR;
+        }
+    }
+
     // Notify firehose of all writes in the batch
     for (NSDictionary *write in writes) {
         NSString *action = write[@"action"];
         NSString *collection = write[@"collection"];
         NSString *rkey = write[@"rkey"];
-        
-        // Find result CID for create/update
-        NSString *resultCID = nil;
-        
-        // Calculate URI to find matching result
-        if (collection && rkey) {
-           NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-           for (NSDictionary *res in resultOps) {
-               if ([res[@"uri"] isEqualToString:uri]) {
-                   resultCID = res[@"cid"];
-                   break;
-               }
-           }
-        }
+
+        NSString *uri = (collection && rkey)
+            ? [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey]
+            : nil;
+        NSString *resultCID = (uri.length > 0) ? resultCIDByURI[uri] : nil;
 
         NSString *normalizedAction = ([action isEqualToString:@"update"]) ? @"update"
                                    : ([action isEqualToString:@"delete"] ? @"delete" : @"create");
 
-        // Find matching record CBOR for create/update ops
-        NSData *recordCBOR = nil;
-        if (![normalizedAction isEqualToString:@"delete"] && collection && rkey) {
-            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-            for (NSDictionary *op in preparedOps) {
-                PDSDatabaseRecord *rec = op[@"record"];
-                if (rec && [rec.uri isEqualToString:uri]) {
-                    // Re-encode the record value to DAG-CBOR for the firehose CAR
-                    NSString *jsonStr = rec.value;
-                    if (jsonStr) {
-                        NSData *jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
-                        NSDictionary *value = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
-                        if (value) {
-                            recordCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:nil];
-                        }
-                    }
-                    break;
-                }
-            }
-        }
+        NSData *recordCBOR = (![normalizedAction isEqualToString:@"delete"] && uri.length > 0)
+            ? recordCBORByURI[uri]
+            : nil;
 
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
