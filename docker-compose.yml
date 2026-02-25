@@ -2,7 +2,7 @@ services:
   pds:
     build:
       context: .
-      dockerfile: docker/Dockerfile.exe.dev
+      dockerfile: docker/Dockerfile.gnustep
     image: nspds:local
     container_name: nspds
     ports:
