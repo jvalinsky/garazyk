@@ -9,19 +9,28 @@
   },
   "session": {
     "access_token_ttl_seconds": 1800,
-    "refresh_token_ttl_seconds": 259200,
-    "invite_code_required": false
+    "refresh_token_ttl_seconds": 2592000,
+    "invite_code_required": true
   },
   "server": {
-    "data_dir": "./data",
-    "host": "garazyk.xyz",
-    "port": 2583
+    "data_dir": ".",
+    "host": "pds.garazyk.xyz",
+    "port": 2583,
+    "issuer": "https://pds.garazyk.xyz",
+    "available_user_domains": [
+      "garazyk.xyz"
+    ]
   },
   "links": {
-    "privacy_policy": "",
-    "terms_of_service": ""
+    "privacy_policy": "https://pds.garazyk.xyz/privacy",
+    "terms_of_service": "https://pds.garazyk.xyz/terms"
   },
   "relays": [
     "https://bsky.network"
-  ]
+  ],
+  "plc": {
+    "url": "https://plc.directory",
+    "retry_count": 5,
+    "retry_delay_ms": 2000
+  }
 }
