@@ -40,7 +40,22 @@
     _version = [version copy];
     _headers = [self normalizeHeaders:headers];
     _body = [body copy];
-    _remoteAddress = [remoteAddress copy];
+    // Check for reverse proxy headers first, then fall back to the direct
+    // socket address
+    NSString *forwardedFor = _headers[@"x-forwarded-for"];
+    if (forwardedFor.length > 0) {
+      // X-Forwarded-For can be a comma-separated list of IPs; the first one is
+      // the original client
+      NSArray<NSString *> *ips =
+          [forwardedFor componentsSeparatedByString:@","];
+      _remoteAddress = [[ips.firstObject
+          stringByTrimmingCharactersInSet:[NSCharacterSet
+                                              whitespaceCharacterSet]] copy];
+    } else if (_headers[@"x-real-ip"]) {
+      _remoteAddress = [_headers[@"x-real-ip"] copy];
+    } else {
+      _remoteAddress = [remoteAddress copy];
+    }
     _correlationID = [headers[@"x-correlation-id"] ?: headers[@"x-request-id"] ?: [[NSUUID UUID] UUIDString] copy];
     _jsonBody = [self parseJsonBody:body];
     _multipartFormData = [self parseMultipartFormData:body headers:headers];
