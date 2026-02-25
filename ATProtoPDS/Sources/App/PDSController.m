@@ -514,11 +514,12 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration, N
     
     NSDictionary *stats = [_recordService getRepoStatsForDid:repo error:nil];
     NSDictionary *account = [_accountService getAccountForDid:repo error:nil];
-    
-    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+
+    NSDictionary *result = [NSMutableDictionary dictionary];
     result[@"did"] = repo;
     if (root) {
-        result[@"root"] = [root base64EncodedStringWithOptions:0];
+        CID *cid = [CID cidFromBytes:root];
+        result[@"root"] = cid.stringValue;
     }
     
     if (account[@"handle"]) {
