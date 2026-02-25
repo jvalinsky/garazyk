@@ -20,6 +20,106 @@
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
 
+static BOOL XrpcAuthEnvBool(NSString *value) {
+    if (value.length == 0) {
+        return NO;
+    }
+    NSString *normalized = [[value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    return [normalized isEqualToString:@"1"] ||
+           [normalized isEqualToString:@"true"] ||
+           [normalized isEqualToString:@"yes"] ||
+           [normalized isEqualToString:@"on"];
+}
+
+static BOOL XrpcAuthIsTrustedProxyRemoteAddress(NSString *remoteAddress) {
+    NSString *candidate = [[remoteAddress ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    if (candidate.length == 0) {
+        return NO;
+    }
+    if ([candidate hasPrefix:@"127."] || [candidate isEqualToString:@"::1"] || [candidate isEqualToString:@"localhost"]) {
+        return YES;
+    }
+    if ([candidate hasPrefix:@"10."] || [candidate hasPrefix:@"192.168."]) {
+        return YES;
+    }
+    if ([candidate hasPrefix:@"172."]) {
+        NSArray<NSString *> *parts = [candidate componentsSeparatedByString:@"."];
+        if (parts.count >= 2) {
+            NSInteger secondOctet = [parts[1] integerValue];
+            if (secondOctet >= 16 && secondOctet <= 31) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
+static BOOL XrpcAuthShouldTrustForwardedHeaders(HttpRequest *request) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    if (!XrpcAuthEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"])) {
+        return NO;
+    }
+    return XrpcAuthIsTrustedProxyRemoteAddress(request.remoteAddress);
+}
+
+static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter) {
+    NSString *hostHeader = [[request headerForKey:@"Host"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *hostLower = [hostHeader lowercaseString];
+    BOOL localHostHeader = [hostLower containsString:@"localhost"] ||
+                           [hostLower hasPrefix:@"127.0.0.1"] ||
+                           [hostLower hasPrefix:@"[::1]"] ||
+                           [hostLower isEqualToString:@"::1"];
+    BOOL trustForwarded = XrpcAuthShouldTrustForwardedHeaders(request);
+
+    NSString *scheme = nil;
+    if (trustForwarded) {
+        NSString *forwardedProto = [[request headerForKey:@"X-Forwarded-Proto"] lowercaseString];
+        if (forwardedProto.length > 0) {
+            NSString *firstProto = [[forwardedProto componentsSeparatedByString:@","] firstObject];
+            firstProto = [firstProto stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if ([firstProto isEqualToString:@"http"] || [firstProto isEqualToString:@"https"]) {
+                scheme = firstProto;
+            }
+        }
+    }
+
+    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+    NSString *issuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
+    NSURL *issuerURL = [NSURL URLWithString:issuer ?: @""];
+    if (scheme.length == 0) {
+        if (localHostHeader) {
+            scheme = @"http";
+        } else if (issuerURL.scheme.length > 0) {
+            scheme = issuerURL.scheme;
+        } else {
+            scheme = @"https";
+        }
+    }
+
+    NSString *authority = nil;
+    if (hostHeader.length > 0 && (trustForwarded || localHostHeader)) {
+        authority = hostHeader;
+    } else if (issuerURL.host.length > 0) {
+        authority = issuerURL.host;
+        if (issuerURL.port != nil) {
+            BOOL isDefaultPort = ([issuerURL.scheme.lowercaseString isEqualToString:@"https"] && issuerURL.port.integerValue == 443) ||
+                                 ([issuerURL.scheme.lowercaseString isEqualToString:@"http"] && issuerURL.port.integerValue == 80);
+            if (!isDefaultPort) {
+                authority = [NSString stringWithFormat:@"%@:%@", issuerURL.host, issuerURL.port];
+            }
+        }
+    }
+    if (authority.length == 0) {
+        return nil;
+    }
+
+    NSMutableString *urlString = [NSMutableString stringWithFormat:@"%@://%@%@", scheme, authority, request.path ?: @"/"];
+    if (request.queryString.length > 0) {
+        [urlString appendFormat:@"?%@", request.queryString];
+    }
+    return [NSURL URLWithString:urlString];
+}
+
 @implementation XrpcAuthHelper
 
 #pragma mark - Public Methods
@@ -63,32 +163,7 @@
             return nil;
         }
 
-        // Construct DPoP URL
-        NSString *host = [request headerForKey:@"Host"] ?: @"";
-        NSString *scheme = nil;
-        NSString *forwardedProto = [request headerForKey:@"X-Forwarded-Proto"];
-        if (forwardedProto.length > 0) {
-            scheme = forwardedProto;
-        } else {
-            NSString *lowercaseHost = [host lowercaseString];
-            if ([lowercaseHost containsString:@"localhost"] || 
-                [lowercaseHost hasPrefix:@"127.0.0.1"] || 
-                [lowercaseHost hasPrefix:@"::1"]) {
-                scheme = @"http";
-            } else {
-                scheme = @"https";
-            }
-        }
-
-        NSMutableString *urlString = [NSMutableString string];
-        if (host.length > 0) {
-            [urlString appendFormat:@"%@://%@%@", scheme, host, request.path ?: @"/"];
-            if (request.queryString.length > 0) {
-                [urlString appendFormat:@"?%@", request.queryString];
-            }
-        }
-
-        NSURL *dpopURL = urlString.length > 0 ? [NSURL URLWithString:urlString] : nil;
+        NSURL *dpopURL = XrpcAuthExpectedDPoPURL(request, jwtMinter);
         if (!dpopURL) {
             PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
             return nil;
@@ -111,6 +186,8 @@
                         [response setHeader:nonce forKey:@"DPoP-Nonce"];
                     }
                     [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+                    [response setHeader:@"no-store" forKey:@"Cache-Control"];
+                    [response setHeader:@"no-cache" forKey:@"Pragma"];
                     [response setJsonBody:@{
                         @"error": @"use_dpop_nonce",
                         @"message": dpopError.localizedDescription ?: @"DPoP nonce required"
@@ -149,8 +226,6 @@
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
-        NSLog(@"[AuthRegistry] JWT verification failed: %@. Expected issuer: %@, JWT issuer: %@, subject: %@", 
-              verifyError.localizedDescription, expectedIssuer, jwt.payload.iss, jwt.payload.sub);
         PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
         return nil;
     }
@@ -159,27 +234,22 @@
     NSString *tokenJkt = jwt.payload.cnf[@"jkt"];
     if (isDPoP) {
         if (!tokenJkt) {
-            NSLog(@"[AuthRegistry] DPoP used but token not bound");
             PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
             return nil;
         }
         if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
-            NSLog(@"[AuthRegistry] DPoP thumbprint mismatch");
             PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
             return nil;
         }
     } else if (tokenJkt) {
-        NSLog(@"[AuthRegistry] DPoP-bound token sent as Bearer");
         PDS_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
         return nil;
     }
 
     // Extract DID from subject claim
     NSString *did = jwt.payload.sub;
-    NSLog(@"[AuthRegistry] Validated JWT for subject: %@", did);
     if (!did || ![did hasPrefix:@"did:"]) {
-        NSLog(@"[AuthRegistry] Invalid DID in subject: %@", did);
-        PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim: %@", did);
+        PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim");
         return nil;
     }
 

@@ -44,7 +44,9 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 }
 
 - (NSSet<WebSocketConnection *> *)connections {
-    return [self.mutableConnections copy];
+    @synchronized (self.mutableConnections) {
+        return [self.mutableConnections copy];
+    }
 }
 
 - (BOOL)start:(NSError **)error {
@@ -167,11 +169,15 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 
     self.state = WebSocketServerStateStopping;
 
-    for (WebSocketConnection *connection in [self.mutableConnections copy]) {
-        [connection close];
+    NSSet<WebSocketConnection *> *connectionsSnapshot = nil;
+    @synchronized (self.mutableConnections) {
+        connectionsSnapshot = [self.mutableConnections copy];
+        [self.mutableConnections removeAllObjects];
     }
 
-    [self.mutableConnections removeAllObjects];
+    for (WebSocketConnection *connection in connectionsSnapshot) {
+        [connection close];
+    }
 
     if (self.listener) {
         nw_listener_cancel(self.listener);
@@ -190,17 +196,26 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 }
 
 - (void)addConnection:(WebSocketConnection *)connection {
-    [self.mutableConnections addObject:connection];
+    @synchronized (self.mutableConnections) {
+        [self.mutableConnections addObject:connection];
+    }
 }
 
 - (void)removeConnection:(WebSocketConnection *)connection {
-    [self.mutableConnections removeObject:connection];
+    @synchronized (self.mutableConnections) {
+        [self.mutableConnections removeObject:connection];
+    }
 }
 
 - (void)broadcastMessage:(NSData *)message toConnectionsMatching:(NSPredicate *)predicate {
+    NSSet<WebSocketConnection *> *snapshot = nil;
+    @synchronized (self.mutableConnections) {
+        snapshot = [self.mutableConnections copy];
+    }
+
     NSSet<WebSocketConnection *> *targets = predicate
-        ? [self.mutableConnections filteredSetUsingPredicate:predicate]
-        : [self.mutableConnections copy];
+        ? [snapshot filteredSetUsingPredicate:predicate]
+        : snapshot;
 
     for (WebSocketConnection *connection in targets) {
         dispatch_group_enter(self.taskGroup);

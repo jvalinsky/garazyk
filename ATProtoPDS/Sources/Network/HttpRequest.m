@@ -1,6 +1,47 @@
 #import "Network/HttpRequest.h"
 #import <stdint.h>
 
+static BOOL PDSHttpRequestEnvBool(NSString *value) {
+  if (value.length == 0) {
+    return NO;
+  }
+  NSString *normalized = [[value
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]]
+      lowercaseString];
+  return [normalized isEqualToString:@"1"] ||
+         [normalized isEqualToString:@"true"] ||
+         [normalized isEqualToString:@"yes"] ||
+         [normalized isEqualToString:@"on"];
+}
+
+static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
+  NSString *candidate = [[remoteAddress ?: @""
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]]
+      lowercaseString];
+  if (candidate.length == 0) {
+    return NO;
+  }
+  if ([candidate hasPrefix:@"127."] || [candidate isEqualToString:@"::1"] ||
+      [candidate isEqualToString:@"localhost"]) {
+    return YES;
+  }
+  if ([candidate hasPrefix:@"10."] || [candidate hasPrefix:@"192.168."]) {
+    return YES;
+  }
+  if ([candidate hasPrefix:@"172."]) {
+    NSArray<NSString *> *parts = [candidate componentsSeparatedByString:@"."];
+    if (parts.count >= 2) {
+      NSInteger secondOctet = [parts[1] integerValue];
+      if (secondOctet >= 16 && secondOctet <= 31) {
+        return YES;
+      }
+    }
+  }
+  return NO;
+}
+
 @interface HttpRequest ()
 
 @property(nonatomic, readwrite, copy) NSDictionary *jsonBody;
@@ -40,20 +81,30 @@
     _version = [version copy];
     _headers = [self normalizeHeaders:headers];
     _body = [body copy];
-    // Check for reverse proxy headers first, then fall back to the direct
-    // socket address
-    NSString *forwardedFor = _headers[@"x-forwarded-for"];
-    if (forwardedFor.length > 0) {
-      // X-Forwarded-For can be a comma-separated list of IPs; the first one is
-      // the original client
-      NSArray<NSString *> *ips =
-          [forwardedFor componentsSeparatedByString:@","];
-      _remoteAddress = [[ips.firstObject
-          stringByTrimmingCharactersInSet:[NSCharacterSet
-                                              whitespaceCharacterSet]] copy];
-    } else if (_headers[@"x-real-ip"]) {
-      _remoteAddress = [_headers[@"x-real-ip"] copy];
-    } else {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    BOOL trustProxyHeaders = PDSHttpRequestEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"]);
+    BOOL trustedProxySource =
+        trustProxyHeaders && PDSHttpRequestIsTrustedProxyAddress(remoteAddress);
+
+    // Honor proxy headers only when explicitly enabled and the immediate peer
+    // is trusted.
+    if (trustedProxySource) {
+      NSString *forwardedFor = _headers[@"x-forwarded-for"];
+      if (forwardedFor.length > 0) {
+        NSArray<NSString *> *ips =
+            [forwardedFor componentsSeparatedByString:@","];
+        NSString *first = [ips.firstObject
+            stringByTrimmingCharactersInSet:[NSCharacterSet
+                                                whitespaceCharacterSet]];
+        if (first.length > 0) {
+          _remoteAddress = [first copy];
+        }
+      }
+      if (!_remoteAddress && _headers[@"x-real-ip"]) {
+        _remoteAddress = [_headers[@"x-real-ip"] copy];
+      }
+    }
+    if (!_remoteAddress) {
       _remoteAddress = [remoteAddress copy];
     }
     _correlationID = [headers[@"x-correlation-id"] ?: headers[@"x-request-id"] ?: [[NSUUID UUID] UUIDString] copy];
