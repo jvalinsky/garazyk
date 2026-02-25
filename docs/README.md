@@ -22,6 +22,8 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 |------|-------------|
 | [TESTING.md](TESTING.md) | Comprehensive testing guide and methodology |
 | [atproto-plc-architecture.md](atproto-plc-architecture.md) | ATProto PLC directory architecture |
+| [troubleshooting-2026-02-25.md](troubleshooting-2026-02-25.md) | PDS Configuration and Identity restoration logs |
+| [troubleshooting-relay-sync-2026-02-25.md](troubleshooting-relay-sync-2026-02-25.md) | Relay integration and sync troubleshooting logs |
 
 ## Quick Navigation
 
