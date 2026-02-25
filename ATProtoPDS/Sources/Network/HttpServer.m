@@ -742,21 +742,22 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
         [[PDSLogger sharedLogger] setCorrelationID:requestRef.correlationID];
 
-        NSString *logPath =
-            requestRef.queryString.length > 0
-                ? [NSString stringWithFormat:@"%@?%@", requestRef.path,
-                                             requestRef.queryString]
-                : requestRef.path;
-        PDS_LOG_HTTP_INFO(@"Starting dispatch for %@ %@",
-                          requestRef.methodString,
-                          [logPath stringByReplacingOccurrencesOfString:@"%"
-                                                             withString:@"%%"]);
+        NSString *logPath = requestRef.queryString.length > 0
+            ? [NSString
+                  stringWithFormat:
+                      @"%@?%@", requestRef.path,
+                      requestRef
+                          .queryString] PDS_LOG_HTTP_INFO(@"Starting dispatch "
+                                                          @"for [%@] %@ %@",
+                                                          requestRef
+                                                              .remoteAddress,
+                                                          requestRef
+                                                              .methodString,
+                                                          logPath);
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
-        PDS_LOG_HTTP_INFO(@"Finished dispatch for %@ %@, status %ld",
-                          requestRef.methodString,
-                          [logPath stringByReplacingOccurrencesOfString:@"%"
-                                                             withString:@"%%"],
-                          (long)response.statusCode);
+        PDS_LOG_HTTP_INFO(@"Finished dispatch for [%@] %@ %@, status %ld",
+                          requestRef.remoteAddress, requestRef.methodString,
+                          logPath, (long)response.statusCode);
 
         dispatch_async(serverQ, ^{
           [strongSelf enqueueResponse:response forConnection:strongConnection];
@@ -1229,9 +1230,8 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                           ? [NSString stringWithFormat:@"%@?%@", request.path,
                                                        request.queryString]
                           : request.path;
-  PDS_LOG_HTTP_INFO(
-      @"%@ %@", request.methodString,
-      [logPath stringByReplacingOccurrencesOfString:@"%" withString:@"%%"]);
+  PDS_LOG_HTTP_INFO(@"[%@] %@ %@", request.remoteAddress, request.methodString,
+                    logPath);
   HttpResponse *response = [HttpResponse response];
 
   if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
