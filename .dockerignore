@@ -4,7 +4,8 @@
 .github
 
 # Build artifacts
-build
+# build (uncommented to allow binary staging for fast deployment)
+build-linux
 *.log
 *.cast
 *.profraw
