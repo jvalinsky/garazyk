@@ -9,10 +9,12 @@
 @interface WebSocketServer (Testing)
 - (void)addConnection:(WebSocketConnection *)connection;
 - (void)removeConnection:(WebSocketConnection *)connection;
+- (void)setState:(WebSocketServerState)state;
 @end
 
 @interface TestWebSocketConnection : WebSocketConnection
 @property (atomic, assign) NSUInteger sentMessageCount;
+@property (nonatomic, assign) NSInteger tag;
 @end
 
 @implementation TestWebSocketConnection
@@ -26,6 +28,21 @@
     @synchronized (self) {
         self.sentMessageCount += 1;
     }
+}
+
+@end
+
+@interface WebSocketServerDelegateSpy : NSObject <WebSocketServerDelegate>
+@property (nonatomic, assign) WebSocketServerState lastState;
+@property (nonatomic, assign) NSUInteger callbackCount;
+@end
+
+@implementation WebSocketServerDelegateSpy
+
+- (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state {
+    (void)server;
+    self.lastState = state;
+    self.callbackCount += 1;
 }
 
 @end
@@ -112,9 +129,19 @@
 }
 
 - (void)testBroadcastWithPredicate {
+    TestWebSocketConnection *allowed = [[TestWebSocketConnection alloc] init];
+    allowed.tag = 1;
+    TestWebSocketConnection *blocked = [[TestWebSocketConnection alloc] init];
+    blocked.tag = 0;
+    [self.server addConnection:allowed];
+    [self.server addConnection:blocked];
+
     NSData *message = [@"filtered" dataUsingEncoding:NSUTF8StringEncoding];
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"port == 8080"];
-    XCTAssertNoThrow([self.server broadcastMessage:message toConnectionsMatching:predicate]);
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"tag == 1"];
+    [self.server broadcastMessage:message toConnectionsMatching:predicate];
+
+    XCTAssertEqual(allowed.sentMessageCount, (NSUInteger)1);
+    XCTAssertEqual(blocked.sentMessageCount, (NSUInteger)0);
 }
 
 - (void)testConcurrentConnectionMutationAndBroadcastDoesNotRace {
@@ -129,6 +156,16 @@
         [self.server addConnection:connections[idx]];
     });
     XCTAssertEqual(self.server.connections.count, connectionCount);
+
+    // Deterministic precondition: a baseline broadcast should reach all existing connections.
+    NSData *warmupPayload = [@"warmup" dataUsingEncoding:NSUTF8StringEncoding];
+    [self.server broadcastMessage:warmupPayload toConnectionsMatching:nil];
+
+    NSUInteger warmupSentTotal = 0;
+    for (TestWebSocketConnection *connection in connections) {
+        warmupSentTotal += connection.sentMessageCount;
+    }
+    XCTAssertGreaterThan(warmupSentTotal, 0u);
 
     NSData *payload = [@"broadcast" dataUsingEncoding:NSUTF8StringEncoding];
     dispatch_group_t group = dispatch_group_create();
@@ -146,12 +183,27 @@
 
     // Force the connection queue to drain pending mutation barriers.
     XCTAssertEqual(self.server.connections.count, 0u);
+}
 
-    NSUInteger sentMessageTotal = 0;
-    for (TestWebSocketConnection *connection in connections) {
-        sentMessageTotal += connection.sentMessageCount;
+- (void)testStateSetterNotifiesDelegateOnChange {
+    WebSocketServerDelegateSpy *spy = [[WebSocketServerDelegateSpy alloc] init];
+    self.server.delegate = spy;
+
+    [self.server setState:WebSocketServerStateRunning];
+    // setState notifies asynchronously on main queue.
+    for (NSUInteger i = 0; i < 50 && spy.callbackCount == 0; i++) {
+        [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
     }
-    XCTAssertGreaterThan(sentMessageTotal, 0u);
+
+    XCTAssertEqual(spy.callbackCount, (NSUInteger)1);
+    XCTAssertEqual(spy.lastState, WebSocketServerStateRunning);
+
+    // Setting same state should not notify again.
+    [self.server setState:WebSocketServerStateRunning];
+    for (NSUInteger i = 0; i < 20; i++) {
+        [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.005]];
+    }
+    XCTAssertEqual(spy.callbackCount, (NSUInteger)1);
 }
 
 - (void)testDelegateAssignment {
