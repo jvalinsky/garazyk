@@ -72,6 +72,23 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
     return privateKey;
 }
 
+static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
+                                         NSString *path,
+                                         NSDictionary<NSString *, NSString *> *headers) {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                   methodString:@"GET"
+                                                           path:path
+                                                    queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"1.1"
+                                                        headers:headers ?: @{}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [HttpResponse response];
+    [dispatcher handleRequest:request response:response];
+    return response;
+}
+
 @implementation XrpcMethodRegistryTests
 
 - (void)testPublicKeyBytesFromMultibaseDecodesBase58 {
@@ -288,6 +305,54 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertTrue(thumbprint.length > 0);
     } @finally {
         CFRelease(privateKey);
+    }
+}
+
+- (void)testRegisterMethodsProvidesCoverageForCoreNamespaces {
+    NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+    tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
+
+    @try {
+        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+
+        NSArray<NSString *> *paths = @[
+            @"/xrpc/com.atproto.server.describeServer",
+            @"/xrpc/com.atproto.identity.resolveHandle",
+            @"/xrpc/com.atproto.sync.getLatestCommit",
+            @"/xrpc/com.atproto.repo.describeRepo",
+            @"/xrpc/app.bsky.actor.getProfile",
+            @"/xrpc/com.atproto.admin.getInviteCodes"
+        ];
+
+        for (NSString *path in paths) {
+            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": @"localhost:2583"});
+            XCTAssertNotEqual(response.statusCode, HttpStatusNotFound, @"Expected registered route for %@", path);
+            XCTAssertNotEqual(response.statusCode, HttpStatusMethodNotAllowed, @"Expected callable route for %@", path);
+        }
+    } @finally {
+        [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+    }
+}
+
+- (void)testUnknownRouteReturnsNotFound {
+    NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+    tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
+
+    @try {
+        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+
+        HttpResponse *response = xrpcDispatchRequest(dispatcher,
+                                                     @"/xrpc/com.atproto.thisEndpointDoesNotExist",
+                                                     @{@"host": @"localhost:2583"});
+        XCTAssertEqual(response.statusCode, HttpStatusNotFound);
+    } @finally {
+        [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 }
 
