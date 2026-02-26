@@ -1,4 +1,8 @@
+#ifdef __APPLE__
 #import <XCTest/XCTest.h>
+#else
+#import "Compat/XCTest/XCTest.h"
+#endif
 #import "Sync/WebSocketServer.h"
 #import "Sync/WebSocketConnection.h"
 
