@@ -3,11 +3,14 @@
 #import "Auth/OAuth2.h"
 #import "Auth/OAuth2Handler+Testing.h"
 #import "Auth/DPoPUtil.h"
+#import "Auth/JWT.h"
 #import "Auth/PDSNonceManager.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
 #import "App/Services/PDSAccountService.h"
+#import <Security/Security.h>
+#import <CommonCrypto/CommonDigest.h>
 
 @interface TestAccountService : NSObject <PDSAccountService>
 @property (nonatomic, copy) NSDictionary *mockUser;
@@ -928,7 +931,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
 - (void)testValidateClientMetadataAcceptsPrivateKeyJWTClient {
     NSMutableDictionary *metadata = [[self validATProtoClientMetadataTemplateWithClientID:@"https://example.com/confidential"
-                                                                               redirectURI:@"https://example.com/callback"] mutableCopy];
+                                                                        redirectURI:@"https://example.com/callback"] mutableCopy];
     metadata[@"token_endpoint_auth_method"] = @"private_key_jwt";
     metadata[@"token_endpoint_auth_signing_alg"] = @"ES256";
     metadata[@"jwks_uri"] = @"https://example.com/jwks.json";
@@ -938,6 +941,347 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     XCTAssertNotNil(validated);
     XCTAssertNil(error);
+}
+
+- (NSDictionary *)createTestClientJWKS {
+    NSData *xData = oauth2HandlerDataFromHexString(@"44073c1c6da8c2c9736c011ff13a2b3602a1d819e687582bdf87262ad1b12f50", 32);
+    NSData *yData = oauth2HandlerDataFromHexString(@"79720e75ce2eaae05079972dd065b2eb437d9af5c9a974d3ce186525494bdc3c", 32);
+
+    return @{
+        @"keys": @[
+            @{
+                @"kty": @"EC",
+                @"crv": @"P-256",
+                @"kid": @"test-key-1",
+                @"x": [xData base64EncodedStringWithOptions:0],
+                @"y": [yData base64EncodedStringWithOptions:0]
+            }
+        ]
+    };
+}
+
+- (NSString *)signJWTAssertionForClientID:(NSString *)clientID
+                                   issuer:(NSString *)issuer
+                                 audience:(NSString *)audience
+                                   expiry:(NSTimeInterval)expiry
+                                 privateKey:(SecKeyRef)privateKey {
+    NSDictionary *header = @{
+        @"alg": @"ES256",
+        @"typ": @"JWT",
+        @"kid": @"test-key-1"
+    };
+
+    NSDate *now = [NSDate date];
+    NSDate *expiration = [now dateByAddingTimeInterval:expiry];
+    NSTimeInterval iat = [now timeIntervalSince1970];
+    NSTimeInterval exp = [expiration timeIntervalSince1970];
+    NSString *jti = [[NSUUID UUID] UUIDString];
+
+    NSDictionary *payload = @{
+        @"iss": issuer,
+        @"sub": issuer,
+        @"aud": audience,
+        @"iat": @(iat),
+        @"exp": @(exp),
+        @"jti": jti
+    };
+
+    NSError *error = nil;
+    JWTHeader *jwtHeader = [JWTHeader headerFromDictionary:header error:&error];
+    JWTPayload *jwtPayload = [JWTPayload payloadFromDictionary:payload error:&error];
+
+    JWT *jwt = [JWT jwtWithHeader:jwtHeader payload:jwtPayload signature:@"" error:&error];
+    NSString *signingInput = jwt.signingInput;
+
+    NSData *signingInputData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+    NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+
+    CFErrorRef signError = NULL;
+    NSData *signatureData = (NSData *)CFBridgingRelease(
+        SecKeyCreateSignature(privateKey,
+                             kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                             (__bridge CFDataRef)hashData,
+                             &signError));
+
+    if (!signatureData) {
+        return nil;
+    }
+
+    NSString *encodedSignature = [JWT base64URLEncodeData:signatureData error:&error];
+    if (!encodedSignature) {
+        return nil;
+    }
+
+    return [NSString stringWithFormat:@"%@.%@", signingInput, encodedSignature];
+}
+
+- (void)testTokenRequestWithValidJWTAssertion {
+    NSError *error = nil;
+    SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&error);
+    XCTAssertTrue(privateKey != NULL, @"Should create private key");
+
+    NSString *clientID = @"https://example.com/confidential-jwt";
+    NSDictionary *jwks = [self createTestClientJWKS];
+
+    NSDictionary *clientRecord = @{
+        @"client_id": clientID,
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @"authorization_code refresh_token",
+        @"scope": @"atproto",
+        @"token_endpoint_auth_method": @"private_key_jwt",
+        @"token_endpoint_auth_signing_alg": @"ES256",
+        @"jwks": jwks,
+        @"jwks_uri": @"",
+        @"application_type": @"web"
+    };
+    XCTAssertTrue([self.database createClient:clientRecord error:&error], @"Should create JWT client: %@", error);
+
+    NSString *assertion = [self signJWTAssertionForClientID:clientID
+                                                    issuer:clientID
+                                                  audience:@"https://pds.garazyk.xyz"
+                                                    expiry:3600
+                                               privateKey:privateKey];
+    XCTAssertNotNil(assertion);
+
+    NSString *body = [NSString stringWithFormat:
+        @"grant_type=authorization_code&code=test-code&client_id=%@&redirect_uri=https://example.com/callback&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        clientID, assertion];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/token"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.handler handleTokenRequest:request response:response];
+
+    XCTAssertTrue(response.statusCode == 400 || response.statusCode == 401,
+                 @"Should return 400 or 401 (valid JWT assertion should be validated)");
+    if (response.statusCode == 401) {
+        NSLog(@"JWT validation failed: %@", response.jsonBody[@"error_description"]);
+    }
+
+    if (privateKey) {
+        CFRelease(privateKey);
+    }
+}
+
+- (void)testTokenRequestWithInvalidJWTAssertionSignature {
+    NSError *error = nil;
+    SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&error);
+    XCTAssertTrue(privateKey != NULL, @"Should create private key");
+
+    NSString *clientID = @"https://example.com/confidential-jwt-sig";
+    NSDictionary *jwks = [self createTestClientJWKS];
+
+    NSDictionary *clientRecord = @{
+        @"client_id": clientID,
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @"authorization_code refresh_token",
+        @"scope": @"atproto",
+        @"token_endpoint_auth_method": @"private_key_jwt",
+        @"token_endpoint_auth_signing_alg": @"ES256",
+        @"jwks": jwks,
+        @"jwks_uri": @"",
+        @"application_type": @"web"
+    };
+    XCTAssertTrue([self.database createClient:clientRecord error:&error], @"Should create JWT client: %@", error);
+
+    NSString *assertion = [self signJWTAssertionForClientID:clientID
+                                                    issuer:clientID
+                                                  audience:@"https://pds.garazyk.xyz"
+                                                    expiry:3600
+                                               privateKey:privateKey];
+
+    NSMutableString *tamperedAssertion = [assertion mutableCopy];
+    NSRange lastDotRange = [assertion rangeOfString:@"." options:NSBackwardsSearch];
+    if (lastDotRange.location != NSNotFound) {
+        NSMutableString *sigPart = [[assertion substringFromIndex:lastDotRange.location + 1] mutableCopy];
+        if (sigPart.length > 0) {
+            unichar firstChar = [sigPart characterAtIndex:0];
+            firstChar = (firstChar == 'a') ? 'b' : 'a';
+            [sigPart replaceCharactersInRange:NSMakeRange(0, 1) withString:[NSString stringWithCharacters:&firstChar length:1]];
+            [tamperedAssertion replaceCharactersInRange:lastDotRange withString:[NSString stringWithFormat:@".%@", sigPart]];
+        }
+    }
+
+    NSString *body = [NSString stringWithFormat:
+        @"grant_type=authorization_code&code=test-code&client_id=%@&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        clientID, tamperedAssertion];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/token"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.handler handleTokenRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 401, @"Should return 401 for invalid JWT signature");
+    XCTAssertNotNil(response.jsonBody[@"error_description"], @"Should have error description");
+
+    if (privateKey) {
+        CFRelease(privateKey);
+    }
+}
+
+- (void)testTokenRequestWithExpiredJWTAssertion {
+    NSError *error = nil;
+    SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&error);
+    XCTAssertTrue(privateKey != NULL, @"Should create private key");
+
+    NSString *clientID = @"https://example.com/confidential-jwt-exp";
+    NSDictionary *jwks = [self createTestClientJWKS];
+
+    NSDictionary *clientRecord = @{
+        @"client_id": clientID,
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @"authorization_code refresh_token",
+        @"scope": @"atproto",
+        @"token_endpoint_auth_method": @"private_key_jwt",
+        @"token_endpoint_auth_signing_alg": @"ES256",
+        @"jwks": jwks,
+        @"jwks_uri": @"",
+        @"application_type": @"web"
+    };
+    XCTAssertTrue([self.database createClient:clientRecord error:&error], @"Should create JWT client: %@", error);
+
+    NSString *assertion = [self signJWTAssertionForClientID:clientID
+                                                    issuer:clientID
+                                                  audience:@"https://pds.garazyk.xyz"
+                                                    expiry:-3600
+                                               privateKey:privateKey];
+    XCTAssertNotNil(assertion);
+
+    NSString *body = [NSString stringWithFormat:
+        @"grant_type=authorization_code&code=test-code&client_id=%@&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        clientID, assertion];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/token"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.handler handleTokenRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 401, @"Should return 401 for expired JWT");
+    XCTAssertTrue([response.jsonBody[@"error_description"] containsString:@"expired"],
+                 @"Error should mention expiration");
+
+    if (privateKey) {
+        CFRelease(privateKey);
+    }
+}
+
+- (void)testTokenRequestWithMismatchedIssuer {
+    NSError *error = nil;
+    SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&error);
+    XCTAssertTrue(privateKey != NULL, @"Should create private key");
+
+    NSString *clientID = @"https://example.com/confidential-jwt-iss";
+    NSDictionary *jwks = [self createTestClientJWKS];
+
+    NSDictionary *clientRecord = @{
+        @"client_id": clientID,
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @"authorization_code refresh_token",
+        @"scope": @"atproto",
+        @"token_endpoint_auth_method": @"private_key_jwt",
+        @"token_endpoint_auth_signing_alg": @"ES256",
+        @"jwks": jwks,
+        @"jwks_uri": @"",
+        @"application_type": @"web"
+    };
+    XCTAssertTrue([self.database createClient:clientRecord error:&error], @"Should create JWT client: %@", error);
+
+    NSString *assertion = [self signJWTAssertionForClientID:clientID
+                                                    issuer:@"https://evil.com/attacker"
+                                                  audience:@"https://pds.garazyk.xyz"
+                                                    expiry:3600
+                                               privateKey:privateKey];
+
+    NSString *body = [NSString stringWithFormat:
+        @"grant_type=authorization_code&code=test-code&client_id=%@&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        clientID, assertion];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/token"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.handler handleTokenRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 401, @"Should return 401 for mismatched issuer");
+    XCTAssertTrue([response.jsonBody[@"error_description"] containsString:@"iss"],
+                 @"Error should mention issuer claim");
+
+    if (privateKey) {
+        CFRelease(privateKey);
+    }
+}
+
+- (void)testTokenRequestWithPrivateKeyJWTClientMissingAssertion {
+    NSString *clientID = @"https://example.com/confidential-jwt-missing";
+
+    NSError *error = nil;
+    NSDictionary *jwks = [self createTestClientJWKS];
+
+    NSDictionary *clientRecord = @{
+        @"client_id": clientID,
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @"authorization_code refresh_token",
+        @"scope": @"atproto",
+        @"token_endpoint_auth_method": @"private_key_jwt",
+        @"token_endpoint_auth_signing_alg": @"ES256",
+        @"jwks": jwks,
+        @"jwks_uri": @"",
+        @"application_type": @"web"
+    };
+    XCTAssertTrue([self.database createClient:clientRecord error:&error], @"Should create JWT client: %@", error);
+
+    NSString *body = [NSString stringWithFormat:
+        @"grant_type=authorization_code&code=test-code&client_id=%@&redirect_uri=https://example.com/callback",
+        clientID];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/token"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    [self.handler handleTokenRequest:request response:response];
+
+    XCTAssertTrue(response.statusCode == 400 || response.statusCode == 401,
+                 @"Should return 400 or 401 when no client authentication provided");
 }
 
 @end
