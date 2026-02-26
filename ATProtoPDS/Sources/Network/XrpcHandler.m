@@ -2,6 +2,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
+#import "Debug/PDSLogger.h"
 
 @interface XrpcDispatcher ()
 
@@ -96,7 +97,21 @@
         return;
     }
 
-    handler(request, response);
+    @try {
+        handler(request, response);
+    } @catch (NSException *exception) {
+        NSString *name = exception.name ?: @"(null)";
+        NSString *reason = exception.reason ?: @"(null)";
+        NSArray<NSString *> *stack = exception.callStackSymbols ?: @[];
+        PDS_LOG_ERROR(@"[XRPC] Unhandled exception in %@: %@ (%@)\n%@",
+                      methodId, name, reason, [stack componentsJoinedByString:@"\n"]);
+
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+            @"error": @"InternalServerError",
+            @"message": @"Unhandled exception"
+        }];
+    }
 }
 
 - (void)registerComAtprotoServerDescribeServer:(XrpcMethodHandler)handler {
