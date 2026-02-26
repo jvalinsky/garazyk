@@ -256,6 +256,12 @@ When generating, modifying, or reviewing PDS configuration for production deploy
 - **VM**: `DEPLOY_HOST` (exe.dev)
 - **Architecture**: `exe.dev HTTPS → nginx:3000 → PDS:2583`
 
+### Required Environment Variables
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `PDS_TRUST_PROXY_HEADERS` | `1` | Trust `X-Real-IP`/`X-Forwarded-For` from nginx for proper rate limiting per-client |
+
 ### Deployment Commands
 
 **CRITICAL**: Always run `docker compose` from `docker/pds/`, NEVER from the repo root. The repo root has a separate `docker-compose.yml` for local dev/testing that mounts the dev `config.json` (localhost, mock PLC). Running from the wrong directory will cause the PDS to serve `did:web:localhost%3A2583` instead of `did:web:pds.garazyk.xyz`.
