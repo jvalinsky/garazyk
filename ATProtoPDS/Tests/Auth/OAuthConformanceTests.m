@@ -7,6 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
 #import <Security/Security.h>
+#import <CommonCrypto/CommonDigest.h>
 
 @interface OAuthConformanceTests : XCTestCase
 @property (nonatomic, strong) OAuth2Handler *handler;
@@ -103,13 +104,25 @@
     XCTAssertNotNil(dpopToken, @"DPoP token creation failed: %@", dpopError);
     
     // 3. Prepare PAR request
+    NSString *codeVerifier = @"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    NSData *verifierData = [codeVerifier dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned char challengeHash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(verifierData.bytes, (CC_LONG)verifierData.length, challengeHash);
+    NSData *challengeData = [NSData dataWithBytes:challengeHash length:CC_SHA256_DIGEST_LENGTH];
+    NSString *codeChallenge = [challengeData base64EncodedStringWithOptions:0];
+    codeChallenge = [codeChallenge stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    codeChallenge = [codeChallenge stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    codeChallenge = [codeChallenge stringByReplacingOccurrencesOfString:@"=" withString:@""];
+
     NSDictionary *params = @{
         @"client_id": @"test_client",
         @"client_secret": @"secret",
         @"response_type": @"code",
         @"redirect_uri": @"https://client.example.com/cb",
         @"scope": @"atproto",
-        @"state": @"xyz"
+        @"state": @"xyz",
+        @"code_challenge": codeChallenge,
+        @"code_challenge_method": @"S256"
     };
     
     NSMutableString *body = [NSMutableString string];
