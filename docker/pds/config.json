@@ -55,6 +55,17 @@
     ],
     "max_age": 86400
   },
+  "rate_limit": {
+    "enabled": true,
+    "requests_per_minute": 10000,
+    "burst_size": 1000,
+    "did_limit": 10000,
+    "did_window": 60,
+    "ip_limit": 10000,
+    "ip_window": 60,
+    "blob_limit": 1000,
+    "blob_window": 3600
+  },
   "debug": {
     "skip_plc_operations": false
   }
