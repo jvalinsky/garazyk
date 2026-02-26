@@ -16,6 +16,7 @@
 #import "App/NodeInfo/NodeInfoHandler.h"
 #import "App/OAuthDemo/OAuthDemoHandler.h"
 #import "App/PDSConfiguration.h"
+#import "App/Services/PDSRecordService.h"
 #import "Auth/JWT.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/PDSKeyManagerFactory.h"
@@ -542,6 +543,11 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
       PDS_LOG_ERROR(
           @"Failed to initialize repo for DID %@ during account creation: %@",
           createdDid, initError.localizedDescription ?: @"unknown error");
+    } else {
+      [[NSNotificationCenter defaultCenter]
+          postNotificationName:PDSRecordDidChangeNotification
+                        object:nil
+                      userInfo:@{@"did" : createdDid}];
     }
   }
 
