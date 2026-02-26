@@ -92,6 +92,26 @@
     XCTAssertFalse(valid, @"Mismatching URI should fail");
 }
 
+- (void)testDPoPHtuCanonicalizationExcludesQueryAndFragment {
+    NSError *error = nil;
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET"
+                                                  uri:@"https://server.example.com/resource?id=123#frag"
+                                               nonce:nil
+                                                 key:_privateKey
+                                               error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(token.htu, @"https://server.example.com/resource");
+
+    BOOL valid = [DPoPUtil verifyDPoP:token.jwt
+                        withPublicKey:_publicKey
+                               method:@"GET"
+                                  uri:@"https://server.example.com/resource?other=1"
+                                nonce:nil
+                                error:&error];
+    XCTAssertTrue(valid, @"DPoP htu verification should ignore query/fragment");
+}
+
 - (void)testDPoPNonceChallenge {
     NSError *error = nil;
     NSString *nonce = @"random-nonce-value";

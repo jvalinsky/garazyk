@@ -598,71 +598,32 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
-    NSUInteger cursorSeq = hasCursor ? parsedCursor : 0;
-    // Removed: Sending initial state identity events is non-spec behavior
-    // Per ATProto spec, firehose should only emit events for actual changes,
-    // not send identity events for all existing repos on connection.
-    // Clients should use getRepo/listRepos endpoints for initial discovery.
-    /*
-    if (cursorSeq == 0) {
-        NSError *error = nil;
-        NSArray<PDSDatabaseRepo *> *repos = [self.controller.userDatabasePool
-    getAllReposWithError:&error];
-
-        if (error) {
-            PDS_LOG_SYNC_ERROR(@"Failed to get all repos: %@", error);
-            [self sendInfoEvent:@"OutdatedCursor" message:@"Unable to retrieve
-    repository state" toConnection:connection]; return;
-        }
-
-        for (PDSDatabaseRepo *repo in repos) {
-            if (repo.rootCid.length > 0) {
-                NSData *rootCidData = repo.rootCid;
-                CID *cid = [CID cidFromBytes:rootCidData];
-                NSString *cidString = cid ? [cid stringValue] : [rootCidData
-    base64EncodedStringWithOptions:0];
-
-                FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc]
-    init]; event.did = repo.ownerDid;
-
-                NSError *encodeError = nil;
-                NSData *eventData = [self.eventFormatter
-    encodeIdentityEvent:event error:&encodeError];
-
-                if (eventData) {
-                    if (![self sendEventData:eventData
-    toConnectionWithBackpressureCheck:connection]) { return;
-                    }
-                    PDS_LOG_SYNC_DEBUG(@"Sent identity event for repo %@ (root:
-    %@)", repo.ownerDid, cidString); } else { PDS_LOG_SYNC_ERROR(@"Failed to
-    encode identity event for repo %@: %@", repo.ownerDid, encodeError);
-                }
-            }
-        }
-        PDS_LOG_SYNC_INFO(@"Completed sending initial state for %lu repos to new
-    connection", (unsigned long)repos.count);
-    }
-    */
-
-    if (cursorSeq == 0) {
-      PDS_LOG_SYNC_INFO(@"Cursor is 0; skipping initial identity broadcast per ATProto spec. Client is now listening for live events.");
+    if (!hasCursor) {
+      PDS_LOG_SYNC_INFO(@"No cursor provided; client is now listening for live events.");
+    } else if (parsedCursor == 0) {
+      PDS_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all events from the beginning.");
     }
 
-    if (cursorSeq > 0) {
-      NSUInteger backlog = self.sequenceNumber - cursorSeq;
-      if (backlog > self.maxReplayEventsPerConnection) {
-        PDS_LOG_SYNC_WARN(@"Backlog (%lu) exceeds replay window (%lu) for connection %@",
-                         (unsigned long)backlog, (unsigned long)self.maxReplayEventsPerConnection, connection);
-        [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
-                             message:@"cursor backlog exceeds replay window"
-                        toConnection:connection];
-        [self detachConnection:connection];
-        [connection closeWithCode:1008
-                           reason:kSubscribeReposErrorConsumerTooSlow];
-        return;
+    if (hasCursor && parsedCursor >= 0) {
+      NSUInteger cursorSeq = parsedCursor;
+      if (cursorSeq == 0 && self.sequenceNumber == 0) {
+        PDS_LOG_SYNC_INFO(@"No events to replay (server sequence is 0).");
+      } else {
+        NSUInteger backlog = self.sequenceNumber - cursorSeq;
+        if (backlog > self.maxReplayEventsPerConnection) {
+          PDS_LOG_SYNC_WARN(@"Backlog (%lu) exceeds replay window (%lu) for connection %@",
+                           (unsigned long)backlog, (unsigned long)self.maxReplayEventsPerConnection, connection);
+          [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
+                               message:@"cursor backlog exceeds replay window"
+                          toConnection:connection];
+          [self detachConnection:connection];
+          [connection closeWithCode:1008
+                             reason:kSubscribeReposErrorConsumerTooSlow];
+          return;
+        }
+        PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@", (unsigned long)backlog, connection);
+        [self replayEventsAfterCursor:cursorSeq toConnection:connection];
       }
-      PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@", (unsigned long)backlog, connection);
-      [self replayEventsAfterCursor:cursorSeq toConnection:connection];
     }
   });
 }

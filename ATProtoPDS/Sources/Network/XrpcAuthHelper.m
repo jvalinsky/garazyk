@@ -62,6 +62,29 @@ static BOOL XrpcAuthShouldTrustForwardedHeaders(HttpRequest *request) {
     return XrpcAuthIsTrustedProxyRemoteAddress(request.remoteAddress);
 }
 
+static NSString *XrpcAuthSanitizedErrorSummary(NSError *error) {
+    if (!error) {
+        return @"domain=unknown code=0";
+    }
+    return [NSString stringWithFormat:@"domain=%@ code=%ld",
+                                      error.domain ?: @"unknown",
+                                      (long)error.code];
+}
+
+static void XrpcAuthAttachDPoPNonceToResponseIfMissing(HttpResponse *response) {
+    if (!response) {
+        return;
+    }
+    NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
+    if (existingNonce.length > 0) {
+        return;
+    }
+    NSString *nextNonce = [[PDSNonceManager sharedManager] generateNonce];
+    if (nextNonce.length > 0) {
+        [response setHeader:nextNonce forKey:@"DPoP-Nonce"];
+    }
+}
+
 static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter) {
     NSString *hostHeader = [[request headerForKey:@"Host"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *hostLower = [hostHeader lowercaseString];
@@ -190,14 +213,16 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                     [response setHeader:@"no-cache" forKey:@"Pragma"];
                     [response setJsonBody:@{
                         @"error": @"use_dpop_nonce",
-                        @"message": dpopError.localizedDescription ?: @"DPoP nonce required"
+                        @"message": @"DPoP nonce required"
                     }];
                 }
                 return nil;
             }
-            PDS_LOG_AUTH_WARN(@"Invalid DPoP proof: %@", dpopError.localizedDescription ?: @"unknown error");
+            PDS_LOG_AUTH_WARN(@"Invalid DPoP proof (%@)", XrpcAuthSanitizedErrorSummary(dpopError));
             return nil;
         }
+
+        XrpcAuthAttachDPoPNonceToResponseIfMissing(response);
     }
 
     // Parse the JWT token
@@ -257,7 +282,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSError *takedownError = nil;
     BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
     if (takedownError) {
-        PDS_LOG_AUTH_WARN(@"Failed to check takedown status for %@: %@", did, takedownError.localizedDescription);
+        PDS_LOG_AUTH_WARN(@"Failed to check takedown status (%@)", XrpcAuthSanitizedErrorSummary(takedownError));
         return nil;
     }
     if (isTakedown) {

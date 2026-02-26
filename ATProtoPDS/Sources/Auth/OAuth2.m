@@ -21,6 +21,7 @@
 #import "Database/PDSDatabase.h"
 #import "Auth/TOTPService.h"
 #import "Auth/Base32Utils.h"
+#import "Auth/CryptoUtils.h"
 #import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
@@ -38,6 +39,58 @@ NSString * const OAuth2ErrorDomain = @"com.atproto.pds.oauth2";
 
 static NSString * const kAuthorizationCodeKey = @"authorization_code";
 static NSString * const kRefreshTokenKey = @"refresh_token";
+
+static NSString *OAuth2CanonicalDPoPHTUFromURL(NSURL *url) {
+    if (!url) {
+        return nil;
+    }
+
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url
+                                             resolvingAgainstBaseURL:NO];
+    if (!components) {
+        return nil;
+    }
+
+    NSString *scheme = [components.scheme lowercaseString];
+    NSString *host = [components.host lowercaseString];
+    if (scheme.length == 0 || host.length == 0) {
+        return nil;
+    }
+
+    NSString *path = components.percentEncodedPath;
+    if (path.length == 0) {
+        path = @"/";
+    }
+
+    NSNumber *port = components.port;
+    BOOL includePort = NO;
+    if (port != nil) {
+        NSInteger portValue = port.integerValue;
+        BOOL defaultHTTPS = [scheme isEqualToString:@"https"] && portValue == 443;
+        BOOL defaultHTTP = [scheme isEqualToString:@"http"] && portValue == 80;
+        includePort = !(defaultHTTPS || defaultHTTP);
+    }
+
+    NSURLComponents *canonical = [[NSURLComponents alloc] init];
+    canonical.scheme = scheme;
+    canonical.host = host;
+    canonical.percentEncodedPath = path;
+    canonical.query = nil;
+    canonical.fragment = nil;
+    if (includePort) {
+        canonical.port = port;
+    }
+
+    return canonical.string;
+}
+
+static NSString *OAuth2CanonicalDPoPHTUFromString(NSString *urlString) {
+    if (![urlString isKindOfClass:[NSString class]] || urlString.length == 0) {
+        return nil;
+    }
+    NSURL *url = [NSURL URLWithString:urlString];
+    return OAuth2CanonicalDPoPHTUFromURL(url);
+}
 
 @interface OAuth2Server ()
 @end
@@ -89,6 +142,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     response.state = params[@"state"];
     response.error = params[@"error"];
     response.errorDescription = params[@"error_description"];
+    response.issuer = params[@"iss"];
 
     NSString *errorParam = params[@"error"];
     if (errorParam) {
@@ -654,9 +708,15 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
     NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
     if (!headerEncoded) return nil;
 
-    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-    components.fragment = nil;
-    NSString *normalizedHTU = components.URL.absoluteString ?: url.absoluteString;
+    NSString *normalizedHTU = OAuth2CanonicalDPoPHTUFromURL(url);
+    if (normalizedHTU.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP URL target"}];
+        }
+        return nil;
+    }
     NSString *normalizedMethod = [method uppercaseString];
 
     NSMutableDictionary *claims = [NSMutableDictionary dictionary];
@@ -784,9 +844,16 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         return NO;
     }
 
-    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-    components.fragment = nil;
-    NSString *expectedHTU = components.URL.absoluteString ?: url.absoluteString;
+    NSString *expectedHTU = OAuth2CanonicalDPoPHTUFromURL(url);
+    NSString *receivedHTU = OAuth2CanonicalDPoPHTUFromString(htu);
+    if (expectedHTU.length == 0 || receivedHTU.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP htu claim"}];
+        }
+        return NO;
+    }
 
     NSString *normalizedMethod = [method uppercaseString];
     if (![htm isEqualToString:normalizedMethod]) {
@@ -799,21 +866,14 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         return NO;
     }
 
-    if (![htu isEqualToString:expectedHTU]) {
-        NSURLComponents *payloadComponents = [NSURLComponents componentsWithString:htu];
-        if (!payloadComponents ||
-            ![payloadComponents.scheme.lowercaseString isEqualToString:components.scheme.lowercaseString] ||
-            ![payloadComponents.host.lowercaseString isEqualToString:components.host.lowercaseString] ||
-            ![payloadComponents.path isEqualToString:components.path] ||
-            ![(payloadComponents.query ?: @"") isEqualToString:(components.query ?: @"")]) {
-            if (error) {
-                PDS_LOG_AUTH_DEBUG(@"DPoP verification failed: htu mismatch (expected=%@, got=%@)", expectedHTU, htu);
-                *error = [NSError errorWithDomain:OAuth2ErrorDomain
-                                             code:OAuth2ErrorInvalidDPoPProof
-                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP htu mismatch"}];
-            }
-            return NO;
+    if (![receivedHTU isEqualToString:expectedHTU]) {
+        if (error) {
+            PDS_LOG_AUTH_DEBUG(@"DPoP verification failed: htu mismatch (expected=%@, got=%@)", expectedHTU, receivedHTU);
+            *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                         code:OAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP htu mismatch"}];
         }
+        return NO;
     }
 
     // DPoP nonce check
@@ -1177,6 +1237,17 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidDPoPProof
                                          userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP key thumbprint"}];
+        completion(nil, error);
+        return;
+    }
+
+    NSString *expectedDPoPJKT = codeData[@"dpop_jwk"];
+    if (expectedDPoPJKT.length > 0 &&
+        ![CryptoUtils constantTimeCompare:expectedDPoPJKT
+                                       to:request.dpopKeyThumbprint]) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidDPoPProof
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP key mismatch for authorization session"}];
         completion(nil, error);
         return;
     }
