@@ -107,6 +107,12 @@
     XCTAssertNoThrow([self.server stop]);
 }
 
+- (void)testStopWhenAlreadyStoppingReturnsImmediately {
+    [self.server setState:WebSocketServerStateStopping];
+    XCTAssertNoThrow([self.server stop]);
+    XCTAssertEqual(self.server.state, WebSocketServerStateStopping);
+}
+
 - (void)testDelegateCanBeNil {
     self.server.delegate = nil;
     XCTAssertNil(self.server.delegate);
@@ -126,6 +132,16 @@
 - (void)testBroadcastWithNoConnections {
     NSData *message = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
     XCTAssertNoThrow([self.server broadcastMessage:message toConnectionsMatching:nil]);
+}
+
+- (void)testStartFailsWhenServerNotIdle {
+    [self.server setState:WebSocketServerStateRunning];
+    NSError *error = nil;
+    BOOL started = [self.server start:&error];
+    XCTAssertFalse(started);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, WebSocketServerErrorDomain);
+    XCTAssertEqual(error.code, WebSocketServerErrorCodeListenerFailed);
 }
 
 - (void)testBroadcastWithPredicate {
