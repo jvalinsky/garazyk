@@ -9,6 +9,7 @@
 
 @property (nonatomic, strong) PDSKeychainSecretsProvider *provider;
 @property (nonatomic, copy) NSString *testService;
+@property (nonatomic, assign) BOOL keychainWritable;
 
 @end
 
@@ -19,6 +20,7 @@
     
     self.testService = [NSString stringWithFormat:@"com.atproto.pds.email.test.%@", [[NSUUID UUID] UUIDString]];
     self.provider = [[PDSKeychainSecretsProvider alloc] initWithService:self.testService];
+    self.keychainWritable = [self probeKeychainWritable];
     
     [self cleanupAllTestData];
 }
@@ -27,6 +29,19 @@
     [self cleanupAllTestData];
     
     [super tearDown];
+}
+
+- (BOOL)probeKeychainWritable {
+    NSString *key = [NSString stringWithFormat:@"probe_%@", [[NSUUID UUID] UUIDString]];
+    NSError *storeError = nil;
+    BOOL stored = [self.provider storeSecret:@"probe" forKey:key error:&storeError];
+    if (!stored) {
+        return NO;
+    }
+
+    NSError *deleteError = nil;
+    (void)[self.provider deleteSecretForKey:key error:&deleteError];
+    return YES;
 }
 
 - (void)cleanupAllTestData {
@@ -66,6 +81,13 @@
     NSError *storeError = nil;
     BOOL stored = [self.provider storeSecret:testSecret forKey:testKey error:&storeError];
     
+    if (!self.keychainWritable) {
+        XCTAssertFalse(stored);
+        XCTAssertNotNil(storeError);
+        XCTAssertEqual(storeError.code, PDSKeychainSecretsProviderErrorStorageFailed);
+        return;
+    }
+
     XCTAssertTrue(stored, @"Secret should be stored successfully");
     XCTAssertNil(storeError, @"No error should occur during storage");
     
@@ -85,7 +107,11 @@
     
     XCTAssertNil(secret, @"Secret should be nil for non-existent key");
     XCTAssertNotNil(error, @"Error should be set for non-existent key");
-    XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorItemNotFound, @"Error should be ItemNotFound");
+    if (self.keychainWritable) {
+        XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorItemNotFound, @"Error should be ItemNotFound");
+    } else {
+        XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorKeychainFailure, @"Unavailable keychain should report keychain failure");
+    }
 }
 
 - (void)testSecretForKeyWithEmptyKey {
@@ -102,7 +128,20 @@
     NSString *testSecret = @"secret_to_delete_12345";
     
     NSError *storeError = nil;
-    [self.provider storeSecret:testSecret forKey:testKey error:&storeError];
+    BOOL stored = [self.provider storeSecret:testSecret forKey:testKey error:&storeError];
+    if (!self.keychainWritable) {
+        XCTAssertFalse(stored);
+        XCTAssertNotNil(storeError);
+        XCTAssertEqual(storeError.code, PDSKeychainSecretsProviderErrorStorageFailed);
+
+        NSError *deleteError = nil;
+        BOOL deleted = [self.provider deleteSecretForKey:testKey error:&deleteError];
+        XCTAssertFalse(deleted);
+        XCTAssertNotNil(deleteError);
+        XCTAssertEqual(deleteError.code, PDSKeychainSecretsProviderErrorDeletionFailed);
+        return;
+    }
+    XCTAssertTrue(stored);
     XCTAssertNil(storeError, @"Setup: Secret should be stored");
     
     NSError *deleteError = nil;
@@ -126,6 +165,13 @@
     
     NSError *storeError1 = nil;
     BOOL stored1 = [self.provider storeSecret:originalSecret forKey:testKey error:&storeError1];
+    if (!self.keychainWritable) {
+        XCTAssertFalse(stored1);
+        XCTAssertNotNil(storeError1);
+        XCTAssertEqual(storeError1.code, PDSKeychainSecretsProviderErrorStorageFailed);
+        return;
+    }
+
     XCTAssertTrue(stored1, @"Original secret should be stored");
     XCTAssertNil(storeError1);
     
@@ -142,6 +188,29 @@
     NSString *retrieved2 = [self.provider secretForKey:testKey error:&retrieveError2];
     XCTAssertEqualObjects(retrieved2, updatedSecret, @"Should retrieve updated secret, not original");
     XCTAssertNotEqualObjects(retrieved2, originalSecret, @"Retrieved secret should not be original");
+}
+
+- (void)testStoreSecretRejectsNilInputs {
+    id nullObject = nil;
+    NSError *error = nil;
+    XCTAssertFalse([self.provider storeSecret:(NSString *)nullObject forKey:@"k" error:&error]);
+    XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorInvalidInput);
+
+    error = nil;
+    XCTAssertFalse([self.provider storeSecret:@"v" forKey:(NSString *)nullObject error:&error]);
+    XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorInvalidInput);
+}
+
+- (void)testStoreSecretRejectsEmptyKey {
+    NSError *error = nil;
+    XCTAssertFalse([self.provider storeSecret:@"v" forKey:@"" error:&error]);
+    XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorInvalidInput);
+}
+
+- (void)testDeleteSecretRejectsEmptyKey {
+    NSError *error = nil;
+    XCTAssertFalse([self.provider deleteSecretForKey:@"" error:&error]);
+    XCTAssertEqual(error.code, PDSKeychainSecretsProviderErrorInvalidKey);
 }
 
 @end
