@@ -356,4 +356,28 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     }
 }
 
+- (void)testRegisterMethodsWithControllerOverloadProvidesRoute {
+    NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+    tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
+
+    @try {
+        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        XCTAssertNotNil(app.legacyController);
+
+        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
+                                               controller:app.legacyController];
+
+        HttpResponse *response = xrpcDispatchRequest(dispatcher,
+                                                     @"/xrpc/com.atproto.server.describeServer",
+                                                     @{@"host": @"localhost:2583"});
+        XCTAssertEqual(response.statusCode, HttpStatusOK);
+        XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+        XCTAssertNotNil(response.jsonBody[@"did"]);
+    } @finally {
+        [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+    }
+}
+
 @end
