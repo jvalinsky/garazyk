@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
-cd "/Users/jack/Software/garazyk"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+cd "${REPO_ROOT}"
 echo "Running Clang Static Analyzer (scan-build)..."
 rm -rf build-analyzed
 mkdir build-analyzed
