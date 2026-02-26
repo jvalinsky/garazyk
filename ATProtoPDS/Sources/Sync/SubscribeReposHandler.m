@@ -31,6 +31,7 @@ static const NSUInteger kSubscribeReposMaxPendingBytesDefault =
 static NSString *const kSubscribeReposErrorFutureCursor = @"FutureCursor";
 static NSString *const kSubscribeReposErrorConsumerTooSlow = @"ConsumerTooSlow";
 static NSString *const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
+static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 
 @interface SubscribeReposHandler () <WebSocketServerDelegate,
                                      WebSocketConnectionDelegate>
@@ -71,6 +72,10 @@ static NSString *const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 - (NSUInteger)addMSTNodeBlocksForRootCID:(CID *)rootCID
                                      did:(NSString *)repoDid
                                 toWriter:(CARWriter *)writer;
+- (nullable NSNumber *)oldestPersistedSequenceNumber;
+- (NSUInteger)effectiveReplayCursorForRequestedCursor:(NSUInteger)requestedCursor
+                                              outdated:(BOOL *)outdated;
+- (NSData *)buildCARBlocksForSyncCommitOnly:(RepoCommit *)commit;
 
 @end
 
@@ -278,6 +283,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   NSString *collection = info[@"collection"];
   NSString *rkey = info[@"rkey"];
   NSString *action = info[@"action"];
+  NSString *normalizedAction =
+      ([action isKindOfClass:[NSString class]] && action.length > 0)
+          ? action
+          : @"create";
+  NSString *previousRecordCIDString =
+      [info[@"previousRecordCID"] isKindOfClass:[NSString class]]
+          ? info[@"previousRecordCID"]
+          : nil;
 
   if (!did || !collection || !rkey)
     return;
@@ -301,10 +314,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     NSString *path = [NSString stringWithFormat:@"%@/%@", collection, rkey];
     NSMutableDictionary *op = [@{
-      @"action" : action ?: @"create",
+      @"action" : normalizedAction,
       @"path" : path,
       @"cid" : opCID ?: [NSNull null]
     } mutableCopy];
+    if (([normalizedAction isEqualToString:@"update"] ||
+         [normalizedAction isEqualToString:@"delete"]) &&
+        previousRecordCIDString.length > 0) {
+      CID *previousRecordCID = [CID cidFromString:previousRecordCIDString];
+      if (previousRecordCID) {
+        op[@"prev"] = previousRecordCID;
+      }
+    }
     if (recordCBOR) {
       op[@"recordCBOR"] = recordCBOR;
     }
@@ -395,26 +416,44 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       self.lastCommitRevByDID[repoDid] = commit.rev;
     }
 
+    NSString *eventType = @"commit";
     NSError *error = nil;
     NSData *eventData =
         [self.eventFormatter encodeCommitEvent:event error:&error];
-
     if (!eventData) {
-      PDS_LOG_SYNC_ERROR(@"Failed to encode commit event: %@", error);
-      return;
+      PDS_LOG_SYNC_WARN(
+          @"Commit event encoding failed for %@ at seq %lu (%@), falling back "
+          @"to #sync",
+          repoDid, (unsigned long)self.sequenceNumber, error);
+      FirehoseSyncEvent *syncEvent = [[FirehoseSyncEvent alloc] init];
+      syncEvent.seq = self.sequenceNumber;
+      syncEvent.did = repoDid;
+      syncEvent.blocks = [self buildCARBlocksForSyncCommitOnly:commit];
+      syncEvent.rev = commit.rev ?: @"";
+      syncEvent.time = event.time;
+
+      NSError *syncError = nil;
+      eventData = [self.eventFormatter encodeSyncEvent:syncEvent error:&syncError];
+      if (!eventData) {
+        PDS_LOG_SYNC_ERROR(@"Failed to encode sync fallback event: %@",
+                           syncError);
+        return;
+      }
+      eventType = @"sync";
     }
 
     NSError *persistError = nil;
     if (![self.serviceDatabases persistEvent:self.sequenceNumber
-                                        type:@"commit"
+                                        type:eventType
                                         data:eventData
                                        error:&persistError]) {
-      PDS_LOG_SYNC_ERROR(@"Failed to persist commit event: %@", persistError);
+      PDS_LOG_SYNC_ERROR(@"Failed to persist %@ event: %@", eventType,
+                         persistError);
     }
 
     [self broadcastEventData:eventData];
-    PDS_LOG_SYNC_INFO(@"Broadcast commit event for repo %@, seq %lu", repoDid,
-                      (unsigned long)self.sequenceNumber);
+    PDS_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
+                      repoDid, (unsigned long)self.sequenceNumber);
   });
 }
 
@@ -604,25 +643,29 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       PDS_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all events from the beginning.");
     }
 
-    if (hasCursor && parsedCursor >= 0) {
-      NSUInteger cursorSeq = parsedCursor;
-      if (cursorSeq == 0 && self.sequenceNumber == 0) {
-        PDS_LOG_SYNC_INFO(@"No events to replay (server sequence is 0).");
+    if (hasCursor) {
+      BOOL outdated = NO;
+      NSUInteger replayCursor =
+          [self effectiveReplayCursorForRequestedCursor:parsedCursor
+                                               outdated:&outdated];
+      if (outdated) {
+        PDS_LOG_SYNC_WARN(@"Outdated cursor %lu adjusted to %lu for connection %@",
+                          (unsigned long)parsedCursor,
+                          (unsigned long)replayCursor, connection);
+        [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                    message:@"Requested cursor exceeded limit. Possibly missing events"
+               toConnection:connection];
+      }
+
+      if (replayCursor >= self.sequenceNumber) {
+        PDS_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu.",
+                          (unsigned long)replayCursor,
+                          (unsigned long)self.sequenceNumber);
       } else {
-        NSUInteger backlog = self.sequenceNumber - cursorSeq;
-        if (backlog > self.maxReplayEventsPerConnection) {
-          PDS_LOG_SYNC_WARN(@"Backlog (%lu) exceeds replay window (%lu) for connection %@",
-                           (unsigned long)backlog, (unsigned long)self.maxReplayEventsPerConnection, connection);
-          [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
-                               message:@"cursor backlog exceeds replay window"
-                          toConnection:connection];
-          [self detachConnection:connection];
-          [connection closeWithCode:1008
-                             reason:kSubscribeReposErrorConsumerTooSlow];
-          return;
-        }
-        PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@", (unsigned long)backlog, connection);
-        [self replayEventsAfterCursor:cursorSeq toConnection:connection];
+        NSUInteger backlog = self.sequenceNumber - replayCursor;
+        PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@",
+                          (unsigned long)backlog, connection);
+        [self replayEventsAfterCursor:replayCursor toConnection:connection];
       }
     }
   });
@@ -666,12 +709,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       if (replayedCount > self.maxReplayEventsPerConnection) {
         PDS_LOG_SYNC_WARN(@"Replay limit exceeded (%lu) during backfill for connection %@",
                          (unsigned long)replayedCount, connection);
-        [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
-                             message:@"replay window exceeded while backfilling"
-                        toConnection:connection];
-        [self detachConnection:connection];
-        [connection closeWithCode:1008
-                           reason:kSubscribeReposErrorConsumerTooSlow];
+        [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                    message:@"Replay window exceeded while backfilling"
+               toConnection:connection];
         return;
       }
 
@@ -743,6 +783,52 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (outValue)
     *outValue = (NSUInteger)parsed;
   return YES;
+}
+
+- (nullable NSNumber *)oldestPersistedSequenceNumber {
+  NSError *error = nil;
+  NSArray<NSDictionary *> *events =
+      [self.serviceDatabases getEventsSince:0 limit:1 error:&error];
+  if (error) {
+    PDS_LOG_SYNC_WARN(@"Failed to read oldest persisted sequence: %@", error);
+    return nil;
+  }
+  if (events.count == 0) {
+    return nil;
+  }
+
+  id seqValue = events.firstObject[@"seq"];
+  return [seqValue isKindOfClass:[NSNumber class]] ? seqValue : nil;
+}
+
+- (NSUInteger)effectiveReplayCursorForRequestedCursor:(NSUInteger)requestedCursor
+                                              outdated:(BOOL *)outdated {
+  NSUInteger minimumCursor = 0;
+
+  NSNumber *oldestSeqValue = [self oldestPersistedSequenceNumber];
+  if (oldestSeqValue != nil) {
+    NSUInteger oldestSeq = oldestSeqValue.unsignedIntegerValue;
+    if (oldestSeq > 0) {
+      NSUInteger oldestCursor = oldestSeq - 1;
+      if (oldestCursor > minimumCursor) {
+        minimumCursor = oldestCursor;
+      }
+    }
+  }
+
+  if (self.sequenceNumber > self.maxReplayEventsPerConnection) {
+    NSUInteger replayWindowCursor =
+        self.sequenceNumber - self.maxReplayEventsPerConnection;
+    if (replayWindowCursor > minimumCursor) {
+      minimumCursor = replayWindowCursor;
+    }
+  }
+
+  BOOL cursorOutdated = requestedCursor < minimumCursor;
+  if (outdated) {
+    *outdated = cursorOutdated;
+  }
+  return cursorOutdated ? minimumCursor : requestedCursor;
 }
 
 - (void)sendErrorFrameWithCode:(NSString *)code
@@ -906,6 +992,32 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                      (unsigned long)revisionBlockCount,
                      (unsigned long)mstBlockCount);
 
+  return carData ?: [NSData data];
+}
+
+- (NSData *)buildCARBlocksForSyncCommitOnly:(RepoCommit *)commit {
+  CID *commitCID = commit.computeCID;
+  if (!commitCID) {
+    PDS_LOG_SYNC_ERROR(@"Failed to compute commit CID for sync fallback CAR");
+    return [NSData data];
+  }
+
+  CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+  NSData *commitBlockData = [commit serializeSigned];
+  if (commitBlockData.length > 0) {
+    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
+  } else {
+    NSData *singleBlockCAR = [commit exportCAR];
+    if (singleBlockCAR.length > 0) {
+      CARReader *reader = [CARReader readFromData:singleBlockCAR error:nil];
+      CARBlock *commitBlock = reader.blocks.firstObject;
+      if (commitBlock) {
+        [writer addBlock:commitBlock];
+      }
+    }
+  }
+
+  NSData *carData = [writer serialize];
   return carData ?: [NSData data];
 }
 

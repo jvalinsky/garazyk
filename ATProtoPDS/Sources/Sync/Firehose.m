@@ -25,6 +25,20 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 
 @end
 
+@implementation FirehoseSyncEvent
+
++ (instancetype)eventWithDid:(NSString *)did
+                         rev:(NSString *)rev
+                      blocks:(NSData *)blocks {
+    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+    event.did = did;
+    event.rev = rev;
+    event.blocks = blocks ?: [NSData data];
+    return event;
+}
+
+@end
+
 @implementation FirehoseIdentityEvent
 
 + (instancetype)eventWithDid:(NSString *)did {

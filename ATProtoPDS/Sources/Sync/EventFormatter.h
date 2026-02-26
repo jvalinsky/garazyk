@@ -13,6 +13,7 @@
 #import <Foundation/Foundation.h>
 
 @class FirehoseCommitEvent;
+@class FirehoseSyncEvent;
 @class FirehoseIdentityEvent;
 @class FirehoseAccountEvent;
 @class FirehoseInfoEvent;
@@ -46,6 +47,7 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
 
  Supported message types:
  - "#commit": Repository commit event
+ - "#sync": Repository sync event
  - "#identity": Identity update event
  - "#account": Account status event
  - "#info": Informational message
@@ -55,6 +57,10 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
 /*! Encodes a commit event with proper XRPC streaming header. */
 - (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event
                                  error:(NSError **)error;
+
+/*! Encodes a sync event with proper XRPC streaming header. */
+- (nullable NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event
+                                error:(NSError **)error;
 
 /*! Encodes an identity event with proper XRPC streaming header. */
 - (nullable NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event
