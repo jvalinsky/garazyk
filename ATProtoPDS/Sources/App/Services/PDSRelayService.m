@@ -7,6 +7,9 @@
 #define MSEC_PER_SEC 1000ULL
 #endif
 
+static const NSTimeInterval kRelayNotifyDebounceSeconds = 1.0;
+static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
+
 @interface PDSRelayService ()
 
 @property(nonatomic, copy) NSArray<NSString *> *relays;
@@ -15,6 +18,7 @@
 @property(nonatomic, strong) NSMutableSet<NSString *> *pendingDids;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t timer;
+@property(nonatomic, assign) NSTimeInterval lastRelayNotificationTime;
 
 @end
 
@@ -32,6 +36,7 @@
     _pendingDids = [NSMutableSet set];
     _queue = dispatch_queue_create("com.atproto.pds.relay.service",
                                    DISPATCH_QUEUE_SERIAL);
+    _lastRelayNotificationTime = 0;
   }
   return self;
 }
@@ -70,11 +75,21 @@
   if (self.timer)
     return;
 
+  NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+  NSTimeInterval earliestByThreshold =
+      self.lastRelayNotificationTime + kRelayNotifyThresholdSeconds;
+  NSTimeInterval targetFireTime =
+      now + kRelayNotifyDebounceSeconds;
+  if (earliestByThreshold > targetFireTime) {
+    targetFireTime = earliestByThreshold;
+  }
+  NSTimeInterval delaySeconds = MAX(0, targetFireTime - now);
+  int64_t delayNanos = (int64_t)(delaySeconds * (double)NSEC_PER_SEC);
+
   self.timer =
       dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, self.queue);
-  // Debounce for 1 second to avoid spamming relays for batch operations
   dispatch_source_set_timer(self.timer,
-                            dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC),
+                            dispatch_time(DISPATCH_TIME_NOW, delayNanos),
                             DISPATCH_TIME_FOREVER, 100 * MSEC_PER_SEC);
 
   dispatch_source_set_event_handler(self.timer, ^{
@@ -97,6 +112,7 @@
                 (unsigned long)self.relays.count,
                 (unsigned long)didsToNotify.count);
 
+  self.lastRelayNotificationTime = [[NSDate date] timeIntervalSince1970];
   for (NSString *relayHost in self.relays) {
     [self notifyRelay:relayHost];
   }
