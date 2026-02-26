@@ -1010,7 +1010,29 @@ static NSString *OAuth2CanonicalDPoPHTUFromString(NSString *urlString) {
         NSError *keyError = nil;
         id<PDSKeyPair> keyPair = [_keyManager getActiveKeyPair:&keyError];
         if (!keyPair) {
-            PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError);
+            NSDictionary *env = [[NSProcessInfo processInfo] environment];
+            BOOL isProduction = [[env[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
+                                [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
+                                [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
+            if (!isProduction) {
+                NSError *fallbackError = nil;
+                Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+                if (fallbackKeyPair) {
+                    _keyManager = nil;
+                    _jwtMinter.keyManager = nil;
+                    _jwtMinter.signingAlgorithm = @"ES256K";
+                    _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+                    _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+                    PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 OAuth2 JWT signing key fallback because key manager provisioning failed (%@).",
+                                      keyError.localizedDescription ?: @"unknown error");
+                } else {
+                    PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@ (fallback error: %@)",
+                                       keyError.localizedDescription ?: @"unknown error",
+                                       fallbackError.localizedDescription ?: @"unknown error");
+                }
+            } else {
+                PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError.localizedDescription ?: @"unknown error");
+            }
         }
     }
     return self;
