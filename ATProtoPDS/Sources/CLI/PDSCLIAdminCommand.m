@@ -4,7 +4,6 @@
 #import "Debug/PDSLogger.h"
 #import "PDSCLIInputHelper.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "App/Services/PDSRecordService.h"
 
 #pragma mark - Admin Command
 
@@ -31,14 +30,13 @@
            @"Subcommands:\n"
            @"  list                   List all administrator DIDs\n"
            @"  add <did|handle>       Grant administrator privileges to an account\n"
-           @"  remove <did>          Revoke administrator privileges from an account\n"
-           @"  create --email <e> --handle <h> [--password <p>]  Create a new admin account\n"
-           @"  notify <did>          Notify relays about a specific account (triggers crawl)\n\n"
+           @"  remove <did>           Revoke administrator privileges from an account\n"
+           @"  create --email <e> --handle <h> [--password <p>]  Create a new admin account\n\n"
            @"Note: Administrative privileges allow access to the PDS dashboard and admin XRPC endpoints.";
 }
 
 - (NSArray<NSString *> *)subcommands {
-    return @[@"list", @"add", @"remove", @"create", @"notify"];
+    return @[@"list", @"add", @"remove", @"create"];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -61,8 +59,6 @@
         return [self executeRemoveWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"create"]) {
         return [self executeCreateWithArgs:subArgs context:context];
-    } else if ([subcommand isEqualToString:@"notify"]) {
-        return [self executeNotifyWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
         return 1;
@@ -187,25 +183,6 @@
 
     [context printError:@"Failed to create admin account"];
     return 1;
-}
-
-- (int)executeNotifyWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
-    if (args.count == 0) {
-        [context printError:@"Missing account DID"];
-        return 1;
-    }
-
-    NSString *did = args[0];
-    
-    [context printInfo:[NSString stringWithFormat:@"Notifying relays about account: %@", did]];
-    
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:PDSRecordDidChangeNotification
-                      object:nil
-                    userInfo:@{@"did" : did}];
-    
-    [context printInfo:@"Relay notification sent successfully"];
-    return 0;
 }
 
 @end
