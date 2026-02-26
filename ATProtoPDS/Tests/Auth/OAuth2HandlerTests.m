@@ -150,6 +150,71 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     [super tearDown];
 }
 
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return [formatter stringFromDate:date];
+}
+
+- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+                                       clientID:(NSString *)clientID {
+    NSError *error = nil;
+    BOOL created = [self.database executeParameterizedUpdate:
+                    @"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)"
+                                                         params:@[]
+                                                          error:&error];
+    XCTAssertTrue(created, @"Failed to create PAR table: %@", error);
+
+    NSData *paramsData = [NSJSONSerialization dataWithJSONObject:authorizeParams options:0 error:&error];
+    XCTAssertNotNil(paramsData, @"Failed to serialize authorize params: %@", error);
+
+    NSString *requestURI = [NSString stringWithFormat:@"urn:ietf:params:oauth:request_uri:%@", [[NSUUID UUID] UUIDString]];
+    NSString *expiresAt = [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSinceNow:600]];
+    NSString *paramsJSON = [[NSString alloc] initWithData:paramsData encoding:NSUTF8StringEncoding];
+    BOOL inserted = [self.database executeParameterizedUpdate:
+                     @"INSERT INTO oauth_par_requests (request_uri, client_id, params_json, expires_at, consumed_at) VALUES (?, ?, ?, ?, NULL)"
+                                                          params:@[requestURI, clientID ?: @"", paramsJSON ?: @"{}", expiresAt]
+                                                           error:&error];
+    XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@""
+                                                   queryParams:@{
+                                                       @"request_uri": requestURI,
+                                                       @"client_id": clientID ?: @""
+                                                   }
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeRequest:request response:response];
+    return response;
+}
+
+- (NSDictionary *)validATProtoClientMetadataTemplateWithClientID:(NSString *)clientID
+                                                      redirectURI:(NSString *)redirectURI {
+    return @{
+        @"client_id": clientID,
+        @"client_name": @"Spec Client",
+        @"redirect_uris": @[redirectURI],
+        @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
+        @"scope": @"atproto",
+        @"dpop_bound_access_tokens": @YES,
+        @"token_endpoint_auth_method": @"none",
+        @"application_type": @"web"
+    };
+}
+
 - (void)testTokenRequestRejectsInvalidClientSecret {
     // Setup request with valid client_id but wrong client_secret (when secret is configured)
     NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client-confidential&client_secret=wrong";
@@ -174,24 +239,14 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
 - (void)testAuthorizeRejectsMissingState {
     // Setup request without state parameter
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb"
-                                                   queryParams:@{
-                                                       @"client_id": @"test-client",
-                                                       @"response_type": @"code",
-                                                       @"redirect_uri": @"http://localhost/cb"
-                                                       // Note: no state parameter
-                                                   }
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-
-    // Execute handler
-    [self.handler handleAuthorizeRequest:request response:response];
+    NSDictionary *queryParams = @{
+        @"client_id": @"test-client",
+        @"response_type": @"code",
+        @"redirect_uri": @"http://localhost/cb"
+        // Note: no state parameter
+    };
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
 
     // Assert 400 Bad Request
     XCTAssertEqual(response.statusCode, 400, @"Should return 400 for missing state parameter");
@@ -389,26 +444,16 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"scope": @"atproto"
     } error:nil];
     
-    NSString *queryString = [NSString stringWithFormat:@"client_id=test-client&redirect_uri=%@&response_type=code&state=test-state-123&code_challenge=test_challenge&code_challenge_method=S256", [redirectWithQuery stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
-    
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                     methodString:@"GET"
-                                                             path:@"/oauth/authorize"
-                                                      queryString:queryString
-                                                      queryParams:@{
-                                                          @"client_id": @"test-client",
-                                                          @"redirect_uri": redirectWithQuery,
-                                                          @"response_type": @"code",
-                                                          @"state": @"test-state-123",
-                                                          @"code_challenge": @"test_challenge",
-                                                          @"code_challenge_method": @"S256"
-                                                      }
-                                                          version:@"1.1"
-                                                          headers:@{}
-                                                             body:[NSData data]
-                                                   remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    [self.handler handleAuthorizeRequest:request response:response];
+    NSDictionary *queryParams = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": redirectWithQuery,
+        @"response_type": @"code",
+        @"state": @"test-state-123",
+        @"code_challenge": @"test_challenge",
+        @"code_challenge_method": @"S256"
+    };
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
     
     XCTAssertEqual(response.statusCode, 200, @"Should serve consent page");
     NSString *bodyStr = [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
@@ -473,26 +518,16 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"scope": @"atproto"
     } error:nil];
     
-    NSString *queryString = [NSString stringWithFormat:@"client_id=test-client&redirect_uri=%@&response_type=code&state=test-state-456&code_challenge=test_challenge&code_challenge_method=S256", redirectWithoutQuery];
-    
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                     methodString:@"GET"
-                                                             path:@"/oauth/authorize"
-                                                      queryString:queryString
-                                                      queryParams:@{
-                                                          @"client_id": @"test-client",
-                                                          @"redirect_uri": redirectWithoutQuery,
-                                                          @"response_type": @"code",
-                                                          @"state": @"test-state-456",
-                                                          @"code_challenge": @"test_challenge",
-                                                          @"code_challenge_method": @"S256"
-                                                      }
-                                                          version:@"1.1"
-                                                          headers:@{}
-                                                             body:[NSData data]
-                                                   remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    [self.handler handleAuthorizeRequest:request response:response];
+    NSDictionary *queryParams = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": redirectWithoutQuery,
+        @"response_type": @"code",
+        @"state": @"test-state-456",
+        @"code_challenge": @"test_challenge",
+        @"code_challenge_method": @"S256"
+    };
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
     
     XCTAssertEqual(response.statusCode, 200, @"Should serve consent page");
     NSString *bodyStr = [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
@@ -634,24 +669,17 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 }
 
 - (void)testPendingConsentsBoundedUnderRepeatedSignInAttempts {
-    HttpRequest *authorizeRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                            methodString:@"GET"
-                                                                    path:@"/oauth/authorize"
-                                                             queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=consent-cap&code_challenge=test_challenge&code_challenge_method=S256"
-                                                             queryParams:@{
-                                                                 @"client_id": @"test-client",
-                                                                 @"response_type": @"code",
-                                                                 @"redirect_uri": @"http://localhost/cb",
-                                                                 @"state": @"consent-cap",
-                                                                 @"code_challenge": @"test_challenge",
-                                                                 @"code_challenge_method": @"S256"
-                                                             }
-                                                                 version:@"1.1"
-                                                                 headers:@{}
-                                                                    body:[NSData data]
-                                                          remoteAddress:@"127.0.0.1"];
-    HttpResponse *authorizeResponse = [[HttpResponse alloc] init];
-    [self.handler handleAuthorizeRequest:authorizeRequest response:authorizeResponse];
+    NSDictionary *authorizeParams = @{
+        @"client_id": @"test-client",
+        @"response_type": @"code",
+        @"redirect_uri": @"http://localhost/cb",
+        @"state": @"consent-cap",
+        @"code_challenge": @"test_challenge",
+        @"code_challenge_method": @"S256"
+    };
+    HttpResponse *authorizeResponse =
+        [self authorizeViaPARWithParameters:authorizeParams
+                                    clientID:@"test-client"];
     XCTAssertEqual(authorizeResponse.statusCode, 200);
 
     NSString *csrfToken = @"csrf-consent-cap";
@@ -681,24 +709,17 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 }
 
 - (void)testAuthorizeDenyRemovesPendingConsentSession {
-    HttpRequest *authorizeRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                            methodString:@"GET"
-                                                                    path:@"/oauth/authorize"
-                                                             queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=deny-cleanup&code_challenge=test_challenge&code_challenge_method=S256"
-                                                             queryParams:@{
-                                                                 @"client_id": @"test-client",
-                                                                 @"response_type": @"code",
-                                                                 @"redirect_uri": @"http://localhost/cb",
-                                                                 @"state": @"deny-cleanup",
-                                                                 @"code_challenge": @"test_challenge",
-                                                                 @"code_challenge_method": @"S256"
-                                                             }
-                                                                 version:@"1.1"
-                                                                 headers:@{}
-                                                                    body:[NSData data]
-                                                          remoteAddress:@"127.0.0.1"];
-    HttpResponse *authorizeResponse = [[HttpResponse alloc] init];
-    [self.handler handleAuthorizeRequest:authorizeRequest response:authorizeResponse];
+    NSDictionary *authorizeParams = @{
+        @"client_id": @"test-client",
+        @"response_type": @"code",
+        @"redirect_uri": @"http://localhost/cb",
+        @"state": @"deny-cleanup",
+        @"code_challenge": @"test_challenge",
+        @"code_challenge_method": @"S256"
+    };
+    HttpResponse *authorizeResponse =
+        [self authorizeViaPARWithParameters:authorizeParams
+                                    clientID:@"test-client"];
     XCTAssertEqual(authorizeResponse.statusCode, 200);
 
     NSString *csrfToken = @"csrf-deny-cleanup";
@@ -761,7 +782,13 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     NSDictionary *validMetadata = @{
         @"client_id": @"https://example.com",
         @"client_name": @"Example App",
-        @"redirect_uris": @[@"https://example.com/callback"]
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
+        @"scope": @"atproto",
+        @"dpop_bound_access_tokens": @YES,
+        @"token_endpoint_auth_method": @"none",
+        @"application_type": @"web"
     };
     NSData *metadataJSON = [NSJSONSerialization dataWithJSONObject:validMetadata options:0 error:nil];
     NSString *metadataString = [[NSString alloc] initWithData:metadataJSON encoding:NSUTF8StringEncoding];
@@ -776,22 +803,15 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"client_metadata": metadataString
     };
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:nil
-                                                remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams
+                                    clientID:@"https://example.com"];
+
     // The handler should extract and parse client_metadata without crashing
     // Expected: Returns 400 because client is not registered (validation not yet implemented)
     // But the parsing should succeed (check logs for "Parsed client_metadata with 3 keys")
-    [self.handler handleAuthorizeRequest:request response:response];
-    
+    // Authorization path now requires PAR, so this test exercises metadata via PAR-backed authorize.
+
     // With client_metadata support, the client should be validated via metadata
     // and the consent page should be served (200) or redirect issued (302)
     XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
@@ -809,21 +829,12 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"client_metadata": @"{invalid json}"
     };
     
-    HttpRequest *invalidRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                          methodString:@"GET"
-                                                                  path:@"/oauth/authorize"
-                                                           queryString:@""
-                                                           queryParams:invalidQueryParams
-                                                               version:@"1.1"
-                                                               headers:@{}
-                                                                  body:nil
-                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *invalidResponse = [[HttpResponse alloc] init];
-    
+    HttpResponse *invalidResponse =
+        [self authorizeViaPARWithParameters:invalidQueryParams
+                                    clientID:@"https://example.com"];
+
     // Should handle gracefully (log warning) and continue
     // Check logs for "Failed to parse client_metadata JSON"
-    [self.handler handleAuthorizeRequest:invalidRequest response:invalidResponse];
-    
     // Should still return 400 (client not registered), but shouldn't crash
     XCTAssertEqual(invalidResponse.statusCode, 400, @"Should handle invalid JSON gracefully and return 400");
     XCTAssertEqualObjects(invalidResponse.jsonBody[@"error"], @"unauthorized_client", @"Should fail with unauthorized_client");
@@ -838,22 +849,95 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge_method": @"S256"
     };
     
-    HttpRequest *noMetadataRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                            methodString:@"GET"
-                                                                    path:@"/oauth/authorize"
-                                                             queryString:@""
-                                                             queryParams:noMetadataParams
-                                                                 version:@"1.1"
-                                                                 headers:@{}
-                                                                    body:nil
-                                                          remoteAddress:@"127.0.0.1"];
-    HttpResponse *noMetadataResponse = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:noMetadataRequest response:noMetadataResponse];
+    HttpResponse *noMetadataResponse =
+        [self authorizeViaPARWithParameters:noMetadataParams
+                                    clientID:@"https://example.com"];
     
     // Should return 400 (client not registered)
     XCTAssertEqual(noMetadataResponse.statusCode, 400, @"Should return 400 when no client_metadata and not registered");
     XCTAssertEqualObjects(noMetadataResponse.jsonBody[@"error"], @"unauthorized_client", @"Should fail with unauthorized_client");
+}
+
+- (void)testAuthorizeRejectsDirectRequestWithoutRequestURI {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=state123"
+                                                   queryParams:@{
+                                                       @"client_id": @"test-client",
+                                                       @"response_type": @"code",
+                                                       @"redirect_uri": @"http://localhost/cb",
+                                                       @"state": @"state123"
+                                                   }
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_request");
+    XCTAssertTrue([response.jsonBody[@"error_description"] containsString:@"request_uri"]);
+}
+
+- (void)testValidateClientMetadataRejectsMissingDPoPBoundAccessTokens {
+    NSDictionary *metadata = @{
+        @"client_id": @"https://example.com/app",
+        @"client_name": @"Example App",
+        @"redirect_uris": @[@"https://example.com/callback"],
+        @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
+        @"scope": @"atproto",
+        @"token_endpoint_auth_method": @"none",
+        @"application_type": @"web"
+    };
+    NSError *error = nil;
+    NSDictionary *validated = [self.handler validateClientMetadata:metadata error:&error];
+
+    XCTAssertNil(validated);
+    XCTAssertNotNil(error);
+    XCTAssertTrue([error.localizedDescription containsString:@"dpop_bound_access_tokens"]);
+}
+
+- (void)testValidateClientMetadataRejectsUnsupportedResponseTypes {
+    NSMutableDictionary *metadata = [[self validATProtoClientMetadataTemplateWithClientID:@"https://example.com/app"
+                                                                               redirectURI:@"https://example.com/callback"] mutableCopy];
+    metadata[@"response_types"] = @[@"code", @"token"];
+
+    NSError *error = nil;
+    NSDictionary *validated = [self.handler validateClientMetadata:metadata error:&error];
+
+    XCTAssertNil(validated);
+    XCTAssertNotNil(error);
+    XCTAssertTrue([error.localizedDescription containsString:@"Unsupported response_type"]);
+}
+
+- (void)testValidateClientMetadataRejectsUnsupportedTokenEndpointAuthMethod {
+    NSMutableDictionary *metadata = [[self validATProtoClientMetadataTemplateWithClientID:@"https://example.com/app"
+                                                                               redirectURI:@"https://example.com/callback"] mutableCopy];
+    metadata[@"token_endpoint_auth_method"] = @"client_secret_basic";
+
+    NSError *error = nil;
+    NSDictionary *validated = [self.handler validateClientMetadata:metadata error:&error];
+
+    XCTAssertNil(validated);
+    XCTAssertNotNil(error);
+    XCTAssertTrue([error.localizedDescription containsString:@"Unsupported token_endpoint_auth_method"]);
+}
+
+- (void)testValidateClientMetadataAcceptsPrivateKeyJWTClient {
+    NSMutableDictionary *metadata = [[self validATProtoClientMetadataTemplateWithClientID:@"https://example.com/confidential"
+                                                                               redirectURI:@"https://example.com/callback"] mutableCopy];
+    metadata[@"token_endpoint_auth_method"] = @"private_key_jwt";
+    metadata[@"token_endpoint_auth_signing_alg"] = @"ES256";
+    metadata[@"jwks_uri"] = @"https://example.com/jwks.json";
+
+    NSError *error = nil;
+    NSDictionary *validated = [self.handler validateClientMetadata:metadata error:&error];
+
+    XCTAssertNotNil(validated);
+    XCTAssertNil(error);
 }
 
 @end
