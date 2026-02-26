@@ -125,6 +125,9 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
                                                           nonce:nil
                                                             key:privateKey
                                                           error:&error];
+        if ([error.domain isEqualToString:NSOSStatusErrorDomain]) {
+            XCTSkip(@"Skipping DPoP nonce flow test: proof signing unavailable (%@)", error.localizedDescription);
+        }
         XCTAssertNotNil(initialProof);
         XCTAssertNil(error);
 
@@ -140,11 +143,15 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertNil(error);
         XCTAssertTrue(thumbprint.length > 0);
 
+        error = nil;
         JWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
                                                                  handle:handle
                                                                  scopes:@[@"com.atproto.access"]
                                                        dpopKeyThumbprint:thumbprint
                                                                   error:&error];
+        if ([error.domain isEqualToString:NSOSStatusErrorDomain]) {
+            XCTSkip(@"Skipping DPoP nonce flow test: token signing unavailable (%@)", error.localizedDescription);
+        }
         XCTAssertNotNil(accessToken);
         XCTAssertNil(error);
         NSString *authorization = [NSString stringWithFormat:@"DPoP %@", [accessToken encodedToken]];
@@ -168,12 +175,18 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
         NSString *challengeNonce = firstResponse.headers[@"DPoP-Nonce"];
         XCTAssertTrue(challengeNonce.length > 0);
         XCTAssertEqualObjects(firstResponse.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+        XCTAssertEqualObjects(firstResponse.headers[@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects(firstResponse.headers[@"Pragma"], @"no-cache");
+        XCTAssertEqualObjects(firstResponse.jsonBody[@"message"], @"DPoP nonce required");
 
         DPoPToken *retryProof = [DPoPUtil createDPoPForMethod:@"GET"
                                                            uri:dpopURLString
                                                         nonce:challengeNonce
                                                           key:privateKey
                                                         error:&error];
+        if ([error.domain isEqualToString:NSOSStatusErrorDomain]) {
+            XCTSkip(@"Skipping DPoP nonce flow test: retry proof signing unavailable (%@)", error.localizedDescription);
+        }
         XCTAssertNotNil(retryProof);
         XCTAssertNil(error);
 
@@ -195,7 +208,9 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
         [dispatcher handleRequest:secondRequest response:secondResponse];
         XCTAssertEqual(secondResponse.statusCode, HttpStatusOK);
         XCTAssertEqualObjects(secondResponse.jsonBody[@"did"], did);
-        XCTAssertNil(secondResponse.headers[@"DPoP-Nonce"]);
+        NSString *successNonce = secondResponse.headers[@"DPoP-Nonce"];
+        XCTAssertTrue(successNonce.length > 0);
+        XCTAssertNotEqualObjects(successNonce, challengeNonce);
 
         HttpRequest *replayRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                              methodString:@"GET"
@@ -217,6 +232,9 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
         NSString *rotatedNonce = replayResponse.headers[@"DPoP-Nonce"];
         XCTAssertTrue(rotatedNonce.length > 0);
         XCTAssertNotEqualObjects(rotatedNonce, challengeNonce);
+        XCTAssertEqualObjects(replayResponse.headers[@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects(replayResponse.headers[@"Pragma"], @"no-cache");
+        XCTAssertEqualObjects(replayResponse.jsonBody[@"message"], @"DPoP nonce required");
     } @finally {
         if (privateKey) {
             CFRelease(privateKey);

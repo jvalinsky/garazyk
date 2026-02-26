@@ -216,6 +216,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! Human-readable error description. */
 @property (nonatomic, copy, nullable) NSString *errorDescription;
 
+/*! Authorization server issuer from callback `iss` parameter. */
+@property (nonatomic, copy, nullable) NSString *issuer;
+
 /*! The redirect URI if provided in the response. */
 @property (nonatomic, strong, nullable) NSURL *redirectURI;
 

@@ -249,4 +249,26 @@
     XCTAssertFalse([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:bearerHeaders]);
 }
 
+- (void)testAuthenticateHeadersRedactsVerificationFailureDetails {
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+    NSError *error = nil;
+    NSString *token = [self mintAdminTokenWithIssuer:@"https://issuer-mismatch.example/secret-token-fragment"
+                                             audience:[self expectedIssuer]
+                                                scope:@"admin"
+                                                error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+
+    NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
+    NSError *authError = nil;
+    BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateHeaders:headers error:&authError];
+    XCTAssertFalse(authenticated);
+    XCTAssertNotNil(authError);
+    XCTAssertEqualObjects(authError.domain, @"PDSAdminAuth");
+    XCTAssertEqual(authError.code, 401);
+    XCTAssertEqualObjects(authError.localizedDescription, @"Invalid authentication token");
+    XCTAssertFalse([authError.localizedDescription containsString:@"secret-token-fragment"]);
+}
+
 @end

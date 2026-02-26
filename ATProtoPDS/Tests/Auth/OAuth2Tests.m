@@ -18,6 +18,55 @@
     [super tearDown];
 }
 
+- (void)testAuthorizationRedirectIncludesIssuerParameter {
+    self.server.issuer = @"https://pds.example.com";
+
+    OAuth2AuthorizationRequest *request = [[OAuth2AuthorizationRequest alloc] init];
+    request.clientID = @"test-client";
+    request.redirectURI = @"https://client.example.com/callback";
+    request.responseType = @"code";
+    request.state = @"state-123";
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"authorization redirect"];
+    [self.server handleAuthorizationRequest:request
+                                 completion:^(NSURL * _Nullable authorizationURL,
+                                              NSString * _Nullable authorizationCode,
+                                              NSError * _Nullable error) {
+        XCTAssertNil(error);
+        XCTAssertNotNil(authorizationURL);
+        XCTAssertNotNil(authorizationCode);
+
+        NSURLComponents *components = [NSURLComponents componentsWithURL:authorizationURL
+                                                 resolvingAgainstBaseURL:NO];
+        NSMutableDictionary<NSString *, NSString *> *query = [NSMutableDictionary dictionary];
+        for (NSURLQueryItem *item in components.queryItems) {
+            if (item.name) {
+                query[item.name] = item.value ?: @"";
+            }
+        }
+
+        XCTAssertEqualObjects(query[@"code"], authorizationCode);
+        XCTAssertEqualObjects(query[@"state"], @"state-123");
+        XCTAssertEqualObjects(query[@"iss"], @"https://pds.example.com");
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:2.0 handler:nil];
+}
+
+- (void)testAuthorizationResponseParsesIssuerParameter {
+    NSURL *url = [NSURL URLWithString:@"https://client.example.com/callback?code=abc123&state=state-xyz&iss=https%3A%2F%2Fpds.example.com"];
+    NSError *error = nil;
+    OAuth2AuthorizationResponse *response = [OAuth2AuthorizationResponse responseFromURL:url
+                                                                            expectedState:@"state-xyz"
+                                                                                    error:&error];
+    XCTAssertNotNil(response);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(response.code, @"abc123");
+    XCTAssertEqualObjects(response.state, @"state-xyz");
+    XCTAssertEqualObjects(response.issuer, @"https://pds.example.com");
+}
+
 #ifndef GNUSTEP
 - (void)testRefreshToken {
     Session *session = [[Session alloc] initWithDID:@"did:plc:test"

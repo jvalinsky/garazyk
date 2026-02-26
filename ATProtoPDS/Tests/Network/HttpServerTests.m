@@ -56,6 +56,7 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 
 @interface HttpServer (Testing)
 - (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection;
+- (void)handleReceivedData:(NSData *)data onConnection:(id<PDSNetworkConnection>)connection;
 @end
 
 @interface PDSFakeConnection : NSObject <PDSNetworkConnection>
@@ -316,6 +317,28 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
     XCTAssertEqual(totalChunkPayloadBytes, largePayload.length);
     XCTAssertEqual(connection.receiveCallCount, (NSUInteger)1);
     XCTAssertTrue(connection.cancelCalled);
+}
+
+- (void)testRejectsAmbiguousTransferEncodingAndContentLength {
+    HttpServer *server = [HttpServer serverWithPort:0];
+    PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
+
+    NSString *rawRequest = @"POST /xrpc/com.atproto.server.getSession HTTP/1.1\r\n"
+                           "Host: localhost\r\n"
+                           "Transfer-Encoding: chunked\r\n"
+                           "Content-Length: 4\r\n"
+                           "\r\n"
+                           "0\r\n\r\n";
+    NSData *requestData = [rawRequest dataUsingEncoding:NSUTF8StringEncoding];
+
+    [server handleReceivedData:requestData onConnection:connection];
+
+    XCTAssertTrue(connection.sentData.count > 0);
+    NSData *responseData = connection.sentData.firstObject;
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+    XCTAssertNotNil(responseString);
+    XCTAssertTrue([responseString containsString:@"400"], @"Expected HTTP 400 response");
+    XCTAssertTrue([responseString containsString:@"InvalidRequestFraming"], @"Expected explicit framing error payload");
 }
 
 @end

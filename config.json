@@ -10,14 +10,16 @@
   "session": {
     "access_token_ttl_seconds": 1800,
     "refresh_token_ttl_seconds": 2592000,
-    "invite_code_required": false
+    "invite_code_required": true
   },
   "server": {
     "data_dir": ".",
     "host": "pds.garazyk.xyz",
     "port": 2583,
     "issuer": "https://pds.garazyk.xyz",
-    "available_user_domains": ["garazyk.xyz"]
+    "available_user_domains": [
+      "garazyk.xyz"
+    ]
   },
   "links": {
     "privacy_policy": "https://pds.garazyk.xyz/privacy",
