@@ -101,13 +101,13 @@
         NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObject error:&cborError];
         if (cborData) {
             NSData *digest = [CID sha256Digest:cborData];
-            CID *cid = [CID cidWithMultihash:digest codec:0x71]; // dag-cbor
+            CID *cid = [CID cidWithDigest:digest codec:0x71]; // dag-cbor
             record.cid = [cid stringValue];
         } else {
             // Fallback: use sha256 of JSON
             NSData *jsonData = [jsonValue dataUsingEncoding:NSUTF8StringEncoding];
             NSData *digest = [CID sha256Digest:jsonData];
-            CID *cid = [CID cidWithMultihash:digest codec:0x71];
+            CID *cid = [CID cidWithDigest:digest codec:0x71];
             record.cid = [cid stringValue];
         }
     } else {
