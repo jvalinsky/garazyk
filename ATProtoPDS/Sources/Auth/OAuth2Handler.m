@@ -1,10 +1,13 @@
 #import "Auth/OAuth2Handler.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/OAuthServerMetadata.h"
 #import "Auth/PDSNonceManager.h"
+#import "Auth/PDSReplayCache.h"
 #import "Auth/Session.h"
 #import "Database/PDSDatabase.h"
+#import <CommonCrypto/CommonDigest.h>
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -53,11 +56,20 @@
 - (NSString *)escapeHtml:(NSString *)input;
 - (void)serveAuthorizePage:(HttpResponse *)response
                     params:(NSDictionary *)params;
+- (NSDictionary *)fetchClientMetadataFromURL:(NSString *)url
+                                       error:(NSError **)error;
+- (BOOL)validateJWTAssertion:(NSString *)assertion
+                   withClient:(NSDictionary *)client
+                        error:(NSError **)error;
+- (NSDictionary *)getClientPublicKeys:(NSDictionary *)client
+                                 error:(NSError **)error;
 @end
 
 static NSMutableDictionary *sPendingConsents = nil;
 static const NSTimeInterval kPendingConsentTTLSeconds = 300.0;
 static const NSUInteger kMaxPendingConsents = 1024;
+static NSCache *sClientMetadataCache = nil;
+static dispatch_once_t sClientCacheOnceToken;
 
 @implementation OAuth2Handler {
   JWTMinter *_minter;
@@ -139,7 +151,7 @@ static const NSUInteger kMaxPendingConsents = 1024;
     return client;
   }
 
-  // Database lookup failed - check if client_metadata is available
+  // Database lookup failed - check if client_metadata is available in request
   if (self.clientMetadata) {
     PDS_LOG_AUTH_INFO(@"Client not in database, attempting validation via "
                       @"client_metadata for client_id: %@",
@@ -176,6 +188,62 @@ static const NSUInteger kMaxPendingConsents = 1024;
       if (error) {
         *error = metadataError;
       }
+      return nil;
+    }
+  }
+
+  // Not in DB and not in request - check if it's a URL-based client_id for
+  // dynamic discovery
+  if ([clientID hasPrefix:@"http://"] || [clientID hasPrefix:@"https://"]) {
+    PDS_LOG_AUTH_INFO(@"Attempting dynamic client discovery for: %@", clientID);
+
+    dispatch_once(&sClientCacheOnceToken, ^{
+      sClientMetadataCache = [[NSCache alloc] init];
+      sClientMetadataCache.countLimit = 1000;
+    });
+
+    NSDictionary *cached = [sClientMetadataCache objectForKey:clientID];
+    if (cached) {
+      PDS_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
+      return cached;
+    }
+
+    NSError *fetchError = nil;
+    NSDictionary *fetchedMetadata =
+        [self fetchClientMetadataFromURL:clientID error:&fetchError];
+    if (fetchedMetadata) {
+      NSError *validationError = nil;
+      NSDictionary *validatedClient =
+          [self validateClientMetadata:fetchedMetadata error:&validationError];
+      if (validatedClient) {
+        // Ensure client_id in metadata matches the URL
+        NSString *metadataClientID = validatedClient[@"client_id"];
+        if ([metadataClientID isEqualToString:clientID]) {
+          [sClientMetadataCache setObject:validatedClient forKey:clientID];
+          PDS_LOG_AUTH_INFO(@"Successfully discovered and cached client: %@",
+                            clientID);
+          return validatedClient;
+        } else {
+          if (error) {
+            *error = [NSError
+                errorWithDomain:@"OAuth2"
+                           code:400
+                       userInfo:@{
+                         NSLocalizedDescriptionKey :
+                             @"client_id in fetched metadata does not match "
+                             @"request client_id URL"
+                       }];
+          }
+          return nil;
+        }
+      } else {
+        if (error)
+          *error = validationError;
+        return nil;
+      }
+    } else {
+      if (error)
+        *error = fetchError;
       return nil;
     }
   }
@@ -698,8 +766,448 @@ static const NSUInteger kMaxPendingConsents = 1024;
     @"response_types" : [responseTypes componentsJoinedByString:@" "],
     @"dpop_bound_access_tokens" : @YES,
     @"token_endpoint_auth_method" : tokenEndpointAuthMethod,
+    @"token_endpoint_auth_signing_alg" : signingAlg ?: @"",
+    @"jwks" : jwksValue ?: @{},
+    @"jwks_uri" : jwksURI ?: @"",
     @"application_type" : applicationType ?: @"web"
   };
+}
+
+- (NSDictionary *)getClientPublicKeys:(NSDictionary *)client
+                                error:(NSError **)error {
+  NSDictionary *jwks = client[@"jwks"];
+  NSString *jwksURI = client[@"jwks_uri"];
+
+  if ([jwks isKindOfClass:[NSDictionary class]] && jwks.count > 0) {
+    return jwks;
+  }
+
+  if (jwksURI.length > 0) {
+    NSURL *url = [NSURL URLWithString:jwksURI];
+    if (!url) {
+      if (error) {
+        *error = [NSError errorWithDomain:@"OAuth2"
+                                     code:400
+                                 userInfo:@{
+                                   NSLocalizedDescriptionKey :
+                                       @"Invalid jwks_uri"
+                                 }];
+      }
+      return nil;
+    }
+
+    __block NSData *responseData = nil;
+    __block NSError *fetchError = nil;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+    NSURLSessionConfiguration *config =
+        [NSURLSessionConfiguration defaultSessionConfiguration];
+    config.timeoutIntervalForRequest = 10.0;
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:config];
+
+    NSURLSessionDataTask *task = [session
+        dataTaskWithURL:url
+      completionHandler:^(NSData *data, NSURLResponse *response,
+                          NSError *err) {
+        responseData = data;
+        fetchError = err;
+        dispatch_semaphore_signal(semaphore);
+      }];
+    [task resume];
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW,
+                                                     10 * NSEC_PER_SEC));
+
+    if (fetchError || !responseData) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         [NSString stringWithFormat:
+                                       @"Failed to fetch JWKS from %@",
+                                       jwksURI]
+                   }];
+      }
+      return nil;
+    }
+
+    NSError *jsonError = nil;
+    NSDictionary *remoteJWKS = [NSJSONSerialization
+        JSONObjectWithData:responseData
+                   options:0
+                     error:&jsonError];
+    if (![remoteJWKS isKindOfClass:[NSDictionary class]]) {
+      if (error) {
+        *error = [NSError errorWithDomain:@"OAuth2"
+                                     code:400
+                                 userInfo:@{
+                                   NSLocalizedDescriptionKey :
+                                       @"Invalid JWKS response"
+                                 }];
+      }
+      return nil;
+    }
+    return remoteJWKS;
+  }
+
+  if (error) {
+    *error = [NSError errorWithDomain:@"OAuth2"
+                                 code:400
+                             userInfo:@{
+                               NSLocalizedDescriptionKey :
+                                   @"Client has no jwks or jwks_uri"
+                             }];
+  }
+  return nil;
+}
+
+- (BOOL)validateJWTAssertion:(NSString *)assertion
+                   withClient:(NSDictionary *)client
+                        error:(NSError **)error {
+  if (!assertion || assertion.length == 0) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Missing client_assertion"
+                               }];
+    }
+    return NO;
+  }
+
+  NSArray<NSString *> *parts = [assertion componentsSeparatedByString:@"."];
+  if (parts.count != 3) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid JWT assertion format"
+                               }];
+    }
+    return NO;
+  }
+
+  NSError *parseError = nil;
+  JWT *jwt = [JWT jwtWithToken:assertion error:&parseError];
+  if (!jwt) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Failed to parse JWT assertion"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *clientID = client[@"client_id"];
+  JWTPayload *jwtPayload = jwt.payload;
+  NSDictionary *payload = [jwtPayload toDictionary];
+
+  if (![payload isKindOfClass:[NSDictionary class]]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid JWT payload"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *iss = payload[@"iss"];
+  NSString *sub = payload[@"sub"];
+  NSString *aud = payload[@"aud"];
+  NSString *jti = payload[@"jti"];
+  NSNumber *exp = payload[@"exp"];
+
+  if (!iss || ![iss isKindOfClass:[NSString class]] ||
+      ![iss isEqualToString:clientID]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid 'iss' claim: must match client_id"
+                               }];
+    }
+    return NO;
+  }
+
+  if (!sub || ![sub isKindOfClass:[NSString class]] ||
+      ![sub isEqualToString:clientID]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid 'sub' claim: must match client_id"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *expectedAud = [PDSConfiguration sharedConfiguration].issuer;
+  if (!expectedAud) {
+    expectedAud = @"https://pds.garazyk.xyz";
+  }
+  if (!aud || ![aud isKindOfClass:[NSString class]] ||
+      ![aud isEqualToString:expectedAud]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid 'aud' claim: must match issuer"
+                               }];
+    }
+    return NO;
+  }
+
+  if (!exp || ![exp isKindOfClass:[NSNumber class]]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Missing 'exp' claim"
+                               }];
+    }
+    return NO;
+  }
+
+  NSTimeInterval expTime = [exp doubleValue];
+  NSDate *expirationDate = [NSDate dateWithTimeIntervalSince1970:expTime];
+  if ([[NSDate date] compare:expirationDate] != NSOrderedAscending) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"JWT assertion has expired"
+                               }];
+    }
+    return NO;
+  }
+
+  if (!jti || ![jti isKindOfClass:[NSString class]] || jti.length == 0) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Missing 'jti' claim for replay protection"
+                               }];
+    }
+    return NO;
+  }
+
+  if (![[PDSReplayCache sharedCache] checkAndAddJTI:jti
+                                          expiration:expirationDate]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"JWT assertion 'jti' has been replayed"
+                               }];
+    }
+    return NO;
+  }
+
+  NSError *keysError = nil;
+  NSDictionary *clientKeys = [self getClientPublicKeys:client error:&keysError];
+  if (!clientKeys) {
+    if (error) {
+      *error = keysError;
+    }
+    return NO;
+  }
+
+  NSArray *keys = clientKeys[@"keys"];
+  if (![keys isKindOfClass:[NSArray class]] || keys.count == 0) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"No keys found in client JWKS"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *kid = jwt.header.kid;
+  NSDictionary *matchingKey = nil;
+  for (NSDictionary *key in keys) {
+    if ([key isKindOfClass:[NSDictionary class]]) {
+      NSString *keyKid = key[@"kty"];
+      if ([keyKid isEqualToString:@"EC"]) {
+        NSString *keyID = key[@"kid"];
+        if (kid.length == 0) {
+          if (!matchingKey) {
+            matchingKey = key;
+          }
+        } else if ([keyID isEqualToString:kid]) {
+          matchingKey = key;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!matchingKey) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"No matching key found in client JWKS"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *kty = matchingKey[@"kty"];
+  if (![kty isEqualToString:@"EC"]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Only EC (elliptic curve) keys supported"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *crv = matchingKey[@"crv"];
+  if (![crv isEqualToString:@"P-256"]) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Only P-256 (ES256) curve supported"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *xB64 = matchingKey[@"x"];
+  NSString *yB64 = matchingKey[@"y"];
+  if (!xB64 || !yB64) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid EC key format"
+                               }];
+    }
+    return NO;
+  }
+
+  NSData *xData = [JWT base64URLDecode:xB64 error:&parseError];
+  NSData *yData = [JWT base64URLDecode:yB64 error:&parseError];
+  if (!xData || !yData) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid key coordinate encoding"
+                               }];
+    }
+    return NO;
+  }
+
+  SecKeyRef publicKey = [self createECPublicKeyFromX:xData Y:yData];
+  if (!publicKey) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Failed to create public key from JWKS"
+                               }];
+    }
+    return NO;
+  }
+
+  NSString *signingInput = [NSString stringWithFormat:@"%@.%@", parts[0],
+                                                     parts[1]];
+  NSData *signingInputData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+  NSData *signatureData = [JWT base64URLDecode:parts[2] error:&parseError];
+
+  if (!signatureData) {
+    CFRelease(publicKey);
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid signature encoding"
+                               }];
+    }
+    return NO;
+  }
+
+  unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+  CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+  NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+
+  CFErrorRef verifyError = NULL;
+  BOOL signatureValid =
+      SecKeyVerifySignature(publicKey, kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                             (__bridge CFDataRef)hashData,
+                             (__bridge CFDataRef)signatureData,
+                             &verifyError);
+
+  CFRelease(publicKey);
+
+  if (!signatureValid) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:401
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Invalid JWT signature"
+                               }];
+    }
+    return NO;
+  }
+
+  return YES;
+}
+
+- (SecKeyRef)createECPublicKeyFromX:(NSData *)xData Y:(NSData *)yData {
+  uint8_t *publicKeyBytes =
+      (uint8_t *)malloc(xData.length + yData.length + 1);
+  publicKeyBytes[0] = 0x04;
+  memcpy(publicKeyBytes + 1, xData.bytes, xData.length);
+  memcpy(publicKeyBytes + 1 + xData.length, yData.bytes, yData.length);
+
+  NSDictionary *attributes = @{
+    (__bridge id)kSecAttrKeyType : (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+    (__bridge id)kSecAttrKeyClass : (__bridge id)kSecAttrKeyClassPublic,
+    (__bridge id)kSecAttrKeySizeInBits : @256
+  };
+
+  CFErrorRef error = NULL;
+  SecKeyRef publicKey = SecKeyCreateWithData(
+      (__bridge CFDataRef)[NSData dataWithBytes:publicKeyBytes
+                                          length:xData.length + yData.length + 1],
+      (__bridge CFDictionaryRef)attributes, &error);
+
+  free(publicKeyBytes);
+
+  return publicKey;
 }
 
 - (BOOL)isLoopbackRedirect:(NSString *)redirectURI {
@@ -1512,33 +2020,83 @@ static const NSUInteger kMaxPendingConsents = 1024;
   PDS_LOG_AUTH_DEBUG(@"Token request client validation passed (client_id=%@)",
                      clientID ?: @"");
 
-  // Validate client secret (optional for DPoP-based clients)
-  // In ATProto, client authentication can use DPoP binding instead of
-  // client_secret
+  // Validate client authentication
+  // In ATProto, client authentication can use DPoP binding, client_secret,
+  // or JWT assertion (private_key_jwt)
   NSString *clientSecret = params[@"client_secret"];
+  NSString *clientAssertion = params[@"client_assertion"];
+  NSString *clientAssertionType = params[@"client_assertion_type"];
   NSString *dpopJWK = params[@"dpop_jwk"];
   NSString *dpopProof = [request headerForKey:@"dpop"];
   BOOL hasDpopProof = (dpopProof.length > 0);
   NSString *expectedSecret = client[@"client_secret"];
+  NSString *tokenEndpointAuthMethod = client[@"token_endpoint_auth_method"];
 
-  if (clientSecret && expectedSecret &&
-      ![clientSecret isEqualToString:expectedSecret]) {
+  // JWT assertion authentication (private_key_jwt)
+  BOOL clientUsesPrivateKeyJWT =
+      [tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"];
+
+  if (clientAssertion.length > 0) {
+    // JWT assertion provided - validate it
+    if (![clientAssertionType
+            isEqualToString:
+                @"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"]) {
+      response.statusCode = 400;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" :
+            @"client_assertion_type must be "
+            @"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+      }];
+      return;
+    }
+
+    NSError *assertionError = nil;
+    if (![self validateJWTAssertion:clientAssertion
+                          withClient:client
+                               error:&assertionError]) {
+      response.statusCode = 401;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" : assertionError.localizedDescription
+                                  ?: @"Invalid client assertion"
+      }];
+      return;
+    }
+    PDS_LOG_AUTH_DEBUG(
+        @"JWT assertion validation passed (client_id=%@)", clientID ?: @"");
+
+  } else if (clientUsesPrivateKeyJWT) {
+    // Client is configured for private_key_jwt but no assertion provided
     response.statusCode = 401;
     [response setJsonBody:@{
       @"error" : @"invalid_client",
-      @"error_description" : @"Invalid client credentials"
+      @"error_description" :
+          @"client_assertion required for private_key_jwt authentication"
     }];
     return;
-  }
 
-  // Reject if client_secret is required but not provided and no DPoP binding
-  if (!clientSecret && !dpopJWK && !hasDpopProof && expectedSecret) {
-    response.statusCode = 401;
-    [response setJsonBody:@{
-      @"error" : @"invalid_client",
-      @"error_description" : @"Client authentication required"
-    }];
-    return;
+  } else {
+    // Traditional client_secret authentication
+    if (clientSecret && expectedSecret &&
+        ![clientSecret isEqualToString:expectedSecret]) {
+      response.statusCode = 401;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" : @"Invalid client credentials"
+      }];
+      return;
+    }
+
+    // Reject if client_secret is required but not provided and no DPoP binding
+    if (!clientSecret && !dpopJWK && !hasDpopProof && expectedSecret) {
+      response.statusCode = 401;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" : @"Client authentication required"
+      }];
+      return;
+    }
   }
 
   // Validate redirect URI for authorization_code grant type
@@ -1759,23 +2317,73 @@ static const NSUInteger kMaxPendingConsents = 1024;
     return;
   }
 
+  // JWT assertion authentication (private_key_jwt)
+  NSString *clientAssertion = params[@"client_assertion"];
+  NSString *clientAssertionType = params[@"client_assertion_type"];
   NSString *clientSecret = params[@"client_secret"];
   NSString *expectedSecret = client[@"client_secret"];
-  if (expectedSecret && ![clientSecret isEqualToString:expectedSecret]) {
+  NSString *tokenEndpointAuthMethod = client[@"token_endpoint_auth_method"];
+  BOOL clientUsesPrivateKeyJWT =
+      [tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"];
+
+  if (clientAssertion.length > 0) {
+    // JWT assertion provided - validate it
+    if (![clientAssertionType
+            isEqualToString:
+                @"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"]) {
+      response.statusCode = 400;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" :
+            @"client_assertion_type must be "
+            @"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+      }];
+      return;
+    }
+
+    NSError *assertionError = nil;
+    if (![self validateJWTAssertion:clientAssertion
+                          withClient:client
+                               error:&assertionError]) {
+      response.statusCode = 401;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" : assertionError.localizedDescription
+                                  ?: @"Invalid client assertion"
+      }];
+      return;
+    }
+    PDS_LOG_AUTH_DEBUG(
+        @"PAR JWT assertion validation passed (client_id=%@)", clientID ?: @"");
+
+  } else if (clientUsesPrivateKeyJWT) {
+    // Client is configured for private_key_jwt but no assertion provided
     response.statusCode = 401;
     [response setJsonBody:@{
       @"error" : @"invalid_client",
-      @"error_description" : @"Invalid client credentials"
+      @"error_description" :
+          @"client_assertion required for private_key_jwt authentication"
     }];
     return;
-  }
-  if (!clientSecret && expectedSecret.length > 0) {
-    response.statusCode = 401;
-    [response setJsonBody:@{
-      @"error" : @"invalid_client",
-      @"error_description" : @"Client authentication required"
-    }];
-    return;
+
+  } else {
+    // Traditional client_secret authentication
+    if (expectedSecret && ![clientSecret isEqualToString:expectedSecret]) {
+      response.statusCode = 401;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" : @"Invalid client credentials"
+      }];
+      return;
+    }
+    if (!clientSecret && expectedSecret.length > 0) {
+      response.statusCode = 401;
+      [response setJsonBody:@{
+        @"error" : @"invalid_client",
+        @"error_description" : @"Client authentication required"
+      }];
+      return;
+    }
   }
 
   if ([params[@"request_uri"] length] > 0) {
@@ -2452,19 +3060,104 @@ static const NSUInteger kMaxPendingConsents = 1024;
     return installPath;
   }
 
-  // Fallback to project structure if running from source
+  // Fallback to project structure if running from source (handling cwd=build/)
   NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-  NSString *sourcePath =
-      [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/Auth/Assets"];
-  PDS_LOG_AUTH_DEBUG(@"Checking for assets in sourcePath: %@", sourcePath);
-  if ([[NSFileManager defaultManager] fileExistsAtPath:sourcePath]) {
-    return sourcePath;
+  NSArray *candidates = @[
+    [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/Auth/Assets"],
+    [[cwd stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"ATProtoPDS/Sources/Auth/Assets"],
+    [[[cwd stringByDeletingLastPathComponent] stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"ATProtoPDS/Sources/Auth/Assets"]
+  ];
+
+  for (NSString *candidate in candidates) {
+    PDS_LOG_AUTH_DEBUG(@"Checking for assets in candidate path: %@", candidate);
+    if ([[NSFileManager defaultManager] fileExistsAtPath:candidate]) {
+      return candidate;
+    }
   }
 
   PDS_LOG_AUTH_ERROR(
       @"No assets path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
       self.dataDirectory, cwd);
   return nil;
+}
+
+- (NSDictionary *)fetchClientMetadataFromURL:(NSString *)urlStr
+                                      error:(NSError **)error {
+  NSURL *url = [NSURL URLWithString:urlStr];
+  if (!url) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:400
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey : @"Invalid client_id URL"
+                               }];
+    }
+    return nil;
+  }
+
+  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+  [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+  request.timeoutInterval = 10.0;
+
+  dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+  __block NSDictionary *metadata = nil;
+  __block NSError *fetchError = nil;
+
+  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+      dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *response,
+                            NSError *err) {
+          if (err) {
+            fetchError = err;
+          } else {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+            if (httpResponse.statusCode == 200 && data) {
+              NSError *jsonError = nil;
+              id json = [NSJSONSerialization JSONObjectWithData:data
+                                                        options:0
+                                                          error:&jsonError];
+              if ([json isKindOfClass:[NSDictionary class]]) {
+                metadata = json;
+              } else {
+                fetchError =
+                    jsonError ?: [NSError errorWithDomain:@"OAuth2"
+                                                     code:400
+                                                 userInfo:@{
+                                                   NSLocalizedDescriptionKey :
+                                                       @"Client metadata is not a JSON object"
+                                                 }];
+              }
+            } else {
+              fetchError = [NSError
+                  errorWithDomain:@"OAuth2"
+                             code:httpResponse.statusCode
+                         userInfo:@{
+                           NSLocalizedDescriptionKey : [NSString
+                               stringWithFormat:@"Failed to fetch client metadata: %ld",
+                                                (long)httpResponse.statusCode]
+                         }];
+            }
+          }
+          dispatch_semaphore_signal(semaphore);
+        }];
+  [task resume];
+
+  dispatch_semaphore_wait(semaphore,
+                          dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)));
+
+  if (!metadata && !fetchError) {
+    fetchError = [NSError errorWithDomain:@"OAuth2"
+                                     code:408
+                                 userInfo:@{
+                                   NSLocalizedDescriptionKey : @"Fetch timed out"
+                                 }];
+  }
+
+  if (error)
+    *error = fetchError;
+  return metadata;
 }
 
 @end
