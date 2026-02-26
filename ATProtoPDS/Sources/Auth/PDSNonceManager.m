@@ -3,6 +3,8 @@
 #import "Compat/PDSTypes.h"
 #import <Security/Security.h>
 
+static const NSTimeInterval kDPoPNonceTTLSeconds = 300.0; // 5 minutes per AT Protocol spec
+
 @interface PDSNonceManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *issuedNonces;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t lockQueue;
@@ -42,7 +44,7 @@
     nonce = [nonce stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
     nonce = [nonce stringByReplacingOccurrencesOfString:@"=" withString:@""];
 
-    NSDate *expiration = [NSDate dateWithTimeIntervalSinceNow:600]; // 10 minutes
+    NSDate *expiration = [NSDate dateWithTimeIntervalSinceNow:kDPoPNonceTTLSeconds];
     
     dispatch_async(self.lockQueue, ^{
         self.issuedNonces[nonce] = expiration;
@@ -58,13 +60,12 @@
     __block BOOL isValid = NO;
     dispatch_sync(self.lockQueue, ^{
         NSDate *expiration = self.issuedNonces[nonce];
-        if (expiration) {
-            if ([expiration timeIntervalSinceNow] > 0) {
-                isValid = YES;
-            }
-            // Nonces are one-time use
-            [self.issuedNonces removeObjectForKey:nonce];
+        if (expiration && [expiration timeIntervalSinceNow] > 0) {
+            isValid = YES;
         }
+        // Nonces are reusable until they expire — do not remove on use.
+        // AT Protocol spec: "Servers may use the same nonce across all client
+        // sessions and across multiple requests at any point in time."
     });
     
     return isValid;
