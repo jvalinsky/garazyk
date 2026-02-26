@@ -1821,12 +1821,21 @@ static const NSUInteger kMaxPendingConsents = 1024;
     return;
   }
 
-  BOOL isPublicClient = (client[@"client_secret"] == nil);
-  if (isPublicClient && [params[@"code_challenge"] length] == 0) {
+  // PKCE is mandatory for all client types per AT Protocol OAuth spec
+  if ([params[@"code_challenge"] length] == 0) {
     response.statusCode = 400;
     [response setJsonBody:@{
       @"error" : @"invalid_request",
-      @"error_description" : @"code_challenge required for public clients"
+      @"error_description" : @"code_challenge is required (PKCE is mandatory)"
+    }];
+    return;
+  }
+  if (![params[@"code_challenge_method"] isEqualToString:@"S256"]) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_request",
+      @"error_description" :
+          @"code_challenge_method must be S256 (plain is not allowed)"
     }];
     return;
   }
