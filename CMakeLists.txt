@@ -399,7 +399,6 @@ if(BUILD_TESTS)
       list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/.*")
   endif()
 
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
 
   # Linux-specific test exclusions
