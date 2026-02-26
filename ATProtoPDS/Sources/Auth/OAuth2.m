@@ -29,6 +29,11 @@
 #import "Auth/PDSNonceManager.h"
 #import "App/PDSConfiguration.h"
 
+NSString * const OAuth2ScopeAtproto = @"atproto";
+NSString * const OAuth2ScopeTransitionGeneric = @"transition:generic";
+NSString * const OAuth2ScopeTransitionChatBsky = @"transition:chat.bsky";
+NSString * const OAuth2ScopeTransitionEmail = @"transition:email";
+
 NSString * const OAuth2ScopeIdentify = @"atproto:identify";
 NSString * const OAuth2ScopeSignIn = @"atproto:signin";
 NSString * const OAuth2ScopeRepoWrite = @"atproto:repo_write";
@@ -1268,7 +1273,16 @@ static NSString *OAuth2CanonicalDPoPHTUFromString(NSString *urlString) {
     }
 
     NSString *handle = account.handle ?: @"handle.placeholder";
-    NSString *scope = codeData[@"scope"] ?: OAuth2ScopeIdentify;
+    NSString *scope = codeData[@"scope"] ?: OAuth2ScopeAtproto;
+
+    // AT Protocol spec: atproto scope is required for all sessions
+    if (![scope containsString:@"atproto"]) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidScope
+                                         userInfo:@{NSLocalizedDescriptionKey: @"The 'atproto' scope is required"}];
+        completion(nil, error);
+        return;
+    }
 
     if (!request.dpopKeyThumbprint || request.dpopKeyThumbprint.length == 0) {
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain

@@ -965,15 +965,12 @@ static const NSUInteger kMaxPendingConsents = 1024;
 
   NSDictionary *resourceMetadata = @{
     @"resource" : issuer,
-    @"authorization_servers" : @[
-      @{@"authorization_server" : issuer, @"resource_servers" : @[ issuer ]}
-    ],
-    @"protected_resources" : @[ @{
-      @"resource" : issuer,
-      @"resource_scopes" : @[ @"atproto" ],
-      @"bearer_methods_supported" : @[ @"header" ],
-      @"access_token_types_supported" : @[ @"Bearer", @"DPoP" ]
-    } ]
+    @"authorization_servers" : @[ issuer ],
+    @"scopes_supported" :
+        @[ @"atproto", @"transition:generic", @"transition:chat.bsky",
+           @"transition:email" ],
+    @"bearer_methods_supported" : @[ @"header" ],
+    @"resource_documentation" : @"https://atproto.com/specs/oauth"
   };
 
   [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
@@ -1598,6 +1595,7 @@ static const NSUInteger kMaxPendingConsents = 1024;
                            NSError *_Nullable error) {
                 if (error) {
                   response.statusCode = 400;
+                  [self attachDPoPNonceToResponseIfMissing:response];
                   NSDictionary *errorResponse = @{
                     @"error" : @"invalid_grant",
                     @"error_description" : error.localizedDescription
@@ -1619,6 +1617,7 @@ static const NSUInteger kMaxPendingConsents = 1024;
 
                 if (session) {
                   response.statusCode = 200;
+                  [self attachDPoPNonceToResponseIfMissing:response];
                   NSMutableDictionary *tokenResp = [@{
                     @"access_token" : session.accessToken,
                     @"token_type" : @"DPoP",
@@ -1817,6 +1816,18 @@ static const NSUInteger kMaxPendingConsents = 1024;
     [response setJsonBody:@{
       @"error" : @"invalid_request",
       @"error_description" : @"state parameter required for CSRF protection"
+    }];
+    return;
+  }
+
+  // AT Protocol spec: scope must include 'atproto'
+  NSString *scope = params[@"scope"];
+  if (![scope containsString:@"atproto"]) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_scope",
+      @"error_description" :
+          @"The 'atproto' scope is required for AT Protocol OAuth sessions"
     }];
     return;
   }

@@ -65,39 +65,31 @@ typedef NS_ENUM(NSInteger, OAuth2Error) {
     OAuth2ErrorConsentRequired
 };
 
-/*!
- @constant OAuth2ScopeIdentify
- 
- @abstract Scope for reading user identity information.
- */
+/*! Required scope for all AT Protocol OAuth sessions. */
+extern NSString * const OAuth2ScopeAtproto;
+
+/*! Broad PDS account permissions (transitional). */
+extern NSString * const OAuth2ScopeTransitionGeneric;
+
+/*! DM access scope (transitional). */
+extern NSString * const OAuth2ScopeTransitionChatBsky;
+
+/*! Email access scope (transitional). */
+extern NSString * const OAuth2ScopeTransitionEmail;
+
+/*! Scope for reading user identity information (legacy). */
 extern NSString * const OAuth2ScopeIdentify;
 
-/*!
- @constant OAuth2ScopeSignIn
- 
- @abstract Scope for signing in to the PDS.
- */
+/*! Scope for signing in to the PDS (legacy). */
 extern NSString * const OAuth2ScopeSignIn;
 
-/*!
- @constant OAuth2ScopeRepoWrite
- 
- @abstract Scope for writing to user repositories.
- */
+/*! Scope for writing to user repositories (legacy). */
 extern NSString * const OAuth2ScopeRepoWrite;
 
-/*!
- @constant OAuth2ScopeRepoRead
- 
- @abstract Scope for reading from user repositories.
- */
+/*! Scope for reading from user repositories (legacy). */
 extern NSString * const OAuth2ScopeRepoRead;
 
-/*!
- @constant OAuth2ScopeAtprotoProfile
- 
- @abstract Scope for reading/writing ATProto profile.
- */
+/*! Scope for reading/writing ATProto profile (legacy). */
 extern NSString * const OAuth2ScopeAtprotoProfile;
 
 /*!

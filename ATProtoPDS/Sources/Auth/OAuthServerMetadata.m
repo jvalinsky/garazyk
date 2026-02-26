@@ -47,7 +47,8 @@
       @"require_request_uri_registration" : @YES,
       @"client_id_metadata_document_supported" : @YES,
       @"scopes_supported" :
-          @[ @"atproto", @"transition:generic", @"transition:chat.bsky" ]
+          @[ @"atproto", @"transition:generic", @"transition:chat.bsky",
+             @"transition:email" ]
     };
   }
   return self;
