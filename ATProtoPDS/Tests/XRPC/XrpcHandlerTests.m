@@ -62,7 +62,7 @@
     
     [self.dispatcher handleRequest:request response:response];
     
-    XCTAssertEqual(response.statusCode, HttpStatusNotImplemented, @"Should return 501 for unimplemented methods");
+    XCTAssertEqual(response.statusCode, HttpStatusNotFound, @"Should return 404 for unknown methods");
 }
 
 #ifndef GNUSTEP
