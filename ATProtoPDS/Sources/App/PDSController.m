@@ -19,6 +19,7 @@
 #import "Auth/JWT.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/PDSKeyManagerFactory.h"
+#import "Auth/Secp256k1.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoError.h"
 #import "Core/PDSServiceContainer.h"
@@ -315,7 +316,29 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
                             ?: @"unknown error");
     }
 
-    _jwtMinter.keyManager = keyManager;
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    BOOL isProduction = [[env[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
+                        [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
+                        [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
+    if (activeKey) {
+      _jwtMinter.keyManager = keyManager;
+    } else if (!isProduction) {
+      NSError *fallbackError = nil;
+      Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+      if (fallbackKeyPair) {
+        _jwtMinter.keyManager = nil;
+        _jwtMinter.signingAlgorithm = @"ES256K";
+        _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+        _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+        PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+      } else {
+        _jwtMinter.keyManager = keyManager;
+        PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@",
+                          fallbackError.localizedDescription ?: @"unknown error");
+      }
+    } else {
+      _jwtMinter.keyManager = keyManager;
+    }
 
     _accountService.minter = _jwtMinter;
 

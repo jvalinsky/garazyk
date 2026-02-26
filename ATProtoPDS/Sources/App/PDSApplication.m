@@ -249,8 +249,25 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     if (serverKeyError) {
         PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
     }
-    
-    _jwtMinter.keyManager = keyManager;
+
+    if (activeKey) {
+        _jwtMinter.keyManager = keyManager;
+    } else if (!isProduction) {
+        NSError *fallbackError = nil;
+        Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+        if (fallbackKeyPair) {
+            _jwtMinter.keyManager = nil;
+            _jwtMinter.signingAlgorithm = @"ES256K";
+            _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+            _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+            PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+        } else {
+            _jwtMinter.keyManager = keyManager;
+            PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@", fallbackError.localizedDescription ?: @"unknown error");
+        }
+    } else {
+        _jwtMinter.keyManager = keyManager;
+    }
     // Private/Public key properties on Minter are now optional if keyManager is set, 
     // but for backwards compatibility or specific internal use we might still need them?
     // The Minter implementation now prefers keyManager. 

@@ -627,6 +627,93 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
+    // If no cursor is provided, replay existing repository state before starting live mode
+    if (!hasCursor) {
+      PDS_LOG_SYNC_INFO(@"No cursor provided; replaying existing repository state before live updates.");
+      
+      NSError *error = nil;
+      PDSDatabase *serviceDB = [self.serviceDatabases serviceDatabaseWithError:&error];
+      if (!serviceDB) {
+        PDS_LOG_SYNC_ERROR(@"Failed to get service database for initial replay: %@", error);
+      } else {
+        NSArray<PDSDatabaseRepo *> *repos = [serviceDB getAllReposWithError:&error];
+        if (error) {
+          PDS_LOG_SYNC_ERROR(@"Failed to fetch repositories for initial replay: %@", error);
+        } else if (!self.userDatabasePool) {
+          PDS_LOG_SYNC_ERROR(@"User database pool not available for initial replay");
+        } else {
+          for (PDSDatabaseRepo *repo in repos) {
+            PDS_LOG_SYNC_DEBUG(@"Replaying repository %@", repo.ownerDid);
+            
+            NSError *repoError = nil;
+            PDSActorStore *store = [self.userDatabasePool storeForDid:repo.ownerDid error:&repoError];
+            if (!store || repoError) {
+              PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ - skipping: %@", repo.ownerDid, repoError);
+              continue;
+            }
+            
+            NSString *rev = [store getRepoRevisionForDid:repo.ownerDid error:&repoError];
+            if (!rev || rev.length == 0) {
+              PDS_LOG_SYNC_WARN(@"Could not get revision for %@ - skipping", repo.ownerDid);
+              continue;
+            }
+            
+            NSData *rootCidBytes = [store getRepoRootForDid:repo.ownerDid error:&repoError];
+            if (!rootCidBytes || rootCidBytes.length == 0) {
+              PDS_LOG_SYNC_WARN(@"Could not get root CID for %@ - skipping", repo.ownerDid);
+              continue;
+            }
+            
+            CID *commitCID = [CID cidFromBytes:rootCidBytes];
+            if (!commitCID) {
+              PDS_LOG_SYNC_WARN(@"Could not parse commit CID for %@ - skipping", repo.ownerDid);
+              continue;
+            }
+            
+            CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+            NSMutableSet<NSString *> *seenCIDs = [NSMutableSet set];
+            if (commitCID.stringValue.length > 0) {
+              [seenCIDs addObject:commitCID.stringValue];
+            }
+            
+            NSData *commitBlockData = [store getBlockForCID:rootCidBytes forDid:repo.ownerDid error:&repoError];
+            if (commitBlockData && commitBlockData.length > 0) {
+              [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
+            }
+            
+            [self addMSTNodeBlocksForRootCID:commitCID did:repo.ownerDid toWriter:writer];
+            
+            NSData *carData = [writer serialize];
+            if (carData.length == 0) {
+              PDS_LOG_SYNC_WARN(@"Empty CAR data for %@ - skipping", repo.ownerDid);
+              continue;
+            }
+            
+            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+            event.repo = repo.ownerDid;
+            event.commit = commitCID;
+            event.rev = rev;
+            event.blocks = carData;
+            event.ops = @[];
+            event.blobs = @[];
+            event.time = [SubscribeReposHandler rfc3339Timestamp];
+            
+            NSError *encodeError = nil;
+            NSData *eventData = [self.eventFormatter encodeCommitEvent:event error:&encodeError];
+            if (!eventData) {
+              PDS_LOG_SYNC_ERROR(@"Failed to encode commit event for %@: %@", repo.ownerDid, encodeError);
+              continue;
+            }
+            
+            if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
+              PDS_LOG_SYNC_WARN(@"Failed to send initial commit event for %@ during replay (backpressure or closed)", repo.ownerDid);
+              return;
+            }
+          }
+        }
+      }
+    }
+
     if (hasCursor && parsedCursor > self.sequenceNumber) {
       [self
           sendErrorFrameWithCode:kSubscribeReposErrorFutureCursor
