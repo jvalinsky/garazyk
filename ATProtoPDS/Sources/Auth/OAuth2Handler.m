@@ -47,6 +47,7 @@
 - (void)enforcePendingConsentCapacityLocked;
 - (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request;
 - (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
+- (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response;
 - (NSString *)assetsPath;
 - (NSString *)escapeHtml:(NSString *)input;
 - (void)serveAuthorizePage:(HttpResponse *)response
@@ -776,6 +777,7 @@ static const NSUInteger kMaxPendingConsents = 1024;
   authRequest.codeChallengeMethod = params[@"code_challenge_method"];
   authRequest.nonce = params[@"nonce"];
   authRequest.loginHint = params[@"login_hint"];
+  authRequest.dpopJWK = params[@"dpop_jkt"];
   authRequest.clientMetadata = clientMetadata;
 
   // RFC 7636: Public clients must use PKCE
@@ -881,6 +883,12 @@ static const NSUInteger kMaxPendingConsents = 1024;
   NSString *scope = params[@"scope"];
 
   if ([decision isEqualToString:@"deny"]) {
+    NSString *sessionTokenForDeny = params[@"session_token"];
+    if (sessionTokenForDeny.length > 0) {
+      @synchronized(sPendingConsents) {
+        [sPendingConsents removeObjectForKey:sessionTokenForDeny];
+      }
+    }
     NSString *redirectUri = params[@"redirect_uri"];
     if (redirectUri.length > 0) {
       NSError *clientError = nil;
@@ -912,6 +920,10 @@ static const NSUInteger kMaxPendingConsents = 1024;
       if (state.length > 0) {
         [queryItems
             addObject:[NSURLQueryItem queryItemWithName:@"state" value:state]];
+      }
+      if (self.oauthServer.issuer.length > 0) {
+        [queryItems addObject:[NSURLQueryItem queryItemWithName:@"iss"
+                                                           value:self.oauthServer.issuer]];
       }
       components.queryItems = queryItems;
       response.statusCode = 302;
@@ -969,6 +981,28 @@ static const NSUInteger kMaxPendingConsents = 1024;
   // Clean up used token
   @synchronized(sPendingConsents) {
     [sPendingConsents removeObjectForKey:sessionToken];
+  }
+
+  NSError *clientError = nil;
+  NSDictionary *client = [self validateClient:clientID error:&clientError];
+  if (!client) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_client",
+      @"error_description" : clientError.localizedDescription ?: @"Invalid client"
+    }];
+    return;
+  }
+
+  NSString *redirectURI = params[@"redirect_uri"];
+  NSError *redirectError = nil;
+  if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_request",
+      @"error_description" : redirectError.localizedDescription ?: @"Invalid redirect_uri"
+    }];
+    return;
   }
 
   // Proceed with authorization
@@ -1112,6 +1146,9 @@ static const NSUInteger kMaxPendingConsents = 1024;
 
 - (void)handleTokenRequest:(HttpRequest *)request
                   response:(HttpResponse *)response {
+  [response setHeader:@"no-store" forKey:@"Cache-Control"];
+  [response setHeader:@"no-cache" forKey:@"Pragma"];
+
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
   if (!body) {
@@ -1542,6 +1579,12 @@ static const NSUInteger kMaxPendingConsents = 1024;
   }
 
   response.statusCode = 201;
+  NSString *nextNonce = [[PDSNonceManager sharedManager] generateNonce];
+  if (nextNonce.length > 0) {
+    [response setHeader:nextNonce forKey:@"DPoP-Nonce"];
+  }
+  [response setHeader:@"no-store" forKey:@"Cache-Control"];
+  [response setHeader:@"no-cache" forKey:@"Pragma"];
   [response
       setJsonBody:@{@"request_uri" : requestURI, @"expires_in" : @(expiresIn)}];
 }
@@ -1776,6 +1819,12 @@ static const NSUInteger kMaxPendingConsents = 1024;
   }
 }
 
+- (void)clearPendingConsentsForTesting {
+  @synchronized(sPendingConsents) {
+    [sPendingConsents removeAllObjects];
+  }
+}
+
 - (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request {
   NSDictionary *env = [[NSProcessInfo processInfo] environment];
   NSString *rawTrustProxy = [env[@"PDS_TRUST_PROXY_HEADERS"] lowercaseString];
@@ -1882,6 +1931,18 @@ static const NSUInteger kMaxPendingConsents = 1024;
   return [NSURL URLWithString:urlString];
 }
 
+- (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response {
+  NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
+  if (existingNonce.length > 0) {
+    return;
+  }
+
+  NSString *nextNonce = [[PDSNonceManager sharedManager] generateNonce];
+  if (nextNonce.length > 0) {
+    [response setHeader:nextNonce forKey:@"DPoP-Nonce"];
+  }
+}
+
 - (BOOL)validateDPoPForRequest:(HttpRequest *)request
                       response:(HttpResponse *)response
                  outThumbprint:(NSString **)outThumbprint {
@@ -1945,6 +2006,8 @@ static const NSUInteger kMaxPendingConsents = 1024;
     }];
     return NO;
   }
+
+  [self attachDPoPNonceToResponseIfMissing:response];
 
   if (dpopThumbprint.length > 0) {
     NSString *prefix = dpopThumbprint.length > 8

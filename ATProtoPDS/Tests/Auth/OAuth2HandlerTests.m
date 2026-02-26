@@ -1,7 +1,9 @@
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
 #import "Auth/OAuth2.h"
+#import "Auth/OAuth2Handler+Testing.h"
 #import "Auth/DPoPUtil.h"
+#import "Auth/PDSNonceManager.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
@@ -130,6 +132,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.accountService = self.accountService;
+    [self.handler clearPendingConsentsForTesting];
 }
 
 - (void)tearDown {
@@ -251,6 +254,8 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertEqualObjects(response.jsonBody[@"error"], @"use_dpop_nonce");
         XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
         XCTAssertEqualObjects(response.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+        XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
     } @finally {
         CFRelease(privateKey);
     }
@@ -279,6 +284,56 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertNil(response.headers[@"DPoP-Nonce"]);
 }
 
+- (void)testTokenRequestRotatesDPoPNonceAfterValidProof {
+    NSError *keyError = nil;
+    SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&keyError);
+    if (privateKey == NULL) {
+        XCTSkip(@"Skipping DPoP nonce rotation test: key import unavailable (%@)", keyError);
+    }
+
+    @try {
+        NSString *incomingNonce = [[PDSNonceManager sharedManager] generateNonce];
+        XCTAssertTrue(incomingNonce.length > 0);
+
+        NSError *proofError = nil;
+        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"POST"
+                                                      uri:@"http://localhost:2583/oauth/token"
+                                                   nonce:incomingNonce
+                                                     key:privateKey
+                                                   error:&proofError];
+        XCTAssertNotNil(proof);
+        XCTAssertNil(proofError);
+
+        NSString *body = @"grant_type=refresh_token&refresh_token=invalid-refresh&client_id=test-client";
+        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                      methodString:@"POST"
+                                                              path:@"/oauth/token"
+                                                       queryString:@""
+                                                       queryParams:@{}
+                                                           version:@"1.1"
+                                                           headers:@{
+                                                               @"content-type": @"application/x-www-form-urlencoded",
+                                                               @"host": @"localhost:2583",
+                                                               @"dpop": proof.jwt,
+                                                               @"dpop-nonce": incomingNonce
+                                                           }
+                                                              body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                        remoteAddress:@"127.0.0.1"];
+        HttpResponse *response = [[HttpResponse alloc] init];
+        [self.handler handleTokenRequest:request response:response];
+
+        XCTAssertEqual(response.statusCode, 400);
+        XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_grant");
+        NSString *nextNonce = response.headers[@"DPoP-Nonce"];
+        XCTAssertTrue(nextNonce.length > 0);
+        XCTAssertNotEqualObjects(nextNonce, incomingNonce);
+        XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
+    } @finally {
+        CFRelease(privateKey);
+    }
+}
+
 - (void)testPARRequestReturnsDPoPNonceChallengeWhenNonceMissing {
     NSError *keyError = nil;
     SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&keyError);
@@ -296,7 +351,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertNotNil(proof);
         XCTAssertNil(proofError);
 
-        NSString *body = @"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb";
+        NSString *body = @"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=test-state&code_challenge=test-challenge&code_challenge_method=S256";
         HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/par"
@@ -317,6 +372,8 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertEqualObjects(response.jsonBody[@"error"], @"use_dpop_nonce");
         XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
         XCTAssertEqualObjects(response.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+        XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
     } @finally {
         CFRelease(privateKey);
     }
@@ -401,6 +458,9 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertTrue([location containsString:@"&code="], @"Should use & separator for existing query string");
     XCTAssertFalse([location containsString:@"?code="], @"Should NOT use ? when query already exists");
     XCTAssertTrue([location containsString:@"&state=test-state-123"], @"Should append state with & separator");
+    NSString *encodedIssuer = [self.handler.oauthServer.issuer stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *expectedIssuerParam = [NSString stringWithFormat:@"&iss=%@", encodedIssuer];
+    XCTAssertTrue([location containsString:expectedIssuerParam], @"Should append issuer parameter");
 }
 
 - (void)testAuthorizeRedirectWithoutQueryStringAfterConsent {
@@ -481,6 +541,206 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertTrue([location hasPrefix:redirectWithoutQuery], @"Should redirect to base redirect URI");
     XCTAssertTrue([location containsString:@"?code="], @"Should use ? separator when no query string exists");
     XCTAssertFalse([location containsString:@"&code="], @"Should NOT use & as first separator");
+    NSString *encodedIssuer = [self.handler.oauthServer.issuer stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *expectedIssuerParam = [NSString stringWithFormat:@"&iss=%@", encodedIssuer];
+    XCTAssertTrue([location containsString:expectedIssuerParam], @"Should append issuer parameter");
+}
+
+- (void)testAuthorizeDenyRedirectIncludesIssuer {
+    NSString *redirectURI = @"http://localhost:2583/cb";
+    NSString *body = [NSString stringWithFormat:@"decision=deny&client_id=test-client&state=deny-state&redirect_uri=%@",
+                      [redirectURI stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/authorize/confirm"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:request response:response];
+
+    XCTAssertEqual(response.statusCode, 302);
+    NSString *location = response.headers[@"Location"];
+    XCTAssertNotNil(location);
+    XCTAssertTrue([location containsString:@"error=access_denied"]);
+    XCTAssertTrue([location containsString:@"state=deny-state"]);
+    NSString *encodedIssuer = [self.handler.oauthServer.issuer stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *expectedIssuerParam = [NSString stringWithFormat:@"iss=%@", encodedIssuer];
+    XCTAssertTrue([location containsString:expectedIssuerParam]);
+}
+
+- (void)testAuthorizeDenyRejectsUnregisteredRedirect {
+    NSString *body = @"decision=deny&client_id=test-client&state=deny-state&redirect_uri=https%3A%2F%2Fevil.example%2Fcallback";
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/authorize/confirm"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[body dataUsingEncoding:NSUTF8StringEncoding]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:request response:response];
+
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_request");
+}
+
+- (void)testAuthorizeAllowRejectsUnregisteredRedirect {
+    NSString *csrfToken = @"csrf-allow-reject";
+    NSString *signInBody = @"handle=test-user.test&password=test-password";
+    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/signin"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                  @"X-CSRF-Token": csrfToken,
+                                                                  @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                              }
+                                                                 body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
+    XCTAssertEqual(signInResponse.statusCode, 200);
+    NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
+    XCTAssertTrue(sessionToken.length > 0);
+
+    NSString *allowBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=allow-state&redirect_uri=https%%3A%%2F%%2Fevil.example%%2Fcallback&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256",
+                           [sessionToken stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    HttpRequest *allowRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                        methodString:@"POST"
+                                                                path:@"/oauth/authorize/confirm"
+                                                         queryString:@""
+                                                         queryParams:@{}
+                                                             version:@"1.1"
+                                                             headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                                body:[allowBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                      remoteAddress:@"127.0.0.1"];
+    HttpResponse *allowResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:allowRequest response:allowResponse];
+
+    XCTAssertEqual(allowResponse.statusCode, 400);
+    XCTAssertEqualObjects(allowResponse.jsonBody[@"error"], @"invalid_request");
+    XCTAssertEqual([self.handler pendingConsentCountForTesting], (NSUInteger)0);
+}
+
+- (void)testPendingConsentsBoundedUnderRepeatedSignInAttempts {
+    HttpRequest *authorizeRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                            methodString:@"GET"
+                                                                    path:@"/oauth/authorize"
+                                                             queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=consent-cap&code_challenge=test_challenge&code_challenge_method=S256"
+                                                             queryParams:@{
+                                                                 @"client_id": @"test-client",
+                                                                 @"response_type": @"code",
+                                                                 @"redirect_uri": @"http://localhost/cb",
+                                                                 @"state": @"consent-cap",
+                                                                 @"code_challenge": @"test_challenge",
+                                                                 @"code_challenge_method": @"S256"
+                                                             }
+                                                                 version:@"1.1"
+                                                                 headers:@{}
+                                                                    body:[NSData data]
+                                                          remoteAddress:@"127.0.0.1"];
+    HttpResponse *authorizeResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeRequest:authorizeRequest response:authorizeResponse];
+    XCTAssertEqual(authorizeResponse.statusCode, 200);
+
+    NSString *csrfToken = @"csrf-consent-cap";
+    NSString *signInBody = @"handle=test-user.test&password=test-password";
+    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/signin"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                  @"X-CSRF-Token": csrfToken,
+                                                                  @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                              }
+                                                                 body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+
+    for (NSUInteger i = 0; i < 1100; i++) {
+        HttpResponse *signInResponse = [[HttpResponse alloc] init];
+        [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
+        XCTAssertEqual(signInResponse.statusCode, 200);
+        XCTAssertNotNil(signInResponse.jsonBody[@"session_token"]);
+    }
+
+    XCTAssertLessThanOrEqual([self.handler pendingConsentCountForTesting], (NSUInteger)1024);
+}
+
+- (void)testAuthorizeDenyRemovesPendingConsentSession {
+    HttpRequest *authorizeRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                            methodString:@"GET"
+                                                                    path:@"/oauth/authorize"
+                                                             queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=deny-cleanup&code_challenge=test_challenge&code_challenge_method=S256"
+                                                             queryParams:@{
+                                                                 @"client_id": @"test-client",
+                                                                 @"response_type": @"code",
+                                                                 @"redirect_uri": @"http://localhost/cb",
+                                                                 @"state": @"deny-cleanup",
+                                                                 @"code_challenge": @"test_challenge",
+                                                                 @"code_challenge_method": @"S256"
+                                                             }
+                                                                 version:@"1.1"
+                                                                 headers:@{}
+                                                                    body:[NSData data]
+                                                          remoteAddress:@"127.0.0.1"];
+    HttpResponse *authorizeResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeRequest:authorizeRequest response:authorizeResponse];
+    XCTAssertEqual(authorizeResponse.statusCode, 200);
+
+    NSString *csrfToken = @"csrf-deny-cleanup";
+    NSString *signInBody = @"handle=test-user.test&password=test-password";
+    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/signin"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                  @"X-CSRF-Token": csrfToken,
+                                                                  @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                              }
+                                                                 body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
+    XCTAssertEqual(signInResponse.statusCode, 200);
+    NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
+    XCTAssertTrue(sessionToken.length > 0);
+    XCTAssertEqual([self.handler pendingConsentCountForTesting], (NSUInteger)1);
+
+    NSString *encodedRedirect = [@"http://localhost/cb" stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *encodedSessionToken = [sessionToken stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *denyBody = [NSString stringWithFormat:@"decision=deny&client_id=test-client&state=deny-cleanup&redirect_uri=%@&session_token=%@",
+                          encodedRedirect, encodedSessionToken];
+    HttpRequest *denyRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                      methodString:@"POST"
+                                                              path:@"/oauth/authorize/confirm"
+                                                       queryString:@""
+                                                       queryParams:@{}
+                                                           version:@"1.1"
+                                                           headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                              body:[denyBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                        remoteAddress:@"127.0.0.1"];
+    HttpResponse *denyResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:denyRequest response:denyResponse];
+
+    XCTAssertEqual(denyResponse.statusCode, 302);
+    XCTAssertEqual([self.handler pendingConsentCountForTesting], (NSUInteger)0);
 }
 
 /**
