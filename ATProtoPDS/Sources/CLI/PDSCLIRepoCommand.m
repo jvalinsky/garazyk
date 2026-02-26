@@ -35,11 +35,12 @@
            @"  get <did> <uri>        Fetch a specific record\n"
            @"  root <did>             Return the current root CID of the repository\n"
            @"  create-record <did> <col> <rkey> <json>  Create a new record\n"
+           @"  delete-record <did> <col> <rkey>         Delete a record\n"
            @"  repair <did>           Force reinitialize a corrupted repository";
 }
 
 - (NSArray<NSString *> *)subcommands {
-    return @[@"list", @"get", @"root", @"create-record", @"repair"];
+    return @[@"list", @"get", @"root", @"create-record", @"delete-record", @"repair"];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -59,6 +60,8 @@
         [self executeRootWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"create-record"]) {
         [self executeCreateRecordWithArgs:subArgs context:context];
+    } else if ([subcommand isEqualToString:@"delete-record"]) {
+        [self executeDeleteRecordWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"repair"]) {
         [self executeRepairWithArgs:subArgs context:context];
     } else {
@@ -108,6 +111,33 @@
         }
     } else {
         [context printError:[NSString stringWithFormat:@"Failed to create record: %@", error.localizedDescription]];
+    }
+}
+
+- (void)executeDeleteRecordWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+    if (args.count < 3) {
+        [context printError:@"Usage: pds repo delete-record <did> <collection> <rkey>"];
+        return;
+    }
+
+    NSString *did = args[0];
+    NSString *collection = args[1];
+    NSString *rkey = args[2];
+
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+    PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:pool];
+    
+    NSError *error = nil;
+    BOOL success = [recordService deleteRecord:collection
+                                          rkey:rkey
+                                        forDid:did
+                                      actorDid:did
+                                         error:&error];
+
+    if (success) {
+        [context printInfo:[NSString stringWithFormat:@"Record deleted successfully: at://%@/%@/%@", did, collection, rkey]];
+    } else {
+        [context printError:[NSString stringWithFormat:@"Failed to delete record: %@", error.localizedDescription]];
     }
 }
 
