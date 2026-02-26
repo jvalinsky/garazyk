@@ -17,6 +17,7 @@ services:
       - PDS_ISSUER=https://pds.garazyk.xyz
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
+      - PDS_DATA_DIR=/var/lib/atprotopds
     command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
     labels:
       - "com.garazyk.git_commit=579d3fec8ceb0ac788d735a56c3f758f3f4a166f"
