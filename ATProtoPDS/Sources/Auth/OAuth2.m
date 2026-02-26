@@ -1189,31 +1189,46 @@ static NSString *OAuth2CanonicalDPoPHTUFromString(NSString *urlString) {
         return;
     }
 
-    if (request.codeVerifier && codeData[@"code_challenge"]) {
-        NSString *expectedChallenge = codeData[@"code_challenge"];
-        NSString *method = codeData[@"code_challenge_method"] ?: @"plain";
-
-        // URL-decode the code_verifier since browsers send it encoded
-        NSString *codeVerifier = [request.codeVerifier stringByRemovingPercentEncoding];
-        if (!codeVerifier) {
-            codeVerifier = request.codeVerifier;
-        }
-
-        PDS_LOG_AUTH_DEBUG(@"Verifying PKCE (client_id=%@, method=%@, verifier_len=%lu, challenge_len=%lu)",
-                           request.clientID ?: @"",
-                           method ?: @"plain",
-                           (unsigned long)codeVerifier.length,
-                           (unsigned long)expectedChallenge.length);
-
-        if (![self verifyCodeVerifier:codeVerifier challenge:expectedChallenge method:method]) {
-            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
-                                                 code:OAuth2ErrorInvalidGrant
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid code verifier"}];
-            completion(nil, error);
-            return;
-        }
-        PDS_LOG_AUTH_DEBUG(@"PKCE verification passed (client_id=%@)", request.clientID ?: @"");
+    // PKCE is mandatory per AT Protocol OAuth spec
+    NSString *expectedChallenge = codeData[@"code_challenge"];
+    if (!expectedChallenge) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidGrant
+                                         userInfo:@{NSLocalizedDescriptionKey: @"PKCE code_challenge was not provided during authorization"}];
+        completion(nil, error);
+        return;
     }
+
+    if (!request.codeVerifier) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidGrant
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing code_verifier (PKCE is mandatory)"}];
+        completion(nil, error);
+        return;
+    }
+
+    NSString *method = codeData[@"code_challenge_method"] ?: @"S256";
+
+    // URL-decode the code_verifier since browsers send it encoded
+    NSString *codeVerifier = [request.codeVerifier stringByRemovingPercentEncoding];
+    if (!codeVerifier) {
+        codeVerifier = request.codeVerifier;
+    }
+
+    PDS_LOG_AUTH_DEBUG(@"Verifying PKCE (client_id=%@, method=%@, verifier_len=%lu, challenge_len=%lu)",
+                       request.clientID ?: @"",
+                       method,
+                       (unsigned long)codeVerifier.length,
+                       (unsigned long)expectedChallenge.length);
+
+    if (![self verifyCodeVerifier:codeVerifier challenge:expectedChallenge method:method]) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidGrant
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid code verifier"}];
+        completion(nil, error);
+        return;
+    }
+    PDS_LOG_AUTH_DEBUG(@"PKCE verification passed (client_id=%@)", request.clientID ?: @"");
 
     [self removeAuthorizationCode:request.code];
 
@@ -1364,18 +1379,16 @@ static NSString *OAuth2CanonicalDPoPHTUFromString(NSString *urlString) {
 }
 
 - (BOOL)verifyCodeVerifier:(NSString *)verifier challenge:(NSString *)challenge method:(NSString *)method {
-    if ([method isEqualToString:@"plain"]) {
-        return [verifier isEqualToString:challenge];
+    // AT Protocol OAuth spec: only S256 is allowed, "plain" is not permitted
+    if (![method isEqualToString:@"S256"]) {
+        return NO;
     }
-    if ([method isEqualToString:@"S256"]) {
-        NSData *verifierData = [verifier dataUsingEncoding:NSUTF8StringEncoding];
-        unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-        CC_SHA256(verifierData.bytes, (CC_LONG)verifierData.length, hash);
-        NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-        NSString *base64Hash = [self base64URLEncodeData:hashData];
-        return [base64Hash isEqualToString:challenge];
-    }
-    return NO;
+    NSData *verifierData = [verifier dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(verifierData.bytes, (CC_LONG)verifierData.length, hash);
+    NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+    NSString *base64Hash = [self base64URLEncodeData:hashData];
+    return [base64Hash isEqualToString:challenge];
 }
 
 - (NSString *)base64URLEncodeData:(NSData *)data {
