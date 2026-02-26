@@ -49,6 +49,17 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
     return [self encodeStreamEventWithType:@"#commit" payload:payload error:error];
 }
 
+- (NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event error:(NSError **)error {
+    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"seq"] = @(event.seq);
+    payload[@"did"] = event.did;
+    payload[@"blocks"] = event.blocks ?: [NSData data];
+    payload[@"rev"] = event.rev ?: @"";
+    payload[@"time"] = event.time ?: @"";
+
+    return [self encodeStreamEventWithType:@"#sync" payload:payload error:error];
+}
+
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
     payload[@"seq"] = @(event.seq);
