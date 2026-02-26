@@ -34,10 +34,19 @@
     request.timeoutInterval = self.timeoutInterval;
     
     NSError *jsonError = nil;
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:body options:0 error:&jsonError];
-    if (jsonError) {
-        if (error) *error = jsonError;
-        PDS_LOG_HTTP_ERROR(@"Failed to serialize JSON body: %@", jsonError);
+    NSData *jsonData = nil;
+    @try {
+        jsonData = [NSJSONSerialization dataWithJSONObject:body options:0 error:&jsonError];
+    } @catch (NSException *exception) {
+        NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+        userInfo[NSLocalizedDescriptionKey] = @"Failed to serialize JSON body";
+        if (exception.name) userInfo[@"exceptionName"] = exception.name;
+        if (exception.reason) userInfo[@"exceptionReason"] = exception.reason;
+        jsonError = [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain" code:-1 userInfo:userInfo];
+    }
+    if (jsonError || !jsonData) {
+        if (error) *error = jsonError ?: [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain" code:-1 userInfo:@{ NSLocalizedDescriptionKey: @"Failed to serialize JSON body" }];
+        PDS_LOG_HTTP_ERROR(@"Failed to serialize JSON body: %@", jsonError ?: @"unknown");
         return nil;
     }
     request.HTTPBody = jsonData;
