@@ -4,6 +4,9 @@
 @interface AppDelegate (TestHooks)
 - (void)startServer:(id)sender;
 - (void)stopServer:(id)sender;
+#if TARGET_OS_OSX || defined(__APPLE__)
+- (void)setupStatusBar;
+#endif
 @end
 
 @interface AppDelegateMockController : NSObject
@@ -42,6 +45,16 @@
     AppDelegate *delegate = [[AppDelegate alloc] init];
     AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
     mock.startShouldSucceed = YES;
+    delegate.pdsController = (id)mock;
+
+    [delegate startServer:nil];
+    XCTAssertEqual(mock.startCalls, 1);
+}
+
+- (void)testStartServerFailureStillInvokesController {
+    AppDelegate *delegate = [[AppDelegate alloc] init];
+    AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
+    mock.startShouldSucceed = NO;
     delegate.pdsController = (id)mock;
 
     [delegate startServer:nil];
