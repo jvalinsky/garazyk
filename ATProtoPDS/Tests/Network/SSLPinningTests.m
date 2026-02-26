@@ -1,6 +1,16 @@
+#ifdef __APPLE__
 #import <XCTest/XCTest.h>
+#else
+#import "Compat/XCTest/XCTest.h"
+#endif
 #import "Network/SSLPinningManager.h"
 #import <Security/Security.h>
+
+@interface SSLPinningManager (TestHooks)
+- (BOOL)validateServerTrust:(SecTrustRef)serverTrust forDomain:(NSString *)domain;
+- (SecKeyRef)publicKeyFromCertificate:(SecCertificateRef)certificate;
+- (NSData *)dataFromPublicKey:(SecKeyRef)publicKey;
+@end
 
 @interface SSLPinningTests : XCTestCase
 
@@ -37,13 +47,26 @@
     NSString *domain = @"example.com";
     NSData *keyData = [@"test-key-data" dataUsingEncoding:NSUTF8StringEncoding];
 
-    // Add a key
     [self.pinningManager addPinnedPublicKey:keyData forDomain:domain];
-    // Note: We can't directly test the internal storage, but we can test that methods don't crash
+    NSDictionary *stored = [self.pinningManager valueForKey:@"pinnedKeys"];
+    XCTAssertEqual([stored[domain] count], (NSUInteger)1);
 
-    // Remove keys
+    // Duplicate should be ignored.
+    [self.pinningManager addPinnedPublicKey:keyData forDomain:domain];
+    stored = [self.pinningManager valueForKey:@"pinnedKeys"];
+    XCTAssertEqual([stored[domain] count], (NSUInteger)1);
+
     [self.pinningManager removePinnedKeysForDomain:domain];
-    // Again, we can't directly verify removal but can test that method doesn't crash
+    stored = [self.pinningManager valueForKey:@"pinnedKeys"];
+    XCTAssertNil(stored[domain]);
+}
+
+- (void)testAddPinnedKeyIgnoresNilInputs {
+    id nullObject = nil;
+    [self.pinningManager addPinnedPublicKey:(NSData *)nullObject forDomain:@"example.com"];
+    [self.pinningManager addPinnedPublicKey:[@"k" dataUsingEncoding:NSUTF8StringEncoding] forDomain:(NSString *)nullObject];
+    NSDictionary *stored = [self.pinningManager valueForKey:@"pinnedKeys"];
+    XCTAssertEqual(stored.count, (NSUInteger)0);
 }
 
 - (void)testCreateSession {
@@ -57,14 +80,74 @@
 
 - (void)testValidateChallengeWithDisabledPinning {
     SSLPinningManager *disabledManager = [[SSLPinningManager alloc] initWithPinningEnabled:NO];
+    id<NSURLAuthenticationChallengeSender> sender = (id<NSURLAuthenticationChallengeSender>)nil;
+    NSURLProtectionSpace *space = [[NSURLProtectionSpace alloc] initWithHost:@"example.com"
+                                                                         port:443
+                                                                     protocol:NSURLProtectionSpaceHTTPS
+                                                                        realm:nil
+                                                         authenticationMethod:NSURLAuthenticationMethodServerTrust];
+    NSURLAuthenticationChallenge *challenge = [[NSURLAuthenticationChallenge alloc] initWithProtectionSpace:space
+                                                                                           proposedCredential:nil
+                                                                                         previousFailureCount:0
+                                                                                              failureResponse:nil
+                                                                                                        error:nil
+                                                                                                       sender:sender];
+    XCTAssertFalse([disabledManager validateChallenge:challenge forDomain:@"example.com"]);
+}
 
-    // Create a mock challenge - this is difficult to test fully without a real server
-    // For now, we'll test that the method exists and doesn't crash
-    NSURLAuthenticationChallenge *challenge = nil; // Would need to create a real challenge
+- (void)testValidateChallengeRejectsUnsupportedMethodWhenEnabled {
+    id<NSURLAuthenticationChallengeSender> sender = (id<NSURLAuthenticationChallengeSender>)nil;
+    NSURLProtectionSpace *space = [[NSURLProtectionSpace alloc] initWithHost:@"example.com"
+                                                                         port:443
+                                                                     protocol:NSURLProtectionSpaceHTTPS
+                                                                        realm:nil
+                                                         authenticationMethod:NSURLAuthenticationMethodHTTPBasic];
+    NSURLAuthenticationChallenge *challenge = [[NSURLAuthenticationChallenge alloc] initWithProtectionSpace:space
+                                                                                           proposedCredential:nil
+                                                                                         previousFailureCount:0
+                                                                                              failureResponse:nil
+                                                                                                        error:nil
+                                                                                                       sender:sender];
+    XCTAssertFalse([self.pinningManager validateChallenge:challenge forDomain:@"example.com"]);
+}
 
-    // Since we can't easily create a real challenge in unit tests,
-    // we'll just verify the manager is properly initialized
-    XCTAssertNotNil(disabledManager);
+- (void)testValidateServerTrustWithDisabledPinningAlwaysAllows {
+    SSLPinningManager *disabledManager = [[SSLPinningManager alloc] initWithPinningEnabled:NO];
+    XCTAssertTrue([disabledManager validateServerTrust:NULL forDomain:@"example.com"]);
+}
+
+- (void)testValidateServerTrustAllowsWhenNoPinsConfigured {
+    XCTAssertTrue([self.pinningManager validateServerTrust:NULL forDomain:@"example.com"]);
+}
+
+- (void)testPublicKeyExtractionAndSerializationRejectNilInputs {
+    XCTAssertTrue([self.pinningManager publicKeyFromCertificate:NULL] == NULL);
+    XCTAssertNil([self.pinningManager dataFromPublicKey:NULL]);
+}
+
+- (void)testSessionDelegateDefaultHandlingForNonTrustChallenge {
+    id<NSURLAuthenticationChallengeSender> sender = (id<NSURLAuthenticationChallengeSender>)nil;
+    NSURLProtectionSpace *space = [[NSURLProtectionSpace alloc] initWithHost:@"example.com"
+                                                                         port:443
+                                                                     protocol:NSURLProtectionSpaceHTTPS
+                                                                        realm:nil
+                                                         authenticationMethod:NSURLAuthenticationMethodHTTPBasic];
+    NSURLAuthenticationChallenge *challenge = [[NSURLAuthenticationChallenge alloc] initWithProtectionSpace:space
+                                                                                           proposedCredential:nil
+                                                                                         previousFailureCount:0
+                                                                                              failureResponse:nil
+                                                                                                        error:nil
+                                                                                                       sender:sender];
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"completion called"];
+    [self.pinningManager URLSession:[NSURLSession sharedSession]
+                 didReceiveChallenge:challenge
+                   completionHandler:^(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential) {
+        XCTAssertEqual(disposition, NSURLSessionAuthChallengePerformDefaultHandling);
+        XCTAssertNil(credential);
+        [expectation fulfill];
+    }];
+    [self waitForExpectations:@[expectation] timeout:1.0];
 }
 
 // Integration test that requires network access - disabled by default
