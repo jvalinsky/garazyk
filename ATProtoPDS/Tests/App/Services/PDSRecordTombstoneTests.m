@@ -129,7 +129,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
