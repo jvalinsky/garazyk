@@ -1038,13 +1038,13 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           id valueObj = record[@"value"];
           if (valueObj) {
             id jsonObj = nil;
-            if ([valueObj isKindOfClass:[NSDictionary class]]) {
-              jsonObj = valueObj;
-            } else if ([valueObj isKindOfClass:[NSString class]]) {
+            if ([valueObj respondsToSelector:@selector(dataUsingEncoding:)]) {
               NSData *jsonData = [valueObj dataUsingEncoding:NSUTF8StringEncoding];
               if (jsonData) {
                 jsonObj = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
               }
+            } else if ([valueObj isKindOfClass:[NSDictionary class]]) {
+              jsonObj = valueObj;
             }
 
             if (jsonObj) {
