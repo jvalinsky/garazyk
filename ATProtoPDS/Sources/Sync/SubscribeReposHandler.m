@@ -631,17 +631,15 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (!hasCursor) {
       PDS_LOG_SYNC_INFO(@"No cursor provided; replaying existing repository state before live updates.");
       
-      NSError *error = nil;
-      PDSDatabase *serviceDB = [self.serviceDatabases serviceDatabaseWithError:&error];
-      if (!serviceDB) {
-        PDS_LOG_SYNC_ERROR(@"Failed to get service database for initial replay: %@", error);
+      if (!self.userDatabasePool) {
+        PDS_LOG_SYNC_ERROR(@"User database pool not available for initial replay");
       } else {
-        NSArray<PDSDatabaseRepo *> *repos = [serviceDB getAllReposWithError:&error];
+        NSError *error = nil;
+        NSArray<PDSDatabaseRepo *> *repos = [self.userDatabasePool getAllReposWithError:&error];
         if (error) {
           PDS_LOG_SYNC_ERROR(@"Failed to fetch repositories for initial replay: %@", error);
-        } else if (!self.userDatabasePool) {
-          PDS_LOG_SYNC_ERROR(@"User database pool not available for initial replay");
         } else {
+          PDS_LOG_SYNC_DEBUG(@"Found %lu repos to replay", (unsigned long)repos.count);
           for (PDSDatabaseRepo *repo in repos) {
             PDS_LOG_SYNC_DEBUG(@"Replaying repository %@", repo.ownerDid);
             
