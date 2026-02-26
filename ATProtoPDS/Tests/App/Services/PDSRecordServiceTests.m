@@ -367,7 +367,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:YES
+                                      validationMode:PDSValidationModeRequired
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -399,7 +399,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -439,7 +439,7 @@
     NSError *firstError = nil;
     NSDictionary *firstResult = [self.service applyWrites:initialWrites
                                                    forDid:self.testDID
-                                                 validate:NO
+                                          validationMode:PDSValidationModeOff
                                                swapCommit:nil
                                                     error:&firstError];
     XCTAssertNotNil(firstResult);
@@ -465,7 +465,7 @@
     NSError *secondError = nil;
     NSDictionary *secondResult = [self.service applyWrites:secondWrites
                                                     forDid:self.testDID
-                                                  validate:NO
+                                           validationMode:PDSValidationModeOff
                                                 swapCommit:commitCID
                                                      error:&secondError];
     XCTAssertNotNil(secondResult);
@@ -501,7 +501,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNil(result, @"Batch should fail due to a duplicate record URI");
@@ -546,7 +546,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -566,7 +566,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:@[]
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -590,7 +590,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -617,7 +617,7 @@
     NSError *error = nil;
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     XCTAssertNotNil(result);
@@ -815,7 +815,7 @@
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:targetDID
                                             actorDid:actorDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     
@@ -842,7 +842,7 @@
     NSDictionary *result = [self.service applyWrites:writes
                                               forDid:self.testDID
                                             actorDid:self.testDID
-                                            validate:NO
+                                      validationMode:PDSValidationModeOff
                                           swapCommit:nil
                                                error:&error];
     

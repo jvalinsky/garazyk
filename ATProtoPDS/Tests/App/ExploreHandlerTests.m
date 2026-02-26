@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "App/Explore/ExploreHandler.h"
 #import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 
 @interface ExploreHandler (Testing)
 @property (nonatomic, assign) BOOL enabled;
@@ -10,6 +11,11 @@
 @property (nonatomic, assign) NSTimeInterval plcTTL;
 @property (nonatomic, assign) NSTimeInterval accountTTL;
 - (void)parseConfig:(NSString *)content;
+- (NSDictionary *)parseQueryString:(NSString *)query;
+- (NSString *)apiEndpointForPath:(NSString *)path;
+- (NSDictionary *)generateOpenAPISpec;
+- (void)handleApiOpenapiSpec:(NSDictionary *)params response:(HttpResponse *)response;
+- (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response endpoint:(NSString *)endpoint;
 @end
 
 @interface ExploreHandlerTests : XCTestCase
@@ -76,6 +82,78 @@
                                                   remoteAddress:@"127.0.0.1"];
 
     XCTAssertTrue([self.handler canHandleRequest:request]);
+}
+
+- (void)testApiEndpointForPathExtractsFirstSegment {
+    XCTAssertEqualObjects([self.handler apiEndpointForPath:@"/api/pds/records"], @"records");
+    XCTAssertEqualObjects([self.handler apiEndpointForPath:@"/api/pds/records/extra/path"], @"records");
+    XCTAssertEqualObjects([self.handler apiEndpointForPath:@"/not-api/pds/records"], @"");
+    XCTAssertEqualObjects([self.handler apiEndpointForPath:nil], @"");
+}
+
+- (void)testParseQueryStringDecodesPercentEscapes {
+    NSDictionary *params = [self.handler parseQueryString:@"did=did%3Aplc%3Aabc&limit=20&empty="];
+    XCTAssertEqualObjects(params[@"did"], @"did:plc:abc");
+    XCTAssertEqualObjects(params[@"limit"], @"20");
+    XCTAssertEqualObjects(params[@"empty"], @"");
+}
+
+- (void)testGenerateOpenAPISpecContainsCoreFieldsAndPaths {
+    NSDictionary *spec = [self.handler generateOpenAPISpec];
+    XCTAssertEqualObjects(spec[@"openapi"], @"3.0.0");
+    XCTAssertTrue([spec[@"info"] isKindOfClass:[NSDictionary class]]);
+    XCTAssertTrue([spec[@"paths"] isKindOfClass:[NSDictionary class]]);
+
+    NSDictionary *paths = spec[@"paths"];
+    XCTAssertNotNil(paths[@"/api/pds/lookup"]);
+    XCTAssertNotNil(paths[@"/api/pds/accounts"]);
+    XCTAssertNotNil(paths[@"/api/pds/openapi.json"]);
+}
+
+- (void)testHandleApiOpenapiSpecReturnsJSONWhenRequested {
+    HttpResponse *response = [HttpResponse response];
+    [self.handler handleApiOpenapiSpec:@{@"format": @"json"} response:response];
+
+    XCTAssertEqualObjects(response.contentType, @"application/json");
+    XCTAssertNotNil(response.body);
+
+    NSError *error = nil;
+    id bodyJSON = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:&error];
+    XCTAssertNil(error);
+    XCTAssertTrue([bodyJSON isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqualObjects(bodyJSON[@"openapi"], @"3.0.0");
+}
+
+- (void)testHandleApiOpenapiSpecReturnsYAMLByDefault {
+    HttpResponse *response = [HttpResponse response];
+    [self.handler handleApiOpenapiSpec:@{} response:response];
+
+    XCTAssertEqualObjects(response.contentType, @"application/yaml");
+    XCTAssertNotNil(response.body);
+
+    NSString *yaml = [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
+    XCTAssertNotNil(yaml);
+    XCTAssertTrue([yaml containsString:@"openapi:"]);
+    XCTAssertTrue([yaml containsString:@"paths:"]);
+}
+
+- (void)testHandleApiRequestUnknownEndpointReturnsNotFound {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/api/pds/unknown"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [HttpResponse response];
+
+    [self.handler handleApiRequest:request response:response endpoint:@"definitely-not-an-endpoint"];
+
+    XCTAssertEqual(response.statusCode, HttpStatusNotFound);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"Unknown endpoint");
+    XCTAssertEqualObjects(response.jsonBody[@"endpoint"], @"definitely-not-an-endpoint");
 }
 
 @end
