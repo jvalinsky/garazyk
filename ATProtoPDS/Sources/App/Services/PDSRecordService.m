@@ -97,9 +97,13 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 
     NSDictionary *parsedValue = @{};
     if (record.value) {
-        NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
-        if (data) {
-            parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+        if ([record.value respondsToSelector:@selector(dataUsingEncoding:)]) {
+            NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+            if (data) {
+                parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+            }
+        } else if ([record.value isKindOfClass:[NSDictionary class]]) {
+            parsedValue = (NSDictionary *)record.value;
         }
     }
 
@@ -131,9 +135,13 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     for (PDSDatabaseRecord *record in records) {
         NSDictionary *parsedValue = @{};
         if (record.value) {
-            NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
-            if (data) {
-                parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+            if ([record.value respondsToSelector:@selector(dataUsingEncoding:)]) {
+                NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+                if (data) {
+                    parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+                }
+            } else if ([record.value isKindOfClass:[NSDictionary class]]) {
+                parsedValue = (NSDictionary *)record.value;
             }
         }
         
