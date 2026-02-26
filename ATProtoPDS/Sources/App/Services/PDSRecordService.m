@@ -226,6 +226,14 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         return NO;
     }
 
+    PDSDatabaseRecord *existingRecord = [_databasePool getRecord:uri forDid:did error:nil];
+    NSString *previousRecordCID = ([existingRecord.cid isKindOfClass:[NSString class]] &&
+                                   existingRecord.cid.length > 0)
+                                      ? existingRecord.cid
+                                      : nil;
+    NSString *firehoseAction =
+        previousRecordCID.length > 0 ? @"update" : @"create";
+
     PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
     NSString *writeRev = [TID tid].stringValue;
     record.uri = uri;
@@ -286,9 +294,10 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             @"did": did,
             @"collection": collection,
             @"rkey": rkey,
-            @"action": @"create",
+            @"action": firehoseAction,
             @"cid": cidString,
             @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],
+            @"previousRecordCID": previousRecordCID ?: [NSNull null],
             @"commit": newRootCID ?: [NSNull null],
             @"rev": newRev ?: [NSNull null],
             @"recordCBOR": cborData ?: [NSNull null]
@@ -340,7 +349,12 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSString *writeRev = [TID tid].stringValue;
-    BOOL hadExistingRecord = ([_databasePool getRecord:uri forDid:did error:nil] != nil);
+    PDSDatabaseRecord *existingRecord = [_databasePool getRecord:uri forDid:did error:nil];
+    BOOL hadExistingRecord = (existingRecord != nil);
+    NSString *previousRecordCID = ([existingRecord.cid isKindOfClass:[NSString class]] &&
+                                   existingRecord.cid.length > 0)
+                                      ? existingRecord.cid
+                                      : nil;
 
     __block BOOL success = NO;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
@@ -390,6 +404,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             @"action": @"delete",
             @"cid": [NSNull null],
             @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],
+            @"previousRecordCID": previousRecordCID ?: [NSNull null],
             @"commit": newRootCID ?: [NSNull null],
             @"rev": newRev ?: [NSNull null],
             @"recordCBOR": [NSNull null]
@@ -557,7 +572,8 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             [preparedOps addObject:@{
                 @"action": action,
                 @"record": dbRecord,
-                @"recordCBOR": cborData
+                @"recordCBOR": cborData,
+                @"previousRecordCID": [NSNull null]
             }];
             [resultOps addObject:@{
                 @"action": action,
@@ -612,6 +628,12 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             }
 
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            PDSDatabaseRecord *existingRecord = [_databasePool getRecord:uri forDid:did error:nil];
+            NSString *previousRecordCID =
+                ([existingRecord.cid isKindOfClass:[NSString class]] &&
+                 existingRecord.cid.length > 0)
+                    ? existingRecord.cid
+                    : nil;
             NSError *cidError = nil;
             NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cidError];
             if (!cborData) {
@@ -651,7 +673,8 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             [preparedOps addObject:@{
                 @"action": action,
                 @"record": dbRecord,
-                @"recordCBOR": cborData
+                @"recordCBOR": cborData,
+                @"previousRecordCID": previousRecordCID ?: [NSNull null]
             }];
             [resultOps addObject:@{
                 @"action": action,
@@ -668,13 +691,20 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 return nil;
             }
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-            BOOL recordExists = ([_databasePool getRecord:uri forDid:did error:nil] != nil);
+            PDSDatabaseRecord *existingRecord = [_databasePool getRecord:uri forDid:did error:nil];
+            BOOL recordExists = (existingRecord != nil);
+            NSString *previousRecordCID =
+                ([existingRecord.cid isKindOfClass:[NSString class]] &&
+                 existingRecord.cid.length > 0)
+                    ? existingRecord.cid
+                    : nil;
             [preparedOps addObject:@{
                 @"action": @"delete",
                 @"uri": uri,
                 @"collection": collection ?: @"",
                 @"rkey": rkey ?: @"",
-                @"exists": @(recordExists)
+                @"exists": @(recordExists),
+                @"previousRecordCID": previousRecordCID ?: [NSNull null]
             }];
             [resultOps addObject:@{@"action": @"delete"}];
         } else {
@@ -810,10 +840,16 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     // Notify firehose of all writes in the batch
-    for (NSDictionary *write in writes) {
+    for (NSUInteger idx = 0; idx < writes.count; idx++) {
+        NSDictionary *write = writes[idx];
+        NSDictionary *prepared = (idx < preparedOps.count) ? preparedOps[idx] : nil;
         NSString *action = write[@"action"];
         NSString *collection = write[@"collection"];
         NSString *rkey = write[@"rkey"];
+        NSString *previousRecordCID =
+            [prepared[@"previousRecordCID"] isKindOfClass:[NSString class]]
+                ? prepared[@"previousRecordCID"]
+                : nil;
 
         NSString *uri = (collection && rkey)
             ? [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey]
@@ -836,6 +872,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             @"action": normalizedAction,
             @"cid": resultCID ?: [NSNull null],
             @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],
+            @"previousRecordCID": previousRecordCID ?: [NSNull null],
             @"commit": commitCID ?: [NSNull null],
             @"rev": commitRev ?: [NSNull null],
             @"recordCBOR": recordCBOR ?: [NSNull null]
