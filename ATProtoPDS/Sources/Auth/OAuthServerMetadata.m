@@ -40,11 +40,11 @@
       @"grant_types_supported" : @[ @"authorization_code", @"refresh_token" ],
       @"code_challenge_methods_supported" : @[ @"S256" ],
       @"token_endpoint_auth_methods_supported" :
-          @[ @"none", @"private_key_jwt", @"client_secret_basic" ],
-      @"token_endpoint_auth_signing_alg_values_supported" :
-          @[ @"ES256", @"RS256" ],
+          @[ @"none", @"private_key_jwt" ],
+      @"token_endpoint_auth_signing_alg_values_supported" : @[ @"ES256" ],
       @"authorization_response_iss_parameter_supported" : @YES,
       @"dpop_signing_alg_values_supported" : @[ @"ES256" ],
+      @"require_request_uri_registration" : @YES,
       @"client_id_metadata_document_supported" : @YES,
       @"scopes_supported" :
           @[ @"atproto", @"transition:generic", @"transition:chat.bsky" ]

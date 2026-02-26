@@ -15,5 +15,6 @@
  */
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata error:(NSError **)error;
 - (NSUInteger)pendingConsentCountForTesting;
+- (void)clearPendingConsentsForTesting;
 
 @end

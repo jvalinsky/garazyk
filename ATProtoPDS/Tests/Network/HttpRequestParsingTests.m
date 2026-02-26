@@ -8,6 +8,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation HttpRequestParsingTests
 
+- (NSString *)_savedEnvValueForKey:(const char *)key {
+    const char *value = getenv(key);
+    return value ? [NSString stringWithUTF8String:value] : nil;
+}
+
+- (void)_restoreEnvKey:(const char *)key toValue:(NSString *)savedValue {
+    if (savedValue) {
+        setenv(key, savedValue.UTF8String, 1);
+    } else {
+        unsetenv(key);
+    }
+}
+
 - (void)testParseGetWithQueryAndHeaders {
     NSString *raw = @"GET /xrpc/test?foo=bar&empty=&flag HTTP/1.1\r\n"
                     "Host: example.com\r\n"
@@ -94,6 +107,66 @@ NS_ASSUME_NONNULL_BEGIN
 
     XCTAssertNotNil(request);
     XCTAssertEqualObjects([request headerForKey:@"Transfer-Encoding"], @"CHUNKED");
+}
+
+- (void)testForwardedHeadersIgnoredWhenProxyTrustDisabled {
+    NSString *savedTrustProxy = [self _savedEnvValueForKey:"PDS_TRUST_PROXY_HEADERS"];
+    unsetenv("PDS_TRUST_PROXY_HEADERS");
+
+    @try {
+        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                       methodString:@"GET"
+                                                               path:@"/xrpc/test"
+                                                        queryString:@""
+                                                        queryParams:@{}
+                                                            version:@"1.1"
+                                                            headers:@{@"x-forwarded-for": @"203.0.113.42"}
+                                                               body:[NSData data]
+                                                     remoteAddress:@"198.51.100.10"];
+        XCTAssertEqualObjects(request.remoteAddress, @"198.51.100.10");
+    } @finally {
+        [self _restoreEnvKey:"PDS_TRUST_PROXY_HEADERS" toValue:savedTrustProxy];
+    }
+}
+
+- (void)testForwardedHeadersIgnoredForUntrustedProxySource {
+    NSString *savedTrustProxy = [self _savedEnvValueForKey:"PDS_TRUST_PROXY_HEADERS"];
+    setenv("PDS_TRUST_PROXY_HEADERS", "1", 1);
+
+    @try {
+        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                       methodString:@"GET"
+                                                               path:@"/xrpc/test"
+                                                        queryString:@""
+                                                        queryParams:@{}
+                                                            version:@"1.1"
+                                                            headers:@{@"x-forwarded-for": @"203.0.113.42"}
+                                                               body:[NSData data]
+                                                     remoteAddress:@"198.51.100.10"];
+        XCTAssertEqualObjects(request.remoteAddress, @"198.51.100.10");
+    } @finally {
+        [self _restoreEnvKey:"PDS_TRUST_PROXY_HEADERS" toValue:savedTrustProxy];
+    }
+}
+
+- (void)testForwardedHeadersHonoredForTrustedProxySource {
+    NSString *savedTrustProxy = [self _savedEnvValueForKey:"PDS_TRUST_PROXY_HEADERS"];
+    setenv("PDS_TRUST_PROXY_HEADERS", "1", 1);
+
+    @try {
+        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                       methodString:@"GET"
+                                                               path:@"/xrpc/test"
+                                                        queryString:@""
+                                                        queryParams:@{}
+                                                            version:@"1.1"
+                                                            headers:@{@"x-forwarded-for": @"203.0.113.42, 198.51.100.1"}
+                                                               body:[NSData data]
+                                                     remoteAddress:@"127.0.0.1"];
+        XCTAssertEqualObjects(request.remoteAddress, @"203.0.113.42");
+    } @finally {
+        [self _restoreEnvKey:"PDS_TRUST_PROXY_HEADERS" toValue:savedTrustProxy];
+    }
 }
 
 @end

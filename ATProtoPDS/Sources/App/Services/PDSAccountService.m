@@ -536,10 +536,13 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         if (error) {
             innerError = error;
         } else if (httpResponse && (httpResponse.statusCode != 200 && httpResponse.statusCode != 202)) {
-            NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"";
+            NSNumber *bodyBytes = @((unsigned long long)(data.length));
             innerError = [NSError errorWithDomain:@"PLCRegistration" 
                                              code:httpResponse.statusCode 
-                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"PLC registration failed with status %ld: %@", (long)httpResponse.statusCode, body]}];
+                                         userInfo:@{
+                                             NSLocalizedDescriptionKey: [NSString stringWithFormat:@"PLC registration failed with status %ld", (long)httpResponse.statusCode],
+                                             @"response_body_bytes": bodyBytes
+                                         }];
         } else if (!httpResponse) {
             innerError = [NSError errorWithDomain:@"PLCRegistration" 
                                              code:-1 

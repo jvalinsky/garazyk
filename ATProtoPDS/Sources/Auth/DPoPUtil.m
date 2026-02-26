@@ -4,15 +4,76 @@
 
 NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
+static NSString *DPoPCanonicalHTUFromURL(NSURL *url) {
+    if (!url) {
+        return nil;
+    }
+
+    NSURLComponents *components =
+        [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    if (!components) {
+        return nil;
+    }
+
+    NSString *scheme = [components.scheme lowercaseString];
+    NSString *host = [components.host lowercaseString];
+    if (scheme.length == 0 || host.length == 0) {
+        return nil;
+    }
+
+    NSString *path = components.percentEncodedPath;
+    if (path.length == 0) {
+        path = @"/";
+    }
+
+    NSNumber *port = components.port;
+    BOOL includePort = NO;
+    if (port != nil) {
+        NSInteger portValue = port.integerValue;
+        BOOL defaultHTTPS = [scheme isEqualToString:@"https"] && portValue == 443;
+        BOOL defaultHTTP = [scheme isEqualToString:@"http"] && portValue == 80;
+        includePort = !(defaultHTTPS || defaultHTTP);
+    }
+
+    NSURLComponents *canonical = [[NSURLComponents alloc] init];
+    canonical.scheme = scheme;
+    canonical.host = host;
+    canonical.percentEncodedPath = path;
+    canonical.query = nil;
+    canonical.fragment = nil;
+    if (includePort) {
+        canonical.port = port;
+    }
+
+    return canonical.string;
+}
+
+static NSString *DPoPCanonicalHTUFromString(NSString *htu) {
+    if (![htu isKindOfClass:[NSString class]] || htu.length == 0) {
+        return nil;
+    }
+    NSURL *url = [NSURL URLWithString:htu];
+    return DPoPCanonicalHTUFromURL(url);
+}
+
 @implementation DPoPToken
 
 + (nullable instancetype)createWithMethod:(NSString *)htm
                                       uri:(NSString *)htu
                                   nonce:(nullable NSString *)nonce
                                   error:(NSError **)error {
+    NSString *canonicalHTU = DPoPCanonicalHTUFromString(htu);
+    if (canonicalHTU.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:DPoPErrorDomain
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP URI"}];
+        }
+        return nil;
+    }
     DPoPToken *token = [[DPoPToken alloc] init];
     token.htm = htm;
-    token.htu = htu;
+    token.htu = canonicalHTU;
     token.iat = [NSDate date];
     token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
     token.jti = [[NSUUID UUID] UUIDString];
@@ -66,7 +127,16 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
                                       error:(NSError **)error {
     DPoPToken *token = [[DPoPToken alloc] init];
     token.htm = htm;
-    token.htu = htu;
+    NSString *canonicalHTU = DPoPCanonicalHTUFromString(htu);
+    if (canonicalHTU.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:DPoPErrorDomain
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP URI"}];
+        }
+        return nil;
+    }
+    token.htu = canonicalHTU;
     token.iat = [NSDate date];
     token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
     token.jti = [[NSUUID UUID] UUIDString];
@@ -243,7 +313,9 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         return NO;
     }
 
-    if (![htu isEqualToString:htuClaim]) {
+    NSString *expectedHTU = DPoPCanonicalHTUFromString(htu);
+    NSString *claimHTU = DPoPCanonicalHTUFromString(htuClaim);
+    if (expectedHTU.length == 0 || claimHTU.length == 0 || ![expectedHTU isEqualToString:claimHTU]) {
         if (error) {
             *error = [NSError errorWithDomain:DPoPErrorDomain
                                          code:-8
