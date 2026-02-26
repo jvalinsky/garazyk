@@ -2652,6 +2652,31 @@
                                                               error400, error404
                                                           ]]];
 
+    APIResponseDescriptor *openapiSpecResponse = [self responseWithStatusCode:@"200" description:@"OpenAPI specification (JSON or YAML)"];
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/openapi.json"
+                                                              method:@"get"
+                                                             summary:@"Get OpenAPI specification"
+                                                        endpointName:@"openapi.json"
+                                                        operationId:@"getOpenAPISpecJSON"
+                                                               tags:@[@"Meta"]
+                                                          parameters:@[]
+                                                          responses:@[
+                                                              openapiSpecResponse,
+                                                              errorResponse
+                                                          ]]];
+
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/openapi.yaml"
+                                                              method:@"get"
+                                                             summary:@"Get OpenAPI specification"
+                                                        endpointName:@"openapi.yaml"
+                                                        operationId:@"getOpenAPISpecYAML"
+                                                               tags:@[@"Meta"]
+                                                          parameters:@[]
+                                                          responses:@[
+                                                              openapiSpecResponse,
+                                                              errorResponse
+                                                          ]]];
+
     return [descriptors copy];
 }
 
