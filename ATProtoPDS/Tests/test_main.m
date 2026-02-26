@@ -245,6 +245,7 @@ int main(int argc, char *argv[]) {
       @"FirehoseIntegrationTests",
       @"PDSReplayCacheTests",
       @"PDSEmailHTTPClientTests",
+      @"PDSKeychainSecretsProviderTests",
       @"PDSEnvironmentSecretsProviderTests",
       @"PDSSMTPEmailProviderTests",
       @"PDSMockEmailProviderTests",
