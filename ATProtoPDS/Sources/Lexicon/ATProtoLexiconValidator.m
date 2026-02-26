@@ -298,12 +298,15 @@ static NSRegularExpression *sLanguageTagRegex;
 
     // Grapheme checks
     if (constraints.maxGraphemes || constraints.minGraphemes) {
-        __block NSUInteger graphemeCount = 0;
-        [str enumerateSubstringsInRange:NSMakeRange(0, str.length)
-                                options:NSStringEnumerationByComposedCharacterSequences
-                             usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+        NSUInteger graphemeCount = 0;
+        for (NSUInteger idx = 0; idx < str.length; ) {
+            NSRange range = [str rangeOfComposedCharacterSequenceAtIndex:idx];
+            if (range.location == NSNotFound || range.length == 0) {
+                break;
+            }
             graphemeCount++;
-        }];
+            idx = NSMaxRange(range);
+        }
 
         if (constraints.maxGraphemes && graphemeCount > [constraints.maxGraphemes unsignedIntegerValue]) {
             if (error) {
