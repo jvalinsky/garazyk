@@ -732,7 +732,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
         digest ? [digest description] : @"NIL");
 
   NSLog(@"[PDSController] Creating CID object...");
-  CID *cid = [CID cidWithMultihash:digest codec:0x71]; // Use dag-cbor codec
+  CID *cid = [CID cidWithDigest:digest codec:0x71]; // Use dag-cbor codec
   NSLog(@"[PDSController] CID string value: %@", cid.stringValue);
 
   NSDictionary *result = @{

@@ -135,11 +135,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (CID *)sha256:(NSData *)data;
 
 /*!
- @method sha256Digest:
- @abstract Compute multihash SHA-256 digest.
- @param data The data to hash.
- @return The multihash digest.
- */
+  @method sha256Digest:
+  @abstract Compute raw SHA-256 digest (32 bytes).
+  @param data The data to hash.
+  @return The raw 32-byte hash digest.
+  */
 + (NSData *)sha256Digest:(NSData *)data;
 
 /*!
