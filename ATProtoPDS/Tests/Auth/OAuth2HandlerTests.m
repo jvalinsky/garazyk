@@ -406,7 +406,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertNotNil(proof);
         XCTAssertNil(proofError);
 
-        NSString *body = @"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=test-state&code_challenge=test-challenge&code_challenge_method=S256";
+        NSString *body = @"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=test-state&scope=atproto&code_challenge=test-challenge&code_challenge_method=S256";
         HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/par"
