@@ -156,4 +156,41 @@
     XCTAssertEqualObjects(response.jsonBody[@"endpoint"], @"definitely-not-an-endpoint");
 }
 
+- (void)testHandleApiRequestDerivesEndpointFromPathAndValidatesParams {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/api/pds/records"
+                                                   queryString:@"did=did%3Aplc%3Aabc"
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [HttpResponse response];
+
+    [self.handler handleRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"Missing collection parameter");
+}
+
+- (void)testHandleApiRequestOpenapiJsonThroughPathDispatch {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/api/pds/openapi.json"
+                                                   queryString:@"format=json"
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [HttpResponse response];
+
+    [self.handler handleRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.contentType, @"application/json");
+    XCTAssertNotNil(response.body);
+}
+
 @end

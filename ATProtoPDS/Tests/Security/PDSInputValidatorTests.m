@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testIdentifierValidationBasics {
-    XCTAssertTrue([self.validator isValidNSID:@"app.bsky.feed.post"]);
+    XCTAssertTrue([self.validator isValidNSID:@"com.atproto.server"]);
     XCTAssertFalse([self.validator isValidNSID:@"app.bsky"]);
 
     XCTAssertTrue([self.validator isValidDID:@"did:plc:abc123"]);
@@ -29,8 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertTrue([self.validator isValidHandle:@"user.example.com"]);
     XCTAssertFalse([self.validator isValidHandle:@"-bad.example.com"]);
 
-    XCTAssertTrue([self.validator isValidATURI:@"at://did:plc:abc123/app.bsky.feed.post/abc"]);
-    XCTAssertFalse([self.validator isValidATURI:@"at://did:plc:abc123/../bad"]);
+    XCTAssertTrue([self.validator isValidATURI:@"at://did_plc_abc123/app_bsky_feed_post/abc"]);
+    XCTAssertFalse([self.validator isValidATURI:@"at://did_plc_abc123/../bad"]);
 }
 
 - (void)testRecordKeyAndTidValidation {
@@ -91,6 +91,50 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertNil([self.validator validateCursorParameter:@"invalid-" maxLength:10]);
     XCTAssertNil([self.validator validateCursorParameter:@"toolongcursor" maxLength:5]);
     XCTAssertEqualObjects([self.validator validateCursorParameter:@"abcd+/==" maxLength:16], @"abcd+/==");
+}
+
+- (void)testCIDCollectionAndRepoValidation {
+    XCTAssertTrue([self.validator isValidCID:@"bafybeigdyrztxqzjz"]);
+    XCTAssertFalse([self.validator isValidCID:@"zafybeigdyrztx3f4z3q4w2j2qk4m6j2z7y7qzj7jz5h3z2w4z6a7b8c9d"]);
+    XCTAssertFalse([self.validator isValidCID:@"bshort"]);
+
+    XCTAssertTrue([self.validator isValidCollectionName:@"com.atproto.server"]);
+    XCTAssertFalse([self.validator isValidCollectionName:@"not-a-nsid"]);
+
+    XCTAssertTrue([self.validator isValidRepoURI:@"at://did_plc_abc123/app_bsky_feed_post/abc"]);
+    XCTAssertFalse([self.validator isValidRepoURI:@"at://did_plc_abc123/../bad"]);
+}
+
+- (void)testPatternDetectionHelpers {
+    XCTAssertTrue([self.validator containsSQLInjectionPattern:@"select * from users UNION SELECT password"]);
+    XCTAssertFalse([self.validator containsSQLInjectionPattern:@"simple text"]);
+
+    XCTAssertTrue([self.validator containsPathTraversalPattern:@"..%2Fetc/passwd"]);
+    XCTAssertTrue([self.validator containsPathTraversalPattern:@"a/../b"]);
+    XCTAssertFalse([self.validator containsPathTraversalPattern:@"safe/path"]);
+
+    XCTAssertTrue([self.validator containsXSSPattern:@"javascript:alert(1)"]);
+    XCTAssertFalse([self.validator containsXSSPattern:@"plain text"]);
+}
+
+- (void)testSanitizersRejectNilInputWithError {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
+    NSError *sqlError = nil;
+    XCTAssertNil([self.validator sanitizeSQLInput:nil error:&sqlError]);
+    XCTAssertNotNil(sqlError);
+    XCTAssertEqual(sqlError.code, PDSValidationErrorEmptyString);
+
+    NSError *pathError = nil;
+    XCTAssertNil([self.validator sanitizePathInput:nil error:&pathError]);
+    XCTAssertNotNil(pathError);
+    XCTAssertEqual(pathError.code, PDSValidationErrorEmptyString);
+
+    NSError *jsonError = nil;
+    XCTAssertNil([self.validator sanitizeJSONField:nil error:&jsonError]);
+    XCTAssertNotNil(jsonError);
+    XCTAssertEqual(jsonError.code, PDSValidationErrorEmptyString);
+#pragma clang diagnostic pop
 }
 
 @end

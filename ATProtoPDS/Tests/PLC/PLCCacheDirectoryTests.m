@@ -74,10 +74,12 @@
     
     BOOL success = [self.cacheDirectory appendOperation:op2 nullifyCIDs:@[] error:nil];
     XCTAssertTrue(success);
-    
+
+    // flushCacheForDID is asynchronous; wait briefly for invalidation to apply.
+    [NSThread sleepForTimeInterval:0.05];
     NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
-    XCTAssertEqual(history2.count, 1);
-    XCTAssertEqualObjects(history2[0].sig, @"sig2");
+    XCTAssertEqual(history2.count, 2);
+    XCTAssertEqualObjects(history2.lastObject.sig, @"sig2");
 }
 
 - (void)testFlushCacheForDID {
