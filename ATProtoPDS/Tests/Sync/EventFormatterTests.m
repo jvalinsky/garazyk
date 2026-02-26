@@ -74,6 +74,34 @@
     XCTAssertNil(error);
 }
 
+- (void)testDecodeSyncEvent {
+    NSError *error = nil;
+    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+    event.seq = 42;
+    event.did = @"did:plc:sync123";
+    event.rev = @"3k3k3k3k3k3k3";
+    event.time = @"2024-01-01T00:00:00Z";
+    event.blocks = [@"car-bytes" dataUsingEncoding:NSUTF8StringEncoding];
+
+    NSData *encoded = [self.formatter encodeSyncEvent:event error:&error];
+    XCTAssertNotNil(encoded);
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+
+    XCTAssertNil(error);
+    XCTAssertNotNil(decoded);
+    XCTAssertEqual(op, 1);
+    XCTAssertEqualObjects(msgType, @"#sync");
+    XCTAssertEqualObjects(decoded[@"seq"], @42);
+    XCTAssertEqualObjects(decoded[@"did"], @"did:plc:sync123");
+    XCTAssertEqualObjects(decoded[@"rev"], @"3k3k3k3k3k3k3");
+    XCTAssertEqualObjects(decoded[@"time"], @"2024-01-01T00:00:00Z");
+    XCTAssertEqualObjects(decoded[@"blocks"], event.blocks);
+}
+
 - (void)testEncodeErrorEvent {
     NSError *error = nil;
     FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];

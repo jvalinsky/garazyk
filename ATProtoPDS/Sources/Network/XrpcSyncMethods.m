@@ -383,6 +383,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
              repositoryService:(PDSRepositoryService *)repositoryService
                   relayService:(PDSRelayService *)relayService
                  configuration:(PDSConfiguration *)config {
+  (void)relayService;
 
   // com.atproto.sync.getRepo
   [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request,
@@ -1101,9 +1102,21 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    PDS_LOG_INFO_C(@"Sync", @"requestCrawl received for hostname: %@",
-                   hostname);
-    [relayService notifyRelay:hostname];
+    NSString *requestedHost = normalizedHostnameString(hostname);
+    NSString *localHost = normalizedHostnameString(config.canonicalIssuer);
+    if (![requestedHost isEqualToString:localHost]) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"hostname must match this PDS host"
+      }];
+      return;
+    }
+
+    PDS_LOG_INFO_C(@"Sync",
+                   @"requestCrawl accepted for local host %@ (no relay "
+                   @"forwarding)",
+                   requestedHost);
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{}];

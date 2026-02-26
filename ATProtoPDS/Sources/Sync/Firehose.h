@@ -99,6 +99,36 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
+ @class FirehoseSyncEvent
+
+ @abstract Represents a repository sync event.
+
+ @discussion Per com.atproto.sync.subscribeRepos#sync lexicon.
+ */
+@interface FirehoseSyncEvent : NSObject
+
+/*! The stream sequence number of this message. */
+@property (nonatomic, assign) int64_t seq;
+
+/*! The account this repo event corresponds to. */
+@property (nonatomic, copy) NSString *did;
+
+/*! CAR file containing the commit block as root. */
+@property (nonatomic, strong) NSData *blocks;
+
+/*! The rev of the commit. */
+@property (nonatomic, copy) NSString *rev;
+
+/*! Timestamp of when this message was originally broadcast (RFC-3339). */
+@property (nonatomic, copy) NSString *time;
+
++ (instancetype)eventWithDid:(NSString *)did
+                         rev:(NSString *)rev
+                      blocks:(NSData *)blocks;
+
+@end
+
+/*!
  @class FirehoseIdentityEvent
 
  @abstract Represents an identity update event.

@@ -306,7 +306,119 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testReplayWithLargeBacklogSendsConsumerTooSlowError {
+- (void)testUpdateCommitIncludesPreviousRecordCIDInRepoOp {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    NSError *error = nil;
+
+    NSDictionary *account = [self.controller createAccountForEmail:@"prev-op@test.com"
+                                                          password:@"password"
+                                                            handle:@"prev-op.test"
+                                                               did:nil
+                                                             error:&error];
+    XCTAssertNotNil(account);
+    XCTAssertNil(error);
+    NSString *did = account[@"did"];
+    XCTAssertNotNil(did);
+
+    NSDictionary *recordV1 = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"v1",
+        @"createdAt": @"2024-01-01T00:00:00Z"
+    };
+    BOOL putV1 = [self.controller putRecord:@"app.bsky.feed.post"
+                                       rkey:@"prev-op-test"
+                                      value:recordV1
+                                     forDid:did
+                             validationMode:PDSValidationModeOff
+                                      error:&error];
+    XCTAssertTrue(putV1);
+    XCTAssertNil(error);
+
+    XCTestExpectation *firstCommitExp = [self expectationWithDescription:@"First commit persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [firstCommitExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    NSArray<NSDictionary *> *eventsAfterV1 = [self.controller.serviceDatabases getEventsSince:0 limit:50 error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(eventsAfterV1);
+    NSDictionary *firstPayload = nil;
+    for (NSDictionary *event in [eventsAfterV1 reverseObjectEnumerator]) {
+        NSInteger firstOpCode = 0;
+        NSString *firstMsgType = nil;
+        NSDictionary *decoded = [formatter decodeEventFromData:event[@"data"]
+                                                           op:&firstOpCode
+                                                      msgType:&firstMsgType
+                                                        error:&error];
+        XCTAssertNil(error);
+        if (firstOpCode == 1 && [firstMsgType isEqualToString:@"#commit"]) {
+            firstPayload = decoded;
+            break;
+        }
+    }
+    XCTAssertNotNil(firstPayload);
+    NSArray *firstOps = firstPayload[@"ops"];
+    XCTAssertEqual(firstOps.count, 1U);
+    NSDictionary *firstRepoOp = firstOps.firstObject;
+    XCTAssertEqualObjects(firstRepoOp[@"action"], @"create");
+    CID *firstCID = [firstRepoOp[@"cid"] isKindOfClass:[CID class]] ? firstRepoOp[@"cid"] : nil;
+    XCTAssertNotNil(firstCID);
+
+    NSDictionary *recordV2 = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"v2",
+        @"createdAt": @"2024-01-01T00:00:01Z"
+    };
+    BOOL putV2 = [self.controller putRecord:@"app.bsky.feed.post"
+                                       rkey:@"prev-op-test"
+                                      value:recordV2
+                                     forDid:did
+                             validationMode:PDSValidationModeOff
+                                      error:&error];
+    XCTAssertTrue(putV2);
+    XCTAssertNil(error);
+
+    XCTestExpectation *secondCommitExp = [self expectationWithDescription:@"Second commit persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [secondCommitExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    NSArray<NSDictionary *> *allEvents = [self.controller.serviceDatabases getEventsSince:0 limit:100 error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(allEvents);
+    XCTAssertGreaterThanOrEqual(allEvents.count, 2U);
+
+    NSDictionary *latestPayload = nil;
+    for (NSDictionary *event in [allEvents reverseObjectEnumerator]) {
+        NSInteger latestOpCode = 0;
+        NSString *latestMsgType = nil;
+        NSDictionary *decoded = [formatter decodeEventFromData:event[@"data"]
+                                                            op:&latestOpCode
+                                                       msgType:&latestMsgType
+                                                         error:&error];
+        XCTAssertNil(error);
+        if (latestOpCode == 1 && [latestMsgType isEqualToString:@"#commit"]) {
+            latestPayload = decoded;
+            break;
+        }
+    }
+    XCTAssertNotNil(latestPayload);
+
+    NSArray *latestOps = latestPayload[@"ops"];
+    XCTAssertEqual(latestOps.count, 1U);
+    NSDictionary *latestRepoOp = latestOps.firstObject;
+    XCTAssertEqualObjects(latestRepoOp[@"action"], @"update");
+
+    CID *prevCID = [latestRepoOp[@"prev"] isKindOfClass:[CID class]] ? latestRepoOp[@"prev"] : nil;
+    XCTAssertNotNil(prevCID);
+    XCTAssertEqualObjects(prevCID.stringValue, firstCID.stringValue);
+}
+#endif
+
+#ifndef GNUSTEP
+- (void)testReplayWithLargeBacklogSendsOutdatedCursorInfoAndContinues {
     self.handler.maxReplayEventsPerConnection = 1;
     EventFormatter *formatter = [[EventFormatter alloc] init];
 
@@ -329,19 +441,32 @@
     });
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 
-    XCTAssertTrue(conn.didClose);
-    XCTAssertEqual(conn.sentMessages.count, 1U);
-    NSInteger op = 0;
-    NSString *msgType = nil;
-    NSError *decodeError = nil;
-    NSDictionary *payload = [formatter decodeEventFromData:conn.sentMessages.firstObject
-                                                        op:&op
-                                                   msgType:&msgType
-                                                     error:&decodeError];
-    XCTAssertNil(decodeError);
-    XCTAssertEqual(op, -1);
-    XCTAssertEqualObjects(msgType, @"#error");
-    XCTAssertEqualObjects(payload[@"error"], @"ConsumerTooSlow");
+    XCTAssertFalse(conn.didClose);
+    XCTAssertEqual(conn.sentMessages.count, 2U);
+
+    NSInteger infoOp = 0;
+    NSString *infoType = nil;
+    NSError *infoDecodeError = nil;
+    NSDictionary *infoPayload = [formatter decodeEventFromData:conn.sentMessages[0]
+                                                            op:&infoOp
+                                                       msgType:&infoType
+                                                         error:&infoDecodeError];
+    XCTAssertNil(infoDecodeError);
+    XCTAssertEqual(infoOp, 1);
+    XCTAssertEqualObjects(infoType, @"#info");
+    XCTAssertEqualObjects(infoPayload[@"name"], @"OutdatedCursor");
+
+    NSInteger eventOp = 0;
+    NSString *eventType = nil;
+    NSError *eventDecodeError = nil;
+    NSDictionary *eventPayload = [formatter decodeEventFromData:conn.sentMessages[1]
+                                                             op:&eventOp
+                                                        msgType:&eventType
+                                                          error:&eventDecodeError];
+    XCTAssertNil(eventDecodeError);
+    XCTAssertEqual(eventOp, 1);
+    XCTAssertEqualObjects(eventType, @"#info");
+    XCTAssertEqualObjects(eventPayload[@"name"], @"info3");
 }
 #endif
 
@@ -450,15 +575,20 @@
     });
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
     
-    // 6. Verify we receive Event 3 (the gap is skipped)
-    XCTAssertEqual(conn.sentMessages.count, 1U);
-    if (conn.sentMessages.count > 0) {
-        NSInteger op = 0;
-        NSString *type = nil;
-        NSDictionary *msg = [formatter decodeEventFromData:conn.sentMessages[0] op:&op msgType:&type error:nil];
-        XCTAssertEqualObjects(type, @"#info");
-        XCTAssertEqualObjects(msg[@"name"], @"info3");
-        // Info events don't carry seq in body, so we can't verify seq here
+    // 6. Verify we receive OutdatedCursor notice followed by Event 3
+    XCTAssertFalse(conn.didClose);
+    XCTAssertEqual(conn.sentMessages.count, 2U);
+    if (conn.sentMessages.count >= 2) {
+        NSInteger op1 = 0;
+        NSInteger op2 = 0;
+        NSString *type1 = nil;
+        NSString *type2 = nil;
+        NSDictionary *msg1 = [formatter decodeEventFromData:conn.sentMessages[0] op:&op1 msgType:&type1 error:nil];
+        NSDictionary *msg2 = [formatter decodeEventFromData:conn.sentMessages[1] op:&op2 msgType:&type2 error:nil];
+        XCTAssertEqualObjects(type1, @"#info");
+        XCTAssertEqualObjects(type2, @"#info");
+        XCTAssertEqualObjects(msg1[@"name"], @"OutdatedCursor");
+        XCTAssertEqualObjects(msg2[@"name"], @"info3");
     }
 }
 #endif
