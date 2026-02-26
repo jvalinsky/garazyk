@@ -32,6 +32,16 @@
     return formatter;
 }
 
++ (NSISO8601DateFormatter *)atproto_iso8601FormatterInternalNoFractionalSeconds {
+    static NSISO8601DateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSISO8601DateFormatter alloc] init];
+        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
+    });
+    return formatter;
+}
+
 + (NSString *)atproto_stringFromDate:(NSDate *)date {
     if (!date) {
         return nil;
@@ -45,6 +55,9 @@
     }
     // Try the precise NSISO8601DateFormatter first
     NSDate *date = [[self atproto_iso8601FormatterInternal] dateFromString:string];
+    if (date) return date;
+    // Fallback for timestamps without fractional seconds
+    date = [[self atproto_iso8601FormatterInternalNoFractionalSeconds] dateFromString:string];
     if (date) return date;
     // Fall back to the legacy formatter for non-Z suffixed strings
     return [[self atproto_iso8601Formatter] dateFromString:string];

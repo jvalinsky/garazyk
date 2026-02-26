@@ -5616,6 +5616,8 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     NSString *repo = body[@"repo"];
     BOOL validate = [body[@"validate"] boolValue];
     NSString *swapCommit = body[@"swapCommit"];
+    PDSValidationMode mode =
+        validate ? PDSValidationModeRequired : PDSValidationModeOff;
 
     if (repo && ![repo isEqualToString:did]) {
       response.statusCode = HttpStatusForbidden;
@@ -5638,7 +5640,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     NSError *error = nil;
     NSDictionary *result = [recordService applyWrites:writes
                                                forDid:did
-                                             validate:validate
+                                      validationMode:mode
                                            swapCommit:swapCommit
                                                 error:&error];
     if (!result) {

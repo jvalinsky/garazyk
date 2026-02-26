@@ -5,6 +5,7 @@
 #import "ATProtoLexiconConstraints.h"
 #import "ATProtoLexiconError.h"
 #import "Core/ATProtoValidator.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
 
 // Maximum recursion depth for nested objects
@@ -494,15 +495,7 @@ static NSRegularExpression *sLanguageTagRegex;
     // Full validation would use NSDateFormatter
     if (str.length < 19) return NO; // Minimum: "2024-01-01T00:00:00"
     if ([str rangeOfString:@"T"].location == NSNotFound) return NO;
-
-    // Try parsing with ISO8601DateFormatter
-    if (@available(macOS 10.12, iOS 10.0, *)) {
-        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
-        NSDate *date = [formatter dateFromString:str];
-        return date != nil;
-    }
-
-    return YES; // Fallback: allow if iOS < 10
+    return [NSDateFormatter atproto_dateFromString:str] != nil;
 }
 
 #pragma mark - Integer Validation

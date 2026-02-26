@@ -8,6 +8,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Core/TID.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
@@ -15,9 +16,56 @@
 #import "Repository/MST.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "Repository/RepoCommit.h"
+#include <math.h>
 
 NSErrorDomain const PDSRecordServiceErrorDomain = @"com.atproto.pds.record-service";
 NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNotification";
+
+static const NSTimeInterval kATProtoCreatedAtMaxSkewSeconds = 24.0 * 60.0 * 60.0;
+
+static BOOL validateCreatedAtCoherence(NSString *collection,
+                                       NSString *rkey,
+                                       NSDictionary *value,
+                                       PDSValidationMode mode,
+                                       NSError **error) {
+    if (mode == PDSValidationModeOff) {
+        return YES;
+    }
+    if (![collection isKindOfClass:[NSString class]] || collection.length == 0) {
+        return YES;
+    }
+    // Guardrail for AppView compatibility: app.bsky.feed.post should have a createdAt
+    // timestamp that is reasonably close to the rkey TID timestamp.
+    if (![collection isEqualToString:@"app.bsky.feed.post"]) {
+        return YES;
+    }
+    id createdAtValue = value[@"createdAt"];
+    if (![createdAtValue isKindOfClass:[NSString class]] || ((NSString *)createdAtValue).length == 0) {
+        return YES;
+    }
+    TID *tid = [TID tidFromString:rkey];
+    if (!tid) {
+        return YES;
+    }
+    NSDate *createdAtDate = [NSDateFormatter atproto_dateFromString:(NSString *)createdAtValue];
+    if (!createdAtDate) {
+        return YES;
+    }
+    NSDate *rkeyDate = [NSDate dateWithTimeIntervalSince1970:((NSTimeInterval)tid.timestamp / 1000000.0)];
+    NSTimeInterval skew = fabs([createdAtDate timeIntervalSinceDate:rkeyDate]);
+    if (skew <= kATProtoCreatedAtMaxSkewSeconds) {
+        return YES;
+    }
+    if (error) {
+        *error = [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                                     code:400
+                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:
+                                                     @"createdAt is too far from rkey timestamp (skew %.0fs > %.0fs)",
+                                                     skew, kATProtoCreatedAtMaxSkewSeconds]}];
+    }
+    return NO;
+}
 
 @interface PDSRecordService ()
 
@@ -208,6 +256,13 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         }
 
         PDS_LOG_DEBUG(@"[PDSRecordService] Lexicon validation passed for %@", collection);
+    }
+
+    if (!validateCreatedAtCoherence(collection, rkey, value, mode, error)) {
+        NSString *message = (error && *error) ? (*error).localizedDescription : @"invalid createdAt";
+        PDS_LOG_WARN(@"[PDSRecordService] createdAt coherence check failed for %@/%@: %@",
+                     collection, rkey, message);
+        return NO;
     }
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
@@ -424,7 +479,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 - (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
                                  forDid:(NSString *)did
                                actorDid:(NSString *)actorDid
-                               validate:(BOOL)validate
+                         validationMode:(PDSValidationMode)mode
                              swapCommit:(nullable NSString *)swapCommit
                                   error:(NSError **)error {
     
@@ -462,7 +517,6 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     // Pre-validate all writes and build records before entering the transaction
-    PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
     NSString *batchRev = [TID tid].stringValue;
 
     NSMutableArray *preparedOps = [NSMutableArray arrayWithCapacity:writes.count];
@@ -530,6 +584,12 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 }
             }
 
+            NSError *coherenceError = nil;
+            if (!validateCreatedAtCoherence(collection, rkey, record, mode, &coherenceError)) {
+                if (error && !*error) *error = coherenceError;
+                return nil;
+            }
+
             // Build the database record
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
             NSError *cidError = nil;
@@ -577,6 +637,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             }];
             [resultOps addObject:@{
                 @"action": action,
+                @"collection": collection ?: @"",
                 @"uri": uri,
                 @"cid": cidString
             }];
@@ -627,6 +688,12 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 }
             }
 
+            NSError *coherenceError = nil;
+            if (!validateCreatedAtCoherence(collection, rkey, record, mode, &coherenceError)) {
+                if (error && !*error) *error = coherenceError;
+                return nil;
+            }
+
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
             PDSDatabaseRecord *existingRecord = [_databasePool getRecord:uri forDid:did error:nil];
             NSString *previousRecordCID =
@@ -678,6 +745,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
             }];
             [resultOps addObject:@{
                 @"action": action,
+                @"collection": collection ?: @"",
                 @"uri": uri,
                 @"cid": cidString
             }];
@@ -706,7 +774,7 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
                 @"exists": @(recordExists),
                 @"previousRecordCID": previousRecordCID ?: [NSNull null]
             }];
-            [resultOps addObject:@{@"action": @"delete"}];
+            [resultOps addObject:@{@"action": @"delete", @"collection": collection ?: @""}];
         } else {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
@@ -880,9 +948,9 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
     }
 
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:resultOps.count];
-    NSString *validationStatus = validate ? @"valid" : @"unknown";
     for (NSDictionary *op in resultOps) {
         NSString *action = op[@"action"];
+        NSString *collection = op[@"collection"];
         if ([action isEqualToString:@"delete"]) {
             [results addObject:@{}];
             continue;
@@ -890,6 +958,13 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
         NSMutableDictionary *entry = [NSMutableDictionary dictionary];
         entry[@"uri"] = op[@"uri"] ?: @"";
         entry[@"cid"] = op[@"cid"] ?: @"";
+        NSString *validationStatus = @"unknown";
+        if (mode != PDSValidationModeOff &&
+            [collection isKindOfClass:[NSString class]] &&
+            collection.length > 0) {
+            BOOL hasSchema = [[ATProtoLexiconRegistry sharedRegistry] schemaForNSID:collection] != nil;
+            validationStatus = hasSchema ? @"valid" : @"unknown";
+        }
         entry[@"validationStatus"] = validationStatus;
         [results addObject:entry];
     }
@@ -907,10 +982,10 @@ NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNo
 
 - (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
                                  forDid:(NSString *)did
-                               validate:(BOOL)validate
+                         validationMode:(PDSValidationMode)mode
                              swapCommit:(nullable NSString *)swapCommit
                                   error:(NSError **)error {
-    return [self applyWrites:writes forDid:did actorDid:did validate:validate swapCommit:swapCommit error:error];
+    return [self applyWrites:writes forDid:did actorDid:did validationMode:mode swapCommit:swapCommit error:error];
 }
 
 - (nullable CID *)computeRepoRootCIDForDid:(NSString *)did

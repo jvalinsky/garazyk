@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                     remoteAddress:@"127.0.0.1"];
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
-    XCTAssertEqual(response.statusCode, HttpStatusNotImplemented);
+    XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     NSDictionary *body = response.jsonBody;
     XCTAssertNotNil(body, @"Error response should have a body");
     XCTAssertNotNil(body[@"error"], @"Error response should have 'error' field");
@@ -52,7 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                     remoteAddress:@"127.0.0.1"];
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
-    XCTAssertEqual(response.statusCode, HttpStatusNotImplemented);
+    XCTAssertEqual(response.statusCode, HttpStatusNotFound);
 }
 
 - (void)testRateLimitResponse {
@@ -376,4 +376,3 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
-

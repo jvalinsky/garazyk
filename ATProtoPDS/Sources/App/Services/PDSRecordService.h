@@ -121,14 +121,14 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
 - (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
                                  forDid:(NSString *)did
                                actorDid:(NSString *)actorDid
-                               validate:(BOOL)validate
+                         validationMode:(PDSValidationMode)mode
                              swapCommit:(nullable NSString *)swapCommit
                                   error:(NSError **)error;
 
 /*! Atomically applies a batch of writes (convenience method with actorDid=did). */
 - (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
                                  forDid:(NSString *)did
-                               validate:(BOOL)validate
+                         validationMode:(PDSValidationMode)mode
                              swapCommit:(nullable NSString *)swapCommit
                                   error:(NSError **)error;
 

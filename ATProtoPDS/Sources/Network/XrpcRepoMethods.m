@@ -20,6 +20,23 @@
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
 
+static PDSValidationMode validationModeFromValidateParameter(id validateParam) {
+    if (!validateParam || validateParam == (id)[NSNull null]) {
+        // Per lexicon: unset -> validate only for known Lexicons.
+        return PDSValidationModeOptimistic;
+    }
+    if ([validateParam isKindOfClass:[NSNumber class]]) {
+        return [validateParam boolValue] ? PDSValidationModeRequired : PDSValidationModeOff;
+    }
+    if ([validateParam isKindOfClass:[NSString class]]) {
+        NSString *lower = [(NSString *)validateParam lowercaseString];
+        if ([lower isEqualToString:@"true"]) return PDSValidationModeRequired;
+        if ([lower isEqualToString:@"false"]) return PDSValidationModeOff;
+    }
+    // Default to optimistic to avoid surprising hard failures on unknown types.
+    return PDSValidationModeOptimistic;
+}
+
 static NSString *trimmedNonEmptyString(NSString *value) {
     if (![value isKindOfClass:[NSString class]]) {
         return nil;
@@ -216,7 +233,7 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
         NSDictionary *record = body[@"record"];
         NSString *rkey = body[@"rkey"];
         NSString *repo = body[@"repo"];
-        BOOL validate = [body[@"validate"] boolValue];
+        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -234,7 +251,6 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
             rkey = [[TID tid] stringValue];
         }
 
-        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
         NSError *error = nil;
         BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
         if (!success) {
@@ -542,7 +558,7 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
         NSString *rkey = body[@"rkey"];
         NSDictionary *record = body[@"record"];
         NSString *repo = body[@"repo"];
-        BOOL validate = [body[@"validate"] boolValue];
+        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -556,7 +572,6 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
             return;
         }
 
-        PDSValidationMode mode = validate ? PDSValidationModeRequired : PDSValidationModeOff;
         NSError *error = nil;
         BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
         if (!success) {
@@ -595,7 +610,7 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
 
         NSArray *writes = body[@"writes"];
         NSString *repo = body[@"repo"];
-        BOOL validate = [body[@"validate"] boolValue];
+        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
         NSString *swapCommit = body[@"swapCommit"];
 
         if (repo && ![repo isEqualToString:did]) {
@@ -613,7 +628,7 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
         NSError *error = nil;
         NSDictionary *result = [recordService applyWrites:writes
                                                    forDid:did
-                                                 validate:validate
+                                          validationMode:mode
                                                swapCommit:swapCommit
                                                     error:&error];
         if (!result) {

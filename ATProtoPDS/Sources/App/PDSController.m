@@ -863,9 +863,11 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
                               validate:(BOOL)validate
                             swapCommit:(nullable NSString *)swapCommit
                                  error:(NSError **)error {
+  PDSValidationMode mode =
+      validate ? PDSValidationModeRequired : PDSValidationModeOff;
   return [_recordService applyWrites:writes
                               forDid:repo
-                            validate:validate
+                      validationMode:mode
                           swapCommit:swapCommit
                                error:error];
 }

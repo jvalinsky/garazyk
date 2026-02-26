@@ -88,7 +88,7 @@
     }
 
     if (!handler) {
-        response.statusCode = HttpStatusNotImplemented;
+        response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
             @"error": @"MethodNotFound",
             @"message": [NSString stringWithFormat:@"XRPC method '%@' not found", methodId]
