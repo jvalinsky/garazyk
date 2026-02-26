@@ -128,6 +128,56 @@
     [super tearDown];
 }
 
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return [formatter stringFromDate:date];
+}
+
+- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+                                       clientID:(NSString *)clientID {
+    NSError *error = nil;
+    BOOL created = [self.database executeParameterizedUpdate:
+                    @"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)"
+                                                         params:@[]
+                                                          error:&error];
+    XCTAssertTrue(created, @"Failed to create PAR table: %@", error);
+
+    NSData *paramsData = [NSJSONSerialization dataWithJSONObject:authorizeParams options:0 error:&error];
+    XCTAssertNotNil(paramsData, @"Failed to serialize authorize params: %@", error);
+
+    NSString *requestURI = [NSString stringWithFormat:@"urn:ietf:params:oauth:request_uri:%@", [[NSUUID UUID] UUIDString]];
+    NSString *expiresAt = [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSinceNow:600]];
+    NSString *paramsJSON = [[NSString alloc] initWithData:paramsData encoding:NSUTF8StringEncoding];
+    BOOL inserted = [self.database executeParameterizedUpdate:
+                     @"INSERT INTO oauth_par_requests (request_uri, client_id, params_json, expires_at, consumed_at) VALUES (?, ?, ?, ?, NULL)"
+                                                          params:@[requestURI, clientID ?: @"", paramsJSON ?: @"{}", expiresAt]
+                                                           error:&error];
+    XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@""
+                                                   queryParams:@{
+                                                       @"request_uri": requestURI,
+                                                       @"client_id": clientID ?: @""
+                                                   }
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeRequest:request response:response];
+    return response;
+}
+
 /**
  * Property 2.1: Registered Client Authorization Success
  * 
@@ -173,19 +223,9 @@
                     @"code_challenge_method": @"S256",
                     @"scope": scope
                 } mutableCopy];
-                
-                HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                              methodString:@"GET"
-                                                                      path:@"/oauth/authorize"
-                                                               queryString:@""
-                                                               queryParams:queryParams
-                                                                   version:@"1.1"
-                                                                   headers:@{}
-                                                                      body:[NSData data]
-                                                                remoteAddress:@"127.0.0.1"];
-                HttpResponse *response = [[HttpResponse alloc] init];
-                
-                [self.handler handleAuthorizeRequest:request response:response];
+                HttpResponse *response =
+                    [self authorizeViaPARWithParameters:queryParams
+                                                clientID:clientID];
                 
                 // EXPECTED: Authorization succeeds (200 consent page or 302 redirect)
                 XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
@@ -218,19 +258,9 @@
         @"scope": @"atproto"
         // Note: Missing code_challenge
     } mutableCopy];
-    
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams
+                                    clientID:@"test-public-client"];
     
     // EXPECTED: Public client without code_challenge should fail
     XCTAssertEqual(response.statusCode, 400,
@@ -244,19 +274,8 @@
     
     queryParams[@"code_challenge"] = codeChallenge;
     queryParams[@"code_challenge_method"] = @"S256";
-    
-    request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                     methodString:@"GET"
-                                             path:@"/oauth/authorize"
-                                      queryString:@""
-                                      queryParams:queryParams
-                                          version:@"1.1"
-                                          headers:@{}
-                                             body:[NSData data]
-                                       remoteAddress:@"127.0.0.1"];
-    response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    response = [self authorizeViaPARWithParameters:queryParams
+                                          clientID:@"test-public-client"];
     
     // EXPECTED: S256 method should be accepted
     XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
@@ -269,19 +288,8 @@
         
         queryParams[@"code_challenge"] = challenge;
         queryParams[@"state"] = [NSString stringWithFormat:@"state-%d", i];
-        
-        request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                         methodString:@"GET"
-                                                 path:@"/oauth/authorize"
-                                          queryString:@""
-                                          queryParams:queryParams
-                                              version:@"1.1"
-                                              headers:@{}
-                                                 body:[NSData data]
-                                           remoteAddress:@"127.0.0.1"];
-        response = [[HttpResponse alloc] init];
-        
-        [self.handler handleAuthorizeRequest:request response:response];
+        response = [self authorizeViaPARWithParameters:queryParams
+                                              clientID:@"test-public-client"];
         
         XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
                      @"PKCE validation should work for iteration %d", i);
@@ -311,19 +319,9 @@
         @"scope": @"atproto"
         // Note: Missing state parameter
     } mutableCopy];
-    
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams
+                                    clientID:@"test-public-client"];
     
     // EXPECTED: Missing state should fail
     XCTAssertEqual(response.statusCode, 400,
@@ -333,19 +331,8 @@
     
     // Test: Empty state parameter should fail
     queryParams[@"state"] = @"";
-    
-    request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                     methodString:@"GET"
-                                             path:@"/oauth/authorize"
-                                      queryString:@""
-                                      queryParams:queryParams
-                                          version:@"1.1"
-                                          headers:@{}
-                                             body:[NSData data]
-                                       remoteAddress:@"127.0.0.1"];
-    response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    response = [self authorizeViaPARWithParameters:queryParams
+                                          clientID:@"test-public-client"];
     
     // EXPECTED: Empty state should fail
     XCTAssertEqual(response.statusCode, 400,
@@ -353,19 +340,8 @@
     
     // Test: Valid state parameter should succeed
     queryParams[@"state"] = @"valid-state-123";
-    
-    request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                     methodString:@"GET"
-                                             path:@"/oauth/authorize"
-                                      queryString:@""
-                                      queryParams:queryParams
-                                          version:@"1.1"
-                                          headers:@{}
-                                             body:[NSData data]
-                                       remoteAddress:@"127.0.0.1"];
-    response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    response = [self authorizeViaPARWithParameters:queryParams
+                                          clientID:@"test-public-client"];
     
     // EXPECTED: Valid state should succeed
     XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
@@ -401,19 +377,9 @@
             @"code_challenge_method": @"S256",
             @"scope": @"atproto"
         } mutableCopy];
-        
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                      methodString:@"GET"
-                                                              path:@"/oauth/authorize"
-                                                       queryString:@""
-                                                       queryParams:queryParams
-                                                           version:@"1.1"
-                                                           headers:@{}
-                                                              body:[NSData data]
-                                                        remoteAddress:@"127.0.0.1"];
-        HttpResponse *response = [[HttpResponse alloc] init];
-        
-        [self.handler handleAuthorizeRequest:request response:response];
+        HttpResponse *response =
+            [self authorizeViaPARWithParameters:queryParams
+                                        clientID:@"test-public-client"];
         
         XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
                      @"Valid redirect URI %@ should succeed", redirectURI);
@@ -429,19 +395,9 @@
         @"code_challenge_method": @"S256",
         @"scope": @"atproto"
     } mutableCopy];
-    
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams
+                                    clientID:@"test-public-client"];
     
     // EXPECTED: Invalid redirect URI should fail
     XCTAssertEqual(response.statusCode, 400,
@@ -474,38 +430,17 @@
         @"code_challenge_method": @"S256",
         @"scope": @"atproto"
     } mutableCopy];
-    
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams
+                                    clientID:@"test-confidential-client"];
     
     XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
                  @"Valid confidential client should succeed");
     
     // Test: Invalid client_id should fail
     queryParams[@"client_id"] = @"non-existent-client";
-    
-    request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                     methodString:@"GET"
-                                             path:@"/oauth/authorize"
-                                      queryString:@""
-                                      queryParams:queryParams
-                                          version:@"1.1"
-                                          headers:@{}
-                                             body:[NSData data]
-                                       remoteAddress:@"127.0.0.1"];
-    response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    response = [self authorizeViaPARWithParameters:queryParams
+                                          clientID:@"non-existent-client"];
     
     XCTAssertEqual(response.statusCode, 400,
                   @"Invalid client_id should fail");
@@ -562,19 +497,9 @@
             @"code_challenge_method": @"S256",
             @"scope": @"atproto"
         } mutableCopy];
-        
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                      methodString:@"GET"
-                                                              path:@"/oauth/authorize"
-                                                       queryString:@""
-                                                       queryParams:queryParams
-                                                           version:@"1.1"
-                                                           headers:@{}
-                                                              body:[NSData data]
-                                                        remoteAddress:@"127.0.0.1"];
-        HttpResponse *response = [[HttpResponse alloc] init];
-        
-        [self.handler handleAuthorizeRequest:request response:response];
+        HttpResponse *response =
+            [self authorizeViaPARWithParameters:queryParams
+                                        clientID:clientInfo[@"client_id"]];
         
         XCTAssertTrue(response.statusCode == 200 || response.statusCode == 302,
                      @"Client %@ should authenticate successfully", clientInfo[@"client_id"]);
