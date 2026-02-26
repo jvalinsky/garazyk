@@ -244,12 +244,12 @@
  * **Validates: Requirement 3.2**
  * 
  * PKCE validation for registered clients must work identically:
- * - code_challenge required for public clients
- * - S256 method supported
+ * - code_challenge required for all clients (AT Protocol spec)
+ * - S256 method supported (plain is not allowed)
  * - code_verifier validation works correctly
  */
 - (void)testProperty_PKCEValidationPreserved {
-    // Test 1: Public client MUST provide code_challenge
+    // Test 1: All clients MUST provide code_challenge
     NSMutableDictionary *queryParams = [@{
         @"client_id": @"test-public-client",
         @"redirect_uri": @"http://localhost:8080/callback",

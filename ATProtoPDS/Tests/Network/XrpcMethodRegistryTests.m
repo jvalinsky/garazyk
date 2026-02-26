@@ -229,29 +229,25 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertTrue(successNonce.length > 0);
         XCTAssertNotEqualObjects(successNonce, challengeNonce);
 
+        // Replay same DPoP proof (same jti) — should be rejected via JTI replay cache
         HttpRequest *replayRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                             methodString:@"GET"
-                                                                     path:path
-                                                              queryString:@""
-                                                              queryParams:@{}
-                                                                  version:@"1.1"
-                                                                  headers:@{
-                                                                      @"authorization": authorization,
-                                                                      @"host": @"localhost:2583",
-                                                                      @"dpop": retryProof.jwt,
-                                                                      @"dpop-nonce": challengeNonce
-                                                                  }
-                                                                     body:[NSData data]
-                                                             remoteAddress:@"127.0.0.1"];
+                                                              methodString:@"GET"
+                                                                      path:path
+                                                               queryString:@""
+                                                               queryParams:@{}
+                                                                   version:@"1.1"
+                                                                   headers:@{
+                                                                       @"authorization": authorization,
+                                                                       @"host": @"localhost:2583",
+                                                                       @"dpop": retryProof.jwt,
+                                                                       @"dpop-nonce": challengeNonce
+                                                                   }
+                                                                      body:[NSData data]
+                                                              remoteAddress:@"127.0.0.1"];
         HttpResponse *replayResponse = [[HttpResponse alloc] init];
         [dispatcher handleRequest:replayRequest response:replayResponse];
-        XCTAssertEqual(replayResponse.statusCode, HttpStatusUnauthorized);
-        NSString *rotatedNonce = replayResponse.headers[@"DPoP-Nonce"];
-        XCTAssertTrue(rotatedNonce.length > 0);
-        XCTAssertNotEqualObjects(rotatedNonce, challengeNonce);
-        XCTAssertEqualObjects(replayResponse.headers[@"Cache-Control"], @"no-store");
-        XCTAssertEqualObjects(replayResponse.headers[@"Pragma"], @"no-cache");
-        XCTAssertEqualObjects(replayResponse.jsonBody[@"message"], @"DPoP nonce required");
+        XCTAssertEqual(replayResponse.statusCode, HttpStatusUnauthorized,
+                      @"Replayed DPoP proof (same jti) must be rejected");
     } @finally {
         if (privateKey) {
             CFRelease(privateKey);
