@@ -7,6 +7,25 @@
 @interface TOTPTests : XCTestCase
 @end
 
+@interface TOTPService (TestHooks)
+- (nullable NSString *)generateSoftwareToken;
+@end
+
+@interface TOTPStubYubiManager : YubiKeyOATHManager
+@property (nonatomic, copy) NSString *tokenToReturn;
+@end
+
+@implementation TOTPStubYubiManager
+- (nullable NSString *)generateTOTPForSecret:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
+    (void)secret;
+    (void)counter;
+    if (self.tokenToReturn) {
+        return self.tokenToReturn;
+    }
+    return [super generateTOTPForSecret:secret counter:counter error:error];
+}
+@end
+
 @implementation TOTPTests
 
 - (void)testBase32Encoding {
@@ -86,6 +105,100 @@
     XCTAssertNotNil(token);
     XCTAssertNil(error);
     XCTAssertEqual(token.length, 6, @"TOTP token should be 6 digits");
+}
+
+- (void)testGenerateSecretRoundTripLength {
+    NSString *secret = [TOTPService generateSecret];
+    XCTAssertNotNil(secret);
+    NSData *decoded = [Base32Utils dataFromBase32String:secret];
+    XCTAssertNotNil(decoded);
+    XCTAssertEqual(decoded.length, 20u);
+}
+
+- (void)testVerifyCodeRejectsInvalidSecretEncoding {
+    XCTAssertFalse([TOTPService verifyCode:@"123456" secret:@"!invalid-base32!"]);
+}
+
+- (void)testGenerateQRCodeImage {
+    NSData *qr = [TOTPService generateQRCodeImageForSecret:@"JBSWY3DPEHPK3PXP"
+                                                accountName:@"alice@example.com"
+                                                     issuer:@"GarazykPDS"];
+    if (!qr || qr.length == 0) {
+        XCTSkip(@"QR image generation backend not available in current test environment");
+    }
+#if defined(GNUSTEP)
+    NSString *header = [[NSString alloc] initWithData:[qr subdataWithRange:NSMakeRange(0, MIN((NSUInteger)2, qr.length))]
+                                             encoding:NSASCIIStringEncoding];
+    XCTAssertEqualObjects(header, @"P4");
+#else
+    const uint8_t *bytes = qr.bytes;
+    XCTAssertGreaterThanOrEqual(qr.length, (NSUInteger)4);
+    XCTAssertEqual(bytes[0], (uint8_t)0x89);
+    XCTAssertEqual(bytes[1], (uint8_t)'P');
+    XCTAssertEqual(bytes[2], (uint8_t)'N');
+    XCTAssertEqual(bytes[3], (uint8_t)'G');
+#endif
+}
+
+- (void)testGenerateSoftwareTokenProducesSixDigits {
+    NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
+    TOTPService *service = [[TOTPService alloc] initWithSecret:secretData];
+    NSString *token = [service generateSoftwareToken];
+    XCTAssertNotNil(token);
+    XCTAssertEqual(token.length, 6u);
+}
+
+- (void)testGenerateTOTPTokenUsesYubiManagerWhenAvailable {
+    NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
+    TOTPService *service = [[TOTPService alloc] initWithSecret:secretData];
+    TOTPStubYubiManager *stub = [[TOTPStubYubiManager alloc] init];
+    stub.tokenToReturn = @"123456";
+    [service setValue:stub forKey:@"yubiKeyManager"];
+
+    NSError *error = nil;
+    NSString *token = [service generateTOTPToken:&error];
+    XCTAssertEqualObjects(token, @"123456");
+    XCTAssertNil(error);
+}
+
+- (void)testYubiKeyManagerSoftwareModeBehaviors {
+    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    XCTAssertFalse(manager.isHardwareAvailable);
+    XCTAssertEqual(manager.connectionState, YubiKeyConnectionStateDisconnected);
+
+    [manager startScanning];
+    XCTAssertEqual(manager.connectionState, YubiKeyConnectionStateDisconnected);
+    [manager stopScanning];
+    XCTAssertEqual(manager.connectionState, YubiKeyConnectionStateDisconnected);
+    [manager refreshConnection];
+    XCTAssertEqual(manager.connectionState, YubiKeyConnectionStateDisconnected);
+}
+
+- (void)testYubiKeyManagerNotImplementedOperationsSetErrors {
+    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    NSError *error = nil;
+    BOOL setResult = [manager setOATHSecret:[@"secret" dataUsingEncoding:NSUTF8StringEncoding]
+                                       name:@"account"
+                                      error:&error];
+    XCTAssertFalse(setResult);
+    XCTAssertEqualObjects(error.domain, YubiKeyOATHErrorDomain);
+    XCTAssertEqual(error.code, YubiKeyOATHErrorNotImplemented);
+
+    error = nil;
+    BOOL deleteResult = [manager deleteCredentialWithName:@"account" error:&error];
+    XCTAssertFalse(deleteResult);
+    XCTAssertEqual(error.code, YubiKeyOATHErrorNotImplemented);
+
+    error = nil;
+    BOOL resetResult = [manager resetAllCredentialsWithError:&error];
+    XCTAssertFalse(resetResult);
+    XCTAssertEqual(error.code, YubiKeyOATHErrorNotImplemented);
+
+    error = nil;
+    NSArray *credentials = [manager listCredentialsWithError:&error];
+    XCTAssertNotNil(credentials);
+    XCTAssertEqual(credentials.count, 0u);
+    XCTAssertNil(error);
 }
 
 @end
