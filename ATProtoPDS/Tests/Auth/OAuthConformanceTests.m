@@ -41,6 +41,10 @@
     if (self.privateKey) {
         self.publicKey = SecKeyCopyPublicKey(self.privateKey);
     }
+    
+    // Ensure the tables exist
+    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, client_name TEXT, client_secret TEXT, redirect_uris TEXT, grant_types TEXT, response_types TEXT, scope TEXT, application_type TEXT)" error:nil];
+    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)" error:nil];
 }
 
 - (void)tearDown {
@@ -163,6 +167,9 @@
     XCTAssertTrue([json[@"request_uri"] hasPrefix:@"urn:ietf:params:oauth:request_uri:"]);
     XCTAssertNotNil(json[@"expires_in"]);
     XCTAssertEqual([json[@"expires_in"] integerValue], 600);
+    XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
+    XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
+    XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
     
     // Verify it's in DB
     NSArray *rows = [self.database executeParameterizedQuery:@"SELECT * FROM oauth_par_requests WHERE request_uri = ?" params:@[json[@"request_uri"]] error:nil];

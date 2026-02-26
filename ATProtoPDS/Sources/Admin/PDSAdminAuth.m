@@ -139,6 +139,15 @@ static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
     return PDSAdminAuthEnvBool(env[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"]);
 }
 
+static NSString *PDSAdminAuthSanitizedErrorSummary(NSError *error) {
+    if (!error) {
+        return @"domain=unknown code=0";
+    }
+    return [NSString stringWithFormat:@"domain=%@ code=%ld",
+                                      error.domain ?: @"unknown",
+                                      (long)error.code];
+}
+
 static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *minter) {
     if (!minter) {
         return nil;
@@ -290,7 +299,11 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     if (!jwt || parseError) {
         PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token");
         if (error) {
-            *error = parseError ?: [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Invalid token format"}];
+            NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey: @"Invalid token format"} mutableCopy];
+            if (parseError) {
+                userInfo[NSUnderlyingErrorKey] = parseError;
+            }
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:userInfo];
         }
         return NO;
     }
@@ -348,10 +361,14 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 
     NSError *verifyError = nil;
     if (![verifier verifyJWT:jwt error:&verifyError]) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed: %@",
-                         verifyError.localizedDescription ?: @"unknown error");
+        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed (%@)",
+                         PDSAdminAuthSanitizedErrorSummary(verifyError));
         if (error) {
-            *error = verifyError;
+            NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey: @"Invalid authentication token"} mutableCopy];
+            if (verifyError) {
+                userInfo[NSUnderlyingErrorKey] = verifyError;
+            }
+            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:userInfo];
         }
         return NO;
     }
