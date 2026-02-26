@@ -48,6 +48,7 @@
 - (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request;
 - (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
 - (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response;
+- (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput;
 - (NSString *)assetsPath;
 - (NSString *)escapeHtml:(NSString *)input;
 - (void)serveAuthorizePage:(HttpResponse *)response
@@ -150,6 +151,23 @@ static const NSUInteger kMaxPendingConsents = 1024;
         [self validateClientMetadata:self.clientMetadata error:&metadataError];
 
     if (validatedClient) {
+      NSString *metadataClientID = [validatedClient[@"client_id"]
+          isKindOfClass:[NSString class]]
+                                       ? validatedClient[@"client_id"]
+                                       : nil;
+      if (metadataClientID.length == 0 ||
+          ![CryptoUtils constantTimeCompare:metadataClientID to:clientID]) {
+        if (error) {
+          *error = [NSError
+              errorWithDomain:@"OAuth2"
+                         code:400
+                     userInfo:@{
+                       NSLocalizedDescriptionKey :
+                           @"client_id does not match client_metadata"
+                     }];
+        }
+        return nil;
+      }
       PDS_LOG_AUTH_INFO(
           @"Client validated successfully via client_metadata: %@", clientID);
       return validatedClient;
@@ -300,16 +318,36 @@ static const NSUInteger kMaxPendingConsents = 1024;
     return nil;
   }
 
-  // Extract grant_types (optional, default to "authorization_code
-  // refresh_token")
+  // Extract grant_types (optional, defaults to ATProto-required grants)
   id grantTypes = metadata[@"grant_types"];
-  NSString *grantTypesString = nil;
+  NSMutableArray<NSString *> *normalizedGrantTypes = [NSMutableArray array];
   if (grantTypes) {
     if ([grantTypes isKindOfClass:[NSArray class]]) {
-      // Convert array to space-separated string
-      grantTypesString = [(NSArray *)grantTypes componentsJoinedByString:@" "];
+      for (id value in (NSArray *)grantTypes) {
+        if (![value isKindOfClass:[NSString class]] ||
+            [(NSString *)value length] == 0) {
+          if (error) {
+            *error = [NSError errorWithDomain:@"OAuth2"
+                                         code:400
+                                     userInfo:@{
+                                       NSLocalizedDescriptionKey :
+                                           @"grant_types values must be "
+                                           @"non-empty strings"
+                                     }];
+          }
+          return nil;
+        }
+        [normalizedGrantTypes addObject:(NSString *)value];
+      }
     } else if ([grantTypes isKindOfClass:[NSString class]]) {
-      grantTypesString = (NSString *)grantTypes;
+      NSArray<NSString *> *parts = [(NSString *)grantTypes
+          componentsSeparatedByCharactersInSet:
+              [NSCharacterSet whitespaceCharacterSet]];
+      for (NSString *part in parts) {
+        if (part.length > 0) {
+          [normalizedGrantTypes addObject:part];
+        }
+      }
     } else {
       if (error) {
         *error = [NSError errorWithDomain:@"OAuth2"
@@ -322,7 +360,46 @@ static const NSUInteger kMaxPendingConsents = 1024;
       return nil;
     }
   } else {
-    grantTypesString = @"authorization_code refresh_token";
+    [normalizedGrantTypes addObjectsFromArray:@[
+      @"authorization_code", @"refresh_token"
+    ]];
+  }
+
+  NSSet<NSString *> *grantTypesSet =
+      [NSSet setWithArray:normalizedGrantTypes];
+  if (![grantTypesSet containsObject:@"authorization_code"] ||
+      ![grantTypesSet containsObject:@"refresh_token"]) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"grant_types must include authorization_code and "
+                       @"refresh_token"
+                 }];
+    }
+    return nil;
+  }
+
+  NSSet<NSString *> *allowedGrantTypes =
+      [NSSet setWithArray:@[ @"authorization_code", @"refresh_token" ]];
+  for (NSString *grantType in grantTypesSet) {
+    if (![allowedGrantTypes containsObject:grantType]) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         [NSString stringWithFormat:
+                                       @"Unsupported grant_type in "
+                                       @"client_metadata: %@",
+                                       grantType]
+                   }];
+      }
+      return nil;
+    }
   }
 
   // Extract scope (optional, default to "atproto")
@@ -342,14 +419,286 @@ static const NSUInteger kMaxPendingConsents = 1024;
     scope = @"atproto";
   }
 
+  NSArray<NSString *> *scopeParts =
+      [scope componentsSeparatedByCharactersInSet:
+                 [NSCharacterSet whitespaceCharacterSet]];
+  BOOL hasATProtoScope = NO;
+  for (NSString *scopePart in scopeParts) {
+    if ([scopePart isEqualToString:@"atproto"]) {
+      hasATProtoScope = YES;
+      break;
+    }
+  }
+  if (!hasATProtoScope) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:400
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"scope must include atproto"
+                               }];
+    }
+    return nil;
+  }
+
+  // ATProto requires response_types to include only "code".
+  id responseTypesValue = metadata[@"response_types"];
+  NSMutableArray<NSString *> *responseTypes = [NSMutableArray array];
+  if ([responseTypesValue isKindOfClass:[NSArray class]]) {
+    for (id value in (NSArray *)responseTypesValue) {
+      if (![value isKindOfClass:[NSString class]] ||
+          [(NSString *)value length] == 0) {
+        if (error) {
+          *error = [NSError errorWithDomain:@"OAuth2"
+                                       code:400
+                                   userInfo:@{
+                                     NSLocalizedDescriptionKey :
+                                         @"response_types must contain "
+                                         @"non-empty strings"
+                                   }];
+        }
+        return nil;
+      }
+      [responseTypes addObject:(NSString *)value];
+    }
+  } else if ([responseTypesValue isKindOfClass:[NSString class]]) {
+    NSArray<NSString *> *parts = [(NSString *)responseTypesValue
+        componentsSeparatedByCharactersInSet:
+            [NSCharacterSet whitespaceCharacterSet]];
+    for (NSString *part in parts) {
+      if (part.length > 0) {
+        [responseTypes addObject:part];
+      }
+    }
+  } else {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:400
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"response_types is required in "
+                                     @"client_metadata"
+                               }];
+    }
+    return nil;
+  }
+
+  if (responseTypes.count == 0) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:400
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"response_types must include code"
+                               }];
+    }
+    return nil;
+  }
+
+  for (NSString *responseType in responseTypes) {
+    if (![responseType isEqualToString:@"code"]) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         [NSString stringWithFormat:
+                                       @"Unsupported response_type in "
+                                       @"client_metadata: %@",
+                                       responseType]
+                   }];
+      }
+      return nil;
+    }
+  }
+
+  // ATProto clients must request DPoP-bound access tokens.
+  id dpopBoundAccessTokens = metadata[@"dpop_bound_access_tokens"];
+  if (![dpopBoundAccessTokens isKindOfClass:[NSNumber class]] ||
+      ![(NSNumber *)dpopBoundAccessTokens boolValue]) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"dpop_bound_access_tokens must be true"
+                 }];
+    }
+    return nil;
+  }
+
+  id tokenEndpointAuthMethodValue = metadata[@"token_endpoint_auth_method"];
+  if (![tokenEndpointAuthMethodValue isKindOfClass:[NSString class]] ||
+      [(NSString *)tokenEndpointAuthMethodValue length] == 0) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"token_endpoint_auth_method is required in "
+                       @"client_metadata"
+                 }];
+    }
+    return nil;
+  }
+
+  NSString *tokenEndpointAuthMethod = (NSString *)tokenEndpointAuthMethodValue;
+  NSSet<NSString *> *allowedAuthMethods =
+      [NSSet setWithArray:@[ @"none", @"private_key_jwt" ]];
+  if (![allowedAuthMethods containsObject:tokenEndpointAuthMethod]) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       [NSString
+                           stringWithFormat:
+                               @"Unsupported token_endpoint_auth_method: %@",
+                               tokenEndpointAuthMethod]
+                 }];
+    }
+    return nil;
+  }
+
+  id signingAlgValue = metadata[@"token_endpoint_auth_signing_alg"];
+  NSString *signingAlg =
+      [signingAlgValue isKindOfClass:[NSString class]]
+          ? (NSString *)signingAlgValue
+          : nil;
+  if (signingAlgValue && ![signingAlgValue isKindOfClass:[NSString class]]) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"token_endpoint_auth_signing_alg must be a string"
+                 }];
+    }
+    return nil;
+  }
+
+  id jwksValue = metadata[@"jwks"];
+  if (jwksValue && ![jwksValue isKindOfClass:[NSDictionary class]]) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey : @"jwks must be an object"
+                 }];
+    }
+    return nil;
+  }
+
+  id jwksURIValue = metadata[@"jwks_uri"];
+  NSString *jwksURI = nil;
+  if (jwksURIValue) {
+    if (![jwksURIValue isKindOfClass:[NSString class]] ||
+        [(NSString *)jwksURIValue length] == 0) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         @"jwks_uri must be a non-empty string"
+                   }];
+      }
+      return nil;
+    }
+    jwksURI = (NSString *)jwksURIValue;
+  }
+
+  BOOL hasJWKS = ([jwksValue isKindOfClass:[NSDictionary class]]);
+  BOOL hasJWKSURI = (jwksURI.length > 0);
+  if (hasJWKS && hasJWKSURI) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"Only one of jwks or jwks_uri may be provided"
+                 }];
+    }
+    return nil;
+  }
+
+  if ([tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"]) {
+    if (!hasJWKS && !hasJWKSURI) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         @"private_key_jwt clients must provide jwks or "
+                         @"jwks_uri"
+                   }];
+      }
+      return nil;
+    }
+    if (signingAlg.length == 0 || ![signingAlg isEqualToString:@"ES256"]) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         @"private_key_jwt requires "
+                         @"token_endpoint_auth_signing_alg=ES256"
+                   }];
+      }
+      return nil;
+    }
+  } else {
+    if (hasJWKS || hasJWKSURI || signingAlg.length > 0) {
+      if (error) {
+        *error = [NSError
+            errorWithDomain:@"OAuth2"
+                       code:400
+                   userInfo:@{
+                     NSLocalizedDescriptionKey :
+                         @"Public clients using token_endpoint_auth_method=none "
+                         @"must not provide jwks, jwks_uri, or "
+                         @"token_endpoint_auth_signing_alg"
+                   }];
+      }
+      return nil;
+    }
+  }
+
+  NSString *applicationType = metadata[@"application_type"];
+  if (applicationType && ![applicationType isKindOfClass:[NSString class]]) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:400
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"application_type must be a string"
+                 }];
+    }
+    return nil;
+  }
+
   // Return normalized client dictionary matching database format for
   // consistency
   return @{
     @"client_id" : clientID,
     @"redirect_uris" : redirectURIs,
     @"client_name" : clientName ?: clientID,
-    @"grant_types" : grantTypesString,
-    @"scope" : scope
+    @"grant_types" : [normalizedGrantTypes componentsJoinedByString:@" "],
+    @"scope" : scope,
+    @"response_types" : [responseTypes componentsJoinedByString:@" "],
+    @"dpop_bound_access_tokens" : @YES,
+    @"token_endpoint_auth_method" : tokenEndpointAuthMethod,
+    @"application_type" : applicationType ?: @"web"
   };
 }
 
@@ -640,6 +989,17 @@ static const NSUInteger kMaxPendingConsents = 1024;
       [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
 
   NSString *requestURI = params[@"request_uri"];
+  if (requestURI.length == 0) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_request",
+      @"error_description" :
+          @"request_uri is required; direct authorization requests are not "
+          @"allowed"
+    }];
+    return;
+  }
+
   if (requestURI.length > 0) {
     NSSet<NSString *> *allowedDirectParams =
         [NSSet setWithArray:@[ @"request_uri", @"client_id" ]];
@@ -672,35 +1032,8 @@ static const NSUInteger kMaxPendingConsents = 1024;
   }
 
   // Extract and parse client_metadata parameter if provided
-  id clientMetadataInput = params[@"client_metadata"];
-  NSString *clientMetadataString =
-      [clientMetadataInput isKindOfClass:[NSString class]]
-          ? (NSString *)clientMetadataInput
-          : nil;
-  NSDictionary *clientMetadata = nil;
-  if ([clientMetadataInput isKindOfClass:[NSDictionary class]]) {
-    clientMetadata = (NSDictionary *)clientMetadataInput;
-  } else if (clientMetadataString && clientMetadataString.length > 0) {
-    NSError *jsonError = nil;
-    NSData *jsonData =
-        [clientMetadataString dataUsingEncoding:NSUTF8StringEncoding];
-    if (jsonData) {
-      id parsedJSON = [NSJSONSerialization JSONObjectWithData:jsonData
-                                                      options:0
-                                                        error:&jsonError];
-      if (jsonError) {
-        PDS_LOG_AUTH_WARN(@"Failed to parse client_metadata JSON: %@",
-                          jsonError.localizedDescription);
-        // Continue without metadata - will be handled by validation
-      } else if ([parsedJSON isKindOfClass:[NSDictionary class]]) {
-        clientMetadata = (NSDictionary *)parsedJSON;
-        PDS_LOG_AUTH_INFO(@"Parsed client_metadata with %lu keys",
-                          (unsigned long)clientMetadata.count);
-      } else {
-        PDS_LOG_AUTH_WARN(@"client_metadata is not a JSON object");
-      }
-    }
-  }
+  NSDictionary *clientMetadata =
+      [self parseClientMetadataFromInput:params[@"client_metadata"]];
 
   // Store clientMetadata in handler for use by validateClient
   self.clientMetadata = clientMetadata;
@@ -1402,6 +1735,7 @@ static const NSUInteger kMaxPendingConsents = 1024;
     return;
   }
   NSDictionary *params = [self parseFormUrlEncodedString:body];
+  self.clientMetadata = [self parseClientMetadataFromInput:params[@"client_metadata"]];
 
   // Validate client authentication (either client_secret or DPoP)
   NSString *clientID = params[@"client_id"];
@@ -1587,6 +1921,47 @@ static const NSUInteger kMaxPendingConsents = 1024;
   [response setHeader:@"no-cache" forKey:@"Pragma"];
   [response
       setJsonBody:@{@"request_uri" : requestURI, @"expires_in" : @(expiresIn)}];
+}
+
+- (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput {
+  if ([clientMetadataInput isKindOfClass:[NSDictionary class]]) {
+    return (NSDictionary *)clientMetadataInput;
+  }
+
+  if ([clientMetadataInput isKindOfClass:[NSString class]]) {
+    NSString *clientMetadataString = (NSString *)clientMetadataInput;
+    if (clientMetadataString.length == 0) {
+      return nil;
+    }
+
+    NSData *jsonData =
+        [clientMetadataString dataUsingEncoding:NSUTF8StringEncoding];
+    if (!jsonData) {
+      PDS_LOG_AUTH_WARN(@"Failed to decode client_metadata text as UTF-8");
+      return nil;
+    }
+
+    NSError *jsonError = nil;
+    id parsedJSON = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                    options:0
+                                                      error:&jsonError];
+    if (jsonError) {
+      PDS_LOG_AUTH_WARN(@"Failed to parse client_metadata JSON: %@",
+                        jsonError.localizedDescription);
+      return nil;
+    }
+    if (![parsedJSON isKindOfClass:[NSDictionary class]]) {
+      PDS_LOG_AUTH_WARN(@"client_metadata is not a JSON object");
+      return nil;
+    }
+
+    NSDictionary *clientMetadata = (NSDictionary *)parsedJSON;
+    PDS_LOG_AUTH_INFO(@"Parsed client_metadata with %lu keys",
+                      (unsigned long)clientMetadata.count);
+    return clientMetadata;
+  }
+
+  return nil;
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {

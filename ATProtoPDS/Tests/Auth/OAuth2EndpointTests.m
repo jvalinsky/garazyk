@@ -29,26 +29,21 @@
 #pragma mark - Authorization Endpoint Tests
 
 #ifndef GNUSTEP
-- (void)testOAuthAuthorizeEndpointReturnsRedirectForValidRequest {
-    // This test should fail initially since we haven't implemented the handler yet
-    
+- (void)testOAuthAuthorizeEndpointRequiresRequestURI {
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"]];
     request.HTTPMethod = @"GET";
     
-    XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize request"];
+    XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize PAR required"];
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         
-        // Should be 302 redirect
-        XCTAssertEqual(httpResponse.statusCode, 302, @"Should return 302 redirect");
-        
-        // Should have Location header with redirect
-        NSString *location = httpResponse.allHeaderFields[@"Location"];
-        XCTAssertNotNil(location, @"Should have Location header");
-        XCTAssertTrue([location containsString:@"http://localhost:3000/callback"], @"Should redirect to callback URL");
-        XCTAssertTrue([location containsString:@"code="], @"Should include authorization code");
-        XCTAssertTrue([location containsString:@"state=test123"], @"Should preserve state parameter");
+        XCTAssertEqual(httpResponse.statusCode, 400, @"Should reject direct authorize requests when request_uri is missing");
+
+        if (data.length > 0) {
+            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            XCTAssertEqualObjects(json[@"error"], @"invalid_request");
+        }
         
         [expectation fulfill];
     }];

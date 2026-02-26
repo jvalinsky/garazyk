@@ -56,6 +56,56 @@
     [super tearDown];
 }
 
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return [formatter stringFromDate:date];
+}
+
+- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+                                       clientID:(NSString *)clientID {
+    NSError *error = nil;
+    BOOL created = [self.database executeParameterizedUpdate:
+                    @"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)"
+                                                         params:@[]
+                                                          error:&error];
+    XCTAssertTrue(created, @"Failed to create PAR table: %@", error);
+
+    NSData *paramsData = [NSJSONSerialization dataWithJSONObject:authorizeParams options:0 error:&error];
+    XCTAssertNotNil(paramsData, @"Failed to serialize authorize params: %@", error);
+
+    NSString *requestURI = [NSString stringWithFormat:@"urn:ietf:params:oauth:request_uri:%@", [[NSUUID UUID] UUIDString]];
+    NSString *expiresAt = [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSinceNow:600]];
+    NSString *paramsJSON = [[NSString alloc] initWithData:paramsData encoding:NSUTF8StringEncoding];
+    BOOL inserted = [self.database executeParameterizedUpdate:
+                     @"INSERT INTO oauth_par_requests (request_uri, client_id, params_json, expires_at, consumed_at) VALUES (?, ?, ?, ?, NULL)"
+                                                          params:@[requestURI, clientID ?: @"", paramsJSON ?: @"{}", expiresAt]
+                                                           error:&error];
+    XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/oauth/authorize"
+                                                   queryString:@""
+                                                   queryParams:@{
+                                                       @"request_uri": requestURI,
+                                                       @"client_id": clientID ?: @""
+                                                   }
+                                                       version:@"1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeRequest:request response:response];
+    return response;
+}
+
 /**
  * Test Case 1: bsky.app authorization with client_metadata
  * 
@@ -73,7 +123,9 @@
         @"client_name": @"Bluesky",
         @"redirect_uris": @[redirectURI],
         @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
         @"scope": @"atproto",
+        @"dpop_bound_access_tokens": @YES,
         @"token_endpoint_auth_method": @"none"
     };
     NSData *metadataJSON = [NSJSONSerialization dataWithJSONObject:clientMetadata options:0 error:nil];
@@ -91,18 +143,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: Authorization should succeed (serve consent page)
     // UNFIXED BEHAVIOR: Returns 400 with "unauthorized_client" error
@@ -132,7 +173,9 @@
         @"client_name": @"Witchsky",
         @"redirect_uris": @[redirectURI],
         @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
         @"scope": @"atproto",
+        @"dpop_bound_access_tokens": @YES,
         @"token_endpoint_auth_method": @"none"
     };
     NSData *metadataJSON = [NSJSONSerialization dataWithJSONObject:clientMetadata options:0 error:nil];
@@ -149,18 +192,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: Authorization should succeed
     XCTAssertNotEqual(response.statusCode, 400,
@@ -188,7 +220,9 @@
         @"client_name": @"Native App",
         @"redirect_uris": @[redirectURI],
         @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
         @"scope": @"atproto",
+        @"dpop_bound_access_tokens": @YES,
         @"token_endpoint_auth_method": @"none",
         @"application_type": @"native"
     };
@@ -206,18 +240,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: Loopback redirect should be allowed
     XCTAssertNotEqual(response.statusCode, 400,
@@ -245,7 +268,9 @@
         @"client_name": @"Native App IPv6",
         @"redirect_uris": @[redirectURI],
         @"grant_types": @[@"authorization_code", @"refresh_token"],
+        @"response_types": @[@"code"],
         @"scope": @"atproto",
+        @"dpop_bound_access_tokens": @YES,
         @"token_endpoint_auth_method": @"none",
         @"application_type": @"native"
     };
@@ -263,18 +288,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                  methodString:@"GET"
-                                                          path:@"/oauth/authorize"
-                                                   queryString:@""
-                                                   queryParams:queryParams
-                                                       version:@"1.1"
-                                                       headers:@{}
-                                                          body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
-    
-    [self.handler handleAuthorizeRequest:request response:response];
+    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: IPv6 loopback redirect should be allowed
     XCTAssertNotEqual(response.statusCode, 400,
