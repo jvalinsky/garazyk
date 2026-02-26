@@ -87,9 +87,6 @@ typedef NS_ENUM(NSInteger, WebSocketServerState) {
 /*! WebSocket subprotocol to use. */
 @property (nonatomic, copy, nullable) NSString *subprotocol;
 
-/*! Mutable set of connections (internal use). */
-@property (nonatomic, strong, readonly) NSMutableSet<WebSocketConnection *> *mutableConnections;
-
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port;
 
 /*! Starts the server. */
