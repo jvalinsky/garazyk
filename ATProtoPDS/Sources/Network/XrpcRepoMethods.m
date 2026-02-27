@@ -903,6 +903,8 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
         NSString *swapCommit = body[@"swapCommit"];
 
+        NSLog(@"[DEBUG applyWrites] body=%@, writes=%@", body, writes);
+
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
             [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot apply writes for another user"}];
