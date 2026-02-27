@@ -546,7 +546,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
          methodEnum == HttpMethodPATCH);
 
     if (expectsBody && !state.isChunkedEncoding &&
-        state.expectedBodyLength == 0) {
+        contentLengthHeader.length == 0) {
+      // Reject POST/PUT/PATCH only when Content-Length header is truly absent.
+      // Content-Length: 0 is valid HTTP (empty body, e.g. refreshSession).
       HttpResponse *response =
           [HttpResponse responseWithStatusCode:HttpStatusLengthRequired];
       response.keepAlive = NO;
