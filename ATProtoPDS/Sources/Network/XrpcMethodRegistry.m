@@ -41,6 +41,7 @@
 #import "Network/XrpcIdentityMethods.h"
 #import "Network/XrpcLabelMethods.h"
 #import "Network/XrpcRepoMethods.h"
+#import "Network/XrpcModerationMethods.h"
 #import "Network/XrpcServerMethods.h"
 #import "Network/XrpcSyncMethods.h"
 #import "PLC/DIDPLCResolver.h"
@@ -6436,6 +6437,11 @@ static void registerMethodsWithDispatcherUsingServices(
                                  jwtMinter:jwtMinter
                            adminController:adminController
                              configuration:config];
+
+  [XrpcModerationMethods registerWithDispatcher:dispatcher
+                                      jwtMinter:jwtMinter
+                                adminController:adminController
+                               serviceDatabases:serviceDatabases];
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
