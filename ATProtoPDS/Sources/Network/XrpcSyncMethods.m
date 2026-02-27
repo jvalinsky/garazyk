@@ -343,14 +343,34 @@ static NSString *normalizedHostnameString(NSString *hostInput) {
     return @"localhost";
   }
 
+  // If it's already a DID or something else, return it as is but lowercased
+  if ([trimmed hasPrefix:@"did:"]) {
+    return [trimmed lowercaseString];
+  }
+
   NSString *urlString = trimmed;
+  // If it's just a hostname, componentsWithString: might fail to find the host.
+  // We ensure it has a scheme for reliable parsing.
   if ([trimmed rangeOfString:@"://"].location == NSNotFound) {
     urlString = [@"https://" stringByAppendingString:trimmed];
   }
 
   NSURLComponents *components =
       [NSURLComponents componentsWithString:urlString];
-  NSString *hostname = components.host ?: trimmed;
+  
+  // host returns the hostname portion without ports or paths.
+  NSString *hostname = components.host;
+  
+  // Fallback if NSURLComponents failed to parse a host
+  if (hostname.length == 0) {
+      // Manual split for port if present
+      if ([trimmed containsString:@":"]) {
+          hostname = [[trimmed componentsSeparatedByString:@":"] firstObject];
+      } else {
+          hostname = trimmed;
+      }
+  }
+
   if ([[hostname lowercaseString] isEqualToString:@"0.0.0.0"]) {
     return @"localhost";
   }
@@ -1134,12 +1154,14 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSString *requestedHost = normalizedHostnameString(hostname);
-    NSString *localHost = normalizedHostnameString(config.canonicalIssuer);
+    NSString *localHost = config.canonicalHostname;
     if (![requestedHost isEqualToString:localHost]) {
       response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
         @"error" : @"InvalidRequest",
-        @"message" : @"hostname must match this PDS host"
+        @"message" : [NSString
+            stringWithFormat:@"hostname must match this PDS host (%@)",
+                             localHost]
       }];
       return;
     }
