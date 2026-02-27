@@ -95,6 +95,8 @@
 
     XrpcMethodHandler handler = self.methodHandlers[methodId];
 
+    PDS_LOG_INFO(@"XrpcHandler: methodId=%@, handler=%@", methodId, handler ? @"found" : @"nil");
+
     if (self.requestInterceptor) {
         BOOL handled = self.requestInterceptor(request, response, methodId, handler != nil);
         if (handled) {
