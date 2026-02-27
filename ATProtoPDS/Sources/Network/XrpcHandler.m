@@ -46,6 +46,11 @@
         return;
     }
 
+    // Set CORS headers for all XRPC responses (not just OPTIONS)
+    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    [response setHeader:@"GET, POST, PUT, DELETE, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
+    [response setHeader:@"Content-Type, Authorization, DPoP, *" forKey:@"Access-Control-Allow-Headers"];
+
     // Check Rate Limit
     RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
     if (!rateLimit.allowed) {
