@@ -224,9 +224,9 @@
               path:@"/xrpc"
            handler:^(HttpRequest *request, HttpResponse *response) {
              [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-             [response setHeader:@"POST, OPTIONS"
+             [response setHeader:@"GET, POST, OPTIONS, HEAD"
                           forKey:@"Access-Control-Allow-Methods"];
-             [response setHeader:@"Content-Type, Authorization, DPoP"
+             [response setHeader:@"Content-Type, Authorization, DPoP, *"
                           forKey:@"Access-Control-Allow-Headers"];
              [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
              response.statusCode = HttpStatusOK;
@@ -249,9 +249,9 @@
               path:@"/xrpc/:method"
            handler:^(HttpRequest *request, HttpResponse *response) {
              [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-             [response setHeader:@"POST, OPTIONS"
+             [response setHeader:@"GET, POST, OPTIONS, HEAD"
                           forKey:@"Access-Control-Allow-Methods"];
-             [response setHeader:@"Content-Type, Authorization, DPoP"
+             [response setHeader:@"Content-Type, Authorization, DPoP, *"
                           forKey:@"Access-Control-Allow-Headers"];
              [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
              response.statusCode = HttpStatusOK;
