@@ -306,8 +306,27 @@
             @"record": record ?: @{}
         }];
     }
-
     return [posts copy];
+}
+
+- (nullable NSDictionary *)getPosts:(NSArray<NSString *> *)uris error:(NSError **)error {
+    if (!uris || uris.count == 0) {
+        return @{@"posts": @[]};
+    }
+    
+    NSMutableArray *posts = [NSMutableArray array];
+    for (NSString *uri in uris) {
+        NSDictionary *post = [self getPostByURI:uri error:error];
+        if (post) {
+            // formatPostRecord returns the feed-ready post view
+            NSDictionary *formatted = [self formatPostRecord:uri cid:[self generateCIDForRecord:post] record:post];
+            if (formatted) {
+                [posts addObject:formatted];
+            }
+        }
+    }
+    
+    return @{@"posts": posts};
 }
 
 - (nullable NSDictionary *)getPostByURI:(NSString *)uri error:(NSError **)error {

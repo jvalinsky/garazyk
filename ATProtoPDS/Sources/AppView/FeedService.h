@@ -59,6 +59,9 @@ NS_ASSUME_NONNULL_BEGIN
                                   cursor:(nullable NSString *)cursor
                                     error:(NSError **)error;
 
+/*! Get multiple posts by URI. */
+- (nullable NSDictionary *)getPosts:(NSArray<NSString *> *)uris error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

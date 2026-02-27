@@ -61,8 +61,10 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 /*! The raw query string (after ?). */
 @property (nonatomic, readonly, copy) NSString *queryString;
 
-/*! Parsed query parameters as key-value pairs. */
-@property (nonatomic, readonly, nullable, copy) NSDictionary<NSString *, NSString *> *queryParams;
+/*! Parsed query parameters as key-value pairs. Repeated keys will have an NSArray of values. */
+@property (nonatomic, readonly, nullable, copy) NSDictionary<NSString *, id> *queryParams;
+
+- (nullable NSArray<NSString *> *)queryParamsForKey:(NSString *)key;
 
 /*! Parsed path parameters extracted from the matched route pattern. */
 @property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *pathParameters;

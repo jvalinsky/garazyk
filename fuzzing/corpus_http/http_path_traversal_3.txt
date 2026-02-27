@@ -1,4 +1,0 @@
-GET /xrpc/./../../etc/passwd HTTP/1.1
-Host: test
-
-
