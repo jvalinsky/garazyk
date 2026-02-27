@@ -663,7 +663,7 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         // Prepare signing input (commit block without sig field)
         NSMutableDictionary *signingData = [commitData mutableCopy];
         [signingData removeObjectForKey:@"sig"];
-        NSData *signingInput = [ATProtoCBORSerialization dataWithJSONObject:signingData error:nil];
+        NSData *signingInput = [ATProtoCBORSerialization encodeDataWithJSONObject:signingData error:nil];
         if (!signingInput) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to re-encode commit for verification"}];
