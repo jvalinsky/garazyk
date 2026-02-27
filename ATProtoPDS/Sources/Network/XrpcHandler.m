@@ -3,6 +3,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 #import "Network/XrpcProxyHandler.h"
+#import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
 
 @interface XrpcDispatcher ()
