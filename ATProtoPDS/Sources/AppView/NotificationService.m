@@ -1,19 +1,29 @@
 #import "AppView/NotificationService.h"
+#import "AppView/ActorService.h"
 #import "Database/PDSDatabase.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 
 @interface NotificationService ()
 @property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) ActorService *actorService;
 @end
 
 @implementation NotificationService
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database {
+- (instancetype)initWithDatabase:(PDSDatabase *)database
+                    actorService:(nullable ActorService *)actorService {
     self = [super init];
     if (self) {
         _database = database;
+        _actorService = actorService;
         [self ensureTablesExist];
     }
     return self;
+}
+
+- (instancetype)initWithDatabase:(PDSDatabase *)database {
+    return [self initWithDatabase:database actorService:nil];
 }
 
 - (void)ensureTablesExist {
@@ -32,6 +42,7 @@
     NSString *createNotificationsTableSQL = @"CREATE TABLE IF NOT EXISTS notifications ("
                                              @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
                                              @"did TEXT NOT NULL, "
+                                             @"author_did TEXT NOT NULL DEFAULT '', "
                                              @"reason TEXT NOT NULL, "
                                              @"reason_subject TEXT, "
                                              @"subject_uri TEXT, "
@@ -40,6 +51,9 @@
                                              @"indexed_at TEXT DEFAULT (datetime('now')))";
 
     [self.database executeRawSQL:createNotificationsTableSQL error:nil];
+
+    // Migration: add author_did column if it doesn't exist
+    [self.database executeRawSQL:@"ALTER TABLE notifications ADD COLUMN author_did TEXT NOT NULL DEFAULT ''" error:nil];
 }
 
 - (BOOL)registerPushForActor:(NSString *)actorDID
@@ -123,22 +137,51 @@
 
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
-        NSString *reason = row[@"reason"];
+        NSString *reason = row[@"reason"] ?: @"";
         NSString *reasonSubject = row[@"reason_subject"];
+        NSString *subjectURI = row[@"subject_uri"];
+        NSString *subjectCID = row[@"subject_cid"];
+        NSString *authorDID = row[@"author_did"] ?: @"";
         NSInteger notifId = [row[@"id"] integerValue];
         NSString *indexedAt = row[@"indexed_at"] ?: @"";
+        BOOL isRead = [row[@"is_read"] boolValue];
+
+        // Hydrate author profile
+        NSDictionary *author = nil;
+        if (self.actorService && authorDID.length > 0) {
+            author = [self.actorService getProfileForActor:authorDID error:nil];
+        }
+        if (!author && authorDID.length > 0) {
+            author = @{@"did": authorDID, @"handle": @"handle.invalid"};
+        }
+
+        // Fetch the actual record that caused the notification
+        NSDictionary *record = @{};
+        if (subjectURI && subjectCID) {
+            // Try to load the record from the blocks table
+            CID *cid = [CID cidFromString:subjectCID];
+            if (cid && authorDID.length > 0) {
+                PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:authorDID error:nil];
+                if (block && block.blockData) {
+                    NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+                    if (decoded) record = decoded;
+                }
+            }
+        }
 
         NSMutableDictionary *notification = [NSMutableDictionary dictionary];
-        notification[@"uri"] = [NSString stringWithFormat:@"at://%@/app.bsky.notification.record/%ld", actorDID, (long)notifId];
-        notification[@"cid"] = @"";
-        notification[@"did"] = actorDID;
-        notification[@"record"] = @{
-            @"reason": reason ?: @"",
-            @"reasonSubject": reasonSubject ?: [NSNull null],
-            @"subject": [self getSubjectForNotification:notifId],
-            @"isRead": @([row[@"is_read"] boolValue]),
-            @"indexedAt": indexedAt
-        };
+        notification[@"uri"] = subjectURI ?: @"";
+        notification[@"cid"] = subjectCID ?: @"";
+        notification[@"author"] = author ?: @{@"did": @"", @"handle": @""};
+        notification[@"reason"] = reason;
+        if (reasonSubject && ![reasonSubject isKindOfClass:[NSNull class]]) {
+            notification[@"reasonSubject"] = reasonSubject;
+        }
+        notification[@"record"] = record;
+        notification[@"isRead"] = @(isRead);
+        notification[@"indexedAt"] = indexedAt;
+        notification[@"labels"] = @[];
+
         [notifications addObject:notification];
     }
 
@@ -198,19 +241,21 @@
 }
 
 - (BOOL)createNotificationForActor:(NSString *)actorDID
+                          authorDID:(NSString *)authorDID
                              reason:(NSString *)reason
                       reasonSubject:(nullable NSString *)reasonSubject
                          subjectURI:(nullable NSString *)subjectURI
                          subjectCID:(nullable NSString *)subjectCID
                               error:(NSError **)error {
-    if (!actorDID || !reason) {
+    if (!actorDID || !reason || !authorDID) {
         return NO;
     }
 
-    NSString *sql = @"INSERT INTO notifications (did, reason, reason_subject, subject_uri, subject_cid) VALUES (?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO notifications (did, author_did, reason, reason_subject, subject_uri, subject_cid) VALUES (?, ?, ?, ?, ?, ?)";
     return [self.database executeParameterizedUpdate:sql
                                               params:@[
                                                   actorDID,
+                                                  authorDID,
                                                   reason,
                                                   reasonSubject ?: [NSNull null],
                                                   subjectURI ?: [NSNull null],
