@@ -2,6 +2,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
+#import "Network/XrpcProxyHandler.h"
 #import "Debug/PDSLogger.h"
 
 @interface XrpcDispatcher ()
@@ -106,6 +107,16 @@
     }
 
     if (!handler) {
+        // Fallback to proxying for app.bsky.* methods if an upstream AppView is configured
+        if (self.proxyURL && [methodId hasPrefix:@"app.bsky."]) {
+            PDS_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId, self.proxyURL);
+            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.proxyURL
+                                                                     upstreamDID:self.upstreamDID
+                                                                          minter:self.jwtMinter];
+            [proxy handleRequest:request response:response];
+            return;
+        }
+
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
             @"error": @"MethodNotFound",

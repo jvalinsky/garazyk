@@ -140,6 +140,10 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
     _emailSmtpPassword = nil;
     _emailSmtpUseTLS = YES;
 
+    _appViewURL = nil;
+    _appViewDID = nil;
+    _localAppViewEnabled = YES;
+
     _resendAPIKeySource = @"env";
     _resendAPIKeyEnvVar = @"RESEND_API_KEY";
     _resendKeychainService = @"com.atproto.pds";
@@ -711,6 +715,37 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
       else
         _logFormat = PDSLogFormatText;
     }
+  }
+
+  NSDictionary *appview = config[@"appview"];
+  if (appview) {
+    _appViewURL = [self resolveEnvOverrideForKey:@"PDS_APPVIEW_URL"
+                                         default:appview[@"url"]];
+    _appViewDID = [self resolveEnvOverrideForKey:@"PDS_APPVIEW_DID"
+                                         default:appview[@"did"]];
+    if (appview[@"local_enabled"] != nil) {
+      _localAppViewEnabled =
+          [self boolFromEnv:@"PDS_LOCAL_APPVIEW"
+                    default:[appview[@"local_enabled"] boolValue]];
+    }
+  }
+
+  // Environment variables override everything for AppView as well
+  NSString *envAppViewURL =
+      [self resolveEnvOverrideForKey:@"PDS_APPVIEW_URL" default:nil];
+  if (envAppViewURL.length > 0) {
+    _appViewURL = envAppViewURL;
+  }
+
+  NSString *envAppViewDID =
+      [self resolveEnvOverrideForKey:@"PDS_APPVIEW_DID" default:nil];
+  if (envAppViewDID.length > 0) {
+    _appViewDID = envAppViewDID;
+  }
+
+  if ([self envVarExists:@"PDS_LOCAL_APPVIEW"]) {
+    _localAppViewEnabled =
+        [self boolFromEnv:@"PDS_LOCAL_APPVIEW" default:_localAppViewEnabled];
   }
 }
 

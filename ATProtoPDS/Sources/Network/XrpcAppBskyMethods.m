@@ -14,6 +14,7 @@
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "AppView/RecordLifecycleHandler.h"
+#import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
 
 #pragma mark - Helper Functions
@@ -39,8 +40,15 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController {
+                      jwtMinter:(JWTMinter *)jwtMinter
+                adminController:(id<PDSAdminController>)adminController {
+    
+    // Check if local AppView is enabled. If not, we skip registration to allow
+    // the XrpcDispatcher to handle these methods via proxying.
+    if (![PDSConfiguration sharedConfiguration].localAppViewEnabled) {
+        PDS_LOG_INFO(@"Local AppView disabled; skipping registration of app.bsky.* handlers.");
+        return;
+    }
     
     // Initialize AppView database and services
     NSError *appViewDbError = nil;
