@@ -284,9 +284,8 @@ NS_ASSUME_NONNULL_END
     headers[@"X-Content-Type-Options"] = self.xContentTypeOptions;
     headers[@"X-Frame-Options"] = self.xFrameOptions;
     headers[@"Content-Security-Policy"] = self.contentSecurityPolicy;
-    headers[@"Access-Control-Allow-Origin"] = @"*";
-    headers[@"Access-Control-Allow-Methods"] = @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
-    headers[@"Access-Control-Allow-Headers"] = @"DPoP, Authorization, Content-Type, *";
+    // CORS headers (Access-Control-Allow-Origin, Methods, Headers) are set
+    // explicitly by each route handler to avoid duplicate header values.
 }
 
 @end
