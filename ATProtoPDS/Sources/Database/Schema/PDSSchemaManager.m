@@ -118,6 +118,16 @@
            @")";
 }
 
+- (NSString *)serviceActorMutesTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS actor_mutes ("
+           @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           @"    did TEXT NOT NULL,"
+           @"    muted_did TEXT NOT NULL,"
+           @"    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+           @"    UNIQUE(did, muted_did)"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -135,6 +145,8 @@
     [sql appendString:[self serviceEventsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceActorPreferencesTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceActorMutesTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
