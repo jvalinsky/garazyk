@@ -350,7 +350,12 @@ static BOOL isProxyHopByHopHeader(NSString *headerKey) {
     blocked = [NSSet setWithArray:@[
       @"connection", @"keep-alive", @"proxy-authenticate",
       @"proxy-authorization", @"te", @"trailer", @"transfer-encoding",
-      @"upgrade", @"host", @"content-length", @"atproto-proxy"
+      @"upgrade", @"host", @"content-length", @"atproto-proxy",
+      // Strip upstream CORS headers — our XrpcHandler sets these explicitly.
+      // Copying them from the AppView creates duplicate *, * values.
+      @"access-control-allow-origin", @"access-control-allow-methods",
+      @"access-control-allow-headers", @"access-control-max-age",
+      @"access-control-expose-headers"
     ]];
   });
   return [blocked containsObject:headerKey.lowercaseString];
