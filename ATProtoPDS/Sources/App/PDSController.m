@@ -434,6 +434,14 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
 
   // Initialize XRPC dispatcher
   _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+  
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  if (config.appViewURL.length > 0) {
+      _xrpcDispatcher.proxyURL = [NSURL URLWithString:config.appViewURL];
+      _xrpcDispatcher.upstreamDID = config.appViewDID;
+      _xrpcDispatcher.jwtMinter = _jwtMinter;
+  }
+
   if (!_subscribeReposHandler) {
     _subscribeReposHandler = [[SubscribeReposHandler alloc]
         initWithServiceDatabases:_serviceDatabases];
