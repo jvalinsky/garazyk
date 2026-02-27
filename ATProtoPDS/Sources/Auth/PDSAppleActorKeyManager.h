@@ -1,9 +1,14 @@
-//
-//  PDSAppleActorKeyManager.h
-//  ATProtoPDS
-//
-//  Created by Antigravity on 2026-02-19.
-//
+/*!
+ @file PDSAppleActorKeyManager.h
+
+ @abstract Apple Security.framework implementation of actor key management.
+
+ @discussion
+    Manages per-user secp256k1 signing keys using the Apple Keychain for
+    secure storage. Falls back to in-memory storage if Keychain access fails.
+
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
 
 #import <Foundation/Foundation.h>
 #import "PDSActorKeyManagerProtocol.h"
@@ -12,8 +17,21 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class PDSAppleActorKeyManager
- @abstract Apple Security.framework implementation of actor key management for per-user signing keys.
- @discussion Manages per-user signing keys stored in the Keychain (or memory fallback).
+
+ @abstract Apple Security.framework implementation of actor key management.
+
+ @discussion
+    Manages per-user signing keys stored in the Keychain. Keys are stored
+    with the following attributes:
+    - kSecClass: kSecClassKey
+    - kSecAttrKeyType: kSecAttrKeyTypeECSECPrimeRandom
+    - kSecAttrKeyClass: kSecAttrKeyClassPrivate
+    - kSecAttrApplicationTag: DID-specific tag
+
+    If Keychain storage fails, keys are held in memory only (non-persistent).
+
+    Thread Safety: This class is thread-safe. Keychain operations are
+    serialized internally.
  */
 @interface PDSAppleActorKeyManager : NSObject <PDSActorKeyManager>
 
@@ -21,8 +39,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, readonly) NSString *did;
 
 /*!
- Initialize with a DID.
- @param did The DID to manage keys for.
+ @method initWithDid:
+
+ @abstract Initialize with a DID.
+
+ @param did The DID to manage keys for. Used as the Keychain tag.
+
+ @return A new PDSAppleActorKeyManager instance.
  */
 - (instancetype)initWithDid:(NSString *)did;
 

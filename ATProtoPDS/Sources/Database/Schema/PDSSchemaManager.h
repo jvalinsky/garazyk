@@ -116,6 +116,22 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)serviceRepoSequenceTableSchema;
 
 /*!
+ @method serviceEventsTableSchema
+
+ @abstract Schema for global firehose events table (seq, type, data).
+
+ @return CREATE TABLE SQL for events.
+ */
+- (NSString *)serviceEventsTableSchema;
+
+/*!
+ @method serviceActorPreferencesTableSchema
+ @abstract Returns the CREATE TABLE SQL for actor preferences.
+ @return CREATE TABLE SQL for actor preferences.
+ */
+- (NSString *)serviceActorPreferencesTableSchema;
+
+/*!
  @method serviceSchemaSQL
 
  @abstract Complete SQL for all service database tables.

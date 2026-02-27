@@ -517,6 +517,37 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }];
   }];
 
+  // com.atproto.sync.getBlocks
+  [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request,
+                                                HttpResponse *response) {
+    NSString *did = [request queryParamForKey:@"did"];
+    NSArray<NSString *> *cids = [request queryParamsForKey:@"cids"];
+    if (did.length == 0 || cids.count == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing did or cids parameter"
+      }];
+      return;
+    }
+
+    NSError *error = nil;
+    NSData *blocksData =
+        [repositoryService getBlocksForDid:did cids:cids error:&error];
+    if (error || !blocksData) {
+      response.statusCode = 404;
+      [response setJsonBody:@{
+        @"error" : @"BlocksNotFound",
+        @"message" : error.localizedDescription ?: @"Blocks not found"
+      }];
+      return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    response.contentType = @"application/vnd.ipld.car";
+    [response setBodyData:blocksData];
+  }];
+
   // com.atproto.sync.getHostStatus
   [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request,
                                                     HttpResponse *response) {

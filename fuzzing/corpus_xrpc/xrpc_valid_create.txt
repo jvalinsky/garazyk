@@ -1,5 +1,0 @@
-POST /xrpc/com.atproto.repo.createRecord HTTP/1.1
-Host: test
-Content-Type: application/json
-
-{"repo": "did:plc:test", "collection": "app.bsky.feed.post", "record": {"$type": "app.bsky.feed.post", "text": "test"}}

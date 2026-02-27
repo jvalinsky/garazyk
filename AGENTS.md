@@ -18,16 +18,14 @@
 - **Repo Sync**: Implemented `subscribeRepos` commit broadcasting with operation extraction in `SubscribeReposHandler.m`.
 - **WebSocket**: Full WebSocket server implementation in `WebSocketServer.m` supporting multiple connections and event broadcasting.
 
-### Phase 4: macOS Build & Test - COMPLETED
-- **macOS Build**: All targets build successfully with xcodebuild
-  - ATProtoPDS-CLI: Builds without errors
-  - AllTests: Builds without errors
-  - Fuzzers: Available
-- **Test Suite**: `./build/tests/AllTests` passing with 0 failures (suite count varies by build/config)
+### Phase 4: macOS Build & Test - COMPLETED (REPAIRED Feb 2026)
+- **macOS Build**: All targets build successfully with CMake (out-of-source) and xcodebuild.
+- **Build System Repair (Feb 2026)**: Fixed root directory pollution and resolved a circular proxy invocation issue with the `swiftly` compiler wrapper on macOS by implementing robust compiler discovery using `xcrun` in `CMakeLists.txt`.
+- **Test Suite**: `./build/tests/AllTests` passing with 0 failures.
 - **Bug Fixes**:
   - Fixed HandleResolver.skipSSRFCheck property accessibility (ATProtoPDS/Sources/Identity/HandleResolver.h:23)
   - Fixed CBOR boolean encoding bug where all NSNumbers were treated as booleans (ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m:47-54)
-- **CLI Verification**: Application runs successfully with all commands functional
+- **CLI Verification**: Application runs successfully with all commands functional.
 
 ### Phase 5: Linux Support & Reliability Improvements - COMPLETED
 - **Linux Porting**: `PDSNetworkTransportLinux` implements non-blocking connect + read/write and uses `getaddrinfo()` for hostname + IPv4/IPv6 resolution.
@@ -79,14 +77,23 @@
 
 ## Build & Test Instructions
 
-### Generating the Project
-The project uses **XcodeGen** to wrap a CMake-based build system. You must regenerate the project if `project.yml` or `CMakeLists.txt` changes.
+### Primary Build Workflow (Recommended)
+Always use out-of-source builds to keep the repository clean. See [BUILD.md](file:///Users/jack/Software/garazyk/BUILD.md) for detailed instructions.
+
+```bash
+mkdir -p build && cd build
+cmake ..
+make -j$(sysctl -n hw.ncpu)
+```
+
+### Xcode Project Generation
+The project use **XcodeGen** to wrap the CMake-based build system.
 
 ```bash
 xcodegen generate
 ```
 
-### Building Targets
+### Building Targets via xcodebuild
 
 **CLI Tool:**
 ```bash
@@ -100,15 +107,7 @@ xcodebuild -scheme AllTests build
 # Binary at: ./build/tests/AllTests
 ```
 
-**Fuzzers:**
-```bash
-xcodebuild -scheme Fuzzers build
-# Binaries at: ./build/fuzzing/
-```
-
 ### Running Tests
-
-**Unit Tests:**
 ```bash
 ./build/tests/AllTests
 # Expected output includes: 1017 tests, Failures: 0

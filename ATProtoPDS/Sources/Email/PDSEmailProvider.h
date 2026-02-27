@@ -2,34 +2,38 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/**
- * @protocol PDSEmailProvider
- * @abstract Defines the interface for a pluggable email delivery system.
- * @discussion Implementations can use SMTP, HTTP APIs (SendGrid/Mailgun), or mock for testing.
+/*!
+ @protocol PDSEmailProvider
+ @abstract Defines the interface for a pluggable email delivery system.
+ @discussion
+    Implementations can use SMTP, HTTP APIs (SendGrid/Mailgun), or mock for testing.
+    The provider abstracts email delivery to allow easy switching between backends.
  */
 @protocol PDSEmailProvider <NSObject>
 
-/**
- * Sends an email message.
- * @param to recipient email address.
- * @param subject email subject line.
- * @param body email body (text/plain).
- * @param error output error if sending fails.
- * @return YES if the message was successfully queued/sent, NO otherwise.
+/*!
+ @method sendEmailTo:subject:body:error:
+ @abstract Sends a plain text email message.
+ @param to Recipient email address.
+ @param subject Email subject line.
+ @param body Email body content (text/plain).
+ @param error Output error if sending fails.
+ @return YES if the message was successfully queued/sent, NO otherwise.
  */
 - (BOOL)sendEmailTo:(NSString *)to
             subject:(NSString *)subject
                body:(NSString *)body
               error:(NSError **)error;
 
-/**
- * Sends a HTML email message.
- * @param to recipient email address.
- * @param subject email subject line.
- * @param htmlBody email body in HTML format.
- * @param textBody fallback email body in plain text.
- * @param error output error if sending fails.
- * @return YES if the message was successfully queued/sent, NO otherwise.
+/*!
+ @method sendHtmlEmailTo:subject:htmlBody:textBody:error:
+ @abstract Sends an HTML email message with plain text fallback.
+ @param to Recipient email address.
+ @param subject Email subject line.
+ @param htmlBody Email body in HTML format.
+ @param textBody Fallback email body in plain text format.
+ @param error Output error if sending fails.
+ @return YES if the message was successfully queued/sent, NO otherwise.
  */
 - (BOOL)sendHtmlEmailTo:(NSString *)to
                 subject:(NSString *)subject

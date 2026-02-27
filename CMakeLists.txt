@@ -1,10 +1,23 @@
 cmake_minimum_required(VERSION 3.21)
 
 #=============================
-# Pre-project Compiler Setup (Linux)
+# Pre-project Compiler Setup
 #=============================
-# On Linux, set compilers BEFORE project() to use clang
-if(NOT APPLE AND UNIX)
+if(APPLE)
+    # On macOS, find absolute paths to Xcode compilers to avoid circular proxy invocation
+    # through wrappers like /usr/bin/cc or ~/.swiftly/bin/cc
+    execute_process(COMMAND xcrun -find clang OUTPUT_VARIABLE XCODE_CLANG OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND xcrun -find clang++ OUTPUT_VARIABLE XCODE_CLANGXX OUTPUT_STRIP_TRAILING_WHITESPACE)
+    
+    if(XCODE_CLANG)
+        set(CMAKE_C_COMPILER "${XCODE_CLANG}")
+        set(CMAKE_OBJC_COMPILER "${XCODE_CLANG}")
+    endif()
+    if(XCODE_CLANGXX)
+        set(CMAKE_CXX_COMPILER "${XCODE_CLANGXX}")
+    endif()
+elseif(UNIX)
+    # On Linux, set compilers BEFORE project() to use clang
     find_program(CLANG_COMPILER NAMES /bin/clang clang-14 clang)
     if(CLANG_COMPILER)
         set(CMAKE_C_COMPILER ${CLANG_COMPILER})

@@ -108,6 +108,16 @@
            @")";
 }
 
+- (NSString *)serviceActorPreferencesTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS actor_preferences ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    preferences BLOB NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    updated_at REAL NOT NULL,"
+           @"    FOREIGN KEY (did) REFERENCES accounts(did)"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -123,6 +133,8 @@
     [sql appendString:[self serviceJWTSigningKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceEventsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceActorPreferencesTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
