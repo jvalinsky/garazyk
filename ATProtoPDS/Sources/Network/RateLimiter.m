@@ -234,7 +234,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSString *upsertSQL = @"INSERT INTO rate_limits (identifier, type, request_count, window_start) "
                           @"VALUES (?, ?, ?, ?) "
                           @"ON CONFLICT(identifier, type) DO UPDATE SET "
-                          @"request_count = request_count + 1, window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
+                          @"request_count = CASE WHEN window_start > ? THEN request_count + 1 ELSE 1 END, "
+                          @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
     
     // We need a new statement variable since the previous one is autoreleased only at scope exit
     // However, declaring another PDS_SQLITE_AUTORELEASE_STMT in the same scope with same name is tricky.
@@ -252,7 +253,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     sqlite3_bind_int(upsertStmt, 3, 1);
     sqlite3_bind_double(upsertStmt, 4, now);
     sqlite3_bind_double(upsertStmt, 5, windowStart);
-    sqlite3_bind_double(upsertStmt, 6, now);
+    sqlite3_bind_double(upsertStmt, 6, windowStart);
+    sqlite3_bind_double(upsertStmt, 7, now);
     
     result = sqlite3_step(upsertStmt);
 
@@ -351,7 +353,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSString *upsertSQL = @"INSERT INTO blob_rate_limits (did, upload_count, window_start) "
                           @"VALUES (?, ?, ?) "
                           @"ON CONFLICT(did) DO UPDATE SET "
-                          @"upload_count = upload_count + 1, window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
+                          @"upload_count = CASE WHEN window_start > ? THEN upload_count + 1 ELSE 1 END, "
+                          @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
     
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *upsertStmt;
     result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
@@ -363,7 +366,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     sqlite3_bind_int(upsertStmt, 2, 1);
     sqlite3_bind_double(upsertStmt, 3, now);
     sqlite3_bind_double(upsertStmt, 4, windowStart);
-    sqlite3_bind_double(upsertStmt, 5, now);
+    sqlite3_bind_double(upsertStmt, 5, windowStart);
+    sqlite3_bind_double(upsertStmt, 6, now);
 
     result = sqlite3_step(upsertStmt);
 
