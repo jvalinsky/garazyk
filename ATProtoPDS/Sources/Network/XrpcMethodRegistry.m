@@ -777,10 +777,11 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
         NSString *explicitProxyTarget =
             trimmedNonEmptyString([request headerForKey:@"atproto-proxy"]);
         if (explicitProxyTarget.length > 0) {
-          // Core AT Protocol methods must always be handled locally.
-          // The client may send atproto-proxy for service routing, but
-          // methods like getSession, createSession, etc. belong to the PDS.
-          if (hasLocalHandler && [methodId hasPrefix:@"com.atproto."]) {
+          // If we have a local handler for this method, prefer it.
+          // The atproto-proxy header is for delegating to upstream services,
+          // but locally-registered methods (getSession, getPreferences, etc.)
+          // must always be handled by the PDS.
+          if (hasLocalHandler) {
             return NO;
           }
           return proxyXrpcRequest(request, response, methodId,
