@@ -1,9 +1,0 @@
-POST /xrpc/com.atproto.server.createSession HTTP/1.1
-Host: bsky.social
-Content-Type: application/json
-Accept: application/json
-
-{
-  "identifier": "user@example.com",
-  "password": "password123"
-}

@@ -4,8 +4,12 @@ build-*/
 build-linux/
 build-linux-ci/
 build_verify/
+build_local/
 DerivedData/
 node_modules/
+
+# Submodules
+secp256k1/
 
 # IDE
 .DS_Store

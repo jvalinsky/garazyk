@@ -1,7 +1,0 @@
-POST /xrpc/com.atproto.server.refreshSession HTTP/1.1
-Host: bsky.social
-Content-Type: application/json
-
-{
-  "refreshJwt": "eyJhbGciOiJhbGciOiJIUzI1NiJ9.refresh_token_here"
-}
