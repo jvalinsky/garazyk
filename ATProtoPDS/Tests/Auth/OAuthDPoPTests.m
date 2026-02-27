@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Auth/DPoPUtil.h"
+#import "AuthCrypto/AuthCryptoDPoP.h"
 
 
 @interface OAuthDPoPTests : XCTestCase {
@@ -76,7 +77,7 @@
                            error:&error];
     XCTAssertFalse(valid, @"Mismatching method should fail");
     XCTAssertNotNil(error);
-    XCTAssertEqualObjects(error.domain, @"com.atproto.pds.dpop");
+    XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);
 }
 
 - (void)testDPoPHtuBinding {
@@ -142,7 +143,7 @@
     BOOL valid = [DPoPUtil verifyDPoP:@"not-a-jwt" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, -2);
+    XCTAssertEqual(error.code, -1);
     
     valid = [DPoPUtil verifyDPoP:@"a.b" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);
