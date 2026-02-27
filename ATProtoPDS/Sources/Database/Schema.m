@@ -17,6 +17,10 @@ NSString * const kPDSLabelTableName = @"labels";
 NSString * const kPDSReservedHandleTableName = @"reserved_handles";
 NSString * const kPDSPasskeysTableName = @"passkeys";
 NSString * const kPDSOAuthClientsTableName = @"oauth_clients";
+NSString * const kPDSOAuthAuthorizationCodesTableName = @"oauth_authorization_codes";
+NSString * const kPDSOAuthRefreshTokensTableName = @"oauth_refresh_tokens";
+NSString * const kPDSOAuthPARTableName = @"oauth_par";
+NSString * const kPDSOAuthGrantsTableName = @"oauth_grants";
 NSString * const kPDSActorPreferencesTableName = @"actor_preferences";
 NSString * const kPDSActorMutesTableName = @"actor_mutes";
 
@@ -233,6 +237,53 @@ NSString * const kPDSOAuthClientsTableCreateSQL =
     @"grant_types TEXT,"
     @"scope TEXT,"
     @"created_at TEXT NOT NULL"
+    @")";
+
+NSString * const kPDSOAuthAuthorizationCodesTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS oauth_authorization_codes ("
+    @"code TEXT PRIMARY KEY,"
+    @"client_id TEXT NOT NULL,"
+    @"redirect_uri TEXT NOT NULL,"
+    @"scope TEXT,"
+    @"state TEXT,"
+    @"code_challenge TEXT,"
+    @"code_challenge_method TEXT,"
+    @"nonce TEXT,"
+    @"dpop_jwk TEXT,"
+    @"login_hint TEXT,"
+    @"login_hint_did TEXT,"
+    @"created_at REAL NOT NULL,"
+    @"expires_at REAL NOT NULL"
+    @")";
+
+NSString * const kPDSOAuthRefreshTokensTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS oauth_refresh_tokens ("
+    @"token_id TEXT PRIMARY KEY,"
+    @"client_id TEXT NOT NULL,"
+    @"did TEXT NOT NULL,"
+    @"scope TEXT,"
+    @"dpop_jwk TEXT,"
+    @"created_at REAL NOT NULL,"
+    @"expires_at REAL NOT NULL,"
+    @"revoked_at REAL"
+    @")";
+
+NSString * const kPDSOAuthPARTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS oauth_par ("
+    @"request_uri TEXT PRIMARY KEY,"
+    @"request_data TEXT NOT NULL,"
+    @"created_at REAL NOT NULL,"
+    @"expires_at REAL NOT NULL"
+    @")";
+
+NSString * const kPDSOAuthGrantsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS oauth_grants ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"did TEXT NOT NULL,"
+    @"client_id TEXT NOT NULL,"
+    @"scope TEXT NOT NULL,"
+    @"created_at REAL NOT NULL,"
+    @"UNIQUE(did, client_id, scope)"
     @")";
 
 NSString * const kPDSJWTSigningKeysTableCreateSQL =
