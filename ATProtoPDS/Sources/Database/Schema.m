@@ -18,6 +18,7 @@ NSString * const kPDSReservedHandleTableName = @"reserved_handles";
 NSString * const kPDSPasskeysTableName = @"passkeys";
 NSString * const kPDSOAuthClientsTableName = @"oauth_clients";
 NSString * const kPDSActorPreferencesTableName = @"actor_preferences";
+NSString * const kPDSActorMutesTableName = @"actor_mutes";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -252,4 +253,13 @@ NSString * const kPDSActorPreferencesTableCreateSQL =
     @"created_at TEXT NOT NULL,"
     @"updated_at TEXT NOT NULL,"
     @"FOREIGN KEY (did) REFERENCES accounts(did)"
+    @")";
+
+NSString * const kPDSActorMutesTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS actor_mutes ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"did TEXT NOT NULL,"
+    @"muted_did TEXT NOT NULL,"
+    @"created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+    @"UNIQUE(did, muted_did)"
     @")";

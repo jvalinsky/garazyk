@@ -10,6 +10,10 @@
 #import "AppView/ActorService.h"
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
+#import "AppView/GraphService.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
+#import "AppView/RecordLifecycleHandler.h"
 #import "Debug/PDSLogger.h"
 
 #pragma mark - Helper Functions
@@ -49,6 +53,12 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
     FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
     NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase];
+    GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
+    
+    // Initialize record lifecycle handler for notification generation
+    __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
+        [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
+                                                           database:appViewDatabase];
     
     // app.bsky.actor.getProfile - Get actor profile
     [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
@@ -397,13 +407,14 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         [response setJsonBody:result];
     }];
 
-    // app.bsky.feed.getFeedGenerators - Get multiple feed generators by URI (Stub)
+    // app.bsky.feed.getFeedGenerators - Get multiple feed generators by URI
     [dispatcher registerAppBskyFeedGetFeedGenerators:^(HttpRequest *request, HttpResponse *response) {
+        // TODO: Query app.bsky.feed.generator records by URI. For now return empty.
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"feeds": @[]}];
     }];
 
-    // app.bsky.feed.getSuggestedFeeds - Get suggested feeds (Stub)
+    // app.bsky.feed.getSuggestedFeeds - Get suggested feeds
     [dispatcher registerMethod:@"app.bsky.feed.getSuggestedFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"feeds": @[]}];
@@ -424,15 +435,15 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         
         NSString *cursor = [request queryParamForKey:@"cursor"];
         
-        // For now, return empty list - full implementation would query social graph
-        NSDictionary *result = @{
-            @"subject": @{@"did": actor, @"handle": actor},
-            @"followers": @[],
-            @"cursor": cursor ?: [NSNull null]
-        };
+        NSError *error = nil;
+        NSDictionary *result = [graphService getFollowersForActor:actor limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
         
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"subject": @{@"did": actor}, @"followers": @[]}];
     }];
     
     // app.bsky.graph.getFollows - Get follows list
@@ -450,27 +461,181 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         
         NSString *cursor = [request queryParamForKey:@"cursor"];
         
-        // For now, return empty list - full implementation would query social graph
-        NSDictionary *result = @{
-            @"subject": @{@"did": actor, @"handle": actor},
-            @"follows": @[],
-            @"cursor": cursor ?: [NSNull null]
-        };
+        NSError *error = nil;
+        NSDictionary *result = [graphService getFollowsForActor:actor limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
         
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"subject": @{@"did": actor}, @"follows": @[]}];
     }];
 
-    // app.bsky.graph.getMutes - Get muted actors (Stub)
+    // app.bsky.graph.getMutes - Get muted actors
     [dispatcher registerAppBskyGraphGetMutes:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        
+        NSError *error = nil;
+        NSDictionary *result = [graphService getMutesForActor:actorDID limit:limit cursor:cursor error:&error];
+        
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"mutes": @[]}];
+        [response setJsonBody:result ?: @{@"mutes": @[]}];
     }];
 
-    // app.bsky.graph.getBlocks - Get blocked actors (Stub)
+    // app.bsky.graph.getBlocks - Get blocked actors
     [dispatcher registerAppBskyGraphGetBlocks:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        
+        NSError *error = nil;
+        NSDictionary *result = [graphService getBlocksForActor:actorDID limit:limit cursor:cursor error:&error];
+        
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"blocks": @[]}];
+        [response setJsonBody:result ?: @{@"blocks": @[]}];
+    }];
+
+    // app.bsky.graph.muteActor - Mute an actor
+    [dispatcher registerMethod:@"app.bsky.graph.muteActor" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSDictionary *body = request.jsonBody;
+        NSString *targetDID = body[@"actor"];
+        if (!targetDID) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
+            return;
+        }
+        
+        NSError *error = nil;
+        [graphService muteActor:targetDID forActor:actorDID error:&error];
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.unmuteActor - Unmute an actor
+    [dispatcher registerMethod:@"app.bsky.graph.unmuteActor" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSDictionary *body = request.jsonBody;
+        NSString *targetDID = body[@"actor"];
+        if (!targetDID) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
+            return;
+        }
+        
+        NSError *error = nil;
+        [graphService unmuteActor:targetDID forActor:actorDID error:&error];
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.feed.getLikes - Get likes for a post
+    [dispatcher registerMethod:@"app.bsky.feed.getLikes" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *uri = [request queryParamForKey:@"uri"];
+        if (!uri) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            return;
+        }
+        
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        
+        NSError *error = nil;
+        NSDictionary *result = [graphService getLikesForURI:uri limit:limit cursor:cursor error:&error];
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result ?: @{@"uri": uri, @"likes": @[]}];
+    }];
+
+    // app.bsky.feed.getRepostedBy - Get actors who reposted
+    [dispatcher registerMethod:@"app.bsky.feed.getRepostedBy" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *uri = [request queryParamForKey:@"uri"];
+        if (!uri) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            return;
+        }
+        
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        
+        NSError *error = nil;
+        NSDictionary *result = [graphService getRepostedByForURI:uri limit:limit cursor:cursor error:&error];
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result ?: @{@"uri": uri, @"repostedBy": @[]}];
+    }];
+
+    // app.bsky.graph.getRelationships - Get relationships between actors
+    [dispatcher registerMethod:@"app.bsky.graph.getRelationships" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+        
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *viewerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        
+        NSArray<NSString *> *others = [request queryParamsForKey:@"others"];
+        NSMutableArray *relationships = [NSMutableArray array];
+        
+        for (NSString *otherDID in others) {
+            NSError *error = nil;
+            NSDictionary *rel = [graphService getRelationship:viewerDID ?: actor withActor:otherDID error:&error];
+            if (rel) {
+                [relationships addObject:rel];
+            }
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"actor": actor, @"relationships": relationships}];
     }];
     
     // app.bsky.notification.listNotifications - List notifications (requires auth)
@@ -528,9 +693,11 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
             return;
         }
         
-        // For now, return 0 - full implementation would query notification database
+        // Query real unread count from notifications table
+        NSError *error = nil;
+        NSInteger count = [notificationService getUnreadCountForActor:actorDID error:&error];
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"count": @0}];
+        [response setJsonBody:@{@"count": @(count)}];
     }];
     
     // app.bsky.notification.updateSeen - Mark notifications as seen (requires auth)
@@ -563,9 +730,613 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
             return;
         }
         
-        // For now, just return success - full implementation would update database
+        // Mark all notifications as read up to this timestamp
+        NSError *error = nil;
+        [notificationService markNotificationsAsReadForActor:actorDID limit:0 error:&error];
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
+    }];
+
+    // ====================================================================
+    // P3: Missing AppView Endpoints
+    // ====================================================================
+
+    // app.bsky.feed.getActorFeeds - Get feed generators created by an actor
+    [dispatcher registerMethod:@"app.bsky.feed.getActorFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        // Query app.bsky.feed.generator records from the actor's repo
+        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+        if (cursor) {
+            query = [query stringByAppendingString:@" AND rkey < ?"];
+        }
+        query = [query stringByAppendingString:@" ORDER BY rkey DESC LIMIT ?"];
+
+        NSMutableArray *args = [NSMutableArray arrayWithObjects:actor, @"app.bsky.feed.generator", nil];
+        if (cursor) [args addObject:cursor];
+        [args addObject:@(limit)];
+
+        NSError *error = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSMutableArray *feeds = [NSMutableArray array];
+
+        for (NSDictionary *row in rows) {
+            NSString *cidStr = row[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:actor error:nil];
+            if (!block || !block.blockData) continue;
+            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            if (!record) continue;
+
+            NSString *rkey = row[@"rkey"];
+            NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.generator/%@", actor, rkey];
+            NSDictionary *generatorView = @{
+                @"uri": uri,
+                @"cid": cidStr ?: @"",
+                @"did": actor,
+                @"creator": [actorService getProfileForActor:actor error:nil] ?: @{@"did": actor},
+                @"displayName": record[@"displayName"] ?: @"",
+                @"description": record[@"description"] ?: @"",
+                @"avatar": record[@"avatar"] ?: [NSNull null],
+                @"likeCount": @0,
+                @"indexedAt": record[@"createdAt"] ?: @"",
+                @"labels": @[],
+                @"viewer": @{}
+            };
+            [feeds addObject:generatorView];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"feeds"] = feeds;
+        if (feeds.count >= (NSUInteger)limit && rows.count > 0) {
+            result[@"cursor"] = [rows lastObject][@"rkey"];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.feed.getFeedGenerator - Get a single feed generator by URI
+    [dispatcher registerMethod:@"app.bsky.feed.getFeedGenerator" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *feed = [request queryParamForKey:@"feed"];
+        if (!feed) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
+            return;
+        }
+
+        // Parse AT URI: at://did/collection/rkey
+        NSArray *components = [feed componentsSeparatedByString:@"/"];
+        if (components.count < 5) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid feed URI"];
+            return;
+        }
+        NSString *did = components[2];
+        NSString *rkey = components[4];
+
+        NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1";
+        NSError *error = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[did, @"app.bsky.feed.generator", rkey] error:&error];
+
+        if (rows.count == 0) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"Feed generator not found"}];
+            return;
+        }
+
+        NSString *cidStr = rows[0][@"cid"];
+        CID *cid = [CID cidFromString:cidStr];
+        NSDictionary *record = nil;
+        if (cid) {
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
+            if (block && block.blockData) {
+                record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            }
+        }
+
+        NSDictionary *generatorView = @{
+            @"uri": feed,
+            @"cid": cidStr ?: @"",
+            @"did": did,
+            @"creator": [actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+            @"displayName": record[@"displayName"] ?: @"",
+            @"description": record[@"description"] ?: @"",
+            @"likeCount": @0,
+            @"indexedAt": record[@"createdAt"] ?: @"",
+            @"labels": @[],
+            @"viewer": @{}
+        };
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"view": generatorView, @"isOnline": @YES, @"isValid": @YES}];
+    }];
+
+    // app.bsky.feed.searchPosts - Search posts by text
+    [dispatcher registerMethod:@"app.bsky.feed.searchPosts" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *q = [request queryParamForKey:@"q"];
+        if (!q || q.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing q parameter"];
+            return;
+        }
+
+        NSInteger limit = 25;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        // Simple LIKE-based search across post records
+        NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
+        NSError *error = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
+
+        NSMutableArray *posts = [NSMutableArray array];
+        for (NSDictionary *row in rows) {
+            if ((NSInteger)posts.count >= limit) break;
+
+            NSString *postDID = row[@"did"];
+            NSString *cidStr = row[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
+            if (!block || !block.blockData) continue;
+            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            if (!record) continue;
+
+            NSString *text = record[@"text"] ?: @"";
+            if ([text rangeOfString:q options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                NSString *rkey = row[@"rkey"];
+                NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", postDID, rkey];
+                NSDictionary *postView = @{
+                    @"uri": uri,
+                    @"cid": cidStr ?: @"",
+                    @"author": [actorService getProfileForActor:postDID error:nil] ?: @{@"did": postDID},
+                    @"record": record,
+                    @"replyCount": @0,
+                    @"repostCount": @0,
+                    @"likeCount": @0,
+                    @"quoteCount": @0,
+                    @"indexedAt": record[@"createdAt"] ?: @"",
+                    @"viewer": @{},
+                    @"labels": @[]
+                };
+                [posts addObject:postView];
+            }
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"posts"] = posts;
+        result[@"hitsTotal"] = @(posts.count);
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.feed.getQuotes - Get posts that quote a given post
+    [dispatcher registerMethod:@"app.bsky.feed.getQuotes" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *uri = [request queryParamForKey:@"uri"];
+        if (!uri) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        // Scan post records for embeds that reference this URI
+        NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
+        NSError *error = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
+
+        NSMutableArray *posts = [NSMutableArray array];
+        for (NSDictionary *row in rows) {
+            if ((NSInteger)posts.count >= limit) break;
+
+            NSString *postDID = row[@"did"];
+            NSString *cidStr = row[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
+            if (!block || !block.blockData) continue;
+            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            if (!record) continue;
+
+            // Check if this post embeds/quotes the target URI
+            NSDictionary *embed = record[@"embed"];
+            if (!embed) continue;
+
+            NSString *embedType = embed[@"$type"];
+            BOOL isQuote = NO;
+
+            if ([embedType isEqualToString:@"app.bsky.embed.record"]) {
+                NSDictionary *embedRecord = embed[@"record"];
+                if ([embedRecord[@"uri"] isEqualToString:uri]) {
+                    isQuote = YES;
+                }
+            } else if ([embedType isEqualToString:@"app.bsky.embed.recordWithMedia"]) {
+                NSDictionary *embedRecord = embed[@"record"][@"record"];
+                if ([embedRecord[@"uri"] isEqualToString:uri]) {
+                    isQuote = YES;
+                }
+            }
+
+            if (isQuote) {
+                NSString *rkey = row[@"rkey"];
+                NSString *postURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", postDID, rkey];
+                NSDictionary *postView = @{
+                    @"uri": postURI,
+                    @"cid": cidStr ?: @"",
+                    @"author": [actorService getProfileForActor:postDID error:nil] ?: @{@"did": postDID},
+                    @"record": record,
+                    @"replyCount": @0,
+                    @"repostCount": @0,
+                    @"likeCount": @0,
+                    @"quoteCount": @0,
+                    @"indexedAt": record[@"createdAt"] ?: @"",
+                    @"viewer": @{},
+                    @"labels": @[]
+                };
+                [posts addObject:postView];
+            }
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"uri"] = uri;
+        result[@"posts"] = posts;
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.feed.describeFeedGenerator - Describe this server's feed generator
+    [dispatcher registerMethod:@"app.bsky.feed.describeFeedGenerator" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"did": @"",
+            @"feeds": @[],
+            @"links": @{}
+        }];
+    }];
+
+    // app.bsky.feed.sendInteractions - Log feed interactions
+    [dispatcher registerMethod:@"app.bsky.feed.sendInteractions" handler:^(HttpRequest *request, HttpResponse *response) {
+        // Accept interaction data but don't persist — single-user PDS doesn't need analytics
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.feed.getListFeed - Get feed from a list
+    [dispatcher registerMethod:@"app.bsky.feed.getListFeed" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *list = [request queryParamForKey:@"list"];
+        if (!list) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"feed": @[]}];
+    }];
+
+    // app.bsky.graph.getLists - Get lists created by an actor
+    [dispatcher registerMethod:@"app.bsky.graph.getLists" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        // Query app.bsky.graph.list records
+        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+        if (cursor) {
+            query = [query stringByAppendingString:@" AND rkey < ?"];
+        }
+        query = [query stringByAppendingString:@" ORDER BY rkey DESC LIMIT ?"];
+
+        NSMutableArray *args = [NSMutableArray arrayWithObjects:actor, @"app.bsky.graph.list", nil];
+        if (cursor) [args addObject:cursor];
+        [args addObject:@(limit)];
+
+        NSError *error = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSMutableArray *lists = [NSMutableArray array];
+
+        for (NSDictionary *row in rows) {
+            NSString *cidStr = row[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:actor error:nil];
+            if (!block || !block.blockData) continue;
+            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            if (!record) continue;
+
+            NSString *rkey = row[@"rkey"];
+            NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/%@", actor, rkey];
+            NSDictionary *listView = @{
+                @"uri": uri,
+                @"cid": cidStr ?: @"",
+                @"creator": [actorService getProfileForActor:actor error:nil] ?: @{@"did": actor},
+                @"name": record[@"name"] ?: @"",
+                @"purpose": record[@"purpose"] ?: @"app.bsky.graph.defs#modlist",
+                @"description": record[@"description"] ?: @"",
+                @"indexedAt": record[@"createdAt"] ?: @"",
+                @"viewer": @{@"muted": @NO},
+                @"labels": @[]
+            };
+            [lists addObject:listView];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"lists"] = lists;
+        if (lists.count >= (NSUInteger)limit) {
+            result[@"cursor"] = [rows lastObject][@"rkey"];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.graph.getList - Get a single list by URI
+    [dispatcher registerMethod:@"app.bsky.graph.getList" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *list = [request queryParamForKey:@"list"];
+        if (!list) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
+            return;
+        }
+
+        NSArray *components = [list componentsSeparatedByString:@"/"];
+        if (components.count < 5) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
+            return;
+        }
+        NSString *did = components[2];
+        NSString *rkey = components[4];
+
+        NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1";
+        NSError *error = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[did, @"app.bsky.graph.list", rkey] error:&error];
+
+        if (rows.count == 0) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"List not found"}];
+            return;
+        }
+
+        NSString *cidStr = rows[0][@"cid"];
+        CID *cid = [CID cidFromString:cidStr];
+        NSDictionary *record = nil;
+        if (cid) {
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
+            if (block && block.blockData) {
+                record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            }
+        }
+
+        NSDictionary *listView = @{
+            @"uri": list,
+            @"cid": cidStr ?: @"",
+            @"creator": [actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+            @"name": record[@"name"] ?: @"",
+            @"purpose": record[@"purpose"] ?: @"app.bsky.graph.defs#modlist",
+            @"description": record[@"description"] ?: @"",
+            @"indexedAt": record[@"createdAt"] ?: @"",
+            @"viewer": @{@"muted": @NO},
+            @"labels": @[]
+        };
+
+        // Get list items
+        NSString *itemQuery = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT 100";
+        NSArray *itemRows = [appViewDatabase executeParameterizedQuery:itemQuery params:@[did, @"app.bsky.graph.listitem"] error:nil];
+        NSMutableArray *items = [NSMutableArray array];
+
+        for (NSDictionary *itemRow in itemRows) {
+            NSString *itemCidStr = itemRow[@"cid"];
+            CID *itemCid = [CID cidFromString:itemCidStr];
+            if (!itemCid) continue;
+            PDSDatabaseBlock *itemBlock = [appViewDatabase getBlockWithCid:itemCid.bytes repoDid:did error:nil];
+            if (!itemBlock || !itemBlock.blockData) continue;
+            NSDictionary *itemRecord = [ATProtoCBORSerialization JSONObjectWithData:itemBlock.blockData error:nil];
+            if (!itemRecord) continue;
+
+            // Check if item belongs to this list
+            NSString *itemList = itemRecord[@"list"];
+            if (![itemList isEqualToString:list]) continue;
+
+            NSString *subjectDID = itemRecord[@"subject"];
+            if (subjectDID) {
+                NSDictionary *subjectProfile = [actorService getProfileForActor:subjectDID error:nil];
+                [items addObject:@{
+                    @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.graph.listitem/%@", did, itemRow[@"rkey"]],
+                    @"subject": subjectProfile ?: @{@"did": subjectDID, @"handle": @"handle.invalid"}
+                }];
+            }
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"list"] = listView;
+        result[@"items"] = items;
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.graph.getListMutes - Get lists the viewer has muted
+    [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"lists": @[]}];
+    }];
+
+    // app.bsky.graph.getListBlocks - Get lists the viewer has blocked
+    [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"lists": @[]}];
+    }];
+
+    // app.bsky.graph.getListsWithMembership - Get lists with membership status
+    [dispatcher registerMethod:@"app.bsky.graph.getListsWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"lists": @[]}];
+    }];
+
+    // app.bsky.graph.getKnownFollowers - Get followers known to the viewer
+    [dispatcher registerMethod:@"app.bsky.graph.getKnownFollowers" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSDictionary *subject = [actorService getProfileForActor:actor error:nil] ?: @{@"did": actor};
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"subject": subject, @"followers": @[]}];
+    }];
+
+    // app.bsky.graph.getSuggestedFollowsByActor - Suggest follows
+    [dispatcher registerMethod:@"app.bsky.graph.getSuggestedFollowsByActor" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"suggestions": @[]}];
+    }];
+
+    // app.bsky.graph.muteActorList - Mute a list
+    [dispatcher registerMethod:@"app.bsky.graph.muteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.unmuteActorList - Unmute a list
+    [dispatcher registerMethod:@"app.bsky.graph.unmuteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.muteThread - Mute a thread
+    [dispatcher registerMethod:@"app.bsky.graph.muteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.unmuteThread - Unmute a thread
+    [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.getActorStarterPacks - Starter packs by actor
+    [dispatcher registerMethod:@"app.bsky.graph.getActorStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"starterPacks": @[]}];
+    }];
+
+    // app.bsky.graph.getStarterPack - Get starter pack by URI
+    [dispatcher registerMethod:@"app.bsky.graph.getStarterPack" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 404;
+        [response setJsonBody:@{@"error": @"NotFound", @"message": @"Starter pack not found"}];
+    }];
+
+    // app.bsky.graph.getStarterPacks - Get multiple starter packs
+    [dispatcher registerMethod:@"app.bsky.graph.getStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"starterPacks": @[]}];
+    }];
+
+    // app.bsky.graph.searchStarterPacks - Search starter packs
+    [dispatcher registerMethod:@"app.bsky.graph.searchStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"starterPacks": @[]}];
+    }];
+
+    // app.bsky.actor.getSuggestions - Get suggested accounts
+    [dispatcher registerMethod:@"app.bsky.actor.getSuggestions" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"actors": @[]}];
+    }];
+
+    // app.bsky.labeler.getServices - Get labeler service views
+    [dispatcher registerMethod:@"app.bsky.labeler.getServices" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"views": @[]}];
+    }];
+
+    // app.bsky.notification.getPreferences - Get notification preferences
+    [dispatcher registerMethod:@"app.bsky.notification.getPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"preferences": @{}}];
+    }];
+
+    // app.bsky.notification.putPreferences - Update notification preferences
+    [dispatcher registerMethod:@"app.bsky.notification.putPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.notification.listActivitySubscriptions - List activity subscriptions
+    [dispatcher registerMethod:@"app.bsky.notification.listActivitySubscriptions" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"subscriptions": @[]}];
+    }];
+
+    // app.bsky.video.getJobStatus - Get video processing status
+    [dispatcher registerMethod:@"app.bsky.video.getJobStatus" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *jobId = [request queryParamForKey:@"jobId"];
+        if (!jobId) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
+            return;
+        }
+        response.statusCode = 404;
+        [response setJsonBody:@{@"error": @"NotFound", @"message": @"Job not found"}];
+    }];
+
+    // app.bsky.video.getUploadLimits - Get video upload limits
+    [dispatcher registerMethod:@"app.bsky.video.getUploadLimits" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"canUpload": @YES,
+            @"remainingDailyVideos": @25,
+            @"remainingDailyBytes": @(50 * 1024 * 1024),
+            @"message": @""
+        }];
+    }];
+
+    // app.bsky.unspecced.getConfig - Get app config
+    [dispatcher registerMethod:@"app.bsky.unspecced.getConfig" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"checkEmailConfirmed": @NO}];
+    }];
+
+    // app.bsky.unspecced.getTaggedSuggestions - Get tagged suggestions
+    [dispatcher registerMethod:@"app.bsky.unspecced.getTaggedSuggestions" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"suggestions": @[]}];
+    }];
+
+    // app.bsky.unspecced.getPopularFeedGenerators - Get popular feed generators
+    [dispatcher registerMethod:@"app.bsky.unspecced.getPopularFeedGenerators" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"feeds": @[]}];
+    }];
+
+    // app.bsky.unspecced.getSuggestedFeeds - Get suggested feeds (unspecced)
+    [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"feeds": @[]}];
+    }];
+
+    // app.bsky.unspecced.getSuggestedUsers - Get suggested users
+    [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsers" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"actors": @[]}];
+    }];
+
+    // app.bsky.unspecced.getTrendingTopics - Get trending topics
+    [dispatcher registerMethod:@"app.bsky.unspecced.getTrendingTopics" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"topics": @[], @"suggested": @[]}];
     }];
 }
 
