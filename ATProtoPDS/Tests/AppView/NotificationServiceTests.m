@@ -214,9 +214,11 @@
     NSArray *notifications = [self.service getNotificationsForActor:@"did:plc:user11" limit:10 cursor:nil error:&error];
     
     XCTAssertEqual(notifications.count, 1);
-    NSDictionary *record = notifications.firstObject[@"record"];
-    XCTAssertNotNil(record[@"subject"]);
-    XCTAssertEqualObjects(record[@"subject"][@"uri"], @"at://did:plc:author/app.bsky.feed.post/abc123");
+    NSDictionary *notif = notifications.firstObject;
+    // In the new format, subject_uri is exposed as top-level "uri"
+    XCTAssertEqualObjects(notif[@"uri"], @"at://did:plc:author/app.bsky.feed.post/abc123");
+    XCTAssertNotNil(notif[@"reason"]);
+    XCTAssertEqualObjects(notif[@"reason"], @"reply");
 }
 
 - (void)insertNotification:(NSString *)did reason:(NSString *)reason subjectURI:(NSString *)subjectURI {
@@ -224,10 +226,10 @@
 }
 
 - (void)insertNotification:(NSString *)did reason:(NSString *)reason subjectURI:(NSString *)subjectURI isRead:(BOOL)isRead {
-    NSString *insert = @"INSERT INTO notifications (did, reason, reason_subject, subject_uri, is_read) VALUES (?, ?, ?, ?, ?)";
+    NSString *insert = @"INSERT INTO notifications (did, author_did, reason, reason_subject, subject_uri, is_read) VALUES (?, ?, ?, ?, ?, ?)";
     NSError *error = nil;
     [self.database executeParameterizedUpdate:insert
-                                       params:@[did, reason, [NSNull null], subjectURI, isRead ? @1 : @0]
+                                       params:@[did, @"did:plc:test-author", reason, [NSNull null], subjectURI, isRead ? @1 : @0]
                                          error:&error];
 }
 
