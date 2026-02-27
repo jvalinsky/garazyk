@@ -566,7 +566,11 @@ static NSString *configuredAppViewProxyTarget(PDSConfiguration *config) {
 static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                              NSString *methodId, NSString *proxyDescriptor,
                              PDSConfiguration *config,
-                             BOOL explicitProxyHeader) {
+                             BOOL explicitProxyHeader,
+                             JWTMinter *jwtMinter,
+                             id<PDSAdminController> adminController,
+                             PDSServiceDatabases *serviceDatabases,
+                             PDSDatabasePool *userDatabasePool) {
   NSError *targetError = nil;
   NSURL *baseURL =
       proxyBaseURLFromDescriptor(proxyDescriptor, config, &targetError);
@@ -628,12 +632,94 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                                 stringWithFormat:@"%ld", (long)(hopCount + 1)]
          forHTTPHeaderField:@"x-objpds-proxy-hop"];
 
-  NSError *proxyError = nil;
-  NSHTTPURLResponse *upstreamResponse = nil;
-  NSData *upstreamBody =
-      [NSURLConnection sendSynchronousRequest:upstreamRequest
-                            returningResponse:&upstreamResponse
-                                        error:&proxyError];
+  // Service auth: replace user's Bearer token with a service auth JWT
+  // so the upstream AppView trusts the request.
+  if (jwtMinter && serviceDatabases && userDatabasePool) {
+    NSString *authHeader =
+        trimmedNonEmptyString([request headerForKey:@"Authorization"]);
+    if ([authHeader.lowercaseString hasPrefix:@"bearer "]) {
+      NSString *did = [XrpcMethodRegistry
+          extractDIDFromAuthHeader:authHeader
+                         jwtMinter:jwtMinter
+                   adminController:adminController
+                           request:request];
+      if (did.length > 0) {
+        NSError *storeError = nil;
+        PDSActorStore *store =
+            [userDatabasePool storeForDid:did error:&storeError];
+        if (store) {
+          // Resolve the upstream DID for the audience claim
+          NSString *upstreamDID = nil;
+          if ([proxyDescriptor hasPrefix:@"did:"]) {
+            NSRange hashRange = [proxyDescriptor rangeOfString:@"#"];
+            upstreamDID = (hashRange.location != NSNotFound)
+                              ? [proxyDescriptor
+                                    substringToIndex:hashRange.location]
+                              : proxyDescriptor;
+          }
+          if (!upstreamDID) {
+            // Use the base URL host as a fallback audience
+            upstreamDID =
+                [NSString stringWithFormat:@"did:web:%@", baseURL.host];
+          }
+
+          long long nowSeconds =
+              (long long)[[NSDate date] timeIntervalSince1970];
+          NSDictionary *servicePayload = @{
+            @"iss" : did,
+            @"sub" : did,
+            @"aud" : upstreamDID,
+            @"lxm" : methodId ?: @"",
+            @"iat" : @(nowSeconds),
+            @"exp" : @(nowSeconds + 60),
+            @"jti" : [[NSUUID UUID] UUIDString]
+          };
+
+          NSError *mintError = nil;
+          NSString *serviceToken =
+              [jwtMinter signPayload:servicePayload
+                    actorKeyManager:store.keyManager
+                              error:&mintError];
+          if (serviceToken.length > 0) {
+            [upstreamRequest
+                setValue:[NSString stringWithFormat:@"Bearer %@",
+                                                    serviceToken]
+                forHTTPHeaderField:@"Authorization"];
+          }
+        }
+      }
+    }
+  }
+
+  // Use NSURLSession with redirect blocking to avoid "Invalid redirect" errors.
+  // Upstream redirects are passed through to the client instead of followed.
+  NSURLSessionConfiguration *sessionConfig =
+      [NSURLSessionConfiguration ephemeralSessionConfiguration];
+  sessionConfig.timeoutIntervalForRequest = 30.0;
+  NSURLSession *session = [NSURLSession
+      sessionWithConfiguration:sessionConfig
+                      delegate:nil
+                 delegateQueue:nil];
+
+  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+  __block NSHTTPURLResponse *upstreamResponse = nil;
+  __block NSData *upstreamBody = nil;
+  __block NSError *proxyError = nil;
+
+  NSURLSessionDataTask *task = [session
+      dataTaskWithRequest:upstreamRequest
+        completionHandler:^(NSData *data, NSURLResponse *resp, NSError *error) {
+          upstreamBody = data;
+          upstreamResponse = ([resp isKindOfClass:[NSHTTPURLResponse class]])
+                                 ? (NSHTTPURLResponse *)resp
+                                 : nil;
+          proxyError = error;
+          dispatch_semaphore_signal(sem);
+        }];
+  [task resume];
+  dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+  [session finishTasksAndInvalidate];
+
   if (!upstreamResponse) {
     response.statusCode = 502;
     [response setJsonBody:@{
@@ -680,15 +766,27 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
 }
 
 static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
-                                        PDSConfiguration *config) {
+                                        PDSConfiguration *config,
+                                        JWTMinter *jwtMinter,
+                                        id<PDSAdminController> adminController,
+                                        PDSServiceDatabases *serviceDatabases,
+                                        PDSDatabasePool *userDatabasePool) {
   dispatcher.requestInterceptor =
       ^BOOL(HttpRequest *request, HttpResponse *response, NSString *methodId,
             BOOL hasLocalHandler) {
         NSString *explicitProxyTarget =
             trimmedNonEmptyString([request headerForKey:@"atproto-proxy"]);
         if (explicitProxyTarget.length > 0) {
+          // Core AT Protocol methods must always be handled locally.
+          // The client may send atproto-proxy for service routing, but
+          // methods like getSession, createSession, etc. belong to the PDS.
+          if (hasLocalHandler && [methodId hasPrefix:@"com.atproto."]) {
+            return NO;
+          }
           return proxyXrpcRequest(request, response, methodId,
-                                  explicitProxyTarget, config, YES);
+                                  explicitProxyTarget, config, YES,
+                                  jwtMinter, adminController,
+                                  serviceDatabases, userDatabasePool);
         }
 
         if (hasLocalHandler || ![methodId hasPrefix:@"app.bsky."]) {
@@ -705,7 +803,8 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
         }
 
         return proxyXrpcRequest(request, response, methodId, fallbackTarget,
-                                config, NO);
+                                config, NO, jwtMinter, adminController,
+                                serviceDatabases, userDatabasePool);
       };
 }
 
@@ -6383,7 +6482,8 @@ static void registerMethodsWithDispatcherUsingServices(
     id<PDSEmailProvider> emailProvider) {
 
   // Install proxy interceptor for AppView delegation
-  installXrpcProxyInterceptor(dispatcher, config);
+  installXrpcProxyInterceptor(dispatcher, config, jwtMinter, adminController,
+                              serviceDatabases, userDatabasePool);
 
   // Register lexicon resolution methods
   registerServerDescribeAndResolveLexiconMethods(dispatcher, config);
