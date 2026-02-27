@@ -8,6 +8,7 @@
 #import "App/Services/PDSBlobService.h"
 #import "App/Services/PDSRepositoryService.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -903,7 +904,7 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
         NSString *swapCommit = body[@"swapCommit"];
 
-        NSLog(@"[DEBUG applyWrites] body=%@, writes=%@", body, writes);
+        PDS_LOG_INFO(@"applyWrites: body=%@, writes=%@", body, writes);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
