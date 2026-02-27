@@ -181,6 +181,15 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether SSL pinning is enabled. */
 @property (nonatomic, readonly) BOOL sslPinningEnabled;
 
+/*! URL of the remote AppView for proxying app.bsky.* requests. */
+@property (nonatomic, readonly, nullable) NSString *appViewURL;
+
+/*! DID of the remote AppView for service-to-service auth. */
+@property (nonatomic, readonly, nullable) NSString *appViewDID;
+
+/*! Whether the local AppView implementation is enabled. Defaults to YES. */
+@property (nonatomic, readonly) BOOL localAppViewEnabled;
+
 /*! Path to write log file, or nil to disable file logging. */
 @property (nonatomic, readonly, nullable) NSString *logFilePath;
 
