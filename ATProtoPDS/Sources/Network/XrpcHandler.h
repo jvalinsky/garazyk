@@ -68,6 +68,15 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Optional pre-dispatch interceptor for proxying/fallback behavior. */
 @property (nonatomic, copy, nullable) XrpcRequestInterceptor requestInterceptor;
 
+/*! Upstream AppView URL for proxying unregistered app.bsky.* methods. */
+@property (nonatomic, copy, nullable) NSURL *proxyURL;
+
+/*! Upstream AppView DID for service-to-service auth. */
+@property (nonatomic, copy, nullable) NSString *upstreamDID;
+
+/*! Minter for service-to-service auth tokens. */
+@property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
+
 /*!
  @method sharedDispatcher
  
