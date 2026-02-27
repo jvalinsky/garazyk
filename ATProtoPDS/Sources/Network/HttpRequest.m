@@ -439,25 +439,36 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
       [data subdataWithRange:NSMakeRange(bodyStart, data.length - bodyStart)];
 }
 
-- (NSDictionary<NSString *, NSString *> *)parseQueryParams:
-    (NSString *)queryString {
+- (NSDictionary<NSString *, id> *)parseQueryParams:(NSString *)queryString {
   if (queryString.length == 0) {
     return @{};
   }
 
-  NSMutableDictionary<NSString *, NSString *> *params =
-      [NSMutableDictionary dictionary];
+  NSMutableDictionary<NSString *, id> *params = [NSMutableDictionary dictionary];
   NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
 
   for (NSString *pair in pairs) {
     NSRange eqRange = [pair rangeOfString:@"="];
+    NSString *key;
+    NSString *value;
     if (eqRange.location != NSNotFound) {
-      NSString *key = [self urlDecode:[pair substringToIndex:eqRange.location]];
-      NSString *value =
-          [self urlDecode:[pair substringFromIndex:eqRange.location + 1]];
-      params[key] = value;
+      key = [self urlDecode:[pair substringToIndex:eqRange.location]];
+      value = [self urlDecode:[pair substringFromIndex:eqRange.location + 1]];
     } else {
-      params[[self urlDecode:pair]] = @"";
+      key = [self urlDecode:pair];
+      value = @"";
+    }
+
+    id existing = params[key];
+    if (existing) {
+      if ([existing isKindOfClass:[NSMutableArray class]]) {
+        [(NSMutableArray *)existing addObject:value];
+      } else {
+        NSMutableArray *array = [NSMutableArray arrayWithObjects:existing, value, nil];
+        params[key] = array;
+      }
+    } else {
+      params[key] = value;
     }
   }
 
@@ -476,7 +487,22 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
 }
 
 - (NSString *)queryParamForKey:(NSString *)key {
-  return self.queryParams[key];
+  id value = self.queryParams[key];
+  if ([value isKindOfClass:[NSArray class]]) {
+    return [(NSArray *)value firstObject];
+  }
+  return value;
+}
+
+- (nullable NSArray<NSString *> *)queryParamsForKey:(NSString *)key {
+  id value = self.queryParams[key];
+  if (!value) {
+    return nil;
+  }
+  if ([value isKindOfClass:[NSArray class]]) {
+    return value;
+  }
+  return @[value];
 }
 
 @end

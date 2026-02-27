@@ -1,4 +1,0 @@
-GET /xrpc/app.bsky.actor.getProfile?actor=did%3Aplc%3Atestuser123 HTTP/1.1
-Host: bsky.social
-Accept: application/json
-

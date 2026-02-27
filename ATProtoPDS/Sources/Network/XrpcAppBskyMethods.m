@@ -346,10 +346,8 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         [response setJsonBody:result];
     }];
     
-    // app.bsky.feed.getPosts - Get multiple posts by URI
+    // app.bsky.feed.getFeed - Get custom feed from generator
     [dispatcher registerAppBskyFeedGetFeed:^(HttpRequest *request, HttpResponse *response) {
-        // This is actually getFeed, not getPosts - getPosts would need different implementation
-        // For now, implement as custom feed generator
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed) {
             [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
@@ -372,6 +370,43 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
+    }];
+
+    // app.bsky.feed.getPosts - Get multiple posts by URI
+    [dispatcher registerAppBskyFeedGetPosts:^(HttpRequest *request, HttpResponse *response) {
+        id urisParam = request.queryParams[@"uris"];
+        NSArray<NSString *> *uris = nil;
+        
+        if ([urisParam isKindOfClass:[NSArray class]]) {
+            uris = urisParam;
+        } else if ([urisParam isKindOfClass:[NSString class]]) {
+            uris = @[urisParam];
+        } else {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uris parameter"];
+            return;
+        }
+        
+        NSError *error = nil;
+        NSDictionary *result = [feedService getPosts:uris error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.feed.getFeedGenerators - Get multiple feed generators by URI (Stub)
+    [dispatcher registerAppBskyFeedGetFeedGenerators:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"feeds": @[]}];
+    }];
+
+    // app.bsky.feed.getSuggestedFeeds - Get suggested feeds (Stub)
+    [dispatcher registerMethod:@"app.bsky.feed.getSuggestedFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"feeds": @[]}];
     }];
     
     // app.bsky.graph.getFollowers - Get followers list
@@ -424,6 +459,18 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
+    }];
+
+    // app.bsky.graph.getMutes - Get muted actors (Stub)
+    [dispatcher registerAppBskyGraphGetMutes:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"mutes": @[]}];
+    }];
+
+    // app.bsky.graph.getBlocks - Get blocked actors (Stub)
+    [dispatcher registerAppBskyGraphGetBlocks:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"blocks": @[]}];
     }];
     
     // app.bsky.notification.listNotifications - List notifications (requires auth)
