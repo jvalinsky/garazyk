@@ -34,6 +34,18 @@
 }
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    // Handle CORS preflight immediately — the /xrpc pathHandler prefix match
+    // catches OPTIONS before the route trie's explicit OPTIONS route, so we
+    // must handle it here to guarantee a 200 response for browsers.
+    if (request.method == HttpMethodOPTIONS) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"GET, POST, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
+        [response setHeader:@"Content-Type, Authorization, DPoP, *" forKey:@"Access-Control-Allow-Headers"];
+        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        response.statusCode = HttpStatusOK;
+        return;
+    }
+
     // Check Rate Limit
     RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
     if (!rateLimit.allowed) {
