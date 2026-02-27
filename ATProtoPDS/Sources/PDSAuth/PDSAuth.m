@@ -24,7 +24,7 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *inMemoryCodes;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *inMemoryRefreshTokens;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *inMemoryConsents;
-@property (nonatomic, strong) dispatch_queue_t queue;
+@property (nonatomic, assign) dispatch_queue_t queue;
 @end
 
 @implementation PDSAuthStorage
