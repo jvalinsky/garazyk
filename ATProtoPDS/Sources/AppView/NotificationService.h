@@ -52,6 +52,20 @@ NS_ASSUME_NONNULL_BEGIN
                                   limit:(NSInteger)limit
                                     error:(NSError **)error;
 
+/*! Create a notification for an actor. */
+- (BOOL)createNotificationForActor:(NSString *)actorDID
+                             reason:(NSString *)reason
+                      reasonSubject:(nullable NSString *)reasonSubject
+                         subjectURI:(nullable NSString *)subjectURI
+                         subjectCID:(nullable NSString *)subjectCID
+                              error:(NSError **)error;
+
+/*! Get unread notification count for actor. */
+- (NSInteger)getUnreadCountForActor:(NSString *)actorDID error:(NSError **)error;
+
+/*! Delete notifications matching a subject URI (used when a record is deleted). */
+- (BOOL)deleteNotificationsForSubjectURI:(NSString *)subjectURI error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

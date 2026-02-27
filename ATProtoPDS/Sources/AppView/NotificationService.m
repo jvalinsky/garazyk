@@ -197,4 +197,44 @@
     return YES;
 }
 
+- (BOOL)createNotificationForActor:(NSString *)actorDID
+                             reason:(NSString *)reason
+                      reasonSubject:(nullable NSString *)reasonSubject
+                         subjectURI:(nullable NSString *)subjectURI
+                         subjectCID:(nullable NSString *)subjectCID
+                              error:(NSError **)error {
+    if (!actorDID || !reason) {
+        return NO;
+    }
+
+    NSString *sql = @"INSERT INTO notifications (did, reason, reason_subject, subject_uri, subject_cid) VALUES (?, ?, ?, ?, ?)";
+    return [self.database executeParameterizedUpdate:sql
+                                              params:@[
+                                                  actorDID,
+                                                  reason,
+                                                  reasonSubject ?: [NSNull null],
+                                                  subjectURI ?: [NSNull null],
+                                                  subjectCID ?: [NSNull null]
+                                              ]
+                                               error:error];
+}
+
+- (NSInteger)getUnreadCountForActor:(NSString *)actorDID error:(NSError **)error {
+    if (!actorDID) return 0;
+
+    NSString *sql = @"SELECT COUNT(*) as count FROM notifications WHERE did = ? AND is_read = 0";
+    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[actorDID] error:error];
+    if (rows.count > 0) {
+        return [rows[0][@"count"] integerValue];
+    }
+    return 0;
+}
+
+- (BOOL)deleteNotificationsForSubjectURI:(NSString *)subjectURI error:(NSError **)error {
+    if (!subjectURI) return YES;
+
+    NSString *sql = @"DELETE FROM notifications WHERE subject_uri = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[subjectURI] error:error];
+}
+
 @end
