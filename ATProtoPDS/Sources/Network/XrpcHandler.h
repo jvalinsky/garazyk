@@ -425,6 +425,18 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for app.bsky.feed.getActorLikes. */
 - (void)registerAppBskyFeedGetActorLikes:(XrpcMethodHandler)handler;
 
+/*! Registers handler for app.bsky.feed.getPosts. */
+- (void)registerAppBskyFeedGetPosts:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.graph.getMutes. */
+- (void)registerAppBskyGraphGetMutes:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.graph.getBlocks. */
+- (void)registerAppBskyGraphGetBlocks:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.feed.getFeedGenerators. */
+- (void)registerAppBskyFeedGetFeedGenerators:(XrpcMethodHandler)handler;
+
 // MARK: - App Bsky Notification Methods
 
 /*! Registers handler for app.bsky.notification.registerPush. */
