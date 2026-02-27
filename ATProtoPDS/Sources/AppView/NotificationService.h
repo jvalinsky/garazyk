@@ -14,6 +14,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
+@class ActorService;
 
 /*!
  @class NotificationService
@@ -25,7 +26,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface NotificationService : NSObject
 
-/*! Initialize with database connection. */
+/*! Initialize with database connection and actor service for profile hydration. */
+- (instancetype)initWithDatabase:(PDSDatabase *)database
+                    actorService:(nullable ActorService *)actorService;
+
+/*! Convenience initializer (no profile hydration). */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
 /*! Database connection (exposed for testing). */
@@ -54,6 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Create a notification for an actor. */
 - (BOOL)createNotificationForActor:(NSString *)actorDID
+                          authorDID:(NSString *)authorDID
                              reason:(NSString *)reason
                       reasonSubject:(nullable NSString *)reasonSubject
                          subjectURI:(nullable NSString *)subjectURI
