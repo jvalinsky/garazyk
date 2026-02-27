@@ -1,6 +1,0 @@
-GET / HTTP/1.1
-Host: test
-Authorization: Bearer token
-Injected-Header: evil
-
-

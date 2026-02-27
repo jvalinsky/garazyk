@@ -1,1 +1,0 @@
-'; ATTACH DATABASE '/tmp/evil.db' AS evil;--

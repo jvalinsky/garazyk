@@ -17,6 +17,7 @@ NSString * const kPDSLabelTableName = @"labels";
 NSString * const kPDSReservedHandleTableName = @"reserved_handles";
 NSString * const kPDSPasskeysTableName = @"passkeys";
 NSString * const kPDSOAuthClientsTableName = @"oauth_clients";
+NSString * const kPDSActorPreferencesTableName = @"actor_preferences";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -242,4 +243,13 @@ NSString * const kPDSJWTSigningKeysTableCreateSQL =
     @"is_active INTEGER DEFAULT 1,"
     @"created_at TEXT NOT NULL,"
     @"last_used_at TEXT"
+    @")";
+
+NSString * const kPDSActorPreferencesTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS actor_preferences ("
+    @"did TEXT PRIMARY KEY,"
+    @"preferences BLOB NOT NULL,"
+    @"created_at TEXT NOT NULL,"
+    @"updated_at TEXT NOT NULL,"
+    @"FOREIGN KEY (did) REFERENCES accounts(did)"
     @")";

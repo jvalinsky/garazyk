@@ -514,6 +514,22 @@
     [self registerMethod:@"app.bsky.feed.getActorLikes" handler:handler];
 }
 
+- (void)registerAppBskyFeedGetPosts:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.feed.getPosts" handler:handler];
+}
+
+- (void)registerAppBskyGraphGetMutes:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.getMutes" handler:handler];
+}
+
+- (void)registerAppBskyGraphGetBlocks:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.getBlocks" handler:handler];
+}
+
+- (void)registerAppBskyFeedGetFeedGenerators:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.feed.getFeedGenerators" handler:handler];
+}
+
 - (void)registerAppBskyNotificationRegisterPush:(XrpcMethodHandler)handler {
     [self registerMethod:@"app.bsky.notification.registerPush" handler:handler];
 }

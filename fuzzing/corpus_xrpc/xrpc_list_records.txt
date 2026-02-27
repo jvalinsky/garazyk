@@ -1,4 +1,0 @@
-GET /xrpc/com.atproto.repo.listRecords?repo=did%3Aplc%3Atest123&collection=app.bsky.feed.post&limit=50&cursor= HTTP/1.1
-Host: bsky.social
-Accept: application/json
-
