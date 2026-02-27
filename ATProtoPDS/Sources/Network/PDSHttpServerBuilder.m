@@ -236,6 +236,18 @@
   [server
       addHandlerForPath:@"/xrpc"
                 handler:^(HttpRequest *request, HttpResponse *response) {
+                  if ([request.methodString isEqualToString:@"OPTIONS"]) {
+                    [response setHeader:@"*"
+                                 forKey:@"Access-Control-Allow-Origin"];
+                    [response setHeader:@"GET, POST, PUT, DELETE, OPTIONS, HEAD"
+                                 forKey:@"Access-Control-Allow-Methods"];
+                    [response setHeader:@"Content-Type, Authorization, DPoP, *"
+                                 forKey:@"Access-Control-Allow-Headers"];
+                    [response setHeader:@"86400"
+                                 forKey:@"Access-Control-Max-Age"];
+                    response.statusCode = HttpStatusOK;
+                    return;
+                  }
                   PDS_LOG_HTTP_INFO(
                       @"About to call dispatcher handleRequest for %@",
                       request.path);
