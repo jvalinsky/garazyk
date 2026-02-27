@@ -162,8 +162,8 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
             return;
         }
         
-        NSDictionary *preferences = body[@"preferences"];
-        if (!preferences || ![preferences isKindOfClass:[NSDictionary class]]) {
+        id preferences = body[@"preferences"];
+        if (!preferences || (![preferences isKindOfClass:[NSDictionary class]] && ![preferences isKindOfClass:[NSArray class]])) {
             [XrpcErrorHelper setValidationError:response message:@"Missing preferences in body"];
             return;
         }
