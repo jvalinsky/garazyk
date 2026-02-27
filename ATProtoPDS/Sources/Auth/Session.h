@@ -301,16 +301,103 @@ typedef NS_ENUM(NSInteger, SessionError) {
 
 /*!
  @protocol PDSSessionStorage
+
  @abstract Protocol for session storage backends.
+
+ @discussion Defines the contract for session persistence operations.
+ Implementations provide different storage backends for OAuth 2.0 sessions:
+
+ <b>Implementations:</b>
+ - PDSMemorySessionStorage: In-memory storage (testing/development)
+ - PDSSQLiteSessionStorage: SQLite-backed persistent storage (production)
+
+ <b>Thread Safety:</b> All methods must be thread-safe. Implementations
+ should handle concurrent access from multiple threads.
+
+ <b>Security:</b> Sessions contain sensitive tokens. Implementations should
+ consider encryption at rest for production deployments.
+
+ @see Session
+ @see SessionStore
  */
 @protocol PDSSessionStorage <NSObject>
+
+/*!
+ @method saveSession:error:
+
+ @abstract Persists a session to storage.
+
+ @param session The session to save.
+ @param error On return, contains an error if the save failed.
+ @return YES if saved successfully, NO otherwise.
+ */
 - (BOOL)saveSession:(Session *)session error:(NSError **)error;
+
+/*!
+ @method getSessionByAccessToken:error:
+
+ @abstract Retrieves a session by its access token.
+
+ @param token The access token to search for.
+ @param error On return, contains an error if the lookup failed.
+ @return The session, or nil if not found.
+ */
 - (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error;
+
+/*!
+ @method getSessionByRefreshToken:error:
+
+ @abstract Retrieves a session by its refresh token.
+
+ @param token The refresh token to search for.
+ @param error On return, contains an error if the lookup failed.
+ @return The session, or nil if not found.
+ */
 - (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error;
+
+/*!
+ @method getSessionByID:error:
+
+ @abstract Retrieves a session by its unique identifier.
+
+ @param sessionID The session identifier.
+ @param error On return, contains an error if the lookup failed.
+ @return The session, or nil if not found.
+ */
 - (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
+
+/*!
+ @method revokeSessionByID:error:
+
+ @abstract Marks a session as revoked.
+
+ @param sessionID The session identifier to revoke.
+ @param error On return, contains an error if the revocation failed.
+ @return YES if revoked successfully, NO otherwise.
+ */
 - (BOOL)revokeSessionByID:(NSString *)sessionID error:(NSError **)error;
+
+/*!
+ @method getSessionsForDID:error:
+
+ @abstract Retrieves all sessions for a given DID.
+
+ @param did The DID to search for.
+ @param error On return, contains an error if the lookup failed.
+ @return An array of sessions for the DID.
+ */
 - (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
+
+/*!
+ @method allActiveSessions:
+
+ @abstract Retrieves all active (non-revoked) sessions.
+
+ @param error On return, contains an error if the lookup failed.
+ @return An array of all active sessions.
+ */
 - (NSArray<Session *> *)allActiveSessions:(NSError **)error;
+
 @end
 
 /*!
