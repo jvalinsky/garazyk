@@ -106,6 +106,7 @@
     if (!targetDID || [targetDID isEqualToString:did]) return; // Don't notify self-likes
 
     [self.notificationService createNotificationForActor:targetDID
+                                              authorDID:did
                                                   reason:@"like"
                                            reasonSubject:subjectURI
                                               subjectURI:uri
@@ -122,6 +123,7 @@
     if ([targetDID isEqualToString:did]) return; // Don't notify self-follows
 
     [self.notificationService createNotificationForActor:targetDID
+                                              authorDID:did
                                                   reason:@"follow"
                                            reasonSubject:nil
                                               subjectURI:uri
@@ -142,6 +144,7 @@
     if (!targetDID || [targetDID isEqualToString:did]) return;
 
     [self.notificationService createNotificationForActor:targetDID
+                                              authorDID:did
                                                   reason:@"repost"
                                            reasonSubject:subjectURI
                                               subjectURI:uri
@@ -162,6 +165,7 @@
                 NSString *parentDID = [self extractDIDFromATURI:parentURI];
                 if (parentDID && ![parentDID isEqualToString:did]) {
                     [self.notificationService createNotificationForActor:parentDID
+                                                              authorDID:did
                                                                   reason:@"reply"
                                                            reasonSubject:parentURI
                                                               subjectURI:uri
@@ -185,6 +189,7 @@
                     NSString *mentionDID = feature[@"did"];
                     if (mentionDID && ![mentionDID isEqualToString:did]) {
                         [self.notificationService createNotificationForActor:mentionDID
+                                                                  authorDID:did
                                                                       reason:@"mention"
                                                                reasonSubject:nil
                                                                   subjectURI:uri
@@ -214,6 +219,7 @@
                 NSString *quotedDID = [self extractDIDFromATURI:quotedURI];
                 if (quotedDID && ![quotedDID isEqualToString:did]) {
                     [self.notificationService createNotificationForActor:quotedDID
+                                                              authorDID:did
                                                                   reason:@"quote"
                                                            reasonSubject:quotedURI
                                                               subjectURI:uri
