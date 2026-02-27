@@ -101,14 +101,25 @@
         NSData *prefsData = row[@"preferences"];
         if (prefsData) {
             NSError *parseError = nil;
-            NSDictionary *preferences = [NSJSONSerialization JSONObjectWithData:prefsData options:0 error:&parseError];
-            if (!parseError) {
-                return @{@"preferences": preferences};
+            id parsed = [NSJSONSerialization JSONObjectWithData:prefsData options:0 error:&parseError];
+            if (!parseError && parsed) {
+                // AT Protocol spec: preferences must be an array of objects.
+                // Handle both stored formats (array or dict wrapping an array).
+                if ([parsed isKindOfClass:[NSArray class]]) {
+                    return @{@"preferences": parsed};
+                } else if ([parsed isKindOfClass:[NSDictionary class]]) {
+                    id inner = ((NSDictionary *)parsed)[@"preferences"];
+                    if ([inner isKindOfClass:[NSArray class]]) {
+                        return @{@"preferences": inner};
+                    }
+                    // Stored as a dict but not wrapping an array — return empty
+                    return @{@"preferences": @[]};
+                }
             }
         }
     }
 
-    return @{@"preferences": @{}};
+    return @{@"preferences": @[]};
 }
 
 - (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSDictionary *)preferences error:(NSError **)error {
