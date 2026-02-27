@@ -1,0 +1,387 @@
+/*!
+ @file AuthVerifier.m
+
+ @abstract AuthVerifier implementation.
+
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
+#import "AuthVerifier/AuthVerifier.h"
+#import "Auth/JWT.h"
+#import "AuthCrypto/AuthCryptoDPoP.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
+#import "Debug/PDSLogger.h"
+#import "OAuthProvider/OAuthProviderProtocols.h"
+#import <Security/Security.h>
+
+NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
+
+#pragma mark - AuthVerifierPrincipal
+
+@interface AuthVerifierPrincipal ()
+@property (nonatomic, copy, readwrite) NSString *did;
+@property (nonatomic, copy, readwrite, nullable) NSString *accessTokenJWT;
+@property (nonatomic, copy, readwrite, nullable) NSDictionary *tokenClaims;
+@property (nonatomic, copy, readwrite, nullable) NSString *dpopThumbprint;
+@property (nonatomic, assign, readwrite) BOOL usedDPoP;
+@property (nonatomic, assign, readwrite) BOOL isAdmin;
+@end
+
+@implementation AuthVerifierPrincipal
+
+- (instancetype)initWithDID:(NSString *)did
+              accessTokenJWT:(nullable NSString *)accessTokenJWT
+               tokenClaims:(nullable NSDictionary *)tokenClaims
+            dpopThumbprint:(nullable NSString *)dpopThumbprint
+                   usedDPoP:(BOOL)usedDPoP
+                    isAdmin:(BOOL)isAdmin {
+    self = [super init];
+    if (self) {
+        _did = [did copy];
+        _accessTokenJWT = [accessTokenJWT copy];
+        _tokenClaims = [tokenClaims copy];
+        _dpopThumbprint = [dpopThumbprint copy];
+        _usedDPoP = usedDPoP;
+        _isAdmin = isAdmin;
+    }
+    return self;
+}
+
+@end
+
+#pragma mark - AuthVerifier
+
+@interface AuthVerifier ()
+@property (nonatomic, strong, nullable) id<TokenKeyResolver> keyResolver;
+@property (nonatomic, strong) id<AccountPolicy> accountPolicy;
+@property (nonatomic, strong, nullable) id<DPoPNonceStore> nonceStore;
+@property (nonatomic, strong) id localPublicKey;
+@property (nonatomic, copy) NSString *localIssuer;
+@end
+
+@implementation AuthVerifier
+
+- (instancetype)initWithKeyResolver:(nullable id<TokenKeyResolver>)keyResolver
+                      accountPolicy:(id<AccountPolicy>)accountPolicy
+                         nonceStore:(nullable id<DPoPNonceStore>)nonceStore {
+    self = [super init];
+    if (self) {
+        _keyResolver = keyResolver;
+        _accountPolicy = accountPolicy;
+        _nonceStore = nonceStore;
+        _requireDPoP = NO;
+    }
+    return self;
+}
+
+- (instancetype)init {
+    return [self initWithKeyResolver:nil accountPolicy:nil nonceStore:nil];
+}
+
+- (void)setLocalPublicKey:(id)publicKey {
+    self.localPublicKey = publicKey;
+}
+
+- (void)setLocalIssuer:(NSString *)issuer {
+    self.localIssuer = issuer;
+    if (self.expectedAudience.length == 0) {
+        self.expectedAudience = issuer;
+    }
+}
+
+#pragma mark - Public API
+
+- (nullable AuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
+                                        response:(nullable HttpResponse *)response
+                                           error:(NSError **)error {
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    NSString *dpopHeader = [request headerForKey:@"DPoP"];
+
+    return [self verifyAuthHeader:authHeader
+                       dpopHeader:dpopHeader
+                         request:request
+                        response:response
+                           error:error];
+}
+
+- (nullable AuthVerifierPrincipal *)verifyAccessToken:(nullable NSString *)token
+                                               error:(NSError **)error {
+    if (!token) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidToken
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing token"}];
+        }
+        return nil;
+    }
+    return [self verifyAuthHeader:[NSString stringWithFormat:@"Bearer %@", token]
+                       dpopHeader:nil
+                         request:nil
+                        response:nil
+                           error:error];
+}
+
+- (nullable AuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
+                                            dpopHeader:(nullable NSString *)dpopHeader
+                                              request:(nullable HttpRequest *)request
+                                             response:(nullable HttpResponse *)response
+                                                error:(NSError **)error {
+    if (!authHeader) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing Authorization header"}];
+        }
+        return nil;
+    }
+
+    NSString *token = nil;
+    BOOL isDPoP = NO;
+
+    if ([authHeader hasPrefix:@"Bearer "]) {
+        token = [authHeader substringFromIndex:7];
+    } else if ([authHeader hasPrefix:@"DPoP "]) {
+        token = [authHeader substringFromIndex:5];
+        isDPoP = YES;
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid Authorization scheme"}];
+        }
+        return nil;
+    }
+
+    if (isDPoP && dpopHeader.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorDPoPMissing
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP header"}];
+        }
+        return nil;
+    }
+
+    if (self.requireDPoP && !isDPoP) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorDPoPRequired
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP is required"}];
+        }
+        return nil;
+    }
+
+    NSString *dpopThumbprint = nil;
+    NSURL *dpopURL = nil;
+
+    if (isDPoP && request) {
+        dpopURL = [self expectedDPoPURLForRequest:request];
+        if (!dpopURL) {
+            PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Unable to construct DPoP URL"}];
+            }
+            return nil;
+        }
+
+        NSError *dpopError = nil;
+        BOOL validProof = [AuthCryptoDPoP verifyProof:dpopHeader
+                                             method:request.methodString ?: @"GET"
+                                                url:dpopURL
+                                              nonce:nil
+                                       requireNonce:self.nonceStore != nil
+                                     nonceValidator:(id<AuthCryptoDPoPNonceValidator>)self.nonceStore
+                                      replayChecker:nil
+                                      outThumbprint:&dpopThumbprint
+                                              error:&dpopError];
+
+        if (!validProof) {
+            BOOL needsNonce = [dpopError.userInfo[@"use_dpop_nonce"] boolValue];
+            if (needsNonce && response) {
+                response.statusCode = 401;
+                NSString *nonce = nil;
+                if ([self.nonceStore respondsToSelector:@selector(issueNonceForJWKThumbprint:error:)]) {
+                    NSError *nonceError = nil;
+                    nonce = [self.nonceStore issueNonceForJWKThumbprint:dpopThumbprint ?: @"" error:&nonceError];
+                }
+                if (!nonce) {
+                    nonce = [[NSUUID UUID] UUIDString];
+                }
+                [response setHeader:nonce forKey:@"DPoP-Nonce"];
+                [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+                [response setHeader:@"no-store" forKey:@"Cache-Control"];
+                [response setHeader:@"no-cache" forKey:@"Pragma"];
+            }
+            if (error) {
+                *error = dpopError;
+            }
+            return nil;
+        }
+    }
+
+    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    if (!jwt) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidToken
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT format"}];
+        }
+        return nil;
+    }
+
+    JWTPayload *payload = jwt.payload;
+    NSString *issuer = payload.iss;
+    NSString *subject = payload.sub;
+    NSString *audience = payload.aud;
+    NSString *tokenJkt = payload.cnf[@"jkt"];
+    NSDictionary *claims = [payload toDictionary];
+
+    if (!issuer) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidToken
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing issuer claim"}];
+        }
+        return nil;
+    }
+
+    if (!subject || ![subject hasPrefix:@"did:"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidToken
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid subject claim"}];
+        }
+        return nil;
+    }
+
+    BOOL isLocalIssuer = [issuer isEqualToString:self.localIssuer] ||
+                         [issuer isEqualToString:self.expectedAudience];
+
+    if (isLocalIssuer) {
+        JWTVerifier *verifier = [[JWTVerifier alloc] init];
+        verifier.publicKey = self.localPublicKey;
+        verifier.expectedIssuer = self.localIssuer;
+        verifier.expectedAudience = self.expectedAudience;
+        verifier.allowedAlgorithms = @[@"ES256K", @"ES256"];
+
+        NSError *verifyError = nil;
+        if (![verifier verifyJWT:jwt error:&verifyError]) {
+            if (error) {
+                *error = verifyError ?: [NSError errorWithDomain:AuthVerifierErrorDomain
+                                                            code:AuthVerifierErrorInvalidSignature
+                                                        userInfo:@{NSLocalizedDescriptionKey: @"JWT verification failed"}];
+            }
+            return nil;
+        }
+    } else if (self.keyResolver && [self.keyResolver isIssuerAllowed:issuer]) {
+        NSDictionary *jwks = [self.keyResolver jwksForIssuer:issuer error:nil];
+        if (!jwks) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidIssuer
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to fetch JWKS"}];
+            }
+            return nil;
+        }
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidIssuer
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Issuer not allowed"}];
+        }
+        return nil;
+    }
+
+    if (audience && self.expectedAudience.length > 0 && ![audience isEqualToString:self.expectedAudience]) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorInvalidAudience
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid audience"}];
+        }
+        return nil;
+    }
+
+    if (isDPoP) {
+        if (!tokenJkt) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorDPoPRequired
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Token not bound to DPoP key"}];
+            }
+            return nil;
+        }
+        if (dpopThumbprint && ![tokenJkt isEqualToString:dpopThumbprint]) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorDPoPThumbprintMismatch
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP thumbprint mismatch"}];
+            }
+            return nil;
+        }
+    } else if (tokenJkt) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                         code:AuthVerifierErrorDPoPRequired
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP-bound token used without DPoP"}];
+        }
+        return nil;
+    }
+
+    NSError *accountError = nil;
+    BOOL accountAllowed = [self.accountPolicy isAccountAllowed:subject error:&accountError];
+    if (!accountAllowed) {
+        if (error) {
+            *error = accountError ?: [NSError errorWithDomain:AuthVerifierErrorDomain
+                                                         code:AuthVerifierErrorAccountTakedown
+                                                     userInfo:@{NSLocalizedDescriptionKey: @"Account is suspended"}];
+        }
+        return nil;
+    }
+
+    BOOL isAdmin = NO;
+    if ([self.accountPolicy respondsToSelector:@selector(isAdmin:error:)]) {
+        NSError *adminError = nil;
+        isAdmin = [self.accountPolicy isAdmin:subject error:&adminError];
+    }
+
+    return [[AuthVerifierPrincipal alloc] initWithDID:subject
+                                          accessTokenJWT:token
+                                           tokenClaims:claims
+                                        dpopThumbprint:dpopThumbprint
+                                               usedDPoP:isDPoP
+                                                isAdmin:isAdmin];
+}
+
+- (nullable NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request {
+    NSString *method = request.methodString ?: @"GET";
+    NSString *path = request.path ?: @"/";
+
+    if (![path hasPrefix:@"/"]) {
+        path = [@"/" stringByAppendingString:path];
+    }
+
+    NSString *hostHeader = [request headerForKey:@"Host"];
+    NSString *scheme = @"https";
+
+    NSString *forwardedProto = [request headerForKey:@"X-Forwarded-Proto"];
+    if (forwardedProto.length > 0) {
+        NSString *firstProto = [[forwardedProto componentsSeparatedByString:@","] firstObject];
+        firstProto = [firstProto stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if ([firstProto isEqualToString:@"http"] || [firstProto isEqualToString:@"https"]) {
+            scheme = firstProto;
+        }
+    } else if ([hostHeader containsString:@"localhost"] || [hostHeader hasPrefix:@"127.0.0.1"]) {
+        scheme = @"http";
+    }
+
+    NSString *urlString = [NSString stringWithFormat:@"%@://%@%@", scheme, hostHeader, path];
+    if (request.queryString.length > 0) {
+        urlString = [urlString stringByAppendingFormat:@"?%@", request.queryString];
+    }
+
+    return [NSURL URLWithString:urlString];
+}
+
+@end

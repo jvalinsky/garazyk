@@ -532,6 +532,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     JWTPayload *payload = [[JWTPayload alloc] init];
     payload.iss = self.issuer;
     payload.sub = did;
+    payload.aud = self.audience;
     payload.did = did;
     payload.handle = handle;
     payload.scope = [scopes componentsJoinedByString:@" "];
@@ -567,6 +568,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     JWTPayload *payload = [[JWTPayload alloc] init];
     payload.iss = self.issuer;
     payload.sub = did;
+    payload.aud = self.audience;
     payload.did = did;
     payload.handle = handle;
     payload.scope = [scopes componentsJoinedByString:@" "];
