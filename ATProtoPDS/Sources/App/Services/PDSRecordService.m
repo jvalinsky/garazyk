@@ -526,7 +526,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         NSString *collection = write[@"collection"];
         NSString *rkey = write[@"rkey"];
         NSDictionary *record = write[@"value"];
-        NSLog(@"[DEBUG applyWrites] write=%@, action=%@, collection=%@", write, action, collection);
+        PDS_LOG_INFO(@"applyWrites loop: write=%@, action=%@, collection=%@", write, action, collection);
         if (!record) {
             // Compatibility fallback for pre-lexicon field names.
             record = write[@"record"];
