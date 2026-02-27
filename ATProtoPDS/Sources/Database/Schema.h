@@ -39,6 +39,8 @@ extern NSString * const kPDSReportsTableName;
 extern NSString * const kPDSAdminConfigTableName;
 extern NSString * const kPDSLabelTableName;
 extern NSString * const kPDSReservedHandleTableName;
+extern NSString * const kPDSActorPreferencesTableName;
+extern NSString * const kPDSActorMutesTableName;
 
 extern NSString * const kPDSAccountTableCreateSQL;
 extern NSString * const kPDSRepoTableCreateSQL;
@@ -55,6 +57,8 @@ extern NSString * const kPDSOAuthClientsTableCreateSQL;
 extern NSString * const kPDSJWTSigningKeysTableCreateSQL;
 extern NSString * const kPDSLabelTableCreateSQL;
 extern NSString * const kPDSReservedHandleTableCreateSQL;
+extern NSString * const kPDSActorPreferencesTableCreateSQL;
+extern NSString * const kPDSActorMutesTableCreateSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;
