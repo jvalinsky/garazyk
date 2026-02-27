@@ -150,21 +150,16 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     
     // com.atproto.label.queryLabels - Public label query endpoint
     [dispatcher registerComAtprotoLabelQueryLabels:^(HttpRequest *request, HttpResponse *response) {
-        NSString *collection = [request queryParamForKey:@"collection"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSString *since = [request queryParamForKey:@"since"];
-
-        NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
-        if (limit > 100) limit = 100;
+        NSString *paramError = nil;
+        NSDictionary *params = labelLookupParamsFromRequest(request, &paramError);
+        if (!params) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": paramError ?: @"Invalid query parameters"}];
+            return;
+        }
 
         NSError *error = nil;
-        NSDictionary *result = [adminController getLabels:@{
-            @"collection": collection ?: @"",
-            @"cursor": cursor ?: @"",
-            @"limit": @(limit),
-            @"since": since ?: @""
-        } error:&error];
+        NSDictionary *result = [adminController getLabels:params error:&error];
 
         if (error) {
             response.statusCode = 400;
