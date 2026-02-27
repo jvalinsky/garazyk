@@ -52,7 +52,7 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
     FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
-    NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase];
+    NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
     GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
     
     // Initialize record lifecycle handler for notification generation
