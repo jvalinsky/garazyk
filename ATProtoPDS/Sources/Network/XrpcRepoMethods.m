@@ -879,6 +879,7 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
     // com.atproto.repo.applyWrites
     [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
+        PDS_LOG_INFO(@"applyWrites: method called, body=%@", body);
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
