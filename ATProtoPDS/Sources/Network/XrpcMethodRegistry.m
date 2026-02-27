@@ -777,11 +777,15 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
         NSString *explicitProxyTarget =
             trimmedNonEmptyString([request headerForKey:@"atproto-proxy"]);
         if (explicitProxyTarget.length > 0) {
-          // If we have a local handler for this method, prefer it.
-          // The atproto-proxy header is for delegating to upstream services,
-          // but locally-registered methods (getSession, getPreferences, etc.)
-          // must always be handled by the PDS.
-          if (hasLocalHandler) {
+          // Core PDS methods and preferences must be handled locally.
+          BOOL forceLocal = [methodId hasPrefix:@"com.atproto."] ||
+                            [methodId isEqualToString:@"app.bsky.actor.getPreferences"] ||
+                            [methodId isEqualToString:@"app.bsky.actor.putPreferences"] ||
+                            [methodId isEqualToString:@"app.bsky.notification.getPreferences"] ||
+                            [methodId isEqualToString:@"app.bsky.notification.putPreferences"] ||
+                            [methodId isEqualToString:@"app.bsky.unspecced.getConfig"];
+
+          if (hasLocalHandler && forceLocal) {
             return NO;
           }
           return proxyXrpcRequest(request, response, methodId,
