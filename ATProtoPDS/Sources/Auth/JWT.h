@@ -351,6 +351,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! The issuer claim for minted tokens. */
 @property (nonatomic, copy) NSString *issuer;
 
+/*! The audience claim for minted tokens (e.g., the PDS DID). */
+@property (nonatomic, copy, nullable) NSString *audience;
+
 /*! The signing algorithm (e.g., "RS256", "ES256"). */
 @property (nonatomic, copy) NSString *signingAlgorithm;
 
