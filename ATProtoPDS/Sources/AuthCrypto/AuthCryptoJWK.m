@@ -34,9 +34,40 @@ NSString * const AuthCryptoErrorDomain = @"com.atproto.auth.crypto";
         return nil;
     }
 
-    NSDictionary *attrs = CFBridgingRelease(SecKeyCopyAttributes(key));
-    NSString *keyType = attrs[(id)kSecAttrKeyType];
-    NSString *keyClass = attrs[(id)kSecAttrKeyClass];
+    // Determine key type and class without SecKeyCopyAttributes (not available on GNUstep)
+    // Key type is determined by key data length:
+    // - EC public: 65 bytes (0x04 || x(32) || y(32))
+    // - EC private (full): 97 bytes (0x04 || x(32) || y(32) || d(32))
+    // - EC private (raw d): 32 bytes
+    BOOL isPrivateKey = NO;
+    NSString *keyType = (__bridge NSString *)kSecAttrKeyTypeECSECPrimeRandom;
+    NSString *keyClass = nil;
+
+    if (keyData.length == 65 && ((const uint8_t *)keyData.bytes)[0] == 0x04) {
+        // Public key format
+        keyClass = (__bridge NSString *)kSecAttrKeyClassPublic;
+    } else if (keyData.length == 97 && ((const uint8_t *)keyData.bytes)[0] == 0x04) {
+        // Full private key format
+        keyClass = (__bridge NSString *)kSecAttrKeyClassPrivate;
+        isPrivateKey = YES;
+    } else if (keyData.length == 32) {
+        // Raw private key - try to get public key to confirm it's private
+        SecKeyRef publicKey = SecKeyCopyPublicKey(key);
+        if (publicKey) {
+            CFRelease(publicKey);
+            keyClass = (__bridge NSString *)kSecAttrKeyClassPrivate;
+            isPrivateKey = YES;
+        } else {
+            keyClass = (__bridge NSString *)kSecAttrKeyClassPublic;
+        }
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoErrorDomain
+                                         code:-3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unknown key format"}];
+        }
+        return nil;
+    }
 
     if ([keyType isEqualToString:(__bridge NSString *)kSecAttrKeyTypeECSECPrimeRandom]) {
         // P-256
