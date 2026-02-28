@@ -464,7 +464,8 @@ static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
   }
 
   // Special case for configured AppView, similar to reference implementation
-  if ([proxyDescriptor isEqualToString:[NSString stringWithFormat:@"%@#bsky_appview", config.appViewDID]]) {
+  NSString *configuredDescriptor = [NSString stringWithFormat:@"%@#bsky_appview", config.appViewDID];
+  if ([proxyDescriptor isEqualToString:configuredDescriptor]) {
     NSString *appViewURL = config.appViewURL;
     if (appViewURL.length > 0) {
       return [NSURL URLWithString:appViewURL];
