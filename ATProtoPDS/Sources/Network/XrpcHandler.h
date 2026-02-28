@@ -452,6 +452,28 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for app.bsky.notification.registerPush. */
 - (void)registerAppBskyNotificationRegisterPush:(XrpcMethodHandler)handler;
 
+// MARK: - App Bsky Bookmark Methods
+
+/*! Registers handler for app.bsky.bookmark.getBookmarks. */
+- (void)registerAppBskyBookmarkGetBookmarks:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.bookmark.createBookmark. */
+- (void)registerAppBskyBookmarkCreateBookmark:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.bookmark.deleteBookmark. */
+- (void)registerAppBskyBookmarkDeleteBookmark:(XrpcMethodHandler)handler;
+
+// MARK: - App Bsky Graph Methods
+
+/*! Registers handler for app.bsky.graph.getStarterPack. */
+- (void)registerAppBskyGraphGetStarterPack:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.graph.getStarterPacks. */
+- (void)registerAppBskyGraphGetStarterPacks:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.graph.getActorStarterPacks. */
+- (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler;
+
 @end
 
 NS_ASSUME_NONNULL_END

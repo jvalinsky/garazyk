@@ -442,4 +442,99 @@
     return [result copy];
 }
 
+#pragma mark - Starter Packs
+
+- (nullable NSDictionary *)getStarterPack:(NSString *)starterPackURI error:(NSError **)error {
+    NSArray *parts = [starterPackURI componentsSeparatedByString:@"/"];
+    if (parts.count < 5) return nil;
+    NSString *did = parts[2];
+    NSString *rkey = parts[4];
+
+    NSString *query = @"SELECT cid, name, created_at FROM starter_packs WHERE did = ? AND rkey = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, rkey] error:error];
+    if (!rows || rows.count == 0) return nil;
+
+    NSDictionary *row = rows.firstObject;
+    NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:did error:nil];
+    if (!record) return nil;
+
+    NSMutableDictionary *view = [NSMutableDictionary dictionary];
+    view[@"uri"] = starterPackURI;
+    view[@"cid"] = row[@"cid"];
+    view[@"record"] = record;
+    view[@"creator"] = [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did};
+    view[@"indexedAt"] = row[@"created_at"] ?: @"";
+
+    return [view copy];
+}
+
+- (nullable NSDictionary *)getStarterPacksForActor:(NSString *)actorDID
+                                             limit:(NSInteger)limit
+                                            cursor:(nullable NSString *)cursor
+                                             error:(NSError **)error {
+    limit = MIN(MAX(limit, 1), 100);
+
+    NSString *query = @"SELECT rkey, cid, name, created_at FROM starter_packs WHERE did = ?";
+    if (cursor) {
+        query = [query stringByAppendingString:@" AND rkey < ?"];
+    }
+    query = [query stringByAppendingString:@" ORDER BY rkey DESC LIMIT ?"];
+
+    NSMutableArray *args = [NSMutableArray arrayWithObject:actorDID];
+    if (cursor) {
+        [args addObject:cursor];
+    }
+    [args addObject:@(limit)];
+
+    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+    if (!rows) return nil;
+
+    NSMutableArray *starterPacks = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.starterpack/%@", actorDID, row[@"rkey"]];
+        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
+        if (record) {
+            [starterPacks addObject:@{
+                @"uri": uri,
+                @"cid": row[@"cid"],
+                @"record": record,
+                @"creator": [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID},
+                @"indexedAt": row[@"created_at"] ?: @""
+            }];
+        }
+    }
+
+    NSString *nextCursor = nil;
+    if (starterPacks.count > 0 && starterPacks.count == limit) {
+        nextCursor = [[rows lastObject] objectForKey:@"rkey"];
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"starterPacks"] = starterPacks;
+    if (nextCursor) {
+        result[@"cursor"] = nextCursor;
+    }
+
+    return [result copy];
+}
+
+- (BOOL)indexStarterPack:(NSDictionary *)record
+                     did:(NSString *)did
+                    rkey:(NSString *)rkey
+                     cid:(NSString *)cid
+                   error:(NSError **)error {
+    NSString *name = record[@"name"] ?: @"";
+    NSString *createdAt = record[@"createdAt"] ?: @"";
+
+    NSString *sql = @"INSERT OR REPLACE INTO starter_packs (did, rkey, cid, name, created_at) VALUES (?, ?, ?, ?, ?)";
+    return [self.database executeParameterizedUpdate:sql params:@[did, rkey, cid, name, createdAt] error:error];
+}
+
+- (BOOL)unindexStarterPackWithRKey:(NSString *)rkey
+                               did:(NSString *)did
+                             error:(NSError **)error {
+    NSString *sql = @"DELETE FROM starter_packs WHERE did = ? AND rkey = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[did, rkey] error:error];
+}
+
 @end

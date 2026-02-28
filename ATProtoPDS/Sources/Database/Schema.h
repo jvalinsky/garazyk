@@ -41,6 +41,8 @@ extern NSString * const kPDSLabelTableName;
 extern NSString * const kPDSReservedHandleTableName;
 extern NSString * const kPDSActorPreferencesTableName;
 extern NSString * const kPDSActorMutesTableName;
+extern NSString * const kPDSBookmarkTableName;
+extern NSString * const kPDSStarterPackTableName;
 
 extern NSString * const kPDSAccountTableCreateSQL;
 extern NSString * const kPDSRepoTableCreateSQL;
@@ -59,6 +61,8 @@ extern NSString * const kPDSLabelTableCreateSQL;
 extern NSString * const kPDSReservedHandleTableCreateSQL;
 extern NSString * const kPDSActorPreferencesTableCreateSQL;
 extern NSString * const kPDSActorMutesTableCreateSQL;
+extern NSString * const kPDSBookmarkTableCreateSQL;
+extern NSString * const kPDSStarterPackTableCreateSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;
@@ -77,5 +81,7 @@ extern NSString * const kPDSIndexPasskeysCredentialIdSQL;
 extern NSString * const kPDSIndexLabelsUriSQL;
 extern NSString * const kPDSIndexLabelsSourceSQL;
 extern NSString * const kPDSIndexReservedHandlesHandleSQL;
+extern NSString * const kPDSIndexBookmarksDidSQL;
+extern NSString * const kPDSIndexStarterPacksDidSQL;
 
 NS_ASSUME_NONNULL_END
