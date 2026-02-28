@@ -83,7 +83,8 @@
             return;
         }
 
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:handle error:nil];
+        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:normalizedHandle error:nil];
         if (account) {
             response.statusCode = HttpStatusOK;
             [response setJsonBody:@{@"did": account.did}];
@@ -93,7 +94,7 @@
         HandleResolver *handleResolver = [[HandleResolver alloc] init];
         __block NSString *resolvedDid = nil;
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-        [handleResolver resolveHandle:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+        [handleResolver resolveHandle:normalizedHandle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
             resolvedDid = did;
             dispatch_semaphore_signal(semaphore);
         }];
