@@ -536,12 +536,12 @@
 
     // com.atproto.identity.updateHandle
     [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
-        PDS_LOG_DEBUG(@"updateHandle: Starting request");
+        PDS_LOG_INFO(@"updateHandle: Starting request");
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-        PDS_LOG_DEBUG(@"updateHandle: Auth extracted, did=%@", did);
+        PDS_LOG_INFO(@"updateHandle: Auth extracted, did=%@", did);
         if (!did) {
-            PDS_LOG_DEBUG(@"updateHandle: Auth failed");
+            PDS_LOG_INFO(@"updateHandle: Auth failed - returning 401");
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
