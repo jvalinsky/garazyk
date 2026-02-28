@@ -217,7 +217,7 @@
     NSDictionary *prefs = [self.service getPreferencesForActor:@"did:plc:nonexistent" error:&error];
     
     XCTAssertNotNil(prefs);
-    XCTAssertEqualObjects(prefs[@"preferences"], @{});
+    XCTAssertEqualObjects(prefs[@"preferences"], @[]);
 }
 
 - (void)testPutPreferencesForActorMissingDID {
@@ -229,7 +229,7 @@
 
 - (void)testPutPreferencesForActorNew {
     NSError *error = nil;
-    NSDictionary *prefs = @{@"theme": @"dark", @"notifications": @YES};
+    NSArray *prefs = @[@{@"$type": @"app.bsky.actor.defs#savedFeedsPrefV2", @"items": @[]}];
     
     BOOL success = [self.service putPreferencesForActor:@"did:plc:prefsuser" preferences:prefs error:&error];
     XCTAssertTrue(success);
@@ -237,29 +237,31 @@
     
     error = nil;
     NSDictionary *retrieved = [self.service getPreferencesForActor:@"did:plc:prefsuser" error:&error];
-    XCTAssertEqualObjects(retrieved[@"preferences"][@"theme"], @"dark");
-    XCTAssertEqualObjects(retrieved[@"preferences"][@"notifications"], @YES);
+    NSArray *retrievedPrefs = (NSArray *)retrieved[@"preferences"];
+    XCTAssertEqual(retrievedPrefs.count, 1);
+    XCTAssertEqualObjects(retrievedPrefs[0][@"$type"], @"app.bsky.actor.defs#savedFeedsPrefV2");
 }
 
 - (void)testPutPreferencesForActorUpdate {
     NSError *error = nil;
-    NSDictionary *initialPrefs = @{@"theme": @"light"};
+    NSArray *initialPrefs = @[@{@"theme": @"light"}];
     XCTAssertTrue([self.service putPreferencesForActor:@"did:plc:updateuser" preferences:initialPrefs error:&error]);
     
     error = nil;
-    NSDictionary *updatedPrefs = @{@"theme": @"dark", @"language": @"en"};
+    NSArray *updatedPrefs = @[@{@"theme": @"dark"}, @{@"language": @"en"}];
     BOOL success = [self.service putPreferencesForActor:@"did:plc:updateuser" preferences:updatedPrefs error:&error];
     XCTAssertTrue(success);
     
     error = nil;
     NSDictionary *retrieved = [self.service getPreferencesForActor:@"did:plc:updateuser" error:&error];
-    XCTAssertEqualObjects(retrieved[@"preferences"][@"theme"], @"dark");
-    XCTAssertEqualObjects(retrieved[@"preferences"][@"language"], @"en");
+    NSArray *retrievedPrefs = (NSArray *)retrieved[@"preferences"];
+    XCTAssertEqual(retrievedPrefs.count, 2);
+    XCTAssertEqualObjects(retrievedPrefs[0][@"theme"], @"dark");
 }
 
 - (void)testPutPreferencesInvalidJSON {
     NSError *error = nil;
-    BOOL success = [self.service putPreferencesForActor:@"did:plc:jsonuser" preferences:@{@"invalid": [NSDate date]} error:&error];
+    BOOL success = [self.service putPreferencesForActor:@"did:plc:jsonuser" preferences:(NSArray *)@{@"invalid": [NSDate date]} error:&error];
     XCTAssertFalse(success);
     XCTAssertNotNil(error);
 }
