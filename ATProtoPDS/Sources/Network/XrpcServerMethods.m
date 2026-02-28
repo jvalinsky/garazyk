@@ -534,8 +534,21 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
             return;
         }
 
+        [response setHeader:@"no-store" forKey:@"Cache-Control"];
+        [response setHeader:@"no-cache" forKey:@"Pragma"];
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:session];
+        
+        NSMutableDictionary *lexiconSession = [NSMutableDictionary dictionary];
+        if (session[@"accessJwt"]) lexiconSession[@"accessJwt"] = session[@"accessJwt"];
+        if (session[@"refreshJwt"]) lexiconSession[@"refreshJwt"] = session[@"refreshJwt"];
+        if (session[@"handle"]) lexiconSession[@"handle"] = [ATProtoHandleValidator normalizeHandle:session[@"handle"]];
+        if (session[@"did"]) lexiconSession[@"did"] = session[@"did"];
+        if (session[@"email"]) lexiconSession[@"email"] = session[@"email"];
+        lexiconSession[@"emailConfirmed"] = session[@"emailConfirmed"] ?: @YES;
+        lexiconSession[@"active"] = session[@"active"] ?: @YES;
+        if (session[@"didDoc"]) lexiconSession[@"didDoc"] = session[@"didDoc"];
+
+        [response setJsonBody:lexiconSession];
     }];
 
     [dispatcher registerComAtprotoServerGetSession:^(HttpRequest *request, HttpResponse *response) {
@@ -558,18 +571,24 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
             return;
         }
 
-        NSMutableDictionary *result = [account mutableCopy];
-        result[@"did"] = did;
-        result[@"emailConfirmed"] = @YES;
-        if (!result[@"handle"]) {
-            result[@"handle"] = @"unknown.handle";
+        if (!account[@"handle"]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InvalidAccount", @"message": @"Account handle is missing"}];
+            return;
         }
-        
-        BOOL isAdmin = [[PDSAdminAuth sharedAuth] isAdminDid:did];
-        result[@"isAdmin"] = @(isAdmin);
 
+        NSMutableDictionary *lexiconSession = [NSMutableDictionary dictionary];
+        lexiconSession[@"handle"] = [ATProtoHandleValidator normalizeHandle:account[@"handle"]];
+        lexiconSession[@"did"] = did;
+        if (account[@"email"]) lexiconSession[@"email"] = account[@"email"];
+        lexiconSession[@"emailConfirmed"] = account[@"emailConfirmed"] ?: @YES;
+        lexiconSession[@"active"] = account[@"active"] ?: @YES;
+        if (account[@"didDoc"]) lexiconSession[@"didDoc"] = account[@"didDoc"];
+
+        [response setHeader:@"no-store" forKey:@"Cache-Control"];
+        [response setHeader:@"no-cache" forKey:@"Pragma"];
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:lexiconSession];
     }];
 
     [dispatcher registerComAtprotoServerRefreshSession:^(HttpRequest *request, HttpResponse *response) {
