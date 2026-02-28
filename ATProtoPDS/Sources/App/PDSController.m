@@ -300,6 +300,7 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
     _httpPort = 2583;
     _jwtMinter.issuer = PDSControllerCanonicalIssuer(
         [PDSConfiguration sharedConfiguration], _httpPort);
+    _jwtMinter.audience = _jwtMinter.issuer;
     _jwtMinter.signingAlgorithm = @"ES256K";
 
     NSError *serverKeyError = nil;
