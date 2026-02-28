@@ -536,9 +536,12 @@
 
     // com.atproto.identity.updateHandle
     [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
+        PDS_LOG_DEBUG(@"updateHandle: Starting request");
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
+        PDS_LOG_DEBUG(@"updateHandle: Auth extracted, did=%@", did);
         if (!did) {
+            PDS_LOG_DEBUG(@"updateHandle: Auth failed");
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
@@ -548,6 +551,7 @@
 
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *handle = body[@"handle"];
+        PDS_LOG_DEBUG(@"updateHandle: handle=%@", handle);
         if (handle.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle"}];
@@ -556,12 +560,27 @@
 
         NSError *validateError = nil;
         if (![ATProtoHandleValidator validateHandle:handle error:&validateError]) {
+            PDS_LOG_DEBUG(@"updateHandle: Validation failed: %@", validateError);
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidHandle", @"message": validateError.localizedDescription ?: @"Invalid handle"}];
             return;
         }
         NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+        PDS_LOG_DEBUG(@"updateHandle: normalizedHandle=%@", normalizedHandle);
 
+        // 1. Uniqueness Check
+        PDS_LOG_DEBUG(@"updateHandle: Checking uniqueness");
+        NSError *error = nil;
+        PDSDatabaseAccount *existingAccount = [serviceDatabases getAccountByHandle:normalizedHandle error:&error];
+        PDS_LOG_DEBUG(@"updateHandle: Uniqueness check done, existingAccount=%@", existingAccount);
+        if (existingAccount && ![existingAccount.did isEqualToString:did]) {
+            response.statusCode = HttpStatusConflict;
+            [response setJsonBody:@{@"error": @"HandleAlreadyTaken", @"message": @"Handle already taken"}];
+            return;
+        }
+
+        // 2. Identity Update / Validation
+        PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
         if ([did hasPrefix:@"did:plc:"]) {
             NSString *plcUrl = configuration.plcURL;
             if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
@@ -569,10 +588,13 @@
             }
             
             DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            PDS_LOG_DEBUG(@"updateHandle: Resolving PLC audit log for DID=%@", did);
             NSError *auditError = nil;
             NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
+            PDS_LOG_DEBUG(@"updateHandle: PLC audit log resolved, count=%lu, error=%@", (unsigned long)auditLog.count, auditError);
             
             if (!auditLog || auditLog.count == 0) {
+                PDS_LOG_DEBUG(@"updateHandle: Failed to resolve PLC audit log");
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to resolve PLC audit log"}];
                 return;
@@ -606,20 +628,26 @@
             }
             
             PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+            PDS_LOG_DEBUG(@"updateHandle: Loading rotation key");
             NSError *keyError = nil;
             if (![keyManager loadOrGenerateKeyWithError:&keyError]) {
+                PDS_LOG_DEBUG(@"updateHandle: Failed to load rotation key: %@", keyError);
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to load rotation key"}];
                 return;
             }
+            PDS_LOG_DEBUG(@"updateHandle: Rotation key loaded successfully");
             
             NSData *hash = [CID rawSha256:unsignedCBOR];
             NSData *sig = nil;
+            PDS_LOG_DEBUG(@"updateHandle: Signing PLC operation");
             if (![keyManager signHash:hash result:&sig error:&keyError] || !sig) {
+                PDS_LOG_DEBUG(@"updateHandle: Failed to sign: %@", keyError);
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign PLC operation"}];
                 return;
             }
+            PDS_LOG_DEBUG(@"updateHandle: Signed successfully");
             
             opData[@"sig"] = [CryptoUtils base64URLEncode:sig];
             
@@ -658,9 +686,21 @@
                 [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
                 return;
             }
+        } else {
+            // Non-PLC DID (e.g. did:web). Verify that it resolves to the new handle.
+            NSError *resolveError = nil;
+            NSDictionary *resolvedData = [XrpcIdentityHelper resolveIdentityInfoForIdentifier:did
+                                                                             serviceDatabases:serviceDatabases
+                                                                                    errorName:nil
+                                                                                        error:&resolveError];
+            if (!resolvedData || ![resolvedData[@"handle"] isEqualToString:normalizedHandle]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID is not properly configured for handle"}];
+                return;
+            }
         }
 
-        NSError *error = nil;
+        // 3. Database Update
         if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
                                                  did:did
                                               handle:normalizedHandle
@@ -668,6 +708,11 @@
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"HandleUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update handle"}];
             return;
+        }
+
+        // 4. Firehose Broadcast
+        if (subscribeReposHandler) {
+            [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
         }
 
         response.statusCode = HttpStatusOK;
