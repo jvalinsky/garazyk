@@ -62,6 +62,15 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Get multiple posts by URI. */
 - (nullable NSDictionary *)getPosts:(NSArray<NSString *> *)uris error:(NSError **)error;
 
+/*! Get a single post record by AT URI. */
+- (nullable NSDictionary *)getPostByURI:(NSString *)uri error:(NSError **)error;
+
+/*! Format a post record into an AppView post structure. */
+- (nullable NSDictionary *)formatPostRecord:(NSString *)uri cid:(NSString *)cid record:(NSDictionary *)record;
+
+/*! Generate a CID string for a record dictionary. */
+- (NSString *)generateCIDForRecord:(NSDictionary *)record;
+
 @end
 
 NS_ASSUME_NONNULL_END
