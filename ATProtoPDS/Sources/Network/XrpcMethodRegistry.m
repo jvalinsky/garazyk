@@ -812,7 +812,7 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
                             [methodId isEqualToString:@"app.bsky.notification.putPreferences"] ||
                             [methodId isEqualToString:@"app.bsky.unspecced.getConfig"];
 
-          if (hasLocalHandler && forceLocal && explicitProxyTarget.length == 0) {
+          if (hasLocalHandler && forceLocal) {
             return NO;
           }
           return proxyXrpcRequest(request, response, methodId,

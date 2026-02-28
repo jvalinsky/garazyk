@@ -597,6 +597,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         
         if ([authHeader hasPrefix:@"Bearer "]) {
             refreshToken = [authHeader substringFromIndex:7];
+        } else if ([authHeader hasPrefix:@"DPoP "]) {
+            refreshToken = [authHeader substringFromIndex:5];
         }
 
         if (!refreshToken) {
