@@ -349,6 +349,7 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         NSDictionary *record = body[@"record"];
         NSString *rkey = body[@"rkey"];
         NSString *repo = body[@"repo"];
+        NSString *swapCommit = body[@"swapCommit"];
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
@@ -363,26 +364,92 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
             return;
         }
 
-        if (!rkey) {
-            rkey = [[TID tid] stringValue];
-        }
+        NSDictionary *write = @{
+            @"action": @"create",
+            @"collection": collection,
+            @"rkey": rkey ?: @"",
+            @"value": record
+        };
 
         NSError *error = nil;
-        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
-        if (!success) {
+        NSDictionary *result = [recordService applyWrites:@[write]
+                                                   forDid:did
+                                           validationMode:mode
+                                               swapCommit:swapCommit
+                                                    error:&error];
+        if (!result) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"RecordCreationFailed", @"message": error.localizedDescription ?: @"Failed to create record"}];
             return;
         }
 
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSDictionary *createdRecord = [recordService getRecord:uri forDid:did error:nil];
+        NSArray *resultsArray = result[@"results"];
+        NSDictionary *firstResult = resultsArray.count > 0 ? resultsArray.firstObject : nil;
+        
+        NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
+        if (firstResult[@"uri"]) resBody[@"uri"] = firstResult[@"uri"];
+        if (firstResult[@"cid"]) resBody[@"cid"] = firstResult[@"cid"];
+        if (result[@"commit"]) resBody[@"commit"] = result[@"commit"];
+        resBody[@"validationStatus"] = firstResult[@"validationStatus"] ?: @"valid";
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:resBody];
+    }];
+
+    // com.atproto.repo.deleteRecord
+    [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                       jwtMinter:jwtMinter
+                                                 adminController:adminController
+                                                         request:request
+                                                        response:response];
+        if (!did) {
+            if (response.statusCode == HttpStatusOK) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            }
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *collection = body[@"collection"];
+        NSString *rkey = body[@"rkey"];
+        NSString *repo = body[@"repo"];
+        NSString *swapCommit = body[@"swapCommit"];
+
+        if (repo && ![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot delete record for another user"}];
+            return;
+        }
+
+        if (!collection || !rkey) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey"}];
+            return;
+        }
+
+        NSDictionary *write = @{
+            @"action": @"delete",
+            @"collection": collection,
+            @"rkey": rkey
+        };
+
+        NSError *error = nil;
+        NSDictionary *result = [recordService applyWrites:@[write]
+                                                   forDid:did
+                                           validationMode:PDSValidationModeOff
+                                               swapCommit:swapCommit
+                                                    error:&error];
+        if (!result) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"RecordDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete record"}];
+            return;
+        }
 
         NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
-        resBody[@"uri"] = uri;
-        if (createdRecord[@"cid"]) {
-            resBody[@"cid"] = createdRecord[@"cid"];
-        }
+        if (result[@"commit"]) resBody[@"commit"] = result[@"commit"];
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:resBody];
@@ -660,6 +727,7 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         NSString *rkey = body[@"rkey"];
         NSDictionary *record = body[@"record"];
         NSString *repo = body[@"repo"];
+        NSString *swapCommit = body[@"swapCommit"];
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
@@ -674,22 +742,43 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
             return;
         }
 
+        // putRecord creates or updates. To emulate upsert with applyWrites,
+        // we use "update" which will implicitly create if it doesn't exist
+        // based on how PDSRecordService applyWrites is implemented.
+        // Wait, PDSRecordService applyWrites doesn't strictly fail on "update"
+        // if the record doesn't exist, it falls back gracefully in the DB.
+        
+        // Actually, ATProto's com.atproto.repo.putRecord is an upsert.
+        // We will just try applying "update", and if applyWrites fails because of it,
+        // we might have to use "create". But looking at applyWrites, "update" works as upsert.
+        
+        NSDictionary *write = @{
+            @"action": @"update",
+            @"collection": collection,
+            @"rkey": rkey,
+            @"value": record
+        };
+
         NSError *error = nil;
-        BOOL success = [recordService putRecord:collection rkey:rkey value:record forDid:did validationMode:mode error:&error];
-        if (!success) {
+        NSDictionary *result = [recordService applyWrites:@[write]
+                                                   forDid:did
+                                           validationMode:mode
+                                               swapCommit:swapCommit
+                                                    error:&error];
+        if (!result) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"RecordUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update record"}];
             return;
         }
 
-        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        NSDictionary *updatedRecord = [recordService getRecord:uri forDid:did error:nil];
+        NSArray *resultsArray = result[@"results"];
+        NSDictionary *firstResult = resultsArray.count > 0 ? resultsArray.firstObject : nil;
         
         NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
-        resBody[@"uri"] = uri;
-        if (updatedRecord[@"cid"]) {
-            resBody[@"cid"] = updatedRecord[@"cid"];
-        }
+        if (firstResult[@"uri"]) resBody[@"uri"] = firstResult[@"uri"];
+        if (firstResult[@"cid"]) resBody[@"cid"] = firstResult[@"cid"];
+        if (result[@"commit"]) resBody[@"commit"] = result[@"commit"];
+        resBody[@"validationStatus"] = firstResult[@"validationStatus"] ?: @"valid";
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:resBody];
