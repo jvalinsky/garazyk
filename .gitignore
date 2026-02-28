@@ -20,7 +20,7 @@ secp256k1/
 *.tmp
 *.temp
 
-tmp_*
+#tmp_*
 
 letta.js
 indigo_research
