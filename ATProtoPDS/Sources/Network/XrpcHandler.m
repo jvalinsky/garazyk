@@ -129,6 +129,7 @@
         return;
     }
 
+    PDS_LOG_INFO(@"XrpcHandler: About to call handler for method=%@", methodId);
     @try {
         handler(request, response);
     } @catch (NSException *exception) {
