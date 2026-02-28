@@ -224,7 +224,9 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
             }];
         }
         
-        BOOL success = [actorService putPreferencesForActor:actorDID preferences:prefsList error:&error];
+        NSDictionary *newPrefs = @{@"preferences": prefsList};
+        
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:newPrefs error:&error];
         if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
             return;
