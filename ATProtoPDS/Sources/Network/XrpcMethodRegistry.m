@@ -463,6 +463,14 @@ static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
     return nil;
   }
 
+  // Special case for configured AppView, similar to reference implementation
+  if ([proxyDescriptor isEqualToString:[NSString stringWithFormat:@"%@#bsky_appview", config.appViewDID]]) {
+    NSString *appViewURL = config.appViewURL;
+    if (appViewURL.length > 0) {
+      return [NSURL URLWithString:appViewURL];
+    }
+  }
+
   DIDResolver *resolver = [[DIDResolver alloc] init];
   if (config.plcURL.length > 0) {
     resolver.plcURL = config.plcURL;
@@ -548,6 +556,7 @@ static NSURL *proxyURLForMethodAndQuery(NSURL *baseURL, NSString *methodId,
 }
 
 static NSString *configuredAppViewProxyTarget(PDSConfiguration *config) {
+  // Check for explicit URL override first
   NSString *envTarget = trimmedNonEmptyString(
       [[NSProcessInfo processInfo] environment][@"PDS_APPVIEW_URL"]);
   if (envTarget.length > 0) {
@@ -561,6 +570,23 @@ static NSString *configuredAppViewProxyTarget(PDSConfiguration *config) {
   }
 
   return trimmedNonEmptyString([config stringForKey:@"app_view.url"]);
+}
+
+static NSString *configuredAppViewProxyDescriptor(PDSConfiguration *config) {
+  // Check for explicit descriptor override
+  NSString *envDescriptor = trimmedNonEmptyString(
+      [[NSProcessInfo processInfo] environment][@"PDS_APPVIEW_DESCRIPTOR"]);
+  if (envDescriptor.length > 0) {
+    return envDescriptor;
+  }
+
+  // Construct DID#service descriptor from AppView configuration
+  NSString *appViewDID = config.appViewDID;
+  if (appViewDID.length > 0) {
+    return [NSString stringWithFormat:@"%@#bsky_appview", appViewDID];
+  }
+
+  return nil;
 }
 
 static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
@@ -802,12 +828,12 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
           return NO;
         }
 
-        NSString *fallbackTarget = configuredAppViewProxyTarget(config);
-        if (fallbackTarget.length == 0) {
+        NSString *fallbackDescriptor = configuredAppViewProxyDescriptor(config);
+        if (fallbackDescriptor.length == 0) {
           return NO;
         }
 
-        return proxyXrpcRequest(request, response, methodId, fallbackTarget,
+        return proxyXrpcRequest(request, response, methodId, fallbackDescriptor,
                                 config, NO, jwtMinter, adminController,
                                 serviceDatabases, userDatabasePool);
       };
