@@ -45,14 +45,8 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController {
     
-    // Check if local AppView is enabled. If not, we skip registration to allow
-    // the XrpcDispatcher to handle these methods via proxying.
-    if (![PDSConfiguration sharedConfiguration].localAppViewEnabled) {
-        PDS_LOG_INFO(@"Local AppView disabled; skipping registration of app.bsky.* handlers.");
-        return;
-    }
-    
-    // Initialize AppView database and services
+    // Initialize AppView database and services for all bsky methods
+    // Even if local app view is disabled, the PDS still must serve get/putPreferences
     NSError *appViewDbError = nil;
     PDSDatabase *appViewDatabase = [serviceDatabases serviceDatabaseWithError:&appViewDbError];
     if (!appViewDatabase && appViewDbError) {
@@ -61,6 +55,191 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     }
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+    
+    // Always register getPreferences and putPreferences, as they belong to the PDS
+    // app.bsky.actor.getPreferences - Get actor preferences
+    [dispatcher registerAppBskyActorGetPreferences:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) {
+            return;
+        }
+        
+        NSError *error = nil;
+        NSDictionary *preferences = [actorService getPreferencesForActor:actorDID error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:preferences ?: @{@"preferences": @{}}];
+    }];
+    
+    // app.bsky.actor.putPreferences - Update actor preferences
+    [dispatcher registerAppBskyActorPutPreferences:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) {
+            return;
+        }
+        
+        NSDictionary *body = request.jsonBody;
+        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+        
+        id preferences = body[@"preferences"];
+        if (!preferences || (![preferences isKindOfClass:[NSDictionary class]] && ![preferences isKindOfClass:[NSArray class]])) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing preferences in body"];
+            return;
+        }
+        
+        NSError *error = nil;
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:preferences error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"preferences": preferences}];
+    }];
+
+    // app.bsky.notification.getPreferences - Get notification preferences
+    [dispatcher registerMethod:@"app.bsky.notification.getPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) {
+            return;
+        }
+        
+        NSError *error = nil;
+        NSDictionary *preferences = [actorService getPreferencesForActor:actorDID error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        
+        // Extract notification preferences if they exist, otherwise return defaults
+        BOOL priority = NO;
+        if (preferences && preferences[@"preferences"] && [preferences[@"preferences"] isKindOfClass:[NSArray class]]) {
+            NSArray *prefsList = preferences[@"preferences"];
+            for (NSDictionary *pref in prefsList) {
+                if ([pref[@"$type"] isEqualToString:@"app.bsky.actor.defs#bskyAppStatePref"]) {
+                    // Extract app state preferences if needed
+                }
+                // Check for notification preferences if stored in actor preferences
+                if ([pref[@"$type"] isEqualToString:@"app.bsky.notification.defs#notificationPref"]) {
+                    if (pref[@"priority"]) {
+                        priority = [pref[@"priority"] boolValue];
+                    }
+                }
+            }
+        }
+        
+        [response setJsonBody:@{@"priority": @(priority)}];
+    }];
+
+    // app.bsky.notification.putPreferences - Update notification preferences
+    [dispatcher registerMethod:@"app.bsky.notification.putPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) {
+            return;
+        }
+        
+        NSDictionary *body = request.jsonBody;
+        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+        
+        BOOL priority = [body[@"priority"] boolValue];
+        
+        // Update notification preferences inside actor preferences
+        NSError *error = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
+        
+        NSMutableArray *prefsList = [NSMutableArray array];
+        if (currentPrefs && currentPrefs[@"preferences"] && [currentPrefs[@"preferences"] isKindOfClass:[NSArray class]]) {
+            prefsList = [currentPrefs[@"preferences"] mutableCopy];
+        }
+        
+        // Find and update or add notification preference
+        BOOL found = NO;
+        for (NSUInteger i = 0; i < prefsList.count; i++) {
+            NSMutableDictionary *pref = [prefsList[i] mutableCopy];
+            if ([pref[@"$type"] isEqualToString:@"app.bsky.notification.defs#notificationPref"]) {
+                pref[@"priority"] = @(priority);
+                prefsList[i] = pref;
+                found = YES;
+                break;
+            }
+        }
+        
+        if (!found) {
+            [prefsList addObject:@{
+                @"$type": @"app.bsky.notification.defs#notificationPref",
+                @"priority": @(priority)
+            }];
+        }
+        
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:prefsList error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+            return;
+        }
+        
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // Check if local AppView is enabled. If not, we skip registration of the rest of the endpoints
+    if (![PDSConfiguration sharedConfiguration].localAppViewEnabled) {
+        PDS_LOG_INFO(@"Local AppView disabled; skipping registration of app.bsky.* feed/graph/notification handlers.");
+        return;
+    }
+    
     FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
     NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
     GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
