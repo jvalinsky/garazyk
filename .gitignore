@@ -20,6 +20,8 @@ secp256k1/
 *.tmp
 *.temp
 
+tmp_*
+
 letta.js
 indigo_research
 # Xcode
