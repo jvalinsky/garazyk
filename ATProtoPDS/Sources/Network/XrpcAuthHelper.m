@@ -170,6 +170,9 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     BOOL isDPoP = NO;
     if ([authHeader hasPrefix:@"Bearer "]) {
         token = [authHeader substringFromIndex:7];
+        if ([request headerForKey:@"DPoP"].length > 0) {
+            isDPoP = YES; // Some clients send Bearer but attach a DPoP header
+        }
     } else if ([authHeader hasPrefix:@"DPoP "]) {
         token = [authHeader substringFromIndex:5];
         isDPoP = YES;
@@ -198,7 +201,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                                    method:request.methodString
                                       url:dpopURL
                                     nonce:nil
-                             requireNonce:YES
+                             requireNonce:NO // Compat: clients may not support nonces yet
                             outThumbprint:&dpopThumbprint
                                     error:&dpopError]) {
             if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
@@ -244,7 +247,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
     NSString *expectedIssuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
     verifier.expectedIssuer = expectedIssuer;
-    verifier.expectedAudience = expectedIssuer; // Ensure tokens are for this PDS instance
+    // Do not set expectedAudience here; we do custom validation to support did:web variants
     verifier.allowedAlgorithms = [self allowedAlgorithmsForMinter:jwtMinter];
 
     // Verify the JWT
@@ -253,6 +256,29 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     if (!isValid || verifyError) {
         PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
         return nil;
+    }
+
+    // Custom Audience Verification
+    NSString *tokenAud = jwt.payload.aud;
+    if (tokenAud) {
+        BOOL validAud = [tokenAud isEqualToString:expectedIssuer];
+        if (!validAud) {
+            NSURL *issuerURL = [NSURL URLWithString:expectedIssuer];
+            if (issuerURL.host) {
+                NSString *didWebHost = [NSString stringWithFormat:@"did:web:%@", issuerURL.host];
+                NSString *didWebHostPort = nil;
+                if (issuerURL.port) {
+                    didWebHostPort = [NSString stringWithFormat:@"did:web:%@%%3A%@", issuerURL.host, issuerURL.port];
+                }
+                if ([tokenAud isEqualToString:didWebHost] || (didWebHostPort && [tokenAud isEqualToString:didWebHostPort])) {
+                    validAud = YES;
+                }
+            }
+        }
+        if (!validAud) {
+            PDS_LOG_AUTH_WARN(@"JWT verification failed due to invalid audience: %@", tokenAud);
+            return nil;
+        }
     }
 
     // Enforce DPoP binding
