@@ -562,6 +562,104 @@
         }
         NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
 
+        if ([did hasPrefix:@"did:plc:"]) {
+            NSString *plcUrl = configuration.plcURL;
+            if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
+                plcUrl = @"http://127.0.0.1:2582";
+            }
+            
+            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            NSError *auditError = nil;
+            NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
+            
+            if (!auditLog || auditLog.count == 0) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to resolve PLC audit log"}];
+                return;
+            }
+            
+            NSDictionary *lastOpDict = [auditLog lastObject];
+            PLCOperation *lastOp = [PLCOperation operationFromDictionary:lastOpDict error:nil];
+            if (!lastOp) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to parse last PLC operation"}];
+                return;
+            }
+            
+            NSString *expectedPrev = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+            if (!expectedPrev) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to calculate CID for previous operation"}];
+                return;
+            }
+            
+            NSMutableDictionary *opData = [lastOp.data mutableCopy];
+            opData[@"alsoKnownAs"] = @[[NSString stringWithFormat:@"at://%@", normalizedHandle]];
+            opData[@"prev"] = expectedPrev;
+            [opData removeObjectForKey:@"sig"];
+            
+            NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:nil];
+            if (!unsignedCBOR) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to encode PLC operation"}];
+                return;
+            }
+            
+            PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+            NSError *keyError = nil;
+            if (![keyManager loadOrGenerateKeyWithError:&keyError]) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to load rotation key"}];
+                return;
+            }
+            
+            NSData *hash = [CID rawSha256:unsignedCBOR];
+            NSData *sig = nil;
+            if (![keyManager signHash:hash result:&sig error:&keyError] || !sig) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign PLC operation"}];
+                return;
+            }
+            
+            opData[@"sig"] = [CryptoUtils base64URLEncode:sig];
+            
+            NSData *postData = [NSJSONSerialization dataWithJSONObject:opData options:0 error:nil];
+            if (!postData) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to serialize PLC operation"}];
+                return;
+            }
+            
+            NSURL *submitUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", plcUrl, did]];
+            NSMutableURLRequest *submitRequest = [NSMutableURLRequest requestWithURL:submitUrl];
+            submitRequest.HTTPMethod = @"POST";
+            [submitRequest setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+            submitRequest.HTTPBody = postData;
+            
+            dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+            __block NSInteger statusCode = 0;
+            __block NSError *submitError = nil;
+            __block NSData *responseData = nil;
+            
+            [[[NSURLSession sharedSession] dataTaskWithRequest:submitRequest completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+                NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)resp;
+                statusCode = httpResp.statusCode;
+                submitError = err;
+                responseData = data;
+                dispatch_semaphore_signal(sema);
+            }] resume];
+            
+            dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+            
+            if (submitError || (statusCode != 200 && statusCode != 202)) {
+                NSString *respString = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
+                PDS_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
+                response.statusCode = HttpStatusServiceUnavailable;
+                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
+                return;
+            }
+        }
+
         NSError *error = nil;
         if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
                                                  did:did
