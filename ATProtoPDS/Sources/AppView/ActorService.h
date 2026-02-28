@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary *)getPreferencesForActor:(NSString *)actorDID error:(NSError **)error;
 
 /*! Update preferences for actor. */
-- (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSDictionary *)preferences error:(NSError **)error;
+- (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSArray *)preferences error:(NSError **)error;
 
 /*! Search actors by term with pagination. */
 - (nullable NSDictionary *)searchActors:(NSString *)term

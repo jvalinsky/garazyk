@@ -224,9 +224,8 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
             }];
         }
         
-        NSDictionary *newPrefs = @{@"preferences": prefsList};
         
-        BOOL success = [actorService putPreferencesForActor:actorDID preferences:newPrefs error:&error];
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:prefsList error:&error];
         if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
             return;
@@ -305,73 +304,6 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         [response setJsonBody:@{@"profiles": profiles ?: @[]}];
     }];
     
-    // app.bsky.actor.getPreferences - Get actor preferences
-    [dispatcher registerAppBskyActorGetPreferences:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
-            return;
-        }
-        
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                         jwtMinter:jwtMinter
-                                                   adminController:adminController
-                                                           request:request
-                                                          response:response];
-        if (!actorDID) {
-            return;
-        }
-        
-        NSError *error = nil;
-        NSDictionary *preferences = [actorService getPreferencesForActor:actorDID error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:preferences ?: @{@"preferences": @{}}];
-    }];
-    
-    // app.bsky.actor.putPreferences - Update actor preferences
-    [dispatcher registerAppBskyActorPutPreferences:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
-            return;
-        }
-        
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                         jwtMinter:jwtMinter
-                                                   adminController:adminController
-                                                           request:request
-                                                          response:response];
-        if (!actorDID) {
-            return;
-        }
-        
-        NSDictionary *body = request.jsonBody;
-        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
-            return;
-        }
-        
-        id preferences = body[@"preferences"];
-        if (!preferences || (![preferences isKindOfClass:[NSDictionary class]] && ![preferences isKindOfClass:[NSArray class]])) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing preferences in body"];
-            return;
-        }
-        
-        NSError *error = nil;
-        BOOL success = [actorService putPreferencesForActor:actorDID preferences:preferences error:&error];
-        if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
-            return;
-        }
-        
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"preferences": preferences}];
-    }];
     
     // app.bsky.actor.searchActors - Search actors with pagination
     [dispatcher registerAppBskyActorSearchActors:^(HttpRequest *request, HttpResponse *response) {
