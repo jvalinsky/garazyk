@@ -32,7 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NS_ENUM(NSInteger, RateLimitType) {
     RateLimitTypeDID,
     RateLimitTypeIP,
-    RateLimitTypeBlob
+    RateLimitTypeBlob,
+    RateLimitTypeCustom
 };
 
 /**
@@ -165,16 +166,17 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  */
 - (RateLimitResult *)checkRateLimitForIP:(NSString *)ip;
 
-/**
- * @brief Check blob upload rate limit for a DID
- *
- * Separate limit for blob uploads to prevent storage abuse. Checks against
- * blobLimit/blobWindowSeconds.
- *
- * @param did Decentralized identifier to check
- * @return RateLimitResult indicating if upload is allowed
- */
 - (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did;
+
+/**
+ * @brief Check a custom rate limit with specific key, limit and window
+ *
+ * @param key Unique key for the limit
+ * @param limit Maximum requests allowed
+ * @param windowSeconds Window duration in seconds
+ * @return RateLimitResult indicating if request is allowed
+ */
+- (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds;
 
 /**
  * @brief Generate X-RateLimit-* headers for DID-based limit

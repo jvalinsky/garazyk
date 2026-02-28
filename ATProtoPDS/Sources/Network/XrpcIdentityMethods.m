@@ -28,6 +28,8 @@
 #import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Sync/SubscribeReposHandler.h"
+#import "Network/RateLimiter.h"
 
 // Forward declarations for XrpcMethodRegistry PLC token methods
 @interface XrpcMethodRegistry (PLCTokens)
@@ -43,7 +45,8 @@
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
                  configuration:(PDSConfiguration *)configuration
-                 emailProvider:(id<PDSEmailProvider>)emailProvider {
+                 emailProvider:(nullable id<PDSEmailProvider>)emailProvider
+         subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler {
     
     // com.atproto.identity.refreshIdentity
     [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
@@ -536,16 +539,34 @@
 
     // com.atproto.identity.updateHandle
     [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
-        PDS_LOG_INFO(@"updateHandle: Starting request");
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-        PDS_LOG_INFO(@"updateHandle: Auth extracted, did=%@", did);
         if (!did) {
-            PDS_LOG_INFO(@"updateHandle: Auth failed - returning 401");
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             }
+            return;
+        }
+
+        // Rate Limiting: 10 per 5 min, 50 per day per DID
+        RateLimiter *limiter = [RateLimiter sharedLimiter];
+        NSString *shortKey = [NSString stringWithFormat:@"identity.updateHandle:5m:%@", did];
+        RateLimitResult *shortResult = [limiter checkRateLimitForKey:shortKey limit:10 windowSeconds:300];
+        if (!shortResult.allowed) {
+            response.statusCode = HttpStatusTooManyRequests;
+            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Rate limit exceeded (10 per 5 min)"}];
+            [limiter applyRateLimitHeadersToResponse:response forDid:nil ip:nil]; // Generic headers or custom
+            [response setHeader:[NSString stringWithFormat:@"%.0f", shortResult.retryAfter] forKey:@"Retry-After"];
+            return;
+        }
+
+        NSString *longKey = [NSString stringWithFormat:@"identity.updateHandle:1d:%@", did];
+        RateLimitResult *longResult = [limiter checkRateLimitForKey:longKey limit:50 windowSeconds:86400];
+        if (!longResult.allowed) {
+            response.statusCode = HttpStatusTooManyRequests;
+            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Rate limit exceeded (50 per day)"}];
+            [response setHeader:[NSString stringWithFormat:@"%.0f", longResult.retryAfter] forKey:@"Retry-After"];
             return;
         }
 
@@ -573,144 +594,160 @@
         NSError *error = nil;
         PDSDatabaseAccount *existingAccount = [serviceDatabases getAccountByHandle:normalizedHandle error:&error];
         PDS_LOG_DEBUG(@"updateHandle: Uniqueness check done, existingAccount=%@", existingAccount);
-        if (existingAccount && ![existingAccount.did isEqualToString:did]) {
+
+        BOOL needsUpdate = YES;
+        if (existingAccount && [existingAccount.did isEqualToString:did]) {
+            // Already owns this handle, skip PLC and DB updates but still broadcast
+            PDS_LOG_INFO(@"updateHandle: User already owns handle %@, skipping updates", normalizedHandle);
+            needsUpdate = NO;
+        } else if (existingAccount) {
             response.statusCode = HttpStatusConflict;
             [response setJsonBody:@{@"error": @"HandleAlreadyTaken", @"message": @"Handle already taken"}];
             return;
         }
 
-        // 2. Identity Update / Validation
-        PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
-        if ([did hasPrefix:@"did:plc:"]) {
-            NSString *plcUrl = configuration.plcURL;
-            if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
-                plcUrl = @"http://127.0.0.1:2582";
+        if (needsUpdate) {
+            // 2. Handle Ownership Verification
+            PDS_LOG_DEBUG(@"updateHandle: Verifying handle ownership for %@", normalizedHandle);
+            
+            BOOL isLocal = NO;
+            NSString *hostname = [configuration canonicalHostname];
+            if ([normalizedHandle hasSuffix:[NSString stringWithFormat:@".%@", hostname]] || [normalizedHandle isEqualToString:hostname]) {
+                isLocal = YES;
+            } else {
+                for (NSString *domain in configuration.availableUserDomains) {
+                    if ([normalizedHandle hasSuffix:[NSString stringWithFormat:@".%@", domain]] || [normalizedHandle isEqualToString:domain]) {
+                        isLocal = YES;
+                        break;
+                    }
+                }
             }
-            
-            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
-            PDS_LOG_DEBUG(@"updateHandle: Resolving PLC audit log for DID=%@", did);
-            NSError *auditError = nil;
-            NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
-            PDS_LOG_DEBUG(@"updateHandle: PLC audit log resolved, count=%lu, error=%@", (unsigned long)auditLog.count, auditError);
-            
-            if (!auditLog || auditLog.count == 0) {
-                PDS_LOG_DEBUG(@"updateHandle: Failed to resolve PLC audit log");
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to resolve PLC audit log"}];
-                return;
+
+            if (!isLocal) {
+                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                __block NSString *resolvedDid = nil;
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                [handleResolver resolveHandle:normalizedHandle completion:^(NSString * _Nullable rDid, NSError * _Nullable rError) {
+                    resolvedDid = rDid;
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+                if (![resolvedDid isEqualToString:did]) {
+                    PDS_LOG_ERROR(@"Handle verification failed for %@: expected %@, got %@", normalizedHandle, did, resolvedDid);
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Handle resolution does not match DID"}];
+                    return;
+                }
             }
-            
-            NSDictionary *lastOpDict = [auditLog lastObject];
-            PLCOperation *lastOp = [PLCOperation operationFromDictionary:lastOpDict error:nil];
-            if (!lastOp) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to parse last PLC operation"}];
-                return;
+
+            // 3. Identity Update / Validation
+            PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
+            if (configuration.debugSkipPlcOperations || [configuration.plcURL isEqualToString:@"mock"]) {
+                PDS_LOG_DB_DEBUG(@"Skipping PLC handle update (mock mode) for DID %@", did);
+            } else if ([did hasPrefix:@"did:plc:"]) {
+                NSString *plcUrl = configuration.plcURL;
+                if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
+                    plcUrl = @"http://127.0.0.1:2582";
+                }
+                
+                DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+                PDS_LOG_DEBUG(@"updateHandle: Resolving PLC audit log for DID=%@", did);
+                NSError *auditError = nil;
+                NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
+                PDS_LOG_DEBUG(@"updateHandle: PLC audit log resolved, count=%lu, error=%@", (unsigned long)auditLog.count, auditError);
+                
+                if (!auditLog || auditLog.count == 0) {
+                    PDS_LOG_ERROR(@"PLC audit log empty or not found for DID %@: %@", did, auditError);
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"NotFound", @"message": @"DID not found in PLC directory"}];
+                    return;
+                }
+
+                PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+                NSError *keyError = nil;
+                if (![keyManager loadOrGenerateKeyWithError:&keyError]) {
+                    PDS_LOG_ERROR(@"Failed to load rotation key for DID %@: %@", did, keyError);
+                    response.statusCode = HttpStatusInternalServerError;
+                    [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to load rotation key"}];
+                    return;
+                }
+
+                NSMutableArray<PLCOperation *> *ops = [NSMutableArray array];
+                for (NSDictionary *dict in auditLog) {
+                    PLCOperation *operation = [PLCOperation operationFromDictionary:dict error:nil];
+                    if (operation) [ops addObject:operation];
+                }
+                
+                PLCDIDState *currentState = [PLCStateReplayer replayHistory:ops error:&auditError];
+                if (!currentState) {
+                    PDS_LOG_ERROR(@"Failed to replay PLC state for DID %@: %@", did, auditError);
+                    response.statusCode = HttpStatusInternalServerError;
+                    [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to replay DID history"}];
+                    return;
+                }
+
+                // Create update operation
+                NSMutableDictionary *op = [NSMutableDictionary dictionary];
+                op[@"type"] = @"plc_operation";
+                op[@"rotationKeys"] = currentState.rotationKeys;
+                op[@"verificationMethods"] = currentState.verificationMethods;
+                
+                // Preserve alsoKnownAs entries that are not at:// handles
+                NSMutableArray *newAlsoKnownAs = [NSMutableArray array];
+                NSString *newAtHandle = [NSString stringWithFormat:@"at://%@", normalizedHandle];
+                for (NSString *aka in currentState.alsoKnownAs) {
+                    if (![aka hasPrefix:@"at://"]) {
+                        [newAlsoKnownAs addObject:aka];
+                    }
+                }
+                [newAlsoKnownAs insertObject:newAtHandle atIndex:0];
+                op[@"alsoKnownAs"] = newAlsoKnownAs;
+
+                op[@"services"] = currentState.services;
+                op[@"prev"] = [PLCOperation calculateCIDForOperation:auditLog.lastObject error:nil];
+                
+                // Sign operation
+                NSError *signError = nil;
+                NSData *opData = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:&signError];
+                NSData *hash = [CryptoUtils sha256:opData];
+                NSData *sigData = nil;
+                if (![keyManager signHash:hash result:&sigData error:&signError]) {
+                    PDS_LOG_ERROR(@"Failed to sign PLC operation for DID %@: %@", did, signError);
+                    response.statusCode = HttpStatusInternalServerError;
+                    [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign operation"}];
+                    return;
+                }
+                op[@"sig"] = [CryptoUtils base64URLEncode:sigData];
+
+                // Submit to PLC
+                PDS_LOG_DEBUG(@"updateHandle: Submitting PLC operation for DID=%@", did);
+                NSInteger statusCode = 0;
+                NSData *responseData = [plcResolver submitOperation:op did:did statusCode:&statusCode error:&auditError];
+                if (statusCode < 200 || statusCode >= 300) {
+                    NSString *respString = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
+                    PDS_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
+                    response.statusCode = HttpStatusServiceUnavailable;
+                    [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
+                    return;
+                }
+            } else {
+                // Non-PLC DID (e.g. did:web). Verification already performed above in Step 2.
+                PDS_LOG_DEBUG(@"updateHandle: Non-PLC DID %@ verification successful", did);
             }
-            
-            NSString *expectedPrev = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
-            if (!expectedPrev) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to calculate CID for previous operation"}];
-                return;
-            }
-            
-            NSMutableDictionary *opData = [lastOp.data mutableCopy];
-            opData[@"alsoKnownAs"] = @[[NSString stringWithFormat:@"at://%@", normalizedHandle]];
-            opData[@"prev"] = expectedPrev;
-            [opData removeObjectForKey:@"sig"];
-            
-            NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:nil];
-            if (!unsignedCBOR) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to encode PLC operation"}];
-                return;
-            }
-            
-            PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
-            PDS_LOG_DEBUG(@"updateHandle: Loading rotation key");
-            NSError *keyError = nil;
-            if (![keyManager loadOrGenerateKeyWithError:&keyError]) {
-                PDS_LOG_DEBUG(@"updateHandle: Failed to load rotation key: %@", keyError);
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to load rotation key"}];
-                return;
-            }
-            PDS_LOG_DEBUG(@"updateHandle: Rotation key loaded successfully");
-            
-            NSData *hash = [CID rawSha256:unsignedCBOR];
-            NSData *sig = nil;
-            PDS_LOG_DEBUG(@"updateHandle: Signing PLC operation");
-            if (![keyManager signHash:hash result:&sig error:&keyError] || !sig) {
-                PDS_LOG_DEBUG(@"updateHandle: Failed to sign: %@", keyError);
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign PLC operation"}];
-                return;
-            }
-            PDS_LOG_DEBUG(@"updateHandle: Signed successfully");
-            
-            opData[@"sig"] = [CryptoUtils base64URLEncode:sig];
-            
-            NSData *postData = [NSJSONSerialization dataWithJSONObject:opData options:0 error:nil];
-            if (!postData) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to serialize PLC operation"}];
-                return;
-            }
-            
-            NSURL *submitUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", plcUrl, did]];
-            NSMutableURLRequest *submitRequest = [NSMutableURLRequest requestWithURL:submitUrl];
-            submitRequest.HTTPMethod = @"POST";
-            [submitRequest setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-            submitRequest.HTTPBody = postData;
-            
-            dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-            __block NSInteger statusCode = 0;
-            __block NSError *submitError = nil;
-            __block NSData *responseData = nil;
-            
-            [[[NSURLSession sharedSession] dataTaskWithRequest:submitRequest completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
-                NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)resp;
-                statusCode = httpResp.statusCode;
-                submitError = err;
-                responseData = data;
-                dispatch_semaphore_signal(sema);
-            }] resume];
-            
-            dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-            
-            if (submitError || (statusCode != 200 && statusCode != 202)) {
-                NSString *respString = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
-                PDS_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
-                response.statusCode = HttpStatusServiceUnavailable;
-                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
-                return;
-            }
-        } else {
-            // Non-PLC DID (e.g. did:web). Verify that it resolves to the new handle.
-            NSError *resolveError = nil;
-            NSDictionary *resolvedData = [XrpcIdentityHelper resolveIdentityInfoForIdentifier:did
-                                                                             serviceDatabases:serviceDatabases
-                                                                                    errorName:nil
-                                                                                        error:&resolveError];
-            if (!resolvedData || ![resolvedData[@"handle"] isEqualToString:normalizedHandle]) {
+
+            // 4. Database Update
+            if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
+                                                    did:did
+                                                handle:normalizedHandle
+                                                    error:&error]) {
                 response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID is not properly configured for handle"}];
+                [response setJsonBody:@{@"error": @"HandleUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update handle"}];
                 return;
             }
         }
 
-        // 3. Database Update
-        if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
-                                                 did:did
-                                              handle:normalizedHandle
-                                               error:&error]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"HandleUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update handle"}];
-            return;
-        }
-
-        // 4. Firehose Broadcast
+        // 5. Firehose / Sequencer Broadcast (Always run, even if handle was already owned)
         if (subscribeReposHandler) {
             [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
         }

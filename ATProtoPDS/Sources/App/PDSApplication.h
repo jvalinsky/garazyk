@@ -33,6 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class JWTMinter;
 @class HttpServer;
 @class PDSRelayService;
+@class SubscribeReposHandler;
 
 @protocol PDSAccountService;
 @protocol PDSAdminController;
@@ -226,6 +227,13 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Service for notifying external relays of updates.
  */
 @property (nonatomic, strong, readonly) PDSRelayService *relayService;
+
+/*!
+ * @property subscribeReposHandler
+ *
+ * @abstract Handler for the subscribeRepos firehose.
+ */
+@property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
 
 /*!
  @property emailProvider

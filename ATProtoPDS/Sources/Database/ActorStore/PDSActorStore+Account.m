@@ -9,6 +9,8 @@
 #import "Core/ATProtoError.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Database/PDSDatabase.h"
+#import "Identity/ATProtoHandleValidator.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Compat/PDSTypes.h"
 
 #pragma clang diagnostic push
@@ -24,15 +26,68 @@
 
     void (^workBlock)(void) = ^{
         NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
-        NSError *prepError = nil;
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
-        if (!stmt) {
-            blockError = prepError;
-            return;
-        }
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&blockError];
+        if (!stmt) return;
 
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            account = [self accountFromStatement:stmt];
+        }
+    };
+
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
+        workBlock();
+    } else {
+        dispatch_sync(self.transactionQueue, workBlock);
+    }
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return account;
+}
+
+- (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
+    __block PDSDatabaseAccount *account = nil;
+    __block NSError *blockError = nil;
+
+    void (^workBlock)(void) = ^{
+        NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&blockError];
+        if (!stmt) return;
+
+        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+        sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            account = [self accountFromStatement:stmt];
+        }
+    };
+
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
+        workBlock();
+    } else {
+        dispatch_sync(self.transactionQueue, workBlock);
+    }
+
+    if (error && blockError) {
+        *error = blockError;
+    }
+    return account;
+}
+
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
+    __block PDSDatabaseAccount *account = nil;
+    __block NSError *blockError = nil;
+
+    void (^workBlock)(void) = ^{
+        NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&blockError];
+        if (!stmt) return;
+
+        sqlite3_bind_text(stmt, 1, email.UTF8String, -1, SQLITE_TRANSIENT);
+
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             account = [self accountFromStatement:stmt];
         }
@@ -71,7 +126,7 @@
         }
     };
 
-    if (dispatch_get_specific("com.atproto.pds.actorstore.queue_key")) {
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
         workBlock();
     } else {
         dispatch_sync(self.transactionQueue, workBlock);
@@ -118,9 +173,27 @@
     }
     col++;
     
-    account.createdAt = sqlite3_column_double(stmt, col);
+    // Robust date parsing
+    if (sqlite3_column_type(stmt, col) == SQLITE_FLOAT || sqlite3_column_type(stmt, col) == SQLITE_INTEGER) {
+        account.createdAt = sqlite3_column_double(stmt, col);
+    } else if (sqlite3_column_type(stmt, col) == SQLITE_TEXT) {
+        const char *text = (const char *)sqlite3_column_text(stmt, col);
+        if (text) {
+            NSDateFormatter *fmt = [NSDateFormatter atproto_iso8601Formatter];
+            account.createdAt = [[fmt dateFromString:@(text)] timeIntervalSince1970];
+        }
+    }
     col++;
-    account.updatedAt = sqlite3_column_double(stmt, col);
+
+    if (sqlite3_column_type(stmt, col) == SQLITE_FLOAT || sqlite3_column_type(stmt, col) == SQLITE_INTEGER) {
+        account.updatedAt = sqlite3_column_double(stmt, col);
+    } else if (sqlite3_column_type(stmt, col) == SQLITE_TEXT) {
+        const char *text = (const char *)sqlite3_column_text(stmt, col);
+        if (text) {
+            NSDateFormatter *fmt = [NSDateFormatter atproto_iso8601Formatter];
+            account.updatedAt = [[fmt dateFromString:@(text)] timeIntervalSince1970];
+        }
+    }
     
     return account;
 }
@@ -135,7 +208,9 @@
     if (!stmt) return NO;
 
     sqlite3_bind_text(stmt, 1, account.did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, account.handle.UTF8String, -1, SQLITE_TRANSIENT);
+    
+    NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:account.handle];
+    sqlite3_bind_text(stmt, 2, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
     
     if (account.email) {
         sqlite3_bind_text(stmt, 3, account.email.UTF8String, -1, SQLITE_TRANSIENT);
@@ -213,7 +288,8 @@
     if (!stmt) return NO;
     
     int idx = 1;
-    sqlite3_bind_text(stmt, idx++, account.handle.UTF8String, -1, SQLITE_TRANSIENT);
+    NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:account.handle];
+    sqlite3_bind_text(stmt, idx++, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
     
     if (account.email) {
         sqlite3_bind_text(stmt, idx++, account.email.UTF8String, -1, SQLITE_TRANSIENT);
