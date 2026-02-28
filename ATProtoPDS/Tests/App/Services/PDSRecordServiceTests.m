@@ -890,4 +890,60 @@
     XCTAssertEqual(error.code, PDSRecordServiceErrorUnauthorized);
 }
 
+- (void)testApplyWritesRobustnessMissingHash {
+    NSArray *writes = @[
+        @{
+            @"$type": @"com.atproto.repo.applyWritescreate", // Missing #
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"robust-1",
+            @"value": @{
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"Robust write test",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                      validationMode:PDSValidationModeOff
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result, @"Should handle $type without # if it has a known suffix");
+    XCTAssertNil(error);
+
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/robust-1", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
+}
+
+- (void)testApplyWritesRobustnessLegacyRecordField {
+    NSArray *writes = @[
+        @{
+            @"action": @"create",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"robust-2",
+            @"record": @{ // Using 'record' instead of 'value'
+                @"$type": @"app.bsky.feed.post",
+                @"text": @"Legacy record field test",
+                @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+            }
+        }
+    ];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:writes
+                                              forDid:self.testDID
+                                      validationMode:PDSValidationModeOff
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNotNil(result, @"Should handle 'record' field as fallback for 'value'");
+    XCTAssertNil(error);
+
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/robust-2", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
+}
+
 @end

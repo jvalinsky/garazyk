@@ -52,7 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary *)getBlocksForActor:(NSString *)actorDID
                                         limit:(NSInteger)limit
                                        cursor:(nullable NSString *)cursor
-                                        error:(NSError **)error;
+                                         error:(NSError **)error;
 
 #pragma mark - Mutes
 
@@ -85,9 +85,32 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Get actors who reposted a given post. */
 - (nullable NSDictionary *)getRepostedByForURI:(NSString *)uri
-                                          limit:(NSInteger)limit
-                                         cursor:(nullable NSString *)cursor
-                                          error:(NSError **)error;
+                                           limit:(NSInteger)limit
+                                          cursor:(nullable NSString *)cursor
+                                           error:(NSError **)error;
+
+#pragma mark - Starter Packs
+
+/*! Get details for a specific starter pack. */
+- (nullable NSDictionary *)getStarterPack:(NSString *)starterPackURI error:(NSError **)error;
+
+/*! Get starter packs created by an actor. */
+- (nullable NSDictionary *)getStarterPacksForActor:(NSString *)actorDID
+                                             limit:(NSInteger)limit
+                                            cursor:(nullable NSString *)cursor
+                                             error:(NSError **)error;
+
+/*! Index a starter pack record. */
+- (BOOL)indexStarterPack:(NSDictionary *)record
+                     did:(NSString *)did
+                    rkey:(NSString *)rkey
+                     cid:(NSString *)cid
+                   error:(NSError **)error;
+
+/*! Unindex a starter pack record. */
+- (BOOL)unindexStarterPackWithRKey:(NSString *)rkey
+                               did:(NSString *)did
+                             error:(NSError **)error;
 
 @end
 

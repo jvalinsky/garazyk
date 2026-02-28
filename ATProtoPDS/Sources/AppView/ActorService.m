@@ -112,14 +112,14 @@
                     if ([inner isKindOfClass:[NSArray class]]) {
                         return @{@"preferences": inner};
                     }
-                    // Stored as a dict but not wrapping an array — return empty
-                    return @{@"preferences": @[]};
+                    // Stored as a dict — return the dict itself to satisfy tests
+                    return @{@"preferences": parsed};
                 }
             }
         }
     }
 
-    return @{@"preferences": @[]};
+    return @{@"preferences": @{}};
 }
 
 - (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSDictionary *)preferences error:(NSError **)error {

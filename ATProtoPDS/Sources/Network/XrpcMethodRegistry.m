@@ -785,7 +785,7 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
                             [methodId isEqualToString:@"app.bsky.notification.putPreferences"] ||
                             [methodId isEqualToString:@"app.bsky.unspecced.getConfig"];
 
-          if (hasLocalHandler && forceLocal) {
+          if (hasLocalHandler && forceLocal && explicitProxyTarget.length == 0) {
             return NO;
           }
           return proxyXrpcRequest(request, response, methodId,
@@ -5485,74 +5485,7 @@ static void registerRepoCoreMethods(XrpcDispatcher *dispatcher,
     [response setJsonBody:result];
   }];
 
-  [dispatcher registerComAtprotoRepoImportRepo:^(HttpRequest *request,
-                                                 HttpResponse *response) {
-    if (request.method != HttpMethodPOST) {
-      response.statusCode = HttpStatusMethodNotAllowed;
-      [response setHeader:@"POST" forKey:@"Allow"];
-      [response setJsonBody:@{
-        @"error" : @"MethodNotAllowed",
-        @"message" : @"Expected POST"
-      }];
-      return;
-    }
-
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcMethodRegistry extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
-                                                         request:request
-                                                        response:response];
-    if (!did) {
-      if (response.statusCode == HttpStatusOK) {
-        response.statusCode = HttpStatusUnauthorized;
-        [response setJsonBody:@{
-          @"error" : @"AuthRequired",
-          @"message" : @"Valid authorization required"
-        }];
-      }
-      return;
-    }
-
-    NSString *contentType = [request headerForKey:@"Content-Type"] ?: @"";
-    if (![contentType hasPrefix:@"application/vnd.ipld.car"]) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Expected application/vnd.ipld.car content type"
-      }];
-      return;
-    }
-
-    NSString *contentLengthHeader = [request headerForKey:@"Content-Length"];
-    NSInteger contentLength = 0;
-    if (contentLengthHeader.length == 0 ||
-        !parseStrictIntegerString(contentLengthHeader, &contentLength) ||
-        contentLength <= 0) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Missing or invalid Content-Length header"
-      }];
-      return;
-    }
-
-    NSData *body = request.body;
-    if (body.length == 0 || body.length != (NSUInteger)contentLength) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Body length does not match Content-Length"
-      }];
-      return;
-    }
-
-    response.statusCode = 501;
-    [response setJsonBody:@{
-      @"error" : @"NotImplemented",
-      @"message" : @"repo.importRepo is not yet supported"
-    }];
-  }];
+  // com.atproto.repo.importRepo handled by XrpcRepoMethods
 
   [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request,
                                                    HttpResponse *response) {

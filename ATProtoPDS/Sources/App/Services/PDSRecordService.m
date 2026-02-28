@@ -523,20 +523,39 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     NSMutableArray *resultOps = [NSMutableArray arrayWithCapacity:writes.count];
     for (NSDictionary *write in writes) {
         NSString *action = write[@"action"];
+        if (!action) {
+            // Spec-compliant clients use $type union discriminator
+            // e.g. "com.atproto.repo.applyWrites#create" -> "create"
+            NSString *type = write[@"$type"];
+            if (type) {
+                NSRange hashRange = [type rangeOfString:@"#" options:NSBackwardsSearch];
+                if (hashRange.location != NSNotFound) {
+                    action = [type substringFromIndex:hashRange.location + 1];
+                } else if ([type hasPrefix:@"com.atproto.repo.applyWrites"]) {
+                    // Fallback for missing hash if it looks like the correct Lexicon
+                    if ([type hasSuffix:@"create"]) action = @"create";
+                    else if ([type hasSuffix:@"update"]) action = @"update";
+                    else if ([type hasSuffix:@"delete"]) action = @"delete";
+                }
+            }
+        }
         NSString *collection = write[@"collection"];
         NSString *rkey = write[@"rkey"];
         NSDictionary *record = write[@"value"];
-        PDS_LOG_INFO(@"applyWrites loop: write=%@, action=%@, collection=%@", write, action, collection);
         if (!record) {
             // Compatibility fallback for pre-lexicon field names.
             record = write[@"record"];
         }
-
+        
         if (!action || !collection) {
+            PDS_LOG_ERROR(@"[PDSRecordService] applyWrites: missing action (%@) or collection (%@) in write: %@", 
+                          action ?: @"nil", collection ?: @"nil", write);
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
                                              code:3
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Each write must have action and collection"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: 
+                                            [NSString stringWithFormat:@"Each write must have action and collection (got action=%@, collection=%@)", 
+                                             action ?: @"nil", collection ?: @"nil"]}];
             }
             return nil;
         }
@@ -546,6 +565,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 rkey = [TID tid].stringValue;
             }
             if (!record) {
+                PDS_LOG_ERROR(@"[PDSRecordService] applyWrites: create write missing record value: %@", write);
                 if (error) {
                     *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
                                                  code:4

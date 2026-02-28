@@ -70,8 +70,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (self) {
         _didLimit = 5000;
         _didWindowSeconds = 3600;
-        _ipLimit = 3000;
-        _ipWindowSeconds = 300;
+        _ipLimit = 100;
+        _ipWindowSeconds = 60;
         _blobLimit = 50;
         _blobWindowSeconds = 3600;
         _enabled = !_rateLimiterDisabledGlobally;
