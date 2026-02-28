@@ -11,6 +11,7 @@
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
 #import "AppView/GraphService.h"
+#import "AppView/BookmarkService.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "AppView/RecordLifecycleHandler.h"
@@ -62,11 +63,14 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
     NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
     GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
+    BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
     
     // Initialize record lifecycle handler for notification generation
     __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
         [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
-                                                           database:appViewDatabase];
+                                                            bookmarkService:bookmarkService
+                                                               graphService:graphService
+                                                                   database:appViewDatabase];
     
     // app.bsky.actor.getProfile - Get actor profile
     [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
@@ -745,6 +749,187 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         [response setJsonBody:@{}];
     }];
 
+    // app.bsky.bookmark.getBookmarks - Get bookmarks for an actor
+    [dispatcher registerAppBskyBookmarkGetBookmarks:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) return;
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSError *error = nil;
+        NSDictionary *result = [bookmarkService getBookmarksForActor:actorDID
+                                                               limit:limit
+                                                              cursor:cursor
+                                                               error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.bookmark.createBookmark - Create a private bookmark
+    [dispatcher registerAppBskyBookmarkCreateBookmark:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = [request jsonBody];
+        NSString *subjectURI = body[@"uri"];
+        NSString *subjectCID = body[@"cid"];
+
+        if (!subjectURI) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
+            return;
+        }
+
+        NSString *now = [[NSDate date] atproto_iso8601String];
+        NSError *error = nil;
+        BOOL success = [bookmarkService indexBookmarkWithDid:actorDID
+                                                  subjectURI:subjectURI
+                                                  subjectCID:subjectCID
+                                                   createdAt:now
+                                                       error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.bookmark.deleteBookmark - Delete a private bookmark
+    [dispatcher registerAppBskyBookmarkDeleteBookmark:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                         jwtMinter:jwtMinter
+                                                   adminController:adminController
+                                                           request:request
+                                                          response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = [request jsonBody];
+        NSString *subjectURI = body[@"uri"];
+
+        if (!subjectURI) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [bookmarkService unindexBookmarkWithSubjectURI:subjectURI
+                                                              did:actorDID
+                                                            error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.getStarterPack - Get details for a specific starter pack
+    [dispatcher registerAppBskyGraphGetStarterPack:^(HttpRequest *request, HttpResponse *response) {
+        NSString *starterPackURI = [request queryParamForKey:@"starterPack"];
+        if (!starterPackURI) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing starterPack parameter"];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *result = [graphService getStarterPack:starterPackURI error:&error];
+        if (error) {
+            [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.graph.getActorStarterPacks - Get starter packs created by an actor
+    [dispatcher registerAppBskyGraphGetActorStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSError *error = nil;
+        NSDictionary *result = [graphService getStarterPacksForActor:actor
+                                                               limit:limit
+                                                              cursor:cursor
+                                                               error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // app.bsky.graph.getStarterPacks - Get multiple starter packs by URIs
+    [dispatcher registerAppBskyGraphGetStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+        NSArray *uris = request.queryParams[@"uris"];
+        if (!uris || uris.count == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing uris parameter"];
+            return;
+        }
+
+        NSMutableArray *starterPacks = [NSMutableArray array];
+        for (NSString *uri in uris) {
+            NSError *error = nil;
+            NSDictionary *result = [graphService getStarterPack:uri error:&error];
+            if (result && result[@"starterPack"]) {
+                [starterPacks addObject:result[@"starterPack"]];
+            }
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"starterPacks": starterPacks}];
+    }];
+
     // ====================================================================
     // P3: Missing AppView Endpoints
     // ====================================================================
@@ -1233,24 +1418,6 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
-    }];
-
-    // app.bsky.graph.getActorStarterPacks - Starter packs by actor
-    [dispatcher registerMethod:@"app.bsky.graph.getActorStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"starterPacks": @[]}];
-    }];
-
-    // app.bsky.graph.getStarterPack - Get starter pack by URI
-    [dispatcher registerMethod:@"app.bsky.graph.getStarterPack" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = 404;
-        [response setJsonBody:@{@"error": @"NotFound", @"message": @"Starter pack not found"}];
-    }];
-
-    // app.bsky.graph.getStarterPacks - Get multiple starter packs
-    [dispatcher registerMethod:@"app.bsky.graph.getStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"starterPacks": @[]}];
     }];
 
     // app.bsky.graph.searchStarterPacks - Search starter packs
