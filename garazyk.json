@@ -32,5 +32,9 @@
     "url": "https://plc.directory",
     "retry_count": 5,
     "retry_delay_ms": 2000
+  },
+  "appview": {
+    "url": "https://api.bsky.app",
+    "did": "did:web:api.bsky.app"
   }
 }
