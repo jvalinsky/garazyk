@@ -378,8 +378,14 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         NSDictionary *createdRecord = [recordService getRecord:uri forDid:did error:nil];
 
+        NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
+        resBody[@"uri"] = uri;
+        if (createdRecord[@"cid"]) {
+            resBody[@"cid"] = createdRecord[@"cid"];
+        }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:createdRecord ?: @{@"uri": uri}];
+        [response setJsonBody:resBody];
     }];
 
     // com.atproto.repo.deleteRecord
@@ -677,8 +683,16 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         }
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSDictionary *updatedRecord = [recordService getRecord:uri forDid:did error:nil];
+        
+        NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
+        resBody[@"uri"] = uri;
+        if (updatedRecord[@"cid"]) {
+            resBody[@"cid"] = updatedRecord[@"cid"];
+        }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"uri": uri}];
+        [response setJsonBody:resBody];
     }];
 
     // com.atproto.repo.applyWrites
