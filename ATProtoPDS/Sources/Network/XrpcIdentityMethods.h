@@ -13,6 +13,7 @@
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @class PDSConfiguration;
+@class SubscribeReposHandler;
 @protocol PDSAdminController;
 @protocol PDSEmailProvider;
 
@@ -49,6 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param userDatabasePool User-level database pool
  * @param configuration Server configuration
  * @param emailProvider Email provider for PLC operation tokens
+ * @param subscribeReposHandler Handler for broadcasting firehose events
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                      jwtMinter:(JWTMinter *)jwtMinter
@@ -56,7 +58,8 @@ NS_ASSUME_NONNULL_BEGIN
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
                  configuration:(PDSConfiguration *)configuration
-                 emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
+                 emailProvider:(nullable id<PDSEmailProvider>)emailProvider
+         subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler;
 
 @end
 
