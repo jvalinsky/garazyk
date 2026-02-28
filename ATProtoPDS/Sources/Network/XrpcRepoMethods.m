@@ -550,13 +550,6 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
 
     // com.atproto.repo.importRepo
     [dispatcher registerComAtprotoRepoImportRepo:^(HttpRequest *request, HttpResponse *response) {
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                        jwtMinter:jwtMinter
@@ -571,205 +564,17 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
             return;
         }
 
-        NSString *contentType = [request headerForKey:@"Content-Type"] ?: @"";
-        if (![contentType hasPrefix:@"application/vnd.ipld.car"]) {
+        if (![request headerForKey:@"Content-Length"]) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Expected application/vnd.ipld.car content type"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing Content-Length header"}];
             return;
         }
 
-        NSString *contentLengthHeader = [request headerForKey:@"Content-Length"];
-        NSInteger contentLength = 0;
-        if (contentLengthHeader.length == 0 || !parseStrictIntegerString(contentLengthHeader, &contentLength) || contentLength <= 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid Content-Length header"}];
-            return;
-        }
-
-        NSData *body = request.body;
-        if (body.length == 0 || body.length != (NSUInteger)contentLength) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Body length does not match Content-Length"}];
-            return;
-        }
-
-        // Parse the incoming CAR file
-        NSError *carError = nil;
-        CARReader *reader = [CARReader readFromData:body error:&carError];
-        if (!reader) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest",
-                                    @"message": [NSString stringWithFormat:@"Failed to parse CAR: %@",
-                                                 carError.localizedDescription ?: @"unknown error"]}];
-            return;
-        }
-
-        if (!reader.rootCID) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"CAR has no root CID"}];
-            return;
-        }
-
-        if (reader.blocks.count == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"CAR contains no blocks"}];
-            return;
-        }
-
-        // Find the root (commit) block
-        CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
-        if (!commitBlock) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Root block not found in CAR"}];
-            return;
-        }
-
-        // Decode the commit to verify structure
-        NSDictionary *commitData = [ATProtoCBORSerialization JSONObjectWithData:commitBlock.data error:nil];
-        if (!commitData) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Failed to decode commit block"}];
-            return;
-        }
-
-        // Verify DID matches authenticated user
-        NSString *commitDid = commitData[@"did"];
-        if (commitDid && ![commitDid isEqualToString:did]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest",
-                                    @"message": @"CAR commit DID does not match authenticated user"}];
-            return;
-        }
-
-        // Verify signature
-        NSData *sig = commitData[@"sig"];
-        if (![sig isKindOfClass:[NSData class]]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Commit is missing signature"}];
-            return;
-        }
-
-        // Resolve DID to get public key
-        NSError *resolveError = nil;
-        NSDictionary *atprotoData = [[DIDResolver sharedResolver] resolveAtprotoDataForDID:did error:&resolveError];
-        NSData *pubKey = atprotoData[@"signingKeyBytes"];
-        if (!pubKey) {
-             response.statusCode = HttpStatusBadRequest;
-             [response setJsonBody:@{@"error": @"InvalidRequest",
-                                     @"message": [NSString stringWithFormat:@"Failed to resolve signing key for %@: %@",
-                                                  did, resolveError.localizedDescription ?: @"not found"]}];
-             return;
-        }
-
-        // Prepare signing input (commit block without sig field)
-        NSMutableDictionary *signingData = [commitData mutableCopy];
-        [signingData removeObjectForKey:@"sig"];
-        NSData *signingInput = [ATProtoCBORSerialization encodeDataWithJSONObject:signingData error:nil];
-        if (!signingInput) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to re-encode commit for verification"}];
-            return;
-        }
-
-        // Compute SHA256 of signing input
-        unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-        CC_SHA256(signingInput.bytes, (CC_LONG)signingInput.length, hash);
-        NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-
-        // Verify signature
-        NSError *verifyError = nil;
-        BOOL sigValid = [[Secp256k1 shared] verifySignature:sig forHash:hashData withPublicKey:pubKey error:&verifyError];
-        if (!sigValid) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest",
-                                    @"message": [NSString stringWithFormat:@"Commit signature verification failed: %@",
-                                                 verifyError.localizedDescription ?: @"invalid signature"]}];
-            return;
-        }
-
-        // Extract revision from commit
-        NSString *rev = commitData[@"rev"];
-        if (!rev || ![rev isKindOfClass:[NSString class]] || rev.length == 0) {
-            rev = [TID tid].stringValue;
-        }
-
-        // Get the actor store
-        NSError *storeError = nil;
-        PDSActorStore *store = [repositoryService.databasePool storeForDid:did error:&storeError];
-        if (!store) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"InternalError",
-                                    @"message": @"Failed to access actor store"}];
-            return;
-        }
-
-        // Convert CAR blocks to database blocks and store them
-        NSMutableArray<PDSDatabaseBlock *> *dbBlocks = [NSMutableArray arrayWithCapacity:reader.blocks.count];
-        for (CARBlock *carBlock in reader.blocks) {
-            // Validate CID integrity: compute CID from data and compare
-            PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
-            dbBlock.cid = carBlock.cid.bytes;
-            dbBlock.repoDid = did;
-            dbBlock.blockData = carBlock.data;
-            dbBlock.contentType = @"application/vnd.ipld.dag-cbor";
-            dbBlock.size = (NSInteger)carBlock.data.length;
-            dbBlock.createdAt = [NSDate date];
-            dbBlock.rev = rev;
-            [dbBlocks addObject:dbBlock];
-        }
-
-        // Store all blocks and update repo root in a single transaction
-        __block BOOL importSuccess = NO;
-        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-            // Store all blocks
-            if (![transactor putBlocks:dbBlocks forDid:did error:blockError]) {
-                return;
-            }
-
-            // Update the repo root to point at the commit CID
-            if (![transactor updateRepoRoot:did
-                                    rootCid:reader.rootCID.bytes
-                                        rev:rev
-                                      error:blockError]) {
-                return;
-            }
-
-            importSuccess = YES;
-        } error:&storeError];
-
-        if (!importSuccess) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"InternalError",
-                                    @"message": [NSString stringWithFormat:@"Failed to import: %@",
-                                                 storeError.localizedDescription ?: @"unknown"]}];
-            return;
-        }
-
-        // Walk the MST blocks to extract records and store them as record entries
-        // The commit's "data" field contains a CID link to the MST root
-        id dataField = commitData[@"data"];
-        NSData *mstRootCIDBytes = nil;
-        if ([dataField isKindOfClass:[NSDictionary class]]) {
-            // CBOR CID link: { "/": <bytes> }
-            NSData *linkBytes = dataField[@"/"];
-            if ([linkBytes isKindOfClass:[NSData class]]) {
-                mstRootCIDBytes = linkBytes;
-            } else {
-                NSString *linkStr = dataField[@"/"];
-                if ([linkStr isKindOfClass:[NSString class]]) {
-                    CID *linkCID = [CID cidFromString:linkStr];
-                    mstRootCIDBytes = linkCID.bytes;
-                }
-            }
-        }
-
-        // Extract records by iterating the MST
-        if (mstRootCIDBytes) {
-            importRepoExtractRecords(mstRootCIDBytes, did, reader, store, recordService, rev);
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
+        response.statusCode = 501;
+        [response setJsonBody:@{
+            @"error": @"NotImplemented",
+            @"message": @"repo.importRepo is not yet supported"
+        }];
     }];
 
     // com.atproto.repo.describeRepo

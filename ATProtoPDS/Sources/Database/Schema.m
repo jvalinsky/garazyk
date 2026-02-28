@@ -23,6 +23,8 @@ NSString * const kPDSOAuthPARTableName = @"oauth_par";
 NSString * const kPDSOAuthGrantsTableName = @"oauth_grants";
 NSString * const kPDSActorPreferencesTableName = @"actor_preferences";
 NSString * const kPDSActorMutesTableName = @"actor_mutes";
+NSString * const kPDSBookmarkTableName = @"bookmarks";
+NSString * const kPDSStarterPackTableName = @"starter_packs";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -314,3 +316,31 @@ NSString * const kPDSActorMutesTableCreateSQL =
     @"created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
     @"UNIQUE(did, muted_did)"
     @")";
+
+NSString * const kPDSBookmarkTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS bookmarks ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"did TEXT NOT NULL,"
+    @"uri TEXT NOT NULL UNIQUE,"
+    @"subject_uri TEXT NOT NULL,"
+    @"subject_cid TEXT,"
+    @"created_at TEXT NOT NULL,"
+    @"UNIQUE(did, subject_uri)"
+    @")";
+
+NSString * const kPDSStarterPackTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS starter_packs ("
+    @"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    @"did TEXT NOT NULL,"
+    @"rkey TEXT NOT NULL,"
+    @"cid TEXT NOT NULL,"
+    @"name TEXT,"
+    @"created_at TEXT NOT NULL,"
+    @"UNIQUE(did, rkey)"
+    @")";
+
+NSString * const kPDSIndexBookmarksDidSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_bookmarks_did ON bookmarks(did)";
+
+NSString * const kPDSIndexStarterPacksDidSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_starter_packs_did ON starter_packs(did)";

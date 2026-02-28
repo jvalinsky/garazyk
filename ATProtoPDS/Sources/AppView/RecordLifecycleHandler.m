@@ -8,6 +8,8 @@
 
 #import "AppView/RecordLifecycleHandler.h"
 #import "AppView/NotificationService.h"
+#import "AppView/BookmarkService.h"
+#import "AppView/GraphService.h"
 #import "App/Services/PDSRecordService.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
@@ -16,16 +18,22 @@
 
 @interface RecordLifecycleHandler ()
 @property (nonatomic, strong) NotificationService *notificationService;
+@property (nonatomic, strong) BookmarkService *bookmarkService;
+@property (nonatomic, strong) GraphService *graphService;
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
 @implementation RecordLifecycleHandler
 
 - (instancetype)initWithNotificationService:(NotificationService *)notificationService
+                            bookmarkService:(BookmarkService *)bookmarkService
+                               graphService:(GraphService *)graphService
                                    database:(PDSDatabase *)database {
     self = [super init];
     if (self) {
         _notificationService = notificationService;
+        _bookmarkService = bookmarkService;
+        _graphService = graphService;
         _database = database;
 
         [[NSNotificationCenter defaultCenter] addObserver:self
@@ -39,7 +47,7 @@
 - (void)stopObserving {
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:PDSRecordDidChangeNotification
-                                                  object:nil];
+                                                   object:nil];
 }
 
 - (void)dealloc {
@@ -66,6 +74,13 @@
     if ([action isEqualToString:@"delete"]) {
         // When a record is deleted, remove associated notifications
         [self.notificationService deleteNotificationsForSubjectURI:uri error:nil];
+        
+        // Handle unindexing
+        if ([collection isEqualToString:@"app.bsky.bookmark.bookmark"]) {
+            [self.bookmarkService unindexBookmarkWithURI:uri did:did error:nil];
+        } else if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
+            [self.graphService unindexStarterPackWithRKey:rkey did:did error:nil];
+        }
         return;
     }
 
@@ -88,47 +103,48 @@
         [self handleRepost:record did:did uri:uri cid:cid];
     } else if ([collection isEqualToString:@"app.bsky.feed.post"]) {
         [self handlePost:record did:did uri:uri cid:cid];
+    } else if ([collection isEqualToString:@"app.bsky.bookmark.bookmark"]) {
+        [self.bookmarkService indexBookmark:record did:did uri:uri cid:cid error:nil];
+    } else if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
+        [self.graphService indexStarterPack:record did:did rkey:rkey cid:cid error:nil];
     }
 }
 
 #pragma mark - Like Notifications
 
 - (void)handleLike:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid {
-    // record.subject = { uri: "at://targetDID/...", cid: "..." }
     NSDictionary *subject = record[@"subject"];
     if (![subject isKindOfClass:[NSDictionary class]]) return;
 
     NSString *subjectURI = subject[@"uri"];
     if (!subjectURI) return;
 
-    // Extract the target actor DID from the subject URI (at://did/collection/rkey)
     NSString *targetDID = [self extractDIDFromATURI:subjectURI];
-    if (!targetDID || [targetDID isEqualToString:did]) return; // Don't notify self-likes
+    if (!targetDID || [targetDID isEqualToString:did]) return; 
 
     [self.notificationService createNotificationForActor:targetDID
-                                              authorDID:did
-                                                  reason:@"like"
-                                           reasonSubject:subjectURI
-                                              subjectURI:uri
-                                              subjectCID:cid
-                                                   error:nil];
+                                               authorDID:did
+                                                   reason:@"like"
+                                            reasonSubject:subjectURI
+                                               subjectURI:uri
+                                               subjectCID:cid
+                                                    error:nil];
 }
 
 #pragma mark - Follow Notifications
 
 - (void)handleFollow:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid {
-    // record.subject = "did:plc:..." (the followed user)
     NSString *targetDID = record[@"subject"];
     if (![targetDID isKindOfClass:[NSString class]]) return;
-    if ([targetDID isEqualToString:did]) return; // Don't notify self-follows
+    if ([targetDID isEqualToString:did]) return; 
 
     [self.notificationService createNotificationForActor:targetDID
-                                              authorDID:did
-                                                  reason:@"follow"
-                                           reasonSubject:nil
-                                              subjectURI:uri
-                                              subjectCID:cid
-                                                   error:nil];
+                                               authorDID:did
+                                                   reason:@"follow"
+                                            reasonSubject:nil
+                                               subjectURI:uri
+                                               subjectCID:cid
+                                                    error:nil];
 }
 
 #pragma mark - Repost Notifications
@@ -144,18 +160,17 @@
     if (!targetDID || [targetDID isEqualToString:did]) return;
 
     [self.notificationService createNotificationForActor:targetDID
-                                              authorDID:did
-                                                  reason:@"repost"
-                                           reasonSubject:subjectURI
-                                              subjectURI:uri
-                                              subjectCID:cid
-                                                   error:nil];
+                                               authorDID:did
+                                                   reason:@"repost"
+                                            reasonSubject:subjectURI
+                                               subjectURI:uri
+                                               subjectCID:cid
+                                                    error:nil];
 }
 
 #pragma mark - Post Notifications (replies and mentions)
 
 - (void)handlePost:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid {
-    // Check for reply — notify the parent post author
     NSDictionary *reply = record[@"reply"];
     if ([reply isKindOfClass:[NSDictionary class]]) {
         NSDictionary *parent = reply[@"parent"];
@@ -165,18 +180,17 @@
                 NSString *parentDID = [self extractDIDFromATURI:parentURI];
                 if (parentDID && ![parentDID isEqualToString:did]) {
                     [self.notificationService createNotificationForActor:parentDID
-                                                              authorDID:did
-                                                                  reason:@"reply"
-                                                           reasonSubject:parentURI
-                                                              subjectURI:uri
-                                                              subjectCID:cid
-                                                                   error:nil];
+                                                               authorDID:did
+                                                                   reason:@"reply"
+                                                            reasonSubject:parentURI
+                                                               subjectURI:uri
+                                                               subjectCID:cid
+                                                                    error:nil];
                 }
             }
         }
     }
 
-    // Check for mentions in facets
     NSArray *facets = record[@"facets"];
     if ([facets isKindOfClass:[NSArray class]]) {
         for (NSDictionary *facet in facets) {
@@ -189,23 +203,21 @@
                     NSString *mentionDID = feature[@"did"];
                     if (mentionDID && ![mentionDID isEqualToString:did]) {
                         [self.notificationService createNotificationForActor:mentionDID
-                                                                  authorDID:did
-                                                                      reason:@"mention"
-                                                               reasonSubject:nil
-                                                                  subjectURI:uri
-                                                                  subjectCID:cid
-                                                                       error:nil];
+                                                                   authorDID:did
+                                                                       reason:@"mention"
+                                                                reasonSubject:nil
+                                                                   subjectURI:uri
+                                                                   subjectCID:cid
+                                                                        error:nil];
                     }
                 }
             }
         }
     }
 
-    // Check for quote embeds — notify the quoted post author
     NSDictionary *embed = record[@"embed"];
     if ([embed isKindOfClass:[NSDictionary class]]) {
         NSString *embedType = embed[@"$type"];
-
         NSDictionary *quotedRecord = nil;
         if ([embedType isEqualToString:@"app.bsky.embed.record"]) {
             quotedRecord = embed[@"record"];
@@ -219,12 +231,12 @@
                 NSString *quotedDID = [self extractDIDFromATURI:quotedURI];
                 if (quotedDID && ![quotedDID isEqualToString:did]) {
                     [self.notificationService createNotificationForActor:quotedDID
-                                                              authorDID:did
-                                                                  reason:@"quote"
-                                                           reasonSubject:quotedURI
-                                                              subjectURI:uri
-                                                              subjectCID:cid
-                                                                   error:nil];
+                                                               authorDID:did
+                                                                   reason:@"quote"
+                                                            reasonSubject:quotedURI
+                                                               subjectURI:uri
+                                                               subjectCID:cid
+                                                                    error:nil];
                 }
             }
         }
@@ -234,13 +246,11 @@
 #pragma mark - Helpers
 
 - (nullable NSString *)extractDIDFromATURI:(NSString *)atURI {
-    // AT URI format: at://did/collection/rkey
     if (![atURI hasPrefix:@"at://"]) return nil;
-
-    NSString *path = [atURI substringFromIndex:5]; // skip "at://"
+    NSString *path = [atURI substringFromIndex:5]; 
     NSRange slashRange = [path rangeOfString:@"/"];
     if (slashRange.location == NSNotFound) {
-        return path; // just the DID
+        return path; 
     }
     return [path substringToIndex:slashRange.location];
 }
