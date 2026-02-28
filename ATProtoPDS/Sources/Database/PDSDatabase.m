@@ -114,41 +114,50 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 
 - (void)close {
-    if (!self.isOpen) return;
-    PDS_LOG_DB_DEBUG(@"Closing database connection");
+    if (!_db) {
+        return;
+    }
 
 #if defined(__linux__) || defined(__GNUstep__)
     dispatch_sync(self.cacheQueue, ^{
-        for (NSValue *val in [self.statementCache allValues]) {
-            sqlite3_finalize([val pointerValue]);
+        if (!_db) return;
+        
+        // Finalize all cached statements
+        for (NSValue *stmtValue in [self.statementCache allValues]) {
+            sqlite3_stmt *stmt = [stmtValue pointerValue];
+            sqlite3_finalize(stmt);
         }
         [self.statementCache removeAllObjects];
         self.statementCache = nil;
-    });
-#else
-    if (_db) {
-        // Finalize all cached statements
-        @synchronized(self.statementCache) {
-            for (NSValue *stmtValue in [self.statementCache allValues]) {
-                sqlite3_stmt *stmt = [stmtValue pointerValue];
-                sqlite3_finalize(stmt);
-            }
-            [self.statementCache removeAllObjects];
+        
+        // Finalize any other stray statements
+        sqlite3_stmt *strayStmt;
+        while ((strayStmt = sqlite3_next_stmt(_db, NULL)) != NULL) {
+            sqlite3_finalize(strayStmt);
         }
         
         sqlite3_close(_db);
         _db = NULL;
+    });
+#else
+    // Finalize all cached statements
+    @synchronized(self.statementCache) {
+        for (NSValue *stmtValue in [self.statementCache allValues]) {
+            sqlite3_stmt *stmt = [stmtValue pointerValue];
+            sqlite3_finalize(stmt);
+        }
+        [self.statementCache removeAllObjects];
     }
-#endif
-
+    
     // Finalize any other stray statements
     sqlite3_stmt *strayStmt;
-    while ((strayStmt = sqlite3_next_stmt(self.db, NULL)) != NULL) {
+    while ((strayStmt = sqlite3_next_stmt(_db, NULL)) != NULL) {
         sqlite3_finalize(strayStmt);
     }
-
+    
     sqlite3_close(_db);
     _db = NULL;
+#endif
     self.isOpen = NO;
     PDS_LOG_DB_DEBUG(@"Database connection closed");
 }

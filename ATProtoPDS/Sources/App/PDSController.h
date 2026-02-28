@@ -63,6 +63,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Path to the data directory. */
 @property(nonatomic, copy, readonly) NSString *dataDirectory;
 
+/*! The backing application instance. */
+@property(nonatomic, strong, readonly, nullable) PDSApplication *application;
+
 /*! URL of the PLC directory server. */
 @property(nonatomic, copy) NSString *plcServerURL;
 
@@ -95,6 +98,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! JWT minting for access tokens. */
 @property(nonatomic, strong, readonly) JWTMinter *jwtMinter;
+
+/*! Handler for the subscribeRepos firehose. */
+@property(nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
 
 /*! Port for the HTTP XRPC server (default 2583). */
 @property(nonatomic, assign) NSUInteger httpPort;
