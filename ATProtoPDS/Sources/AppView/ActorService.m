@@ -119,13 +119,20 @@
         }
     }
 
-    return @{@"preferences": @{}};
+    return @{@"preferences": @[]};
 }
 
-- (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSDictionary *)preferences error:(NSError **)error {
+- (BOOL)putPreferencesForActor:(NSString *)actorDID preferences:(NSArray *)preferences error:(NSError **)error {
     if (!actorDID || actorDID.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+        }
+        return NO;
+    }
+
+    if (![preferences isKindOfClass:[NSArray class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Preferences must be an array"}];
         }
         return NO;
     }
@@ -144,7 +151,7 @@
         return NO;
     }
 
-    NSString *checkQuery = @"SELECT id FROM actor_preferences WHERE did = ?";
+    NSString *checkQuery = @"SELECT did FROM actor_preferences WHERE did = ?";
     NSArray *existingRows = [self.database executeParameterizedQuery:checkQuery params:@[actorDID] error:nil];
 
     BOOL success;
