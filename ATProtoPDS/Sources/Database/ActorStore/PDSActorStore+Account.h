@@ -36,6 +36,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface PDSActorStore (Account)
 
+- (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError * _Nullable * _Nullable)error;
+- (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError * _Nullable * _Nullable)error;
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError * _Nullable * _Nullable)error;
+- (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError * _Nullable * _Nullable)error;
+
+- (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError * _Nullable * _Nullable)error;
+- (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError * _Nullable * _Nullable)error;
+- (BOOL)deleteAccount:(NSString *)did error:(NSError * _Nullable * _Nullable)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

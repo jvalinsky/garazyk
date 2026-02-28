@@ -11,6 +11,7 @@
 #import "Database/ActorStore/PDSActorStore+Account.h"
 #import "Core/ATProtoError.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
+#import "Identity/ATProtoHandleValidator.h"
 #import <sqlite3.h>
 
 @implementation PDSSQLiteAccountRepository {
@@ -60,7 +61,8 @@
             return;
         }
 
-        sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_TRANSIENT);
+        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+        sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
         
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             account = [store accountFromStatement:stmt];

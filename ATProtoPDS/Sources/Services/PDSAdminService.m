@@ -206,6 +206,8 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     return YES;
 }
 
+// Direct DB update only — does NOT update PLC directory or emit firehose identity events.
+// For full protocol-compliant updates, use com.atproto.identity.updateHandle XRPC endpoint.
 - (BOOL)updateHandle:(NSString *)handle forAccount:(NSString *)did error:(NSError **)error {
     PDSDatabaseAccount *account = [_database getAccountByDid:did error:error];
     if (!account) return NO;

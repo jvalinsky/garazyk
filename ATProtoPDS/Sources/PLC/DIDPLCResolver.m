@@ -282,4 +282,51 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [task resume];
 }
 
+- (nullable NSData *)submitOperation:(NSDictionary *)operation did:(NSString *)did statusCode:(NSInteger *)statusCode error:(NSError **)error {
+    if (!did) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDPLCResolverErrorDomain
+                                         code:DIDPLCResolverErrorInvalidDID
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DID missing"}];
+        }
+        return nil;
+    }
+    
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@", self.plcUrl, did];
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        if (error) *error = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNetworkError userInfo:@{NSLocalizedDescriptionKey: @"Invalid constructed PLC URL"}];
+        return nil;
+    }
+    
+    NSData *bodyData = [NSJSONSerialization dataWithJSONObject:operation options:0 error:nil];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"POST";
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    request.HTTPBody = bodyData;
+    request.timeoutInterval = self.timeout;
+    
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block NSData *responseData = nil;
+    __block NSInteger code = 0;
+    __block NSError *netError = nil;
+    
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+        responseData = data;
+        if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            code = [(NSHTTPURLResponse *)response statusCode];
+        }
+        netError = err;
+        dispatch_semaphore_signal(semaphore);
+    }];
+    [task resume];
+    
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.timeout + 2.0) * NSEC_PER_SEC)));
+    
+    if (statusCode) *statusCode = code;
+    if (netError && error) *error = netError;
+    
+    return responseData;
+}
+
 @end

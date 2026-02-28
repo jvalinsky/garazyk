@@ -1,11 +1,20 @@
 #import "RepoAuthXrpcTestBase.h"
+#import "App/PDSConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Admin/PDSAdminAuth.h"
+
+@interface PDSConfiguration (Test)
+- (void)applyConfig:(NSDictionary *)config;
+@end
 
 @implementation RepoAuthXrpcTestBase
 
 - (void)setUp {
     [super setUp];
+
+    setenv("PDS_AVAILABLE_USER_DOMAINS", "test", 1);
+    setenv("PDS_ADMIN_PASSWORD", "password", 1);
+    [[PDSConfiguration sharedConfiguration] applyConfig:@{@"server": @{}}];
 
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
@@ -48,7 +57,6 @@
     XCTAssertNil(error);
     XCTAssertNotNil(adminAccount[@"did"]);
 
-    setenv("PDS_ADMIN_PASSWORD", "password", 1);
     [PDSAdminAuth sharedAuth].dataDirectory = self.tempURL.path;
     [PDSAdminAuth sharedAuth].controller = self.controller;
     NSError *authError = nil;
@@ -181,6 +189,15 @@
     }
 
     return response.body;
+}
+
+- (PDSServiceDatabases *)serviceDatabases {
+    // PDSApplication's serviceDatabases is assigned to _serviceDatabases
+    // Since we don't have a direct reference to the app in the base, 
+    // we can get it from the controller if we added it there, 
+    // but in RepoAuthXrpcTestBase.m setUp, it's not saved.
+    // However, the controller has a reference to the application.
+    return self.controller.application.serviceDatabases;
 }
 
 @end

@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *refreshJwt1;
 @property (nonatomic, copy) NSString *adminAccessJwt;
 
+- (PDSServiceDatabases *)serviceDatabases;
+
 - (NSString *)iso8601String;
 
 - (HttpResponse *)sendJsonRequestWithPath:(NSString *)path

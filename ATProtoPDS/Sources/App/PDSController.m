@@ -115,8 +115,19 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
   return _dataDirectory;
 }
 
+- (PDSApplication *)application {
+  return _backingApplication;
+}
+
 - (PDSAdminController *)adminController {
   return _adminController;
+}
+
+- (SubscribeReposHandler *)subscribeReposHandler {
+  if (_backingApplication) {
+    return _backingApplication.subscribeReposHandler;
+  }
+  return _subscribeReposHandler;
 }
 
 - (PDSRelayService *)relayService {

@@ -3,6 +3,7 @@
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStore+Account.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/PDSDataPaths.h"
@@ -239,21 +240,17 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return nil;
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return nil;
     
-    PDSDatabaseAccount *account = [db getAccountByHandle:handle error:error];
-    [db close];
-    return account;
+    return [store getAccountByHandle:handle error:error];
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return nil;
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return nil;
     
-    PDSDatabaseAccount *account = [db getAccountByEmail:email error:error];
-    [db close];
-    return account;
+    return [store getAccountByEmail:email error:error];
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
@@ -321,19 +318,36 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return @[];
-    NSArray *accounts = [db getAllAccountsWithError:error];
-    [db close];
-    return accounts ?: @[];
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return @[];
+    
+    return [store getAllAccountsWithError:error] ?: @[];
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) return @[];
-    NSArray *accounts = [db getAccountsWithLimit:limit afterDid:cursor error:error];
-    [db close];
-    return accounts ?: @[];
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return @[];
+    
+    // Fallback to getAllAccounts and filter if needed, or implement limit in ActorStore
+    // For now, let's just use getAllAccounts for consistency if limit is not critical here
+    NSArray *all = [store getAllAccountsWithError:error];
+    if (!all) return @[];
+    
+    // Simple cursor implementation
+    if (cursor) {
+        NSUInteger index = [all indexOfObjectPassingTest:^BOOL(PDSDatabaseAccount *obj, NSUInteger idx, BOOL *stop) {
+            return [obj.did isEqualToString:cursor];
+        }];
+        if (index != NSNotFound && index + 1 < all.count) {
+            all = [all subarrayWithRange:NSMakeRange(index + 1, MIN((NSUInteger)limit, all.count - index - 1))];
+        } else {
+            all = @[];
+        }
+    } else if (all.count > (NSUInteger)limit) {
+        all = [all subarrayWithRange:NSMakeRange(0, (NSUInteger)limit)];
+    }
+    
+    return all;
 }
 
 #pragma mark - Refresh Token Operations
@@ -519,15 +533,24 @@ static NSString *appPasswordGenerateSecret(void) {
         return NO;
     }
 
-    PDSDatabase *db = [self serviceDatabaseWithError:error];
-    if (!db) {
-        return NO;
-    }
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
 
-    BOOL success = [db executeParameterizedUpdate:@"INSERT OR IGNORE INTO reserved_handles (handle, created_at) VALUES (?, ?)"
-                                           params:@[normalizedHandle, @([[NSDate date] timeIntervalSince1970])]
-                                            error:error];
-    [db close];
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @"INSERT OR IGNORE INTO reserved_handles (handle, created_at) VALUES (?, ?)";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+        
+        sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
+        
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+    } error:&localError];
+
+    if (!success && localError) {
+        if (error) *error = localError;
+    }
     return success;
 }
 
@@ -542,28 +565,21 @@ static NSString *appPasswordGenerateSecret(void) {
         return NO;
     }
 
-    NSError *queryError = nil;
-    PDSDatabase *db = [self serviceDatabaseWithError:&queryError];
-    if (!db) {
-        if (error) {
-            *error = queryError;
-        }
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return NO;
+
+    NSString *sql = @"SELECT 1 FROM reserved_handles WHERE handle = ? LIMIT 1";
+    __autoreleasing NSError *stmtError = nil;
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
         return NO;
     }
 
-    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT handle FROM reserved_handles WHERE handle = ? LIMIT 1"
-                                                           params:@[normalizedHandle]
-                                                            error:&queryError];
-    [db close];
-
-    if (queryError) {
-        if (error) {
-            *error = queryError;
-        }
-        return NO;
-    }
-
-    return rows.count > 0;
+    sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
+    BOOL reserved = (sqlite3_step(stmt) == SQLITE_ROW);
+    
+    return reserved;
 }
 
 #pragma mark - App Password Operations

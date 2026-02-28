@@ -6,6 +6,68 @@ Incrementally extract I/O-free protocol cores from `WebSocketConnection`, `HttpS
 
 ---
 
+## Current Status: Not Started
+
+**As of 2026-02-28:** No implementation has begun. All components and tests listed below are yet to be created.
+
+### What still needs to be done:
+- All 5 characterization test files (Phase 0.1–0.5)
+- All 7 new source files for WebSocket Codec (Phase 1)
+- All 5 new source files for HTTP/1.1 Core (Phase 2)
+- All 2 new source files for Outbound Policy (Phase 3)
+- All 11+ new test files
+- Rewiring of existing WebSocketConnection.m, HttpServer.m, and other consumers
+- Consolidation of duplicated SSRF, query param, and retry logic
+
+### Verified (plan accurate as-is):
+- `HttpChunkedBodyParser.m` (315 lines) is confirmed to be already Sans-I/O
+- Duplicated SSRF logic exists at:
+  - `FederationClient.m` L15-44 (`pds_isPrivateIPv4Address`, `pds_isPrivateIPv6Address`)
+  - `HandleResolver.m` L522-585 (`-isPrivateIPv4Address:`, `-isPrivateIPv6Address:`)
+- Duplicated query param parsing exists at:
+  - `HttpServer.m` L1210 (`parseQueryParamsFromString:`)
+  - `HttpRequest.m` (also has parse logic)
+- Duplicated retry/backoff logic exists at:
+  - `DIDPLCResolver.m` L115-158 (`executeRequest:retries:currentDelay:`)
+  - `DIDPLCResolver.m` L249-283 (`executeRawRequest:...` - near-duplicate)
+
+### Verified file line counts:
+- `WebSocketConnection.m`: 679 lines
+- `HttpServer.m`: 1433 lines
+- `FederationClient.m`: 442 lines
+- `HandleResolver.m`: 587 lines
+- `DIDPLCResolver.m`: 285 lines
+
+### Parser Hardening Audit Findings (2026-02-28)
+
+The parser hardening audit (`skills/objc-parser-hardening-audit`) identified significant concerns in the codebase that this sans-io refactor should address:
+
+**Priority targets for extraction/hardening:**
+- `Base58.h` - parse/decoder signals without bounds guards
+- `CID.h` - parse/decoder signals without bounds guards  
+- `RepoCommit.h` - parse/decoder signals without bounds guards
+
+**Signal counts in scanned paths:**
+- Parse/decoder signals: 63
+- Risky memory/range signals: 231
+- Bounds/length signals: 417
+- Integer/conversion signals: 374
+
+The HTTP and WebSocket parsers being extracted in Phases 1 & 2 are medium-risk for integer overflow and bounds issues. The sans-io refactor provides an opportunity to add proper bounds checking in the extracted codec classes.
+
+### Additional Code Review Findings
+
+**Existing HttpRequest parsing approach:**
+- Uses `CFHTTPMessageRef` for header parsing in `HttpServer.m`
+- Has its own `parseFromData:` method in `HttpRequest.m` (lines 308+) that handles request-line splitting
+- Both approaches coexist; `Http1Parser` extraction should consolidate
+
+**Reference: sans-io patterns:**
+- See https://fasterthanli.me/articles/the-case-for-sans-io for foundational concepts
+- Key insight: protocol logic should be testable without network I/O
+
+---
+
 ## Current Architecture Inventory
 
 ### What we're working with

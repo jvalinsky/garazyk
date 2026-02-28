@@ -87,6 +87,10 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     return self.httpPort;
 }
 
+- (SubscribeReposHandler *)subscribeReposHandler {
+    return _subscribeReposHandler;
+}
+
 #pragma mark - Initialization
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
@@ -374,6 +378,11 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     if (isProductionEnv && !xAdminTokenDisabled) {
         PDS_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is active in production. Set PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1 to disable it.");
     }
+    
+    // Initialize Firehose (subscribeRepos) handler early so it's available for persistence in tests
+    if (!_subscribeReposHandler) {
+        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
+    }
 }
 
 - (void)loadLexicons {
@@ -450,9 +459,6 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
-    if (!_subscribeReposHandler) {
-        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
-    }
     
     // Build and configure HTTP server
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:_configuration];
