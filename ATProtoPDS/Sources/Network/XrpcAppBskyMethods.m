@@ -16,6 +16,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "AppView/RecordLifecycleHandler.h"
 #import "App/PDSConfiguration.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
 
 #pragma mark - Helper Functions
@@ -809,7 +810,7 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
             return;
         }
 
-        NSString *now = [[NSDate date] atproto_iso8601String];
+        NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         NSError *error = nil;
         BOOL success = [bookmarkService indexBookmarkWithDid:actorDID
                                                   subjectURI:subjectURI
