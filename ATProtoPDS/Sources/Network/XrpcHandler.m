@@ -569,6 +569,30 @@
     [self registerMethod:@"app.bsky.user.getUserStats" handler:handler];
 }
 
+- (void)registerAppBskyBookmarkGetBookmarks:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.bookmark.getBookmarks" handler:handler];
+}
+
+- (void)registerAppBskyBookmarkCreateBookmark:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.bookmark.createBookmark" handler:handler];
+}
+
+- (void)registerAppBskyBookmarkDeleteBookmark:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.bookmark.deleteBookmark" handler:handler];
+}
+
+- (void)registerAppBskyGraphGetStarterPack:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.getStarterPack" handler:handler];
+}
+
+- (void)registerAppBskyGraphGetStarterPacks:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.getStarterPacks" handler:handler];
+}
+
+- (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.getActorStarterPacks" handler:handler];
+}
+
 - (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.admin.getModerationReports" handler:handler];
 }
