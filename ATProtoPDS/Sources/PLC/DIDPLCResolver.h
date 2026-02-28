@@ -112,6 +112,18 @@ typedef NS_ENUM(NSInteger, DIDPLCResolverErrorCode) {
  */
 - (void)resolveAuditLogForDID:(NSString *)did completion:(void (^)(NSArray * _Nullable log, NSError * _Nullable error))completion;
 
+/*!
+ @method submitOperation:statusCode:error:
+
+ @abstract Synchronously submits a PLC operation to the directory.
+
+ @param operation The operation dictionary to submit.
+ @param statusCode On return, the HTTP status code from the server.
+ @param error A pointer to an error object.
+ @return The raw response data from the server, or nil on network failure.
+ */
+- (nullable NSData *)submitOperation:(NSDictionary *)operation did:(NSString *)did statusCode:(NSInteger *)statusCode error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

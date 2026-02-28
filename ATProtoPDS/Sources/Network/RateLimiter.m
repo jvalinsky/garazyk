@@ -196,6 +196,21 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     return result;
 }
 
+- (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+    if (!key || key.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+    
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkRateLimitInternalForIdentifier:key type:RateLimitTypeCustom limit:limit windowSeconds:windowSeconds];
+    });
+    return result;
+}
+
 - (RateLimitResult *)checkRateLimitInternalForIdentifier:(NSString *)identifier
                                                      type:(RateLimitType)type
                                                     limit:(NSInteger)limit
