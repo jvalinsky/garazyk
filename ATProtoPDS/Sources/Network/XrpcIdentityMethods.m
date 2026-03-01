@@ -707,6 +707,12 @@
                 
                 // CRITICAL DEBUG: After for loop
                 PDS_LOG_INFO(@"updateHandle: After for loop, plcHandle=%@", plcHandle);
+                if (plcHandle) {
+                    fprintf(stderr, "DEBUG: plcHandle is NOT nil, going to skip PLC op\n");
+                } else {
+                    fprintf(stderr, "DEBUG: plcHandle is nil, will create PLC op\n");
+                }
+                fflush(stderr);
 
                 PDS_LOG_INFO(@"updateHandle: After PLC check, plcHandle=%@", plcHandle);
                 if (plcHandle) {
@@ -783,25 +789,14 @@
 
         // 5. Firehose / Sequencer Broadcast (Always run, even if handle was already owned)
         PDS_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler exists=%d", did, subscribeReposHandler != nil);
-        NSLog(@"DEBUG: About to call broadcastIdentityChange for did=%@", did);
+        fprintf(stderr, "DEBUG: About to call broadcastIdentityChange for did=%s handle=%s\n", [did UTF8String], [normalizedHandle UTF8String]);
+        fflush(stderr);
         if (subscribeReposHandler) {
             [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
         }
 
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
-    }];
-
-    // com.atproto.identity.resolveDid
-    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
-        NSString *did = [request queryParamForKey:@"did"];
-        if (!did) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
-            return;
-        }
-
-        NSError *error = nil;
+        // 6. Resolve DID for response
+        error = nil;
         NSDictionary *doc = [XrpcIdentityHelper resolveDid:did
                                           serviceDatabases:serviceDatabases
                                              configuration:configuration
