@@ -597,14 +597,16 @@
 
         BOOL needsUpdate = YES;
         if (existingAccount && [existingAccount.did isEqualToString:did]) {
-            // Already owns this handle, skip PLC and DB updates but still broadcast
-            PDS_LOG_INFO(@"updateHandle: User already owns handle %@, skipping updates", normalizedHandle);
-            needsUpdate = NO;
+            // Already owns this handle in local DB - verify PLC also matches before skipping
+            PDS_LOG_DEBUG(@"updateHandle: Local DB has handle %@ for did=%@", normalizedHandle, did);
+            // Continue to PLC check below to ensure PLC is in sync
         } else if (existingAccount) {
             response.statusCode = HttpStatusConflict;
             [response setJsonBody:@{@"error": @"HandleAlreadyTaken", @"message": @"Handle already taken"}];
             return;
         }
+
+        // Only skip if PLC is also in sync (checked below with needsUpdate flag)
 
         if (needsUpdate) {
             // 2. Handle Ownership Verification
@@ -689,56 +691,72 @@
                     return;
                 }
 
-                // Create update operation
-                NSMutableDictionary *op = [NSMutableDictionary dictionary];
-                op[@"type"] = @"plc_operation";
-                op[@"rotationKeys"] = currentState.rotationKeys;
-                op[@"verificationMethods"] = currentState.verificationMethods;
-                
-                // Preserve alsoKnownAs entries that are not at:// handles
-                NSMutableArray *newAlsoKnownAs = [NSMutableArray array];
-                NSString *newAtHandle = [NSString stringWithFormat:@"at://%@", normalizedHandle];
+                // Check if PLC already has this handle - if so, only DB update needed
+                NSString *plcHandle = nil;
                 for (NSString *aka in currentState.alsoKnownAs) {
-                    if (![aka hasPrefix:@"at://"]) {
-                        [newAlsoKnownAs addObject:aka];
+                    if ([aka hasPrefix:@"at://"]) {
+                        NSString *handle = [aka substringFromIndex:5]; // remove "at://"
+                        if ([handle isEqualToString:normalizedHandle]) {
+                            plcHandle = handle;
+                            break;
+                        }
                     }
                 }
-                [newAlsoKnownAs insertObject:newAtHandle atIndex:0];
-                op[@"alsoKnownAs"] = newAlsoKnownAs;
 
-                op[@"services"] = currentState.services;
-                NSDictionary *lastEntry = auditLog.lastObject;
-                NSDictionary *lastOp = lastEntry[@"operation"] ?: lastEntry;
-                NSString *prevCid = lastEntry[@"cid"];
-                if (!prevCid) {
-                    prevCid = [PLCOperation calculateCIDForOperation:lastOp error:nil];
-                }
-                op[@"prev"] = prevCid;
-                
-                // Sign operation
-                NSError *signError = nil;
-                NSData *opData = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:&signError];
-                NSData *hash = [CryptoUtils sha256:opData];
-                NSData *sigData = nil;
-                if (![keyManager signHash:hash result:&sigData error:&signError]) {
-                    PDS_LOG_ERROR(@"Failed to sign PLC operation for DID %@: %@", did, signError);
-                    response.statusCode = HttpStatusInternalServerError;
-                    [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign operation"}];
-                    return;
-                }
-                op[@"sig"] = [CryptoUtils base64URLEncode:sigData];
+                if (plcHandle) {
+                    PDS_LOG_INFO(@"updateHandle: PLC already has handle %@, need DB update", normalizedHandle);
+                } else {
+                    // Create update operation
+                    NSMutableDictionary *op = [NSMutableDictionary dictionary];
+                    op[@"type"] = @"plc_operation";
+                    op[@"rotationKeys"] = currentState.rotationKeys;
+                    op[@"verificationMethods"] = currentState.verificationMethods;
+                    
+                    // Preserve alsoKnownAs entries that are not at:// handles
+                    NSMutableArray *newAlsoKnownAs = [NSMutableArray array];
+                    NSString *newAtHandle = [NSString stringWithFormat:@"at://%@", normalizedHandle];
+                    for (NSString *aka in currentState.alsoKnownAs) {
+                        if (![aka hasPrefix:@"at://"]) {
+                            [newAlsoKnownAs addObject:aka];
+                        }
+                    }
+                    [newAlsoKnownAs insertObject:newAtHandle atIndex:0];
+                    op[@"alsoKnownAs"] = newAlsoKnownAs;
 
-                // Submit to PLC
-                PDS_LOG_DEBUG(@"updateHandle: Submitting PLC operation for DID=%@", did);
-                NSInteger statusCode = 0;
-                NSData *responseData = [plcResolver submitOperation:op did:did statusCode:&statusCode error:&auditError];
-                if (statusCode < 200 || statusCode >= 300) {
-                    NSString *respString = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
-                    PDS_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
-                    response.statusCode = HttpStatusServiceUnavailable;
-                    [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
-                    return;
-                }
+                    op[@"services"] = currentState.services;
+                    NSDictionary *lastEntry = auditLog.lastObject;
+                    NSDictionary *lastOp = lastEntry[@"operation"] ?: lastEntry;
+                    NSString *prevCid = lastEntry[@"cid"];
+                    if (!prevCid) {
+                        prevCid = [PLCOperation calculateCIDForOperation:lastOp error:nil];
+                    }
+                    op[@"prev"] = prevCid;
+                    
+                    // Sign operation
+                    NSError *signError = nil;
+                    NSData *opData = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:&signError];
+                    NSData *hash = [CryptoUtils sha256:opData];
+                    NSData *sigData = nil;
+                    if (![keyManager signHash:hash result:&sigData error:&signError]) {
+                        PDS_LOG_ERROR(@"Failed to sign PLC operation for DID %@: %@", did, signError);
+                        response.statusCode = HttpStatusInternalServerError;
+                        [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign operation"}];
+                        return;
+                    }
+                    op[@"sig"] = [CryptoUtils base64URLEncode:sigData];
+
+                    // Submit to PLC
+                    PDS_LOG_DEBUG(@"updateHandle: Submitting PLC operation for DID=%@", did);
+                    NSInteger statusCode = 0;
+                    NSData *responseData = [plcResolver submitOperation:op did:did statusCode:&statusCode error:&auditError];
+                    if (statusCode < 200 || statusCode >= 300) {
+                        NSString *respString = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
+                        PDS_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
+                        response.statusCode = HttpStatusServiceUnavailable;
+                        [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
+                        return;
+                    }
+                }  // end else (plcHandle)
             } else {
                 // Non-PLC DID (e.g. did:web). Verification already performed above in Step 2.
                 PDS_LOG_DEBUG(@"updateHandle: Non-PLC DID %@ verification successful", did);
