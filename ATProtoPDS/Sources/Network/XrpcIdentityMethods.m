@@ -692,10 +692,12 @@
                 }
 
                 // Check if PLC already has this handle - if so, only DB update needed
+                PDS_LOG_DEBUG(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
                 NSString *plcHandle = nil;
                 for (NSString *aka in currentState.alsoKnownAs) {
                     if ([aka hasPrefix:@"at://"]) {
                         NSString *handle = [aka substringFromIndex:5]; // remove "at://"
+                        PDS_LOG_DEBUG(@"updateHandle: Found handle in PLC: %@", handle);
                         if ([handle isEqualToString:normalizedHandle]) {
                             plcHandle = handle;
                             break;
