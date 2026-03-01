@@ -782,7 +782,8 @@
         }
 
         // 5. Firehose / Sequencer Broadcast (Always run, even if handle was already owned)
-        PDS_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler=%@", did, subscribeReposHandler);
+        PDS_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler exists=%d", did, subscribeReposHandler != nil);
+        NSLog(@"DEBUG: About to call broadcastIdentityChange for did=%@", did);
         if (subscribeReposHandler) {
             [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
         }
