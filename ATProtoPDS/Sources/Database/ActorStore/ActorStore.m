@@ -17,6 +17,8 @@
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"
 #import "PDSActorStore+Blob.h"
+#import "Auth/CryptoUtils.h"
+#import "App/PDSConfiguration.h"
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 
@@ -1677,6 +1679,11 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     
     if (result != SQLITE_DONE) {
         if (error) {
+            *error = [self errorWithSQLiteResult:result message:@"Failed to store rotation key"];
+        }
+        return NO;
+    }
+    
     return YES;
 }
 
