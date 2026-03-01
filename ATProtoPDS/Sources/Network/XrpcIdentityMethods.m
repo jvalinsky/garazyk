@@ -675,7 +675,9 @@
 
                 NSMutableArray<PLCOperation *> *ops = [NSMutableArray array];
                 for (NSDictionary *dict in auditLog) {
-                    PLCOperation *operation = [PLCOperation operationFromDictionary:dict error:nil];
+                    // PLC audit log wraps each operation in metadata (cid, createdAt, etc.)
+                    NSDictionary *opDict = dict[@"operation"] ?: dict;
+                    PLCOperation *operation = [PLCOperation operationFromDictionary:opDict error:nil];
                     if (operation) [ops addObject:operation];
                 }
                 
@@ -705,7 +707,13 @@
                 op[@"alsoKnownAs"] = newAlsoKnownAs;
 
                 op[@"services"] = currentState.services;
-                op[@"prev"] = [PLCOperation calculateCIDForOperation:auditLog.lastObject error:nil];
+                NSDictionary *lastEntry = auditLog.lastObject;
+                NSDictionary *lastOp = lastEntry[@"operation"] ?: lastEntry;
+                NSString *prevCid = lastEntry[@"cid"];
+                if (!prevCid) {
+                    prevCid = [PLCOperation calculateCIDForOperation:lastOp error:nil];
+                }
+                op[@"prev"] = prevCid;
                 
                 // Sign operation
                 NSError *signError = nil;
