@@ -24,6 +24,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/Secp256k1.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
@@ -705,7 +706,17 @@
                     if (operation) [ops addObject:operation];
                 }
                 
-                PLCDIDState *currentState = [PLCStateReplayer replayHistory:ops error:&auditError];
+                PLCDIDState *currentState = nil;
+                @try {
+                    PDS_LOG_DEBUG(@"updateHandle: Replaying PLC history");
+                    currentState = [PLCStateReplayer replayHistory:ops error:&auditError];
+                } @catch (NSException *exception) {
+                    PDS_LOG_ERROR(@"updateHandle: Exception replaying PLC history: %@", exception);
+                    response.statusCode = HttpStatusInternalServerError;
+                    [response setJsonBody:@{@"error": @"InternalError", @"message": [NSString stringWithFormat:@"Exception replaying DID history: %@", exception.reason]}];
+                    return;
+                }
+
                 if (!currentState) {
                     PDS_LOG_ERROR(@"Failed to replay PLC state for DID %@: %@", did, auditError);
                     response.statusCode = HttpStatusInternalServerError;
@@ -714,10 +725,8 @@
                 }
 
                 // Check if PLC already has this handle - if so, only DB update needed
-                PDS_LOG_DEBUG(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
+                PDS_LOG_INFO(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
                 NSString *plcHandle = nil;
-                fprintf(stderr, "DEBUG: Starting for loop over alsoKnownAs, count=%lu\n", (unsigned long)[currentState.alsoKnownAs count]);
-                fflush(stderr);
                 for (NSString *aka in currentState.alsoKnownAs) {
                     if ([aka hasPrefix:@"at://"]) {
                         NSString *handle = [aka substringFromIndex:5]; // remove "at://"
@@ -729,15 +738,6 @@
                     }
                 }
                 
-                // CRITICAL DEBUG: After for loop
-                PDS_LOG_INFO(@"updateHandle: After for loop, plcHandle=%@", plcHandle);
-                if (plcHandle) {
-                    fprintf(stderr, "DEBUG: plcHandle is NOT nil, going to skip PLC op\n");
-                } else {
-                    fprintf(stderr, "DEBUG: plcHandle is nil, will create PLC op\n");
-                }
-                fflush(stderr);
-
                 PDS_LOG_INFO(@"updateHandle: After PLC check, plcHandle=%@", plcHandle);
                 if (plcHandle) {
                     PDS_LOG_INFO(@"updateHandle: PLC already has handle %@, need DB update", normalizedHandle);

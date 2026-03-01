@@ -230,6 +230,15 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Clears the repo_root table for re-initialization. */
 - (BOOL)clearRepoRootWithError:(NSError **)error;
 
+/*! Derives an encryption key from a password and salt. */
+- (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt;
+
+/*! Encrypts data using the crypto utility. */
+- (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key;
+
+/*! Decrypts data using the crypto utility. */
+- (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key;
+
 @end
 
 NS_ASSUME_NONNULL_END
