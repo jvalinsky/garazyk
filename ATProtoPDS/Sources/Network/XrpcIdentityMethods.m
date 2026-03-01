@@ -708,6 +708,7 @@
                 if (plcHandle) {
                     PDS_LOG_INFO(@"updateHandle: PLC already has handle %@, need DB update", normalizedHandle);
                 } else {
+                    PDS_LOG_INFO(@"updateHandle: Creating PLC operation for handle %@", normalizedHandle);
                     // Create update operation
                     NSMutableDictionary *op = [NSMutableDictionary dictionary];
                     op[@"type"] = @"plc_operation";
@@ -765,6 +766,7 @@
             }
 
             // 4. Database Update
+            PDS_LOG_INFO(@"updateHandle: Doing DB update for did=%@, handle=%@", did, normalizedHandle);
             if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
                                                     did:did
                                                 handle:normalizedHandle
