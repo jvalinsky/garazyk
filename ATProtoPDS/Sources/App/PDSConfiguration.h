@@ -244,6 +244,12 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether to use the system Keychain for storing keys (default: YES). */
 @property (nonatomic, assign) BOOL useKeychain;
 
+/*! Whether to use the Secure Enclave for hardware-backed keys (default: NO). */
+@property (nonatomic, assign) BOOL useSecureEnclave;
+
+/*! Master secret used for encryption at rest. */
+@property (nonatomic, copy, nullable) NSString *masterSecret;
+
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;
 

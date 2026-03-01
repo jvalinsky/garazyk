@@ -260,6 +260,12 @@
         }
         NSString *serverRotationKey = keyManager.rotationKeyDidKey;
 
+        // Load per-DID rotation key if it exists
+        NSData *perDidRotationKey = nil;
+        if (store) {
+            perDidRotationKey = [store rotationKeyDecryptedWithError:nil];
+        }
+
         NSArray *rotationKeys = [rotationKeysValue isKindOfClass:[NSArray class]] ? rotationKeysValue : nil;
         if (rotationKeys.count == 0) {
             rotationKeys = @[serverRotationKey];
@@ -347,7 +353,15 @@
         NSError *signError = nil;
         NSData *sig = nil;
         
-        if (![keyManager signHash:hash result:&sig error:&signError]) {
+        if (perDidRotationKey) {
+            PDS_LOG_INFO(@"Signing PLC operation with per-DID rotation key for %@", did);
+            sig = [[Secp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
+        } else {
+            PDS_LOG_INFO(@"Signing PLC operation with server rotation key for %@", did);
+            [keyManager signHash:hash result:&sig error:&signError];
+        }
+
+        if (!sig) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"SigningFailed", @"message": signError.localizedDescription ?: @"Failed to sign PLC operation"}];
             return;
@@ -675,6 +689,14 @@
                     return;
                 }
 
+                // Load per-DID rotation key if it exists
+                NSError *storeError = nil;
+                PDSActorStore *store = [userDatabasePool storeForDid:did error:&storeError];
+                NSData *perDidRotationKey = nil;
+                if (store) {
+                    perDidRotationKey = [store rotationKeyDecryptedWithError:nil];
+                }
+
                 NSMutableArray<PLCOperation *> *ops = [NSMutableArray array];
                 for (NSDictionary *dict in auditLog) {
                     // PLC audit log wraps each operation in metadata (cid, createdAt, etc.)
@@ -694,6 +716,8 @@
                 // Check if PLC already has this handle - if so, only DB update needed
                 PDS_LOG_DEBUG(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
                 NSString *plcHandle = nil;
+                fprintf(stderr, "DEBUG: Starting for loop over alsoKnownAs, count=%lu\n", (unsigned long)[currentState.alsoKnownAs count]);
+                fflush(stderr);
                 for (NSString *aka in currentState.alsoKnownAs) {
                     if ([aka hasPrefix:@"at://"]) {
                         NSString *handle = [aka substringFromIndex:5]; // remove "at://"
@@ -750,7 +774,16 @@
                     NSData *opData = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:&signError];
                     NSData *hash = [CryptoUtils sha256:opData];
                     NSData *sigData = nil;
-                    if (![keyManager signHash:hash result:&sigData error:&signError]) {
+                    
+                    if (perDidRotationKey) {
+                        PDS_LOG_INFO(@"Signing handle update with per-DID rotation key for %@", did);
+                        sigData = [[Secp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
+                    } else {
+                        PDS_LOG_INFO(@"Signing handle update with server rotation key for %@", did);
+                        [keyManager signHash:hash result:&sigData error:&signError];
+                    }
+
+                    if (!sigData) {
                         PDS_LOG_ERROR(@"Failed to sign PLC operation for DID %@: %@", did, signError);
                         response.statusCode = HttpStatusInternalServerError;
                         [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign operation"}];

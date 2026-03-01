@@ -72,8 +72,9 @@
     return @"CREATE TABLE IF NOT EXISTS jwt_signing_keys ("
            @"    key_id TEXT PRIMARY KEY,"
            @"    algorithm TEXT NOT NULL,"
-           @"    private_key_data BLOB NOT NULL,"
+           @"    private_key_data BLOB," // NULL for Secure Enclave keys
            @"    public_key_data BLOB NOT NULL,"
+           @"    keychain_tag TEXT," // Label/Tag for loading from Keychain
            @"    is_active INTEGER DEFAULT 1,"
            @"    created_at TEXT NOT NULL,"
            @"    last_used_at TEXT"

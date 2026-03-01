@@ -219,6 +219,14 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
                                                 error:(NSError **)error;
 
+/*! Stores the rotation key encrypted with the PDS master secret. */
+- (BOOL)storeRotationKeyPrivate:(NSData *)privateKey
+                      publicKey:(NSData *)compressedPublicKey
+                            error:(NSError **)error;
+
+/*! Retrieves the decrypted rotation key using the PDS master secret. */
+- (nullable NSData *)rotationKeyDecryptedWithError:(NSError **)error;
+
 /*! Clears the repo_root table for re-initialization. */
 - (BOOL)clearRepoRootWithError:(NSError **)error;
 

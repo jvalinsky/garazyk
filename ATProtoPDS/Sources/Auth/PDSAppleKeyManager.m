@@ -12,6 +12,7 @@
 
 #import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
+#import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
@@ -172,10 +173,20 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         keyType = kSecAttrKeyTypeECSECPrimeRandom;
     }
 
-    NSDictionary *parameters = @{
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    BOOL useSE = config.useSecureEnclave;
+
+    NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithDictionary:@{
         (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
         (__bridge id)kSecAttrKeySizeInBits: @(keySize)
-    };
+    }];
+
+    if (useSE) {
+        parameters[(__bridge id)kSecAttrTokenID] = (__bridge id)kSecAttrTokenIDSecureEnclave;
+        parameters[(__bridge id)kSecAttrIsPermanent] = @YES;
+        parameters[(__bridge id)kSecAttrLabel] = keyID;
+        parameters[(__bridge id)kSecAttrApplicationTag] = [keyID dataUsingEncoding:NSUTF8StringEncoding];
+    }
 
     CFErrorRef cfError = NULL;
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
@@ -206,6 +217,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                              publicKey:publicKey
                                                  keyID:keyID
                                               algorithm:algorithm];
+    keyPair.isSecureEnclaveKey = useSE;
     CFRelease(privateKey);
     CFRelease(publicKey);
 
@@ -462,7 +474,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     if (!self.database) return;
 
     NSError *error = nil;
-    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
+    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
 
     if (error) {
         PDS_LOG_AUTH_ERROR(@"Failed to load JWT signing keys from database: %@", error);
@@ -473,36 +485,52 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         for (NSDictionary *row in results) {
             NSString *keyID = row[@"key_id"];
             NSString *algorithm = row[@"algorithm"];
-            NSData *privateKeyData = row[@"private_key_data"];
+            NSData *privateKeyData = [row[@"private_key_data"] isKindOfClass:[NSData class]] ? row[@"private_key_data"] : nil;
             NSData *publicKeyData = row[@"public_key_data"];
+            NSString *keychainTag = [row[@"keychain_tag"] isKindOfClass:[NSString class]] ? row[@"keychain_tag"] : nil;
             NSNumber *isActive = row[@"is_active"];
 
-            // Import keys from data
-            NSDictionary *privateKeyAttrs = @{
-                (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
-                (__bridge id)kSecAttrKeySizeInBits: @2048
-            };
-
-            NSDictionary *publicKeyAttrs = @{
-                (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic,
-                (__bridge id)kSecAttrKeySizeInBits: @2048
-            };
-
+            SecKeyRef privateKey = NULL;
+            SecKeyRef publicKey = NULL;
             CFErrorRef importError = NULL;
-            SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
-                                                       (__bridge CFDictionaryRef)privateKeyAttrs,
-                                                       &importError);
+
+            if (keychainTag) {
+                // Load Secure Enclave key from Keychain
+                NSDictionary *query = @{
+                    (__bridge id)kSecClass: (__bridge id)kSecClassKey,
+                    (__bridge id)kSecAttrApplicationTag: [keychainTag dataUsingEncoding:NSUTF8StringEncoding],
+                    (__bridge id)kSecReturnRef: @YES
+                };
+                OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&privateKey);
+                if (status != errSecSuccess) {
+                    PDS_LOG_AUTH_ERROR(@"Failed to load Secure Enclave key from Keychain for tag: %@ (status: %d)", keychainTag, (int)status);
+                }
+            } else if (privateKeyData) {
+                // Import legacy RSA/EC key from data
+                NSDictionary *privateKeyAttrs = @{
+                    (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA, // Default to RSA, but SecKeyCreateWithData handles it
+                    (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate
+                };
+                privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+                                                  (__bridge CFDictionaryRef)privateKeyAttrs,
+                                                  &importError);
+                if (importError) {
+                    CFRelease(importError);
+                    importError = NULL;
+                }
+            }
+            // Public key should always be present as data
+            NSDictionary *publicKeyAttrs = @{
+                (__bridge id)kSecAttrKeyType: [algorithm hasPrefix:@"RS"] ? (__bridge id)kSecAttrKeyTypeRSA : (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+                (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic
+            };
+
+            publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+                                             (__bridge CFDictionaryRef)publicKeyAttrs,
+                                             &importError);
             if (importError) {
                 CFRelease(importError);
                 importError = NULL;
-            }
-            SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
-                                                      (__bridge CFDictionaryRef)publicKeyAttrs,
-                                                      &importError);
-            if (importError) {
-                CFRelease(importError);
             }
 
             if (privateKey && publicKey) {
@@ -512,6 +540,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                                         algorithm:algorithm];
                 if (keyPair) {
                     keyPair.isActive = [isActive boolValue];
+                    keyPair.isSecureEnclaveKey = (keychainTag != nil);
                     self.keyPairs[keyID] = keyPair;
 
                     // Set current key ID if this is active
@@ -542,17 +571,26 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     };
 
     CFErrorRef exportError = NULL;
-    NSData *privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
-    if (exportError) {
-        CFRelease(exportError);
-        exportError = NULL;
+    NSData *privateKeyData = nil;
+    NSString *keychainTag = nil;
+
+    if (keyPair.isSecureEnclaveKey) {
+        keychainTag = keyPair.keyID;
+        PDS_LOG_AUTH_INFO(@"Storing Secure Enclave key by reference: %@", keychainTag);
+    } else {
+        privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+        if (exportError) {
+            CFRelease(exportError);
+            exportError = NULL;
+        }
     }
+
     NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
     if (exportError) {
         CFRelease(exportError);
     }
 
-    if (!privateKeyData || !publicKeyData) {
+    if (!publicKeyData || (!privateKeyData && !keyPair.isSecureEnclaveKey)) {
         if (error) {
             *error = [NSError errorWithDomain:KeyManagerErrorDomain
                                          code:KeyManagerErrorExportFailed
@@ -562,12 +600,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     }
 
     // Insert into database
-    NSString *sql = @"INSERT OR REPLACE INTO jwt_signing_keys (key_id, algorithm, private_key_data, public_key_data, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO jwt_signing_keys (key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     NSArray *params = @[
         keyPair.keyID,
         keyPair.algorithm,
-        privateKeyData,
+        privateKeyData ?: [NSNull null],
         publicKeyData,
+        keychainTag ?: [NSNull null],
         @(keyPair.isActive),
         [self iso8601StringFromDate:keyPair.createdAt]
     ];

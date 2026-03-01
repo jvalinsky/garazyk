@@ -13,6 +13,8 @@
 #import "Auth/CryptoUtils.h"
 #import <CommonCrypto/CommonHMAC.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <CommonCrypto/CommonCryptor.h>
+#import <CommonCrypto/CommonKeyDerivation.h>
 #import <Security/Security.h>
 
 @implementation CryptoUtils
@@ -173,6 +175,84 @@
     }
     
     return result == 0;
+}
+
++ (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
+    if (key.length != 32) return nil;
+    
+    uint8_t ivBytes[kCCBlockSizeAES128];
+    if (SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, ivBytes) != errSecSuccess) {
+        return nil;
+    }
+    
+    size_t bufferSize = data.length + kCCBlockSizeAES128;
+    NSMutableData *cipherData = [NSMutableData dataWithLength:bufferSize];
+    
+    size_t numBytesEncrypted = 0;
+    CCCryptorStatus status = CCCrypt(kCCEncrypt,
+                                     kCCAlgorithmAES128,
+                                     kCCOptionPKCS7Padding,
+                                     key.bytes, kCCKeySizeAES256,
+                                     ivBytes,
+                                     data.bytes, data.length,
+                                     cipherData.mutableBytes, bufferSize,
+                                     &numBytesEncrypted);
+    
+    if (status != kCCSuccess) {
+        return nil;
+    }
+    
+    cipherData.length = numBytesEncrypted;
+    
+    NSMutableData *result = [NSMutableData dataWithBytes:ivBytes length:kCCBlockSizeAES128];
+    [result appendData:cipherData];
+    
+    return result;
+}
+
++ (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key {
+    if (key.length != 32 || data.length < kCCBlockSizeAES128) return nil;
+    
+    const uint8_t *iv = data.bytes;
+    NSData *ciphertext = [data subdataWithRange:NSMakeRange(kCCBlockSizeAES128, data.length - kCCBlockSizeAES128)];
+    
+    size_t bufferSize = ciphertext.length + kCCBlockSizeAES128;
+    NSMutableData *plainData = [NSMutableData dataWithLength:bufferSize];
+    
+    size_t numBytesDecrypted = 0;
+    CCCryptorStatus status = CCCrypt(kCCDecrypt,
+                                     kCCAlgorithmAES128,
+                                     kCCOptionPKCS7Padding,
+                                     key.bytes, kCCKeySizeAES256,
+                                     iv,
+                                     ciphertext.bytes, ciphertext.length,
+                                     plainData.mutableBytes, bufferSize,
+                                     &numBytesDecrypted);
+    
+    if (status != kCCSuccess) {
+        return nil;
+    }
+    
+    plainData.length = numBytesDecrypted;
+    return plainData;
+}
+
++ (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt {
+    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
+    
+    int result = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                      passwordData.bytes, passwordData.length,
+                                      salt.bytes, salt.length,
+                                      kCCPRFHmacAlgSHA256,
+                                      100000,
+                                      derivedKey.mutableBytes, 32);
+    
+    if (result != kCCSuccess) {
+        return nil;
+    }
+    
+    return derivedKey;
 }
 
 @end
