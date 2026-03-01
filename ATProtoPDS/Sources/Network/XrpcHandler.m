@@ -5,6 +5,7 @@
 #import "Network/XrpcProxyHandler.h"
 #import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
+#import "App/PDSConfiguration.h"
 
 @interface XrpcDispatcher ()
 
@@ -35,24 +36,46 @@
     self.methodHandlers[methodId] = [handler copy];
 }
 
+- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSArray<NSString *> *allowedOrigins = [config arrayForKey:@"cors.allowed_origins"];
+    if (!allowedOrigins) {
+        allowedOrigins = @[@"*"];
+    }
+
+    NSString *origin = [request headerForKey:@"Origin"];
+
+    if (origin && [allowedOrigins containsObject:@"*"]) {
+        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+    } else if (origin && [allowedOrigins containsObject:origin]) {
+        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+    } else if (!origin && [allowedOrigins containsObject:@"*"]) {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    }
+
+    NSString *allowedMethods = [config stringForKey:@"cors.allowed_methods"] ?: @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
+    NSString *allowedHeaders = [config stringForKey:@"cors.allowed_headers"] ?: @"DPoP, Authorization, Content-Type, *";
+    NSInteger maxAge = [config integerForKey:@"cors.max_age"] ?: 86400;
+
+    [response setHeader:allowedMethods forKey:@"Access-Control-Allow-Methods"];
+    [response setHeader:allowedHeaders forKey:@"Access-Control-Allow-Headers"];
+    [response setHeader:[NSString stringWithFormat:@"%ld", (long)maxAge] forKey:@"Access-Control-Max-Age"];
+    [response setHeader:@"DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
+    [response setHeader:@"Origin" forKey:@"Vary"];
+}
+
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     // Handle CORS preflight immediately — the /xrpc pathHandler prefix match
     // catches OPTIONS before the route trie's explicit OPTIONS route, so we
     // must handle it here to guarantee a 200 response for browsers.
     if (request.method == HttpMethodOPTIONS) {
-        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-        [response setHeader:@"GET, POST, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
-        [response setHeader:@"Content-Type, Authorization, DPoP, *" forKey:@"Access-Control-Allow-Headers"];
-        [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        [self setCorsHeaders:response forRequest:request];
         response.statusCode = HttpStatusOK;
         return;
     }
 
     // Set CORS headers for all XRPC responses (not just OPTIONS)
-    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setHeader:@"GET, POST, PUT, DELETE, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
-    [response setHeader:@"Content-Type, Authorization, DPoP, *" forKey:@"Access-Control-Allow-Headers"];
-    [response setHeader:@"DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
+    [self setCorsHeaders:response forRequest:request];
 
     // Check Rate Limit
     RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
