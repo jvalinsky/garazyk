@@ -242,6 +242,9 @@ endif()
 if(NOT APPLE)
 
 
+  # PDSAppleKeyManager.m uses Security.framework (macOS/iOS only)
+  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
+
   # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO)
   list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
 
