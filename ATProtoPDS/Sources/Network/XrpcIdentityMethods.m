@@ -141,6 +141,33 @@
         [response setJsonBody:result];
     }];
 
+    // com.atproto.identity.resolveDid
+    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
+        NSString *did = [request queryParamForKey:@"did"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *doc = [XrpcIdentityHelper resolveDid:did
+                                          serviceDatabases:serviceDatabases
+                                             configuration:configuration
+                                                     error:&error];
+        if (!doc) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{
+                @"error": @"NotFound",
+                @"message": error.localizedDescription ?: @"DID not found"
+            }];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:doc];
+    }];
+
     // com.atproto.identity.getRecommendedDidCredentials
     [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [configuration canonicalIssuerWithPortHint:0];
