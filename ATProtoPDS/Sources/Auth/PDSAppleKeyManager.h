@@ -46,6 +46,7 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 @property (nonatomic, assign) SecKeyRef publicKey;
 @property (nonatomic, strong) NSDate *createdAt;
 @property (nonatomic, assign) BOOL isActive;
+@property (nonatomic, assign) BOOL isSecureEnclaveKey;
 
 + (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
                                       publicKey:(SecKeyRef)publicKey
