@@ -274,6 +274,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Returns a string configuration value. */
 - (nullable NSString *)stringForKey:(NSString *)key;
 
+/*! Returns an array configuration value. */
+- (nullable NSArray *)arrayForKey:(NSString *)key;
+
 /*! Returns an integer configuration value. */
 - (NSInteger)integerForKey:(NSString *)key;
 

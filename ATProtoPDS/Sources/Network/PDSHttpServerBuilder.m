@@ -198,6 +198,27 @@
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth routes registered");
 }
 
+- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  NSArray<NSString *> *allowedOrigins = [self getCorsAllowedOrigins];
+  NSString *origin = [request headerForKey:@"Origin"];
+
+  if (origin && [allowedOrigins containsObject:@"*"]) {
+    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  } else if (origin && [allowedOrigins containsObject:origin]) {
+    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  } else if (!origin && [allowedOrigins containsObject:@"*"]) {
+    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+  }
+
+  [response setHeader:[self getCorsAllowedMethods]
+               forKey:@"Access-Control-Allow-Methods"];
+  [response setHeader:[self getCorsAllowedHeaders]
+               forKey:@"Access-Control-Allow-Headers"];
+  [response setHeader:[self getCorsMaxAge] forKey:@"Access-Control-Max-Age"];
+  [response setHeader:@"Origin" forKey:@"Vary"];
+}
+
 - (void)registerXrpcRoutesWithServer:(HttpServer *)server {
   XrpcDispatcher *dispatcher = self.xrpcDispatcher;
   if (!dispatcher) {
@@ -223,12 +244,7 @@
   [server addRoute:@"OPTIONS"
               path:@"/xrpc"
            handler:^(HttpRequest *request, HttpResponse *response) {
-             [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-             [response setHeader:@"GET, POST, OPTIONS, HEAD"
-                          forKey:@"Access-Control-Allow-Methods"];
-             [response setHeader:@"Content-Type, Authorization, DPoP, *"
-                          forKey:@"Access-Control-Allow-Headers"];
-             [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+             [self setCorsHeaders:response forRequest:request];
              response.statusCode = HttpStatusOK;
            }];
 
@@ -237,14 +253,7 @@
       addHandlerForPath:@"/xrpc"
                 handler:^(HttpRequest *request, HttpResponse *response) {
                   if ([request.methodString isEqualToString:@"OPTIONS"]) {
-                    [response setHeader:@"*"
-                                 forKey:@"Access-Control-Allow-Origin"];
-                    [response setHeader:@"GET, POST, PUT, DELETE, OPTIONS, HEAD"
-                                 forKey:@"Access-Control-Allow-Methods"];
-                    [response setHeader:@"Content-Type, Authorization, DPoP, *"
-                                 forKey:@"Access-Control-Allow-Headers"];
-                    [response setHeader:@"86400"
-                                 forKey:@"Access-Control-Max-Age"];
+                    [self setCorsHeaders:response forRequest:request];
                     response.statusCode = HttpStatusOK;
                     return;
                   }
@@ -260,12 +269,7 @@
   [server addRoute:@"OPTIONS"
               path:@"/xrpc/:method"
            handler:^(HttpRequest *request, HttpResponse *response) {
-             [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-             [response setHeader:@"GET, POST, OPTIONS, HEAD"
-                          forKey:@"Access-Control-Allow-Methods"];
-             [response setHeader:@"Content-Type, Authorization, DPoP, *"
-                          forKey:@"Access-Control-Allow-Headers"];
-             [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+             [self setCorsHeaders:response forRequest:request];
              response.statusCode = HttpStatusOK;
            }];
 
@@ -281,12 +285,7 @@
     [server addRoute:@"OPTIONS"
                 path:@"/xrpc/com.atproto.sync.subscribeRepos"
              handler:^(HttpRequest *request, HttpResponse *response) {
-               [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-               [response setHeader:@"GET, POST, OPTIONS"
-                            forKey:@"Access-Control-Allow-Methods"];
-               [response setHeader:@"Content-Type, Authorization, DPoP"
-                            forKey:@"Access-Control-Allow-Headers"];
-               [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+               [self setCorsHeaders:response forRequest:request];
                response.statusCode = HttpStatusOK;
              }];
 
