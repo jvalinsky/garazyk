@@ -49,6 +49,7 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 - [Web UI](oauth2/web-ui.md)
 
 ### Security
+- [Identity Hardening (Rotation Keys)](security/IDENTITY_HARDENING.md)
 - [Security Testing Plan](security/SECURITY_TESTING_PLAN.md)
 - [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT.md)
 - [SQL Injection Report](security/SQL_INJECTION_VULNERABILITY_REPORT.md)
@@ -75,7 +76,7 @@ This section provides quick links to key documentation in each subfolder:
 | **Architecture** | [PDS Architecture](architecture/atproto_pds_architecture.md), [Data Models](architecture/atproto_data_models.md), [Diagrams](architecture/DIAGRAMS_MERMAID.md) |
 | **Guides** | [Developer Guide](guides/DEVELOPER_GUIDE.md), [Setup Guide](guides/SETUP_GUIDE.md), [Deployment](guides/DEPLOYMENT.md) |
 | **OAuth2** | [Overview](oauth2/README.md), [Authorization Flow](oauth2/authorization-flow.md), [DPoP](oauth2/dpop.md) |
-| **Security** | [Testing Plan](security/SECURITY_TESTING_PLAN.md), [Analysis Report](security/SECURITY_ANALYSIS_REPORT.md) |
+| **Security** | [Testing Plan](security/SECURITY_TESTING_PLAN.md), [Analysis Report](security/SECURITY_ANALYSIS_REPORT.md), [Identity Hardening](security/IDENTITY_HARDENING.md) |
 | **Testing** | [Test Index](tests/README.md), [Identity/Auth](tests/00-identity-auth/README.md), [Repository](tests/01-repository/README.md) |
 
 ## Project Links
