@@ -704,6 +704,9 @@
                         }
                     }
                 }
+                
+                // CRITICAL DEBUG: After for loop
+                PDS_LOG_INFO(@"updateHandle: After for loop, plcHandle=%@", plcHandle);
 
                 PDS_LOG_INFO(@"updateHandle: After PLC check, plcHandle=%@", plcHandle);
                 if (plcHandle) {
