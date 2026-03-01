@@ -1677,12 +1677,27 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     
     if (result != SQLITE_DONE) {
         if (error) {
-            *error = [self errorWithSQLiteResult:result message:@"Failed to store rotation key"];
+    return YES;
+}
+
+- (BOOL)storeRotationKeyPrivate:(NSData *)privateKey
+                      publicKey:(NSData *)compressedPublicKey
+                            error:(NSError **)error {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *masterSecret = config.masterSecret;
+    if (masterSecret.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PDS_MASTER_SECRET not configured"}];
         }
         return NO;
     }
-    
-    return YES;
+
+    return [self storeRotationKeyPrivate:privateKey
+                               publicKey:compressedPublicKey
+                    encryptedWithPassword:masterSecret
+                                    error:error];
 }
 
 - (nullable NSData *)rotationKeyDecryptedWithPassword:(NSString *)password
@@ -1736,6 +1751,21 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return privateKey;
 }
 
+- (nullable NSData *)rotationKeyDecryptedWithError:(NSError **)error {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *masterSecret = config.masterSecret;
+    if (masterSecret.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PDS_MASTER_SECRET not configured"}];
+        }
+        return nil;
+    }
+
+    return [self rotationKeyDecryptedWithPassword:masterSecret error:error];
+}
+
 - (nullable NSData *)exportSigningKeyWithError:(NSError **)error {
     if (!self.keyManager) {
         if (error) {
@@ -1785,88 +1815,15 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 #pragma mark - Encryption Helpers
 
 - (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt {
-    // PBKDF2 with SHA-256, 100000 iterations, 32-byte output
-    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
-    
-    NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
-    
-    int result = CCKeyDerivationPBKDF(kCCPBKDF2,
-                                      passwordData.bytes, passwordData.length,
-                                      salt.bytes, salt.length,
-                                      kCCPRFHmacAlgSHA256,
-                                      100000,
-                                      derivedKey.mutableBytes, 32);
-    
-    if (result != kCCSuccess) {
-        return nil;
-    }
-    
-    return derivedKey;
+    return [CryptoUtils deriveKeyFromPassword:password salt:salt];
 }
 
 - (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
-    // AES-256-CBC with PKCS7 padding
-    // Generate cryptographically secure random IV
-    uint8_t ivBytes[kCCBlockSizeAES128];
-    if (SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, ivBytes) != errSecSuccess) {
-        return nil;
-    }
-    
-    size_t bufferSize = data.length + kCCBlockSizeAES128;
-    NSMutableData *cipherData = [NSMutableData dataWithLength:bufferSize];
-    
-    size_t numBytesEncrypted = 0;
-    CCCryptorStatus status = CCCrypt(kCCEncrypt,
-                                     kCCAlgorithmAES128,
-                                     kCCOptionPKCS7Padding,
-                                     key.bytes, kCCKeySizeAES256,
-                                     ivBytes,
-                                     data.bytes, data.length,
-                                     cipherData.mutableBytes, bufferSize,
-                                     &numBytesEncrypted);
-    
-    if (status != kCCSuccess) {
-        return nil;
-    }
-    
-    cipherData.length = numBytesEncrypted;
-    
-    // Prepend IV to ciphertext
-    NSMutableData *result = [NSMutableData dataWithBytes:ivBytes length:kCCBlockSizeAES128];
-    [result appendData:cipherData];
-    
-    return result;
+    return [CryptoUtils encryptData:data withKey:key];
 }
 
 - (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key {
-    // AES-256-CBC with PKCS7 padding
-    // IV is prepended to the ciphertext
-    if (data.length < kCCBlockSizeAES128) {
-        return nil;
-    }
-    
-    const uint8_t *iv = data.bytes;
-    NSData *ciphertext = [data subdataWithRange:NSMakeRange(kCCBlockSizeAES128, data.length - kCCBlockSizeAES128)];
-    
-    size_t bufferSize = ciphertext.length + kCCBlockSizeAES128;
-    NSMutableData *plainData = [NSMutableData dataWithLength:bufferSize];
-    
-    size_t numBytesDecrypted = 0;
-    CCCryptorStatus status = CCCrypt(kCCDecrypt,
-                                     kCCAlgorithmAES128,
-                                     kCCOptionPKCS7Padding,
-                                     key.bytes, kCCKeySizeAES256,
-                                     iv,
-                                     ciphertext.bytes, ciphertext.length,
-                                     plainData.mutableBytes, bufferSize,
-                                     &numBytesDecrypted);
-    
-    if (status != kCCSuccess) {
-        return nil;
-    }
-    
-    plainData.length = numBytesDecrypted;
-    return plainData;
+    return [CryptoUtils decryptData:data withKey:key];
 }
 
 @end
