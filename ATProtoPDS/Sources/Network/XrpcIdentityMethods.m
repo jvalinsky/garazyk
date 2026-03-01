@@ -644,7 +644,7 @@
             }
 
             // 3. Identity Update / Validation
-            PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
+            PDS_LOG_INFO(@"updateHandle: Starting PLC/DID update for did=%@", did);
             if (configuration.debugSkipPlcOperations || [configuration.plcURL isEqualToString:@"mock"]) {
                 PDS_LOG_DB_DEBUG(@"Skipping PLC handle update (mock mode) for DID %@", did);
             } else if ([did hasPrefix:@"did:plc:"]) {
@@ -692,12 +692,12 @@
                 }
 
                 // Check if PLC already has this handle - if so, only DB update needed
-                PDS_LOG_DEBUG(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
+                PDS_LOG_INFO(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
                 NSString *plcHandle = nil;
                 for (NSString *aka in currentState.alsoKnownAs) {
                     if ([aka hasPrefix:@"at://"]) {
                         NSString *handle = [aka substringFromIndex:5]; // remove "at://"
-                        PDS_LOG_DEBUG(@"updateHandle: Found handle in PLC: %@", handle);
+                        PDS_LOG_INFO(@"updateHandle: Found handle in PLC: %@", handle);
                         if ([handle isEqualToString:normalizedHandle]) {
                             plcHandle = handle;
                             break;
