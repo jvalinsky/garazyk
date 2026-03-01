@@ -13,6 +13,7 @@
 #import "Core/CID.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/DIDPLCResolver.h"
+#import "PLC/PLCRotationKeyManager.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -197,8 +198,17 @@
         return NO;
     }
 
+    Secp256k1KeyPair *rotationKeyPair = [signer generateKeyPairWithError:&keyError];
+    if (!rotationKeyPair) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to generate rotation keypair: %@", keyError.localizedDescription);
+        }
+        [db close];
+        return NO;
+    }
+
     // Register with PLC
-    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname pdsEndpoint:pdsEndpoint keyPair:keyPair error:&error];
+    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname pdsEndpoint:pdsEndpoint keyPair:keyPair rotationKeyPair:rotationKeyPair error:&error];
     if (!did) {
         if (context.verbose) {
             PDS_LOG_ERROR(@"Failed to register DID with PLC: %@", error.localizedDescription);
@@ -207,13 +217,16 @@
         return NO;
     }
 
-    // Save the rotation key so that CLI operations (like migration) can rotate endpoints
+    // Save keys to ActorStore
     PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
     PDSActorStore *store = [pool storeForDid:did error:&error];
     if (store) {
         [store importSigningKey:keyPair.privateKey error:nil];
+        [store storeRotationKeyPrivate:rotationKeyPair.privateKey
+                              publicKey:rotationKeyPair.compressedPublicKey
+                                  error:nil];
     } else if (context.verbose) {
-        PDS_LOG_ERROR(@"Failed to open ActorStore to save rotation key: %@", error.localizedDescription);
+        PDS_LOG_ERROR(@"Failed to open ActorStore to save keys: %@", error.localizedDescription);
     }
 
     if (context.verbose) {
@@ -280,8 +293,21 @@
                            pdsHost:(NSString *)pdsHost 
                        pdsEndpoint:(NSString *)pdsEndpoint
                            keyPair:(Secp256k1KeyPair *)keyPair
+                   rotationKeyPair:(Secp256k1KeyPair *)rotationKeyPair
                              error:(NSError **)error {
     NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
+    NSString *rotationKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:rotationKeyPair.compressedPublicKey]]];
+
+    PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+    [keyManager loadOrGenerateKeyWithError:nil];
+    NSString *serverRotationKey = keyManager.rotationKeyDidKey;
+    
+    NSArray *rotationKeys = @[];
+    if (serverRotationKey) {
+        rotationKeys = @[serverRotationKey, rotationKeyDidKey];
+    } else {
+        rotationKeys = @[rotationKeyDidKey];
+    }
 
     // Use the full issuer/endpoint URL if available, otherwise fall back to http://host
     NSString *serviceEndpoint = pdsEndpoint.length > 0 ? pdsEndpoint : [NSString stringWithFormat:@"http://%@", pdsHost];
@@ -289,7 +315,7 @@
     // 3. Genesis Op Data
     NSDictionary *opData = @{
         @"type": @"plc_operation",
-        @"rotationKeys": @[pubKeyDidKey],
+        @"rotationKeys": rotationKeys,
         @"verificationMethods": @{@"atproto": pubKeyDidKey},
         @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
         @"services": @{

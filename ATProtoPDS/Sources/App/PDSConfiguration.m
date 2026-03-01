@@ -196,6 +196,12 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
       _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN" default:YES];
     }
 
+    _masterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
+
+    if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
+      _useSecureEnclave = [self boolFromEnv:@"PDS_USE_SECURE_ENCLAVE" default:NO];
+    }
+
     // Apply environment overrides and empty config defaults
     [self applyConfig:_config];
   }
@@ -308,6 +314,15 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
       [self resolveEnvOverrideForKey:@"PDS_ISSUER" default:nil];
   if (envIssuer.length > 0) {
     _issuer = envIssuer;
+  }
+
+  NSString *envMasterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
+  if (envMasterSecret.length > 0) {
+    _masterSecret = envMasterSecret;
+  }
+
+  if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
+    _useSecureEnclave = [self boolFromEnv:@"PDS_USE_SECURE_ENCLAVE" default:NO];
   }
 
   NSDictionary *plc = config[@"plc"];
