@@ -705,6 +705,7 @@
                     }
                 }
 
+                PDS_LOG_INFO(@"updateHandle: After PLC check, plcHandle=%@", plcHandle);
                 if (plcHandle) {
                     PDS_LOG_INFO(@"updateHandle: PLC already has handle %@, need DB update", normalizedHandle);
                 } else {
