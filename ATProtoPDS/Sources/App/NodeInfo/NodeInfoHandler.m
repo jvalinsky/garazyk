@@ -108,55 +108,92 @@
     PDS_LOG_CORE_INFO(@"NodeInfo routes registered");
 }
 
-- (void)handleDiscoveryRequest:(HttpRequest *)request response:(HttpResponse *)response {
-    if (!response) {
-        return;
-    }
+- (void)setCorsHeaders:(HttpResponse *)response
+           forRequest:(HttpRequest *)request {
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  NSArray<NSString *> *allowedOrigins =
+      [config arrayForKey:@"cors.allowed_origins"];
+  if (!allowedOrigins) {
+    allowedOrigins = @[ @"*" ];
+  }
 
-    if (!self.provider) {
-        response.statusCode = 500;
-        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"NodeInfo not configured"}];
-        return;
-    }
+  NSString *origin = [request headerForKey:@"Origin"];
 
+  if (origin && [allowedOrigins containsObject:@"*"]) {
+    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  } else if (origin && [allowedOrigins containsObject:origin]) {
+    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  } else if (!origin && [allowedOrigins containsObject:@"*"]) {
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setJsonBody:self.provider.discoveryDocument21];
-    response.contentType = @"application/json; charset=utf-8";
-    response.statusCode = 200;
+  }
+  [response setHeader:@"Origin" forKey:@"Vary"];
 }
 
-- (void)handleNodeInfo20Request:(HttpRequest *)request response:(HttpResponse *)response {
-    if (!response) {
-        return;
-    }
+- (void)handleDiscoveryRequest:(HttpRequest *)request
+                      response:(HttpResponse *)response {
+  if (!response) {
+    return;
+  }
 
-    if (!self.provider) {
-        response.statusCode = 500;
-        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"NodeInfo not configured"}];
-        return;
-    }
+  if (!self.provider) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"error" : @"server_error",
+      @"error_description" : @"NodeInfo not configured"
+    }];
+    return;
+  }
 
-    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setJsonBody:self.provider.nodeInfo20];
-    response.contentType = @"application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.0#\"";
-    response.statusCode = 200;
+  [self setCorsHeaders:response forRequest:request];
+  [response setJsonBody:self.provider.discoveryDocument21];
+  response.contentType = @"application/json; charset=utf-8";
+  response.statusCode = 200;
 }
 
-- (void)handleNodeInfo21Request:(HttpRequest *)request response:(HttpResponse *)response {
-    if (!response) {
-        return;
-    }
+- (void)handleNodeInfo20Request:(HttpRequest *)request
+                       response:(HttpResponse *)response {
+  if (!response) {
+    return;
+  }
 
-    if (!self.provider) {
-        response.statusCode = 500;
-        [response setJsonBody:@{@"error": @"server_error", @"error_description": @"NodeInfo not configured"}];
-        return;
-    }
+  if (!self.provider) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"error" : @"server_error",
+      @"error_description" : @"NodeInfo not configured"
+    }];
+    return;
+  }
 
-    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    [response setJsonBody:self.provider.nodeInfo21];
-    response.contentType = @"application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.1#\"";
-    response.statusCode = 200;
+  [self setCorsHeaders:response forRequest:request];
+  [response setJsonBody:self.provider.nodeInfo20];
+  response.contentType =
+      @"application/json; "
+      @"profile=\"http://nodeinfo.diaspora.software/ns/schema/2.0#\"";
+  response.statusCode = 200;
+}
+
+- (void)handleNodeInfo21Request:(HttpRequest *)request
+                       response:(HttpResponse *)response {
+  if (!response) {
+    return;
+  }
+
+  if (!self.provider) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"error" : @"server_error",
+      @"error_description" : @"NodeInfo not configured"
+    }];
+    return;
+  }
+
+  [self setCorsHeaders:response forRequest:request];
+  [response setJsonBody:self.provider.nodeInfo21];
+  response.contentType =
+      @"application/json; "
+      @"profile=\"http://nodeinfo.diaspora.software/ns/schema/2.1#\"";
+  response.statusCode = 200;
 }
 
 @end
