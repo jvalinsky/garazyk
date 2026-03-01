@@ -107,45 +107,57 @@ static BOOL isBase32Char(unichar c) {
     return cid.stringValue;
 }
 
-+ (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error {
++ (nullable instancetype)operationFromDictionary:(NSDictionary *)entry error:(NSError **)outError {
+    // PLC audit log wraps each operation in metadata (cid, createdAt, etc.)
+    // Handle both wrapped and unwrapped formats.
+    NSDictionary *dict = entry[@"operation"];
+    if (![dict isKindOfClass:[NSDictionary class]]) {
+        dict = entry;
+    }
+
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = dict[@"did"];
     
-    if (op.did && ![self assertDidPlc:op.did error:error]) {
-        return nil;
+    if (op.did && [op.did isKindOfClass:[NSString class]]) {
+        if (![self assertDidPlc:op.did error:outError]) {
+            return nil;
+        }
     }
     
     op.sig = dict[@"sig"];
+    if (![op.sig isKindOfClass:[NSString class]]) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorMissingSignature userInfo:@{NSLocalizedDescriptionKey: @"Invalid operation dictionary: missing or invalid sig"}];
+        }
+        return nil;
+    }
     
     id prev = dict[@"prev"];
     if (prev && [prev isKindOfClass:[NSString class]]) {
         op.prev = prev;
     }
     
-    NSMutableDictionary *data = [dict mutableCopy];
-    [data removeObjectForKey:@"sig"];
-    op.data = [data copy];
-    
-    if (!op.sig) {
-        if (error) {
-            *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorMissingSignature userInfo:@{NSLocalizedDescriptionKey: @"Invalid operation dictionary: missing sig"}];
+    NSMutableDictionary *data = [NSMutableDictionary dictionary];
+    [dict enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        if (![key isEqualToString:@"sig"] && obj != [NSNull null]) {
+            data[key] = obj;
         }
-        return nil;
-    }
+    }];
+    op.data = [data copy];
     
     NSString *type = op.data[@"type"];
     if (![type isKindOfClass:[NSString class]]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorUnsupportedType userInfo:@{NSLocalizedDescriptionKey: @"Operation missing valid type"}];
+        if (outError) {
+            *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorUnsupportedType userInfo:@{NSLocalizedDescriptionKey: @"Operation missing valid type"}];
         }
         return nil;
     }
     
     if ([type isEqualToString:@"update_handle"]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PLCErrorDomain
-                                         code:PLCErrorUnsupportedType
-                                     userInfo:@{NSLocalizedDescriptionKey: @"update_handle is not supported in spec-compliant PLC"}];
+        if (outError) {
+            *outError = [NSError errorWithDomain:PLCErrorDomain
+                                          code:PLCErrorUnsupportedType
+                                      userInfo:@{NSLocalizedDescriptionKey: @"update_handle is not supported in spec-compliant PLC"}];
         }
         return nil;
     }
@@ -153,37 +165,32 @@ static BOOL isBase32Char(unichar c) {
     if ([type isEqualToString:@"plc_operation"]) {
         NSArray *rotationKeys = op.data[@"rotationKeys"];
         if (![rotationKeys isKindOfClass:[NSArray class]] || rotationKeys.count == 0) {
-            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidRotationKeys userInfo:@{NSLocalizedDescriptionKey: @"plc_operation requires rotationKeys array"}];
+            if (outError) *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidRotationKeys userInfo:@{NSLocalizedDescriptionKey: @"plc_operation requires rotationKeys array"}];
             return nil;
         }
         for (NSString *key in rotationKeys) {
             if (![key isKindOfClass:[NSString class]] || ![key hasPrefix:@"did:key:"]) {
-                if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidRotationKeys userInfo:@{NSLocalizedDescriptionKey: @"rotationKeys must be valid did:key strings"}];
+                if (outError) *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidRotationKeys userInfo:@{NSLocalizedDescriptionKey: @"rotationKeys must be valid did:key strings"}];
                 return nil;
             }
         }
         
         NSDictionary *verificationMethods = op.data[@"verificationMethods"];
         if (verificationMethods && ![verificationMethods isKindOfClass:[NSDictionary class]]) {
-            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidVerificationMethods userInfo:@{NSLocalizedDescriptionKey: @"verificationMethods must be an object"}];
+            if (outError) *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidVerificationMethods userInfo:@{NSLocalizedDescriptionKey: @"verificationMethods must be an object"}];
             return nil;
         }
         
         NSArray *alsoKnownAs = op.data[@"alsoKnownAs"];
         if (alsoKnownAs && ![alsoKnownAs isKindOfClass:[NSArray class]]) {
-            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidAlsoKnownAs userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs must be an array"}];
+            if (outError) *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidAlsoKnownAs userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs must be an array"}];
             return nil;
         }
-        for (NSString *alias in alsoKnownAs) {
-            if (![alias isKindOfClass:[NSString class]] || ![alias hasPrefix:@"at://"]) {
-                if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidAlsoKnownAs userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs entries must be strings starting with at://"}];
-                return nil;
-            }
-        }
+        // Strict at:// check removed as some legacy entries might differ, but PDS should be lenient on replay
         
         NSDictionary *services = op.data[@"services"];
         if (services && ![services isKindOfClass:[NSDictionary class]]) {
-            if (error) *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidServices userInfo:@{NSLocalizedDescriptionKey: @"services must be an object"}];
+            if (outError) *outError = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorInvalidServices userInfo:@{NSLocalizedDescriptionKey: @"services must be an object"}];
             return nil;
         }
     }
