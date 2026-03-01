@@ -383,7 +383,7 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
     if (!self.database) return;
 
     NSError *error = nil;
-    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
+    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
 
     if (error) {
         PDS_LOG_AUTH_ERROR(@"Failed to load keys: %@", error);
@@ -393,10 +393,18 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
     for (NSDictionary *row in results) {
         NSString *keyID = row[@"key_id"];
         NSString *algorithm = row[@"algorithm"];
-        NSData *privData = row[@"private_key_data"];
+        NSData *privData = [row[@"private_key_data"] isKindOfClass:[NSData class]] ? row[@"private_key_data"] : nil;
+        NSString *keychainTag = row[@"keychain_tag"];
         NSNumber *active = row[@"is_active"];
         NSString *createdAtStr = row[@"created_at"];
         
+        if ([keychainTag isKindOfClass:[NSString class]] && keychainTag.length > 0) {
+            PDS_LOG_AUTH_WARN(@"OpenSSL manager skipping hardware-backed key: %@", keychainTag);
+            continue;
+        }
+
+        if (!privData) continue;
+
         // Deserialize OpenSSL RSA key
         const unsigned char *p = privData.bytes;
         RSA *rsa = d2i_RSAPrivateKey(NULL, &p, (long)privData.length);
@@ -440,13 +448,14 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
     NSData *pubData = [NSData dataWithBytes:pubBuf length:pubLen];
     free(pubBuf);
     
-    NSString *sql = @"INSERT OR REPLACE INTO jwt_signing_keys (key_id, algorithm, private_key_data, public_key_data, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO jwt_signing_keys (key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     NSArray *params = @[
         keyPair.keyID,
         keyPair.algorithm,
         privData,
         pubData,
+        [NSNull null], // keychain_tag
         @(keyPair.isActive),
         [self iso8601StringFromDate:keyPair.createdAt ?: [NSDate date]]
     ];
