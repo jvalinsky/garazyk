@@ -172,8 +172,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
             }
             if (![store storeRotationKeyPrivate:rotationKeyPair.privateKey
                                       publicKey:rotationKeyPair.compressedPublicKey
-                           encryptedWithPassword:password
-                                       error:&storeError]) {
+                                        error:&storeError]) {
                 PDS_LOG_ERROR(@"Failed to store rotation key for DID %@: %@", resolvedDid, storeError);
             }
         } else {
