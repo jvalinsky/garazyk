@@ -700,10 +700,13 @@
 
                 NSMutableArray<PLCOperation *> *ops = [NSMutableArray array];
                 for (NSDictionary *dict in auditLog) {
-                    // PLC audit log wraps each operation in metadata (cid, createdAt, etc.)
-                    NSDictionary *opDict = dict[@"operation"] ?: dict;
-                    PLCOperation *operation = [PLCOperation operationFromDictionary:opDict error:nil];
-                    if (operation) [ops addObject:operation];
+                    NSError *parseError = nil;
+                    PLCOperation *operation = [PLCOperation operationFromDictionary:dict error:&parseError];
+                    if (operation) {
+                        [ops addObject:operation];
+                    } else {
+                        PDS_LOG_ERROR(@"updateHandle: Failed to parse PLC operation from audit log: %@, error: %@", dict, parseError);
+                    }
                 }
                 
                 PLCDIDState *currentState = nil;
