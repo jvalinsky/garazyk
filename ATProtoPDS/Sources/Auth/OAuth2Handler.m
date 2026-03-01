@@ -71,6 +71,11 @@ static const NSUInteger kMaxPendingConsents = 1024;
 static NSCache *sClientMetadataCache = nil;
 static dispatch_once_t sClientCacheOnceToken;
 
+@interface OAuth2Handler ()
+- (void)setCorsHeaders:(HttpResponse *)response
+           forRequest:(HttpRequest *)request;
+@end
+
 @implementation OAuth2Handler {
   JWTMinter *_minter;
 }
@@ -1343,6 +1348,38 @@ static dispatch_once_t sClientCacheOnceToken;
   return NO;
 }
 
+- (void)setCorsHeaders:(HttpResponse *)response
+           forRequest:(HttpRequest *)request {
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  NSArray<NSString *> *allowedOrigins =
+      [config arrayForKey:@"cors.allowed_origins"];
+  if (!allowedOrigins) {
+    allowedOrigins = @[ @"*" ];
+  }
+
+  NSString *origin = [request headerForKey:@"Origin"];
+
+  if (origin && [allowedOrigins containsObject:@"*"]) {
+    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  } else if (origin && [allowedOrigins containsObject:origin]) {
+    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  } else if (!origin && [allowedOrigins containsObject:@"*"]) {
+    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+  }
+
+  NSString *allowedMethods = [config stringForKey:@"cors.allowed_methods"]
+                                 ?: @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
+  NSString *allowedHeaders = [config stringForKey:@"cors.allowed_headers"]
+                                 ?: @"DPoP, Authorization, Content-Type, *";
+  NSInteger maxAge = [config integerForKey:@"cors.max_age"] ?: 86400;
+
+  [response setHeader:allowedMethods forKey:@"Access-Control-Allow-Methods"];
+  [response setHeader:allowedHeaders forKey:@"Access-Control-Allow-Headers"];
+  [response setHeader:[NSString stringWithFormat:@"%ld", (long)maxAge]
+               forKey:@"Access-Control-Max-Age"];
+  [response setHeader:@"Origin" forKey:@"Vary"];
+}
+
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
   [httpServer addRoute:@"GET"
                   path:@"/oauth/authorize"
@@ -1365,12 +1402,14 @@ static dispatch_once_t sClientCacheOnceToken;
   [httpServer addRoute:@"POST"
                   path:@"/oauth/token"
                handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self setCorsHeaders:response forRequest:request];
                  [self handleTokenRequest:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/revoke"
                handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self setCorsHeaders:response forRequest:request];
                  [self handleRevokeRequest:request response:response];
                }];
 
@@ -1378,6 +1417,7 @@ static dispatch_once_t sClientCacheOnceToken;
       addRoute:@"GET"
           path:@"/.well-known/oauth-authorization-server"
        handler:^(HttpRequest *request, HttpResponse *response) {
+         [self setCorsHeaders:response forRequest:request];
          [self handleAuthorizationServerMetadata:request response:response];
        }];
 
@@ -1385,6 +1425,7 @@ static dispatch_once_t sClientCacheOnceToken;
       addRoute:@"GET"
           path:@"/.well-known/oauth-protected-resource"
        handler:^(HttpRequest *request, HttpResponse *response) {
+         [self setCorsHeaders:response forRequest:request];
          [self handleProtectedResourceMetadata:request response:response];
        }];
 
@@ -1392,6 +1433,7 @@ static dispatch_once_t sClientCacheOnceToken;
   [httpServer addRoute:@"GET"
                   path:@"/oauth/jwks"
                handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self setCorsHeaders:response forRequest:request];
                  [self handleJWKS:request response:response];
                }];
 
@@ -1399,18 +1441,14 @@ static dispatch_once_t sClientCacheOnceToken;
   [httpServer addRoute:@"POST"
                   path:@"/oauth/par"
                handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self setCorsHeaders:response forRequest:request];
                  [self handlePARRequest:request response:response];
                }];
 
   // CORS preflight handlers for ATProto OAuth client compatibility
   void (^corsPreflightHandler)(HttpRequest *, HttpResponse *) =
       ^(HttpRequest *req, HttpResponse *resp) {
-        [resp setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-        [resp setHeader:@"GET, POST, OPTIONS"
-                 forKey:@"Access-Control-Allow-Methods"];
-        [resp setHeader:@"Authorization, Content-Type, DPoP, DPoP-Nonce"
-                 forKey:@"Access-Control-Allow-Headers"];
-        [resp setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+        [self setCorsHeaders:resp forRequest:req];
         resp.statusCode = 204;
         resp.statusMessage = @"No Content";
       };

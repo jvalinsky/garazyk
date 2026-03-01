@@ -782,6 +782,19 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
          [@"1" isEqualToString:envValue];
 }
 
+- (nullable NSArray *)arrayForKey:(NSString *)key {
+  NSArray *components = [key componentsSeparatedByString:@"."];
+  id current = _config;
+  for (NSString *component in components) {
+    if (![current isKindOfClass:[NSDictionary class]])
+      return nil;
+    current = ((NSDictionary *)current)[component];
+    if (!current)
+      return nil;
+  }
+  return [current isKindOfClass:[NSArray class]] ? (NSArray *)current : nil;
+}
+
 - (nullable NSString *)stringForKey:(NSString *)key {
   NSArray *components = [key componentsSeparatedByString:@"."];
   id current = _config;
