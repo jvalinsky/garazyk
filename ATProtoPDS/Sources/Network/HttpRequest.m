@@ -1,4 +1,5 @@
 #import "Network/HttpRequest.h"
+#import "Network/HttpParsing.h"
 #import <stdint.h>
 
 static BOOL PDSHttpRequestEnvBool(NSString *value) {
@@ -347,14 +348,14 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
     queryString = [fullPath substringFromIndex:queryRange.location + 1];
   }
 
-  NSDictionary<NSString *, NSString *> *queryParams =
-      [self parseQueryParams:queryString];
+  NSDictionary<NSString *, id> *queryParams =
+      [HttpParsing parseQueryString:queryString];
 
   NSDictionary<NSString *, NSString *> *headers = [self parseHeaders:lines];
 
   NSData *body = [self parseBody:lines fromData:data];
 
-  HttpMethod method = [self methodFromString:methodString];
+  HttpMethod method = [HttpParsing methodFromString:methodString];
 
   return [self initWithMethod:method
                  methodString:methodString
@@ -365,24 +366,6 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
                       headers:headers
                          body:body
                 remoteAddress:remoteAddress];
-}
-
-- (HttpMethod)methodFromString:(NSString *)methodString {
-  if ([methodString isEqualToString:@"GET"])
-    return HttpMethodGET;
-  if ([methodString isEqualToString:@"POST"])
-    return HttpMethodPOST;
-  if ([methodString isEqualToString:@"PUT"])
-    return HttpMethodPUT;
-  if ([methodString isEqualToString:@"DELETE"])
-    return HttpMethodDELETE;
-  if ([methodString isEqualToString:@"PATCH"])
-    return HttpMethodPATCH;
-  if ([methodString isEqualToString:@"OPTIONS"])
-    return HttpMethodOPTIONS;
-  if ([methodString isEqualToString:@"HEAD"])
-    return HttpMethodHEAD;
-  return HttpMethodUnknown;
 }
 
 - (NSDictionary<NSString *, NSString *> *)parseHeaders:
@@ -437,49 +420,6 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
 
   return
       [data subdataWithRange:NSMakeRange(bodyStart, data.length - bodyStart)];
-}
-
-- (NSDictionary<NSString *, id> *)parseQueryParams:(NSString *)queryString {
-  if (queryString.length == 0) {
-    return @{};
-  }
-
-  NSMutableDictionary<NSString *, id> *params = [NSMutableDictionary dictionary];
-  NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
-
-  for (NSString *pair in pairs) {
-    NSRange eqRange = [pair rangeOfString:@"="];
-    NSString *key;
-    NSString *value;
-    if (eqRange.location != NSNotFound) {
-      key = [self urlDecode:[pair substringToIndex:eqRange.location]];
-      value = [self urlDecode:[pair substringFromIndex:eqRange.location + 1]];
-    } else {
-      key = [self urlDecode:pair];
-      value = @"";
-    }
-
-    id existing = params[key];
-    if (existing) {
-      if ([existing isKindOfClass:[NSMutableArray class]]) {
-        [(NSMutableArray *)existing addObject:value];
-      } else {
-        NSMutableArray *array = [NSMutableArray arrayWithObjects:existing, value, nil];
-        params[key] = array;
-      }
-    } else {
-      params[key] = value;
-    }
-  }
-
-  return [params copy];
-}
-
-- (NSString *)urlDecode:(NSString *)string {
-  NSString *result =
-      [string stringByReplacingOccurrencesOfString:@"+" withString:@" "];
-  result = [result stringByRemovingPercentEncoding];
-  return result ?: string;
 }
 
 - (NSString *)headerForKey:(NSString *)key {
