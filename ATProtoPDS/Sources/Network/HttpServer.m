@@ -14,7 +14,6 @@
 #import "Compat/PDSTypes.h"
 #import "Debug/PDSLogger.h"
 #import "Network/HttpBufferPool.h"
-#import "Network/HttpChunkedBodyParser.h"
 #import "Network/HttpParsing.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -22,6 +21,8 @@
 #import "Network/PDSNetworkTransport.h"
 #import "Network/RateLimiter.h"
 #import "Network/WebSocketUpgradeHandler.h"
+#import "Network/Http1Parser.h"
+#import "Network/Http1PipelinePolicy.h"
 #import <CoreFoundation/CoreFoundation.h>
 
 @class HttpRouteTrie;
@@ -90,22 +91,15 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 @interface HttpConnectionState : NSObject
 
-@property(nonatomic, strong) NSMutableData *buffer;
-@property(nonatomic, assign) CFHTTPMessageRef message;
-@property(nonatomic, assign) BOOL headersComplete;
-@property(nonatomic, assign) NSUInteger expectedBodyLength;
+@property(nonatomic, strong) Http1Parser *parser;
+@property(nonatomic, strong) Http1PipelinePolicy *pipelinePolicy;
+
 @property(nonatomic, assign) NSTimeInterval headerStartTime;
 @property(nonatomic, assign) BOOL requestInFlight;
-@property(nonatomic, assign) NSUInteger headerEndOffset;
 @property(nonatomic, strong) NSMutableArray<HttpQueuedResponse *> *outputQueue;
 @property(nonatomic, assign) BOOL readingPaused;
 @property(nonatomic, assign) NSUInteger outputQueueSize;
-@property(nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
-@property(nonatomic, assign) BOOL isChunkedEncoding;
 @property(nonatomic, strong) NSMutableArray<HttpRequest *> *pendingRequests;
-@property(nonatomic, strong) NSMutableArray<NSNumber *> *pendingRequestOffsets;
-@property(nonatomic, assign) NSUInteger pendingDispatchCount;
-@property(nonatomic, assign) NSUInteger maxPipelinedRequests;
 @property(nonatomic, assign) BOOL sendingActive;
 @property(nonatomic, assign) BOOL upgradedToWebSocket;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
@@ -115,25 +109,17 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 @implementation HttpConnectionState
 
-static const NSUInteger kDefaultMaxPipelinedRequests = 4;
-
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _buffer = [[HttpBufferPool sharedPool] acquireBufferOfSize:1024];
-    _message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true);
-    _headersComplete = NO;
-    _expectedBodyLength = 0;
+    _parser = [[Http1Parser alloc] init];
+    _pipelinePolicy = [[Http1PipelinePolicy alloc] init];
     _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
     _requestInFlight = NO;
-    _headerEndOffset = 0;
     _outputQueue = [NSMutableArray array];
     _readingPaused = NO;
     _outputQueueSize = 0;
     _pendingRequests = [NSMutableArray array];
-    _pendingRequestOffsets = [NSMutableArray array];
-    _pendingDispatchCount = 0;
-    _maxPipelinedRequests = kDefaultMaxPipelinedRequests;
     _sendingActive = NO;
     _upgradedToWebSocket = NO;
   }
@@ -141,35 +127,21 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 }
 
 - (void)dealloc {
-  if (_message) {
-    CFRelease(_message);
-    _message = NULL;
-  }
 #if !defined(__APPLE__)
   if (_transportQueue) {
     dispatch_release(_transportQueue);
     _transportQueue = NULL;
   }
 #endif
-  [[HttpBufferPool sharedPool] releaseBuffer:_buffer];
 }
 
 - (void)resetForNextRequest {
-  if (_message) {
-    CFRelease(_message);
-  }
-  _message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true);
-  _headersComplete = NO;
-  _expectedBodyLength = 0;
+  [_parser reset];
   _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
   _requestInFlight = NO;
-  _headerEndOffset = 0;
   [_outputQueue removeAllObjects];
   _outputQueueSize = 0;
   _readingPaused = NO;
-  [_buffer setLength:0];
-  _isChunkedEncoding = NO;
-  _chunkedBodyParser = nil;
 }
 
 @end
@@ -383,7 +355,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     return;
   }
 
-  if (state.pendingDispatchCount > 0 || state.outputQueue.count > 0 ||
+  if (state.pipelinePolicy.pendingDispatchCount > 0 || state.outputQueue.count > 0 ||
       state.pendingRequests.count > 0) {
     return;
   }
@@ -427,11 +399,14 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 - (void)handleReceivedData:(NSData *)data
               onConnection:(id<PDSNetworkConnection>)connection {
   HttpConnectionState *state = [self connectionStateForConnection:connection];
-  [state.buffer appendData:data];
+  
+  if (!state.parser.remoteAddress) {
+    state.parser.remoteAddress = connection.remoteAddress;
+  }
+  
+  [self tryProcessRequestFromState:state data:data connection:connection];
 
-  [self tryProcessRequestFromState:state connection:connection];
-
-  if (state.pendingDispatchCount == 0 && state.outputQueue.count == 0) {
+  if ([state.pipelinePolicy shouldReadMoreData] && state.outputQueue.count == 0) {
     [self readRequestFromConnection:connection];
   }
 }
@@ -456,215 +431,42 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
   return state;
 }
 
-- (BOOL)tryProcessRequestFromState:(HttpConnectionState *)state
+- (void)tryProcessRequestFromState:(HttpConnectionState *)state
+                              data:(NSData *)data
                         connection:(id<PDSNetworkConnection>)connection {
   if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime >
       kHttpHeaderTimeout) {
     [connection cancel];
-    return YES;
+    return;
+  }
+                        
+  BOOL completeOrError = [state.parser feedData:data];
+  if (!completeOrError) {
+    return;
   }
 
-  if (!state.headersComplete) {
-    if (state.buffer.length > kHttpMaxHeaderBytes) {
-      HttpResponse *response =
-          [HttpResponse responseWithStatusCode:HttpStatusPayloadTooLarge];
-      response.keepAlive = NO;
-      [response setJsonBody:@{
-        @"error" : @"RequestTooLarge",
-        @"message" : @"Request headers too large"
-      }];
-      [self queueResponse:response forState:state connection:connection];
-      return YES;
-    }
-
-    NSRange headerEndRange = [self headerEndRangeInData:state.buffer];
-    if (headerEndRange.location == NSNotFound) {
-      return NO;
-    }
-
-    NSData *headerData = [state.buffer
-        subdataWithRange:NSMakeRange(0, headerEndRange.location +
-                                            headerEndRange.length)];
-    if (!CFHTTPMessageAppendBytes(state.message, headerData.bytes,
-                                  headerData.length)) {
-      HttpResponse *response =
-          [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-      response.keepAlive = NO;
-      [response setBodyString:@"Invalid request"];
-      [self queueResponse:response forState:state connection:connection];
-      return YES;
-    }
-
-    if (!CFHTTPMessageIsHeaderComplete(state.message)) {
-      return NO;
-    }
-
-    state.headersComplete = YES;
-    state.headerEndOffset = headerEndRange.location + headerEndRange.length;
-    state.expectedBodyLength = [self contentLengthForMessage:state.message];
-
-    NSDictionary *headers = [self headersFromMessage:state.message];
-    NSString *transferEncoding =
-        [[headers objectForKey:@"transfer-encoding"] lowercaseString];
-    NSString *contentLengthHeader = headers[@"content-length"];
-
-    if (transferEncoding.length > 0 && contentLengthHeader.length > 0) {
-      HttpResponse *response =
-          [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-      response.keepAlive = NO;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequestFraming",
-        @"message" : @"Transfer-Encoding and Content-Length cannot both be present"
-      }];
-      [self queueResponse:response forState:state connection:connection];
-      return YES;
-    }
-
-    state.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
-
-    if (state.isChunkedEncoding) {
-      state.chunkedBodyParser =
-          [[HttpChunkedBodyParser alloc] initWithMaxSize:kHttpMaxBodyBytes];
-      state.expectedBodyLength = 0;
-    } else if (state.expectedBodyLength > kHttpMaxBodyBytes) {
-      HttpResponse *response =
-          [HttpResponse responseWithStatusCode:HttpStatusPayloadTooLarge];
-      response.keepAlive = NO;
-      [response setJsonBody:@{
-        @"error" : @"RequestTooLarge",
-        @"message" : @"Request body too large"
-      }];
-      [self queueResponse:response forState:state connection:connection];
-      return YES;
-    }
-
-    NSString *method =
-        (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(
-            state.message);
-    HttpMethod methodEnum = [HttpParsing methodFromString:method ?: @""];
-    BOOL expectsBody =
-        (methodEnum == HttpMethodPOST || methodEnum == HttpMethodPUT ||
-         methodEnum == HttpMethodPATCH);
-
-    if (expectsBody && !state.isChunkedEncoding &&
-        contentLengthHeader.length == 0) {
-      // Reject POST/PUT/PATCH only when Content-Length header is truly absent.
-      // Content-Length: 0 is valid HTTP (empty body, e.g. refreshSession).
-      HttpResponse *response =
-          [HttpResponse responseWithStatusCode:HttpStatusLengthRequired];
-      response.keepAlive = NO;
-      [response setJsonBody:@{
-        @"error" : @"LengthRequired",
-        @"message" : @"Content-Length or Transfer-Encoding: chunked required"
-      }];
-      [self queueResponse:response forState:state connection:connection];
-      return YES;
-    }
-  }
-
-  NSData *bodyData = nil;
-  NSUInteger consumedOffset = 0;
-
-  if (state.isChunkedEncoding) {
-    NSUInteger bodyStart = state.headerEndOffset;
-    NSUInteger availableBodyLength =
-        state.buffer.length > bodyStart ? state.buffer.length - bodyStart : 0;
-
-    if (availableBodyLength > 0) {
-      NSData *bodyChunk = [state.buffer
-          subdataWithRange:NSMakeRange(bodyStart, availableBodyLength)];
-      NSError *parseError = nil;
-      BOOL shouldContinue =
-          [state.chunkedBodyParser appendData:bodyChunk error:&parseError];
-
-      if (parseError) {
-        HttpResponse *response =
-            [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-        response.keepAlive = NO;
-        [response setBodyString:@"Invalid chunked body"];
-        [self queueResponse:response forState:state connection:connection];
-        return YES;
-      }
-
-      if (!shouldContinue) {
-        return NO;
-      }
-
-      if (!state.chunkedBodyParser.isComplete) {
-        return NO;
-      }
-
-      bodyData = state.chunkedBodyParser.parsedData;
-      consumedOffset = state.buffer.length;
-    } else {
-      return NO;
-    }
-  } else {
-    NSUInteger bodyStart = state.headerEndOffset;
-    if (state.buffer.length < bodyStart + state.expectedBodyLength) {
-      return NO;
-    }
-
-    bodyData = [state.buffer
-        subdataWithRange:NSMakeRange(bodyStart, state.expectedBodyLength)];
-    consumedOffset = bodyStart + state.expectedBodyLength;
-  }
-
-  CFHTTPMessageRef message = state.message;
-  NSString *method =
-      (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(message);
-  CFURLRef urlRef = CFHTTPMessageCopyRequestURL(message);
-#if defined(__APPLE__)
-  NSURL *url = urlRef ? CFBridgingRelease(urlRef) : nil;
-#else
-  NSURL *url = CFURLToNSURL(urlRef);
-  if (urlRef)
-    CFURLRelease(urlRef);
-#endif
-  NSString *version =
-      (__bridge_transfer NSString *)CFHTTPMessageCopyVersion(message);
-  NSDictionary *headers = [self headersFromMessage:message];
-
-  if (![self isSupportedTransferEncoding:headers]) {
+  Http1ParserError *parseError = [state.parser parseError];
+  if (parseError) {
     HttpResponse *response =
-        [HttpResponse responseWithStatusCode:HttpStatusNotImplemented];
+        [HttpResponse responseWithStatusCode:parseError.statusCode];
     response.keepAlive = NO;
     [response setJsonBody:@{
-      @"error" : @"UnsupportedTransferEncoding",
-      @"message" : @"Transfer-Encoding not supported"
+      @"error" : parseError.errorCode,
+      @"message" : parseError.message
     }];
     [self queueResponse:response forState:state connection:connection];
-    return YES;
+    return;
   }
 
-  NSString *path = url.path ?: @"/";
-  NSString *queryString = url.query ?: @"";
-  NSDictionary<NSString *, id> *queryParams =
-      [HttpParsing parseQueryString:queryString];
-  HttpMethod methodEnum = [HttpParsing methodFromString:method ?: @""];
-
-  HttpRequest *request =
-      [[HttpRequest alloc] initWithMethod:methodEnum
-                             methodString:method ?: @""
-                                     path:path
-                              queryString:queryString
-                              queryParams:queryParams ?: @{}
-                                  version:version ?: @"HTTP/1.1"
-                                  headers:headers ?: @{}
-                                     body:bodyData ?: [NSData data]
-                            remoteAddress:connection.remoteAddress ?: @""];
-
+  HttpRequest *request = [state.parser completedRequest];
   if (!request) {
-    HttpResponse *response =
-        [HttpResponse responseWithStatusCode:HttpStatusBadRequest];
-    response.keepAlive = NO;
-    [response setBodyString:@"Invalid request"];
-    [self queueResponse:response forState:state connection:connection];
-    return YES;
+    return;
   }
 
+  NSString *path = request.path;
   WebSocketRequestHandler webSocketHandler = self.webSocketHandlers[path];
-  if (webSocketHandler) {
+  
+  if (webSocketHandler && [request headerForKey:@"upgrade"] != nil) {
     HttpResponse *upgradeResponse = [HttpResponse response];
     BOOL shouldUpgrade =
         [self.webSocketUpgradeHandler handleUpgradeRequest:request
@@ -672,15 +474,13 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     if (!shouldUpgrade) {
       [state resetForNextRequest];
       [self queueResponse:upgradeResponse forState:state connection:connection];
-      return YES;
+      return;
     }
 
     state.upgradedToWebSocket = YES;
     [state.pendingRequests removeAllObjects];
-    [state.pendingRequestOffsets removeAllObjects];
     [state.outputQueue removeAllObjects];
     state.outputQueueSize = 0;
-    [state.buffer setLength:0];
 
     NSData *responseData = [upgradeResponse serialize];
     [connection sendData:responseData
@@ -691,28 +491,31 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
                 }
                 webSocketHandler(request, upgradeResponse, connection);
               }];
-    return YES;
+    return;
   }
 
-  [state resetForNextRequest];
-
-  NSUInteger requestOffset = consumedOffset;
-  [state.pendingRequests addObject:request];
-  [state.pendingRequestOffsets addObject:@(requestOffset)];
-
-  [self processPipelinedRequestsForState:state connection:connection];
-
-  return YES;
+  Http1PipelineAction action = [state.pipelinePolicy requestParsed];
+  
+  if (action == Http1PipelineActionDispatch || action == Http1PipelineActionQueue) {
+    [state.pendingRequests addObject:request];
+    NSData *unconsumed = [state.parser unconsumedData];
+    [state resetForNextRequest];
+    
+    [self processPipelinedRequestsForState:state connection:connection];
+    
+    if (unconsumed.length > 0) {
+      [self tryProcessRequestFromState:state data:unconsumed connection:connection];
+    }
+  }
 }
 
 - (void)processPipelinedRequestsForState:(HttpConnectionState *)state
                               connection:(id<PDSNetworkConnection>)connection {
   while (state.pendingRequests.count > 0 &&
-         state.pendingDispatchCount < state.maxPipelinedRequests) {
+         [state.pipelinePolicy shouldReadMoreData]) {
     HttpRequest *request = state.pendingRequests[0];
     [state.pendingRequests removeObjectAtIndex:0];
-    [state.pendingRequestOffsets removeObjectAtIndex:0];
-    state.pendingDispatchCount++;
+    [state.pipelinePolicy requestDispatched];
 
     [self dispatchRequest:request onConnection:connection];
   }
@@ -1105,9 +908,8 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
       (state.outputQueueSize > queueItem.queueByteSize)
           ? (state.outputQueueSize - queueItem.queueByteSize)
           : 0;
-  if (state.pendingDispatchCount > 0) {
-    state.pendingDispatchCount--;
-  }
+  
+  [state.pipelinePolicy responseCompleted];
   state.sendingActive = NO;
 
   if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
@@ -1124,66 +926,10 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
 - (void)continueConnection:(id<PDSNetworkConnection>)connection
                  withState:(HttpConnectionState *)state {
-  if (state.outputQueue.count == 0 && state.pendingDispatchCount == 0 &&
+  if (state.outputQueue.count == 0 && [state.pipelinePolicy shouldReadMoreData] &&
       state.pendingRequests.count == 0) {
     [self readRequestFromConnection:connection];
   }
-}
-
-- (NSRange)headerEndRangeInData:(NSData *)data {
-  const uint8_t *bytes = data.bytes;
-  for (NSUInteger i = 0; i + 3 < data.length; i++) {
-    if (bytes[i] == '\r' && bytes[i + 1] == '\n' && bytes[i + 2] == '\r' &&
-        bytes[i + 3] == '\n') {
-      return NSMakeRange(i, 4);
-    }
-  }
-  return NSMakeRange(NSNotFound, 0);
-}
-
-- (NSUInteger)contentLengthForMessage:(CFHTTPMessageRef)message {
-  NSString *contentLengthString =
-      (__bridge_transfer NSString *)CFHTTPMessageCopyHeaderFieldValue(
-          message, CFSTR("Content-Length"));
-  if (!contentLengthString) {
-    return 0;
-  }
-  return (NSUInteger)[contentLengthString longLongValue];
-}
-
-- (NSDictionary<NSString *, NSString *> *)headersFromMessage:
-    (CFHTTPMessageRef)message {
-  NSDictionary *rawHeaders =
-      (__bridge_transfer NSDictionary *)CFHTTPMessageCopyAllHeaderFields(
-          message);
-  if (!rawHeaders) {
-    return @{};
-  }
-  NSMutableDictionary<NSString *, NSString *> *headers =
-      [NSMutableDictionary dictionaryWithCapacity:rawHeaders.count];
-  for (NSString *key in rawHeaders) {
-    NSString *value = rawHeaders[key];
-    if (key && value) {
-      headers[key.lowercaseString] = value;
-    }
-  }
-  return [headers copy];
-}
-
-- (BOOL)isSupportedTransferEncoding:
-    (NSDictionary<NSString *, NSString *> *)headers {
-  NSString *transferEncoding = headers[@"transfer-encoding"];
-  if (!transferEncoding || transferEncoding.length == 0) {
-    return YES;
-  }
-  NSString *lowercased = transferEncoding.lowercaseString;
-  if ([lowercased isEqualToString:@"identity"]) {
-    return YES;
-  }
-  if ([lowercased isEqualToString:@"chunked"]) {
-    return YES;
-  }
-  return NO;
 }
 
 - (RequestHandler _Nullable)
