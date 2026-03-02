@@ -1,5 +1,6 @@
 #import "DIDPLCResolver.h"
 #import "PLCOperation.h"
+#import "Network/HttpRetryPolicy.h"
 
 NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
 static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/json";
@@ -9,6 +10,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 @property (nonatomic, copy) NSString *plcUrl;
 @property (nonatomic, strong) NSCache<NSString *, NSDictionary *> *cache;
 @property (nonatomic, strong) NSURLSession *session;
+@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 
 @end
 
@@ -25,6 +27,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         config.timeoutIntervalForRequest = _timeout;
         config.timeoutIntervalForResource = _timeout * 2;
         _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
+        _retryPolicy = [[HttpRetryPolicy alloc] init];
     }
     return self;
 }
@@ -104,54 +107,70 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     request.timeoutInterval = self.timeout;
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    [self executeRequest:request retries:3 currentDelay:0.5 completion:^(NSDictionary *doc, NSError *err) {
-        if (doc) {
-            [self.cache setObject:doc forKey:did];
+    [self executeRequest:request attempt:0 transform:^id(NSData *data, NSError **error) {
+        NSError *jsonError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        if (jsonError || ![json isKindOfClass:[NSDictionary class]]) {
+            if (error) *error = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse JSON response"}];
+            return nil;
         }
-        completion(doc, err);
+        return json;
+    } completion:^(id result, NSError *err) {
+        if (result) {
+            [self.cache setObject:result forKey:did];
+        }
+        completion(result, err);
     }];
 }
 
-- (void)executeRequest:(NSURLRequest *)request retries:(NSInteger)retries currentDelay:(NSTimeInterval)delay completion:(void (^)(NSDictionary * _Nullable, NSError * _Nullable))completion {
+- (void)executeRequest:(NSURLRequest *)request attempt:(NSInteger)attempt transform:(id (^)(NSData *data, NSError **error))transform completion:(void (^)(id _Nullable result, NSError * _Nullable error))completion {
     NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
         
-        if (error || (httpResponse && httpResponse.statusCode >= 500)) {
-            if (retries > 0) {
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                    [self executeRequest:request retries:retries - 1 currentDelay:delay * 2 completion:completion];
-                });
+        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode networkError:error attemptNumber:attempt];
+        
+        if (retryResult.decision == HttpRetryDecisionRetryAfter) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(retryResult.retryDelay * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                [self executeRequest:request attempt:attempt + 1 transform:transform completion:completion];
+            });
+            return;
+        }
+        
+        if (retryResult.decision == HttpRetryDecisionFail) {
+            if (statusCode == 404) {
+                NSError *notFoundErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNotFound userInfo:@{NSLocalizedDescriptionKey: @"DID not found on PLC server"}];
+                completion(nil, notFoundErr);
                 return;
             }
             
-            NSError *finalError = error ?: [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNetworkError userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Server Error: %ld", (long)httpResponse.statusCode]}];
+            if (statusCode > 0 && statusCode != 200) {
+                NSError *statusErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unexpected status code: %ld", (long)statusCode]}];
+                completion(nil, statusErr);
+                return;
+            }
+            
+            NSError *finalError = error ?: [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNetworkError userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Server Error: %ld", (long)statusCode]}];
             completion(nil, finalError);
             return;
         }
         
-        if (httpResponse.statusCode == 404) {
-            NSError *notFoundErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNotFound userInfo:@{NSLocalizedDescriptionKey: @"DID not found on PLC server"}];
-            completion(nil, notFoundErr);
-            return;
-        }
-        
-        if (httpResponse.statusCode != 200 || !data) {
-            NSError *statusErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unexpected status code: %ld", (long)httpResponse.statusCode]}];
+        if (!data) {
+            NSError *statusErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: @"Empty response"}];
             completion(nil, statusErr);
             return;
         }
         
-        NSError *jsonError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        NSError *transformError = nil;
+        id result = transform(data, &transformError);
         
-        if (jsonError || ![json isKindOfClass:[NSDictionary class]]) {
-            NSError *parseErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse JSON response"}];
-            completion(nil, parseErr);
+        if (transformError || !result) {
+            completion(nil, transformError ?: [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: @"Transform failed"}]);
             return;
         }
         
-        completion(json, nil);
+        completion(result, nil);
     }];
     
     [task resume];
@@ -216,16 +235,10 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     request.timeoutInterval = self.timeout;
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    [self executeRawRequest:request retries:3 currentDelay:0.5 completion:^(NSData *data, NSError *err) {
-        if (err || !data) {
-            completion(nil, err);
-            return;
-        }
-        
+    [self executeRequest:request attempt:0 transform:^id(NSData *data, NSError **error) {
         id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         if ([json isKindOfClass:[NSArray class]]) {
-            completion(json, nil);
-            return;
+            return json;
         } else {
             NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
             NSArray *lines = [str componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
@@ -237,49 +250,15 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
                 }
             }
             if (ops.count > 0) {
-                completion(ops, nil);
+                return ops;
             } else {
-                NSError *parseErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse NDJSON response"}];
-                completion(nil, parseErr);
+                if (error) *error = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse NDJSON response"}];
+                return nil;
             }
         }
+    } completion:^(id result, NSError *err) {
+        completion(result, err);
     }];
-}
-
-- (void)executeRawRequest:(NSURLRequest *)request retries:(NSInteger)retries currentDelay:(NSTimeInterval)delay completion:(void (^)(NSData * _Nullable, NSError * _Nullable))completion {
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        
-        if (error || (httpResponse && httpResponse.statusCode >= 500)) {
-            if (retries > 0) {
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                    [self executeRawRequest:request retries:retries - 1 currentDelay:delay * 2 completion:completion];
-                });
-                return;
-            }
-            
-            NSError *finalError = error ?: [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNetworkError userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Server Error: %ld", (long)httpResponse.statusCode]}];
-            completion(nil, finalError);
-            return;
-        }
-        
-        if (httpResponse.statusCode == 404) {
-            NSError *notFoundErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorNotFound userInfo:@{NSLocalizedDescriptionKey: @"DID not found on PLC server"}];
-            completion(nil, notFoundErr);
-            return;
-        }
-        
-        if (httpResponse.statusCode != 200 || !data) {
-            NSError *statusErr = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidResponse userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unexpected status code: %ld", (long)httpResponse.statusCode]}];
-            completion(nil, statusErr);
-            return;
-        }
-        
-        completion(data, nil);
-    }];
-    
-    [task resume];
 }
 
 - (nullable NSData *)submitOperation:(NSDictionary *)operation did:(NSString *)did statusCode:(NSInteger *)statusCode error:(NSError **)error {
