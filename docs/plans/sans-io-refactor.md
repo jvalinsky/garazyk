@@ -741,3 +741,22 @@ The term "Sans-I/O" gained prominence in the Python community (most notably popu
    *   *Concept:* By extracting policies (like `HttpRetryPolicy` or `WebSocketHeartbeatPolicy`) to take a timestamp (`now`) as an argument rather than relying on system clocks, you can test complex timeout edge cases instantly.
 4. **Transport Agnosticism**
    *   *Concept:* A pure protocol core doesn't care if bytes come from a TCP socket, a TLS buffer, a mock testing array, or a Unix domain socket. This is especially relevant here as the codebase targets both macOS and Linux/GNUstep where transport implementations differ (`NSURLSession` vs. custom BSD sockets).
+
+---
+
+## Post-Refactor Improvements & Security Hardening (2026-03-01 22:47:47 EST)
+
+Following the completion of the 7 milestones, a senior-level architecture review identified and resolved four critical algorithmic bottlenecks and RFC compliance gaps. These were implemented immediately to ensure production-readiness:
+
+1. **Eliminated Stack Overflow DoS Vector in `HttpServer`**
+   * *Problem:* HTTP pipelining was initially implemented recursively. In Objective-C, `objc_msgSend` does not guarantee tail-call optimization, meaning a malicious client sending 5,000 tiny invalid requests could blow the thread stack and crash the server.
+   * *Solution:* Replaced the recursion with a safe `while (unconsumed.length > 0)` loop.
+2. **Fixed (N^2)$ Buffer Shifting in `WebSocketCodec`**
+   * *Problem:* The codec deleted parsed frames from the front of an `NSMutableData` buffer inside the parsing loop. This forced a `memmove()` of all remaining bytes *for every single frame*. Under heavy firehose load, this scales quadratically.
+   * *Solution:* Introduced a moving `offset` pointer. The buffer is now only shifted/truncated exactly once at the end of the `feedData:` call, achieving (N)$ time complexity.
+3. **Implemented RFC 6455 WebSocket Fragment Reassembly**
+   * *Problem:* The previous naive parser dropped `Opcode=0` (continuation) frames, meaning large fragmented ATProto payloads were silently lost.
+   * *Solution:* Added stateful tracking using an `NSMutableArray<NSData *>` to collect fragments efficiently, reassembling them only when the `FIN=1` frame arrives. Interleaved control frames (e.g., PINGs) are handled independently as required by the RFC.
+4. **Fixed Pipelining Data Loss After Chunked Bodies**
+   * *Problem:* The `HttpChunkedBodyParser` aggressively consumed the entire available TCP buffer. If a client sent a pipelined request immediately after the chunked terminator (`0\r\n\r\nGET /...`), the pipelined request was swallowed.
+   * *Solution:* Modified the chunked parser to return the exact number of bytes it consumed, allowing the parent `Http1Parser` to safely slice and preserve the remaining bytes for the next request.
