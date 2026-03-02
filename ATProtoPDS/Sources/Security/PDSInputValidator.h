@@ -91,26 +91,26 @@ typedef NS_ENUM(NSInteger, PDSValidationError) {
 /*! Validates an AT URI. */
 - (BOOL)isValidATURI:(NSString *)uri;
 
-/*! Sanitizes input for SQL queries. */
-- (nullable NSString *)sanitizeSQLInput:(NSString *)input error:(NSError **)error;
+/*! Sanitizes input for SQL queries. @deprecated Use parameterized queries instead. */
+- (nullable NSString *)sanitizeSQLInput:(NSString *)input error:(NSError **)error DEPRECATED_MSG_ATTRIBUTE("Use parameterized queries instead.");
 
-/*! Sanitizes input for file paths. */
-- (nullable NSString *)sanitizePathInput:(NSString *)input error:(NSError **)error;
+/*! Sanitizes input for file paths. @deprecated Use strict whitelist validation instead. */
+- (nullable NSString *)sanitizePathInput:(NSString *)input error:(NSError **)error DEPRECATED_MSG_ATTRIBUTE("Use strict whitelist validation instead.");
 
-/*! Sanitizes input for JSON fields. */
-- (nullable NSString *)sanitizeJSONField:(NSString *)input error:(NSError **)error;
+/*! Sanitizes input for JSON fields. @deprecated Lexicon validation handles this at the application layer. */
+- (nullable NSString *)sanitizeJSONField:(NSString *)input error:(NSError **)error DEPRECATED_MSG_ATTRIBUTE("Lexicon validation handles this at the application layer.");
 
-/*! Checks for SQL injection patterns. */
-- (BOOL)containsSQLInjectionPattern:(NSString *)input;
+/*! Checks for SQL injection patterns. @deprecated Fragile blacklist-based security. */
+- (BOOL)containsSQLInjectionPattern:(NSString *)input DEPRECATED_MSG_ATTRIBUTE("Fragile blacklist-based security. Use parameterized queries.");
 
-/*! Checks for path traversal patterns. */
-- (BOOL)containsPathTraversalPattern:(NSString *)input;
+/*! Checks for path traversal patterns. @deprecated Use strict whitelist validation instead. */
+- (BOOL)containsPathTraversalPattern:(NSString *)input DEPRECATED_MSG_ATTRIBUTE("Use strict whitelist validation instead.");
 
 /*! Checks for null byte injection. */
 - (BOOL)containsNullByte:(NSString *)input;
 
-/*! Checks for XSS patterns. */
-- (BOOL)containsXSSPattern:(NSString *)input;
+/*! Checks for XSS patterns. @deprecated Lexicon validation handles this. */
+- (BOOL)containsXSSPattern:(NSString *)input DEPRECATED_MSG_ATTRIBUTE("Lexicon validation handles this.");
 
 /*! Validates and clamps a limit parameter. */
 - (NSInteger)validateLimitParameter:(NSInteger)limit maxLimit:(NSInteger)maxLimit;
