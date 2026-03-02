@@ -568,26 +568,17 @@
         }
       };
 
-  [server addRoute:@"GET"
-              path:@"/.well-known/atproto-did"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             [self setCorsHeaders:response forRequest:request];
-             handleWellKnownAtprotoDid(request, response, YES);
-           }];
-
-  [server addRoute:@"HEAD"
-              path:@"/.well-known/atproto-did"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             [self setCorsHeaders:response forRequest:request];
-             handleWellKnownAtprotoDid(request, response, NO);
-           }];
-
-  [server addRoute:@"OPTIONS"
-              path:@"/.well-known/atproto-did"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             [self setCorsHeaders:response forRequest:request];
-             response.statusCode = HttpStatusOK;
-           }];
+  [server addHandlerForPath:@"/.well-known/atproto-did"
+                    handler:^(HttpRequest *request, HttpResponse *response) {
+                      [self setCorsHeaders:response forRequest:request];
+                      NSString *method = request.methodString.uppercaseString;
+                      if ([method isEqualToString:@"OPTIONS"]) {
+                        response.statusCode = HttpStatusOK;
+                      } else {
+                        handleWellKnownAtprotoDid(request, response,
+                                                  [method isEqualToString:@"GET"]);
+                      }
+                    }];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: .well-known routes registered");
 }
