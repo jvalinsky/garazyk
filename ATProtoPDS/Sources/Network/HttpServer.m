@@ -15,6 +15,7 @@
 #import "Debug/PDSLogger.h"
 #import "Network/HttpBufferPool.h"
 #import "Network/HttpChunkedBodyParser.h"
+#import "Network/HttpParsing.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpRouteTrie.h"
@@ -540,7 +541,7 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     NSString *method =
         (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(
             state.message);
-    HttpMethod methodEnum = [self httpMethodFromString:method ?: @""];
+    HttpMethod methodEnum = [HttpParsing methodFromString:method ?: @""];
     BOOL expectsBody =
         (methodEnum == HttpMethodPOST || methodEnum == HttpMethodPUT ||
          methodEnum == HttpMethodPATCH);
@@ -638,9 +639,9 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
 
   NSString *path = url.path ?: @"/";
   NSString *queryString = url.query ?: @"";
-  NSDictionary<NSString *, NSString *> *queryParams =
-      [self parseQueryParamsFromString:queryString];
-  HttpMethod methodEnum = [self httpMethodFromString:method ?: @""];
+  NSDictionary<NSString *, id> *queryParams =
+      [HttpParsing parseQueryString:queryString];
+  HttpMethod methodEnum = [HttpParsing methodFromString:method ?: @""];
 
   HttpRequest *request =
       [[HttpRequest alloc] initWithMethod:methodEnum
@@ -1205,56 +1206,6 @@ static const NSUInteger kDefaultMaxPipelinedRequests = 4;
     *parameters = handler ? matchedParams : nil;
   }
   return handler;
-}
-
-- (NSDictionary<NSString *, NSString *> *)parseQueryParamsFromString:
-    (NSString *)queryString {
-  if (queryString.length == 0) {
-    return @{};
-  }
-
-  NSMutableDictionary<NSString *, NSString *> *params =
-      [NSMutableDictionary dictionary];
-  NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
-
-  for (NSString *pair in pairs) {
-    NSRange eqRange = [pair rangeOfString:@"="];
-    if (eqRange.location != NSNotFound) {
-      NSString *key = [self urlDecode:[pair substringToIndex:eqRange.location]];
-      NSString *value =
-          [self urlDecode:[pair substringFromIndex:eqRange.location + 1]];
-      params[key] = value;
-    } else {
-      params[[self urlDecode:pair]] = @"";
-    }
-  }
-
-  return [params copy];
-}
-
-- (NSString *)urlDecode:(NSString *)string {
-  NSString *result =
-      [string stringByReplacingOccurrencesOfString:@"+" withString:@" "];
-  result = [result stringByRemovingPercentEncoding];
-  return result ?: string;
-}
-
-- (HttpMethod)httpMethodFromString:(NSString *)methodString {
-  if ([methodString isEqualToString:@"GET"])
-    return HttpMethodGET;
-  if ([methodString isEqualToString:@"POST"])
-    return HttpMethodPOST;
-  if ([methodString isEqualToString:@"PUT"])
-    return HttpMethodPUT;
-  if ([methodString isEqualToString:@"DELETE"])
-    return HttpMethodDELETE;
-  if ([methodString isEqualToString:@"PATCH"])
-    return HttpMethodPATCH;
-  if ([methodString isEqualToString:@"OPTIONS"])
-    return HttpMethodOPTIONS;
-  if ([methodString isEqualToString:@"HEAD"])
-    return HttpMethodHEAD;
-  return HttpMethodUnknown;
 }
 
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
