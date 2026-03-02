@@ -76,16 +76,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
+- (instancetype)init NS_UNAVAILABLE;
+
 /*!
- @method init
+ @method validateClient:completion:
 
- @abstract Initializes a new OAuth2 handler without a database.
+ @abstract Validates a client by ID.
 
- @return An initialized OAuth2Handler instance.
-
- @discussion Use initWithDatabase: for full functionality.
+ @param clientID The client_id to validate.
+ @param completion Callback with the client dictionary or error.
  */
-- (instancetype)init;
+- (void)validateClient:(NSString *)clientID
+            completion:(void (^)(NSDictionary * _Nullable client, NSError * _Nullable error))completion;
 
 /*!
  @method registerRoutesWithServer:

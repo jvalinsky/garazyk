@@ -179,13 +179,28 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
 - (BOOL)containsPathTraversalPattern:(NSString *)input {
     if (!input) return NO;
     
+    // Normalize common URL-encoded variants of slash and backslash
     NSString *normalized = [input stringByReplacingOccurrencesOfString:@"%2f" withString:@"/" options:NSCaseInsensitiveSearch range:NSMakeRange(0, input.length)];
     normalized = [normalized stringByReplacingOccurrencesOfString:@"%5c" withString:@"\\" options:NSCaseInsensitiveSearch range:NSMakeRange(0, normalized.length)];
     
+    // Normalize encoded dots
+    normalized = [normalized stringByReplacingOccurrencesOfString:@"%2e" withString:@"." options:NSCaseInsensitiveSearch range:NSMakeRange(0, normalized.length)];
+
+    // Check for standard traversal patterns
     if ([normalized containsString:@"/../"] || [normalized hasSuffix:@"/.."] || [normalized hasPrefix:@"../"] ||
-        [normalized containsString:@"\\..\\"] || [normalized hasSuffix:@"\\.."] || [normalized hasPrefix:@"..\\"]) {
+        [normalized containsString:@"\\..\\"] || [normalized hasSuffix:@"\\.."] || [normalized hasPrefix:@"..\\"] ||
+        [normalized isEqualToString:@".."]) {
         return YES;
     }
+    
+    // Check for naked double dots if the context is sensitive (like path components)
+    if ([normalized containsString:@".."]) {
+        // Additional heuristic: if it contains .. and any path separator, it's likely a traversal attempt
+        if ([normalized containsString:@"/"] || [normalized containsString:@"\\"]) {
+            return YES;
+        }
+    }
+
     return NO;
 }
 
