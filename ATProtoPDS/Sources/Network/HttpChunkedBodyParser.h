@@ -46,9 +46,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param error On return, contains error if parsing failed.
 
- @return YES if parsing should continue, NO if complete or error.
+ @return The number of bytes consumed, or -1 if an error occurred.
  */
-- (BOOL)appendData:(NSData *)data error:(NSError **)error;
+- (NSInteger)appendData:(NSData *)data error:(NSError **)error;
 
 /*!
  @property parsedData
