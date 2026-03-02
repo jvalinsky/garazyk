@@ -330,3 +330,78 @@ a platform-level security feature, not a PDS or nginx issue.
 | `NodeInfoHandler.m` | Dynamic CORS for NodeInfo endpoints |
 | `PDSConfiguration.h` / `.m` | Added `arrayForKey:` for config array access |
 | `CMakeLists.txt` | Excluded `PDSAppleKeyManager.m` on non-Apple platforms |
+
+---
+
+## Part 3: Handle Resolution CORS (.well-known)
+
+### Background
+
+After fixing the main RPC CORS headers, handle resolution on `pdsls.dev` for subdomains (e.g., `newvmtest.garazyk.xyz`) was still failing. 
+
+Browser behavior on `pdsls.dev`:
+1. Attempts to fetch `https://newvmtest.garazyk.xyz/.well-known/atproto-did`.
+2. Sends an `OPTIONS` preflight request.
+3. PDS returned `404 Not Found` for `OPTIONS /.well-known/atproto-did`.
+
+### Root Cause
+
+In `PDSHttpServerBuilder.m`, the `.well-known` routes were registered using method-specific `addRoute:path:handler:` calls (GET/HEAD). While the XRPC layer had catch-all CORS handling, the `.well-known` endpoints were outside that dispatcher and lacked an `OPTIONS` handler.
+
+Initial attempt to add a specific `OPTIONS` route via `addRoute:@"OPTIONS" ...` failed because the router's exact matching logic sometimes conflicted with how the PDS handles subdomains vs main domains.
+
+### Fix: Method-Agnostic Path Handler
+
+Changed the registration from method-specific routes to a method-agnostic path handler using `addHandlerForPath:`. This mirrors the robust pattern used for the `/xrpc` prefix.
+
+**File:** `PDSHttpServerBuilder.m`
+
+```objc
+[server addHandlerForPath:@"/.well-known/atproto-did"
+                  handler:^(HttpRequest *request, HttpResponse *response) {
+                    [self setCorsHeaders:response forRequest:request];
+                    NSString *method = request.methodString.uppercaseString;
+                    if ([method isEqualToString:@"OPTIONS"]) {
+                      response.statusCode = HttpStatusOK;
+                    } else {
+                      handleWellKnownAtprotoDid(request, response,
+                                                [method isEqualToString:@"GET"]);
+                    }
+                  }];
+```
+
+This ensures:
+1. `OPTIONS` requests are caught and return 200 OK + CORS headers.
+2. `GET`/`HEAD` requests continue to serve the DID, but now with proper CORS headers.
+3. The `setCorsHeaders:` helper matches the origin against `config.json` allowed origins.
+
+---
+
+## Deployment & Build Orchestration
+
+### Workflow Refinement
+
+Deploying these fixes to the production VM required several steps and surfaced some environmental nuances:
+
+1. **Git Workflow**: Local changes were committed and pushed, then pulled on the server.
+2. **Docker Rebuild**: Because the fix involved Objective-C source code, a simple container restart was insufficient. A full rebuild was required:
+   ```bash
+   docker compose up --build -d
+   ```
+3. **Container Conflict Resolution**: Encountered issues where `docker compose` would fail if a container with the same name (`nspds`) already existed but wasn't part of the current compose state. 
+   **Fix**: Manually removed the conflicting container: `docker rm -f nspds`.
+4. **Command Transition**: Noted that the server uses modern `docker compose` (V2) rather than the legacy `docker-compose` (Python).
+
+### Verification
+
+Final verification using `curl` confirmed success for both XRPC and `.well-known` endpoints:
+
+```bash
+# Verify Handle Resolution OPTIONS
+curl -v -X OPTIONS https://newvmtest.garazyk.xyz/.well-known/atproto-did \
+  -H "Origin: https://pdsls.dev"
+# -> HTTP 200 OK
+# -> access-control-allow-origin: https://pdsls.dev ✅
+```
+
+**Commits:** `1af4d9d` (initial OPTIONS route), `bd3c9a4` (final `addHandlerForPath` fix).
