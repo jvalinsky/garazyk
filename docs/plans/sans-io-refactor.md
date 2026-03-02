@@ -16,8 +16,8 @@ As of 2026-03-01: Execution has begun with a bottom-up approach — simplest ext
 3. ✅ **Milestone 3: HttpRetryPolicy (Phase 3.1)** — extract retry/backoff logic, wire into `DIDPLCResolver`. *Why: Separates business logic (when to retry) from the transport mechanism (NSURLSession), making backoffs deterministically testable.*
 4. ⏳ **Milestone 4: WebSocketCodec (Phase 1.1)** — extract frame parser/serializer + characterization tests. *Why: Allows rigorous testing of websocket frame edge cases (e.g. fragmentation, masks) purely in memory to harden against malformed network packets.*
 5. ✅ **Milestone 5: WebSocketHeartbeatPolicy (Phase 1.2)** — extract heartbeat state machine. *Why: Separates protocol state (ping/pong expectations) from actual timer dispatch, enabling simulated time tests.*
-6. ⏳ **Milestone 6: Http1Parser + Http1PipelinePolicy (Phase 2.1, 2.2)** — extract HTTP parsing + pipeline policy. *Why: Moves HTTP parsing away from network sockets into a pure function (`feedData:`) to safely test partial reads and pipelining.*
-7. 🔲 **Milestone 7: Rewiring (Phase 1.3, 2.4, 3.3)** — thin adapter layer for WebSocketConnection, HttpServer, outbound consumers. *Why: Plugs the pure logic back into the asynchronous I/O layer, completing the refactor while keeping the transport logic completely dumb.*
+6. ✅ **Milestone 6: Http1Parser + Http1PipelinePolicy (Phase 2.1, 2.2)** — extract HTTP parsing + pipeline policy. *Why: Moves HTTP parsing away from network sockets into a pure function (`feedData:`) to safely test partial reads and pipelining.*
+7. ⏳ **Milestone 7: Rewiring (Phase 1.3, 2.4, 3.3)** — thin adapter layer for WebSocketConnection, HttpServer, outbound consumers. *Why: Plugs the pure logic back into the asynchronous I/O layer, completing the refactor while keeping the transport logic completely dumb.*
 
 ### Completed:
 - Milestone 1: SSRFValidator (Phase 3.2)
