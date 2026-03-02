@@ -139,8 +139,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   [_parser reset];
   _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
   _requestInFlight = NO;
-  [_outputQueue removeAllObjects];
-  _outputQueueSize = 0;
   _readingPaused = NO;
 }
 
