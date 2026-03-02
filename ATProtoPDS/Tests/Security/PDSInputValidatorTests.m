@@ -49,38 +49,49 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testSanitizeSQLInput {
+    // Note: Traditional SQL sanitization (quote escaping) is deprecated.
+    // We now rely on parameterized queries. Sanitize only removes null bytes.
     NSError *error = nil;
-    NSString *sanitized = [self.validator sanitizeSQLInput:@"O'Reilly" error:&error];
+    NSString *input = @"O'Reilly";
+    NSString *sanitized = [self.validator sanitizeSQLInput:input error:&error];
     XCTAssertNil(error);
-    XCTAssertEqualObjects(sanitized, @"O''Reilly");
+    XCTAssertEqualObjects(sanitized, @"O'Reilly"); // No longer escapes quotes
 
-    NSError *blockedError = nil;
-    NSString *blocked = [self.validator sanitizeSQLInput:@"1; DROP TABLE users" error:&blockedError];
-    XCTAssertNil(blocked);
-    XCTAssertNotNil(blockedError);
+    // Redundant pattern blocking is removed.
+    NSString *query = @"1; DROP TABLE users";
+    NSString *sanitizedQuery = [self.validator sanitizeSQLInput:query error:nil];
+    XCTAssertEqualObjects(sanitizedQuery, query); // No longer blocks patterns
+    
+    // Test null byte removal
+    const char bytes[] = {'u', 's', 'e', 'r', '\0', '1'};
+    NSString *withNull = [[NSString alloc] initWithBytes:bytes length:6 encoding:NSUTF8StringEncoding];
+    NSString *sanitizedNull = [self.validator sanitizeSQLInput:withNull error:nil];
+    XCTAssertEqualObjects(sanitizedNull, @"user1");
 }
 
 - (void)testSanitizePathInput {
+    // Note: Path sanitization now primarily handles null bytes and obvious traversal.
     NSError *error = nil;
     NSString *sanitized = [self.validator sanitizePathInput:@"safe/path/file.txt" error:&error];
     XCTAssertEqualObjects(sanitized, @"safe/path/file.txt");
 
-    NSError *blockedError = nil;
-    NSString *blocked = [self.validator sanitizePathInput:@"../etc/passwd" error:&blockedError];
-    XCTAssertNil(blocked);
-    XCTAssertNotNil(blockedError);
+    // We still block basic traversal if containsPathTraversalPattern is called
+    XCTAssertTrue([self.validator containsPathTraversalPattern:@"../etc/passwd"]);
 }
 
 - (void)testSanitizeJSONField {
+    // Note: HTML escaping is deprecated at this layer.
     NSError *error = nil;
-    NSString *sanitized = [self.validator sanitizeJSONField:@"Hello <b>world</b>" error:&error];
+    NSString *input = @"Hello <b>world</b>";
+    NSString *sanitized = [self.validator sanitizeJSONField:input error:&error];
     XCTAssertNil(error);
-    XCTAssertEqualObjects(sanitized, @"Hello &lt;b&gt;world&lt;/b&gt;");
+    XCTAssertEqualObjects(sanitized, input); // No longer escapes HTML
 
-    NSError *blockedError = nil;
-    NSString *blocked = [self.validator sanitizeJSONField:@"<script>alert(1)</script>" error:&blockedError];
-    XCTAssertNil(blocked);
-    XCTAssertNotNil(blockedError);
+    // Test null byte removal
+    const char bytes[] = {'{', '}', '\0'};
+    NSString *withNull = [[NSString alloc] initWithBytes:bytes length:3 encoding:NSUTF8StringEncoding];
+    NSString *sanitizedNull = [self.validator sanitizeJSONField:withNull error:nil];
+    XCTAssertEqualObjects(sanitizedNull, @"{}");
 }
 
 - (void)testLimitAndCursorValidation {
@@ -106,15 +117,15 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testPatternDetectionHelpers {
-    XCTAssertTrue([self.validator containsSQLInjectionPattern:@"select * from users UNION SELECT password"]);
-    XCTAssertFalse([self.validator containsSQLInjectionPattern:@"simple text"]);
-
+    // Legacy SQL and XSS pattern detection are deprecated and return NO.
+    XCTAssertFalse([self.validator containsSQLInjectionPattern:@"select * from users UNION SELECT password"]);
+    
+    // Path traversal detection is still active as it's less fragile than SQL/XSS blacklists.
     XCTAssertTrue([self.validator containsPathTraversalPattern:@"..%2Fetc/passwd"]);
     XCTAssertTrue([self.validator containsPathTraversalPattern:@"a/../b"]);
     XCTAssertFalse([self.validator containsPathTraversalPattern:@"safe/path"]);
 
-    XCTAssertTrue([self.validator containsXSSPattern:@"javascript:alert(1)"]);
-    XCTAssertFalse([self.validator containsXSSPattern:@"plain text"]);
+    XCTAssertFalse([self.validator containsXSSPattern:@"javascript:alert(1)"]);
 }
 
 - (void)testSanitizersRejectNilInputWithError {

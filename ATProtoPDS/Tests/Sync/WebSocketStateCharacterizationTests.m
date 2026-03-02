@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Sync/WebSocketConnection.h"
+#import "Sync/WebSocketHeartbeatPolicy.h"
 
 @interface MockStateWebSocketDelegate : NSObject <WebSocketConnectionDelegate>
 @property (nonatomic, assign) NSInteger lastCloseCode;
@@ -29,11 +30,11 @@
 @property (nonatomic, assign, readwrite) WebSocketConnectionState state;
 @property (nonatomic, assign) NSUInteger queuedSendBytes;
 @property (nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
+@property (nonatomic, strong) WebSocketHeartbeatPolicy *heartbeatPolicy;
 - (void)startHeartbeat;
 - (void)stopHeartbeat;
-- (void)sendHeartbeat;
+- (void)tickHeartbeat;
 - (void)handlePongFrame:(NSData *)payload;
-- (void)handleHeartbeatTimeout;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
 - (void)sendFrame:(NSData *)frame;
 @end
@@ -62,7 +63,10 @@
 // We will test the direct handler methods instead to characterize the logic.
 
 - (void)testHeartbeatTimeoutClosesConnection {
-    [self.connection handleHeartbeatTimeout];
+    // Simulate ping sent, wait timeout
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    [self.connection.heartbeatPolicy pingSent:now - 11.0]; // 10s timeout
+    [self.connection tickHeartbeat];
     // This calls closeWithCode:1001 reason:@"Heartbeat timeout"
     XCTAssertEqual(self.connection.closeCode, 1001);
     XCTAssertEqualObjects(self.connection.closeReason, @"Heartbeat timeout");
@@ -111,10 +115,9 @@
 - (void)testMissingPongTriggersTimeout {
     self.connection.state = WebSocketConnectionStateConnected;
     
-    // sendHeartbeat sets waitingForPong = YES and starts timeout timer.
-    // If called again while waitingForPong == YES, it closes connection.
-    [self.connection sendHeartbeat];
-    [self.connection sendHeartbeat]; // Should trigger timeout
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    [self.connection.heartbeatPolicy pingSent:now - 20.0];
+    [self.connection tickHeartbeat]; // Should trigger timeout
     
     XCTAssertEqual(self.connection.closeCode, 1001);
     XCTAssertEqualObjects(self.connection.closeReason, @"Heartbeat timeout");
@@ -123,11 +126,12 @@
 - (void)testPongResetsWaiting {
     self.connection.state = WebSocketConnectionStateConnected;
     
-    [self.connection sendHeartbeat];
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    [self.connection.heartbeatPolicy pingSent:now - 20.0];
     [self.connection handlePongFrame:[NSData data]]; // Clears waitingForPong
     
     // Second heartbeat should not fail since waitingForPong was cleared
-    [self.connection sendHeartbeat];
+    [self.connection tickHeartbeat];
     
     XCTAssertNotEqual(self.connection.closeCode, 1001);
 }

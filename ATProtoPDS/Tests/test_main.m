@@ -206,6 +206,7 @@ int main(int argc, char *argv[]) {
       @"PDSHttpServerBuilderTests",
       @"WebSocketServerTests",
       @"MSTPersistenceTests",
+      @"MSTRebalancingTests",
       @"HttpResponseTests",
       @"PDSConfigurationTests",
       @"PDSPhoneVerificationProviderTests",

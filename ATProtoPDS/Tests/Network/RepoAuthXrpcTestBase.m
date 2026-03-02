@@ -14,6 +14,7 @@
 
     setenv("PDS_AVAILABLE_USER_DOMAINS", "test", 1);
     setenv("PDS_ADMIN_PASSWORD", "password", 1);
+    setenv("PDS_MASTER_SECRET", "test-master-secret-123", 1);
     [[PDSConfiguration sharedConfiguration] applyConfig:@{@"server": @{}}];
 
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];

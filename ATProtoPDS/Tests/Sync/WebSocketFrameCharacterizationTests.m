@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Sync/WebSocketConnection.h"
+#import "Sync/WebSocketCodec.h"
 
 @interface MockWebSocketDelegate2 : NSObject <WebSocketConnectionDelegate>
 @property (nonatomic, strong) NSMutableArray<NSData *> *messages;
@@ -40,11 +41,12 @@
 @end
 
 @interface WebSocketConnection (Testing2)
+@property (nonatomic, assign, readwrite) WebSocketConnectionState state;
+@property (nonatomic, strong) NSMutableData *readBuffer;
+@property (nonatomic, strong) WebSocketCodec *codec;
 - (void)handleReceivedData:(NSData *)data;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
 - (void)sendPong:(NSData *)payload;
-@property (nonatomic, assign, readwrite) WebSocketConnectionState state;
-@property (nonatomic, strong) NSMutableData *readBuffer;
 @end
 
 @interface WebSocketFrameCharacterizationTests : XCTestCase
@@ -92,11 +94,9 @@
     
     [self waitForMainQueue];
     
-    // The current code ignores FIN and treats opcode=0 as unknown.
-    // Characterization: it will dispatch "He" as text frame (since opcode=1) and ignore continuation (opcode=0).
-    // Let's document the CURRENT behavior.
+    // The current code correctly handles reassembly.
     XCTAssertEqual(self.delegate.texts.count, 1);
-    XCTAssertEqualObjects(self.delegate.texts.firstObject, @"He");
+    XCTAssertEqualObjects(self.delegate.texts.firstObject, @"Hello");
 }
 
 - (void)testMaskedClientServerFrame {

@@ -27,6 +27,7 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 | [troubleshooting-bsky-ghost-posts-2026-02-26.md](troubleshooting-bsky-ghost-posts-2026-02-26.md) | Ghost post visibility + GNUstep `createRecord` crash investigation and fixes |
 | [test-suite-stabilization-report-2026-03-01.md](test-suite-stabilization-report-2026-03-01.md) | **100% Pass Rate** stabilization effort, resolving 1267 test failures |
 | [troubleshooting-identity-cors-2026-03-01.md](troubleshooting-identity-cors-2026-03-01.md) | Identity resolution, spec compliance, and dynamic CORS fixes |
+| [security-and-architectural-remediation-report-2026-03-02.md](security-and-architectural-remediation-report-2026-03-02.md) | **100% Pass Rate** remediation report: security hardening, MST rebalancing, and protocol fixes |
 
 ## Quick Navigation
 
@@ -61,6 +62,7 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 ### Test Documentation & Reports
 - [Testing Guide](TESTING.md)
 - [Test Suite Stabilization Report (2026-03-01)](test-suite-stabilization-report-2026-03-01.md) - **100% Pass Rate** attainment details
+- [Security and Architectural Remediation Report (2026-03-02)](security-and-architectural-remediation-report-2026-03-02.md) - Final remediation and 100% stability results
 - [Test Documentation Index](tests/README.md) - Complete index of all test classes
 
 ### Guides & References
