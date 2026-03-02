@@ -266,11 +266,17 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     // Test that issuer can be configured via environment variable
     setenv("PDS_ISSUER", "https://custom.pds.example.com", 1);
 
-    OAuth2Handler *handler = [[OAuth2Handler alloc] init];
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"issuer_test.db"];
+    PDSDatabase *testDb = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
+    NSError *error = nil;
+    [testDb openWithError:&error];
+    
+    OAuth2Handler *handler = [[OAuth2Handler alloc] initWithDatabase:testDb];
     XCTAssertEqualObjects(handler.oauthServer.issuer, @"https://custom.pds.example.com",
                          @"Should use custom issuer from environment");
 
     // Clean up
+    [testDb close];
     unsetenv("PDS_ISSUER");
 }
 
