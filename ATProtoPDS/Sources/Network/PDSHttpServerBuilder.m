@@ -571,13 +571,22 @@
   [server addRoute:@"GET"
               path:@"/.well-known/atproto-did"
            handler:^(HttpRequest *request, HttpResponse *response) {
+             [self setCorsHeaders:response forRequest:request];
              handleWellKnownAtprotoDid(request, response, YES);
            }];
 
   [server addRoute:@"HEAD"
               path:@"/.well-known/atproto-did"
            handler:^(HttpRequest *request, HttpResponse *response) {
+             [self setCorsHeaders:response forRequest:request];
              handleWellKnownAtprotoDid(request, response, NO);
+           }];
+
+  [server addRoute:@"OPTIONS"
+              path:@"/.well-known/atproto-did"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [self setCorsHeaders:response forRequest:request];
+             response.statusCode = HttpStatusOK;
            }];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: .well-known routes registered");
