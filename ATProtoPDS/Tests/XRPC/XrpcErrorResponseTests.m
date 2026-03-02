@@ -78,7 +78,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusTooManyRequests);
     XCTAssertTrue(rateLimited);
-    XCTAssertEqualObjects(response.headers[@"X-RateLimit-Limit"], @"100");
+    XCTAssertEqualObjects([response headerForKey:@"X-RateLimit-Limit"], @"100");
 }
 
 - (void)testUnauthorizedForMissingAuth {

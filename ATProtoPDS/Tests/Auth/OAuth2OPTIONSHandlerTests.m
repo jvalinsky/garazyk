@@ -37,7 +37,7 @@
     // Verify serialized response is valid HTTP
     NSString *responseString = [[NSString alloc] initWithData:serialized encoding:NSUTF8StringEncoding];
     XCTAssertTrue([responseString hasPrefix:@"HTTP/1.1 204"], @"Response should start with HTTP/1.1 204");
-    XCTAssertTrue([responseString containsString:@"Access-Control-Allow-Origin: *"], @"Should contain CORS header");
+    XCTAssertTrue([responseString containsString:@"access-control-allow-origin: *"], @"Should contain CORS header");
     
     // Verify no Content-Length header for 204
     XCTAssertFalse([responseString containsString:@"Content-Length:"], @"204 response should not have Content-Length");
@@ -81,10 +81,10 @@
     response.statusMessage = @"No Content";
     
     // Verify headers are set correctly
-    XCTAssertEqualObjects(response.headers[@"Access-Control-Allow-Origin"], @"*");
-    XCTAssertEqualObjects(response.headers[@"Access-Control-Allow-Methods"], @"GET, POST, OPTIONS");
-    XCTAssertEqualObjects(response.headers[@"Access-Control-Allow-Headers"], @"Authorization, Content-Type, DPoP, DPoP-Nonce");
-    XCTAssertEqualObjects(response.headers[@"Access-Control-Max-Age"], @"86400");
+    XCTAssertEqualObjects([response headerForKey:@"Access-Control-Allow-Origin"], @"*");
+    XCTAssertEqualObjects([response headerForKey:@"Access-Control-Allow-Methods"], @"GET, POST, OPTIONS");
+    XCTAssertEqualObjects([response headerForKey:@"Access-Control-Allow-Headers"], @"Authorization, Content-Type, DPoP, DPoP-Nonce");
+    XCTAssertEqualObjects([response headerForKey:@"Access-Control-Max-Age"], @"86400");
 }
 
 - (void)test200ResponseWithEmptyBodyForComparison {
@@ -100,7 +100,7 @@
     NSString *responseString = [[NSString alloc] initWithData:serialized encoding:NSUTF8StringEncoding];
     XCTAssertTrue([responseString hasPrefix:@"HTTP/1.1 200"]);
     // 200 OK should have Content-Length: 0
-    XCTAssertTrue([responseString containsString:@"Content-Length: 0"], @"200 OK with empty body should have Content-Length: 0");
+    XCTAssertTrue([responseString containsString:@"content-length: 0"], @"200 OK with empty body should have Content-Length: 0");
 }
 
 @end
