@@ -40,6 +40,7 @@
                     inFile:(nullable NSString *)filePath
                     atLine:(NSUInteger)lineNumber {
   self.failureCount++;
+  NSLog(@"FAIL: %@ at %@:%lu: %@", testCase.name, filePath, (unsigned long)lineNumber, description);
 }
 @end
 #else

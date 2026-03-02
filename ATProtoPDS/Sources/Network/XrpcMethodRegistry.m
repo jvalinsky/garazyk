@@ -581,10 +581,23 @@ static NSString *configuredAppViewProxyDescriptor(PDSConfiguration *config) {
     return envDescriptor;
   }
 
+  // Also check for explicit URL override in environment (common in tests)
+  NSString *envURL = trimmedNonEmptyString(
+      [[NSProcessInfo processInfo] environment][@"PDS_APPVIEW_URL"]);
+  if (envURL.length > 0) {
+    return envURL;
+  }
+
   // Construct DID#service descriptor from AppView configuration
   NSString *appViewDID = config.appViewDID;
   if (appViewDID.length > 0) {
     return [NSString stringWithFormat:@"%@#bsky_appview", appViewDID];
+  }
+
+  // Fallback to configured URL
+  NSString *appViewURL = config.appViewURL;
+  if (appViewURL.length > 0) {
+    return appViewURL;
   }
 
   return nil;
@@ -653,7 +666,18 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
     if (![value isKindOfClass:[NSString class]] || value.length == 0) {
       continue;
     }
-    [upstreamRequest setValue:value forHTTPHeaderField:key];
+
+    // Normalize common header casing for upstream compatibility.
+    NSString *headerFieldName = key;
+    if ([lowercaseKey isEqualToString:@"authorization"]) {
+      headerFieldName = @"Authorization";
+    } else if ([lowercaseKey isEqualToString:@"dpop"]) {
+      headerFieldName = @"DPoP";
+    } else if ([lowercaseKey isEqualToString:@"atproto-proxy"]) {
+      headerFieldName = @"Atproto-Proxy";
+    }
+
+    [upstreamRequest setValue:value forHTTPHeaderField:headerFieldName];
   }
   [upstreamRequest setValue:[NSString
                                 stringWithFormat:@"%ld", (long)(hopCount + 1)]
@@ -804,13 +828,10 @@ static void installXrpcProxyInterceptor(XrpcDispatcher *dispatcher,
         NSString *explicitProxyTarget =
             trimmedNonEmptyString([request headerForKey:@"atproto-proxy"]);
         if (explicitProxyTarget.length > 0) {
-          // Core PDS methods and preferences must be handled locally.
-          BOOL forceLocal = [methodId hasPrefix:@"com.atproto."] ||
-                            [methodId isEqualToString:@"app.bsky.actor.getPreferences"] ||
-                            [methodId isEqualToString:@"app.bsky.actor.putPreferences"] ||
-                            [methodId isEqualToString:@"app.bsky.notification.getPreferences"] ||
-                            [methodId isEqualToString:@"app.bsky.notification.putPreferences"] ||
-                            [methodId isEqualToString:@"app.bsky.unspecced.getConfig"];
+          // Explicitly proxied requests override forceLocal, but NOT for core PDS identity methods
+          // that MUST be handled locally to avoid infinite loops or identity sync issues.
+          BOOL forceLocal = [methodId isEqualToString:@"com.atproto.identity.resolveDid"] ||
+                            [methodId isEqualToString:@"com.atproto.identity.updateHandle"];
 
           if (hasLocalHandler && forceLocal) {
             return NO;

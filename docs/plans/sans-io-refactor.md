@@ -8,7 +8,7 @@ Incrementally extract I/O-free protocol cores from `WebSocketConnection`, `HttpS
 
 ## Current Status: Not Started
 
-**As of 2026-02-28:** No implementation has begun. All components and tests listed below are yet to be created.
+As of 2026-03-01: No implementation has begun. Codebase review confirms that all proposed new files and characterization tests are still absent.
 
 ### What still needs to be done:
 - All 5 characterization test files (Phase 0.1–0.5)
@@ -31,12 +31,12 @@ Incrementally extract I/O-free protocol cores from `WebSocketConnection`, `HttpS
   - `DIDPLCResolver.m` L115-158 (`executeRequest:retries:currentDelay:`)
   - `DIDPLCResolver.m` L249-283 (`executeRawRequest:...` - near-duplicate)
 
-### Verified file line counts:
-- `WebSocketConnection.m`: 679 lines
-- `HttpServer.m`: 1433 lines
-- `FederationClient.m`: 442 lines
-- `HandleResolver.m`: 587 lines
-- `DIDPLCResolver.m`: 285 lines
+### Verified file line counts (2026-03-01):
+- `WebSocketConnection.m`: 680 lines
+- `HttpServer.m`: 1434 lines
+- `FederationClient.m`: 442 lines (Sources/Federation/FederationClient.m)
+- `HandleResolver.m`: 587 lines (Sources/Identity/HandleResolver.m)
+- `DIDPLCResolver.m`: 333 lines (Sources/PLC/DIDPLCResolver.m)
 
 ### Parser Hardening Audit Findings (2026-02-28)
 
@@ -95,12 +95,12 @@ The HTTP and WebSocket parsers being extracted in Phases 1 & 2 are medium-risk f
 
 | Logic | Location A | Location B | Location C |
 |-------|-----------|-----------|-----------|
-| SSRF IPv4 classification | `FederationClient.m` L15-29 (`pds_isPrivateIPv4Address` static) | `HandleResolver.m` L522-547 (`-isPrivateIPv4Address:` instance) | — |
-| SSRF IPv6 classification | `FederationClient.m` L32-44 (`pds_isPrivateIPv6Address` static) | `HandleResolver.m` L561-585 (`-isPrivateIPv6Address:` instance) | — |
-| Query param parsing | `HttpServer.m` L1208-1231 (`-parseQueryParamsFromString:`) | `HttpRequest.m` L350-368 (`-parseQueryParams:`) | `WebSocketConnection.m` ~L60 (`-parseQueryParams:`) |
-| HTTP method string→enum | `HttpServer.m` L1240-1256 (`-httpMethodFromString:`) | `HttpRequest.m` L370-380 (`-methodFromString:`) | — |
-| Retry/backoff | `DIDPLCResolver.m` L115-158 (`executeRequest:retries:currentDelay:completion:`) | `DIDPLCResolver.m` L249-283 (`executeRawRequest:...` — near-copy) | `FederationClient.m` (no retry at all) |
-| URL decode | `HttpServer.m` L1233-1238 (`-urlDecode:`) | `HttpRequest.m` (inline percent-decoding) | — |
+| SSRF IPv4 classification | `Federation/FederationClient.m` L15-29 (`pds_isPrivateIPv4Address` static) | `Identity/HandleResolver.m` L522-547 (`-isPrivateIPv4Address:` instance) | — |
+| SSRF IPv6 classification | `Federation/FederationClient.m` L32-44 (`pds_isPrivateIPv6Address` static) | `Identity/HandleResolver.m` L561-585 (`-isPrivateIPv6Address:` instance) | — |
+| Query param parsing | `Network/HttpServer.m` L1208-1231 (`-parseQueryParamsFromString:`) | `Network/HttpRequest.m` L350-368 (`-parseQueryParams:`) | `Sync/WebSocketConnection.m` ~L60 (`-parseQueryParams:`) |
+| HTTP method string→enum | `Network/HttpServer.m` L1240-1256 (`-httpMethodFromString:`) | `Network/HttpRequest.m` L370-380 (`-methodFromString:`) | — |
+| Retry/backoff | `PLC/DIDPLCResolver.m` L115-158 (`executeRequest:retries:currentDelay:completion:`) | `PLC/DIDPLCResolver.m` L249-283 (`executeRawRequest:...` — near-copy) | `Federation/FederationClient.m` (no retry at all) |
+| URL decode | `Network/HttpServer.m` L1233-1238 (`-urlDecode:`) | `Network/HttpRequest.m` (inline percent-decoding) | — |
 
 ---
 
@@ -185,6 +185,19 @@ Current `HttpServerTests` has fake listener/connection infrastructure. Extend it
 - IPv4-mapped IPv6 with private IPv4: YES
 
 **File:** `ATProtoPDS/Tests/Network/SSRFClassificationCharacterizationTests.m`
+
+### 0.6 Parser Hardening Characterization
+
+**Goal:** Capture current failure modes and performance of core parsers (`Base58`, `CID`, `RepoCommit`) to ensure hardening doesn't break valid inputs.
+
+**Add tests for:**
+- `Base58` decoder with max-length (64KB) string
+- `Base58` decoder with invalid UTF-8 characters
+- `CID` string parser with over-length (>256 chars) string
+- `CID` varint reader with truncated buffers
+- `RepoCommit` CAR decoder with malformed CBOR maps
+
+**File:** `ATProtoPDS/Tests/Core/ParserHardeningCharacterizationTests.m`
 
 ---
 

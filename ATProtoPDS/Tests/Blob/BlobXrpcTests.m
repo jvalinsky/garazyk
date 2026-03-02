@@ -272,10 +272,10 @@
     [self.dispatcher handleRequest:getRequest response:getResponse];
 
     XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)206);
-    XCTAssertEqualObjects(getResponse.headers[@"Accept-Ranges"], @"bytes");
+    XCTAssertEqualObjects([getResponse headerForKey:@"Accept-Ranges"], @"bytes");
     NSString *expectedContentRange = [NSString stringWithFormat:@"bytes 0-4/%lu",
                                       (unsigned long)blobData.length];
-    XCTAssertEqualObjects(getResponse.headers[@"Content-Range"],
+    XCTAssertEqualObjects([getResponse headerForKey:@"Content-Range"],
                           expectedContentRange);
     XCTAssertNotNil(getResponse.bodyChunkProducer);
     XCTAssertEqualObjects(getResponse.body, [blobData subdataWithRange:NSMakeRange(0, 5)]);
@@ -306,7 +306,7 @@
     XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)416);
     NSString *expectedContentRange = [NSString stringWithFormat:@"bytes */%lu",
                                       (unsigned long)blobData.length];
-    XCTAssertEqualObjects(getResponse.headers[@"Content-Range"],
+    XCTAssertEqualObjects([getResponse headerForKey:@"Content-Range"],
                           expectedContentRange);
 }
 

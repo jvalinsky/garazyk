@@ -214,7 +214,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testPostWithJsonContentType {
     __block BOOL correctContentType = NO;
     [self.dispatcher registerMethod:@"test.jsonBody" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *contentType = request.headers[@"content-type"];
+        NSString *contentType = [request headerForKey:@"content-type"];
         correctContentType = [contentType containsString:@"application/json"];
         response.statusCode = HttpStatusOK;
     }];
@@ -237,7 +237,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testPostWithIncorrectContentType {
     [self.dispatcher registerMethod:@"test.wrongType" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *contentType = request.headers[@"content-type"];
+        NSString *contentType = [request headerForKey:@"content-type"];
         if (![contentType containsString:@"application/json"]) {
             response.statusCode = HttpStatusUnsupportedMediaType;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Expected application/json"}];
