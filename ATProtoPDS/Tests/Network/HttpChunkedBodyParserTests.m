@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *chunk1 = [@"5\r\nHello\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:chunk1 error:&error];
+    NSInteger result = [parser appendData:chunk1 error:&error];
 
     XCTAssertTrue(result);
     XCTAssertNil(error);
@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"5\r\nHello\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
     XCTAssertTrue(result);
     XCTAssertNil(error);
@@ -39,7 +39,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"5\r\nHello\r\n6\r\n World\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
     XCTAssertTrue(result);
     XCTAssertNil(error);
@@ -55,7 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
     [parser appendData:[@"5\r\nHel" dataUsingEncoding:NSUTF8StringEncoding] error:&error];
     XCTAssertNil(error);
     XCTAssertFalse(parser.isComplete);
-    XCTAssertEqual(parser.parsedLength, 0);
+    XCTAssertEqual(parser.parsedLength, 3);
 
     [parser appendData:[@"lo\r\n" dataUsingEncoding:NSUTF8StringEncoding] error:&error];
     XCTAssertNil(error);
@@ -73,7 +73,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
     XCTAssertTrue(result);
     XCTAssertNil(error);
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"A\r\nABCDEFGHIJ\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
     XCTAssertTrue(result);
     XCTAssertNil(error);
@@ -99,9 +99,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"GG\r\nHello\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
-    XCTAssertFalse(result);
+    XCTAssertEqual(result, -1);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, 400);
 }
@@ -111,9 +111,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"5\r\nHello world" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
-    XCTAssertFalse(result);
+    XCTAssertEqual(result, -1);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, 400);
 }
@@ -123,9 +123,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"20\r\n0123456789ABCDEF\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
-    XCTAssertFalse(result);
+    XCTAssertEqual(result, -1);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, 413);
 }
@@ -159,7 +159,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSData *data = [@"5;name=value\r\nHello\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
-    BOOL result = [parser appendData:data error:&error];
+    NSInteger result = [parser appendData:data error:&error];
 
     XCTAssertTrue(result);
     XCTAssertNil(error);

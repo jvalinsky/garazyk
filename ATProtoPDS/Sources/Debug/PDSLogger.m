@@ -1,6 +1,11 @@
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 
+#if __has_include(<os/log.h>)
+#import <os/log.h>
+#define PDS_HAS_OS_LOG 1
+#endif
+
 // Component constant definitions
 NSString * const PDSLogComponentDatabase = @"Database";
 NSString * const PDSLogComponentAuth = @"Auth";
@@ -21,6 +26,9 @@ NSString * const PDSLogComponentCLI = @"CLI";
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t ioQueue;
 @property (nonatomic, strong) NSMutableArray<NSString *> *logBuffer;
 @property (nonatomic, strong) NSTimer *flushTimer;
+#if PDS_HAS_OS_LOG
+@property (nonatomic, strong) NSMutableDictionary<NSString *, os_log_t> *osLogs;
+#endif
 // currentCorrelationID is now managed via thread-local storage to be thread-safe in concurrent environments
 @end
 
@@ -50,6 +58,9 @@ NSString * const PDSLogComponentCLI = @"CLI";
         _asyncLogging = NO; // Disable by default for debugging
         _enabledComponents = nil; // All components enabled by default
 
+#if PDS_HAS_OS_LOG
+        _osLogs = [NSMutableDictionary dictionary];
+#endif
         _logBuffer = [[NSMutableArray alloc] init];
 
         _dateFormatter = [[NSDateFormatter alloc] init];
@@ -163,6 +174,10 @@ NSString * const PDSLogComponentCLI = @"CLI";
         // Check if rotation is needed
         [self rotateLogIfNeeded];
 
+#if PDS_HAS_OS_LOG
+        [self logToOSLogWithLevel:level formatted:formatted component:component];
+#endif
+
         NSString *logMessage = nil;
 
         // Text format
@@ -251,6 +266,37 @@ NSString * const PDSLogComponentCLI = @"CLI";
     }
 });
 }
+
+#if PDS_HAS_OS_LOG
+- (void)logToOSLogWithLevel:(PDSLogLevel)level
+                  formatted:(NSString *)formatted
+                  component:(NSString *)component {
+    static os_log_t defaultLog;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        defaultLog = os_log_create("com.atproto.pds", "Default");
+    });
+    
+    os_log_t log = defaultLog;
+    if (component) {
+        log = self.osLogs[component];
+        if (!log) {
+            log = os_log_create("com.atproto.pds", [component UTF8String]);
+            self.osLogs[component] = log;
+        }
+    }
+    
+    os_log_type_t type = OS_LOG_TYPE_DEFAULT;
+    switch (level) {
+        case PDSLogLevelDebug: type = OS_LOG_TYPE_DEBUG; break;
+        case PDSLogLevelInfo:  type = OS_LOG_TYPE_INFO; break;
+        case PDSLogLevelWarn:  type = OS_LOG_TYPE_DEFAULT; break;
+        case PDSLogLevelError: type = OS_LOG_TYPE_ERROR; break;
+    }
+    
+    os_log_with_type(log, type, "%{public}@", formatted);
+}
+#endif
 
 - (NSString *)levelString:(PDSLogLevel)level {
     switch (level) {

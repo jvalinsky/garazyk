@@ -20,7 +20,7 @@ fail() { echo -e "${RED}✗${NC} $1"; }
 warn() { echo -e "${YELLOW}⚠${NC} $1"; }
 
 echo "=== 1. Checking PDS Service Status ==="
-if ssh DEPLOY_HOST 'cd DEPLOY_DIR/objpds/docker/pds && docker compose ps pds' 2>/dev/null | grep -q "Up"; then
+if ssh DEPLOY_HOST 'cd DEPLOY_DIR/objpds && docker compose ps pds' 2>/dev/null | grep -q "Up"; then
     pass "PDS container is running"
 else
     fail "PDS container is not running"
