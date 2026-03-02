@@ -268,7 +268,8 @@ int main(int argc, char *argv[]) {
       @"WebSocketFrameCharacterizationTests",
       @"WebSocketStateCharacterizationTests",
       @"WebSocketCodecTests",
-      @"WebSocketHeartbeatPolicyTests"
+      @"WebSocketHeartbeatPolicyTests",
+      @"HttpConnectionCharacterizationTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
