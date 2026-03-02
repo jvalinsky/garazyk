@@ -87,9 +87,11 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)setHeader:(NSString *)value forKey:(NSString *)key {
-    if (value && key) {
-        [_headers setObject:value forKey:key];
-    }
+    [self.headers setObject:value forKey:key.lowercaseString];
+}
+
+- (nullable NSString *)headerForKey:(NSString *)key {
+    return [self.headers objectForKey:key.lowercaseString];
 }
 
 - (void)setJsonBody:(id)json {
@@ -281,9 +283,9 @@ NS_ASSUME_NONNULL_END
 + (NSString *)contentSecurityPolicy { return kContentSecurityPolicy; }
 
 + (void)applySecurityHeaders:(NSMutableDictionary *)headers {
-    headers[@"X-Content-Type-Options"] = self.xContentTypeOptions;
-    headers[@"X-Frame-Options"] = self.xFrameOptions;
-    headers[@"Content-Security-Policy"] = self.contentSecurityPolicy;
+    headers[@"x-content-type-options"] = self.xContentTypeOptions;
+    headers[@"x-frame-options"] = self.xFrameOptions;
+    headers[@"content-security-policy"] = self.contentSecurityPolicy;
     // CORS headers (Access-Control-Allow-Origin, Methods, Headers) are set
     // explicitly by each route handler to avoid duplicate header values.
 }

@@ -75,7 +75,7 @@ static void XrpcAuthAttachDPoPNonceToResponseIfMissing(HttpResponse *response) {
     if (!response) {
         return;
     }
-    NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
+    NSString *existingNonce = [response headerForKey:@"DPoP-Nonce"];
     if (existingNonce.length > 0) {
         return;
     }
@@ -201,7 +201,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                                    method:request.methodString
                                       url:dpopURL
                                     nonce:nil
-                             requireNonce:NO // Compat: clients may not support nonces yet
+                             requireNonce:[PDSConfiguration sharedConfiguration].requireDPoPNonce
                             outThumbprint:&dpopThumbprint
                                     error:&dpopError]) {
             if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
@@ -218,6 +218,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                         @"error": @"use_dpop_nonce",
                         @"message": @"DPoP nonce required"
                     }];
+                    NSLog(@"DEBUG: DPoP challenge generated with nonce: %@", nonce);
                 }
                 return nil;
             }

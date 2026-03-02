@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSApplication.h"
+#import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/DPoPUtil.h"
 #import "Auth/JWT.h"
@@ -109,6 +110,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     SecKeyRef privateKey = NULL;
     @try {
         PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        app.configuration.requireDPoPNonce = YES;
         PDSController *controller = app.legacyController;
         XCTAssertNotNil(controller);
         XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
@@ -189,11 +191,11 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         HttpResponse *firstResponse = [[HttpResponse alloc] init];
         [dispatcher handleRequest:firstRequest response:firstResponse];
         XCTAssertEqual(firstResponse.statusCode, HttpStatusUnauthorized);
-        NSString *challengeNonce = firstResponse.headers[@"DPoP-Nonce"];
+        NSString *challengeNonce = [firstResponse headerForKey:@"DPoP-Nonce"];
         XCTAssertTrue(challengeNonce.length > 0);
-        XCTAssertEqualObjects(firstResponse.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
-        XCTAssertEqualObjects(firstResponse.headers[@"Cache-Control"], @"no-store");
-        XCTAssertEqualObjects(firstResponse.headers[@"Pragma"], @"no-cache");
+        XCTAssertEqualObjects([firstResponse headerForKey:@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+        XCTAssertEqualObjects([firstResponse headerForKey:@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects([firstResponse headerForKey:@"Pragma"], @"no-cache");
         XCTAssertEqualObjects(firstResponse.jsonBody[@"message"], @"DPoP nonce required");
 
         DPoPToken *retryProof = [DPoPUtil createDPoPForMethod:@"GET"
@@ -225,7 +227,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         [dispatcher handleRequest:secondRequest response:secondResponse];
         XCTAssertEqual(secondResponse.statusCode, HttpStatusOK);
         XCTAssertEqualObjects(secondResponse.jsonBody[@"did"], did);
-        NSString *successNonce = secondResponse.headers[@"DPoP-Nonce"];
+        NSString *successNonce = [secondResponse headerForKey:@"DPoP-Nonce"];
         XCTAssertTrue(successNonce.length > 0);
         XCTAssertNotEqualObjects(successNonce, challengeNonce);
 

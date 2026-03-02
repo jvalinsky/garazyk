@@ -176,10 +176,10 @@
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertEqualObjects(response.headers[@"Deprecation"], @"true");
-    XCTAssertNotNil(response.headers[@"Sunset"]);
-    XCTAssertTrue([response.headers[@"Warning"] containsString:@"deprecated"]);
-    XCTAssertTrue([response.headers[@"Link"] containsString:@"com.atproto.label.queryLabels"]);
+    XCTAssertEqualObjects([response headerForKey:@"Deprecation"], @"true");
+    XCTAssertNotNil([response headerForKey:@"Sunset"]);
+    XCTAssertTrue([[response headerForKey:@"Warning"] containsString:@"deprecated"]);
+    XCTAssertTrue([[response headerForKey:@"Link"] containsString:@"com.atproto.label.queryLabels"]);
     NSArray *labels = response.jsonBody[@"labels"];
     XCTAssertTrue([labels isKindOfClass:[NSArray class]]);
     XCTAssertTrue(labels.count > 0U);

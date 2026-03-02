@@ -250,6 +250,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Master secret used for encryption at rest. */
 @property (nonatomic, copy, nullable) NSString *masterSecret;
 
+/*! Whether to require DPoP nonces for all DPoP-bound requests (default: NO). */
+@property (nonatomic, assign) BOOL requireDPoPNonce;
+
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;
 
