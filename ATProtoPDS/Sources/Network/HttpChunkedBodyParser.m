@@ -42,12 +42,13 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
     return self;
 }
 
-- (BOOL)appendData:(NSData *)data error:(NSError **)error {
+- (NSInteger)appendData:(NSData *)data error:(NSError **)error {
     if (self.state == HttpChunkedParserStateComplete || self.state == HttpChunkedParserStateError) {
-        return YES;
+        return 0;
     }
 
     [self.workingBuffer appendData:data];
+    NSUInteger totalConsumed = 0;
 
     while (self.workingBuffer.length > 0) {
         BOOL shouldBreak = NO;
@@ -64,9 +65,10 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                         if (error) {
                             *error = [self createError];
                         }
-                        return NO;
+                        return -1;
                     }
-                    return YES;
+                    shouldBreak = YES;
+                    break;
                 }
 
                 NSData *sizeLineData = [self.workingBuffer subdataWithRange:NSMakeRange(0, crlfRange.location)];
@@ -79,7 +81,7 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                     if (error) {
                         *error = [self createError];
                     }
-                    return NO;
+                    return -1;
                 }
 
                 NSString *trimmedSize = [self parseChunkSizeFromLine:sizeLine];
@@ -90,7 +92,7 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                     if (error) {
                         *error = [self createError];
                     }
-                    return NO;
+                    return -1;
                 }
 
                 NSScanner *scanner = [NSScanner scannerWithString:trimmedSize];
@@ -102,11 +104,12 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                     if (error) {
                         *error = [self createError];
                     }
-                    return NO;
+                    return -1;
                 }
 
                 self.currentChunkSize = (NSUInteger)chunkSizeValue;
                 [self.workingBuffer replaceBytesInRange:NSMakeRange(0, crlfRange.location + 2) withBytes:NULL length:0];
+                totalConsumed += crlfRange.location + 2;
 
                 if (self.currentChunkSize == 0) {
                     self.state = HttpChunkedParserStateReadingFinalCRLF;
@@ -118,7 +121,7 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                         if (error) {
                             *error = [self createError];
                         }
-                        return NO;
+                        return -1;
                     }
                     self.bytesReadInCurrentChunk = 0;
                     self.state = HttpChunkedParserStateReadingChunkData;
@@ -139,21 +142,25 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                         if (error) {
                             *error = [self createError];
                         }
-                        return NO;
+                        return -1;
                     }
 
                     NSData *chunkData = [self.workingBuffer subdataWithRange:NSMakeRange(0, self.currentChunkSize)];
                     [self.outputData appendData:chunkData];
 
                     [self.workingBuffer replaceBytesInRange:NSMakeRange(0, self.currentChunkSize + 2) withBytes:NULL length:0];
+                    totalConsumed += self.currentChunkSize + 2;
                     self.state = HttpChunkedParserStateReadingChunkSize;
                     self.bytesReadInCurrentChunk = 0;
                 } else if (available >= neededForChunk && available < self.currentChunkSize + 2) {
                     self.bytesReadInCurrentChunk += available;
+                    totalConsumed += available;
                     [self.workingBuffer replaceBytesInRange:NSMakeRange(0, available) withBytes:NULL length:0];
                     shouldBreak = YES;
                 } else {
                     self.bytesReadInCurrentChunk += available;
+                    totalConsumed += available;
+                    [self.workingBuffer setLength:0];
                     shouldBreak = YES;
                 }
                 break;
@@ -165,34 +172,41 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                     if (bytes[0] == '\r' && bytes[1] == '\n') {
                         self.state = HttpChunkedParserStateComplete;
                         [self.workingBuffer replaceBytesInRange:NSMakeRange(0, 2) withBytes:NULL length:0];
+                        totalConsumed += 2;
+                        shouldBreak = YES;
                     } else if (self.workingBuffer.length >= 4 &&
                                bytes[0] == '\r' && bytes[1] == '\n' &&
                                bytes[2] == '\r' && bytes[3] == '\n') {
                         self.state = HttpChunkedParserStateComplete;
                         [self.workingBuffer replaceBytesInRange:NSMakeRange(0, 4) withBytes:NULL length:0];
-                    } else {
+                        totalConsumed += 4;
+                        shouldBreak = YES;
+                    } else if (self.workingBuffer.length >= 4) {
                         self.errorMessage = @"Invalid trailer format";
                         self.errorCode = 400;
                         self.state = HttpChunkedParserStateError;
                         if (error) {
                             *error = [self createError];
                         }
-                        return NO;
+                        return -1;
+                    } else {
+                         shouldBreak = YES; // Need more data to verify trailer
                     }
                 } else {
-                    return YES;
+                    shouldBreak = YES;
                 }
                 break;
             }
 
             case HttpChunkedParserStateComplete:
-                return YES;
+                shouldBreak = YES;
+                break;
 
             case HttpChunkedParserStateError:
                 if (error && *error == nil) {
                     *error = [self createError];
                 }
-                return NO;
+                return -1;
         }
 
         if (shouldBreak) {
@@ -200,7 +214,7 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
         }
     }
 
-    return YES;
+    return totalConsumed;
 }
 
 - (NSString *)parseChunkSizeFromLine:(NSString *)line {
