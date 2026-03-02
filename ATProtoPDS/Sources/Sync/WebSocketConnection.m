@@ -1,6 +1,7 @@
 #import "Sync/WebSocketConnection.h"
 #import "Compat/PDSTypes.h"
 #import "Network/PDSNetworkTransport.h"
+#import "Network/HttpParsing.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString *const WebSocketConnectionErrorDomain =
@@ -60,7 +61,7 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
     NSRange queryRange = [path rangeOfString:@"?"];
     if (queryRange.location != NSNotFound) {
       _queryString = [path substringFromIndex:queryRange.location + 1];
-      _queryParams = [self parseQueryParams:_queryString];
+      _queryParams = [HttpParsing parseQueryString:_queryString];
       _path = [path substringToIndex:queryRange.location];
     } else {
       _queryString = @"";
@@ -130,43 +131,6 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 
 - (instancetype)init {
   return [self initWithHost:@"localhost" port:0 path:@"/"];
-}
-
-- (NSDictionary<NSString *, id> *)parseQueryParams:(NSString *)queryString {
-  if (queryString.length == 0) {
-    return nil;
-  }
-
-  NSMutableDictionary<NSString *, NSMutableArray<NSString *> *> *params =
-      [NSMutableDictionary dictionary];
-  NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
-
-  for (NSString *pair in pairs) {
-    NSArray<NSString *> *keyValue = [pair componentsSeparatedByString:@"="];
-    if (keyValue.count == 2) {
-      NSString *key = [keyValue[0]
-          stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-      NSString *value = [keyValue[1]
-          stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-      if (key && value) {
-        NSMutableArray<NSString *> *existing = params[key];
-        if (existing) {
-          [existing addObject:value];
-        } else {
-          params[key] = [NSMutableArray arrayWithObject:value];
-        }
-      }
-    }
-  }
-
-  NSMutableDictionary<NSString *, id> *result =
-      [NSMutableDictionary dictionary];
-  for (NSString *key in params) {
-    NSArray<NSString *> *values = params[key];
-    result[key] = values.count == 1 ? values.firstObject : values;
-  }
-
-  return [result copy];
 }
 
 - (void)dealloc {
