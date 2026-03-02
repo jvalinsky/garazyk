@@ -11,16 +11,20 @@ Incrementally extract I/O-free protocol cores from `WebSocketConnection`, `HttpS
 As of 2026-03-01: Execution has begun with a bottom-up approach — simplest extractions first.
 
 ### Execution Order (milestones, each committed separately):
-1. **Milestone 1: SSRFValidator (Phase 3.2)** — extract duplicated IP classification into `SSRFValidator`, update consumers, add tests
-2. **Milestone 2: HttpParsing (Phase 2.3)** — consolidate query params, URL decode, method enum into `HttpParsing`, update consumers
-3. **Milestone 3: HttpRetryPolicy (Phase 3.1)** — extract retry/backoff logic, wire into `DIDPLCResolver`
-4. **Milestone 4: WebSocketCodec (Phase 1.1)** — extract frame parser/serializer + characterization tests
-5. **Milestone 5: WebSocketHeartbeatPolicy (Phase 1.2)** — extract heartbeat state machine
-6. **Milestone 6: Http1Parser + Http1PipelinePolicy (Phase 2.1, 2.2)** — extract HTTP parsing + pipeline policy
-7. **Milestone 7: Rewiring (Phase 1.3, 2.4, 3.3)** — thin adapter layer for WebSocketConnection, HttpServer, outbound consumers
+1. ✅ **Milestone 1: SSRFValidator (Phase 3.2)** — extract duplicated IP classification into `SSRFValidator`, update consumers, add tests. *Why: Removes duplicated code and makes critical SSRF logic testable without network constraints.*
+2. ✅ **Milestone 2: HttpParsing (Phase 2.3)** — consolidate query params, URL decode, method enum into `HttpParsing`, update consumers. *Why: Unifies URL decoding to prevent bypasses and centralizes query param logic for easier fuzzing.*
+3. ✅ **Milestone 3: HttpRetryPolicy (Phase 3.1)** — extract retry/backoff logic, wire into `DIDPLCResolver`. *Why: Separates business logic (when to retry) from the transport mechanism (NSURLSession), making backoffs deterministically testable.*
+4. 🔲 **Milestone 4: WebSocketCodec (Phase 1.1)** — extract frame parser/serializer + characterization tests. *Why: Allows rigorous testing of websocket frame edge cases (e.g. fragmentation, masks) purely in memory to harden against malformed network packets.*
+5. 🔲 **Milestone 5: WebSocketHeartbeatPolicy (Phase 1.2)** — extract heartbeat state machine. *Why: Separates protocol state (ping/pong expectations) from actual timer dispatch, enabling simulated time tests.*
+6. 🔲 **Milestone 6: Http1Parser + Http1PipelinePolicy (Phase 2.1, 2.2)** — extract HTTP parsing + pipeline policy. *Why: Moves HTTP parsing away from network sockets into a pure function (`feedData:`) to safely test partial reads and pipelining.*
+7. 🔲 **Milestone 7: Rewiring (Phase 1.3, 2.4, 3.3)** — thin adapter layer for WebSocketConnection, HttpServer, outbound consumers. *Why: Plugs the pure logic back into the asynchronous I/O layer, completing the refactor while keeping the transport logic completely dumb.*
 
 ### Completed:
-- (none yet)
+- Milestone 1: SSRFValidator (Phase 3.2)
+- Milestone 2: HttpParsing (Phase 2.3)
+- Milestone 3: HttpRetryPolicy (Phase 3.1)
+- Phase 0.5 SSRF characterization tests
+- Phase 0.4 Outbound retry/backoff characterization
 
 ### Verified (plan accurate as-is):
 - `HttpChunkedBodyParser.m` (315 lines) is confirmed to be already Sans-I/O
@@ -674,3 +678,66 @@ Each phase PR must pass before merging:
 
 **Sequential (one engineer):** ~8–11 weeks
 **With parallelism (Phase 0 overlapping, Phases 1+3 concurrent):** ~6–8 weeks
+
+---
+
+## Architecture Diagrams
+
+### Before: Tightly Coupled I/O and Protocol Logic
+
+```text
+       [ Network Socket ]
+              │
+              ▼ (Bytes via dispatch queue)
+┌──────────────────────────────────────────────┐
+│  HttpServer / WebSocketConnection            │
+│                                              │
+│  [ I/O Layer ]                               │
+│  - dispatch_read / GCD timers                │
+│  - Socket cancellation & errors              │
+│       ↕                                      │
+│  [ Protocol Layer ]                          │
+│  - Parse HTTP headers / WS masks             │  <-- Hard to test! Requires
+│  - Track Content-Length / payload frames     │      spinning up a real socket
+│  - Manage keep-alive & ping/pong state       │      and waiting for timers.
+│       ↕                                      │
+│  [ Application Layer ]                       │
+│  - Route dispatch / Delegate callbacks       │
+└──────────────────────────────────────────────┘
+```
+
+### After: "Sans-I/O" Architecture
+
+```text
+       [ Network Socket ]
+              │
+              ▼ (Bytes)
+┌────────────────────────────┐         ┌──────────────────────────────┐
+│       "Dumb" Adapter       │         │        Pure Protocol         │
+│   (WebSocketConnection)    │         │       (WebSocketCodec)       │
+│                            │         │                              │
+│ - Reads from socket      ──┼─Bytes──▶│ - Parses bytes in memory     │
+│ - Manages GCD timers       │         │ - Handles bounds/masks       │
+│ - Writes to socket       ◀─┼─Events──│ - Validates protocol rules   │
+└─────────────┬──────────────┘         └──────────────────────────────┘
+              │ 
+              ▼ (Events: "MessageReceived", "PingRequired")
+     [ Application Logic ]
+```
+
+---
+
+## Why the "Sans-I/O" Pattern is Highly Beneficial
+
+The term "Sans-I/O" gained prominence in the Python community (most notably popularized by Cory Benfield and the `h11` library) but its principles apply universally to systems engineering.
+
+1. **Deterministic Testability (No Flaky Tests)**
+   *   *Concept:* Network sockets introduce non-determinism (latency, TCP fragmentation, dropped packets). By removing the network from the protocol logic, a parser simply becomes a pure function: `State + Bytes = New State + Events`.
+   *   *Citation:* "The Case for Sans-I/O" (fasterthanli.me/articles/the-case-for-sans-io) — "If your protocol implementation doesn't do I/O, you can test it by just giving it bytes... You don't need a mock network, you don't need `asyncio`, you don't need threads."
+2. **Security Hardening & Fuzzing**
+   *   *Concept:* Parsers are the primary surface for remote code execution and denial-of-service attacks. A Sans-I/O parser can be plugged directly into a fuzzer (like libFuzzer) because it executes synchronously in memory.
+   *   *Citation:* "Building Protocol Libraries The Right Way" (Cory Benfield, PyCon 2016) — emphasizing that separating state machines from transport allows security tooling to pound the parser with malformed data thousands of times per second.
+3. **Time Simulation**
+   *   *Concept:* By extracting policies (like `HttpRetryPolicy` or `WebSocketHeartbeatPolicy`) to take a timestamp (`now`) as an argument rather than relying on system clocks, you can test complex timeout edge cases instantly.
+4. **Transport Agnosticism**
+   *   *Concept:* A pure protocol core doesn't care if bytes come from a TCP socket, a TLS buffer, a mock testing array, or a Unix domain socket. This is especially relevant here as the codebase targets both macOS and Linux/GNUstep where transport implementations differ (`NSURLSession` vs. custom BSD sockets).
