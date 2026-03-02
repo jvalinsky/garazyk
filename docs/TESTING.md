@@ -2,6 +2,9 @@
 
 This document describes the `ATProtoPDS` testing strategy. The test suites are organized by protocol and subsystem so failures map to concrete implementation areas.
 
+> [!IMPORTANT]
+> **Current Status (2026-03-01):** The test suite is fully stabilized with a **100% pass rate** (1267 passing tests). For details on the stabilization effort, see the [Test Suite Stabilization Report](test-suite-stabilization-report-2026-03-01.md).
+
 ## Running Tests
 
 ### macOS (Xcode)
