@@ -25,6 +25,8 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 | [troubleshooting-2026-02-25.md](troubleshooting-2026-02-25.md) | PDS Configuration and Identity restoration logs |
 | [troubleshooting-relay-sync-2026-02-25.md](troubleshooting-relay-sync-2026-02-25.md) | Relay integration and sync troubleshooting logs |
 | [troubleshooting-bsky-ghost-posts-2026-02-26.md](troubleshooting-bsky-ghost-posts-2026-02-26.md) | Ghost post visibility + GNUstep `createRecord` crash investigation and fixes |
+| [test-suite-stabilization-report-2026-03-01.md](test-suite-stabilization-report-2026-03-01.md) | **100% Pass Rate** stabilization effort, resolving 1267 test failures |
+| [troubleshooting-identity-cors-2026-03-01.md](troubleshooting-identity-cors-2026-03-01.md) | Identity resolution, spec compliance, and dynamic CORS fixes |
 
 ## Quick Navigation
 
@@ -56,9 +58,10 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 - [SSRF Protection](security/SSRF_PROTECTION.md)
 - [Admin Auth Configuration](security/ADMIN_AUTH_CONFIGURATION.md)
 
-### Testing
+### Test Documentation & Reports
 - [Testing Guide](TESTING.md)
-- [Test Documentation Index](tests/README.md)
+- [Test Suite Stabilization Report (2026-03-01)](test-suite-stabilization-report-2026-03-01.md) - **100% Pass Rate** attainment details
+- [Test Documentation Index](tests/README.md) - Complete index of all test classes
 
 ### Guides & References
 - [Script Development](guides/SCRIPT_DEVELOPMENT.md)
