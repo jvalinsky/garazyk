@@ -11,6 +11,11 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Network/SSRFValidator.h"
+
+#import <CoreFoundation/CoreFoundation.h>
+#import <netinet/in.h>
+#import <arpa/inet.h>
 
 #import "App/PDSConfiguration.h"
 #import "App/Services/PDSAccountService.h"
@@ -123,37 +128,29 @@ static dispatch_once_t sClientCacheOnceToken;
   return self;
 }
 
-- (instancetype)init {
-  // Legacy init - create temporary database for backward compatibility
-  // In production, use initWithDatabase: instead
-  NSString *tempPath =
-      [NSTemporaryDirectory() stringByAppendingPathComponent:@"oauth_temp.db"];
-  PDSDatabase *tempDB =
-      [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
-  NSError *error = nil;
-  if (![tempDB openWithError:&error]) {
-    PDS_LOG_AUTH_ERROR(@"Failed to create temporary OAuth database: %@", error);
-    return nil;
-  }
-  return [self initWithDatabase:tempDB];
-}
+- (void)validateClient:(NSString *)clientID
+            completion:(void (^)(NSDictionary *_Nullable client,
+                                 NSError *_Nullable error))completion {
+  if (!completion)
+    return;
 
-- (NSDictionary *)validateClient:(NSString *)clientID error:(NSError **)error {
   if (!clientID) {
-    if (error) {
-      *error = [NSError
-          errorWithDomain:@"OAuth2"
-                     code:400
-                 userInfo:@{NSLocalizedDescriptionKey : @"Missing client_id"}];
-    }
-    return nil;
+    completion(nil, [NSError errorWithDomain:@"OAuth2"
+                                        code:400
+                                    userInfo:@{
+                                      NSLocalizedDescriptionKey :
+                                          @"Missing client_id"
+                                    }]);
+    return;
   }
 
   // First attempt: Query database (existing path - preserve this exactly)
-  NSDictionary *client = [self.database getClientWithID:clientID error:error];
+  NSError *dbError = nil;
+  NSDictionary *client = [self.database getClientWithID:clientID error:&dbError];
   if (client) {
     // Database lookup succeeded - return the client
-    return client;
+    completion(client, nil);
+    return;
   }
 
   // Database lookup failed - check if client_metadata is available in request
@@ -174,26 +171,23 @@ static dispatch_once_t sClientCacheOnceToken;
                                        : nil;
       if (metadataClientID.length == 0 ||
           ![CryptoUtils constantTimeCompare:metadataClientID to:clientID]) {
-        if (error) {
-          *error = [NSError
-              errorWithDomain:@"OAuth2"
-                         code:400
-                     userInfo:@{
-                       NSLocalizedDescriptionKey :
-                           @"client_id does not match client_metadata"
-                     }];
-        }
-        return nil;
+        completion(nil, [NSError errorWithDomain:@"OAuth2"
+                                            code:400
+                                        userInfo:@{
+                                          NSLocalizedDescriptionKey :
+                                              @"client_id does not match "
+                                              @"client_metadata"
+                                        }]);
+        return;
       }
       PDS_LOG_AUTH_INFO(
           @"Client validated successfully via client_metadata: %@", clientID);
-      return validatedClient;
+      completion(validatedClient, nil);
+      return;
     } else {
       // Metadata validation failed
-      if (error) {
-        *error = metadataError;
-      }
-      return nil;
+      completion(nil, metadataError);
+      return;
     }
   }
 
@@ -210,57 +204,60 @@ static dispatch_once_t sClientCacheOnceToken;
     NSDictionary *cached = [sClientMetadataCache objectForKey:clientID];
     if (cached) {
       PDS_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
-      return cached;
+      completion(cached, nil);
+      return;
     }
 
-    NSError *fetchError = nil;
-    NSDictionary *fetchedMetadata =
-        [self fetchClientMetadataFromURL:clientID error:&fetchError];
-    if (fetchedMetadata) {
-      NSError *validationError = nil;
-      NSDictionary *validatedClient =
-          [self validateClientMetadata:fetchedMetadata error:&validationError];
-      if (validatedClient) {
-        // Ensure client_id in metadata matches the URL
-        NSString *metadataClientID = validatedClient[@"client_id"];
-        if ([metadataClientID isEqualToString:clientID]) {
-          [sClientMetadataCache setObject:validatedClient forKey:clientID];
-          PDS_LOG_AUTH_INFO(@"Successfully discovered and cached client: %@",
-                            clientID);
-          return validatedClient;
-        } else {
-          if (error) {
-            *error = [NSError
-                errorWithDomain:@"OAuth2"
-                           code:400
-                       userInfo:@{
-                         NSLocalizedDescriptionKey :
-                             @"client_id in fetched metadata does not match "
-                             @"request client_id URL"
-                       }];
-          }
-          return nil;
-        }
-      } else {
-        if (error)
-          *error = validationError;
-        return nil;
-      }
-    } else {
-      if (error)
-        *error = fetchError;
-      return nil;
-    }
+    [self fetchClientMetadataFromURL:clientID
+                          completion:^(NSDictionary *_Nullable fetchedMetadata,
+                                       NSError *_Nullable fetchError) {
+                            if (fetchedMetadata) {
+                              NSError *validationError = nil;
+                              NSDictionary *validatedClient =
+                                  [self validateClientMetadata:fetchedMetadata
+                                                         error:&validationError];
+                              if (validatedClient) {
+                                // Ensure client_id in metadata matches the URL
+                                NSString *metadataClientID =
+                                    validatedClient[@"client_id"];
+                                if ([metadataClientID isEqualToString:clientID]) {
+                                  [sClientMetadataCache
+                                      setObject:validatedClient
+                                         forKey:clientID];
+                                  PDS_LOG_AUTH_INFO(@"Successfully discovered "
+                                                    @"and cached client: %@",
+                                                    clientID);
+                                  completion(validatedClient, nil);
+                                } else {
+                                  completion(
+                                      nil,
+                                      [NSError
+                                          errorWithDomain:@"OAuth2"
+                                                     code:400
+                                                 userInfo:@{
+                                                   NSLocalizedDescriptionKey :
+                                                       @"client_id in fetched "
+                                                       @"metadata does not "
+                                                       @"match request "
+                                                       @"client_id URL"
+                                                 }]);
+                                }
+                              } else {
+                                completion(nil, validationError);
+                              }
+                            } else {
+                              completion(nil, fetchError);
+                            }
+                          }];
+    return;
   }
 
   // Not found in database AND no client_metadata provided
-  if (error) {
-    *error = [NSError
-        errorWithDomain:@"OAuth2"
-                   code:401
-               userInfo:@{NSLocalizedDescriptionKey : @"Invalid client"}];
-  }
-  return nil;
+  completion(nil, [NSError errorWithDomain:@"OAuth2"
+                                      code:401
+                                  userInfo:@{
+                                    NSLocalizedDescriptionKey : @"Invalid client"
+                                  }]);
 }
 
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
@@ -1593,8 +1590,20 @@ static dispatch_once_t sClientCacheOnceToken;
     return;
   }
 
-  NSError *clientError = nil;
-  NSDictionary *client = [self validateClient:clientID error:&clientError];
+  __block NSDictionary *client = nil;
+  __block NSError *clientError = nil;
+  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+  
+  [self validateClient:clientID
+            completion:^(NSDictionary *_Nullable fetchedClient,
+                         NSError *_Nullable error) {
+              client = fetchedClient;
+              clientError = error;
+              dispatch_semaphore_signal(clientSem);
+            }];
+  
+  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+  
   if (!client) {
     PDS_LOG_AUTH_WARN(@"Invalid client_id: %@, error: %@", clientID,
                       clientError.localizedDescription);
@@ -1768,7 +1777,20 @@ static dispatch_once_t sClientCacheOnceToken;
     NSString *redirectUri = params[@"redirect_uri"];
     if (redirectUri.length > 0) {
       NSError *clientError = nil;
-      NSDictionary *client = [self validateClient:clientID error:&clientError];
+      __block NSDictionary *client = nil;
+      __block NSError *clientError = nil;
+      dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+      
+      [self validateClient:clientID
+                completion:^(NSDictionary *_Nullable fetchedClient,
+                             NSError *_Nullable error) {
+                  client = fetchedClient;
+                  clientError = error;
+                  dispatch_semaphore_signal(clientSem);
+                }];
+      
+      dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+      
       NSError *redirectError = nil;
       if (!client || ![self validateRedirectURI:redirectUri
                                       forClient:client
@@ -1859,8 +1881,20 @@ static dispatch_once_t sClientCacheOnceToken;
     [sPendingConsents removeObjectForKey:sessionToken];
   }
 
-  NSError *clientError = nil;
-  NSDictionary *client = [self validateClient:clientID error:&clientError];
+  __block NSDictionary *client = nil;
+  __block NSError *clientError = nil;
+  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+  
+  [self validateClient:clientID
+            completion:^(NSDictionary *_Nullable fetchedClient,
+                         NSError *_Nullable error) {
+              client = fetchedClient;
+              clientError = error;
+              dispatch_semaphore_signal(clientSem);
+            }];
+  
+  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+  
   if (!client) {
     response.statusCode = 400;
     [response setJsonBody:@{
@@ -3121,34 +3155,46 @@ static dispatch_once_t sClientCacheOnceToken;
   return nil;
 }
 
-- (NSDictionary *)fetchClientMetadataFromURL:(NSString *)urlStr
-                                      error:(NSError **)error {
+- (void)fetchClientMetadataFromURL:(NSString *)urlStr
+                        completion:(void (^)(NSDictionary *_Nullable metadata,
+                                             NSError *_Nullable error))completion {
+  if (!completion)
+    return;
+
   NSURL *url = [NSURL URLWithString:urlStr];
-  if (!url) {
-    if (error) {
-      *error = [NSError errorWithDomain:@"OAuth2"
-                                   code:400
-                               userInfo:@{
-                                 NSLocalizedDescriptionKey : @"Invalid client_id URL"
-                               }];
-    }
-    return nil;
+  NSString *host = url.host;
+
+  if (!url || !host) {
+    completion(nil, [NSError errorWithDomain:@"OAuth2"
+                                        code:400
+                                    userInfo:@{
+                                      NSLocalizedDescriptionKey :
+                                          @"Invalid client_id URL"
+                                    }]);
+    return;
+  }
+
+  // SSRF Protection: Validate host before fetching
+  NSError *ssrfError = nil;
+  if (![self validateHostResolvesToPublicIP:host error:&ssrfError]) {
+    PDS_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@ (%@)",
+                       urlStr, ssrfError.localizedDescription);
+    completion(nil, ssrfError);
+    return;
   }
 
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   request.timeoutInterval = 10.0;
 
-  dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-  __block NSDictionary *metadata = nil;
-  __block NSError *fetchError = nil;
+  PDS_LOG_AUTH_DEBUG(@"Fetching dynamic client metadata from %@", urlStr);
 
   NSURLSessionDataTask *task = [[NSURLSession sharedSession]
       dataTaskWithRequest:request
         completionHandler:^(NSData *data, NSURLResponse *response,
                             NSError *err) {
           if (err) {
-            fetchError = err;
+            completion(nil, err);
           } else {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             if (httpResponse.statusCode == 200 && data) {
@@ -3157,45 +3203,112 @@ static dispatch_once_t sClientCacheOnceToken;
                                                         options:0
                                                           error:&jsonError];
               if ([json isKindOfClass:[NSDictionary class]]) {
-                metadata = json;
+                completion(json, nil);
               } else {
-                fetchError =
-                    jsonError ?: [NSError errorWithDomain:@"OAuth2"
-                                                     code:400
-                                                 userInfo:@{
-                                                   NSLocalizedDescriptionKey :
-                                                       @"Client metadata is not a JSON object"
-                                                 }];
+                completion(nil, jsonError ?: [NSError
+                                     errorWithDomain:@"OAuth2"
+                                                code:400
+                                            userInfo:@{
+                                              NSLocalizedDescriptionKey :
+                                                  @"Client metadata is not a "
+                                                  @"JSON object"
+                                            }]);
               }
             } else {
-              fetchError = [NSError
-                  errorWithDomain:@"OAuth2"
-                             code:httpResponse.statusCode
-                         userInfo:@{
-                           NSLocalizedDescriptionKey : [NSString
-                               stringWithFormat:@"Failed to fetch client metadata: %ld",
-                                                (long)httpResponse.statusCode]
-                         }];
+              completion(nil, [NSError
+                                  errorWithDomain:@"OAuth2"
+                                             code:httpResponse.statusCode
+                                         userInfo:@{
+                                           NSLocalizedDescriptionKey :
+                                               [NSString
+                                                   stringWithFormat:
+                                                       @"Failed to fetch "
+                                                       @"client metadata: %ld",
+                                                       (long)httpResponse
+                                                           .statusCode]
+                                         }]);
             }
           }
-          dispatch_semaphore_signal(semaphore);
         }];
   [task resume];
+}
 
-  dispatch_semaphore_wait(semaphore,
-                          dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)));
+#pragma mark - SSRF Protection
 
-  if (!metadata && !fetchError) {
-    fetchError = [NSError errorWithDomain:@"OAuth2"
-                                     code:408
-                                 userInfo:@{
-                                   NSLocalizedDescriptionKey : @"Fetch timed out"
-                                 }];
+- (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
+  if (hostname.length == 0) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:400
+                               userInfo:@{NSLocalizedDescriptionKey : @"Empty hostname"}];
+    }
+    return NO;
   }
 
-  if (error)
-    *error = fetchError;
-  return metadata;
+  CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)hostname);
+  if (!hostRef) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:500
+                               userInfo:@{NSLocalizedDescriptionKey : @"Failed to create host reference"}];
+    }
+    return NO;
+  }
+
+  CFStreamError streamError;
+  if (!CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError)) {
+    CFRelease(hostRef);
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:500
+                               userInfo:@{NSLocalizedDescriptionKey : @"DNS resolution failed"}];
+    }
+    return NO;
+  }
+
+  CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
+  if (!addresses || CFArrayGetCount(addresses) == 0) {
+    CFRelease(hostRef);
+    if (error) {
+      *error = [NSError errorWithDomain:@"OAuth2"
+                                   code:500
+                               userInfo:@{NSLocalizedDescriptionKey : @"No IP addresses found for hostname"}];
+    }
+    return NO;
+  }
+
+  for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
+    struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
+
+    if (addr->sa_family == AF_INET) {
+      struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+      uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
+      if ([SSRFValidator isPrivateIPv4Address:ip]) {
+        CFRelease(hostRef);
+        if (error) {
+          *error = [NSError errorWithDomain:@"OAuth2"
+                                       code:403
+                                   userInfo:@{NSLocalizedDescriptionKey : @"SSRF Protection: Host resolves to private IP address"}];
+        }
+        return NO;
+      }
+    } else if (addr->sa_family == AF_INET6) {
+      struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+      struct in6_addr ip6 = addr_in6->sin6_addr;
+      if ([SSRFValidator isPrivateIPv6Address:ip6]) {
+        CFRelease(hostRef);
+        if (error) {
+          *error = [NSError errorWithDomain:@"OAuth2"
+                                       code:403
+                                   userInfo:@{NSLocalizedDescriptionKey : @"SSRF Protection: Host resolves to private IPv6 address"}];
+        }
+        return NO;
+      }
+    }
+  }
+
+  CFRelease(hostRef);
+  return YES;
 }
 
 @end
