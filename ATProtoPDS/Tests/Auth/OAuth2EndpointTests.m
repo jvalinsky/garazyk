@@ -3,10 +3,12 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/OAuth2Handler.h"
+#import "Database/PDSDatabase.h"
 
 @interface OAuth2EndpointTests : XCTestCase
 @property (nonatomic, strong) HttpServer *server;
 @property (nonatomic, strong) OAuth2Handler *oauthHandler;
+@property (nonatomic, strong) PDSDatabase *database;
 @end
 
 @implementation OAuth2EndpointTests
@@ -14,14 +16,21 @@
 - (void)setUp {
     [super setUp];
     
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"oauth_test.db"];
+    self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
+    NSError *error = nil;
+    [self.database openWithError:&error];
+    
     self.server = [HttpServer serverWithPort:8443];
-    self.oauthHandler = [[OAuth2Handler alloc] init];
+    self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     [self.oauthHandler registerRoutesWithServer:self.server];
 }
 
 - (void)tearDown {
     [self.server stop];
+    [self.database close];
     self.server = nil;
+    self.database = nil;
     self.oauthHandler = nil;
     [super tearDown];
 }
