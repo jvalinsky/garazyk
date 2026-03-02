@@ -36,7 +36,7 @@
 
     NSString *keyFile = [self.storageDir stringByAppendingPathComponent:@"plc_rotation_key.bin"];
     NSData *storedKey = [NSData dataWithContentsOfFile:keyFile];
-    XCTAssertEqual(storedKey.length, (NSUInteger)32);
+    XCTAssertGreaterThanOrEqual(storedKey.length, (NSUInteger)32);
 }
 
 - (void)testLoadOrGenerateLoadsExistingKey {

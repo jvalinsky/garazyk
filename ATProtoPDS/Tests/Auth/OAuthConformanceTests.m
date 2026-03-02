@@ -85,7 +85,7 @@
     XCTAssertTrue([json[@"keys"] isKindOfClass:[NSArray class]]);
     
     // Verify headers
-    XCTAssertEqualObjects(response.headers[@"Access-Control-Allow-Origin"], @"*");
+    XCTAssertEqualObjects([response headerForKey:@"Access-Control-Allow-Origin"], @"*");
 }
 
 - (void)testPARResponse {
@@ -151,8 +151,8 @@
     [self.handler performSelector:@selector(handlePARRequest:response:) withObject:request withObject:response];
     
     // Handle DPoP Nonce Challenge
-    if (response.statusCode == 400 && [response.headers[@"DPoP-Nonce"] length] > 0) {
-        NSString *nonce = response.headers[@"DPoP-Nonce"];
+    if (response.statusCode == 400 && [[response headerForKey:@"DPoP-Nonce"] length] > 0) {
+        NSString *nonce = [response headerForKey:@"DPoP-Nonce"];
         dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nonce key:self.privateKey error:&dpopError];
         XCTAssertNotNil(dpopToken);
         
@@ -180,9 +180,9 @@
     XCTAssertTrue([json[@"request_uri"] hasPrefix:@"urn:ietf:params:oauth:request_uri:"]);
     XCTAssertNotNil(json[@"expires_in"]);
     XCTAssertEqual([json[@"expires_in"] integerValue], 600);
-    XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
-    XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
-    XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
+    XCTAssertTrue([[response headerForKey:@"DPoP-Nonce"] length] > 0);
+    XCTAssertEqualObjects([response headerForKey:@"Cache-Control"], @"no-store");
+    XCTAssertEqualObjects([response headerForKey:@"Pragma"], @"no-cache");
     
     // Verify it's in DB
     NSArray *rows = [self.database executeParameterizedQuery:@"SELECT * FROM oauth_par_requests WHERE request_uri = ?" params:@[json[@"request_uri"]] error:nil];

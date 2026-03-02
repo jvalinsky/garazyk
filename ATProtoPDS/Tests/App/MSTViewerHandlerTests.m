@@ -32,7 +32,7 @@
     [self.handler handleRequest:req response:res];
     
     XCTAssertEqual(res.statusCode, 200);
-    XCTAssertTrue([res.headers[@"Content-Type"] containsString:@"text/html"]);
+    XCTAssertTrue([[res headerForKey:@"Content-Type"] containsString:@"text/html"]);
 }
 
 @end

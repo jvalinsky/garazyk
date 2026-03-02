@@ -139,7 +139,7 @@ static BOOL isBase32Char(unichar c) {
     
     NSMutableDictionary *data = [NSMutableDictionary dictionary];
     [dict enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        if (![key isEqualToString:@"sig"] && obj != [NSNull null]) {
+        if (![key isEqualToString:@"sig"]) {
             data[key] = obj;
         }
     }];
