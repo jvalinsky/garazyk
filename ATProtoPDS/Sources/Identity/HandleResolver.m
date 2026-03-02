@@ -13,6 +13,7 @@
 
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Network/SSRFValidator.h"
 
 #ifdef GNUSTEP
 #import <Security/Security.h>
@@ -477,7 +478,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
             struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
             uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
 
-            if ([self isPrivateIPv4Address:ip]) {
+            if ([SSRFValidator isPrivateIPv4Address:ip]) {
                 CFRelease(hostRef);
                 if (error) {
                     *error = [NSError errorWithDomain:HandleErrorDomain
@@ -491,7 +492,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
             struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
             struct in6_addr ip6 = addr_in6->sin6_addr;
 
-            if ([self isPrivateIPv6Address:ip6]) {
+            if ([SSRFValidator isPrivateIPv6Address:ip6]) {
                 CFRelease(hostRef);
                 if (error) {
                     *error = [NSError errorWithDomain:HandleErrorDomain
@@ -505,83 +506,6 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
     CFRelease(hostRef);
     return YES;
-}
-
-/*!
- @method isPrivateIPv4Address:
-
- @abstract Checks if an IPv4 address is in a private or reserved range.
-
- @discussion Blocks RFC 1918 private addresses (10.x, 172.16.x, 192.168.x),
- loopback (127.x), link-local (169.254.x), multicast (224.x), and TEST-NET
- ranges used for documentation (192.0.2.x, 198.51.100.x, 203.0.113.x).
-
- @param ip The IPv4 address in network byte order (ntohl applied).
- @return YES if address is private/reserved, NO if public.
- */
-- (BOOL)isPrivateIPv4Address:(uint32_t)ip {
-    /*! RFC 1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. */
-    if ((ip & 0xFF000000) == 0x0A000000) return YES;      // 10.0.0.0/8
-    if ((ip & 0xFFF00000) == 0xAC100000) return YES;      // 172.16.0.0/12
-    if ((ip & 0xFFFF0000) == 0xC0A80000) return YES;      // 192.168.0.0/16
-
-    /*! Loopback: 127.0.0.0/8. */
-    if ((ip & 0xFF000000) == 0x7F000000) return YES;      // 127.0.0.0/8
-
-    /*! Link-local: 169.254.0.0/16. */
-    if ((ip & 0xFFFF0000) == 0xA9FE0000) return YES;      // 169.254.0.0/16
-
-    /*! TEST-NET documentation ranges (RFC 5737). */
-    if ((ip & 0xFF000000) == 0x00000000) return YES;      // 0.0.0.0/8
-    if ((ip & 0xFFC00000) == 0x64400000) return YES;      // 100.64.0.0/10 (RFC 6598)
-    if ((ip & 0xFFFFFF00) == 0xC0000000) return YES;      // 192.0.0.0/24 (IETF protocol)
-    if ((ip & 0xFFFFFF00) == 0xC0000200) return YES;      // 192.0.2.0/24 (TEST-NET-1)
-    if ((ip & 0xFFFFFF00) == 0xC6336400) return YES;      // 198.51.100.0/24 (TEST-NET-2)
-    if ((ip & 0xFFFFFF00) == 0xCB007100) return YES;      // 203.0.113.0/24 (TEST-NET-3)
-
-    /*! Multicast (224.0.0.0/4) and reserved for future use (240.0.0.0/4). */
-    if ((ip & 0xF0000000) == 0xE0000000) return YES;      // 224.0.0.0/4
-    if ((ip & 0xF0000000) == 0xF0000000) return YES;      // 240.0.0.0/4
-
-    return NO;
-}
-
-/*!
- @method isPrivateIPv6Address:
-
- @abstract Checks if an IPv6 address is in a private or reserved range.
-
- @discussion Blocks loopback (::1), unique local addresses (fc00::/7),
- link-local (fe80::/10), and IPv4-mapped IPv6 addresses containing
- private IPv4 addresses.
-
- @param ip6 The IPv6 address structure.
- @return YES if address is private/reserved, NO if public.
- */
-- (BOOL)isPrivateIPv6Address:(struct in6_addr)ip6 {
-    const uint8_t *bytes = ip6.s6_addr;
-
-    /*! Loopback: ::1/128. */
-    if (memcmp(&ip6, &in6addr_loopback, sizeof(struct in6_addr)) == 0) return YES;
-
-    /*! Unique local addresses (ULA): fc00::/7. */
-    if ((bytes[0] & 0xFE) == 0xFC) return YES;
-
-    /*! Link-local: fe80::/10. */
-    if (bytes[0] == 0xFE && (bytes[1] & 0xC0) == 0x80) return YES;
-
-    /*! IPv4-mapped IPv6 addresses: ::ffff:0:0/96. */
-    /*! Validate embedded IPv4 to prevent IPv4 private address bypass. */
-    if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF}, 12) == 0) {
-        /*! Extract embedded IPv4 from last 4 bytes. */
-        uint32_t ipv4;
-        memcpy(&ipv4, bytes + 12, sizeof(ipv4));
-        ipv4 = ntohl(ipv4);
-        /*! Recursively validate embedded IPv4 address. */
-        return [self isPrivateIPv4Address:ipv4];
-    }
-
-    return NO;
 }
 
 @end

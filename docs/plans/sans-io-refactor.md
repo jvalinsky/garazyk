@@ -6,18 +6,21 @@ Incrementally extract I/O-free protocol cores from `WebSocketConnection`, `HttpS
 
 ---
 
-## Current Status: Not Started
+## Current Status: In Progress
 
-As of 2026-03-01: No implementation has begun. Codebase review confirms that all proposed new files and characterization tests are still absent.
+As of 2026-03-01: Execution has begun with a bottom-up approach — simplest extractions first.
 
-### What still needs to be done:
-- All 5 characterization test files (Phase 0.1–0.5)
-- All 7 new source files for WebSocket Codec (Phase 1)
-- All 5 new source files for HTTP/1.1 Core (Phase 2)
-- All 2 new source files for Outbound Policy (Phase 3)
-- All 11+ new test files
-- Rewiring of existing WebSocketConnection.m, HttpServer.m, and other consumers
-- Consolidation of duplicated SSRF, query param, and retry logic
+### Execution Order (milestones, each committed separately):
+1. **Milestone 1: SSRFValidator (Phase 3.2)** — extract duplicated IP classification into `SSRFValidator`, update consumers, add tests
+2. **Milestone 2: HttpParsing (Phase 2.3)** — consolidate query params, URL decode, method enum into `HttpParsing`, update consumers
+3. **Milestone 3: HttpRetryPolicy (Phase 3.1)** — extract retry/backoff logic, wire into `DIDPLCResolver`
+4. **Milestone 4: WebSocketCodec (Phase 1.1)** — extract frame parser/serializer + characterization tests
+5. **Milestone 5: WebSocketHeartbeatPolicy (Phase 1.2)** — extract heartbeat state machine
+6. **Milestone 6: Http1Parser + Http1PipelinePolicy (Phase 2.1, 2.2)** — extract HTTP parsing + pipeline policy
+7. **Milestone 7: Rewiring (Phase 1.3, 2.4, 3.3)** — thin adapter layer for WebSocketConnection, HttpServer, outbound consumers
+
+### Completed:
+- (none yet)
 
 ### Verified (plan accurate as-is):
 - `HttpChunkedBodyParser.m` (315 lines) is confirmed to be already Sans-I/O
