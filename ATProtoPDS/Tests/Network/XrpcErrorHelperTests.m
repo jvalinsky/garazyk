@@ -63,7 +63,7 @@
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
     XCTAssertEqual(response.statusCode, HttpStatusMethodNotAllowed);
-    XCTAssertEqualObjects(response.headers[@"Allow"], @"POST");
+    XCTAssertEqualObjects([response headerForKey:@"Allow"], @"POST");
     XCTAssertEqualObjects(body[@"error"], @"MethodNotAllowed");
     XCTAssertEqualObjects(body[@"message"], @"Expected POST");
 }
@@ -73,7 +73,7 @@
     [XrpcErrorHelper setMethodNotAllowedError:response allowedMethod:@"" message:@"custom"];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
-    XCTAssertNil(response.headers[@"Allow"]);
+    XCTAssertNil([response headerForKey:@"Allow"]);
     XCTAssertEqualObjects(body[@"message"], @"custom");
 }
 

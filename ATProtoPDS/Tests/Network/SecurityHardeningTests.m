@@ -128,7 +128,7 @@
     
     // It should return 401 because the DPoP proof is invalid AND it should suggest a nonce.
     XCTAssertEqual(response.statusCode, 401);
-    XCTAssertNotNil(response.headers[@"DPoP-Nonce"], @"DPoP-Nonce header should be present in 401 challenge");
+    XCTAssertNotNil([response headerForKey:@"DPoP-Nonce"], @"DPoP-Nonce header should be present in 401 challenge");
 }
 
 @end

@@ -9,13 +9,13 @@
 - (void)testContentTypePropertyDoesNotUpdateHeaders {
     HttpResponse *response = [[HttpResponse alloc] init];
     response.contentType = @"text/html; charset=utf-8";
-    XCTAssertNil(response.headers[@"Content-Type"], @"Setting contentType property should NOT update headers directly");
+    XCTAssertNil([response headerForKey:@"Content-Type"], @"Setting contentType property should NOT update headers directly");
 }
 
 - (void)testSetHeaderUpdatesHeadersCorrectly {
     HttpResponse *response = [[HttpResponse alloc] init];
     [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
-    XCTAssertEqualObjects(response.headers[@"Content-Type"], @"text/html; charset=utf-8", @"setHeader:forKey: should update headers");
+    XCTAssertEqualObjects([response headerForKey:@"Content-Type"], @"text/html; charset=utf-8", @"setHeader:forKey: should update headers");
 }
 
 - (void)testSerializeAddsContentTypeToHeaders {
@@ -26,7 +26,7 @@
     NSData *serialized = [response serialize];
     NSString *httpString = [[NSString alloc] initWithData:serialized encoding:NSUTF8StringEncoding];
     
-    XCTAssertTrue([httpString containsString:@"Content-Type: text/html"], @"Serialization should add Content-Type header from contentType property");
+    XCTAssertTrue([[httpString lowercaseString] containsString:@"content-type: text/html"], @"Serialization should add Content-Type header from contentType property");
 }
 
 - (void)testMSTViewerHandlerPatternWorks {
@@ -36,8 +36,8 @@
     response.contentType = @"text/html; charset=utf-8";
     [response setHeader:response.contentType forKey:@"Content-Type"];
     
-    XCTAssertNotNil(response.headers[@"Content-Type"], @"MSTViewerHandler pattern: setting contentType then calling setHeader ensures headers are populated");
-    XCTAssertEqualObjects(response.headers[@"Content-Type"], @"text/html; charset=utf-8");
+    XCTAssertNotNil([response headerForKey:@"Content-Type"], @"MSTViewerHandler pattern: setting contentType then calling setHeader ensures headers are populated");
+    XCTAssertEqualObjects([response headerForKey:@"Content-Type"], @"text/html; charset=utf-8");
 }
 
 - (void)testDefaultContentTypeIsApplicationJson {
@@ -49,7 +49,7 @@
     HttpResponse *response = [[HttpResponse alloc] init];
     [response setJsonBody:@{@"key": @"value"}];
     XCTAssertEqualObjects(response.contentType, @"application/json; charset=utf-8", @"setJsonBody: should set contentType property");
-    XCTAssertNil(response.headers[@"Content-Type"], @"setJsonBody: does NOT update headers - headers only updated during serialize");
+    XCTAssertNil([response headerForKey:@"Content-Type"], @"setJsonBody: does NOT update headers - headers only updated during serialize");
 }
 
 - (void)testBodyFilePathLazyLoadsBody {
@@ -71,7 +71,7 @@
     response.contentType = @"application/octet-stream";
     NSData *headers = [response serializeHeadersForBodyLength:12];
     NSString *headerString = [[NSString alloc] initWithData:headers encoding:NSUTF8StringEncoding];
-    XCTAssertTrue([headerString containsString:@"Content-Length: 12"]);
+    XCTAssertTrue([[headerString lowercaseString] containsString:@"content-length: 12"]);
     XCTAssertTrue([headerString hasSuffix:@"\r\n\r\n"]);
     XCTAssertFalse([headerString containsString:@"streamed-body"]);
 }
@@ -107,7 +107,7 @@
 
     NSData *headers = [response serializeHeadersForBodyLength:0];
     NSString *headerString = [[NSString alloc] initWithData:headers encoding:NSUTF8StringEncoding];
-    XCTAssertTrue([headerString containsString:@"Transfer-Encoding: chunked"]);
+    XCTAssertTrue([[headerString lowercaseString] containsString:@"transfer-encoding: chunked"]);
     XCTAssertFalse([headerString containsString:@"Content-Length"]);
 }
 
