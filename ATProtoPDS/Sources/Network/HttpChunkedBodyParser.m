@@ -130,12 +130,19 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
             }
 
             case HttpChunkedParserStateReadingChunkData: {
-                NSUInteger neededForChunk = self.currentChunkSize - self.bytesReadInCurrentChunk;
+                NSUInteger remainingInChunkAndCRLF = (self.currentChunkSize - self.bytesReadInCurrentChunk) + 2;
                 NSUInteger available = self.workingBuffer.length;
-
-                if (available >= self.currentChunkSize + 2) {
+                
+                if (available >= remainingInChunkAndCRLF) {
+                    // We have the rest of the chunk plus the CRLF
+                    NSUInteger remainingInChunk = self.currentChunkSize - self.bytesReadInCurrentChunk;
+                    if (remainingInChunk > 0) {
+                        NSData *chunkData = [self.workingBuffer subdataWithRange:NSMakeRange(0, remainingInChunk)];
+                        [self.outputData appendData:chunkData];
+                    }
+                    
                     const uint8_t *bytes = (const uint8_t *)self.workingBuffer.bytes;
-                    if (bytes[self.currentChunkSize] != '\r' || bytes[self.currentChunkSize + 1] != '\n') {
+                    if (bytes[remainingInChunk] != '\r' || bytes[remainingInChunk + 1] != '\n') {
                         self.errorMessage = @"Missing CRLF after chunk data";
                         self.errorCode = 400;
                         self.state = HttpChunkedParserStateError;
@@ -144,23 +151,24 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
                         }
                         return -1;
                     }
-
-                    NSData *chunkData = [self.workingBuffer subdataWithRange:NSMakeRange(0, self.currentChunkSize)];
-                    [self.outputData appendData:chunkData];
-
-                    [self.workingBuffer replaceBytesInRange:NSMakeRange(0, self.currentChunkSize + 2) withBytes:NULL length:0];
-                    totalConsumed += self.currentChunkSize + 2;
+                    
+                    [self.workingBuffer replaceBytesInRange:NSMakeRange(0, remainingInChunk + 2) withBytes:NULL length:0];
+                    totalConsumed += remainingInChunk + 2;
                     self.state = HttpChunkedParserStateReadingChunkSize;
                     self.bytesReadInCurrentChunk = 0;
-                } else if (available >= neededForChunk && available < self.currentChunkSize + 2) {
-                    self.bytesReadInCurrentChunk += available;
-                    totalConsumed += available;
-                    [self.workingBuffer replaceBytesInRange:NSMakeRange(0, available) withBytes:NULL length:0];
-                    shouldBreak = YES;
                 } else {
-                    self.bytesReadInCurrentChunk += available;
-                    totalConsumed += available;
-                    [self.workingBuffer setLength:0];
+                    // Not enough for the CRLF yet, consume what we can of the chunk
+                    NSUInteger remainingInChunk = self.currentChunkSize - self.bytesReadInCurrentChunk;
+                    NSUInteger toConsume = MIN(available, remainingInChunk);
+                    
+                    if (toConsume > 0) {
+                        NSData *chunkData = [self.workingBuffer subdataWithRange:NSMakeRange(0, toConsume)];
+                        [self.outputData appendData:chunkData];
+                        self.bytesReadInCurrentChunk += toConsume;
+                        [self.workingBuffer replaceBytesInRange:NSMakeRange(0, toConsume) withBytes:NULL length:0];
+                        totalConsumed += toConsume;
+                    }
+                    
                     shouldBreak = YES;
                 }
                 break;

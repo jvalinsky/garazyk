@@ -296,24 +296,28 @@
     MSTNode *leftNode = [[MSTNode alloc] initWithLevel:self.level left:self.internalLeft entries:leftData];
     MSTNode *rightNode = [[MSTNode alloc] initWithLevel:self.level left:nil entries:rightData];
     
-    if (leftData.count > 0) {
+    if (idx == 0) {
+        if (self.internalLeft) {
+            MSTNode *subL = nil;
+            MSTNode *subR = nil;
+            [self.internalLeft split:key left:&subL right:&subR];
+            leftNode.internalLeft = subL;
+            rightNode.internalLeft = subR;
+        }
+    } else {
         MSTNodeEntry *lastInLeft = leftData.lastObject;
         if (lastInLeft.internalTree) {
             NSMutableArray *nLeftEntries = [leftData mutableCopy];
             [nLeftEntries removeLastObject];
-            leftNode.internalEntries = nLeftEntries;
             
             MSTNode *subL = nil;
             MSTNode *subR = nil;
             [lastInLeft.internalTree split:key left:&subL right:&subR];
             
-            if (subL) {
-                MSTNodeEntry *newLast = [[MSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:subL];
-                [nLeftEntries addObject:newLast];
-            }
-            if (subR) {
-                rightNode.internalLeft = subR;
-            }
+            MSTNodeEntry *newLast = [[MSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:subL];
+            [nLeftEntries addObject:newLast];
+            leftNode.internalEntries = nLeftEntries;
+            rightNode.internalLeft = subR;
         }
     }
     
@@ -422,20 +426,25 @@
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(bytes, (CC_LONG)len, hash);
 
-    uint32_t zeroCount = 0;
+    uint32_t depth = 0;
     for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
         uint8_t byte = hash[i];
         if (byte == 0) {
-            zeroCount += 4;
+            depth += 4;
             continue;
         }
-        if ((byte & 0xC0) != 0) break;
-        if ((byte & 0xFC) == 0) zeroCount += 3;
-        else if ((byte & 0xF0) == 0) zeroCount += 2;
-        else zeroCount += 1;
+        if ((byte & 0xC0) == 0) {
+            depth++;
+            if ((byte & 0x30) == 0) {
+                depth++;
+                if ((byte & 0x0C) == 0) {
+                    depth++;
+                }
+            }
+        }
         break;
     }
-    return zeroCount;
+    return depth;
 }
 
 + (NSUInteger)keyDepthString:(NSString *)key {
