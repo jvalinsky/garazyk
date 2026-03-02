@@ -310,10 +310,10 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
         XCTAssertEqual(response.statusCode, 400);
         XCTAssertEqualObjects(response.jsonBody[@"error"], @"use_dpop_nonce");
-        XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
-        XCTAssertEqualObjects(response.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
-        XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
-        XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
+        XCTAssertTrue([[response headerForKey:@"DPoP-Nonce"] length] > 0);
+        XCTAssertEqualObjects([response headerForKey:@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+        XCTAssertEqualObjects([response headerForKey:@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects([response headerForKey:@"Pragma"], @"no-cache");
     } @finally {
         CFRelease(privateKey);
     }
@@ -339,7 +339,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     XCTAssertEqual(response.statusCode, 400);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_dpop_proof");
-    XCTAssertNil(response.headers[@"DPoP-Nonce"]);
+    XCTAssertNil([response headerForKey:@"DPoP-Nonce"]);
 }
 
 - (void)testTokenRequestRotatesDPoPNonceAfterValidProof {
@@ -382,11 +382,11 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
         XCTAssertEqual(response.statusCode, 400);
         XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_grant");
-        NSString *nextNonce = response.headers[@"DPoP-Nonce"];
+        NSString *nextNonce = [response headerForKey:@"DPoP-Nonce"];
         XCTAssertTrue(nextNonce.length > 0);
         XCTAssertNotEqualObjects(nextNonce, incomingNonce);
-        XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
-        XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
+        XCTAssertEqualObjects([response headerForKey:@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects([response headerForKey:@"Pragma"], @"no-cache");
     } @finally {
         CFRelease(privateKey);
     }
@@ -428,10 +428,10 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
         XCTAssertEqual(response.statusCode, 400);
         XCTAssertEqualObjects(response.jsonBody[@"error"], @"use_dpop_nonce");
-        XCTAssertTrue([response.headers[@"DPoP-Nonce"] length] > 0);
-        XCTAssertEqualObjects(response.headers[@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
-        XCTAssertEqualObjects(response.headers[@"Cache-Control"], @"no-store");
-        XCTAssertEqualObjects(response.headers[@"Pragma"], @"no-cache");
+        XCTAssertTrue([[response headerForKey:@"DPoP-Nonce"] length] > 0);
+        XCTAssertEqualObjects([response headerForKey:@"WWW-Authenticate"], @"DPoP error=\"use_dpop_nonce\"");
+        XCTAssertEqualObjects([response headerForKey:@"Cache-Control"], @"no-store");
+        XCTAssertEqualObjects([response headerForKey:@"Pragma"], @"no-cache");
     } @finally {
         CFRelease(privateKey);
     }
@@ -499,7 +499,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
     
-    NSString *location = consentResponse.headers[@"Location"];
+    NSString *location = [consentResponse headerForKey:@"Location"];
     XCTAssertNotNil(location, @"Location header should be set");
     
     XCTAssertTrue([location hasPrefix:redirectWithQuery], @"Should redirect to base redirect URI");
@@ -573,7 +573,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
     
-    NSString *location = consentResponse.headers[@"Location"];
+    NSString *location = [consentResponse headerForKey:@"Location"];
     XCTAssertNotNil(location, @"Location header should be set");
     
     XCTAssertTrue([location hasPrefix:redirectWithoutQuery], @"Should redirect to base redirect URI");
@@ -602,7 +602,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     [self.handler handleAuthorizeConfirm:request response:response];
 
     XCTAssertEqual(response.statusCode, 302);
-    NSString *location = response.headers[@"Location"];
+    NSString *location = [response headerForKey:@"Location"];
     XCTAssertNotNil(location);
     XCTAssertTrue([location containsString:@"error=access_denied"]);
     XCTAssertTrue([location containsString:@"state=deny-state"]);

@@ -111,6 +111,9 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 /*! Sets a response header. */
 - (void)setHeader:(NSString *)value forKey:(NSString *)key;
 
+/*! Returns the value for a given header key (case-insensitive). */
+- (nullable NSString *)headerForKey:(NSString *)key;
+
 /*! Sets the body as JSON. */
 - (void)setJsonBody:(id)json;
 

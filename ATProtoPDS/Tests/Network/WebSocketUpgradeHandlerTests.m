@@ -34,9 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertTrue(shouldUpgrade);
     XCTAssertEqual(response.statusCode, 101);
     XCTAssertEqualObjects(response.statusMessage, @"Switching Protocols");
-    XCTAssertEqualObjects([response.headers objectForKey:@"Upgrade"], @"websocket");
-    XCTAssertEqualObjects([response.headers objectForKey:@"Connection"], @"Upgrade");
-    XCTAssertNotNil([response.headers objectForKey:@"Sec-WebSocket-Accept"]);
+    XCTAssertEqualObjects([response headerForKey:@"Upgrade"], @"websocket");
+    XCTAssertEqualObjects([response headerForKey:@"Connection"], @"Upgrade");
+    XCTAssertNotNil([response headerForKey:@"Sec-WebSocket-Accept"]);
 }
 
 - (void)testMissingUpgradeHeaderReturns426 {
@@ -61,8 +61,8 @@ NS_ASSUME_NONNULL_BEGIN
 
     XCTAssertFalse(shouldUpgrade);
     XCTAssertEqual(response.statusCode, 426);
-    XCTAssertEqualObjects([response.headers objectForKey:@"Connection"], @"Upgrade");
-    XCTAssertEqualObjects([response.headers objectForKey:@"Upgrade"], @"websocket");
+    XCTAssertEqualObjects([response headerForKey:@"Connection"], @"Upgrade");
+    XCTAssertEqualObjects([response headerForKey:@"Upgrade"], @"websocket");
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"UpgradeRequired");
     XCTAssertFalse(response.keepAlive);
 }
@@ -89,8 +89,8 @@ NS_ASSUME_NONNULL_BEGIN
 
     XCTAssertFalse(shouldUpgrade);
     XCTAssertEqual(response.statusCode, 426);
-    XCTAssertEqualObjects([response.headers objectForKey:@"Connection"], @"Upgrade");
-    XCTAssertEqualObjects([response.headers objectForKey:@"Upgrade"], @"websocket");
+    XCTAssertEqualObjects([response headerForKey:@"Connection"], @"Upgrade");
+    XCTAssertEqualObjects([response headerForKey:@"Upgrade"], @"websocket");
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"UpgradeRequired");
     XCTAssertFalse(response.keepAlive);
 }

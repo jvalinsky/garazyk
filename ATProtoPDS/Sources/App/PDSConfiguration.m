@@ -202,6 +202,8 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
       _useSecureEnclave = [self boolFromEnv:@"PDS_USE_SECURE_ENCLAVE" default:NO];
     }
 
+    _requireDPoPNonce = [self boolFromEnv:@"PDS_REQUIRE_DPOP_NONCE" default:NO];
+
     // Apply environment overrides and empty config defaults
     [self applyConfig:_config];
   }
@@ -324,6 +326,8 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
   if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
     _useSecureEnclave = [self boolFromEnv:@"PDS_USE_SECURE_ENCLAVE" default:NO];
   }
+
+  _requireDPoPNonce = [self boolFromEnv:@"PDS_REQUIRE_DPOP_NONCE" default:NO];
 
   NSDictionary *plc = config[@"plc"];
   if (plc) {
