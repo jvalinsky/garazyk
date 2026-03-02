@@ -178,14 +178,14 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
     NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithDictionary:@{
         (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
-        (__bridge id)kSecAttrKeySizeInBits: @(keySize)
+        (__bridge id)kSecAttrKeySizeInBits: @(keySize),
+        (__bridge id)kSecAttrIsPermanent: @YES,
+        (__bridge id)kSecAttrLabel: keyID,
+        (__bridge id)kSecAttrApplicationTag: [keyID dataUsingEncoding:NSUTF8StringEncoding]
     }];
 
     if (useSE) {
         parameters[(__bridge id)kSecAttrTokenID] = (__bridge id)kSecAttrTokenIDSecureEnclave;
-        parameters[(__bridge id)kSecAttrIsPermanent] = @YES;
-        parameters[(__bridge id)kSecAttrLabel] = keyID;
-        parameters[(__bridge id)kSecAttrApplicationTag] = [keyID dataUsingEncoding:NSUTF8StringEncoding];
     }
 
     CFErrorRef cfError = NULL;
@@ -495,7 +495,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
             CFErrorRef importError = NULL;
 
             if (keychainTag) {
-                // Load Secure Enclave key from Keychain
+                // Load key from Keychain
                 NSDictionary *query = @{
                     (__bridge id)kSecClass: (__bridge id)kSecClassKey,
                     (__bridge id)kSecAttrApplicationTag: [keychainTag dataUsingEncoding:NSUTF8StringEncoding],
@@ -503,10 +503,13 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                 };
                 OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&privateKey);
                 if (status != errSecSuccess) {
-                    PDS_LOG_AUTH_ERROR(@"Failed to load Secure Enclave key from Keychain for tag: %@ (status: %d)", keychainTag, (int)status);
+                    PDS_LOG_AUTH_WARN(@"Failed to load private key from Keychain for tag: %@ (status: %d)", keychainTag, (int)status);
                 }
-            } else if (privateKeyData) {
+            }
+            
+            if (!privateKey && privateKeyData) {
                 // Import legacy RSA/EC key from data
+                PDS_LOG_AUTH_WARN(@"Loading legacy private key from database for key ID: %@. Migration recommended.", keyID);
                 NSDictionary *privateKeyAttrs = @{
                     (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA, // Default to RSA, but SecKeyCreateWithData handles it
                     (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate
@@ -574,27 +577,24 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     NSData *privateKeyData = nil;
     NSString *keychainTag = nil;
 
-    if (keyPair.isSecureEnclaveKey) {
-        keychainTag = keyPair.keyID;
-        PDS_LOG_AUTH_INFO(@"Storing Secure Enclave key by reference: %@", keychainTag);
-    } else {
-        privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
-        if (exportError) {
-            CFRelease(exportError);
-            exportError = NULL;
-        }
-    }
+    // All newly generated keys are stored in the Keychain.
+    // keychainTag is the keyID, used for both SE and Non-SE keys to point to the Keychain item.
+    keychainTag = keyPair.keyID;
+    PDS_LOG_AUTH_INFO(@"Referencing private key in Keychain via tag: %@", keychainTag);
+    
+    // We stop exporting the private key data to prevent it from being stored in the database.
+    privateKeyData = nil;
 
     NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
     if (exportError) {
         CFRelease(exportError);
     }
 
-    if (!publicKeyData || (!privateKeyData && !keyPair.isSecureEnclaveKey)) {
+    if (!publicKeyData || !keychainTag) {
         if (error) {
             *error = [NSError errorWithDomain:KeyManagerErrorDomain
                                          code:KeyManagerErrorExportFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export key data"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export public key data or keychain tag"}];
         }
         return NO;
     }

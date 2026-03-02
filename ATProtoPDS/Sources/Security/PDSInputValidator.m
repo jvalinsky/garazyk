@@ -2,48 +2,6 @@
 
 NSErrorDomain const PDSValidationErrorDomain = @"com.atproto.pds.validation";
 
-static NSString *const kSQLInjectionPatterns[] = {
-    @"' OR '1'='1",
-    @"UNION SELECT",
-    @"DROP TABLE",
-    @"--",
-    @"; DROP",
-    @"EXEC(",
-    @"EXEC (",
-    @"xp_cmdshell",
-    @"load_extension",
-    @"ATTACH DATABASE",
-    @"PRAGMA",
-    @"VACUUM",
-    NULL
-};
-
-static NSString *const kPathTraversalPatterns[] = {
-    @"../",
-    @"..\\",
-    @"%2e%2e",
-    @"%c0%ae%c0%ae",
-    @"....//",
-    @"..%2F",
-    @"\\..\\",
-    NULL
-};
-
-static NSString *const kXSSPatterns[] = {
-    @"<script>",
-    @"javascript:",
-    @"<iframe",
-    @"<object",
-    @"<embed",
-    @"onload=",
-    @"onerror=",
-    @"onclick=",
-    @"onmouseover=",
-    @"alert(",
-    @"eval(",
-    NULL
-};
-
 static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
 
 @interface PDSInputValidator ()
@@ -153,8 +111,8 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
     if (!rkey || rkey.length == 0) return NO;
     if (rkey.length > 512) return NO;
     if ([self containsNullByte:rkey]) return NO;
-    if ([self containsPathTraversalPattern:rkey]) return NO;
 
+    if ([rkey containsString:@".."]) return NO;
     if ([self isValidTID:rkey]) return YES;
 
     NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./"];
@@ -174,117 +132,60 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
     if (!uri || uri.length == 0) return NO;
     if (uri.length > 2048) return NO;
     if ([self containsNullByte:uri]) return NO;
-    if ([self containsPathTraversalPattern:uri]) return NO;
 
     NSRange range = NSMakeRange(0, uri.length);
     return [self.atUriRegex numberOfMatchesInString:uri options:0 range:range] > 0;
 }
 
 - (nullable NSString *)sanitizeSQLInput:(NSString *)input error:(NSError **)error {
-    if (!input) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorEmptyString userInfo:@{NSLocalizedDescriptionKey: @"Input cannot be nil"}];
-        }
+    if (!input || input.length == 0) {
+        if (error) *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorEmptyString userInfo:@{NSLocalizedDescriptionKey: @"SQL input cannot be empty"}];
         return nil;
     }
-
-    if ([self containsSQLInjectionPattern:input]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorSQLInjectionPattern userInfo:@{NSLocalizedDescriptionKey: @"Input contains SQL injection patterns"}];
-        }
-        return nil;
-    }
-
     NSMutableString *sanitized = [NSMutableString stringWithString:input];
-    [sanitized replaceOccurrencesOfString:@"'" withString:@"''" options:0 range:NSMakeRange(0, sanitized.length)];
     [sanitized replaceOccurrencesOfString:@"\0" withString:@"" options:0 range:NSMakeRange(0, sanitized.length)];
-
     return [sanitized copy];
 }
 
 - (nullable NSString *)sanitizePathInput:(NSString *)input error:(NSError **)error {
-    if (!input) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorEmptyString userInfo:@{NSLocalizedDescriptionKey: @"Input cannot be nil"}];
-        }
+    if (!input || input.length == 0) {
+        if (error) *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorEmptyString userInfo:@{NSLocalizedDescriptionKey: @"Path input cannot be empty"}];
         return nil;
     }
-
     if ([self containsNullByte:input]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorNullByteInjection userInfo:@{NSLocalizedDescriptionKey: @"Input contains null byte"}];
-        }
+        if (error) *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorNullByteInjection userInfo:@{NSLocalizedDescriptionKey: @"Input contains null byte"}];
         return nil;
     }
-
-    if ([self containsPathTraversalPattern:input]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorPathTraversal userInfo:@{NSLocalizedDescriptionKey: @"Input contains path traversal pattern"}];
-        }
-        return nil;
-    }
-
     NSMutableString *sanitized = [NSMutableString stringWithString:input];
-    [sanitized replaceOccurrencesOfString:@"../" withString:@"" options:0 range:NSMakeRange(0, sanitized.length)];
-    [sanitized replaceOccurrencesOfString:@"..\\" withString:@"" options:0 range:NSMakeRange(0, sanitized.length)];
     [sanitized replaceOccurrencesOfString:@"\0" withString:@"" options:0 range:NSMakeRange(0, sanitized.length)];
-
     return [sanitized copy];
 }
 
 - (nullable NSString *)sanitizeJSONField:(NSString *)input error:(NSError **)error {
-    if (!input) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorEmptyString userInfo:@{NSLocalizedDescriptionKey: @"Input cannot be nil"}];
-        }
+    if (!input || input.length == 0) {
+        if (error) *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorEmptyString userInfo:@{NSLocalizedDescriptionKey: @"JSON field cannot be empty"}];
         return nil;
     }
-
-    if ([self containsXSSPattern:input]) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSValidationErrorDomain code:PDSValidationErrorXSSPattern userInfo:@{NSLocalizedDescriptionKey: @"Input contains XSS patterns"}];
-        }
-        return nil;
-    }
-
     NSMutableString *sanitized = [NSMutableString stringWithString:input];
-    [sanitized replaceOccurrencesOfString:@"<" withString:@"&lt;" options:0 range:NSMakeRange(0, sanitized.length)];
-    [sanitized replaceOccurrencesOfString:@">" withString:@"&gt;" options:0 range:NSMakeRange(0, sanitized.length)];
-    [sanitized replaceOccurrencesOfString:@"\"" withString:@"&quot;" options:0 range:NSMakeRange(0, sanitized.length)];
-    [sanitized replaceOccurrencesOfString:@"'" withString:@"&#x27;" options:0 range:NSMakeRange(0, sanitized.length)];
     [sanitized replaceOccurrencesOfString:@"\0" withString:@"" options:0 range:NSMakeRange(0, sanitized.length)];
-
     return [sanitized copy];
 }
 
 - (BOOL)containsSQLInjectionPattern:(NSString *)input {
-    if (!input) return NO;
-
-    NSString *upperInput = [input uppercaseString];
-    for (int i = 0; kSQLInjectionPatterns[i] != NULL; i++) {
-        NSString *pattern = [kSQLInjectionPatterns[i] uppercaseString];
-        if ([upperInput containsString:pattern]) {
-            return YES;
-        }
-    }
+    // Deprecated: rely on parameterized queries.
     return NO;
 }
 
 - (BOOL)containsPathTraversalPattern:(NSString *)input {
     if (!input) return NO;
-
-    NSString *normalizedInput = [input lowercaseString];
-    for (int i = 0; kPathTraversalPatterns[i] != NULL; i++) {
-        if ([normalizedInput containsString:[kPathTraversalPatterns[i] lowercaseString]]) {
-            return YES;
-        }
-    }
-
-    if ([input containsString:@"/../"] || [input hasSuffix:@"/.."] ||
-        [input containsString:@"\\..\\"] || [input hasSuffix:@"\\.."]) {
+    
+    NSString *normalized = [input stringByReplacingOccurrencesOfString:@"%2f" withString:@"/" options:NSCaseInsensitiveSearch range:NSMakeRange(0, input.length)];
+    normalized = [normalized stringByReplacingOccurrencesOfString:@"%5c" withString:@"\\" options:NSCaseInsensitiveSearch range:NSMakeRange(0, normalized.length)];
+    
+    if ([normalized containsString:@"/../"] || [normalized hasSuffix:@"/.."] || [normalized hasPrefix:@"../"] ||
+        [normalized containsString:@"\\..\\"] || [normalized hasSuffix:@"\\.."] || [normalized hasPrefix:@"..\\"]) {
         return YES;
     }
-
     return NO;
 }
 
@@ -294,15 +195,7 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
 }
 
 - (BOOL)containsXSSPattern:(NSString *)input {
-    if (!input) return NO;
-
-    NSString *upperInput = [input uppercaseString];
-    for (int i = 0; kXSSPatterns[i] != NULL; i++) {
-        NSString *pattern = [kXSSPatterns[i] uppercaseString];
-        if ([upperInput containsString:pattern]) {
-            return YES;
-        }
-    }
+    // Deprecated: lexicon validation handles this.
     return NO;
 }
 

@@ -28,15 +28,18 @@
 
 static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     if (!a || !b) {
-        return NO;
+        return a == b;
     }
-    if (a.length != b.length) {
-        return NO;
-    }
+    
     const uint8_t *aBytes = (const uint8_t *)a.bytes;
     const uint8_t *bBytes = (const uint8_t *)b.bytes;
-    uint8_t diff = 0;
-    for (NSUInteger i = 0; i < a.length; i++) {
+    NSUInteger aLen = a.length;
+    NSUInteger bLen = b.length;
+    
+    NSUInteger minLen = aLen < bLen ? aLen : bLen;
+    uint8_t diff = (uint8_t)(aLen ^ bLen);
+    
+    for (NSUInteger i = 0; i < minLen; i++) {
         diff |= (uint8_t)(aBytes[i] ^ bBytes[i]);
     }
     return diff == 0;
