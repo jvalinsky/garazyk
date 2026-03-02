@@ -268,6 +268,7 @@ int main(int argc, char *argv[]) {
       @"WebSocketFrameCharacterizationTests",
       @"WebSocketStateCharacterizationTests",
       @"WebSocketCodecTests",
+      @"WebSocketCodecFragmentationTests",
       @"WebSocketHeartbeatPolicyTests",
       @"HttpConnectionCharacterizationTests",
       @"Http1PipelinePolicyTests",

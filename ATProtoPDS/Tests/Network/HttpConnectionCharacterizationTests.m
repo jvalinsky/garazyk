@@ -186,10 +186,8 @@
     NSString *respStr = [[NSString alloc] initWithData:self.connection.writtenData encoding:NSUTF8StringEncoding];
     // Check that there are two responses
     NSArray *parts = [respStr componentsSeparatedByString:@"HTTP/1.1 200 OK"];
-    // CURRENT BUG: HttpServer's resetForNextRequest calls [_buffer setLength:0], discarding pipelined requests.
-    // This characterization test captures the current buggy behavior.
-    // When Http1Parser is implemented in Phase 2, this will change to 3 (2 responses + 1 empty string from split).
-    XCTAssertEqual(parts.count, 2); 
+    // The sans-io parser correctly supports pipelining without zeroing the buffer.
+    XCTAssertEqual(parts.count, 3); // 2 occurrences = 3 parts
 }
 
 - (void)testChunkedBody {
