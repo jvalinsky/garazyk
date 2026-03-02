@@ -2,24 +2,18 @@
 #import "Compat/PDSTypes.h"
 #import "Network/PDSNetworkTransport.h"
 #import "Network/HttpParsing.h"
+#import "Sync/WebSocketCodec.h"
+#import "Sync/WebSocketHeartbeatPolicy.h"
 #import <CommonCrypto/CommonDigest.h>
 
+static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024; // 16MB limit
+
 NSString *const WebSocketConnectionErrorDomain =
-    @"com.atproto.pds.websocket.connection";
+    @"com.atproto.pds.websocket.error";
+
 NSInteger const WebSocketConnectionErrorCodeConnectionClosed = 2000;
 NSInteger const WebSocketConnectionErrorCodeInvalidFrame = 2001;
 NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
-
-static const uint8_t WS_OPCODE_CONTINUE = 0x0;
-static const uint8_t WS_OPCODE_TEXT = 0x1;
-static const uint8_t WS_OPCODE_BINARY = 0x2;
-static const uint8_t WS_OPCODE_CLOSE = 0x8;
-static const uint8_t WS_OPCODE_PING = 0x9;
-static const uint8_t WS_OPCODE_PONG = 0xA;
-static const uint8_t WS_FLAG_FIN = 0x80;
-static const uint8_t WS_MASK = 0x80;
-static const uint64_t WS_MAX_FRAME_SIZE = 16 * 1024 * 1024;
-static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 
 @interface WebSocketConnection ()
 
@@ -31,16 +25,15 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 @property(nonatomic, strong) id<PDSNetworkConnection> connection;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_queue_t connectionQueue;
-@property(nonatomic, strong) NSMutableData *readBuffer;
 @property(nonatomic, strong) NSMutableData *writeBuffer;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t writeQueue;
 @property(nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
 @property(nonatomic, assign) NSUInteger queuedSendBytes;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable)
     dispatch_source_t heartbeatTimer;
-@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable)
-    dispatch_source_t heartbeatTimeoutTimer;
-@property(nonatomic, assign) BOOL waitingForPong;
+
+@property(nonatomic, strong) WebSocketCodec *codec;
+@property(nonatomic, strong) WebSocketHeartbeatPolicy *heartbeatPolicy;
 
 @end
 
@@ -87,16 +80,30 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 
 - (void)commonInit {
   _identifier = [NSUUID UUID];
-  _heartbeatInterval = 30.0;
-  _heartbeatTimeout = 10.0;
-  _readBuffer = [NSMutableData data];
   _messageQueue = [NSMutableArray array];
   _queuedSendBytes = 0;
   _writeQueue = dispatch_queue_create("com.atproto.pds.websocket.write",
                                       DISPATCH_QUEUE_SERIAL);
   _connectionQueue = dispatch_queue_create(
       "com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
-  _waitingForPong = NO;
+  _codec = [[WebSocketCodec alloc] init];
+  _heartbeatPolicy = [[WebSocketHeartbeatPolicy alloc] init];
+}
+
+- (NSTimeInterval)heartbeatInterval {
+  return self.heartbeatPolicy.heartbeatInterval;
+}
+
+- (void)setHeartbeatInterval:(NSTimeInterval)interval {
+  self.heartbeatPolicy.heartbeatInterval = interval;
+}
+
+- (NSTimeInterval)heartbeatTimeout {
+  return self.heartbeatPolicy.heartbeatTimeout;
+}
+
+- (void)setHeartbeatTimeout:(NSTimeInterval)timeout {
+  self.heartbeatPolicy.heartbeatTimeout = timeout;
 }
 
 - (void)start {
@@ -255,123 +262,30 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 }
 
 - (void)handleReceivedData:(NSData *)data {
-  [self.readBuffer appendData:data];
-
-  while (self.readBuffer.length >= 2) {
-    NSUInteger offset = 0;
-    const uint8_t *bytes = self.readBuffer.bytes;
-    uint8_t firstByte = bytes[0];
-    uint8_t secondByte = bytes[1];
-
-    BOOL fin = (firstByte & WS_FLAG_FIN) != 0;
-    uint8_t opcode = firstByte & 0x0F;
-    BOOL masked = (secondByte & WS_MASK) != 0;
-    uint64_t payloadLength = secondByte & 0x7F;
-    NSUInteger extendedLengthOffset = 0;
-
-    if (payloadLength == 126) {
-      if (self.readBuffer.length < 4)
-        return;
-      payloadLength = (uint64_t)bytes[2] << 8 | bytes[3];
-      extendedLengthOffset = 2;
-    } else if (payloadLength == 127) {
-      if (self.readBuffer.length < 10)
-        return;
-      payloadLength = 0;
-      for (int i = 0; i < 8; i++) {
-        payloadLength = (payloadLength << 8) | bytes[2 + i];
-      }
-      extendedLengthOffset = 8;
-    }
-
-    if (payloadLength > WS_MAX_FRAME_SIZE) {
-      [self closeWithCode:1009 reason:@"Frame too large"];
-      return;
-    }
-
-    NSUInteger headerLength = 2 + extendedLengthOffset + (masked ? 4 : 0);
-    NSUInteger maskOffset = 2 + extendedLengthOffset;
-    NSUInteger dataOffset = headerLength;
-
-    if (self.readBuffer.length < headerLength + payloadLength) {
-      return;
-    }
-
-    NSMutableData *payload = [NSMutableData dataWithCapacity:payloadLength];
-    if (masked) {
-      const uint8_t *maskBytes = bytes + maskOffset;
-      for (NSUInteger i = 0; i < payloadLength; i++) {
-        uint8_t maskedByte = bytes[dataOffset + i];
-        uint8_t unmaskedByte = maskedByte ^ maskBytes[i % 4];
-        [payload appendBytes:&unmaskedByte length:1];
-      }
-    } else {
-      [payload appendBytes:bytes + dataOffset length:payloadLength];
-    }
-
-    [self.readBuffer
-        replaceBytesInRange:NSMakeRange(0, headerLength + payloadLength)
-                  withBytes:NULL
-                     length:0];
-
-    [self handleFrameWithOpcode:opcode fin:fin payload:payload];
-
-    if (!fin) {
-      return;
+  NSArray<WSCodecEvent *> *events = [self.codec feedData:data];
+  
+  for (WSCodecEvent *event in events) {
+    switch (event.type) {
+      case WSCodecEventTextMessage:
+        [self notifyTextMessage:event.text];
+        break;
+      case WSCodecEventBinaryMessage:
+        [self notifyBinaryMessage:event.payload];
+        break;
+      case WSCodecEventPing:
+        [self handlePingFrame:event.payload];
+        break;
+      case WSCodecEventPong:
+        [self handlePongFrame:event.payload];
+        break;
+      case WSCodecEventClose:
+        [self closeWithCode:event.closeCode reason:event.closeReason];
+        break;
+      case WSCodecEventProtocolError:
+        [self closeWithCode:event.closeCode reason:event.closeReason];
+        break;
     }
   }
-}
-
-- (void)handleFrameWithOpcode:(uint8_t)opcode
-                          fin:(BOOL)fin
-                      payload:(NSData *)payload {
-  switch (opcode) {
-  case WS_OPCODE_TEXT:
-    [self
-        notifyTextMessage:[[NSString alloc] initWithData:payload
-                                                encoding:NSUTF8StringEncoding]];
-    break;
-
-  case WS_OPCODE_BINARY:
-    [self notifyBinaryMessage:payload];
-    break;
-
-  case WS_OPCODE_CLOSE:
-    [self handleCloseFrame:payload];
-    break;
-
-  case WS_OPCODE_PING:
-    [self handlePingFrame:payload];
-    break;
-
-  case WS_OPCODE_PONG:
-    [self handlePongFrame:payload];
-    break;
-
-  default:
-    break;
-  }
-}
-
-- (void)handleCloseFrame:(NSData *)payload {
-  NSInteger code = 0;
-  NSString *reason = @"";
-
-  if (payload.length >= 2) {
-    const unsigned char *payloadBytes = (const unsigned char *)payload.bytes;
-    code = (NSInteger)payloadBytes[0] << 8 | (NSInteger)payloadBytes[1];
-    if (payload.length > 2) {
-      NSUInteger reasonLength = payload.length - 2;
-      if (reasonLength > 1000) {
-        reasonLength = 1000;
-      }
-      reason = [[NSString alloc]
-          initWithData:[payload subdataWithRange:NSMakeRange(2, reasonLength)]
-              encoding:NSUTF8StringEncoding];
-    }
-  }
-
-  [self closeWithCode:code reason:reason];
 }
 
 - (void)handlePingFrame:(NSData *)payload {
@@ -379,8 +293,8 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 }
 
 - (void)handlePongFrame:(NSData *)payload {
-  [self stopHeartbeatTimeout];
-  self.waitingForPong = NO;
+  NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+  [self.heartbeatPolicy pongReceived:now];
 }
 
 - (void)close {
@@ -401,16 +315,7 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
     self.queuedSendBytes = 0;
   });
 
-  NSMutableData *closeData = [NSMutableData dataWithCapacity:2 + reason.length];
-  uint8_t codeBytes[2] = {(uint8_t)((code >> 8) & 0xFF),
-                          (uint8_t)(code & 0xFF)};
-  [closeData appendBytes:codeBytes length:2];
-  if (reason.length > 0) {
-    [closeData appendData:[reason dataUsingEncoding:NSUTF8StringEncoding]];
-  }
-
-  NSData *frame =
-      [self createFrameWithOpcode:WS_OPCODE_CLOSE payload:closeData];
+  NSData *frame = [self.codec closeFrame:code reason:reason];
   [self writeData:frame];
 
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)),
@@ -423,22 +328,19 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
 }
 
 - (void)sendMessage:(NSData *)data {
-  [self sendFrame:[self createFrameWithOpcode:WS_OPCODE_BINARY payload:data]];
+  [self sendFrame:[self.codec binaryFrame:data]];
 }
 
 - (void)sendText:(NSString *)text {
-  NSData *textData = [text dataUsingEncoding:NSUTF8StringEncoding];
-  [self sendFrame:[self createFrameWithOpcode:WS_OPCODE_TEXT payload:textData]];
+  [self sendFrame:[self.codec textFrame:text]];
 }
 
 - (void)sendPing:(NSData *)payload {
-  [self sendFrame:[self createFrameWithOpcode:WS_OPCODE_PING
-                                      payload:payload ?: [NSData data]]];
+  [self sendFrame:[self.codec pingFrame:payload]];
 }
 
 - (void)sendPong:(NSData *)payload {
-  [self sendFrame:[self createFrameWithOpcode:WS_OPCODE_PONG
-                                      payload:payload ?: [NSData data]]];
+  [self sendFrame:[self.codec pongFrame:payload]];
 }
 
 - (void)sendFrame:(NSData *)frame {
@@ -525,50 +427,19 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
                  }];
 }
 
-- (NSData *)createFrameWithOpcode:(uint8_t)opcode payload:(NSData *)payload {
-  NSMutableData *frame = [NSMutableData data];
-
-  uint8_t firstByte = WS_FLAG_FIN | opcode;
-  [frame appendBytes:&firstByte length:1];
-
-  uint64_t length = payload.length;
-  if (length < 126) {
-    uint8_t secondByte = (uint8_t)length;
-    [frame appendBytes:&secondByte length:1];
-  } else if (length < 65536) {
-    uint8_t secondByte = 126;
-    uint8_t lengthBytes[2] = {(uint8_t)((length >> 8) & 0xFF),
-                              (uint8_t)(length & 0xFF)};
-    [frame appendBytes:&secondByte length:1];
-    [frame appendBytes:lengthBytes length:2];
-  } else {
-    uint8_t secondByte = 127;
-    uint8_t lengthBytes[8];
-    for (int i = 7; i >= 0; i--) {
-      lengthBytes[i] = (uint8_t)(length & 0xFF);
-      length >>= 8;
-    }
-    [frame appendBytes:&secondByte length:1];
-    [frame appendBytes:lengthBytes length:8];
-  }
-
-  [frame appendData:payload];
-
-  return frame;
-}
-
 - (void)startHeartbeat {
   [self stopHeartbeat];
   self.heartbeatTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
                                                dispatch_get_main_queue());
+  // Tick more frequently to check the policy (e.g., every 1 second)
   dispatch_source_set_timer(
       self.heartbeatTimer,
-      dispatch_walltime(NULL, self.heartbeatInterval * NSEC_PER_SEC),
-      self.heartbeatInterval * NSEC_PER_SEC, 1 * NSEC_PER_SEC);
+      dispatch_walltime(NULL, 1 * NSEC_PER_SEC),
+      1 * NSEC_PER_SEC, 1 * NSEC_PER_SEC);
 
   __weak typeof(self) weakSelf = self;
   dispatch_source_set_event_handler(self.heartbeatTimer, ^{
-    [weakSelf sendHeartbeat];
+    [weakSelf tickHeartbeat];
   });
   dispatch_resume(self.heartbeatTimer);
 }
@@ -580,38 +451,16 @@ static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024;
   }
 }
 
-- (void)sendHeartbeat {
-  if (self.waitingForPong) {
+- (void)tickHeartbeat {
+  NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+  WSHeartbeatAction action = [self.heartbeatPolicy tick:now];
+  
+  if (action == WSHeartbeatActionSendPing) {
+    [self sendPing:nil];
+    [self.heartbeatPolicy pingSent:now];
+  } else if (action == WSHeartbeatActionTimeout) {
     [self closeWithCode:1001 reason:@"Heartbeat timeout"];
-    return;
   }
-
-  self.waitingForPong = YES;
-  [self sendPing:nil];
-
-  self.heartbeatTimeoutTimer = dispatch_source_create(
-      DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-  dispatch_source_set_timer(
-      self.heartbeatTimeoutTimer,
-      dispatch_walltime(NULL, self.heartbeatTimeout * NSEC_PER_SEC),
-      DISPATCH_TIME_FOREVER, 1 * NSEC_PER_SEC);
-
-  __weak typeof(self) weakSelf = self;
-  dispatch_source_set_event_handler(self.heartbeatTimeoutTimer, ^{
-    [weakSelf handleHeartbeatTimeout];
-  });
-  dispatch_resume(self.heartbeatTimeoutTimer);
-}
-
-- (void)stopHeartbeatTimeout {
-  if (self.heartbeatTimeoutTimer) {
-    dispatch_source_cancel(self.heartbeatTimeoutTimer);
-    self.heartbeatTimeoutTimer = nil;
-  }
-}
-
-- (void)handleHeartbeatTimeout {
-  [self closeWithCode:1001 reason:@"Heartbeat timeout"];
 }
 
 - (void)notifyTextMessage:(NSString *)text {
