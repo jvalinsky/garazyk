@@ -17,7 +17,7 @@ static const NSTimeInterval PDSAdminAuthMaxTokenTTLSeconds = 86400.0;
 
 static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
     if (a == nil || b == nil) {
-        return NO;
+        return a == b;
     }
 
     NSData *aData = [a dataUsingEncoding:NSUTF8StringEncoding];
@@ -26,16 +26,26 @@ static BOOL PDSConstantTimeEqualStrings(NSString *a, NSString *b) {
         return NO;
     }
 
-    if (aData.length != bData.length) {
-        return NO;
-    }
-
     const uint8_t *aBytes = aData.bytes;
     const uint8_t *bBytes = bData.bytes;
-    uint8_t diff = 0;
-    for (NSUInteger i = 0; i < aData.length; i++) {
-        diff |= (uint8_t)(aBytes[i] ^ bBytes[i]);
+    NSUInteger aLen = aData.length;
+    NSUInteger bLen = bData.length;
+    
+    // Use the longer length for the loop to ensure we always touch enough memory,
+    // though for strings of different lengths we just want to ensure we don't crash
+    // and that the comparison logic doesn't exit early.
+    // However, a true constant-time comparison across different lengths is tricky.
+    // The standard approach is to compare a fixed number of bytes or just ensure
+    // the loop runs a fixed amount if lengths are predictable.
+    // Here, we'll compare the minimum length and then bitwise-OR the length difference.
+    
+    NSUInteger minLen = aLen < bLen ? aLen : bLen;
+    uint8_t diff = (uint8_t)(aLen ^ bLen);
+    
+    for (NSUInteger i = 0; i < minLen; i++) {
+        diff |= (aBytes[i] ^ bBytes[i]);
     }
+    
     return diff == 0;
 }
 
