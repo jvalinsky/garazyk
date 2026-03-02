@@ -1776,7 +1776,6 @@ static dispatch_once_t sClientCacheOnceToken;
     }
     NSString *redirectUri = params[@"redirect_uri"];
     if (redirectUri.length > 0) {
-      NSError *clientError = nil;
       __block NSDictionary *client = nil;
       __block NSError *clientError = nil;
       dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
@@ -2078,8 +2077,21 @@ static dispatch_once_t sClientCacheOnceToken;
   NSString *clientID = params[@"client_id"];
   PDS_LOG_AUTH_INFO(@"Token request received (grant_type=%@, client_id=%@)",
                     grantType ?: @"", clientID ?: @"");
-  NSError *clientError = nil;
-  NSDictionary *client = [self validateClient:clientID error:&clientError];
+
+  __block NSDictionary *client = nil;
+  __block NSError *clientError = nil;
+  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+
+  [self validateClient:clientID
+            completion:^(NSDictionary *_Nullable fetchedClient,
+                         NSError *_Nullable error) {
+              client = fetchedClient;
+              clientError = error;
+              dispatch_semaphore_signal(clientSem);
+            }];
+
+  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+
   if (!client) {
     response.statusCode = 401;
     [response setJsonBody:@{
@@ -2288,8 +2300,20 @@ static dispatch_once_t sClientCacheOnceToken;
   NSString *clientID = params[@"client_id"];
   NSString *token = params[@"token"];
 
-  NSError *clientError = nil;
-  NSDictionary *client = [self validateClient:clientID error:&clientError];
+  __block NSDictionary *client = nil;
+  __block NSError *clientError = nil;
+  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+
+  [self validateClient:clientID
+            completion:^(NSDictionary *_Nullable fetchedClient,
+                         NSError *_Nullable error) {
+              client = fetchedClient;
+              clientError = error;
+              dispatch_semaphore_signal(clientSem);
+            }];
+
+  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+
   if (!client) {
     response.statusCode = 401;
     [response setJsonBody:@{
@@ -2377,8 +2401,20 @@ static dispatch_once_t sClientCacheOnceToken;
     return;
   }
 
-  NSError *clientError = nil;
-  NSDictionary *client = [self validateClient:clientID error:&clientError];
+  __block NSDictionary *client = nil;
+  __block NSError *clientError = nil;
+  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+
+  [self validateClient:clientID
+            completion:^(NSDictionary *_Nullable fetchedClient,
+                         NSError *_Nullable error) {
+              client = fetchedClient;
+              clientError = error;
+              dispatch_semaphore_signal(clientSem);
+            }];
+
+  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+
   if (!client) {
     response.statusCode = 401;
     [response setJsonBody:@{
