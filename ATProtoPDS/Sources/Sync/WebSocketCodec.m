@@ -31,6 +31,8 @@ static const uint8_t WS_MASK = 0x80;
 
 @interface WebSocketCodec ()
 @property (nonatomic, strong) NSMutableData *readBuffer;
+@property (nonatomic, strong) NSMutableArray<NSData *> *fragments;
+@property (nonatomic, assign) uint8_t fragmentOpcode;
 @end
 
 @implementation WebSocketCodec
@@ -40,6 +42,8 @@ static const uint8_t WS_MASK = 0x80;
     if (self) {
         _maxFrameSize = 16 * 1024 * 1024; // 16MB default
         _readBuffer = [NSMutableData data];
+        _fragments = [NSMutableArray array];
+        _fragmentOpcode = 0;
     }
     return self;
 }
@@ -50,24 +54,25 @@ static const uint8_t WS_MASK = 0x80;
     }
 
     NSMutableArray<WSCodecEvent *> *events = [NSMutableArray array];
+    NSUInteger offset = 0;
 
-    while (self.readBuffer.length >= 2) {
-        const uint8_t *bytes = self.readBuffer.bytes;
+    while (self.readBuffer.length - offset >= 2) {
+        const uint8_t *bytes = self.readBuffer.bytes + offset;
         uint8_t firstByte = bytes[0];
         uint8_t secondByte = bytes[1];
 
-        // BOOL fin = (firstByte & WS_FLAG_FIN) != 0;
+        BOOL fin = (firstByte & WS_FLAG_FIN) != 0;
         uint8_t opcode = firstByte & 0x0F;
         BOOL masked = (secondByte & WS_MASK) != 0;
         uint64_t payloadLength = secondByte & 0x7F;
         NSUInteger extendedLengthOffset = 0;
 
         if (payloadLength == 126) {
-            if (self.readBuffer.length < 4) return events;
+            if (self.readBuffer.length - offset < 4) break;
             payloadLength = (uint64_t)bytes[2] << 8 | bytes[3];
             extendedLengthOffset = 2;
         } else if (payloadLength == 127) {
-            if (self.readBuffer.length < 10) return events;
+            if (self.readBuffer.length - offset < 10) break;
             payloadLength = 0;
             for (int i = 0; i < 8; i++) {
                 payloadLength = (payloadLength << 8) | bytes[2 + i];
@@ -81,6 +86,7 @@ static const uint8_t WS_MASK = 0x80;
                                                        closeCode:1009
                                                      closeReason:@"Frame too large"
                                                             text:nil]];
+            [self.readBuffer setLength:0];
             return events;
         }
 
@@ -88,8 +94,8 @@ static const uint8_t WS_MASK = 0x80;
         NSUInteger maskOffset = 2 + extendedLengthOffset;
         NSUInteger dataOffset = headerLength;
 
-        if (self.readBuffer.length < headerLength + payloadLength) {
-            return events;
+        if (self.readBuffer.length - offset < headerLength + payloadLength) {
+            break;
         }
 
         NSMutableData *payload = [NSMutableData dataWithCapacity:payloadLength];
@@ -104,22 +110,55 @@ static const uint8_t WS_MASK = 0x80;
             [payload appendBytes:bytes + dataOffset length:payloadLength];
         }
 
-        [self.readBuffer replaceBytesInRange:NSMakeRange(0, headerLength + payloadLength)
-                                   withBytes:NULL
-                                      length:0];
+        offset += headerLength + payloadLength;
 
-        WSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
-        if (event) {
-            [events addObject:event];
+        if (opcode >= WS_OPCODE_CLOSE) {
+            // Control frames can be interleaved and are always complete
+            WSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
+            if (event) {
+                [events addObject:event];
+            }
+        } else {
+            // Data or continuation frame
+            if (opcode != WS_OPCODE_CONTINUE) {
+                if (!fin) {
+                    self.fragmentOpcode = opcode;
+                    [self.fragments addObject:payload];
+                } else {
+                    WSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
+                    if (event) {
+                        [events addObject:event];
+                    }
+                }
+            } else {
+                [self.fragments addObject:payload];
+                if (fin) {
+                    // Reassemble
+                    NSUInteger totalLength = 0;
+                    for (NSData *frag in self.fragments) {
+                        totalLength += frag.length;
+                    }
+                    NSMutableData *reassembled = [NSMutableData dataWithCapacity:totalLength];
+                    for (NSData *frag in self.fragments) {
+                        [reassembled appendData:frag];
+                    }
+                    WSCodecEvent *event = [self eventForOpcode:self.fragmentOpcode payload:reassembled];
+                    if (event) {
+                        [events addObject:event];
+                    }
+                    [self.fragments removeAllObjects];
+                    self.fragmentOpcode = 0;
+                }
+            }
         }
-        
-        // Note: The original parser didn't fully handle FIN=0 logic natively in the parser. 
-        // We preserve that behavior but emit the events. If it was FIN=0, the old parser just exited the loop 
-        // without consuming more, or returned? Let's check original behavior.
-        // Original: "if (!fin) { return; }" 
-        // This was a bug in original parser (it would stop processing buffered data until more came in).
-        // Let's drop the "return" so it keeps parsing if there are more frames in buffer, 
-        // making the codec more correct.
+    }
+
+    if (offset > 0) {
+        if (offset == self.readBuffer.length) {
+            [self.readBuffer setLength:0];
+        } else {
+            [self.readBuffer replaceBytesInRange:NSMakeRange(0, offset) withBytes:NULL length:0];
+        }
     }
 
     return events;

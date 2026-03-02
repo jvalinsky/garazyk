@@ -503,8 +503,38 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     
     [self processPipelinedRequestsForState:state connection:connection];
     
-    if (unconsumed.length > 0) {
-      [self tryProcessRequestFromState:state data:unconsumed connection:connection];
+    while (unconsumed.length > 0) {
+      if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime > kHttpHeaderTimeout) {
+        [connection cancel];
+        return;
+      }
+      
+      BOOL loopComplete = [state.parser feedData:unconsumed];
+      if (!loopComplete) {
+        break;
+      }
+      
+      Http1ParserError *loopError = [state.parser parseError];
+      if (loopError) {
+        HttpResponse *response = [HttpResponse responseWithStatusCode:loopError.statusCode];
+        response.keepAlive = NO;
+        [response setJsonBody:@{@"error": loopError.errorCode, @"message": loopError.message}];
+        [self queueResponse:response forState:state connection:connection];
+        return;
+      }
+      
+      HttpRequest *loopReq = [state.parser completedRequest];
+      if (!loopReq) break;
+      
+      Http1PipelineAction loopAction = [state.pipelinePolicy requestParsed];
+      if (loopAction == Http1PipelineActionDispatch || loopAction == Http1PipelineActionQueue) {
+        [state.pendingRequests addObject:loopReq];
+        unconsumed = [state.parser unconsumedData];
+        [state resetForNextRequest];
+        [self processPipelinedRequestsForState:state connection:connection];
+      } else {
+        break;
+      }
     }
   }
 }
