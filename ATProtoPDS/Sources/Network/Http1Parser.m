@@ -217,15 +217,11 @@
         if (availableBodyLength > 0) {
             NSData *bodyChunk = [self.buffer subdataWithRange:NSMakeRange(bodyStart, availableBodyLength)];
             NSError *parseError = nil;
-            BOOL shouldContinue = [self.chunkedBodyParser appendData:bodyChunk error:&parseError];
+            NSInteger bytesConsumed = [self.chunkedBodyParser appendData:bodyChunk error:&parseError];
 
-            if (parseError) {
+            if (parseError || bytesConsumed < 0) {
                 [self setErrorWithStatusCode:400 errorCode:@"BadRequest" message:@"Invalid chunked body"];
                 return YES;
-            }
-
-            if (!shouldContinue) {
-                return NO;
             }
 
             if (!self.chunkedBodyParser.isComplete) {
@@ -233,11 +229,7 @@
             }
 
             bodyData = self.chunkedBodyParser.parsedData;
-            // For chunked body, the unconsumed data logic is tricky because we might over-read. 
-            // Currently HttpChunkedBodyParser consumes all available data if no error. 
-            // In a real robust implementation, HttpChunkedBodyParser would return exactly how many bytes it consumed.
-            // For now we'll match the existing logic which assumes it consumes the whole buffer.
-            consumedOffset = self.buffer.length;
+            consumedOffset = bodyStart + bytesConsumed;
         } else {
             return NO;
         }
