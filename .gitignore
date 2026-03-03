@@ -101,3 +101,7 @@ source.tar.gz
 
 # Cadmus build data
 .cadmus/
+
+# Build artifacts
+build_output.txt
+buildServer.json
