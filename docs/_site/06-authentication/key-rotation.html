@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key Rotation - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Key Rotation</h1>
+            </div>
+            <h1 id="key-rotation">Key Rotation</h1>
+<h2 id="overview">Overview</h2>
+<p>Key rotation is the process of periodically replacing cryptographic keys used for signing and authentication. Regular key rotation reduces the impact of key compromise and follows security best practices.</p>
+<h2 id="key-types">Key Types</h2>
+<p>The PDS manages several types of keys:</p>
+<table>
+<thead>
+<tr>
+<th>Key Type</th>
+<th>Purpose</th>
+<th>Rotation Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Account signing key</td>
+<td>Sign repository commits</td>
+<td>Annually</td>
+</tr>
+<tr>
+<td>OAuth client secret</td>
+<td>OAuth authentication</td>
+<td>Quarterly</td>
+</tr>
+<tr>
+<td>JWT signing key</td>
+<td>Sign access tokens</td>
+<td>Annually</td>
+</tr>
+<tr>
+<td>DPoP key</td>
+<td>DPoP proof generation</td>
+<td>Per-session</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rotation-strategy">Rotation Strategy</h2>
+<h3 id="account-signing-key-rotation">Account Signing Key Rotation</h3>
+<pre class="codehilite"><code>Current Key (Active)
+    ↓
+    ├─ Used for new commits
+    ├─ Stored in account database
+    └─ Published in DID document
+
+Old Key (Deprecated)
+    ├─ Still valid for verification
+    ├─ Kept for 30 days
+    └─ Removed after expiration
+
+New Key (Staged)
+    ├─ Generated before rotation
+    ├─ Published in DID document
+    └─ Activated at rotation time
+</code></pre>
+
+<h3 id="rotation-timeline">Rotation Timeline</h3>
+<pre class="codehilite"><code>Day 1: Generate new key
+Day 2: Publish new key in DID document
+Day 3: Activate new key (start using for signing)
+Day 4-33: Keep old key for verification
+Day 34: Remove old key
+</code></pre>
+
+<h2 id="implementation">Implementation</h2>
+<h3 id="key-rotation-manager">Key Rotation Manager</h3>
+<pre class="codehilite"><code class="language-objc">@interface KeyRotationManager : NSObject
+
+// Rotation operations
+- (BOOL)rotateAccountSigningKey:(NSString *)did error:(NSError **)error;
+- (BOOL)rotateOAuthClientSecret:(NSString *)clientId error:(NSError **)error;
+- (BOOL)rotateJWTSigningKey:(NSError **)error;
+
+// Key status
+- (nullable NSDictionary *)getKeyStatus:(NSString *)keyId error:(NSError **)error;
+- (NSArray *)getActiveKeys:(NSError **)error;
+- (NSArray *)getDeprecatedKeys:(NSError **)error;
+
+// Cleanup
+- (BOOL)cleanupExpiredKeys:(NSError **)error;
+
+@end
+</code></pre>
+
+<h3 id="rotating-account-signing-key">Rotating Account Signing Key</h3>
+<pre class="codehilite"><code class="language-objc">- (BOOL)rotateAccountSigningKey:(NSString *)did error:(NSError **)error {
+    // 1. Generate new key
+    SecKeyRef newKey = [self generateSigningKey];
+    NSString *newKeyId = [self generateKeyId];
+
+    // 2. Store new key (not yet active)
+    [self storeKey:newKey withId:newKeyId forDid:did status:@&quot;staged&quot;];
+
+    // 3. Update DID document
+    NSDictionary *didDoc = [self getDidDocument:did];
+    NSMutableArray *publicKeys = [didDoc[@&quot;publicKey&quot;] mutableCopy];
+    [publicKeys addObject:@{
+        @&quot;id&quot;: newKeyId,
+        @&quot;type&quot;: @&quot;EcdsaSecp256r1VerificationKey2019&quot;,
+        @&quot;publicKeyPem&quot;: [self exportPublicKey:newKey]
+    }];
+
+    [self updateDidDocument:did withPublicKeys:publicKeys];
+
+    // 4. Activate new key
+    [self activateKey:newKeyId forDid:did];
+
+    // 5. Mark old key as deprecated
+    NSString *oldKeyId = [self getCurrentKeyId:did];
+    [self deprecateKey:oldKeyId forDid:did];
+
+    // 6. Schedule cleanup
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 30*24*3600*NSEC_PER_SEC),
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        [self removeKey:oldKeyId forDid:did];
+    });
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="rotating-oauth-client-secret">Rotating OAuth Client Secret</h3>
+<pre class="codehilite"><code class="language-objc">- (BOOL)rotateOAuthClientSecret:(NSString *)clientId error:(NSError **)error {
+    // 1. Generate new secret
+    NSString *newSecret = [self generateClientSecret];
+
+    // 2. Store new secret (not yet active)
+    [self storeClientSecret:newSecret forClientId:clientId status:@&quot;staged&quot;];
+
+    // 3. Activate new secret
+    [self activateClientSecret:newSecret forClientId:clientId];
+
+    // 4. Mark old secret as deprecated
+    NSString *oldSecret = [self getCurrentClientSecret:clientId];
+    [self deprecateClientSecret:oldSecret forClientId:clientId];
+
+    // 5. Schedule cleanup
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 7*24*3600*NSEC_PER_SEC),
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        [self removeClientSecret:oldSecret forClientId:clientId];
+    });
+
+    return YES;
+}
+</code></pre>
+
+<h2 id="key-storage">Key Storage</h2>
+<h3 id="secure-key-storage">Secure Key Storage</h3>
+<p>Keys are stored securely:</p>
+<pre class="codehilite"><code class="language-objc">// Store in Keychain (macOS)
+SecKeychainItemRef item = nil;
+SecKeychainAddGenericPassword(NULL,
+                             (UInt32)strlen(serviceName),
+                             serviceName,
+                             (UInt32)strlen(accountName),
+                             accountName,
+                             (UInt32)keyData.length,
+                             keyData.bytes,
+                             &amp;item);
+
+// Or in file with restricted permissions (Linux)
+chmod(keyFilePath, 0600);  // Owner read/write only
+</code></pre>
+
+<h3 id="key-metadata">Key Metadata</h3>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE signing_keys (
+    key_id TEXT PRIMARY KEY,
+    did TEXT NOT NULL,
+    key_data BLOB NOT NULL,
+    status TEXT,  -- active, staged, deprecated
+    created_at DATETIME NOT NULL,
+    activated_at DATETIME,
+    deprecated_at DATETIME,
+    expires_at DATETIME,
+    FOREIGN KEY (did) REFERENCES accounts(did)
+);
+
+CREATE INDEX idx_signing_keys_did ON signing_keys(did);
+CREATE INDEX idx_signing_keys_status ON signing_keys(status);
+</code></pre>
+
+<h2 id="rotation-policies">Rotation Policies</h2>
+<h3 id="automatic-rotation">Automatic Rotation</h3>
+<pre class="codehilite"><code class="language-objc">// Rotate keys annually
+dispatch_source_t rotationTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,
+                                                         0, 0,
+                                                         dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0));
+
+dispatch_source_set_timer(rotationTimer,
+                         dispatch_time(DISPATCH_TIME_NOW, 365*24*3600*NSEC_PER_SEC),
+                         365*24*3600*NSEC_PER_SEC,
+                         24*3600*NSEC_PER_SEC);
+
+dispatch_source_set_event_handler(rotationTimer, ^{
+    NSArray *accounts = [self getAllAccounts];
+    for (NSDictionary *account in accounts) {
+        NSError *error = nil;
+        [rotationManager rotateAccountSigningKey:account[@&quot;did&quot;] error:&amp;error];
+        if (error) {
+            NSLog(@&quot;Rotation failed for %@: %@&quot;, account[@&quot;did&quot;], error);
+        }
+    }
+});
+
+dispatch_resume(rotationTimer);
+</code></pre>
+
+<h3 id="manual-rotation">Manual Rotation</h3>
+<pre class="codehilite"><code class="language-objc">// Rotate on demand
+NSError *error = nil;
+BOOL success = [rotationManager rotateAccountSigningKey:userDid error:&amp;error];
+
+if (success) {
+    NSLog(@&quot;Key rotated successfully&quot;);
+} else {
+    NSLog(@&quot;Rotation failed: %@&quot;, error);
+}
+</code></pre>
+
+<h2 id="monitoring">Monitoring</h2>
+<h3 id="key-status">Key Status</h3>
+<pre class="codehilite"><code class="language-objc">- (NSDictionary *)getKeyStatus:(NSString *)keyId error:(NSError **)error {
+    NSArray *result = [database executeQuery:
+        @&quot;SELECT * FROM signing_keys WHERE key_id = ?&quot;, keyId];
+
+    if (result.count == 0) {
+        return nil;
+    }
+
+    NSDictionary *keyRecord = result[0];
+    return @{
+        @&quot;key_id&quot;: keyId,
+        @&quot;status&quot;: keyRecord[@&quot;status&quot;],
+        @&quot;created_at&quot;: keyRecord[@&quot;created_at&quot;],
+        @&quot;activated_at&quot;: keyRecord[@&quot;activated_at&quot;],
+        @&quot;deprecated_at&quot;: keyRecord[@&quot;deprecated_at&quot;],
+        @&quot;expires_at&quot;: keyRecord[@&quot;expires_at&quot;]
+    };
+}
+</code></pre>
+
+<h3 id="rotation-audit-log">Rotation Audit Log</h3>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE key_rotation_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    did TEXT NOT NULL,
+    old_key_id TEXT,
+    new_key_id TEXT,
+    rotation_type TEXT,  -- account_signing, oauth_secret, jwt_signing
+    rotated_at DATETIME NOT NULL,
+    rotated_by TEXT,
+    reason TEXT,
+    FOREIGN KEY (did) REFERENCES accounts(did)
+);
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Rotation Schedule</strong></li>
+<li>Rotate account signing keys annually</li>
+<li>Rotate OAuth secrets quarterly</li>
+<li>Rotate JWT signing keys annually</li>
+<li>
+<p>Rotate DPoP keys per-session</p>
+</li>
+<li>
+<p><strong>Key Generation</strong></p>
+</li>
+<li>Use cryptographically secure random generation</li>
+<li>Use appropriate key sizes (256-bit for EC)</li>
+<li>Store keys securely</li>
+<li>
+<p>Never log key material</p>
+</li>
+<li>
+<p><strong>Transition Period</strong></p>
+</li>
+<li>Keep old keys valid for 30 days</li>
+<li>Publish new keys before activation</li>
+<li>Activate new keys gradually</li>
+<li>
+<p>Remove old keys after expiration</p>
+</li>
+<li>
+<p><strong>Monitoring</strong></p>
+</li>
+<li>Track key rotation events</li>
+<li>Alert on rotation failures</li>
+<li>Monitor key expiration</li>
+<li>
+<p>Audit key access</p>
+</li>
+<li>
+<p><strong>Emergency Rotation</strong></p>
+</li>
+<li>Rotate immediately if key is compromised</li>
+<li>Revoke old key immediately</li>
+<li>Notify users of rotation</li>
+<li>Update all systems</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="scheduled-rotation">Scheduled Rotation</h3>
+<pre class="codehilite"><code class="language-objc">// Rotate keys on a schedule
+- (void)setupKeyRotationSchedule {
+    // Check for keys that need rotation
+    NSArray *keysNeedingRotation = [self getKeysNeedingRotation];
+
+    for (NSDictionary *key in keysNeedingRotation) {
+        NSError *error = nil;
+        [self rotateAccountSigningKey:key[@&quot;did&quot;] error:&amp;error];
+    }
+}
+</code></pre>
+
+<h3 id="emergency-rotation">Emergency Rotation</h3>
+<pre class="codehilite"><code class="language-objc">// Rotate immediately if key is compromised
+- (BOOL)emergencyRotateKey:(NSString *)keyId forDid:(NSString *)did error:(NSError **)error {
+    // 1. Revoke compromised key immediately
+    [self revokeKey:keyId];
+
+    // 2. Generate new key
+    SecKeyRef newKey = [self generateSigningKey];
+    NSString *newKeyId = [self generateKeyId];
+
+    // 3. Activate new key immediately
+    [self storeKey:newKey withId:newKeyId forDid:did status:@&quot;active&quot;];
+
+    // 4. Update DID document
+    [self updateDidDocumentWithNewKey:newKeyId forDid:did];
+
+    // 5. Notify user
+    [self notifyUserOfEmergencyRotation:did];
+
+    return YES;
+}
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./jwt-tokens.md">JWT Tokens</a></li>
+<li><a href="./oauth2-dpop.md">OAuth 2.0 with DPoP</a></li>
+<li><a href="./totp-webauthn.md">TOTP and WebAuthn</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

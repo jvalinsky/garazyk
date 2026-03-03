@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Objective-C Documentation Improvement Plan - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Objective-C Documentation Improvement Plan</h1>
+            </div>
+            <h1 id="objective-c-documentation-improvement-plan">Objective-C Documentation Improvement Plan</h1>
+<p><strong>Created</strong>: 2026-02-27
+<strong>Goal</strong>: Standardize and improve code documentation following Apple HeaderDoc best practices</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p>The codebase uses <strong>Apple's HeaderDoc style</strong> as the primary documentation format with ~88% coverage in header files. However, there are inconsistencies (Javadoc style in some files) and gaps (implementation files, thread safety, error handling docs).</p>
+<hr />
+<h2 id="phase-1-standardize-documentation-format">Phase 1: Standardize Documentation Format</h2>
+<h3 id="11-migrate-javadoc-headerdoc">1.1 Migrate Javadoc → HeaderDoc</h3>
+<p><strong>Files to update:</strong>
+- <code>ATProtoPDS/Sources/Email/PDSEmailProvider.h</code>
+- <code>ATProtoPDS/Sources/Blob/PDSBlobProvider.h</code></p>
+<p><strong>Change:</strong></p>
+<pre class="codehilite"><code class="language-objective-c">// FROM (Javadoc)
+/**
+ * @protocol PDSEmailProvider
+ * @abstract Email sending protocol
+ */
+
+// TO (HeaderDoc)
+/*!
+ @protocol PDSEmailProvider
+ @abstract Email sending protocol
+ */
+</code></pre>
+
+<h3 id="12-standardize-file-headers">1.2 Standardize File Headers</h3>
+<p>All <code>.h</code> files should have consistent file-level documentation:</p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @header FileName.h
+ @abstract One-line summary of the module's purpose
+ @discussion
+    Detailed explanation of the module's responsibilities,
+    design decisions, and how it fits into the larger system.
+
+    Include usage notes, thread safety considerations, and
+    any important implementation details.
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+</code></pre>
+
+<p><strong>Files missing proper headers:</strong>
+- <code>ATProtoPDS/Sources/PLC/*.h</code> (multiple files)
+- <code>ATProtoPDS/Sources/Sync/*.h</code> (some files)</p>
+<hr />
+<h2 id="phase-2-header-file-documentation-standards">Phase 2: Header File Documentation Standards</h2>
+<h3 id="21-classinterface-documentation">2.1 Class/Interface Documentation</h3>
+<p><strong>Required elements:</strong></p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @class ClassName
+ @abstract Brief one-line description
+ @discussion
+    Detailed explanation of the class purpose and behavior.
+
+    Include:
+    - Primary responsibilities
+    - Key design patterns used
+    - Thread safety notes (if applicable)
+    - Memory management considerations
+
+ @code
+    // Usage example
+    ClassName *instance = [[ClassName alloc] init];
+    [instance performAction];
+ @endcode
+
+ @warning Note any important caveats
+ @see RelatedClass
+ */
+@interface ClassName : NSObject
+</code></pre>
+
+<h3 id="22-method-documentation">2.2 Method Documentation</h3>
+<p><strong>Required elements:</strong></p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @method methodName:param1:param2:
+ @abstract Brief description of what the method does
+ @param param1 Description of first parameter
+ @param param2 Description of second parameter
+ @return Description of return value
+ @discussion
+    Optional detailed explanation of implementation details,
+    edge cases, or performance characteristics.
+ @error
+    NSErrorDomain and error codes that may be returned:
+    - MyErrorDomain/MyErrorCodeInvalidInput - param1 was nil
+    - MyErrorDomain/MyErrorCodeNetworkFailure - connection failed
+ @note Thread safety notes if applicable
+ @see relatedMethod:
+ */
+- (ReturnType)methodName:(ParamType)param1
+                   param2:(ParamType2)param2;
+</code></pre>
+
+<h3 id="23-property-documentation">2.3 Property Documentation</h3>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @property propertyName
+ @abstract Brief description
+ @discussion
+    Optional detailed explanation for non-trivial properties.
+    Include KVO compliance notes if applicable.
+ */
+@property (nonatomic, copy, nullable) NSString *propertyName;
+
+/*! Read-only property description. */
+@property (nonatomic, readonly) NSInteger count;
+</code></pre>
+
+<h3 id="24-enum-documentation">2.4 Enum Documentation</h3>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @enum EnumName
+ @abstract Brief description of the enum's purpose
+ @constant EnumValueA Description of first value
+ @constant EnumValueB Description of second value
+ */
+typedef NS_ENUM(NSInteger, EnumName) {
+    /*! Description of EnumValueA */
+    EnumValueA,
+    /*! Description of EnumValueB */
+    EnumValueB
+};
+</code></pre>
+
+<h3 id="25-protocol-documentation">2.5 Protocol Documentation</h3>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @protocol ProtocolName
+ @abstract Brief description of the protocol's purpose
+ @discussion
+    Detailed explanation of the contract and expected behavior.
+    Include notes about required vs optional methods.
+
+ @required
+    All conforming classes must implement these methods.
+
+ @optional
+    These methods provide optional functionality.
+ */
+@protocol ProtocolName &lt;NSObject&gt;
+
+/*! Required method description */
+- (void)requiredMethod;
+
+@optional
+/*! Optional method description */
+- (void)optionalMethod;
+
+@end
+</code></pre>
+
+<hr />
+<h2 id="phase-3-implementation-file-documentation-standards">Phase 3: Implementation File Documentation Standards</h2>
+<h3 id="31-file-level-headers">3.1 File-Level Headers</h3>
+<pre class="codehilite"><code class="language-objective-c">//
+//  FileName.m
+//  ATProtoPDS
+//
+//  Implementation of ClassName functionality.
+//  See FileName.h for public API documentation.
+//
+
+#import &quot;FileName.h&quot;
+
+// Private constants
+static NSString * const kPrivateConstant = @&quot;value&quot;;
+
+// Private interface
+@interface ClassName ()
+// Private properties
+@end
+
+@implementation ClassName
+</code></pre>
+
+<h3 id="32-pragma-mark-organization">3.2 Pragma Mark Organization</h3>
+<p>Use <code>#pragma mark</code> consistently to organize implementation:</p>
+<pre class="codehilite"><code class="language-objective-c">@implementation ClassName
+
+#pragma mark - Lifecycle
+
+- (instancetype)init {
+    // ...
+}
+
+- (void)dealloc {
+    // ...
+}
+
+#pragma mark - Public Methods
+
+- (void)publicMethod {
+    // ...
+}
+
+#pragma mark - Private Methods
+
+- (void)privateMethod {
+    // ...
+}
+
+#pragma mark - Property Accessors
+
+- (void)setProperty:(id)property {
+    // ...
+}
+
+#pragma mark - NSCopying
+
+- (id)copyWithZone:(NSZone *)zone {
+    // ...
+}
+
+@end
+</code></pre>
+
+<h3 id="33-inline-comment-standards">3.3 Inline Comment Standards</h3>
+<p><strong>DO comment:</strong>
+- Non-obvious algorithm decisions
+- Workarounds for system bugs
+- Performance-critical code
+- Complex business logic
+- Edge cases being handled</p>
+<p><strong>DON'T comment:</strong>
+- Obvious code operations
+- Self-documenting code</p>
+<p><strong>Format:</strong></p>
+<pre class="codehilite"><code class="language-objective-c">// WHY: Explain the reason for non-obvious code
+// NOTE: Important information for maintainers
+// FIXME: Known issue that should be addressed
+// TODO: Future improvement
+// WARNING: Dangerous code that needs care
+
+// Calculate the MST hash using the specified algorithm.
+// The order of operations is critical here - we must process
+// children before parents to ensure correct CID calculation.
+NSString *hash = [self computeMSTHash:node];
+</code></pre>
+
+<h3 id="34-method-implementation-comments">3.4 Method Implementation Comments</h3>
+<p>For complex methods, add a brief header:</p>
+<pre class="codehilite"><code class="language-objective-c">#pragma mark - Private Methods
+
+/*!
+ @brief Process the incoming request and route to handler.
+ @discussion
+    This method implements the routing algorithm:
+    1. Parse the NSID from the path
+    2. Look up the registered handler
+    3. Validate authentication if required
+    4. Execute the handler
+
+    Performance: O(1) lookup using the handler dictionary.
+    Thread Safety: Uses @synchronized for handler registration.
+ */
+- (void)processRequest:(HttpRequest *)request {
+    // Implementation...
+}
+</code></pre>
+
+<hr />
+<h2 id="phase-4-special-documentation-categories">Phase 4: Special Documentation Categories</h2>
+<h3 id="41-thread-safety-documentation">4.1 Thread Safety Documentation</h3>
+<p>Add thread safety notes to classes/methods with concurrency:</p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @class HttpRouter
+ @discussion
+    Thread Safety: This class is thread-safe for read operations.
+    Handler registration uses @synchronized to prevent race conditions.
+
+    All public methods may be called from any thread.
+ */
+@interface HttpRouter : NSObject
+
+/*!
+ @method registerHandler:forMethod:
+ @discussion
+    Thread Safety: This method is thread-safe and may be called
+    from any thread. Uses @synchronized for mutual exclusion.
+ */
+- (void)registerHandler:(Handler)handler forMethod:(NSString *)method;
+
+@end
+</code></pre>
+
+<h3 id="42-memory-management-documentation">4.2 Memory Management Documentation</h3>
+<p>Document memory management for non-ARC code or complex retain cycles:</p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @class WebSocketConnection
+ @discussion
+    Memory Management:
+    - The delegate is held weakly to prevent retain cycles
+    - Call -disconnect to release all resources
+    - The connection retains itself during async operations
+ */
+@interface WebSocketConnection : NSObject
+
+/*!
+ @property delegate
+ @discussion
+    Weak reference to prevent retain cycles.
+    The delegate is not retained.
+ */
+@property (nonatomic, weak) id&lt;WebSocketDelegate&gt; delegate;
+
+@end
+</code></pre>
+
+<h3 id="43-error-documentation">4.3 Error Documentation</h3>
+<p>Document error domains and codes:</p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @const ATProtoErrorDomain
+ @abstract Error domain for AT Protocol operations
+ */
+extern NSString * const ATProtoErrorDomain;
+
+/*!
+ @enum ATProtoErrorCode
+ @abstract Error codes for AT Protocol operations
+ @constant ATProtoErrorInvalidDID The DID format was invalid
+ @constant ATProtoErrorResolutionFailed DID resolution failed
+ @constant ATProtoErrorNetworkFailure Network request failed
+ */
+typedef NS_ENUM(NSInteger, ATProtoErrorCode) {
+    ATProtoErrorInvalidDID = 1,
+    ATProtoErrorResolutionFailed = 2,
+    ATProtoErrorNetworkFailure = 3
+};
+</code></pre>
+
+<h3 id="44-api-stability-documentation">4.4 API Stability Documentation</h3>
+<p>Mark API stability:</p>
+<pre class="codehilite"><code class="language-objective-c">/*!
+ @method experimentalMethod
+ @discussion
+    API Stability: This method is experimental and may change
+    or be removed in future versions without notice.
+ */
+- (void)experimentalMethod;
+
+/*!
+ @method deprecatedMethod
+ @deprecated Use newMethod instead. Will be removed in v2.0.
+ */
+- (void)deprecatedMethod __attribute__((deprecated(&quot;Use newMethod instead&quot;)));
+</code></pre>
+
+<hr />
+<h2 id="phase-5-documentation-coverage-goals">Phase 5: Documentation Coverage Goals</h2>
+<h3 id="priority-1-public-api-headers-critical">Priority 1: Public API Headers (Critical)</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Current</th>
+<th>Target</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Auth</td>
+<td>95%</td>
+<td>100%</td>
+<td>Minor gaps</td>
+</tr>
+<tr>
+<td>Core</td>
+<td>95%</td>
+<td>100%</td>
+<td>Minor gaps</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>98%</td>
+<td>100%</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>90%</td>
+<td>100%</td>
+<td>Needs work</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td>85%</td>
+<td>100%</td>
+<td>Needs work</td>
+</tr>
+<tr>
+<td>PLC</td>
+<td>60%</td>
+<td>100%</td>
+<td>Critical</td>
+</tr>
+<tr>
+<td>Sync</td>
+<td>70%</td>
+<td>100%</td>
+<td>Critical</td>
+</tr>
+</tbody>
+</table>
+<h3 id="priority-2-implementation-files-important">Priority 2: Implementation Files (Important)</h3>
+<ul>
+<li>Add file headers to all <code>.m</code> files</li>
+<li>Add <code>#pragma mark</code> sections consistently</li>
+<li>Document complex algorithms</li>
+<li>Add inline comments for non-obvious logic</li>
+</ul>
+<h3 id="priority-3-internal-documentation-nice-to-have">Priority 3: Internal Documentation (Nice to Have)</h3>
+<ul>
+<li>Document private methods</li>
+<li>Add architecture diagrams</li>
+<li>Create module-level README files</li>
+</ul>
+<hr />
+<h2 id="phase-6-implementation-checklist">Phase 6: Implementation Checklist</h2>
+<h3 id="week-1-standardization">Week 1: Standardization</h3>
+<ul>
+<li>[ ] Convert Javadoc comments to HeaderDoc in Email/Blob modules</li>
+<li>[ ] Add missing file headers to PLC module</li>
+<li>[ ] Add missing file headers to Sync module</li>
+<li>[ ] Create DOCUMENTATION.md style guide</li>
+</ul>
+<h3 id="week-2-core-modules">Week 2: Core Modules</h3>
+<ul>
+<li>[ ] Review and enhance Auth module documentation</li>
+<li>[ ] Review and enhance Core module documentation</li>
+<li>[ ] Add thread safety notes where applicable</li>
+<li>[ ] Add error documentation for public methods</li>
+</ul>
+<h3 id="week-3-network-repository">Week 3: Network &amp; Repository</h3>
+<ul>
+<li>[ ] Review Network module documentation</li>
+<li>[ ] Review Repository module documentation</li>
+<li>[ ] Document MST algorithm thoroughly</li>
+<li>[ ] Add usage examples for complex APIs</li>
+</ul>
+<h3 id="week-4-implementation-files">Week 4: Implementation Files</h3>
+<ul>
+<li>[ ] Add <code>#pragma mark</code> sections consistently</li>
+<li>[ ] Document complex algorithms in <code>.m</code> files</li>
+<li>[ ] Add inline comments for non-obvious logic</li>
+<li>[ ] Review and update copyright dates</li>
+</ul>
+<hr />
+<h2 id="tools-validation">Tools &amp; Validation</h2>
+<h3 id="headerdoc-generation">HeaderDoc Generation</h3>
+<pre class="codehilite"><code class="language-bash"># Generate HTML documentation
+headerdoc2html -o docs/api ATProtoPDS/Sources
+
+# Resolve cross-references
+resolveLinks docs/api
+</code></pre>
+
+<h3 id="validation-script">Validation Script</h3>
+<pre class="codehilite"><code class="language-bash"># Check for undocumented public methods
+./scripts/check-documentation.sh
+</code></pre>
+
+<hr />
+<h2 id="style-guide-quick-reference">Style Guide Quick Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File header</td>
+<td><code>/*! @header ... */</code></td>
+</tr>
+<tr>
+<td>Class</td>
+<td><code>/*! @class ... */</code></td>
+</tr>
+<tr>
+<td>Method</td>
+<td><code>/*! @method ... @param ... @return */</code></td>
+</tr>
+<tr>
+<td>Property</td>
+<td><code>/*! Brief description. */</code></td>
+</tr>
+<tr>
+<td>Enum</td>
+<td><code>/*! @enum ... @constant ... */</code></td>
+</tr>
+<tr>
+<td>Protocol</td>
+<td><code>/*! @protocol ... */</code></td>
+</tr>
+<tr>
+<td>Inline comment</td>
+<td><code>// Single line</code></td>
+</tr>
+<tr>
+<td>Section marker</td>
+<td><code>#pragma mark - Section Name</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/HeaderDoc/tags/tags.html">Apple HeaderDoc User Guide</a></li>
+<li><a href="https://developer.apple.com/documentation/swift/api_design_guidelines">Apple API Design Guidelines</a></li>
+<li><a href="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Conventions/Conventions.html">Objective-C Coding Conventions</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

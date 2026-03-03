@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repository Basics - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Repository Basics</h1>
+            </div>
+            <h1 id="repository-basics">Repository Basics</h1>
+<h2 id="overview">Overview</h2>
+<p>A repository is a versioned data store for a user. It contains:
+- <strong>Records</strong> — User data (posts, profiles, likes, etc.)
+- <strong>Blobs</strong> — Binary files (images, videos, etc.)
+- <strong>Commits</strong> — Versioned snapshots of repository state
+- <strong>MST</strong> — Merkle Search Tree for efficient lookups</p>
+<h2 id="repository-structure">Repository Structure</h2>
+<pre class="codehilite"><code>Repository (did:plc:user123)
+├── Records
+│   ├── app.bsky.feed.post/abc123
+│   ├── app.bsky.feed.post/def456
+│   ├── app.bsky.actor.profile/self
+│   └── app.bsky.feed.like/ghi789
+├── Blobs
+│   ├── bafyreiabc123...
+│   └── bafyredef456...
+└── Commits
+    ├── Commit 1 (root)
+    ├── Commit 2
+    └── Commit 3 (head)
+</code></pre>
+
+<h2 id="records">Records</h2>
+<h3 id="record-identifiers">Record Identifiers</h3>
+<p>Records are identified by:
+- <strong>DID</strong> — User identifier
+- <strong>Collection</strong> — Record type (e.g., <code>app.bsky.feed.post</code>)
+- <strong>RKey</strong> — Record key (unique within collection)</p>
+<p><strong>Full URI:</strong> <code>at://did:plc:user123/app.bsky.feed.post/abc123</code></p>
+<h3 id="record-keys-rkeys">Record Keys (RKeys)</h3>
+<p>RKeys can be:
+- <strong>TID</strong> — Timestamp Identifier (for time-ordered records)
+- <strong>Random</strong> — Random string (for unordered records)
+- <strong>"self"</strong> — Singleton records (like profile)</p>
+<h3 id="creating-records">Creating Records</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (void)createRecord:(NSDictionary *)record
+          collection:(NSString *)collection
+                 did:(NSString *)did
+          completion:(void (^)(NSString *uri, NSError *error))completion {
+
+    // 1. Validate record against lexicon
+    if (![self validateRecord:record againstLexicon:collection error:nil]) {
+        NSError *error = [NSError errorWithDomain:@&quot;Record&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid record&quot;}];
+        completion(nil, error);
+        return;
+    }
+
+    // 2. Generate RKey
+    NSString *rkey = [self generateRKeyForCollection:collection];
+
+    // 3. Encode record to CBOR
+    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
+    NSString *cid = [CID calculateCIDForData:cbor];
+
+    // 4. Store in database
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+    [self storeRecord:record collection:collection rkey:rkey cid:cid db:db];
+
+    // 5. Update MST
+    [self.app.repositoryService updateMSTWithRecord:record 
+                                         collection:collection 
+                                              rkey:rkey 
+                                               did:did 
+                                        completion:^(NSString *rootCID, NSError *error) {
+        if (error) {
+            completion(nil, error);
+            return;
+        }
+
+        // 6. Create commit
+        [self.app.repositoryService createCommitWithRootCID:rootCID 
+                                                       did:did 
+                                                completion:^(NSString *commitCID, NSError *error) {
+            if (error) {
+                completion(nil, error);
+                return;
+            }
+
+            // 7. Notify relays
+            [self.app.relayService notifyRelaysOfCommit:@{@&quot;root&quot;: rootCID} 
+                                                   did:did 
+                                            completion:^(NSError *error) {
+                NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+                completion(uri, nil);
+            }];
+        }];
+    }];
+}
+</code></pre>
+
+<h2 id="blobs">Blobs</h2>
+<h3 id="blob-storage">Blob Storage</h3>
+<p>Blobs are stored separately from records:
+- <strong>CID</strong> — Content identifier (hash of blob data)
+- <strong>Size</strong> — Blob size in bytes
+- <strong>MIME type</strong> — Content type</p>
+<h3 id="uploading-blobs">Uploading Blobs</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSBlobService.m
+- (void)uploadBlob:(NSData *)data
+        completion:(void (^)(NSString *blobCID, NSError *error))completion {
+
+    // 1. Calculate CID
+    NSString *cid = [CID calculateCIDForData:data];
+
+    // 2. Store blob
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:self.userDID error:nil];
+    [self storeBlob:data cid:cid db:db];
+
+    completion(cid, nil);
+}
+
+- (void)getBlob:(NSString *)blobCID
+     completion:(void (^)(NSData *data, NSError *error))completion {
+
+    // 1. Retrieve blob from database
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:self.userDID error:nil];
+    NSData *data = [self retrieveBlob:blobCID db:db];
+
+    if (!data) {
+        NSError *error = [NSError errorWithDomain:@&quot;Blob&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Blob not found&quot;}];
+        completion(nil, error);
+        return;
+    }
+
+    completion(data, nil);
+}
+</code></pre>
+
+<h2 id="commits">Commits</h2>
+<h3 id="commit-structure">Commit Structure</h3>
+<p>A commit contains:
+- <strong>Root CID</strong> — Hash of repository's MST
+- <strong>Previous CID</strong> — Hash of previous commit
+- <strong>Timestamp</strong> — When commit was created
+- <strong>Signature</strong> — Cryptographic signature</p>
+<h3 id="creating-commits">Creating Commits</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (void)createCommitWithRootCID:(NSString *)rootCID
+                            did:(NSString *)did
+                     completion:(void (^)(NSString *commitCID, NSError *error))completion {
+
+    // 1. Get previous commit
+    NSString *prevCID = [self getHeadCommitCID:did];
+
+    // 2. Create commit object
+    NSDictionary *commit = @{
+        @&quot;root&quot;: rootCID,
+        @&quot;prev&quot;: prevCID ?: [NSNull null],
+        @&quot;timestamp&quot;: [NSDate date],
+        @&quot;did&quot;: did
+    };
+
+    // 3. Encode commit
+    NSData *commitData = [ATProtoCBORSerialization encodeObject:commit error:nil];
+
+    // 4. Sign commit
+    NSString *signature = [self signData:commitData withKey:self.userPrivateKey];
+
+    // 5. Create signed commit
+    NSDictionary *signedCommit = @{
+        @&quot;commit&quot;: commit,
+        @&quot;signature&quot;: signature
+    };
+
+    // 6. Calculate commit CID
+    NSData *signedData = [ATProtoCBORSerialization encodeObject:signedCommit error:nil];
+    NSString *commitCID = [CID calculateCIDForData:signedData];
+
+    // 7. Store commit
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+    [self storeCommit:signedCommit cid:commitCID db:db];
+
+    completion(commitCID, nil);
+}
+</code></pre>
+
+<h2 id="repository-operations">Repository Operations</h2>
+<h3 id="reading-records">Reading Records</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (void)getRecord:(NSString *)did
+       collection:(NSString *)collection
+             rkey:(NSString *)rkey
+       completion:(void (^)(NSDictionary *record, NSError *error))completion {
+
+    // 1. Get actor database
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+
+    // 2. Query database
+    const char *sql = &quot;SELECT data FROM records WHERE collection = ? AND rkey = ?&quot;;
+    sqlite3_stmt *stmt;
+    sqlite3_prepare_v2(db.connection, sql, -1, &amp;stmt, NULL);
+
+    sqlite3_bind_text(stmt, 1, [collection UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [rkey UTF8String], -1, SQLITE_TRANSIENT);
+
+    // 3. Fetch result
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const void *data = sqlite3_column_blob(stmt, 0);
+        int size = sqlite3_column_bytes(stmt, 0);
+
+        NSData *cbor = [NSData dataWithBytes:data length:size];
+        NSDictionary *record = [ATProtoCBORSerialization decodeData:cbor error:nil];
+
+        sqlite3_finalize(stmt);
+        completion(record, nil);
+    } else {
+        sqlite3_finalize(stmt);
+        NSError *error = [NSError errorWithDomain:@&quot;Record&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Record not found&quot;}];
+        completion(nil, error);
+    }
+}
+</code></pre>
+
+<h3 id="updating-records">Updating Records</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (void)updateRecord:(NSDictionary *)record
+          collection:(NSString *)collection
+                rkey:(NSString *)rkey
+                 did:(NSString *)did
+          completion:(void (^)(NSString *uri, NSError *error))completion {
+
+    // 1. Validate record
+    if (![self validateRecord:record againstLexicon:collection error:nil]) {
+        NSError *error = [NSError errorWithDomain:@&quot;Record&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid record&quot;}];
+        completion(nil, error);
+        return;
+    }
+
+    // 2. Encode record
+    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
+    NSString *cid = [CID calculateCIDForData:cbor];
+
+    // 3. Update in database
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+    [self updateRecordInDatabase:record collection:collection rkey:rkey cid:cid db:db];
+
+    // 4. Update MST and create commit
+    [self.app.repositoryService updateMSTWithRecord:record 
+                                         collection:collection 
+                                              rkey:rkey 
+                                               did:did 
+                                        completion:^(NSString *rootCID, NSError *error) {
+        if (error) {
+            completion(nil, error);
+            return;
+        }
+
+        NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+        completion(uri, nil);
+    }];
+}
+</code></pre>
+
+<h3 id="deleting-records">Deleting Records</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (void)deleteRecord:(NSString *)did
+          collection:(NSString *)collection
+                rkey:(NSString *)rkey
+          completion:(void (^)(NSError *error))completion {
+
+    // 1. Delete from database
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+    [self deleteRecordFromDatabase:collection rkey:rkey db:db];
+
+    // 2. Update MST
+    [self.app.repositoryService updateMSTWithDeletedRecord:collection 
+                                                      rkey:rkey 
+                                                       did:did 
+                                                completion:^(NSString *rootCID, NSError *error) {
+        if (error) {
+            completion(error);
+            return;
+        }
+
+        // 3. Create commit
+        [self.app.repositoryService createCommitWithRootCID:rootCID 
+                                                       did:did 
+                                                completion:^(NSString *commitCID, NSError *error) {
+            completion(error);
+        }];
+    }];
+}
+</code></pre>
+
+<h2 id="repository-sync">Repository Sync</h2>
+<h3 id="syncing-repositories">Syncing Repositories</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (void)syncRepository:(NSString *)remoteDID
+            completion:(void (^)(NSError *error))completion {
+
+    // 1. Get local MST
+    MST *localMST = [self getMSTForDID:remoteDID];
+
+    // 2. Get remote MST
+    [self fetchRemoteMST:remoteDID completion:^(MST *remoteMST, NSError *error) {
+        if (error) {
+            completion(error);
+            return;
+        }
+
+        // 3. Calculate differences
+        NSArray *diffs = [self diffMST:localMST remoteMST:remoteMST];
+
+        // 4. Apply differences
+        for (NSDictionary *diff in diffs) {
+            NSString *type = diff[@&quot;type&quot;];
+            NSString *key = diff[@&quot;key&quot;];
+
+            if ([type isEqualToString:@&quot;add&quot;]) {
+                [self addRecordFromRemote:key];
+            } else if ([type isEqualToString:@&quot;remove&quot;]) {
+                [self removeRecordLocally:key];
+            } else if ([type isEqualToString:@&quot;update&quot;]) {
+                [self updateRecordFromRemote:key];
+            }
+        }
+
+        completion(nil);
+    }];
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Validate records</strong> — Always validate against lexicon</li>
+<li><strong>Use transactions</strong> — Ensure atomicity</li>
+<li><strong>Sign commits</strong> — Always sign repository changes</li>
+<li><strong>Verify signatures</strong> — Always verify before accepting</li>
+<li><strong>Handle conflicts</strong> — Implement conflict resolution</li>
+<li><strong>Monitor performance</strong> — Track repository size and access patterns</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./cbor-serialization.md">CBOR Serialization</a></strong> — Data encoding</li>
+<li><strong><a href="./car-format.md">CAR Format</a></strong> — Archive format</li>
+<li><strong><a href="./cid-and-hashing.md">CID and Hashing</a></strong> — Content addressing</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

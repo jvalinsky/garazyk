@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AT Protocol Basics - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>AT Protocol Basics</h1>
+            </div>
+            <h1 id="at-protocol-basics">AT Protocol Basics</h1>
+<h2 id="overview">Overview</h2>
+<p>The AT Protocol (Authenticated Transfer Protocol) is a decentralized social protocol that enables users to own their data and choose their service providers. This document covers the fundamental concepts you need to understand to implement a PDS.</p>
+<h2 id="decentralized-identifiers-dids">Decentralized Identifiers (DIDs)</h2>
+<h3 id="what-is-a-did">What is a DID?</h3>
+<p>A DID (Decentralized Identifier) is a globally unique identifier that doesn't depend on any central authority. DIDs are used to identify users, services, and other entities in the AT Protocol.</p>
+<p><strong>Format:</strong> <code>did:method:identifier</code></p>
+<p><strong>Examples:</strong>
+- <code>did:plc:bv6ggkxzsnbjrsxtsyrdypa</code> — User DID (PLC method)
+- <code>did:web:pds.example.com</code> — Service DID (Web method)
+- <code>did:key:z6MkhaXgBZDvotDkL5257faWxcqV6qGlN5aNiMEE5zcvKV1b</code> — Key DID</p>
+<h3 id="did-methods">DID Methods</h3>
+<p>The AT Protocol primarily uses two DID methods:</p>
+<p><strong>PLC (Placeholder) Method:</strong>
+- Used for user identifiers
+- Registered with a PLC directory service
+- Allows key rotation and handle changes
+- Example: <code>did:plc:bv6ggkxzsnbjrsxtsyrdypa</code></p>
+<p><strong>Web Method:</strong>
+- Used for service identifiers
+- Resolved via HTTPS
+- Example: <code>did:web:pds.example.com</code></p>
+<h3 id="did-resolution">DID Resolution</h3>
+<p>To resolve a DID to its document:</p>
+<pre class="codehilite"><code class="language-objc">// In XrpcIdentityHelper.m
+- (void)resolveDID:(NSString *)did 
+         completion:(void (^)(NSDictionary *document, NSError *error))completion {
+    if ([did hasPrefix:@&quot;did:plc:&quot;]) {
+        // Query PLC directory
+        [self resolvePLCDID:did completion:completion];
+    } else if ([did hasPrefix:@&quot;did:web:&quot;]) {
+        // Fetch from HTTPS endpoint
+        [self resolveWebDID:did completion:completion];
+    }
+}
+</code></pre>
+
+<h2 id="namespaced-identifiers-nsids">Namespaced Identifiers (NSIDs)</h2>
+<h3 id="what-is-an-nsid">What is an NSID?</h3>
+<p>An NSID (Namespaced Identifier) is a hierarchical identifier for RPC methods and record types. It's similar to a reverse domain name.</p>
+<p><strong>Format:</strong> <code>authority.namespace.method</code></p>
+<p><strong>Examples:</strong>
+- <code>com.atproto.server.createAccount</code> — Create account method
+- <code>com.atproto.repo.createRecord</code> — Create record method
+- <code>app.bsky.feed.post</code> — Bluesky post record type
+- <code>app.bsky.feed.like</code> — Bluesky like record type</p>
+<h3 id="nsid-structure">NSID Structure</h3>
+<pre class="codehilite"><code>com.atproto.server.createAccount
+│   │       │      │
+│   │       │      └─ Method name
+│   │       └──────── Namespace
+│   └──────────────── Service
+└─────────────────── Authority (reverse domain)
+</code></pre>
+
+<h3 id="nsid-routing">NSID Routing</h3>
+<p>The XRPC dispatcher uses NSIDs to route requests:</p>
+<pre class="codehilite"><code class="language-objc">// In XrpcDispatcher.m
+- (void)dispatchRequest:(XrpcRequest *)request 
+               response:(XrpcResponse *)response {
+    NSString *nsid = request.method;  // e.g., &quot;com.atproto.repo.createRecord&quot;
+
+    XrpcMethodHandler handler = [self.registry handlerForNSID:nsid];
+    if (handler) {
+        handler(request, response);
+    } else {
+        response.error = @&quot;MethodNotFound&quot;;
+    }
+}
+</code></pre>
+
+<h2 id="repositories">Repositories</h2>
+<h3 id="what-is-a-repository">What is a Repository?</h3>
+<p>A repository is a versioned data store for a user. It contains:
+- <strong>Records</strong> — User data (posts, profiles, likes, etc.)
+- <strong>Blobs</strong> — Binary files (images, videos, etc.)
+- <strong>Commits</strong> — Versioned snapshots of the repository state</p>
+<p>Each user has exactly one repository, identified by their DID.</p>
+<h3 id="repository-structure">Repository Structure</h3>
+<pre class="codehilite"><code>Repository (did:plc:user123)
+├── Records
+│   ├── app.bsky.feed.post/abc123
+│   ├── app.bsky.feed.post/def456
+│   ├── app.bsky.actor.profile/self
+│   └── app.bsky.feed.like/ghi789
+├── Blobs
+│   ├── bafyreiabc123...
+│   └── bafyredef456...
+└── Commits
+    ├── Commit 1 (root)
+    ├── Commit 2
+    └── Commit 3 (head)
+</code></pre>
+
+<h3 id="record-keys-rkeys">Record Keys (RKeys)</h3>
+<p>Records are identified by a collection name and a record key (rkey):</p>
+<pre class="codehilite"><code>Collection: app.bsky.feed.post
+RKey: abc123
+Full URI: at://did:plc:user123/app.bsky.feed.post/abc123
+</code></pre>
+
+<p>RKeys are typically:
+- TID (Timestamp Identifier) for time-ordered records
+- Random strings for unordered records
+- "self" for singleton records (like profile)</p>
+<h2 id="commits-and-versioning">Commits and Versioning</h2>
+<h3 id="what-is-a-commit">What is a Commit?</h3>
+<p>A commit is a snapshot of the repository state at a point in time. It contains:
+- <strong>Root CID</strong> — Hash of the repository's Merkle Search Tree
+- <strong>Timestamp</strong> — When the commit was created
+- <strong>Signature</strong> — Cryptographic signature by the user's key</p>
+<h3 id="commit-flow">Commit Flow</h3>
+<pre class="codehilite"><code>User creates/updates record
+    ↓
+Record is inserted into repository
+    ↓
+Merkle Search Tree is updated
+    ↓
+New root CID is calculated
+    ↓
+Commit is created with new root CID
+    ↓
+Commit is signed with user's key
+    ↓
+Commit is broadcast to subscribers (firehose)
+</code></pre>
+
+<h2 id="merkle-search-trees-mst">Merkle Search Trees (MST)</h2>
+<h3 id="what-is-an-mst">What is an MST?</h3>
+<p>A Merkle Search Tree is a data structure that:
+- Stores all records in a repository
+- Provides efficient lookups and range queries
+- Generates a deterministic root hash (CID)
+- Enables efficient synchronization</p>
+<h3 id="mst-properties">MST Properties</h3>
+<ul>
+<li><strong>Deterministic</strong> — Same records always produce same root CID</li>
+<li><strong>Efficient</strong> — O(log n) lookup time</li>
+<li><strong>Verifiable</strong> — Root CID proves repository state</li>
+<li><strong>Syncable</strong> — Differences can be computed efficiently</li>
+</ul>
+<h3 id="mst-in-code">MST in Code</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (void)updateMSTWithRecord:(NSDictionary *)record
+                   collection:(NSString *)collection
+                        rkey:(NSString *)rkey
+                  completion:(void (^)(NSString *rootCID, NSError *error))completion {
+    // 1. Get current MST
+    MST *mst = [self getMSTForDID:self.did];
+
+    // 2. Insert/update record in MST
+    [mst setRecord:record forKey:[NSString stringWithFormat:@&quot;%@/%@&quot;, collection, rkey]];
+
+    // 3. Calculate new root CID
+    NSString *rootCID = [mst calculateRootCID];
+
+    // 4. Create commit
+    [self createCommitWithRootCID:rootCID completion:completion];
+}
+</code></pre>
+
+<h2 id="content-addressing-cid">Content Addressing (CID)</h2>
+<h3 id="what-is-a-cid">What is a CID?</h3>
+<p>A CID (Content Identifier) is a hash-based identifier for content. It's used to:
+- Identify records and blobs
+- Verify content integrity
+- Enable content-addressed storage</p>
+<p><strong>Format:</strong> <code>bafy...</code> (base32-encoded multihash)</p>
+<p><strong>Example:</strong> <code>bafyreiabc123def456ghi789jkl012mno345pqr678stu901vwx234yz</code></p>
+<h3 id="cid-calculation">CID Calculation</h3>
+<pre class="codehilite"><code class="language-objc">// In CID.m
+- (NSString *)calculateCIDForData:(NSData *)data {
+    // 1. Hash data with SHA-256
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+
+    // 2. Create multihash (SHA-256 prefix + hash)
+    NSMutableData *multihash = [NSMutableData data];
+    [multihash appendBytes:&quot;\x12\x20&quot; length:2];  // SHA-256 prefix
+    [multihash appendBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+
+    // 3. Encode as base32
+    NSString *cid = [self base32Encode:multihash];
+    return [NSString stringWithFormat:@&quot;bafy%@&quot;, cid];
+}
+</code></pre>
+
+<h2 id="lexicons">Lexicons</h2>
+<h3 id="what-is-a-lexicon">What is a Lexicon?</h3>
+<p>A lexicon is a schema definition for:
+- <strong>Record types</strong> — Structure of user data
+- <strong>RPC methods</strong> — Parameters and return types
+- <strong>Tokens</strong> — Authentication token formats</p>
+<p>Lexicons are defined in JSON Schema format.</p>
+<h3 id="example-lexicon">Example Lexicon</h3>
+<pre class="codehilite"><code class="language-json">{
+  &quot;lexicon&quot;: 1,
+  &quot;id&quot;: &quot;app.bsky.feed.post&quot;,
+  &quot;description&quot;: &quot;A post record&quot;,
+  &quot;type&quot;: &quot;record&quot;,
+  &quot;record&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;required&quot;: [&quot;text&quot;, &quot;createdAt&quot;],
+    &quot;properties&quot;: {
+      &quot;text&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;maxLength&quot;: 300
+      },
+      &quot;createdAt&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;format&quot;: &quot;date-time&quot;
+      },
+      &quot;facets&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: { &quot;$ref&quot;: &quot;#/definitions/facet&quot; }
+      }
+    }
+  }
+}
+</code></pre>
+
+<h2 id="handles">Handles</h2>
+<h3 id="what-is-a-handle">What is a Handle?</h3>
+<p>A handle is a human-readable identifier for a user, like a username. Examples:
+- <code>alice.bsky.social</code>
+- <code>bob.example.com</code>
+- <code>charlie.localhost</code></p>
+<h3 id="handle-resolution">Handle Resolution</h3>
+<p>Handles are resolved to DIDs through:
+1. <strong>DNS TXT records</strong> — For custom domains
+2. <strong>PLC directory</strong> — For <code>.bsky.social</code> handles</p>
+<pre class="codehilite"><code class="language-objc">// In XrpcIdentityHelper.m
+- (void)resolveHandle:(NSString *)handle 
+            completion:(void (^)(NSString *did, NSError *error))completion {
+    if ([handle hasSuffix:@&quot;.bsky.social&quot;]) {
+        // Query PLC directory
+        [self resolveBskyHandle:handle completion:completion];
+    } else {
+        // Query DNS TXT record
+        [self resolveDNSHandle:handle completion:completion];
+    }
+}
+</code></pre>
+
+<h2 id="authentication">Authentication</h2>
+<h3 id="access-tokens">Access Tokens</h3>
+<p>Access tokens are JWT tokens that:
+- Identify the authenticated user (DID)
+- Specify the scope of access
+- Have an expiration time
+- Are signed with the server's key</p>
+<p><strong>Token Structure:</strong></p>
+<pre class="codehilite"><code>Header: { &quot;alg&quot;: &quot;ES256&quot;, &quot;typ&quot;: &quot;JWT&quot; }
+Payload: { &quot;iss&quot;: &quot;did:web:pds.example.com&quot;, &quot;sub&quot;: &quot;did:plc:user123&quot;, &quot;exp&quot;: 1234567890 }
+Signature: &lt;ECDSA signature&gt;
+</code></pre>
+
+<h3 id="refresh-tokens">Refresh Tokens</h3>
+<p>Refresh tokens are long-lived tokens used to obtain new access tokens without re-authenticating.</p>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./cbor-and-car.md">CBOR and CAR</a></strong> — Data serialization formats</li>
+<li><strong><a href="./mst-trees.md">MST Trees</a></strong> — Merkle Search Tree details</li>
+<li><strong><a href="./cryptography.md">Cryptography</a></strong> — Cryptographic operations</li>
+<li><strong><a href="../03-application-layer/pds-application.md">Application Layer</a></strong> — Service implementation</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

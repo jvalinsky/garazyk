@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blob Service - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Blob Service</h1>
+            </div>
+            <h1 id="blob-service">Blob Service</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>PDSBlobService</code> manages binary blob storage and retrieval for ATProto repositories. It handles blob uploads, downloads, metadata management, and deletion with content-addressed storage using CIDs.</p>
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Blob upload and CID generation</li>
+<li>Blob retrieval by CID</li>
+<li>Blob metadata management</li>
+<li>Blob listing with pagination</li>
+<li>Blob deletion</li>
+<li>File-backed streaming support</li>
+<li>Storage backend abstraction</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<pre class="codehilite"><code>┌──────────────────────────────────────────┐
+│   XRPC Blob Endpoints                    │
+│  (com.atproto.repo.uploadBlob)           │
+│  (com.atproto.sync.getBlob)              │
+└────────────────┬─────────────────────────┘
+                 │
+┌────────────────▼─────────────────────────┐
+│   PDSBlobService                         │
+│  - uploadBlob()                          │
+│  - getBlob()                             │
+│  - getBlobWithCID()                      │
+│  - listBlobs()                           │
+│  - deleteBlob()                          │
+└────────────────┬─────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+┌───────▼──────────┐  ┌──▼──────────────┐
+│ BlobStorage      │  │ CID Generation  │
+│ (File/Memory)    │  │ (SHA-256)       │
+└──────────────────┘  └──────────────────┘
+        │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────────┐
+        │ PDSDatabasePool     │
+        │ (Blob Metadata)     │
+        └─────────────────────┘
+</code></pre>
+
+<h2 id="key-methods">Key Methods</h2>
+<h3 id="upload-blob">Upload Blob</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)uploadBlob:(NSData *)blobData
+                              forDid:(NSString *)did
+                             mimeType:(NSString *)mimeType
+                               error:(NSError **)error;
+</code></pre>
+
+<p>Uploads a blob and returns its CID and metadata.</p>
+<p><strong>Parameters:</strong>
+- <code>blobData</code>: Binary blob data
+- <code>did</code>: Repository owner DID
+- <code>mimeType</code>: MIME type (e.g., "image/jpeg")
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Dictionary with CID, size, and metadata or nil on failure</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSData *imageData = [NSData dataWithContentsOfFile:@&quot;/path/to/image.jpg&quot;];
+
+NSError *error = nil;
+NSDictionary *blob = [blobService uploadBlob:imageData
+                                     forDid:@&quot;did:plc:user123&quot;
+                                   mimeType:@&quot;image/jpeg&quot;
+                                      error:&amp;error];
+
+if (blob) {
+    NSString *cid = blob[@&quot;cid&quot;];
+    NSNumber *size = blob[@&quot;size&quot;];
+    NSString *mimeType = blob[@&quot;mimeType&quot;];
+}
+</code></pre>
+
+<h3 id="get-blob">Get Blob</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSData *)getBlob:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
+</code></pre>
+
+<p>Retrieves blob data by CID.</p>
+<p><strong>Parameters:</strong>
+- <code>cid</code>: Content identifier (binary)
+- <code>did</code>: Repository owner DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Blob data or nil if not found</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSData *blobData = [blobService getBlob:cidData
+                                forDid:@&quot;did:plc:user123&quot;
+                                 error:&amp;error];
+
+if (blobData) {
+    // Write to file or process
+    [blobData writeToFile:@&quot;/tmp/blob.jpg&quot; atomically:YES];
+}
+</code></pre>
+
+<h3 id="get-blob-with-cid-string">Get Blob with CID String</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getBlobWithCID:(NSString *)cid
+                                       did:(NSString *)did
+                                    error:(NSError **)error;
+</code></pre>
+
+<p>Retrieves blob metadata by CID string.</p>
+<p><strong>Parameters:</strong>
+- <code>cid</code>: CID as string (e.g., "bafy...")
+- <code>did</code>: Repository owner DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Dictionary with metadata or nil if not found</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSDictionary *metadata = [blobService getBlobWithCID:@&quot;bafy2bzaced...&quot;
+                                                 did:@&quot;did:plc:user123&quot;
+                                              error:&amp;error];
+
+if (metadata) {
+    NSNumber *size = metadata[@&quot;size&quot;];
+    NSString *mimeType = metadata[@&quot;mimeType&quot;];
+}
+</code></pre>
+
+<h3 id="get-blob-stream">Get Blob Stream</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getBlobStreamWithCID:(NSString *)cid
+                                            did:(NSString *)did
+                                          error:(NSError **)error;
+</code></pre>
+
+<p>Gets file-backed streaming metadata for a blob when available.</p>
+<p><strong>Parameters:</strong>
+- <code>cid</code>: CID as string
+- <code>did</code>: Repository owner DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Dictionary with stream metadata or nil</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSDictionary *stream = [blobService getBlobStreamWithCID:@&quot;bafy2bzaced...&quot;
+                                                     did:@&quot;did:plc:user123&quot;
+                                                   error:&amp;error];
+
+if (stream) {
+    NSString *filePath = stream[@&quot;path&quot;];
+    NSNumber *size = stream[@&quot;size&quot;];
+    // Stream from file instead of loading into memory
+}
+</code></pre>
+
+<h3 id="list-blobs">List Blobs</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSArray *)listBlobsForDID:(NSString *)did
+                                limit:(NSUInteger)limit
+                               cursor:(nullable NSString *)cursor
+                                error:(NSError **)error;
+</code></pre>
+
+<p>Lists blobs for a DID with pagination.</p>
+<p><strong>Parameters:</strong>
+- <code>did</code>: Repository owner DID
+- <code>limit</code>: Maximum blobs to return
+- <code>cursor</code>: Pagination cursor from previous response
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Array of blob metadata or nil on failure</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSArray *blobs = [blobService listBlobsForDID:@&quot;did:plc:user123&quot;
+                                        limit:50
+                                       cursor:nil
+                                        error:&amp;error];
+
+for (NSDictionary *blob in blobs) {
+    NSString *cid = blob[@&quot;cid&quot;];
+    NSNumber *size = blob[@&quot;size&quot;];
+    NSString *mimeType = blob[@&quot;mimeType&quot;];
+}
+</code></pre>
+
+<h3 id="delete-blob">Delete Blob</h3>
+<pre class="codehilite"><code class="language-objc">- (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error;
+</code></pre>
+
+<p>Deletes a blob by CID.</p>
+<p><strong>Parameters:</strong>
+- <code>cid</code>: CID as string
+- <code>did</code>: Repository owner DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> YES on success, NO on failure</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+BOOL deleted = [blobService deleteBlobWithCID:@&quot;bafy2bzaced...&quot;
+                                          did:@&quot;did:plc:user123&quot;
+                                         error:&amp;error];
+</code></pre>
+
+<h2 id="storage-backend">Storage Backend</h2>
+<p>The service uses a pluggable <code>BlobStorage</code> backend:</p>
+<pre class="codehilite"><code class="language-objc">@property (nonatomic, strong) BlobStorage *blobStorage;
+</code></pre>
+
+<p>Backends can implement:
+- File-based storage (disk)
+- Memory-based storage (testing)
+- Cloud storage (S3, etc.)</p>
+<h2 id="cid-generation">CID Generation</h2>
+<p>Blobs are content-addressed using CIDv1 with SHA-256:</p>
+<pre class="codehilite"><code>CID = CIDv1(sha256(blob_data))
+</code></pre>
+
+<p>This ensures:
+- Deduplication (same content = same CID)
+- Integrity verification
+- Immutability</p>
+<h2 id="metadata-storage">Metadata Storage</h2>
+<p>Blob metadata is stored in the database:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cid</td>
+<td>string</td>
+<td>Content identifier</td>
+</tr>
+<tr>
+<td>did</td>
+<td>string</td>
+<td>Repository owner</td>
+</tr>
+<tr>
+<td>size</td>
+<td>integer</td>
+<td>Blob size in bytes</td>
+</tr>
+<tr>
+<td>mimeType</td>
+<td>string</td>
+<td>MIME type</td>
+</tr>
+<tr>
+<td>createdAt</td>
+<td>timestamp</td>
+<td>Upload time</td>
+</tr>
+<tr>
+<td>hash</td>
+<td>binary</td>
+<td>SHA-256 hash</td>
+</tr>
+</tbody>
+</table>
+<h2 id="error-handling">Error Handling</h2>
+<p>Common error scenarios:</p>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Blob too large</td>
+<td>Exceeds size limit</td>
+<td>Return 413</td>
+</tr>
+<tr>
+<td>Invalid MIME type</td>
+<td>Unsupported type</td>
+<td>Return 400</td>
+</tr>
+<tr>
+<td>Not found</td>
+<td>CID doesn't exist</td>
+<td>Return 404</td>
+</tr>
+<tr>
+<td>Storage error</td>
+<td>Backend failure</td>
+<td>Return 500</td>
+</tr>
+<tr>
+<td>Unauthorized</td>
+<td>DID mismatch</td>
+<td>Return 403</td>
+</tr>
+</tbody>
+</table>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Upload Validation</strong></li>
+<li>Validate MIME type</li>
+<li>Check blob size limits</li>
+<li>Verify DID ownership</li>
+<li>
+<p>Rate limit uploads per user</p>
+</li>
+<li>
+<p><strong>Storage Management</strong></p>
+</li>
+<li>Use file-backed storage for large blobs</li>
+<li>Implement garbage collection for orphaned blobs</li>
+<li>Monitor storage usage</li>
+<li>
+<p>Set size quotas per user</p>
+</li>
+<li>
+<p><strong>Performance</strong></p>
+</li>
+<li>Use streaming for large downloads</li>
+<li>Cache frequently accessed blobs</li>
+<li>Implement CDN for blob distribution</li>
+<li>
+<p>Use compression where appropriate</p>
+</li>
+<li>
+<p><strong>Security</strong></p>
+</li>
+<li>Validate blob content (magic bytes)</li>
+<li>Scan for malware</li>
+<li>Implement access controls</li>
+<li>Log blob operations</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="uploading-an-image">Uploading an Image</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Read image file
+NSData *imageData = [NSData dataWithContentsOfFile:imagePath];
+
+// 2. Upload blob
+NSError *error = nil;
+NSDictionary *blob = [blobService uploadBlob:imageData
+                                     forDid:userDid
+                                   mimeType:@&quot;image/jpeg&quot;
+                                      error:&amp;error];
+
+// 3. Use CID in record
+if (blob) {
+    NSDictionary *post = @{
+        @&quot;text&quot;: @&quot;Check out this image!&quot;,
+        @&quot;embed&quot;: @{
+            @&quot;$type&quot;: @&quot;app.bsky.embed.image&quot;,
+            @&quot;image&quot;: @{
+                @&quot;cid&quot;: blob[@&quot;cid&quot;],
+                @&quot;mimeType&quot;: @&quot;image/jpeg&quot;,
+                @&quot;size&quot;: blob[@&quot;size&quot;]
+            }
+        }
+    };
+
+    [recordService putRecord:@&quot;app.bsky.feed.post&quot;
+                       rkey:@&quot;abc123&quot;
+                      value:post
+                     forDid:userDid
+                   actorDid:userDid
+             validationMode:PDSValidationModeOptimistic
+                      error:&amp;error];
+}
+</code></pre>
+
+<h3 id="downloading-a-blob">Downloading a Blob</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Get blob metadata
+NSError *error = nil;
+NSDictionary *metadata = [blobService getBlobWithCID:cidString
+                                                 did:userDid
+                                              error:&amp;error];
+
+// 2. Check if streaming available
+NSDictionary *stream = [blobService getBlobStreamWithCID:cidString
+                                                     did:userDid
+                                                   error:&amp;error];
+
+if (stream) {
+    // Stream from file
+    NSString *filePath = stream[@&quot;path&quot;];
+    [self streamFileFromPath:filePath];
+} else {
+    // Load into memory
+    NSData *blobData = [blobService getBlob:cidData
+                                    forDid:userDid
+                                     error:&amp;error];
+    [self processBlobData:blobData];
+}
+</code></pre>
+
+<h3 id="listing-and-cleaning-up-blobs">Listing and Cleaning Up Blobs</h3>
+<pre class="codehilite"><code class="language-objc">NSMutableArray *allBlobs = [NSMutableArray array];
+NSString *cursor = nil;
+
+while (YES) {
+    NSError *error = nil;
+    NSArray *blobs = [blobService listBlobsForDID:userDid
+                                            limit:100
+                                           cursor:cursor
+                                            error:&amp;error];
+
+    if (!blobs) break;
+
+    [allBlobs addObjectsFromArray:blobs];
+
+    if (blobs.count &lt; 100) break;
+    cursor = blobs.lastObject[@&quot;cursor&quot;];
+}
+
+// Delete old blobs
+for (NSDictionary *blob in allBlobs) {
+    NSDate *createdAt = blob[@&quot;createdAt&quot;];
+    if ([createdAt timeIntervalSinceNow] &lt; -30*24*3600) { // 30 days old
+        [blobService deleteBlobWithCID:blob[@&quot;cid&quot;]
+                                  did:userDid
+                                 error:&amp;error];
+    }
+}
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./repository-service.md">Repository Service</a></li>
+<li><a href="./services-overview.md">Services Overview</a></li>
+<li><a href="../07-repository-protocol/blob-storage.md">Blob Storage</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -63,6 +63,30 @@ The server will start on `http://localhost:2583` by default.
 
 **Available commands**: `account`, `admin`, `daemon`, `health`, `help`, `init`, `install`, `invite`, `nuke-data`, `oauth`, `repo`, `serve`, `version`
 
+## Documentation
+
+The complete **PDS Objective-C Implementation Guide** is available at:
+
+📖 **[PDS Implementation Guide](https://jvalinsky.github.io/September/)**
+
+### Quick Links
+
+- **[Getting Started](https://jvalinsky.github.io/September/01-getting-started/overview.html)** — What is a PDS and why Objective-C
+- **[Architecture Overview](https://jvalinsky.github.io/September/01-getting-started/architecture-overview.html)** — System components and design patterns
+- **[API Reference](https://jvalinsky.github.io/September/11-reference/api-reference.html)** — XRPC endpoints and specifications
+- **[Troubleshooting Guide](https://jvalinsky.github.io/September/11-reference/troubleshooting.html)** — Common issues and solutions
+
+The guide covers:
+- Core AT Protocol concepts (DAG-CBOR, CAR, MST, cryptography)
+- Application layer services and patterns
+- Network layer (HTTP, XRPC, routing)
+- Database architecture and SQLite patterns
+- Authentication (JWT, OAuth 2.0, DPoP)
+- Repository protocol and blob storage
+- Firehose and WebSocket streaming
+- Platform compatibility (macOS and Linux/GNUstep)
+- Production deployment and operations
+
 ## Building from Source
 
 ### Using XcodeGen & CMake (Recommended)

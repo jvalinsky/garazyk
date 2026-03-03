@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started with PDS - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Getting Started with PDS</h1>
+            </div>
+            <h1 id="getting-started-with-pds">Getting Started with PDS</h1>
+<h2 id="what-is-a-personal-data-server-pds">What is a Personal Data Server (PDS)?</h2>
+<p>A Personal Data Server (PDS) is a core component of the AT Protocol ecosystem. It's a server that stores and manages user data (posts, profiles, relationships) in a decentralized manner. Unlike traditional social networks where a single company controls all user data, AT Protocol allows users to host their own PDS or choose a PDS provider they trust.</p>
+<p>The PDS implements the AT Protocol specification, which defines:
+- <strong>DIDs (Decentralized Identifiers)</strong> — Unique identifiers for users and services
+- <strong>Repositories</strong> — Versioned data stores using Merkle Search Trees (MST)
+- <strong>XRPC</strong> — A simple RPC protocol for client-server communication
+- <strong>Firehose</strong> — Real-time event streaming via WebSocket</p>
+<h2 id="why-objective-c">Why Objective-C?</h2>
+<p>This implementation is written in Objective-C for several reasons:</p>
+<ol>
+<li><strong>Performance</strong> — Objective-C provides direct access to system APIs and efficient memory management</li>
+<li><strong>Cross-Platform</strong> — Runs on both macOS (via Xcode/clang) and Linux (via GNUstep)</li>
+<li><strong>Production-Ready</strong> — Mature runtime with ARC (Automatic Reference Counting)</li>
+<li><strong>System Integration</strong> — Direct access to platform-specific features when needed</li>
+</ol>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>The PDS is organized into several layers:</p>
+<pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
+│                    HTTP Clients                         │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────▼────────────┐
+        │   HTTP Server (2583)    │
+        │  - Route Registration   │
+        │  - TLS Termination      │
+        └────────────┬────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │   XRPC Dispatcher               │
+        │  - Route by NSID                │
+        │  - Auth Verification            │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────────────────────┐
+        │        Service Layer                            │
+        │  - Account Service                              │
+        │  - Record Service                               │
+        │  - Blob Service                                 │
+        │  - Repository Service                           │
+        │  - Admin Service                                │
+        │  - Relay Service                                │
+        └────────────┬─────────────────────────────────────┘
+                     │
+        ┌────────────▼────────────────────────────────────┐
+        │        Database Layer (SQLite)                   │
+        │  - Service Database (shared)                     │
+        │  - Actor Databases (per-user)                    │
+        └─────────────────────────────────────────────────┘
+</code></pre>
+
+<h2 id="key-components">Key Components</h2>
+<h3 id="http-server">HTTP Server</h3>
+<p>A custom HTTP server that listens on port 2583 and handles:
+- XRPC method routing
+- OAuth 2.0 authentication
+- WebSocket upgrades for the firehose
+- Static content serving (Explore UI, NodeInfo)</p>
+<h3 id="xrpc-dispatcher">XRPC Dispatcher</h3>
+<p>Routes incoming RPC calls by NSID (Namespaced Identifier) to appropriate handlers. For example:
+- <code>com.atproto.server.createAccount</code> → Account creation
+- <code>com.atproto.repo.createRecord</code> → Record creation
+- <code>com.atproto.sync.subscribeRepos</code> → Firehose subscription</p>
+<h3 id="service-layer">Service Layer</h3>
+<p>Implements business logic for:
+- <strong>Account Service</strong> — User account creation, authentication, token management
+- <strong>Record Service</strong> — CRUD operations on user records
+- <strong>Blob Service</strong> — File upload and retrieval
+- <strong>Repository Service</strong> — MST management and commit processing
+- <strong>Admin Service</strong> — Moderation and administrative operations
+- <strong>Relay Service</strong> — Notifications to external relays</p>
+<h3 id="database-layer">Database Layer</h3>
+<p>SQLite-based persistence with:
+- <strong>Service Database</strong> — Shared data (users, DIDs, configuration)
+- <strong>Actor Databases</strong> — Per-user repositories (one database per user)
+- <strong>WAL Mode</strong> — Write-Ahead Logging for concurrent access</p>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<p><strong>macOS:</strong>
+- Xcode 16.1 or later
+- CMake 3.28 or later
+- Homebrew (for dependencies)</p>
+<p><strong>Linux (GNUstep):</strong>
+- GNUstep Make and Base libraries
+- Clang compiler
+- CMake 3.28 or later</p>
+<h3 id="quick-start">Quick Start</h3>
+<ol>
+<li>
+<p><strong>Clone the repository:</strong>
+   <code>bash
+   git clone https://github.com/garazyk/atproto-pds.git
+   cd atproto-pds</code></p>
+</li>
+<li>
+<p><strong>Build on macOS:</strong>
+   <code>bash
+   mkdir -p build &amp;&amp; cd build
+   cmake ..
+   make -j$(sysctl -n hw.ncpu)</code></p>
+</li>
+<li>
+<p><strong>Build on Linux:</strong>
+   <code>bash
+   mkdir build-linux &amp;&amp; cd build-linux
+   cmake .. -DCMAKE_BUILD_TYPE=Debug
+   make -j$(nproc)</code></p>
+</li>
+<li>
+<p><strong>Run tests:</strong>
+   <code>bash
+   ./build/tests/AllTests</code></p>
+</li>
+<li>
+<p><strong>Start the server:</strong>
+   <code>bash
+   ./build/bin/kaszlak --data-dir ./pds-data --config ./config.json</code></p>
+</li>
+</ol>
+<h3 id="configuration">Configuration</h3>
+<p>The PDS is configured via <code>config.json</code>:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;server&quot;: {
+    &quot;host&quot;: &quot;0.0.0.0&quot;,
+    &quot;port&quot;: 2583,
+    &quot;issuer&quot;: &quot;https://pds.example.com&quot;
+  },
+  &quot;database&quot;: {
+    &quot;path&quot;: &quot;./pds-data/db&quot;
+  },
+  &quot;plc&quot;: {
+    &quot;url&quot;: &quot;https://plc.directory&quot;
+  },
+  &quot;session&quot;: {
+    &quot;invite_code_required&quot;: true
+  }
+}
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./architecture-overview.md">Architecture Overview</a></strong> — Detailed system architecture</li>
+<li><strong><a href="./setup.md">Setup Guide</a></strong> — Platform-specific setup instructions</li>
+<li><strong><a href="../02-core-concepts/atproto-basics.md">Core Concepts</a></strong> — AT Protocol fundamentals</li>
+<li><strong><a href="../10-tutorials/tutorial-1-hello-pds.md">Tutorials</a></strong> — Hands-on learning</li>
+</ul>
+<h2 id="documentation-structure">Documentation Structure</h2>
+<p>This guide is organized into 12 progressive sections:</p>
+<ol>
+<li><strong>Getting Started</strong> — Introduction and setup</li>
+<li><strong>Core Concepts</strong> — AT Protocol fundamentals</li>
+<li><strong>Application Layer</strong> — Service architecture</li>
+<li><strong>Network Layer</strong> — HTTP and XRPC</li>
+<li><strong>Database Layer</strong> — SQLite and persistence</li>
+<li><strong>Authentication</strong> — JWT, OAuth, DPoP</li>
+<li><strong>Repository Protocol</strong> — CBOR, CAR, CID</li>
+<li><strong>Sync &amp; Firehose</strong> — Real-time events</li>
+<li><strong>Platform Compatibility</strong> — macOS and Linux</li>
+<li><strong>Tutorials</strong> — Step-by-step guides</li>
+<li><strong>Reference</strong> — API and configuration</li>
+<li><strong>Diagrams</strong> — Visual architecture</li>
+</ol>
+<p>Each section builds on previous knowledge and includes code examples from the actual codebase.</p>
+<h2 id="support">Support</h2>
+<ul>
+<li><strong>Issues</strong> — Report bugs on GitHub</li>
+<li><strong>Discussions</strong> — Ask questions in GitHub Discussions</li>
+<li><strong>Contributing</strong> — See CONTRIBUTING.md for guidelines</li>
+</ul>
+<h2 id="license">License</h2>
+<p>This project is licensed under the MIT License. See LICENSE for details.</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
