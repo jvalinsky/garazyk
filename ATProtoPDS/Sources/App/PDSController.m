@@ -87,6 +87,35 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
       stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
 }
 
+static BOOL PDSControllerShouldUseEphemeralJWTKeyForTests(void) {
+  NSDictionary *env = [[NSProcessInfo processInfo] environment];
+  NSString *processName = [[NSProcessInfo processInfo] processName] ?: @"";
+  BOOL runningTests = [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+                      [processName containsString:@"AllTests"];
+  if (!runningTests) {
+    return NO;
+  }
+
+  NSString *useKeychainEnv = [env[@"PDS_USE_KEYCHAIN"] lowercaseString];
+  if ([useKeychainEnv isEqualToString:@"0"] ||
+      [useKeychainEnv isEqualToString:@"false"] ||
+      [useKeychainEnv isEqualToString:@"no"]) {
+    return YES;
+  }
+
+  return ![PDSConfiguration sharedConfiguration].useKeychain;
+}
+
+static void PDSControllerLogEphemeralJWTKeyModeOnce(void) {
+  static BOOL didLog = NO;
+  if (didLog) {
+    return;
+  }
+  didLog = YES;
+  PDS_LOG_AUTH_INFO(
+      @"Using in-memory secp256k1 JWT signing key in test mode (keychain disabled).");
+}
+
 @implementation PDSController {
   PDSApplication
       *_backingApplication; // When initialized via initWithApplication:
@@ -314,42 +343,61 @@ static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
     _jwtMinter.audience = _jwtMinter.issuer;
     _jwtMinter.signingAlgorithm = @"ES256K";
 
-    NSError *serverKeyError = nil;
-    // Use factory to get appropriate key manager
-    id<PDSKeyManager> keyManager = [PDSKeyManagerFactory
-        createKeyManagerWithDatabase:[_serviceDatabases
-                                         serviceDatabaseWithError:nil]];
-
-    // Ensure active key exists
-    id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
-    if (serverKeyError) {
-      PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@",
-                        serverKeyError.localizedDescription
-                            ?: @"unknown error");
-    }
-
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
     BOOL isProduction = [[env[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
                         [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
                         [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
-    if (activeKey) {
-      _jwtMinter.keyManager = keyManager;
-    } else if (!isProduction) {
+
+    BOOL hasProvisionedSigningKey = NO;
+    if (PDSControllerShouldUseEphemeralJWTKeyForTests()) {
       NSError *fallbackError = nil;
-      Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+      Secp256k1KeyPair *fallbackKeyPair =
+          [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
       if (fallbackKeyPair) {
         _jwtMinter.keyManager = nil;
         _jwtMinter.signingAlgorithm = @"ES256K";
         _jwtMinter.privateKey = fallbackKeyPair.privateKey;
         _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-        PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+        hasProvisionedSigningKey = YES;
+        PDSControllerLogEphemeralJWTKeyModeOnce();
       } else {
-        _jwtMinter.keyManager = keyManager;
-        PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@",
+        PDS_LOG_AUTH_WARN(@"Test-mode ephemeral JWT key generation failed; falling back to key manager path: %@",
                           fallbackError.localizedDescription ?: @"unknown error");
       }
-    } else {
-      _jwtMinter.keyManager = keyManager;
+    }
+
+    if (!hasProvisionedSigningKey) {
+      NSError *serverKeyError = nil;
+      id<PDSKeyManager> keyManager = [PDSKeyManagerFactory
+          createKeyManagerWithDatabase:[_serviceDatabases
+                                           serviceDatabaseWithError:nil]];
+
+      id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
+      if (serverKeyError) {
+        PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@",
+                          serverKeyError.localizedDescription
+                              ?: @"unknown error");
+      }
+
+      if (activeKey) {
+        _jwtMinter.keyManager = keyManager;
+      } else if (!isProduction) {
+        NSError *fallbackError = nil;
+        Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+        if (fallbackKeyPair) {
+          _jwtMinter.keyManager = nil;
+          _jwtMinter.signingAlgorithm = @"ES256K";
+          _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+          _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+          PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+        } else {
+          _jwtMinter.keyManager = keyManager;
+          PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@",
+                            fallbackError.localizedDescription ?: @"unknown error");
+        }
+      } else {
+        _jwtMinter.keyManager = keyManager;
+      }
     }
 
     _accountService.minter = _jwtMinter;
