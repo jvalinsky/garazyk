@@ -161,6 +161,20 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                              error:(NSError **)error;
 
 /*!
+ @method preparedStatementForQuery:
+
+ @abstract Returns a cached prepared statement for the given SQL query.
+
+ @discussion
+    This method is intended for internal diagnostics and tests that validate
+    statement-cache behavior. The returned statement is reset before reuse.
+
+ @param query SQL query text used as the statement cache key.
+ @return A prepared SQLite statement, or NULL on prepare failure.
+ */
+- (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query;
+
+/*!
  @method getClientWithID:error:
  
  @abstract Retrieves an OAuth client by ID.
