@@ -472,7 +472,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @param database The database to use for OAuth client storage.
  @return An initialized OAuth2Server instance.
  */
-- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (instancetype)initWithDatabase:(nullable PDSDatabase *)database;
 
 /*!
  @method handleAuthorizationRequest:completion:
