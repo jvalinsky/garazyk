@@ -6,16 +6,22 @@
 #import "Lexicon/ATProtoLexiconDef.h"
 #import "App/PDSConfiguration.h"
 #import "Network/SSRFValidator.h"
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#import <CoreFoundation/CoreFoundation.h>
+#import "Network/HttpRetryPolicy.h"
 
 NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
-@implementation FederationClient {
+@interface FederationClient ()
+@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+@end
+
+@implementation FederationClient
+
+static BOOL PDSFederationRunningTests(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    return [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+           [env[@"XCTestConfigurationFilePath"] length] > 0;
 }
 
 static NSString *PDSSanitizedURLString(NSURL *url) {
@@ -34,11 +40,76 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         config.timeoutIntervalForRequest = 30.0;
         config.timeoutIntervalForResource = 60.0;
         _session = [NSURLSession sessionWithConfiguration:config];
+        _retryPolicy = [[HttpRetryPolicy alloc] init];
+        if (PDSFederationRunningTests()) {
+            _retryPolicy.initialDelay = 0.01;
+        }
 
         _didResolver = [[DIDResolver alloc] init];
         ((DIDResolver *)_didResolver).plcURL = [PDSConfiguration sharedConfiguration].plcURL;
     }
     return self;
+}
+
+- (void)executeRequestWithRetry:(NSURLRequest *)request
+                        attempt:(NSInteger)attempt
+                     completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
+                                                 completionHandler:^(NSData * _Nullable data,
+                                                                     NSURLResponse * _Nullable response,
+                                                                     NSError * _Nullable error) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
+        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
+                                                                networkError:error
+                                                               attemptNumber:attempt];
+
+        if (retryResult.decision == HttpRetryDecisionRetryAfter) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(retryResult.retryDelay * NSEC_PER_SEC)),
+                           dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                [self executeRequestWithRetry:request
+                                      attempt:attempt + 1
+                                   completion:completion];
+            });
+            return;
+        }
+
+        if (retryResult.decision == HttpRetryDecisionFail) {
+            if (error) {
+                NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
+                                                                code:FederationErrorNetworkError
+                                                            userInfo:@{
+                                                                NSLocalizedDescriptionKey: @"Network error during remote request",
+                                                                NSUnderlyingErrorKey: error
+                                                            }];
+                completion(nil, nil, federationError);
+                return;
+            }
+
+            if (statusCode < 200 || statusCode >= 300) {
+                NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
+                                                                code:FederationErrorRemoteServerError
+                                                            userInfo:@{
+                                                                NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remote server returned HTTP %ld", (long)statusCode]
+                                                            }];
+                completion(nil, httpResponse, federationError);
+                return;
+            }
+        }
+
+        if (!data) {
+            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
+                                                            code:FederationErrorInvalidResponse
+                                                        userInfo:@{
+                                                            NSLocalizedDescriptionKey: @"No data received from remote server"
+                                                        }];
+            completion(nil, httpResponse, federationError);
+            return;
+        }
+
+        completion(data, httpResponse, nil);
+    }];
+    [task resume];
 }
 
 - (void)forwardXrpcRequest:(NSString *)method
@@ -67,8 +138,16 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     NSURL *pdsURL = [NSURL URLWithString:pdsEndpoint];
     NSString *pdsHost = pdsURL.host;
     NSError *ssrfError = nil;
-    if (![self validateHostResolvesToPublicIP:pdsHost error:&ssrfError]) {
-        completion(nil, ssrfError);
+    if (![SSRFValidator validateHostResolvesToPublicIP:pdsHost error:&ssrfError]) {
+        NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:(ssrfError.localizedDescription ?: @"PDS endpoint failed SSRF validation")
+                                                                           forKey:NSLocalizedDescriptionKey];
+        if (ssrfError) {
+            userInfo[NSUnderlyingErrorKey] = ssrfError;
+        }
+        NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
+                                                       code:FederationErrorNetworkError
+                                                   userInfo:userInfo];
+        completion(nil, federationError);
         return;
     }
 
@@ -125,51 +204,30 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         request.HTTPBody = jsonData;
     }
 
-    // Execute the request
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
-                                             completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-
+    [self executeRequestWithRetry:request attempt:0 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
+            completion(nil, error);
+            return;
+        }
+
+        NSError *jsonError = nil;
+        id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        if (jsonError || ![parsed isKindOfClass:[NSDictionary class]]) {
+            NSMutableDictionary *userInfo = [@{
+                NSLocalizedDescriptionKey: @"Invalid JSON response from remote server"
+            } mutableCopy];
+            if (jsonError) {
+                userInfo[NSUnderlyingErrorKey] = jsonError;
+            }
             NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorNetworkError
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"Network error during remote request",
-                                                              NSUnderlyingErrorKey: error}];
+                                                            code:FederationErrorInvalidResponse
+                                                        userInfo:userInfo];
             completion(nil, federationError);
             return;
         }
 
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        if (httpResponse.statusCode < 200 || httpResponse.statusCode >= 300) {
-            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorRemoteServerError
-                                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remote server returned HTTP %ld", (long)httpResponse.statusCode]}];
-            completion(nil, federationError);
-            return;
-        }
-
-        if (!data) {
-            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorInvalidResponse
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"No data received from remote server"}];
-            completion(nil, federationError);
-            return;
-        }
-
-        NSError *jsonError;
-        NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-        if (jsonError) {
-            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorInvalidResponse
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"Invalid JSON response from remote server",
-                                                              NSUnderlyingErrorKey: jsonError}];
-            completion(nil, federationError);
-            return;
-        }
-
-        completion(jsonResponse, nil);
+        completion((NSDictionary *)parsed, nil);
     }];
-
-    [task resume];
 }
 
 - (void)forwardHttpRequest:(NSURL *)url
@@ -225,8 +283,16 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     // SSRF protection: validate PDS endpoint resolves to public IP
     NSURL *binaryPdsURL = [NSURL URLWithString:pdsEndpoint];
     NSError *ssrfError = nil;
-    if (![self validateHostResolvesToPublicIP:binaryPdsURL.host error:&ssrfError]) {
-        completion(nil, ssrfError);
+    if (![SSRFValidator validateHostResolvesToPublicIP:binaryPdsURL.host error:&ssrfError]) {
+        NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:(ssrfError.localizedDescription ?: @"PDS endpoint failed SSRF validation")
+                                                                           forKey:NSLocalizedDescriptionKey];
+        if (ssrfError) {
+            userInfo[NSUnderlyingErrorKey] = ssrfError;
+        }
+        NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
+                                                       code:FederationErrorNetworkError
+                                                   userInfo:userInfo];
+        completion(nil, federationError);
         return;
     }
 
@@ -267,119 +333,16 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
 
-    // Execute the request
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
-                                             completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-
+    [self executeRequestWithRetry:request attempt:0 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
-            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorNetworkError
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"Network error during remote request",
-                                                              NSUnderlyingErrorKey: error}];
-            completion(nil, federationError);
+            completion(nil, error);
             return;
         }
-
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        if (httpResponse.statusCode < 200 || httpResponse.statusCode >= 300) {
-            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorRemoteServerError
-                                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remote server returned HTTP %ld", (long)httpResponse.statusCode]}];
-            completion(nil, federationError);
-            return;
-        }
-
-        if (!data) {
-            NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                        code:FederationErrorInvalidResponse
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"No data received from remote server"}];
-            completion(nil, federationError);
-            return;
-        }
-
         completion(data, nil);
     }];
-
-    [task resume];
 }
 
 #pragma mark - Helper Methods
-
-- (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
-    if (!hostname || hostname.length == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:FederationErrorDomain
-                                         code:FederationErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty hostname"}];
-        }
-        return NO;
-    }
-
-    CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)hostname);
-    if (!hostRef) {
-        if (error) {
-            *error = [NSError errorWithDomain:FederationErrorDomain
-                                         code:FederationErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create host reference"}];
-        }
-        return NO;
-    }
-
-    CFStreamError streamError;
-    if (!CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError)) {
-        CFRelease(hostRef);
-        if (error) {
-            *error = [NSError errorWithDomain:FederationErrorDomain
-                                         code:FederationErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution failed"}];
-        }
-        return NO;
-    }
-
-    CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
-    if (!addresses || CFArrayGetCount(addresses) == 0) {
-        CFRelease(hostRef);
-        if (error) {
-            *error = [NSError errorWithDomain:FederationErrorDomain
-                                         code:FederationErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"No IP addresses found for hostname"}];
-        }
-        return NO;
-    }
-
-    for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
-        struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
-
-        if (addr->sa_family == AF_INET) {
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
-            uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
-            if ([SSRFValidator isPrivateIPv4Address:ip]) {
-                CFRelease(hostRef);
-                if (error) {
-                    *error = [NSError errorWithDomain:FederationErrorDomain
-                                                 code:FederationErrorNetworkError
-                                             userInfo:@{NSLocalizedDescriptionKey: @"PDS endpoint resolves to private IP address (SSRF protection)"}];
-                }
-                return NO;
-            }
-        } else if (addr->sa_family == AF_INET6) {
-            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
-            struct in6_addr ip6 = addr_in6->sin6_addr;
-            if ([SSRFValidator isPrivateIPv6Address:ip6]) {
-                CFRelease(hostRef);
-                if (error) {
-                    *error = [NSError errorWithDomain:FederationErrorDomain
-                                                 code:FederationErrorNetworkError
-                                             userInfo:@{NSLocalizedDescriptionKey: @"PDS endpoint resolves to private IPv6 address (SSRF protection)"}];
-                }
-                return NO;
-            }
-        }
-    }
-
-    CFRelease(hostRef);
-    return YES;
-}
 
 - (BOOL)isGetMethod:(NSString *)method {
     // Check the lexicon registry first
