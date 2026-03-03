@@ -10,6 +10,10 @@
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import "PDSAppleKeyManager.h"
+#import "App/PDSConfiguration.h"
+#if defined(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+#import "PDSOpenSSLSessionKeyManager.h"
+#endif
 #else
 #import "PDSOpenSSLSessionKeyManager.h"
 #endif
@@ -18,6 +22,13 @@
 
 + (id<PDSKeyManager>)createKeyManagerWithDatabase:(PDSDatabase *)database {
 #if defined(__APPLE__) && !defined(GNUSTEP)
+    if (![PDSConfiguration sharedConfiguration].useKeychain) {
+#if defined(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+        return [[PDSOpenSSLSessionKeyManager alloc] initWithDatabase:database];
+#else
+        return [[PDSAppleKeyManager alloc] initWithDatabase:database serviceIdentifier:@"com.atproto.pds.keys"];
+#endif
+    }
     return [[PDSAppleKeyManager alloc] initWithDatabase:database serviceIdentifier:@"com.atproto.pds.keys"];
 #else
     return [[PDSOpenSSLSessionKeyManager alloc] initWithDatabase:database];
