@@ -13,10 +13,6 @@
 #import "Network/HttpServer.h"
 #import "Network/SSRFValidator.h"
 
-#import <CoreFoundation/CoreFoundation.h>
-#import <netinet/in.h>
-#import <arpa/inet.h>
-
 #import "App/PDSConfiguration.h"
 #import "App/Services/PDSAccountService.h"
 #import "Debug/PDSLogger.h"
@@ -3212,10 +3208,30 @@ static dispatch_once_t sClientCacheOnceToken;
 
   // SSRF Protection: Validate host before fetching
   NSError *ssrfError = nil;
-  if (![self validateHostResolvesToPublicIP:host error:&ssrfError]) {
+  if (![SSRFValidator validateHostResolvesToPublicIP:host error:&ssrfError]) {
+    NSInteger oauthErrorCode = 500;
+    NSString *oauthMessage = @"DNS resolution failed";
+    if (ssrfError.code == SSRFValidatorErrorInvalidHost) {
+      oauthErrorCode = 400;
+      oauthMessage = @"Empty hostname";
+    } else if (ssrfError.code == SSRFValidatorErrorPrivateAddress) {
+      oauthErrorCode = 403;
+      oauthMessage = @"SSRF Protection: Host resolves to private IP address";
+    }
+
+    NSMutableDictionary *userInfo =
+        [NSMutableDictionary dictionaryWithObject:oauthMessage
+                                           forKey:NSLocalizedDescriptionKey];
+    if (ssrfError) {
+      userInfo[NSUnderlyingErrorKey] = ssrfError;
+    }
+    NSError *oauthError = [NSError errorWithDomain:@"OAuth2"
+                                              code:oauthErrorCode
+                                          userInfo:userInfo];
+
     PDS_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@ (%@)",
                        urlStr, ssrfError.localizedDescription);
-    completion(nil, ssrfError);
+    completion(nil, oauthError);
     return;
   }
 
@@ -3267,84 +3283,6 @@ static dispatch_once_t sClientCacheOnceToken;
           }
         }];
   [task resume];
-}
-
-#pragma mark - SSRF Protection
-
-- (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
-  if (hostname.length == 0) {
-    if (error) {
-      *error = [NSError errorWithDomain:@"OAuth2"
-                                   code:400
-                               userInfo:@{NSLocalizedDescriptionKey : @"Empty hostname"}];
-    }
-    return NO;
-  }
-
-  CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)hostname);
-  if (!hostRef) {
-    if (error) {
-      *error = [NSError errorWithDomain:@"OAuth2"
-                                   code:500
-                               userInfo:@{NSLocalizedDescriptionKey : @"Failed to create host reference"}];
-    }
-    return NO;
-  }
-
-  CFStreamError streamError;
-  if (!CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError)) {
-    CFRelease(hostRef);
-    if (error) {
-      *error = [NSError errorWithDomain:@"OAuth2"
-                                   code:500
-                               userInfo:@{NSLocalizedDescriptionKey : @"DNS resolution failed"}];
-    }
-    return NO;
-  }
-
-  CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
-  if (!addresses || CFArrayGetCount(addresses) == 0) {
-    CFRelease(hostRef);
-    if (error) {
-      *error = [NSError errorWithDomain:@"OAuth2"
-                                   code:500
-                               userInfo:@{NSLocalizedDescriptionKey : @"No IP addresses found for hostname"}];
-    }
-    return NO;
-  }
-
-  for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
-    struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
-
-    if (addr->sa_family == AF_INET) {
-      struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
-      uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
-      if ([SSRFValidator isPrivateIPv4Address:ip]) {
-        CFRelease(hostRef);
-        if (error) {
-          *error = [NSError errorWithDomain:@"OAuth2"
-                                       code:403
-                                   userInfo:@{NSLocalizedDescriptionKey : @"SSRF Protection: Host resolves to private IP address"}];
-        }
-        return NO;
-      }
-    } else if (addr->sa_family == AF_INET6) {
-      struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
-      struct in6_addr ip6 = addr_in6->sin6_addr;
-      if ([SSRFValidator isPrivateIPv6Address:ip6]) {
-        CFRelease(hostRef);
-        if (error) {
-          *error = [NSError errorWithDomain:@"OAuth2"
-                                       code:403
-                                   userInfo:@{NSLocalizedDescriptionKey : @"SSRF Protection: Host resolves to private IPv6 address"}];
-        }
-        return NO;
-      }
-    }
-  }
-
-  CFRelease(hostRef);
-  return YES;
 }
 
 @end

@@ -14,6 +14,7 @@
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Network/SSRFValidator.h"
+#import "Network/HttpRetryPolicy.h"
 
 #ifdef GNUSTEP
 #import <Security/Security.h>
@@ -24,10 +25,7 @@
 #import <resolv.h>
 #import <arpa/nameser.h>
 #import <netdb.h>
-#import <netinet/in.h>
 #import <string.h>
-#import <sys/socket.h>
-#import <arpa/inet.h>
 
 NSString * const HandleErrorDomain = @"com.atproto.handle";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
@@ -40,7 +38,22 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 @implementation HandleResolutionFailure
 @end
 
+@interface HandleResolver ()
+@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+#if defined(__APPLE__)
+- (void)executeHandleHTTPSRequest:(NSURLRequest *)request
+                          attempt:(NSInteger)attempt
+                       completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion;
+#endif
+@end
+
 @implementation HandleResolver
+
+static BOOL PDSHandleResolverRunningTests(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    return [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+           [env[@"XCTestConfigurationFilePath"] length] > 0;
+}
 
 - (instancetype)init {
     self = [super init];
@@ -58,6 +71,10 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         _cacheExpirationInterval = 300.0;
         _rateLimitPerMinute = 100;
         _requestTimestamps = [NSMutableArray array];
+        _retryPolicy = [[HttpRetryPolicy alloc] init];
+        if (PDSHandleResolverRunningTests()) {
+            _retryPolicy.initialDelay = 0.01;
+        }
     }
     return self;
 }
@@ -97,8 +114,24 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
     /*! Prevent SSRF attacks by validating public IP resolution. */
     if (!self.skipSSRFCheck) {
         NSError *ssrfError = nil;
-        if (![self validateHandleResolvesToPublicIP:handle error:&ssrfError]) {
-            completion(nil, ssrfError);
+        if (![SSRFValidator validateHostResolvesToPublicIP:handle error:&ssrfError]) {
+            NSInteger mappedCode = HandleErrorNetworkError;
+            NSString *mappedMessage = ssrfError.localizedDescription ?: @"Failed to resolve hostname";
+            if (ssrfError.code == SSRFValidatorErrorPrivateAddress) {
+                mappedCode = HandleErrorSSRFAttempt;
+                mappedMessage = @"Handle resolves to private IP address (SSRF protection)";
+            }
+
+            NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:mappedMessage
+                                                                               forKey:NSLocalizedDescriptionKey];
+            if (ssrfError) {
+                userInfo[NSUnderlyingErrorKey] = ssrfError;
+            }
+
+            NSError *mappedError = [NSError errorWithDomain:HandleErrorDomain
+                                                       code:mappedCode
+                                                   userInfo:userInfo];
+            completion(nil, mappedError);
             return;
         }
     }
@@ -189,54 +222,51 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 #if defined(__APPLE__)
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
-    
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
-                                              completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        
+    [self executeHandleHTTPSRequest:request
+                            attempt:0
+                         completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
             completion(nil, error);
             return;
         }
 
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        if (httpResponse.statusCode != 200) {
+        if (response.statusCode != 200) {
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                      code:HandleErrorNotFound
-                                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving handle", (long)httpResponse.statusCode]}];
+                                                        code:HandleErrorNotFound
+                                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving handle", (long)response.statusCode]}];
             completion(nil, resolveError);
             return;
         }
-        
+
         if (!data) {
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                      code:HandleErrorResolutionFailed
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"No data received from handle resolution"}];
+                                                        code:HandleErrorResolutionFailed
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"No data received from handle resolution"}];
             completion(nil, resolveError);
             return;
         }
-        
+
         NSString *did = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         did = [did stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        
+
         if (!did || did.length == 0) {
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                      code:HandleErrorResolutionFailed
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Empty DID in handle resolution response"}];
+                                                        code:HandleErrorResolutionFailed
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"Empty DID in handle resolution response"}];
             completion(nil, resolveError);
             return;
         }
-        
+
         if (![did hasPrefix:@"did:"]) {
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                      code:HandleErrorResolutionFailed
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Response does not contain a valid DID"}];
+                                                        code:HandleErrorResolutionFailed
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"Response does not contain a valid DID"}];
             completion(nil, resolveError);
             return;
         }
-        
+
         completion(did, nil);
     }];
-    [task resume];
     
 #else
     /*! Linux (GNUstep): Use NSURLConnection with synchronous request on background queue. */
@@ -293,6 +323,41 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
     });
 #endif
 }
+
+#if defined(__APPLE__)
+- (void)executeHandleHTTPSRequest:(NSURLRequest *)request
+                          attempt:(NSInteger)attempt
+                       completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
+    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
+                                                 completionHandler:^(NSData * _Nullable data,
+                                                                     NSURLResponse * _Nullable response,
+                                                                     NSError * _Nullable error) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
+        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
+                                                                networkError:error
+                                                               attemptNumber:attempt];
+
+        if (retryResult.decision == HttpRetryDecisionRetryAfter) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(retryResult.retryDelay * NSEC_PER_SEC)),
+                           dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                [self executeHandleHTTPSRequest:request
+                                        attempt:attempt + 1
+                                     completion:completion];
+            });
+            return;
+        }
+
+        if (retryResult.decision == HttpRetryDecisionFail && error) {
+            completion(nil, nil, error);
+            return;
+        }
+
+        completion(data, httpResponse, nil);
+    }];
+    [task resume];
+}
+#endif
 
 - (void)resolveHandles:(NSArray<NSString *> *)handles
              completion:(void (^)(NSDictionary<NSString *, NSString *> * _Nullable results, NSError * _Nullable error))completion {
@@ -416,96 +481,6 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
         [self.requestTimestamps addObject:now];
         return YES;
     }
-}
-
-#pragma mark - SSRF Protection
-
-/*!
- @method validateHandleResolvesToPublicIP:error:
-
- @abstract Validates that a handle resolves to a public IP address.
-
- @discussion Performs DNS resolution and checks all resolved IP addresses
- against private/reserved ranges to prevent SSRF attacks. This includes
- RFC 1918 private addresses, loopback, link-local, and IPv6 private ranges.
-
- @param handle The handle to validate (nonnull).
- @param error On return, contains an error if validation failed.
- @return YES if handle resolves to public IP, NO otherwise.
- */
-- (BOOL)validateHandleResolvesToPublicIP:(NSString *)handle error:(NSError **)error {
-    /*! Resolve hostname to prevent DNS rebinding attacks. */
-    CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)handle);
-    if (!hostRef) {
-        if (error) {
-            *error = [NSError errorWithDomain:HandleErrorDomain
-                                         code:HandleErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create host resolver"}];
-        }
-        return NO;
-    }
-
-    CFStreamError streamError;
-    Boolean success = CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError);
-
-    if (!success) {
-        CFRelease(hostRef);
-        if (error) {
-            *error = [NSError errorWithDomain:HandleErrorDomain
-                                         code:HandleErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to resolve hostname"}];
-        }
-        return NO;
-    }
-
-    CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
-    if (!addresses || CFArrayGetCount(addresses) == 0) {
-        CFRelease(hostRef);
-        if (error) {
-            *error = [NSError errorWithDomain:HandleErrorDomain
-                                         code:HandleErrorNetworkError
-                                     userInfo:@{NSLocalizedDescriptionKey: @"No IP addresses found for hostname"}];
-        }
-        return NO;
-    }
-
-    /*! Validate each resolved IP address against private/reserved ranges. */
-    for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
-        struct sockaddr *addr = (struct sockaddr *)CFDataGetBytePtr(CFArrayGetValueAtIndex(addresses, i));
-
-        if (addr->sa_family == AF_INET) {
-            /*! IPv4 address validation. */
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
-            uint32_t ip = ntohl(addr_in->sin_addr.s_addr);
-
-            if ([SSRFValidator isPrivateIPv4Address:ip]) {
-                CFRelease(hostRef);
-                if (error) {
-                    *error = [NSError errorWithDomain:HandleErrorDomain
-                                                 code:HandleErrorSSRFAttempt
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IP address (SSRF protection)"}];
-                }
-                return NO;
-            }
-        } else if (addr->sa_family == AF_INET6) {
-            /*! IPv6 address validation. */
-            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
-            struct in6_addr ip6 = addr_in6->sin6_addr;
-
-            if ([SSRFValidator isPrivateIPv6Address:ip6]) {
-                CFRelease(hostRef);
-                if (error) {
-                    *error = [NSError errorWithDomain:HandleErrorDomain
-                                                 code:HandleErrorSSRFAttempt
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Handle resolves to private IPv6 address (SSRF protection)"}];
-                }
-                return NO;
-            }
-        }
-    }
-
-    CFRelease(hostRef);
-    return YES;
 }
 
 @end
