@@ -2,82 +2,181 @@
 
 ## Overview
 
-The PDS implements sliding window rate limiting to prevent abuse and ensure fair resource allocation. Rate limiting is applied at multiple levels:
+Rate limiting prevents abuse by restricting the number of requests a client can make within a time window. The PDS implements sliding window rate limiting with SQLite persistence, supporting multiple limit types:
 
-- **Per-DID API requests** — Limits authenticated API calls per user
-- **Per-IP requests** — Limits unauthenticated requests per IP address
-- **Per-DID blob uploads** — Separate limits for blob operations
+- **DID-based API limits** — Per-user authenticated request limits
+- **IP-based limits** — Per-IP unauthenticated request limits  
+- **Blob upload limits** — Per-user blob upload limits
+- **Custom limits** — Flexible limits for specific operations
 
-Rate limits use SQLite for persistent tracking across server restarts, ensuring limits are enforced even after crashes or deployments.
+## Why Rate Limiting?
 
-## Architecture
+Rate limiting protects the PDS from:
 
+1. **Abuse** — Malicious actors overwhelming the server
+2. **Resource exhaustion** — Excessive requests consuming CPU/memory/disk
+3. **Denial of service** — Legitimate users unable to access the service
+4. **Cost overruns** — Excessive bandwidth or compute costs
+5. **Data scraping** — Automated harvesting of user data
+
+## Rate Limiting Strategies
+
+### 1. Fixed Window
+
+Counts requests in fixed time windows (e.g., per minute, per hour).
+
+**Pros:**
+- Simple to implement
+- Low memory overhead
+- Easy to understand
+
+**Cons:**
+- Burst traffic at window boundaries
+- Can allow 2x limit at boundary
+- Not smooth rate enforcement
+
+**Example:**
 ```
-┌──────────────────────────────────────────┐
-│   HTTP Request                           │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   Rate Limiter Check                     │
-│  - Extract DID or IP                     │
-│  - Query SQLite for request count        │
-│  - Check against limit                   │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-   Allowed          Rate Limited
-        │                 │
-        ▼                 ▼
-   Continue         Return 429
-   Request          + Retry-After
+Window 1: 00:00-01:00 → 100 requests allowed
+Window 2: 01:00-02:00 → 100 requests allowed
+
+Problem: 100 requests at 00:59, 100 at 01:01 = 200 in 2 minutes
 ```
 
-## Rate Limiting Algorithm
+### 2. Sliding Window (Used by PDS)
 
-### Sliding Window
+Tracks request timestamps and counts requests within a rolling time window.
 
-The PDS uses a **sliding window** algorithm that tracks request timestamps within a time window:
+**Pros:**
+- Smooth rate enforcement
+- No boundary burst issues
+- Accurate limit enforcement
 
-1. **Record Request** — Store timestamp in SQLite
-2. **Count Requests** — Count requests within window (now - window_seconds)
-3. **Check Limit** — Compare count against configured limit
-4. **Allow or Deny** — Return result with remaining count
+**Cons:**
+- Higher memory overhead
+- More complex implementation
+- Requires timestamp storage
 
-**Implementation (from RateLimiter.m):**
+**Example:**
+```
+Current time: 01:30
+Window: Last 60 minutes (00:30-01:30)
+Count: All requests with timestamp > 00:30
+```
+
+### 3. Token Bucket
+
+Tokens added at fixed rate, consumed per request. Allows bursts up to bucket size.
+
+**Pros:**
+- Allows controlled bursts
+- Smooth long-term rate
+- Flexible configuration
+
+**Cons:**
+- Complex to implement
+- Requires state management
+- Harder to explain to users
+
+### 4. Leaky Bucket
+
+Requests queued and processed at fixed rate. Excess requests dropped.
+
+**Pros:**
+- Smooth output rate
+- Predictable behavior
+- Good for rate shaping
+
+**Cons:**
+- Adds latency (queuing)
+- Complex implementation
+- May drop valid requests
+
+## PDS Implementation: Sliding Window
+
+The PDS uses a sliding window algorithm with SQLite persistence:
 
 ```objc
+// In RateLimiter.h
+@interface RateLimiter : NSObject
+
+/*! Maximum API requests per hour per DID (default: 5000) */
+@property (nonatomic, assign) NSInteger didLimit;
+
+/*! Time window for DID rate limiting in seconds (default: 3600) */
+@property (nonatomic, assign) NSTimeInterval didWindowSeconds;
+
+/*! Maximum API requests per minute per IP address (default: 100) */
+@property (nonatomic, assign) NSInteger ipLimit;
+
+/*! Time window for IP rate limiting in seconds (default: 60) */
+@property (nonatomic, assign) NSTimeInterval ipWindowSeconds;
+
+/*! Maximum blob uploads per hour per DID (default: 50) */
+@property (nonatomic, assign) NSInteger blobLimit;
+
+/*! Time window for blob upload limiting in seconds (default: 3600) */
+@property (nonatomic, assign) NSTimeInterval blobWindowSeconds;
+
+/*! Whether rate limiting is enabled (default: YES) */
+@property (nonatomic, assign, getter=isEnabled) BOOL enabled;
+
+@end
+```
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.h` (lines 90-115)
+
+## Algorithm Details
+
+### Sliding Window Algorithm
+
+```objc
+// In RateLimiter.m - Core sliding window check
 - (RateLimitResult *)checkRateLimitInternalForIdentifier:(NSString *)identifier
                                                      type:(RateLimitType)type
                                                     limit:(NSInteger)limit
                                               windowSeconds:(NSTimeInterval)windowSeconds {
+    if (![self ensureDatabaseOpened]) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
     
-    // Query requests within window
-    NSString *selectSQL = @"SELECT request_count, window_start "
-                          @"FROM rate_limits "
-                          @"WHERE identifier = ? AND type = ? AND window_start > ?";
+    // 1. Query current count within window
+    NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
     
-    // ... bind parameters and execute query
-    
-    if (requestCount >= limit) {
-        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
-        return [RateLimitResult resultAllowed:NO 
-                                        limit:limit 
-                                    remaining:0 
-                                  resetSeconds:resetSeconds 
-                                   retryAfter:resetSeconds];
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
+    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
+    if (result != SQLITE_OK) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
     
-    // Increment counter using UPSERT
+    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, type);
+    sqlite3_bind_double(stmt, 3, windowStart);
+    
+    NSInteger requestCount = 0;
+    NSTimeInterval existingWindowStart = 0;
+    
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        requestCount = sqlite3_column_int(stmt, 0);
+        existingWindowStart = sqlite3_column_double(stmt, 1);
+    }
+    
+    // 2. Check if limit exceeded
+    if (requestCount >= limit) {
+        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+        return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
+    }
+    
+    // 3. Increment count (UPSERT)
     NSString *upsertSQL = @"INSERT INTO rate_limits (identifier, type, request_count, window_start) "
                           @"VALUES (?, ?, ?, ?) "
                           @"ON CONFLICT(identifier, type) DO UPDATE SET "
                           @"request_count = CASE WHEN window_start > ? THEN request_count + 1 ELSE 1 END, "
                           @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
     
-    // ... execute upsert
+    // ... (execute upsert)
     
     return [RateLimitResult resultAllowed:YES
                                     limit:limit
@@ -87,280 +186,12 @@ The PDS uses a **sliding window** algorithm that tracks request timestamps withi
 }
 ```
 
-### Why Sliding Window?
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 210-270)
 
-**Advantages:**
-- Smooth rate limiting without burst spikes
-- Fair distribution across time
-- Accurate tracking of request patterns
-
-**Trade-offs:**
-- Requires persistent storage (SQLite)
-- Slightly more complex than fixed window
-- Database queries on every request
-
-## Rate Limit Types
-
-### 1. DID-Based API Limits
-
-Limits authenticated API requests per user (DID).
-
-**Default Configuration:**
-- Limit: 5000 requests
-- Window: 3600 seconds (1 hour)
-
-**Implementation (from RateLimiter.h):**
-
-```objc
-- (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
-    if (!self.isEnabled) {
-        return [RateLimitResult resultAllowed:YES 
-                                        limit:self.didLimit 
-                                    remaining:self.didLimit 
-                                  resetSeconds:0 
-                                   retryAfter:0];
-    }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkRateLimitInternalForIdentifier:did 
-                                                      type:RateLimitTypeDID 
-                                                     limit:self.didLimit 
-                                              windowSeconds:self.didWindowSeconds];
-    });
-    return result;
-}
-```
-
-**Usage in XRPC Handlers:**
-
-```objc
-// Extract DID from authentication
-NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                              jwtMinter:jwtMinter
-                                        adminController:adminController
-                                                request:request];
-
-// Check rate limit
-RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
-if (!result.allowed) {
-    response.statusCode = 429; // Too Many Requests
-    [response setJsonBody:@{
-        @"error": @"RateLimitExceeded",
-        @"message": @"Too many requests"
-    }];
-    [response setHeader:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
-                 forKey:@"Retry-After"];
-    return;
-}
-```
-
-### 2. IP-Based Request Limits
-
-Limits unauthenticated requests per IP address.
-
-**Default Configuration:**
-- Limit: 100 requests
-- Window: 60 seconds (1 minute)
-
-**Implementation:**
-
-```objc
-- (RateLimitResult *)checkRateLimitForIP:(NSString *)ip {
-    if (!self.isEnabled || _rateLimiterDisabledGlobally) {
-        return [RateLimitResult resultAllowed:YES 
-                                        limit:self.ipLimit 
-                                    remaining:self.ipLimit 
-                                  resetSeconds:0 
-                                   retryAfter:0];
-    }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkRateLimitInternalForIdentifier:ip 
-                                                      type:RateLimitTypeIP 
-                                                     limit:self.ipLimit 
-                                              windowSeconds:self.ipWindowSeconds];
-    });
-    return result;
-}
-```
-
-**Use Case:**
-- Public endpoints (e.g., OAuth authorization)
-- Unauthenticated API calls
-- Protection against IP-based attacks
-
-### 3. Blob Upload Limits
-
-Separate limits for blob uploads to prevent storage abuse.
-
-**Default Configuration:**
-- Limit: 50 uploads
-- Window: 3600 seconds (1 hour)
-
-**Implementation:**
-
-```objc
-- (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
-    if (!self.isEnabled) {
-        return [RateLimitResult resultAllowed:YES 
-                                        limit:self.blobLimit 
-                                    remaining:self.blobLimit 
-                                  resetSeconds:0 
-                                   retryAfter:0];
-    }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkBlobRateLimitInternalForDid:did 
-                                                   limit:self.blobLimit 
-                                            windowSeconds:self.blobWindowSeconds];
-    });
-    return result;
-}
-```
-
-**Separate Table:**
-
-Blob limits use a dedicated SQLite table for isolation:
+### Database Schema
 
 ```sql
-CREATE TABLE IF NOT EXISTS blob_rate_limits (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    did TEXT NOT NULL,
-    upload_count INTEGER NOT NULL DEFAULT 0,
-    window_start INTEGER NOT NULL,
-    UNIQUE(did)
-)
-```
-
-## Configuration
-
-### Configuration File
-
-Rate limits are configured in `config.json`:
-
-```json
-{
-  "rate_limit": {
-    "enabled": true,
-    "did_limit": 5000,
-    "did_window": 3600,
-    "ip_limit": 100,
-    "ip_window": 60,
-    "blob_limit": 50,
-    "blob_window": 3600
-  }
-}
-```
-
-### Environment Variables
-
-Environment variables override configuration file:
-
-```bash
-export PDS_RATELIMIT_ENABLED=true
-export PDS_RATELIMIT_DID_LIMIT=10000
-export PDS_RATELIMIT_DID_WINDOW=3600
-export PDS_RATELIMIT_IP_LIMIT=200
-export PDS_RATELIMIT_IP_WINDOW=60
-```
-
-### Programmatic Configuration
-
-**Implementation (from PDSApplication.m):**
-
-```objc
-- (void)configureRateLimiter {
-    if (!_configuration) return;
-    
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
-    limiter.enabled = _configuration.rateLimitEnabled;
-    limiter.didLimit = _configuration.rateLimitDidLimit;
-    limiter.didWindowSeconds = _configuration.rateLimitDidWindowSeconds;
-    limiter.ipLimit = _configuration.rateLimitIpLimit;
-    limiter.ipWindowSeconds = _configuration.rateLimitIpWindowSeconds;
-    limiter.blobLimit = _configuration.rateLimitBlobLimit;
-    limiter.blobWindowSeconds = _configuration.rateLimitBlobWindowSeconds;
-}
-```
-
-### Default Values
-
-**Implementation (from PDSConfiguration.m):**
-
-```objc
-_rateLimitEnabled = YES;
-_rateLimitDidLimit = 5000;
-_rateLimitDidWindowSeconds = 3600;
-_rateLimitIpLimit = 1000; // Increased default for tests
-_rateLimitIpWindowSeconds = 60;
-_rateLimitBlobLimit = 50;
-_rateLimitBlobWindowSeconds = 3600;
-```
-
-## HTTP Headers
-
-### X-RateLimit Headers
-
-The PDS returns standard rate limit headers (RFC 6585):
-
-```
-X-RateLimit-Limit: 5000
-X-RateLimit-Remaining: 4999
-X-RateLimit-Reset: 3600
-```
-
-**Implementation:**
-
-```objc
-- (NSDictionary<NSString *, NSString *> *)headersFromResult:(RateLimitResult *)result {
-    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
-    
-    [headers setObject:[NSString stringWithFormat:@"%ld", (long)result.limit] 
-                forKey:@"X-RateLimit-Limit"];
-    [headers setObject:[NSString stringWithFormat:@"%ld", (long)result.remaining] 
-                forKey:@"X-RateLimit-Remaining"];
-    [headers setObject:[NSString stringWithFormat:@"%.0f", result.resetSeconds] 
-                forKey:@"X-RateLimit-Reset"];
-    
-    if (!result.allowed) {
-        [headers setObject:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
-                    forKey:@"Retry-After"];
-    }
-    
-    return [headers copy];
-}
-```
-
-### Applying Headers to Response
-
-```objc
-- (void)applyRateLimitHeadersToResponse:(HttpResponse *)response
-                                  forDid:(nullable NSString *)did
-                                    ip:(nullable NSString *)ip {
-    if (did) {
-        NSDictionary *didHeaders = [self rateLimitHeadersForDid:did];
-        [didHeaders enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
-            [response setHeader:value forKey:(NSString *)key];
-        }];
-    }
-    
-    if (ip) {
-        NSDictionary *ipHeaders = [self rateLimitHeadersForIP:ip];
-        [ipHeaders enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
-            [response setHeader:value forKey:(NSString *)key];
-        }];
-    }
-}
-```
-
-## Database Schema
-
-### Rate Limits Table
-
-```sql
+-- Rate limits table
 CREATE TABLE IF NOT EXISTS rate_limits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     identifier TEXT NOT NULL,
@@ -370,19 +201,9 @@ CREATE TABLE IF NOT EXISTS rate_limits (
     UNIQUE(identifier, type)
 );
 
-CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier 
-    ON rate_limits(identifier);
-```
+CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier);
 
-**Fields:**
-- `identifier` — DID or IP address
-- `type` — RateLimitType enum (DID=0, IP=1, Blob=2, Custom=3)
-- `request_count` — Number of requests in current window
-- `window_start` — Unix timestamp of window start
-
-### Blob Rate Limits Table
-
-```sql
+-- Blob rate limits table
 CREATE TABLE IF NOT EXISTS blob_rate_limits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     did TEXT NOT NULL,
@@ -392,187 +213,352 @@ CREATE TABLE IF NOT EXISTS blob_rate_limits (
 );
 ```
 
-## Thread Safety
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 118-150)
 
-Rate limiting is thread-safe through SQLite serialization:
+## Rate Limit Types
 
-```objc
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
+### 1. DID-Based API Limits
 
-- (instancetype)initWithDatabasePath:(nullable NSString *)path {
-    self = [super init];
-    if (self) {
-        _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", 
-                                         DISPATCH_QUEUE_SERIAL);
-        // ... initialize database
-    }
-    return self;
-}
-```
-
-All database operations are dispatched to the serial queue:
+Applied to authenticated XRPC requests:
 
 ```objc
-__block RateLimitResult *result;
-dispatch_sync(self.dbQueue, ^{
-    result = [self checkRateLimitInternalForIdentifier:did 
-                                                  type:RateLimitTypeDID 
-                                                 limit:self.didLimit 
-                                          windowSeconds:self.didWindowSeconds];
-});
-return result;
-```
-
-## Custom Rate Limits
-
-For specialized rate limiting needs:
-
-```objc
-- (RateLimitResult *)checkRateLimitForKey:(NSString *)key 
-                                    limit:(NSInteger)limit 
-                             windowSeconds:(NSTimeInterval)windowSeconds {
+// In RateLimiter.m
+- (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
     if (!self.isEnabled) {
-        return [RateLimitResult resultAllowed:YES 
-                                        limit:limit 
-                                    remaining:limit 
-                                  resetSeconds:0 
-                                   retryAfter:0];
+        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
+    }
+    if (!did || did.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
     }
     
     __block RateLimitResult *result;
     dispatch_sync(self.dbQueue, ^{
-        result = [self checkRateLimitInternalForIdentifier:key 
-                                                      type:RateLimitTypeCustom 
-                                                     limit:limit 
-                                              windowSeconds:windowSeconds];
+        result = [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
     });
     return result;
 }
 ```
 
-**Example Usage:**
+**Default:** 5000 requests/hour per DID
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 154-168)
+
+### 2. IP-Based Limits
+
+Applied to unauthenticated requests (e.g., OAuth endpoints):
 
 ```objc
-// Rate limit password reset attempts
-RateLimitResult *result = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:[NSString stringWithFormat:@"password_reset:%@", email]
-                   limit:5
-            windowSeconds:3600];
+// In HttpServer.m - OAuth endpoint rate limiting
+if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
+    [RateLimiter sharedLimiter].isEnabled) {
+  RateLimitResult *result =
+      [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+
+  if (!result.allowed) {
+    response.statusCode = 429;
+    [response setJsonBody:@{
+      @"error" : @"too_many_requests",
+      @"message" : @"Rate limit exceeded"
+    }];
+    return response;
+  }
+}
 ```
+
+**Default:** 100 requests/minute per IP
+
+**Source:** `ATProtoPDS/Sources/Network/HttpServer.m` (lines 994-1005)
+
+### 3. Blob Upload Limits
+
+Applied to blob upload operations:
+
+```objc
+// In RateLimiter.m
+- (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+    }
+    if (!did || did.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+    }
+    
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkBlobRateLimitInternalForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
+    });
+    return result;
+}
+```
+
+**Default:** 50 uploads/hour per DID
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 190-203)
+
+### 4. Custom Limits
+
+Flexible limits for specific operations:
+
+```objc
+// In RateLimiter.m
+- (RateLimitResult *)checkRateLimitForKey:(NSString *)key 
+                                    limit:(NSInteger)limit 
+                            windowSeconds:(NSTimeInterval)windowSeconds {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+    if (!key || key.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+    
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkRateLimitInternalForIdentifier:key type:RateLimitTypeCustom limit:limit windowSeconds:windowSeconds];
+    });
+    return result;
+}
+```
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 205-220)
+
+## Configuration
+
+### Initialization
+
+```objc
+// In RateLimiter.m
+- (instancetype)initWithDatabasePath:(nullable NSString *)path {
+    self = [super init];
+    if (self) {
+        _didLimit = 5000;
+        _didWindowSeconds = 3600;
+        _ipLimit = 100;
+        _ipWindowSeconds = 60;
+        _blobLimit = 50;
+        _blobWindowSeconds = 3600;
+        _enabled = !_rateLimiterDisabledGlobally;
+        
+        _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
+        
+        if (path) {
+            _databasePath = [path copy];
+        } else {
+            _databasePath = nil; // Will be determined on-demand
+        }
+    }
+    return self;
+}
+```
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 68-90)
+
+### Customizing Limits
+
+```objc
+// Example: Increase DID limit for premium users
+RateLimiter *limiter = [[RateLimiter alloc] initWithDatabasePath:@"rate_limits.db"];
+limiter.didLimit = 10000;  // 10k requests/hour
+limiter.didWindowSeconds = 3600;
+
+// Example: Stricter IP limits
+limiter.ipLimit = 50;  // 50 requests/minute
+limiter.ipWindowSeconds = 60;
+
+// Example: More generous blob limits
+limiter.blobLimit = 100;  // 100 uploads/hour
+limiter.blobWindowSeconds = 3600;
+```
+
+### Global Disable (Development)
+
+```objc
+// In RateLimiter.m
+#ifdef DEBUG
+static BOOL _rateLimiterDisabledGlobally = YES;
+#else
+static BOOL _rateLimiterDisabledGlobally = NO;
+#endif
+
+void RateLimiterSetDisabledGlobally(BOOL disabled) {
+    _rateLimiterDisabledGlobally = disabled;
+}
+
+BOOL RateLimiterIsDisabledGlobally(void) {
+    return _rateLimiterDisabledGlobally;
+}
+```
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 12-25)
+
+## HTTP Headers
+
+### X-RateLimit-* Headers
+
+The PDS returns standard rate limit headers per RFC 6585:
+
+```objc
+// In RateLimiter.m
+- (NSDictionary<NSString *, NSString *> *)headersFromResult:(RateLimitResult *)result {
+    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+    
+    [headers setObject:[NSString stringWithFormat:@"%ld", (long)result.limit] forKey:@"X-RateLimit-Limit"];
+    [headers setObject:[NSString stringWithFormat:@"%ld", (long)result.remaining] forKey:@"X-RateLimit-Remaining"];
+    [headers setObject:[NSString stringWithFormat:@"%.0f", result.resetSeconds] forKey:@"X-RateLimit-Reset"];
+    
+    if (!result.allowed) {
+        [headers setObject:[NSString stringWithFormat:@"%.0f", result.retryAfter] forKey:@"Retry-After"];
+    }
+    
+    return [headers copy];
+}
+```
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 450-465)
+
+### Header Examples
+
+**Successful request:**
+```http
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 5000
+X-RateLimit-Remaining: 4999
+X-RateLimit-Reset: 3600
+```
+
+**Rate limit exceeded:**
+```http
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 5000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1234
+Retry-After: 1234
+Content-Type: application/json
+
+{
+  "error": "too_many_requests",
+  "message": "Rate limit exceeded"
+}
+```
+
+## Thread Safety
+
+The RateLimiter is thread-safe through SQLite serialization:
+
+```objc
+// In RateLimiter.m
+@interface RateLimiter ()
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
+@end
+
+@implementation RateLimiter
+
+- (instancetype)initWithDatabasePath:(nullable NSString *)path {
+    // ...
+    _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
+    // ...
+}
+
+- (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
+    });
+    return result;
+}
+```
+
+All database operations are serialized through `dbQueue`, ensuring thread-safe access.
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 45-50, 154-168)
 
 ## Performance Considerations
 
-### Database Location
+### Database Persistence
 
-Rate limits are stored in the service directory:
-
-```objc
-NSString *baseDir = config.dataPaths.serviceDirectory;
-_databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
-```
-
-### Query Optimization
-
-Queries use indexed lookups:
-
-```sql
-CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier 
-    ON rate_limits(identifier);
-```
-
-### Cleanup Strategy
-
-Old entries are automatically cleaned by the sliding window query:
-
-```sql
-WHERE window_start > ?  -- Only queries recent windows
-```
-
-## Testing
-
-**Example Test (from RateLimiterTests.m):**
+Rate limits are persisted to SQLite, surviving server restarts:
 
 ```objc
-- (void)testRateLimitDecrementsRemaining {
-    RateLimitResult *result1 = [self.limiter checkRateLimitForDid:@"did:test:user2"];
-    RateLimitResult *result2 = [self.limiter checkRateLimitForDid:@"did:test:user2"];
-
-    XCTAssertTrue(result1.allowed, @"First request should be allowed");
-    XCTAssertTrue(result2.allowed, @"Second request should be allowed");
-    XCTAssertEqual(result2.remaining, result1.remaining - 1, 
-                   @"Remaining should decrement by 1");
+// In RateLimiter.m
+- (BOOL)ensureDatabaseOpened {
+    if (_db) return YES;
+    
+    if (!_databasePath) {
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *baseDir = config ? config.dataPaths.serviceDirectory
+                                   : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
+        [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
+        _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
+    }
+    
+    [self initializeDatabase];
+    return _db != NULL;
 }
 ```
+
+**Source:** `ATProtoPDS/Sources/Network/RateLimiter.m` (lines 92-106)
+
+### Index Optimization
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier);
+```
+
+The index on `identifier` ensures fast lookups for rate limit checks.
+
+### Memory Overhead
+
+- **Per identifier:** ~100 bytes (identifier + metadata)
+- **1000 active users:** ~100 KB
+- **10,000 active users:** ~1 MB
+
+Minimal memory footprint due to SQLite storage.
 
 ## Best Practices
 
-1. **Enable in Production**
-   - Always enable rate limiting in production
-   - Use conservative limits initially
-   - Monitor and adjust based on usage
+1. **Set appropriate limits** — Balance protection and usability
+2. **Monitor rate limit hits** — Track 429 responses
+3. **Provide clear error messages** — Include retry-after information
+4. **Use different limits per resource** — API vs blobs vs auth
+5. **Consider user tiers** — Premium users may need higher limits
+6. **Test under load** — Verify limits work as expected
+7. **Log rate limit events** — Track abuse patterns
+8. **Implement gradual backoff** — Increase limits for trusted users
 
-2. **Different Limits for Different Resources**
-   - API calls: Higher limits (5000/hour)
-   - Blob uploads: Lower limits (50/hour)
-   - Authentication: Very low limits (5/hour)
+## Monitoring
 
-3. **Provide Clear Error Messages**
-   - Include `Retry-After` header
-   - Explain rate limit in error message
-   - Document limits in API documentation
-
-4. **Monitor Rate Limit Hits**
-   - Log rate limit violations
-   - Track which endpoints hit limits
-   - Identify potential abuse patterns
-
-5. **Graceful Degradation**
-   - If rate limiter fails, allow requests
-   - Log failures for investigation
-   - Don't block legitimate traffic
-
-## Common Patterns
-
-### OAuth Endpoint Rate Limiting
-
-**Implementation (from HttpServer.m):**
+### Metrics to Track
 
 ```objc
-if ([request.path hasPrefix:@"/oauth/"] && 
-    !RateLimiterIsDisabledGlobally() &&
-    [RateLimiter sharedLimiter].isEnabled) {
-    
-    RateLimitResult *result = [[RateLimiter sharedLimiter] 
-        checkRateLimitForIP:clientIP];
-    
+// Example metrics collection
+@interface RateLimiterMetrics : NSObject
+@property (nonatomic, assign) NSUInteger totalRequests;
+@property (nonatomic, assign) NSUInteger rateLimitedRequests;
+@property (nonatomic, assign) NSUInteger uniqueIdentifiers;
+@property (nonatomic, strong) NSMutableDictionary *limitsByType;
+@end
+
+- (void)recordRateLimitCheck:(RateLimitResult *)result type:(RateLimitType)type {
+    self.totalRequests++;
     if (!result.allowed) {
-        response.statusCode = 429;
-        [response setJsonBody:@{
-            @"error": @"rate_limit_exceeded",
-            @"message": @"Too many requests"
-        }];
-        [response setHeader:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
-                     forKey:@"Retry-After"];
-        return;
+        self.rateLimitedRequests++;
     }
+    
+    NSString *typeKey = [self keyForType:type];
+    NSNumber *count = self.limitsByType[typeKey] ?: @0;
+    self.limitsByType[typeKey] = @(count.integerValue + 1);
 }
 ```
 
-### Combining DID and IP Limits
+### Key Metrics
 
-```objc
-// Check both DID and IP limits
-RateLimitResult *didResult = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
-RateLimitResult *ipResult = [[RateLimiter sharedLimiter] checkRateLimitForIP:ip];
+- **Rate limit hit rate** — Percentage of requests rate limited
+- **Unique identifiers** — Number of distinct users/IPs
+- **Limits by type** — DID vs IP vs blob distribution
+- **Reset time distribution** — When limits reset
+- **Retry-after compliance** — Do clients respect retry-after?
 
-if (!didResult.allowed || !ipResult.allowed) {
-    // Return 429 with appropriate headers
-}
-```
+## Next Steps
 
-## See Also
-
-- [DoS Protection](./dos-protection.md) — Attack mitigation strategies
-- [Request Throttling](./request-throttling.md) — Per-endpoint throttling
-- [Error Handling](./error-handling.md) — Error response patterns
-- [HTTP Server](./http-server.md) — Server implementation
+- **[DoS Protection](./dos-protection.md)** — Attack mitigation strategies
+- **[Request Throttling](./request-throttling.md)** — Per-endpoint throttling
+- **[Error Handling](./error-handling.md)** — Standardized error responses
