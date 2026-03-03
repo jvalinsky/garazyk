@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .step-box { fill: #ecf0f1; stroke: #2c3e50; stroke-width: 2; }
+      .decision-box { fill: #fff3cd; stroke: #f39c12; stroke-width: 2; }
+      .success-box { fill: #d4edda; stroke: #28a745; stroke-width: 2; }
+      .error-box { fill: #f8d7da; stroke: #dc3545; stroke-width: 2; }
+      .title { fill: #2c3e50; font-weight: bold; font-size: 14px; }
+      .label { fill: #34495e; font-size: 12px; }
+      .arrow { stroke: #7f8c8d; stroke-width: 2; fill: none; }
+      .section-title { fill: #2c3e50; font-weight: bold; font-size: 16px; }
+      .note { fill: #7f8c8d; font-size: 11px; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="30" text-anchor="middle" class="section-title">PDS Transaction Flow</text>
+
+  <!-- Start -->
+  <circle cx="500" cy="70" r="20" class="step-box"/>
+  <text x="500" y="75" text-anchor="middle" class="label">START</text>
+
+  <!-- Step 1: Get Connection -->
+  <path d="M 500 90 L 500 130" class="arrow" marker-end="url(#arrowhead)"/>
+  <rect x="380" y="130" width="240" height="60" class="step-box"/>
+  <text x="500" y="155" text-anchor="middle" class="title">1. Get Connection</text>
+  <text x="500" y="175" text-anchor="middle" class="label">PDSDatabasePool.databaseForDID()</text>
+
+  <!-- Step 2: Begin Transaction -->
+  <path d="M 500 190 L 500 230" class="arrow" marker-end="url(#arrowhead)"/>
+  <rect x="380" y="230" width="240" height="60" class="step-box"/>
+  <text x="500" y="255" text-anchor="middle" class="title">2. Begin Transaction</text>
+  <text x="500" y="275" text-anchor="middle" class="label">BEGIN IMMEDIATE</text>
+
+  <!-- Step 3: Execute Operations -->
+  <path d="M 500 290 L 500 330" class="arrow" marker-end="url(#arrowhead)"/>
+  <rect x="380" y="330" width="240" height="80" class="step-box"/>
+  <text x="500" y="355" text-anchor="middle" class="title">3. Execute Operations</text>
+  <text x="500" y="375" text-anchor="middle" class="label">• Insert/Update records</text>
+  <text x="500" y="395" text-anchor="middle" class="label">• Update MST nodes</text>
+
+  <!-- Step 4: Validate -->
+  <path d="M 500 410 L 500 450" class="arrow" marker-end="url(#arrowhead)"/>
+  <polygon points="500,450 480,430 520,430" class="decision-box"/>
+  <text x="500" y="460" text-anchor="middle" class="title">4. Validate</text>
+  <text x="500" y="480" text-anchor="middle" class="label">All constraints met?</text>
+
+  <!-- Error Path -->
+  <path d="M 380 465 L 280 465" class="arrow" marker-end="url(#arrowhead)"/>
+  <text x="330" y="455" class="label">NO</text>
+  <rect x="120" y="440" width="160" height="50" class="error-box"/>
+  <text x="200" y="465" text-anchor="middle" class="title">ROLLBACK</text>
+  <text x="200" y="480" text-anchor="middle" class="label">Undo changes</text>
+
+  <!-- Success Path -->
+  <path d="M 500 490 L 500 530" class="arrow" marker-end="url(#arrowhead)"/>
+  <text x="520" y="510" class="label">YES</text>
+
+  <!-- Step 5: Commit -->
+  <rect x="380" y="530" width="240" height="60" class="success-box"/>
+  <text x="500" y="555" text-anchor="middle" class="title">5. Commit</text>
+  <text x="500" y="575" text-anchor="middle" class="label">COMMIT (WAL mode)</text>
+
+  <!-- Step 6: Notify -->
+  <path d="M 500 590 L 500 630" class="arrow" marker-end="url(#arrowhead)"/>
+  <rect x="380" y="630" width="240" height="60" class="step-box"/>
+  <text x="500" y="655" text-anchor="middle" class="title">6. Notify Subscribers</text>
+  <text x="500" y="675" text-anchor="middle" class="label">Broadcast commit event</text>
+
+  <!-- Step 7: Return -->
+  <path d="M 500 690 L 500 730" class="arrow" marker-end="url(#arrowhead)"/>
+  <rect x="380" y="730" width="240" height="60" class="step-box"/>
+  <text x="500" y="755" text-anchor="middle" class="title">7. Return Result</text>
+  <text x="500" y="775" text-anchor="middle" class="label">Success with new CID</text>
+
+  <!-- End -->
+  <path d="M 500 790 L 500 830" class="arrow" marker-end="url(#arrowhead)"/>
+  <circle cx="500" cy="850" r="20" class="success-box"/>
+  <text x="500" y="855" text-anchor="middle" class="label">END</text>
+
+  <!-- Error End -->
+  <path d="M 200 440 L 200 380 L 100 380 L 100 850 L 480 850" class="arrow" marker-end="url(#arrowhead)"/>
+  <text x="150" y="375" class="label">Error</text>
+
+  <!-- WAL Mode Notes -->
+  <rect x="50" y="50" width="250" height="100" fill="none" stroke="#3498db" stroke-width="1" stroke-dasharray="5,5"/>
+  <text x="60" y="70" class="section-title">WAL Mode Benefits</text>
+  <text x="60" y="90" class="note">• Readers don't block writers</text>
+  <text x="60" y="105" class="note">• Writers don't block readers</text>
+  <text x="60" y="120" class="note">• Better concurrency</text>
+  <text x="60" y="135" class="note">• Faster commits</text>
+
+  <!-- Transaction Isolation Notes -->
+  <rect x="700" y="50" width="250" height="100" fill="none" stroke="#9b59b6" stroke-width="1" stroke-dasharray="5,5"/>
+  <text x="710" y="70" class="section-title">Isolation Levels</text>
+  <text x="710" y="90" class="note">• IMMEDIATE: Acquire write lock</text>
+  <text x="710" y="105" class="note">• DEFERRED: Lock on first write</text>
+  <text x="710" y="120" class="note">• EXCLUSIVE: Full lock</text>
+  <text x="710" y="135" class="note">• Prevents dirty reads</text>
+
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#7f8c8d"/>
+    </marker>
+  </defs>
+</svg>

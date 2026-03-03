@@ -421,10 +421,10 @@ BOOL verified = SecKeyVerifySignature(publicKey,
 
 ## Related Documentation
 
-- [Token Management](./token-management.md) - JWT tokens and DPoP binding via cnf.jkt
-- [Security](./security.md) - Security considerations for DPoP implementation
-- [Authorization Flow](./authorization-flow.md) - DPoP in token exchange
-- [Overview](./README.md) - OAuth2 implementation overview
+- [Token Management](./token-management) - JWT tokens and DPoP binding via cnf.jkt
+- [Security](./security) - Security considerations for DPoP implementation
+- [Authorization Flow](./authorization-flow) - DPoP in token exchange
+- [Overview](./README) - OAuth2 implementation overview
 
 ## References
 

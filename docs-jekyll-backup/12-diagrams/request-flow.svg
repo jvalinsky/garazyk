@@ -1,0 +1,112 @@
+<svg viewBox="0 0 1000 1200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .process { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .database { fill: #f0f0f0; stroke: #333; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+      .title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="30" class="title">XRPC Request Flow</text>
+
+  <!-- Client -->
+  <rect x="350" y="60" width="300" height="60" class="box" rx="5"/>
+  <text x="500" y="95" class="text">Client Request</text>
+
+  <!-- Arrow -->
+  <path d="M 500 120 L 500 160" class="arrow"/>
+  <text x="520" y="145" class="label">HTTP POST</text>
+
+  <!-- HttpServer -->
+  <rect x="300" y="160" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="190" class="text" font-weight="bold">HttpServer</text>
+  <text x="500" y="210" class="text">• Route matching</text>
+  <text x="500" y="230" class="text">• TLS termination</text>
+
+  <!-- Arrow -->
+  <path d="M 500 240 L 500 280" class="arrow"/>
+  <text x="520" y="265" class="label">Route: /xrpc/*</text>
+
+  <!-- XrpcDispatcher -->
+  <rect x="300" y="280" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="310" class="text" font-weight="bold">XrpcDispatcher</text>
+  <text x="500" y="330" class="text">• Parse NSID</text>
+  <text x="500" y="350" class="text">• Route by method</text>
+
+  <!-- Arrow -->
+  <path d="M 500 360 L 500 400" class="arrow"/>
+  <text x="520" y="385" class="label">NSID lookup</text>
+
+  <!-- Auth Verification -->
+  <rect x="300" y="400" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="430" class="text" font-weight="bold">Auth Verification</text>
+  <text x="500" y="450" class="text">• Verify JWT/DPoP</text>
+  <text x="500" y="470" class="text">• Extract DID</text>
+
+  <!-- Arrow -->
+  <path d="M 500 480 L 500 520" class="arrow"/>
+  <text x="520" y="505" class="label">Auth OK</text>
+
+  <!-- XrpcMethodRegistry -->
+  <rect x="300" y="520" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="550" class="text" font-weight="bold">XrpcMethodRegistry</text>
+  <text x="500" y="570" class="text">• Method lookup</text>
+  <text x="500" y="590" class="text">• Get handler</text>
+
+  <!-- Arrow -->
+  <path d="M 500 600 L 500 640" class="arrow"/>
+  <text x="520" y="625" class="label">Handler found</text>
+
+  <!-- Domain Handler -->
+  <rect x="300" y="640" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="670" class="text" font-weight="bold">Domain Handler</text>
+  <text x="500" y="690" class="text">(e.g., XrpcRepoMethods)</text>
+  <text x="500" y="710" class="text">• Parse parameters</text>
+
+  <!-- Arrow -->
+  <path d="M 500 720 L 500 760" class="arrow"/>
+  <text x="520" y="745" class="label">Call service</text>
+
+  <!-- Service Layer -->
+  <rect x="300" y="760" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="790" class="text" font-weight="bold">Service Layer</text>
+  <text x="500" y="810" class="text">(e.g., PDSRecordService)</text>
+  <text x="500" y="830" class="text">• Business logic</text>
+
+  <!-- Arrow -->
+  <path d="M 500 840 L 500 880" class="arrow"/>
+  <text x="520" y="865" class="label">Query/Update</text>
+
+  <!-- Database -->
+  <rect x="300" y="880" width="400" height="80" class="database" rx="5"/>
+  <text x="500" y="910" class="text" font-weight="bold">SQLite Database</text>
+  <text x="500" y="930" class="text">• Execute query</text>
+  <text x="500" y="950" class="text">• Return results</text>
+
+  <!-- Arrow -->
+  <path d="M 500 960 L 500 1000" class="arrow"/>
+  <text x="520" y="985" class="label">Results</text>
+
+  <!-- Response Serialization -->
+  <rect x="300" y="1000" width="400" height="80" class="process" rx="5"/>
+  <text x="500" y="1030" class="text" font-weight="bold">Response Serialization</text>
+  <text x="500" y="1050" class="text">• Serialize to CBOR/JSON</text>
+  <text x="500" y="1070" class="text">• Set headers</text>
+
+  <!-- Arrow -->
+  <path d="M 500 1080 L 500 1120" class="arrow"/>
+  <text x="520" y="1105" class="label">HTTP 200</text>
+
+  <!-- Client Response -->
+  <rect x="350" y="1120" width="300" height="60" class="box" rx="5"/>
+  <text x="500" y="1155" class="text">HTTP Response</text>
+</svg>

@@ -91,7 +91,7 @@ export default defineConfig({
       'objectivec': 'objective-c',
       'objc': 'objective-c',
       'dot': 'plaintext',  // Graphviz DOT not supported by Shiki, fallback to plaintext
-      'promql': 'plaintext'  // PromQL not supported by Shiki, fallback to plaintext
+      // PromQL is natively supported by Shiki - no alias needed
     },
     // Support for code block features
     config: (md) => {

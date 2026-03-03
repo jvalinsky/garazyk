@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing Guide - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Testing Guide</h1>
+            </div>
+            <h1 id="testing-guide">Testing Guide</h1>
+<p>This document describes the <code>ATProtoPDS</code> testing strategy. The test suites are organized by protocol and subsystem so failures map to concrete implementation areas.</p>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>Current Status (2026-03-01):</strong> The test suite is fully stabilized with a <strong>100% pass rate</strong> (1267 passing tests). For details on the stabilization effort, see the <a href="test-suite-stabilization-report-2026-03-01.md">Test Suite Stabilization Report</a>.</p>
+</blockquote>
+<h2 id="running-tests">Running Tests</h2>
+<h3 id="macos-xcode">macOS (Xcode)</h3>
+<p>The project is configured for Xcode. You can run the full test suite directly from the IDE or via command line.</p>
+<p><strong>Command Line:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Build and run all tests
+xcodebuild -scheme AllTests test
+
+# Run a specific test suite
+xcodebuild -scheme AllTests test -only-testing:AllTests/HandleResolverTests
+</code></pre>
+
+<p><strong>IDE:</strong>
+1. Open <code>ATProtoPDS.xcodeproj</code>.
+2. Select the <code>AllTests</code> scheme.
+3. Press <code>Cmd+U</code> to run all tests.</p>
+<h3 id="linux-gnustep">Linux (GNUstep)</h3>
+<p>Linux support is provided via GNUstep. Tests can be built and run using CMake.</p>
+<pre class="codehilite"><code class="language-bash">mkdir build &amp;&amp; cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+make -j$(nproc)
+./tests/AllTests
+</code></pre>
+
+<h2 id="identity-authentication">Identity &amp; Authentication</h2>
+<p>This section covers identity resolution, authentication flows, and core security primitives.</p>
+<h3 id="identity-system">Identity System</h3>
+<p><strong>HandleResolver &amp; DIDResolver</strong>
+*   <strong>What it tests:</strong> Resolution of ATProto handles to DIDs and DIDs to DID Documents. Verifies handle syntax, HTTPS well-known resolution, and caching mechanisms.
+*   <strong>Why it exists:</strong> Ensures user identities can be reliably discovered and verified across the network, adhering to the ATProto Identity specifications.
+*   <strong>Sources:</strong> <a href="https://atproto.com/specs/did">ATProto DID Specification</a>, <a href="https://atproto.com/specs/handle">ATProto Handle Specification</a>.
+*   <strong>Security Verifications:</strong>
+    *   <strong>SSRF Protection:</strong> Explicitly blocks resolution to private IP ranges (10.x, 127.x, 169.254.x, IPv6 link-local) to prevent Server-Side Request Forgery (<code>HandleResolverSSRFTests</code>).
+    *   <strong>Input Validation:</strong> Rejects invalid characters, excessive lengths, and malformed segments.</p>
+<h3 id="authentication-core">Authentication Core</h3>
+<p><strong>JWT &amp; Session Management</strong>
+*   <strong>What it tests:</strong> Minting and verifying JSON Web Tokens (access and refresh tokens), session lifecycle (creation, lookup, revocation), and token refresh flows.
+*   <strong>Why it exists:</strong> Manages secure, stateless user sessions and ensures tokens are cryptographically bound and time-limited.
+*   <strong>Sources:</strong> RFC 7519 (JWT).
+*   <strong>Security Verifications:</strong>
+    *   <strong>Algorithm Enforcement:</strong> Explicitly rejects the "none" algorithm and unverified signatures (<code>JWTSecurityTests</code>).
+    *   <strong>Claim Validation:</strong> Enforces <code>iss</code> (issuer), <code>aud</code> (audience), and <code>exp</code> (expiration) checks.
+    *   <strong>Key Rotation:</strong> Verifies that tokens signed by rotated keys are accepted during transition periods (<code>KeyRotationTests</code>).</p>
+<p><strong>Cryptography</strong>
+*   <strong>What it tests:</strong> Core cryptographic primitives including SHA256, HMAC-SHA256, and random number generation.
+*   <strong>Why it exists:</strong> Provides the foundational security layer for all higher-level auth protocols.
+*   <strong>Sources:</strong> RFC 4231 (HMAC Test Vectors).
+*   <strong>Security Verifications:</strong> Validates output against standard test vectors to ensure correct implementation of cryptographic algorithms.</p>
+<h3 id="oauth-20-oidc">OAuth 2.0 &amp; OIDC</h3>
+<p><strong>OAuth Endpoints &amp; Handlers</strong>
+*   <strong>What it tests:</strong> The full OAuth 2.0 authorization code flow, including <code>/oauth/authorize</code>, <code>/oauth/token</code>, and <code>/oauth/revoke</code> endpoints.
+*   <strong>Why it exists:</strong> Enables third-party clients to authenticate users safely without handling credentials.
+*   <strong>Sources:</strong> RFC 6749 (OAuth 2.0), RFC 7636 (PKCE), RFC 9449 (DPoP).
+*   <strong>Security Verifications:</strong>
+    *   <strong>PKCE:</strong> Enforces Proof Key for Code Exchange to prevent authorization code injection (<code>OAuthPKCETests</code>).
+    *   <strong>DPoP:</strong> Verifies "Demonstrating Proof-of-Possession" to bind tokens to client keys, preventing replay attacks if tokens are stolen (<code>OAuthDPoPTests</code>).
+    *   <strong>State Parameter:</strong> Enforces state checks to prevent CSRF.</p>
+<h3 id="security-primitives">Security Primitives</h3>
+<p><strong>Input Validation &amp; Authorization</strong>
+*   <strong>What it tests:</strong> Validation of all external inputs (DIDs, handles, record keys) and authorization checks for repository access and admin actions.
+*   <strong>Why it exists:</strong> Prevents common web vulnerabilities and ensures users can only modify their own data.
+*   <strong>Security Verifications:</strong>
+    *   <strong>Sanitization:</strong> Tests removal of dangerous characters from SQL inputs, file paths (path traversal), and JSON fields (XSS) (<code>PDSInputValidatorTests</code>).
+    *   <strong>Access Control:</strong> Verifies that cross-repo writes are rejected and admin endpoints require admin privileges (<code>PDSAuthzManagerTests</code>).
+    *   <strong>CBOR Hardening:</strong> Tests resistance to "zip bombs" (large allocations), deep nesting (stack overflows), and buffer overreads in CBOR decoding (<code>CBORSecurityTests</code>).</p>
+<p><strong>MFA &amp; Hardware Tokens</strong>
+*   <strong>What it tests:</strong> Time-based One-Time Passwords (TOTP) and WebAuthn (Passkeys) registration and assertion flows.
+*   <strong>Why it exists:</strong> Supports Multi-Factor Authentication for enhanced account security.
+*   <strong>Sources:</strong> RFC 6238 (TOTP), W3C WebAuthn Level 3.
+*   <strong>Security Verifications:</strong>
+    *   <strong>Attestation:</strong> Verifies FIDO2 attestation objects and challenges during registration (<code>WebAuthnVerifierTests</code>).
+    *   <strong>Time Windows:</strong> Enforces strict time windows for TOTP codes to prevent replay.</p>
+<h2 id="core-repository-layer">Core &amp; Repository Layer</h2>
+<h3 id="repository-mst-car">Repository (MST &amp; CAR)</h3>
+<p>These tests ensure the PDS complies with the authenticated data structure standards of the AT Protocol.</p>
+<ul>
+<li>
+<p><strong>MSTInteropTests</strong></p>
+<ul>
+<li><strong>What</strong>: Verifies Merkle Search Tree (MST) behavior including tree construction, key insertion/deletion, and root hash calculation.</li>
+<li><strong>Why</strong>: Ensures the PDS generates state roots identical to other network actors (Go/TypeScript implementations).</li>
+<li><strong>Sources</strong>: Reference values are derived from <code>indigo/mst/mst_interop_test.go</code> and <code>go-atproto</code>.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>Leading Zeros</strong>: Verifies SHA-256 digest leading zero counting for correct layer depth assignment.</li>
+<li><strong>Prefix Length</strong>: Tests common prefix counting between keys.</li>
+<li><strong>Diff Generation</strong>: Verifies <code>diffFrom:</code> correctly identifies added, updated, and deleted records between tree states.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>CARInteropTests</strong></p>
+<ul>
+<li><strong>What</strong>: Tests Content Addressable Archives (CAR) v1 parsing and generation.</li>
+<li><strong>Why</strong>: CAR files are the standard transport format for repository export and import.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>Header Parsing</strong>: strictly validates the CAR v1 header structure.</li>
+<li><strong>Round-Trip</strong>: Ensures data written to a CAR can be read back with identical CIDs and block data.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>RepoCommitTests</strong></p>
+<ul>
+<li><strong>What</strong>: Validates the structure, serialization (CBOR), and signing of repository commits.</li>
+<li><strong>Why</strong>: Commits are the atomic units of repository history; their validity is cryptographic.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>Signature Verification</strong>: Tests acceptance of valid signatures (secp256k1) and rejection of tampered data or wrong keys.</li>
+<li><strong>Deterministic Hashing</strong>: Ensures the commit CID is stable for identical data.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>MSTPersistenceTests</strong></p>
+<ul>
+<li><strong>What</strong>: Tests loading and reconstructing MSTs from the database and fixture CAR files.</li>
+<li><strong>Why</strong>: Verifies the "hydration" of trees from persistent storage.</li>
+<li><strong>Sources</strong>: Uses <code>greenground.repo.car</code> as a real-world data fixture.</li>
+</ul>
+</li>
+</ul>
+<h3 id="core-primitives">Core Primitives</h3>
+<p>These tests validate the fundamental data types and validation logic used throughout the system.</p>
+<ul>
+<li>
+<p><strong>ATProtoCoreTests</strong></p>
+<ul>
+<li><strong>What</strong>: Coverage for CIDs, TIDs (Timestamp Identifiers), CBOR encoding, and JWTs.</li>
+<li><strong>Why</strong>: These primitives are the building blocks of the protocol.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>DAG-CBOR Compliance</strong>: Enforces canonical bytewise key sorting in CBOR maps (critical for signature verification).</li>
+<li><strong>TID Ordering</strong>: Verifies that generated TIDs are strictly time-ordered and unique.</li>
+<li><strong>JWT Expiration</strong>: Tests rejection of expired tokens.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>DIDValidationTests</strong></p>
+<ul>
+<li><strong>What</strong>: Validates <code>did:plc</code> and <code>did:web</code> identifiers.</li>
+<li><strong>Why</strong>: Enforces identity specifications to prevent invalid accounts.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>did:web</strong>: blocks IP addresses (except loopback in some contexts), requires valid hostnames, and forbids <code>.onion</code>/<code>.exit</code> TLDs.</li>
+<li><strong>did:plc</strong>: Enforces strict base32 encoding and 24-character length.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>RecordPathValidationTests</strong></p>
+<ul>
+<li><strong>What</strong>: Validates Record Keys (<code>rkey</code>) and Collection names (NSIDs).</li>
+<li><strong>Why</strong>: Ensures data stored in the repo follows the <code>collection/rkey</code> path schema.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>Reserved Keys</strong>: Rejects <code>.</code> and <code>..</code>, allows <code>self</code>.</li>
+<li><strong>Constraints</strong>: Enforces length limits (512 chars) and allowed characters (printable ASCII).</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="blob-storage">Blob Storage</h3>
+<p>These tests cover the management of binary large objects (images, videos).</p>
+<ul>
+<li>
+<p><strong>BlobStorageTests</strong></p>
+<ul>
+<li><strong>What</strong>: Tests the storage layer's CRUD operations for blobs.</li>
+<li><strong>Why</strong>: Manages user media while maintaining isolation and efficiency.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>Deduplication</strong>: Uploading the same data twice returns the same CID without duplicating storage.</li>
+<li><strong>Isolation</strong>: Ensures one DID cannot list or delete another DID's blobs.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>MimeTypeValidatorTests</strong></p>
+<ul>
+<li><strong>What</strong>: Validates file types via MIME sniffing (magic bytes) and extensions.</li>
+<li><strong>Why</strong>: Security measure to prevent uploading malicious executables disguised as media.</li>
+<li><strong>Edge Cases</strong>:<ul>
+<li><strong>Magic Bytes</strong>: Detects file type by reading header bytes (e.g., <code>0xFFD8</code> for JPEG), ignoring the provided content-type header if it conflicts.</li>
+<li><strong>Size Limits</strong>: Enforces different max sizes for images (5MB) vs video (50MB).</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="blob-performance-tests">Blob Performance Tests</h3>
+<p>The <code>BlobPerformanceTests</code> suite provides benchmarks for blob storage throughput and latency, enabling performance regression testing and capacity planning.</p>
+<p><strong>Location:</strong> <code>ATProtoPDS/Tests/Blob/BlobPerformanceTests.m</code></p>
+<h4 id="test-categories">Test Categories</h4>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Tests</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Single Operations</strong></td>
+<td>Small/Medium/Large blob upload &amp; retrieve</td>
+<td>Baseline latency measurements</td>
+</tr>
+<tr>
+<td><strong>Batch Operations</strong></td>
+<td>10/100 small, 10/50 medium blob batches</td>
+<td>Throughput at scale</td>
+</tr>
+<tr>
+<td><strong>Throughput</strong></td>
+<td>10MB total (20 x 500KB blobs)</td>
+<td>Sustained throughput benchmark</td>
+</tr>
+<tr>
+<td><strong>Concurrent</strong></td>
+<td>20 concurrent uploads/retrieves</td>
+<td>Thread safety and parallelism</td>
+</tr>
+<tr>
+<td><strong>Stress</strong></td>
+<td>500 blob upload/retrieve/mixed</td>
+<td>High-load stability</td>
+</tr>
+</tbody>
+</table>
+<h4 id="performance-results-rate-limiter-disabled">Performance Results (Rate Limiter Disabled)</h4>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Avg Time</th>
+<th>Throughput</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Single small blob (1KB) upload</strong></td>
+<td>~1ms</td>
+<td>~1,000 blobs/sec</td>
+<td>Cold start: ~11ms</td>
+</tr>
+<tr>
+<td><strong>Single medium blob (100KB) upload</strong></td>
+<td>~1ms</td>
+<td>~1,000 blobs/sec</td>
+<td>Includes SHA-256</td>
+</tr>
+<tr>
+<td><strong>Single large blob (1MB) upload</strong></td>
+<td>~3ms</td>
+<td>~333 blobs/sec</td>
+<td>I/O bound</td>
+</tr>
+<tr>
+<td><strong>Batch 100 small blobs</strong></td>
+<td>~10ms</td>
+<td>10,000 blobs/sec</td>
+<td>Good batching efficiency</td>
+</tr>
+<tr>
+<td><strong>Batch 50 medium blobs</strong></td>
+<td>~10ms</td>
+<td>5,000 blobs/sec</td>
+<td>Parallelizable</td>
+</tr>
+<tr>
+<td><strong>500 blob upload (stress)</strong></td>
+<td>~240ms</td>
+<td><strong>~2,100 blobs/sec</strong></td>
+<td>Sustained throughput</td>
+</tr>
+<tr>
+<td><strong>500 blob retrieve (stress)</strong></td>
+<td>~70ms</td>
+<td><strong>~7,100 blobs/sec</strong></td>
+<td>3.4x faster than upload</td>
+</tr>
+<tr>
+<td><strong>Mixed: 200 gets + 100 uploads</strong></td>
+<td>~130ms</td>
+<td>~2,300 ops/sec</td>
+<td>Concurrent workloads</td>
+</tr>
+</tbody>
+</table>
+<h4 id="key-findings">Key Findings</h4>
+<ol>
+<li><strong>Retrieval is ~3.4x faster than upload</strong></li>
+<li>Upload includes SHA-256 CID computation and magic byte validation</li>
+<li>
+<p>Retrieval is pure file I/O</p>
+</li>
+<li>
+<p><strong>Cold start penalty</strong></p>
+</li>
+<li>First blob operation: ~10-15ms (initialization, disk spin-up)</li>
+<li>
+<p>Subsequent operations: ~0.1-0.2ms (cached file handles)</p>
+</li>
+<li>
+<p><strong>Batch efficiency</strong></p>
+</li>
+<li>100 small blobs complete in ~10ms, indicating excellent batching</li>
+<li>
+<p>No significant per-blob overhead</p>
+</li>
+<li>
+<p><strong>Rate limiter impact</strong></p>
+</li>
+<li>Tests use <code>RateLimiterSetDisabledGlobally(YES)</code> for accurate benchmarks</li>
+<li>Production with rate limiting: ~50 blobs/hr per DID</li>
+</ol>
+<h4 id="running-performance-tests">Running Performance Tests</h4>
+<pre class="codehilite"><code class="language-bash"># Build tests
+cmake .. -DBUILD_TESTS=ON
+make AllTests
+
+# Run full suite
+./tests/AllTests
+
+# Run only blob performance tests
+./tests/AllTests 2&gt;&amp;1 | grep -A20 &quot;Test Suite 'BlobPerformanceTests'&quot;
+
+# Check specific throughput
+./tests/AllTests 2&gt;&amp;1 | grep &quot;BlobPerformance]&quot;
+</code></pre>
+
+<h4 id="interpreting-results">Interpreting Results</h4>
+<p>The tests use XCTest's <code>measureBlock:</code> for consistent benchmarking. Results include:
+- <strong>Average</strong>: Mean execution time across 10 iterations
+- <strong>RSD</strong>: Relative Standard Deviation (lower = more consistent)
+- <strong>Baseline</strong>: No baseline set; results are relative to current hardware</p>
+<p><strong>Regression Detection:</strong>
+- XCTest flags tests with &gt;10% regression from the baseline
+- For reliable comparisons, run on consistent hardware
+- Monitor trends across commits rather than absolute values</p>
+<h2 id="network-synchronization">Network &amp; Synchronization</h2>
+<p>The networking layer handles HTTP/1.1 requests, XRPC methods, and WebSocket firehose synchronization.</p>
+<h3 id="core-networking">Core Networking</h3>
+<p>Tests in <code>Tests/Network</code> validate the custom HTTP stack used for portability-sensitive paths (Linux/BSD).</p>
+<ul>
+<li><strong>HTTP Stack</strong> (<code>HttpServerTests</code>, <code>HttpRequestParsingTests</code>, <code>HttpResponseTests</code>):<ul>
+<li><strong>Parsing</strong>: GET query parameters, POST JSON bodies, Multipart forms, and <code>Transfer-Encoding: chunked</code>.</li>
+<li><strong>Routing</strong>: <code>HttpRouterTests</code> and <code>HttpRouteTrieTests</code> validate performant O(k) routing with support for parameterized (<code>/users/:id</code>) and wildcard (<code>/files/*</code>) paths.</li>
+<li><strong>Memory Management</strong>: <code>HttpBufferPoolTests</code> ensures high-throughput scenarios do not cause excessive GC pressure by recycling data buffers.</li>
+<li><strong>Transport</strong>: <code>PDSNetworkTransportLinuxTests</code> verifies BSD socket operations (recv/send, buffering) for non-Apple platforms.</li>
+</ul>
+</li>
+</ul>
+<h3 id="xrpc-protocol">XRPC Protocol</h3>
+<p>Tests in <code>Tests/XRPC</code> ensure the PDS strictly adheres to the <a href="https://atproto.com/specs/xrpc">XRPC specification</a>.</p>
+<ul>
+<li><strong>Input Validation</strong> (<code>XrpcInputValidationTests</code>): ensures strict type checking:<ul>
+<li><strong>Query Params</strong>: Validates Booleans (<code>true</code>/<code>false</code>), Integers, and Arrays (<code>?tag=a&amp;tag=b</code>).</li>
+<li><strong>Content-Type</strong>: Enforces <code>application/json</code> for RPC bodies.</li>
+<li><strong>Limits</strong>: Checks rejection of oversized payloads and malformed query strings.</li>
+</ul>
+</li>
+<li><strong>Error Mapping</strong> (<code>XrpcErrorResponseTests</code>): validates that internal errors map to correct XRPC error codes and HTTP statuses:<ul>
+<li><code>InvalidToken</code> / <code>ExpiredToken</code> -&gt; 401 Unauthorized</li>
+<li><code>RateLimitExceeded</code> -&gt; 429 Too Many Requests</li>
+<li><code>RecordNotFound</code> -&gt; 404 Not Found</li>
+</ul>
+</li>
+<li><strong>Integration</strong> (<code>XrpcIntegrationTests</code>): mocks external services (PLC Directory, Handle Resolver) to verify the PDS acts correctly as both an XRPC client and server.</li>
+</ul>
+<h3 id="synchronization-firehose">Synchronization (Firehose)</h3>
+<p>Tests in <code>Tests/Sync</code> cover the real-time event stream used to replicate data across the AT Protocol network.</p>
+<ul>
+<li><strong>WebSocket Layer</strong> (<code>WebSocketServerTests</code>): Verify the HTTP-to-WebSocket upgrade handshake (RFC 6455), subprotocol negotiation, and connection lifecycle.</li>
+<li><strong>Event Formatting</strong> (<code>EventFormatterTests</code>): verifies <strong>DAG-CBOR</strong> encoding/decoding compliance:<ul>
+<li>Roundtrip tests for primitive types and nested structures.</li>
+<li>Specific encoding for <code>#commit</code>, <code>#identity</code>, and <code>#error</code> event frames.</li>
+</ul>
+</li>
+<li><strong>Broadcasting</strong> (<code>SubscribeReposHandlerTests</code>): ensures that:<ul>
+<li>Repository commits (<code>RepoCommit</code>) are correctly translated into stream events.</li>
+<li>Operations (creates, updates, deletes) are broadcast to all active subscribers.</li>
+<li>Cursors and filters are respected.</li>
+</ul>
+</li>
+</ul>
+<h3 id="security-reliability">Security &amp; Reliability</h3>
+<ul>
+<li><strong>Rate Limiting</strong> (<code>RateLimiterTests</code>): verifies token bucket implementation for DID-based (5000/hr) and IP-based (100/min) limits, ensuring headers (<code>X-RateLimit-Remaining</code>) are set correctly.</li>
+<li><strong>SSL Pinning</strong> (<code>SSLPinningTests</code>): validates configuration for secure server-to-server communication.</li>
+</ul>
+<h2 id="application-database-layer">Application &amp; Database Layer</h2>
+<h3 id="database-layer">Database Layer</h3>
+<p>The database layer uses a shared service database plus per-user SQLite databases (<code>ActorStore</code>).</p>
+<ul>
+<li>
+<p><strong>ActorStore</strong> (<code>ActorStoreTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Verifies CRUD operations for accounts, records, blocks (MST nodes), and blobs within a user's isolated database. Also tests key management and transaction support.</li>
+<li><strong>Why it exists:</strong> Ensures that user data is persisted correctly and isolated from other users. It validates the integrity of the repository data structure (blocks and records).</li>
+<li><strong>Integration Patterns:</strong> Uses file-based SQLite databases in temporary directories. Tests transaction atomicity and proper cleanup of resources.</li>
+</ul>
+</li>
+<li>
+<p><strong>DatabasePool</strong> (<code>DatabasePoolTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Verifies the connection pooling logic, including LRU eviction, maximum size enforcement, and thread safety.</li>
+<li><strong>Why it exists:</strong> Crucial for resource management (file descriptors) when serving thousands of users.</li>
+<li><strong>Role:</strong> Manages the lifecycle of <code>ActorStore</code> instances, providing pooled access while respecting resource limits.</li>
+</ul>
+</li>
+<li>
+<p><strong>ServiceDatabases</strong> (<code>ServiceDatabasesTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Verifies persistence for service-wide entities like Accounts (DID/Handle mapping), Invite Codes, and the DID Cache.</li>
+<li><strong>Role:</strong> The entry point for account lookup and global service configuration.</li>
+</ul>
+</li>
+</ul>
+<h3 id="appview-services">AppView Services</h3>
+<p>These services reside above the database layer and implement the business logic for the AT Protocol.</p>
+<ul>
+<li>
+<p><strong>Feed Service</strong> (<code>FeedServiceTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Timeline generation, thread views (<code>getPostThread</code>), and author feeds.</li>
+<li><strong>Role:</strong> Primary read-path service for client applications.</li>
+</ul>
+</li>
+<li>
+<p><strong>Actor Service</strong> (<code>ActorServiceTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Profile retrieval, preference management, and social graph counts (follows/followers).</li>
+<li><strong>Role:</strong> Manages user identity presentation and configuration.</li>
+</ul>
+</li>
+<li>
+<p><strong>Notification Service</strong> (<code>NotificationServiceTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Push registration and notification aggregation/listing.</li>
+<li><strong>Role:</strong> Asynchronous messaging component.</li>
+</ul>
+</li>
+</ul>
+<h3 id="admin-layer">Admin Layer</h3>
+<ul>
+<li>
+<p><strong>Admin Service</strong> (<code>AdminServiceTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Account management (email/password updates), invite code generation/disabling, and moderation actions.</li>
+<li><strong>Role:</strong> Privileged interface for server administration.</li>
+</ul>
+</li>
+<li>
+<p><strong>Admin Middleware</strong> (<code>AdminMiddlewareTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Authorization checks for admin endpoints. verifies that only DIDs listed in <code>adminDids</code> or passing the custom check can access admin routes.</li>
+<li><strong>Why it exists:</strong> Critical security boundary preventing unauthorized access to administrative functions.</li>
+</ul>
+</li>
+</ul>
+<h3 id="core-controller">Core Controller</h3>
+<ul>
+<li><strong>PDS Controller</strong> (<code>PDSControllerTests</code>)<ul>
+<li><strong>What it tests:</strong> End-to-end flow of account creation, authentication (JWT), and record management.</li>
+<li><strong>Role:</strong> The central "brain" of the PDS, coordinating requests between handlers and persistence.</li>
+<li><strong>Integration Patterns:</strong> Boots a full environment with temporary directory structures to simulate a running server.</li>
+</ul>
+</li>
+</ul>
+<h3 id="configuration-handlers">Configuration &amp; Handlers</h3>
+<ul>
+<li>
+<p><strong>Configuration</strong> (<code>PDSConfigurationTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Loading configuration from files and environment variables, ensuring proper precedence (Env &gt; Config File &gt; Defaults).</li>
+</ul>
+</li>
+<li>
+<p><strong>Handlers</strong> (<code>ExploreHandlerTests</code>, <code>MSTViewerHandlerTests</code>)</p>
+<ul>
+<li><strong>What it tests:</strong> Request routing and response generation for auxiliary endpoints (Explore, Debug viewers).</li>
+</ul>
+</li>
+</ul>
+<h2 id="related-documentation">Related Documentation</h2>
+<h3 id="test-documentation">Test Documentation</h3>
+<ul>
+<li><a href="tests/README.md">Test Documentation Index</a> - Complete index of all test classes</li>
+<li><a href="tests/00-identity-auth/README.md">Identity &amp; Auth Tests</a> - JWT, crypto, OAuth, MFA tests</li>
+<li><a href="tests/01-repository/README.md">Repository Tests</a> - MST, CAR, CBOR tests</li>
+<li><a href="tests/02-network/README.md">Network Tests</a> - HTTP, XRPC, WebSocket tests</li>
+<li><a href="tests/03-database/README.md">Database Tests</a> - ActorStore, pool, service tests</li>
+<li><a href="tests/04-application/README.md">Application Tests</a> - Services, controller, CLI tests</li>
+<li><a href="tests/05-security/README.md">Security Tests</a> - Hardening, validation, auth security</li>
+<li><a href="tests/06-integration/README.md">Integration Tests</a> - E2E, federation, PLC tests</li>
+</ul>
+<h3 id="guides">Guides</h3>
+<ul>
+<li><a href="guides/DEVELOPER_GUIDE.md">Developer Guide</a> - Development setup and workflows</li>
+<li><a href="guides/SETUP_GUIDE.md">Setup Guide</a> - Initial project setup</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul>
+<li><a href="security/SECURITY_TESTING_PLAN.md">Security Testing Plan</a> - Security test methodology</li>
+<li><a href="security/SECURITY_ANALYSIS_REPORT.md">Security Analysis Report</a> - Security audit results</li>
+</ul>
+<h2 id="sources-references">Sources &amp; References</h2>
+<ul>
+<li><a href="https://atproto.com/specs/repository">AT Protocol Repository Spec</a></li>
+<li><a href="https://atproto.com/specs/identity">AT Protocol Identity Spec</a></li>
+<li><a href="https://atproto.com/specs/xrpc">AT Protocol XRPC Spec</a></li>
+<li><a href="https://github.com/bluesky-social/indigo">Indigo Reference Implementation (Go)</a></li>
+<li><a href="https://github.com/bluesky-social/atproto">TypeScript Reference Implementation</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

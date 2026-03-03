@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging Strategy - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Logging Strategy</h1>
+            </div>
+            <h1 id="logging-strategy">Logging Strategy</h1>
+<p>This guide covers the logging system in September PDS, including log levels, structured logging, component-based filtering, and sensitive data redaction.</p>
+<h2 id="overview">Overview</h2>
+<p>September PDS uses a custom <code>PDSLogger</code> class that provides:</p>
+<ul>
+<li><strong>Multiple log levels</strong>: DEBUG, INFO, WARN, ERROR</li>
+<li><strong>Structured logging</strong>: Text and JSON output formats</li>
+<li><strong>Component-based filtering</strong>: Tag logs by subsystem</li>
+<li><strong>Correlation IDs</strong>: Track related log messages across requests</li>
+<li><strong>Log rotation</strong>: Automatic file rotation based on size</li>
+<li><strong>Async logging</strong>: Optional background logging for performance</li>
+<li><strong>Platform integration</strong>: Uses <code>os_log</code> on macOS when available</li>
+</ul>
+<h3 id="logging-pipeline-diagram">Logging Pipeline Diagram</h3>
+<p>The following diagram illustrates the complete logging pipeline from log statement macros through formatters to output destinations and aggregation systems:</p>
+<p><img alt="Logging Pipeline" src="../12-diagrams/logging-pipeline.svg" /></p>
+<p>The pipeline consists of seven phases:</p>
+<ol>
+<li><strong>Log Statement Macros</strong>: Basic, component-tagged, and shorthand macros that auto-capture context</li>
+<li><strong>Data Sanitization</strong>: Helpers that remove sensitive data before logging</li>
+<li><strong>PDSLogger Singleton</strong>: Central logger that filters by level and component</li>
+<li><strong>Log Formatting</strong>: Text format for development, JSON format for production</li>
+<li><strong>Output Destinations</strong>: stdout, log files, os_log (macOS), NSLog (Linux)</li>
+<li><strong>Log Rotation</strong>: Automatic rotation based on file size with configurable retention</li>
+<li><strong>Log Aggregation</strong>: Integration with log shippers, aggregators, and alerting systems</li>
+</ol>
+<h2 id="log-levels">Log Levels</h2>
+<p>The logging system supports four severity levels:</p>
+<pre class="codehilite"><code class="language-objc">typedef NS_ENUM(NSInteger, PDSLogLevel) {
+    PDSLogLevelDebug = 0,  // Most verbose
+    PDSLogLevelInfo,       // Informational messages
+    PDSLogLevelWarn,       // Warning messages
+    PDSLogLevelError       // Least verbose, errors only
+};
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L25-L30">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h3 id="setting-the-log-level">Setting the Log Level</h3>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+logger.logLevel = PDSLogLevelInfo;  // Only INFO, WARN, and ERROR will be logged
+</code></pre>
+
+<h3 id="when-to-use-each-level">When to Use Each Level</h3>
+<ul>
+<li><strong>DEBUG</strong>: Detailed diagnostic information for development</li>
+<li>Variable values, state transitions, algorithm steps</li>
+<li>
+<p>Should not be enabled in production</p>
+</li>
+<li>
+<p><strong>INFO</strong>: General informational messages</p>
+</li>
+<li>Server startup/shutdown, configuration loaded</li>
+<li>Request processing milestones</li>
+<li>
+<p>Background task completion</p>
+</li>
+<li>
+<p><strong>WARN</strong>: Warning conditions that don't prevent operation</p>
+</li>
+<li>Deprecated API usage, fallback behavior</li>
+<li>Recoverable errors, retry attempts</li>
+<li>
+<p>Performance degradation</p>
+</li>
+<li>
+<p><strong>ERROR</strong>: Error conditions requiring attention</p>
+</li>
+<li>Failed operations, exceptions</li>
+<li>Data integrity issues</li>
+<li>Authentication/authorization failures</li>
+</ul>
+<h2 id="logging-macros">Logging Macros</h2>
+<p>The logging system provides convenient macros for common use cases:</p>
+<h3 id="basic-logging">Basic Logging</h3>
+<pre class="codehilite"><code class="language-objc">PDS_LOG_DEBUG(@&quot;Processing request with ID: %@&quot;, requestID);
+PDS_LOG_INFO(@&quot;Server started on port %d&quot;, port);
+PDS_LOG_WARN(@&quot;Deprecated API called: %@&quot;, apiName);
+PDS_LOG_ERROR(@&quot;Failed to connect to database: %@&quot;, error);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L232-L262">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h3 id="macro-definitions">Macro Definitions</h3>
+<p>The basic logging macros are defined as follows:</p>
+<pre class="codehilite"><code class="language-objc">#define PDS_LOG_DEBUG(FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelDebug file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+
+#define PDS_LOG_INFO(FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelInfo file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+
+#define PDS_LOG_WARN(FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelWarn file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+
+#define PDS_LOG_ERROR(FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelError file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L236-L262">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<p>These macros automatically capture the file name and line number for debugging context.</p>
+<h3 id="component-tagged-logging">Component-Tagged Logging</h3>
+<p>Use component tags to categorize logs by subsystem:</p>
+<pre class="codehilite"><code class="language-objc">PDS_LOG_DEBUG_C(PDSLogComponentDatabase, @&quot;Executing query: %@&quot;, sql);
+PDS_LOG_INFO_C(PDSLogComponentAuth, @&quot;User authenticated: %@&quot;, did);
+PDS_LOG_WARN_C(PDSLogComponentHTTP, @&quot;Slow request: %0.2fs&quot;, duration);
+PDS_LOG_ERROR_C(PDSLogComponentSync, @&quot;Firehose connection lost: %@&quot;, error);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L268-L294">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h3 id="macro-definitions-for-component-logging">Macro Definitions for Component Logging</h3>
+<pre class="codehilite"><code class="language-objc">#define PDS_LOG_DEBUG_C(COMPONENT, FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelDebug component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+
+#define PDS_LOG_INFO_C(COMPONENT, FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelInfo component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+
+#define PDS_LOG_WARN_C(COMPONENT, FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelWarn component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+
+#define PDS_LOG_ERROR_C(COMPONENT, FORMAT, ...) \
+    [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelError component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L268-L294">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h3 id="component-specific-shortcuts">Component-Specific Shortcuts</h3>
+<p>Convenience macros for common components:</p>
+<pre class="codehilite"><code class="language-objc">// Database logging
+PDS_LOG_DB_ERROR(@&quot;Query failed: %@&quot;, error);
+PDS_LOG_DB_INFO(@&quot;Migration completed: v%d&quot;, version);
+
+// Authentication logging
+PDS_LOG_AUTH_ERROR(@&quot;Invalid token: %@&quot;, token);
+PDS_LOG_AUTH_INFO(@&quot;Session created for: %@&quot;, did);
+
+// HTTP logging
+PDS_LOG_HTTP_ERROR(@&quot;Request failed: %@&quot;, error);
+PDS_LOG_HTTP_INFO(@&quot;Request completed: %@ %@&quot;, method, path);
+
+// Sync/Firehose logging
+PDS_LOG_SYNC_ERROR(@&quot;Broadcast failed: %@&quot;, error);
+PDS_LOG_SYNC_INFO(@&quot;Subscriber connected: %@&quot;, subscriberID);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L296-L327">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h3 id="complete-component-shorthand-macro-definitions">Complete Component Shorthand Macro Definitions</h3>
+<p>The following shorthand macros are available for all log levels and components:</p>
+<pre class="codehilite"><code class="language-objc">// Database component shortcuts
+#define PDS_LOG_DB_ERROR(FORMAT, ...)   PDS_LOG_ERROR_C(PDSLogComponentDatabase, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_DB_WARN(FORMAT, ...)    PDS_LOG_WARN_C(PDSLogComponentDatabase, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_DB_INFO(FORMAT, ...)    PDS_LOG_INFO_C(PDSLogComponentDatabase, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_DB_DEBUG(FORMAT, ...)   PDS_LOG_DEBUG_C(PDSLogComponentDatabase, FORMAT, ##__VA_ARGS__)
+
+// Authentication component shortcuts
+#define PDS_LOG_AUTH_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentAuth, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_AUTH_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentAuth, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_AUTH_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentAuth, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_AUTH_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentAuth, FORMAT, ##__VA_ARGS__)
+
+// HTTP component shortcuts
+#define PDS_LOG_HTTP_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentHTTP, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_HTTP_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentHTTP, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_HTTP_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentHTTP, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_HTTP_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentHTTP, FORMAT, ##__VA_ARGS__)
+
+// Admin component shortcuts
+#define PDS_LOG_ADMIN_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentAdmin, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_ADMIN_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentAdmin, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_ADMIN_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentAdmin, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_ADMIN_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentAdmin, FORMAT, ##__VA_ARGS__)
+
+// Service component shortcuts
+#define PDS_LOG_SERVICE_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_SERVICE_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_SERVICE_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_SERVICE_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentService, FORMAT, ##__VA_ARGS__)
+
+// Sync/Firehose component shortcuts
+#define PDS_LOG_SYNC_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentSync, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_SYNC_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentSync, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_SYNC_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentSync, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_SYNC_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentSync, FORMAT, ##__VA_ARGS__)
+
+// Core component shortcuts
+#define PDS_LOG_CORE_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentCore, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_CORE_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentCore, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_CORE_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentCore, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_CORE_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentCore, FORMAT, ##__VA_ARGS__)
+
+// Blob component shortcuts
+#define PDS_LOG_BLOB_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentBlob, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_BLOB_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentBlob, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_BLOB_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentBlob, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_BLOB_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentBlob, FORMAT, ##__VA_ARGS__)
+
+// Explore UI component shortcuts
+#define PDS_LOG_EXPLORE_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentExplore, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_EXPLORE_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentExplore, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_EXPLORE_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentExplore, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_EXPLORE_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentExplore, FORMAT, ##__VA_ARGS__)
+
+// CLI component shortcuts
+#define PDS_LOG_CLI_ERROR(FORMAT, ...) PDS_LOG_ERROR_C(PDSLogComponentCLI, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_CLI_WARN(FORMAT, ...)  PDS_LOG_WARN_C(PDSLogComponentCLI, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_CLI_INFO(FORMAT, ...)  PDS_LOG_INFO_C(PDSLogComponentCLI, FORMAT, ##__VA_ARGS__)
+#define PDS_LOG_CLI_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentCLI, FORMAT, ##__VA_ARGS__)
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L296-L454">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h2 id="real-world-usage-examples">Real-World Usage Examples</h2>
+<h3 id="error-logging-patterns">Error Logging Patterns</h3>
+<h4 id="database-errors">Database Errors</h4>
+<pre class="codehilite"><code class="language-objc">// From PDSAdminService.m
+PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&amp;error];
+if (!db) {
+    PDS_LOG_ERROR(@&quot;Failed to get service database: %@&quot;, error);
+    return nil;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Services/PDSAdminService.m#L122-L125">ATProtoPDS/Sources/Services/PDSAdminService.m</a></em></p>
+<h4 id="networkproxy-errors">Network/Proxy Errors</h4>
+<pre class="codehilite"><code class="language-objc">// From XrpcProxyHandler.m
+NSString *token = [self.minter signPayload:payload error:&amp;mintError];
+if (!token) {
+    PDS_LOG_ERROR(@&quot;Failed to mint proxy token: %@&quot;, mintError);
+    response.statusCode = HttpStatusInternalServerError;
+    [response setJsonBody:@{@&quot;error&quot;: @&quot;InternalError&quot;, 
+                            @&quot;message&quot;: @&quot;Failed to create service token&quot;}];
+    return;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcProxyHandler.m#L57-L61">ATProtoPDS/Sources/Network/XrpcProxyHandler.m</a></em></p>
+<h4 id="repository-initialization-errors">Repository Initialization Errors</h4>
+<pre class="codehilite"><code class="language-objc">// From XrpcServerMethods.m
+NSError *initError = nil;
+if (![repositoryService initializeRepoForDid:createdDid error:&amp;initError]) {
+    PDS_LOG_ERROR(@&quot;Failed to initialize repo for DID %@: %@&quot;, createdDid, initError);
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcServerMethods.m#L507-L509">ATProtoPDS/Sources/Network/XrpcServerMethods.m</a></em></p>
+<h3 id="info-logging-patterns">Info Logging Patterns</h3>
+<h4 id="service-initialization">Service Initialization</h4>
+<pre class="codehilite"><code class="language-objc">// From PDSRelayService.m
+PDS_LOG_INFO(@&quot;PDSRelayService started with %lu relays&quot;,
+             (unsigned long)self.relays.count);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/App/Services/PDSRelayService.m#L50-L52">ATProtoPDS/Sources/App/Services/PDSRelayService.m</a></em></p>
+<h4 id="email-provider-configuration">Email Provider Configuration</h4>
+<pre class="codehilite"><code class="language-objc">// From PDSController.m
+PDS_LOG_INFO(@&quot;Initialized Resend email provider (source: %@, from: %@)&quot;,
+             source, config.resendFromAddress);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/App/PDSController.m#L310-L313">ATProtoPDS/Sources/App/PDSController.m</a></em></p>
+<h4 id="lexicon-loading">Lexicon Loading</h4>
+<pre class="codehilite"><code class="language-objc">// From ATProtoLexiconRegistry.m
+PDS_LOG_INFO(@&quot;[LexiconRegistry] Loaded %lu lexicons (%lu errors) from %@&quot;,
+             (unsigned long)loadedCount, (unsigned long)errorCount, path);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m#L83-L85">ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m</a></em></p>
+<h4 id="account-operations">Account Operations</h4>
+<pre class="codehilite"><code class="language-objc">// From PDSAdminService.m
+PDS_LOG_INFO(@&quot;Taking down account: %@ reason: %@&quot;, did, reason);
+return [_database takeDownAccount:did reason:reason takedownRef:nil error:error];
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Services/PDSAdminService.m#L154-L156">ATProtoPDS/Sources/Services/PDSAdminService.m</a></em></p>
+<h3 id="component-specific-logging-examples">Component-Specific Logging Examples</h3>
+<h4 id="authentication-logging-pds_log_auth_">Authentication Logging (PDS_LOG_AUTH_*)</h4>
+<pre class="codehilite"><code class="language-objc">// From XrpcAuthHelper.m - Warning about missing DPoP header
+NSString *dpopProof = [request headerForKey:@&quot;DPoP&quot;];
+if (dpopProof.length == 0) {
+    PDS_LOG_AUTH_WARN(@&quot;Missing DPoP header for DPoP authorization&quot;);
+    return nil;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L187-L191">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// From XrpcAuthHelper.m - JWT verification failure
+BOOL isValid = [verifier verifyJWT:jwt error:&amp;verifyError];
+if (!isValid || verifyError) {
+    PDS_LOG_AUTH_WARN(@&quot;JWT verification failed for request from IP: %@&quot;, 
+                      request.remoteAddress ?: @&quot;unknown&quot;);
+    return nil;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L257-L261">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// From XrpcAuthHelper.m - Suspended account detection
+if (isTakedown) {
+    PDS_LOG_AUTH_WARN(@&quot;Rejected request for suspended account %@&quot;, did);
+    return nil;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L316-L319">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// From OAuthProvider.m - Debug logging for token issuance
+PDS_LOG_AUTH_DEBUG(@&quot;Tokens issued: sub=%@ client_id=%@&quot;, sub, clientID);
+completion(response, nil);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m#L509-L511">ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m</a></em></p>
+<h4 id="cli-logging">CLI Logging</h4>
+<pre class="codehilite"><code class="language-objc">// From PDSCLIServeCommand.m - Server startup information
+if (context.verbose) {
+    PDS_LOG_INFO(@&quot;Starting PDS server on port %ld&quot;, (long)port);
+    PDS_LOG_INFO(@&quot;Data directory: %@&quot;, context.dataDir);
+    PDS_LOG_INFO(@&quot;Config path: %@&quot;, context.configPath);
+    PDS_LOG_INFO(@&quot;Log level: %@&quot;, logLevel);
+    if (logComponents) {
+        PDS_LOG_INFO(@&quot;Enabled components: %@&quot;, logComponents);
+    }
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m#L91-L98">ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m</a></em></p>
+<h3 id="structured-logging-with-context">Structured Logging with Context</h3>
+<h4 id="exception-handling-with-stack-traces">Exception Handling with Stack Traces</h4>
+<pre class="codehilite"><code class="language-objc">// From XrpcHandler.m - Logging unhandled exceptions
+NSString *name = exception.name ?: @&quot;(null)&quot;;
+NSString *reason = exception.reason ?: @&quot;(null)&quot;;
+NSArray&lt;NSString *&gt; *stack = exception.callStackSymbols ?: @[];
+PDS_LOG_ERROR(@&quot;[XRPC] Unhandled exception in %@: %@ (%@)\n%@&quot;,
+              methodId, name, reason, [stack componentsJoinedByString:@&quot;\n&quot;]);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcHandler.m#L161-L164">ATProtoPDS/Sources/Network/XrpcHandler.m</a></em></p>
+<p>This pattern provides comprehensive debugging information including the full stack trace.</p>
+<h2 id="standard-components">Standard Components</h2>
+<p>The following component tags are defined:</p>
+<ul>
+<li><strong><code>PDSLogComponentDatabase</code></strong>: Database operations, queries, migrations</li>
+<li><strong><code>PDSLogComponentAuth</code></strong>: Authentication, authorization, token handling</li>
+<li><strong><code>PDSLogComponentHTTP</code></strong>: HTTP server, request handling, routing</li>
+<li><strong><code>PDSLogComponentAdmin</code></strong>: Admin operations, moderation, takedowns</li>
+<li><strong><code>PDSLogComponentService</code></strong>: Service layer operations</li>
+<li><strong><code>PDSLogComponentCore</code></strong>: Core application lifecycle</li>
+<li><strong><code>PDSLogComponentBlob</code></strong>: Blob storage and retrieval</li>
+<li><strong><code>PDSLogComponentSync</code></strong>: Firehose, WebSocket, event streaming</li>
+<li><strong><code>PDSLogComponentExplore</code></strong>: Explorer UI</li>
+<li><strong><code>PDSLogComponentCLI</code></strong>: CLI commands</li>
+</ul>
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L49-L58">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h2 id="structured-logging">Structured Logging</h2>
+<p>The logger supports both text and JSON output formats.</p>
+<h3 id="text-format-default">Text Format (Default)</h3>
+<p>Human-readable format for development:</p>
+<pre class="codehilite"><code>[2025-01-15 14:32:45.123] [INFO] [Auth] [XrpcAuthHelper.m:224] User authenticated: did:plc:abc123
+[2025-01-15 14:32:45.456] [ERROR] [Database] [PDSDatabase.m:89] Query failed: table not found
+</code></pre>
+
+<h3 id="json-format">JSON Format</h3>
+<p>Machine-parseable format for log aggregation:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;timestamp&quot;: &quot;2025-01-15T14:32:45.123Z&quot;,
+  &quot;level&quot;: &quot;INFO&quot;,
+  &quot;component&quot;: &quot;Auth&quot;,
+  &quot;message&quot;: &quot;User authenticated: did:plc:abc123&quot;,
+  &quot;file&quot;: &quot;XrpcAuthHelper.m&quot;,
+  &quot;line&quot;: 224,
+  &quot;thread_id&quot;: &quot;0x1a2b3c4d&quot;,
+  &quot;pid&quot;: 12345,
+  &quot;correlation_id&quot;: &quot;req-abc-123&quot;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.m#L244-L275">ATProtoPDS/Sources/Debug/PDSLogger.m</a></em></p>
+<h3 id="configuring-output-format">Configuring Output Format</h3>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+
+// Text format only (default)
+logger.logFormat = PDSLogFormatText;
+
+// JSON format only
+logger.logFormat = PDSLogFormatJSON;
+
+// Both formats
+logger.logFormat = PDSLogFormatBoth;
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L39-L46">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h2 id="correlation-ids">Correlation IDs</h2>
+<p>Use correlation IDs to track related log messages across a request lifecycle:</p>
+<pre class="codehilite"><code class="language-objc">// Set correlation ID at request start
+NSString *requestID = [[NSUUID UUID] UUIDString];
+[[PDSLogger sharedLogger] setCorrelationID:requestID];
+
+// All subsequent logs will include this ID
+PDS_LOG_INFO(@&quot;Processing request&quot;);
+PDS_LOG_DEBUG(@&quot;Validating parameters&quot;);
+
+// Clear correlation ID when done
+[[PDSLogger sharedLogger] clearCorrelationID];
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L197-L212">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<p>Correlation IDs are stored in thread-local storage, so they're automatically isolated per-thread.</p>
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.m#L382-L395">ATProtoPDS/Sources/Debug/PDSLogger.m</a></em></p>
+<h2 id="log-file-management">Log File Management</h2>
+<h3 id="configuring-log-files">Configuring Log Files</h3>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+
+// Set log file path
+logger.logFilePath = @&quot;/var/log/pds/server.log&quot;;
+
+// Configure rotation
+logger.maxLogFileSize = 10 * 1024 * 1024;  // 10MB
+logger.maxLogFiles = 5;  // Keep 5 rotated files
+
+// Enable stdout output
+logger.printToStdout = YES;
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L100-L109">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<h3 id="log-rotation">Log Rotation</h3>
+<p>Logs are automatically rotated when they exceed <code>maxLogFileSize</code>:</p>
+<pre class="codehilite"><code>server.log       (current)
+server.log.1     (previous)
+server.log.2
+server.log.3
+server.log.4
+server.log.5     (oldest, deleted on next rotation)
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.m#L407-L445">ATProtoPDS/Sources/Debug/PDSLogger.m</a></em></p>
+<h3 id="manual-rotation">Manual Rotation</h3>
+<pre class="codehilite"><code class="language-objc">// Force immediate rotation
+[[PDSLogger sharedLogger] forceRotate];
+
+// Flush buffered logs
+[[PDSLogger sharedLogger] flush];
+</code></pre>
+
+<h2 id="component-filtering">Component Filtering</h2>
+<p>Enable logging for specific components only:</p>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+
+// Only log Auth and Database components
+logger.enabledComponents = [NSSet setWithObjects:
+    PDSLogComponentAuth,
+    PDSLogComponentDatabase,
+    nil
+];
+
+// Re-enable all components
+logger.enabledComponents = nil;
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.h#L115-L116">ATProtoPDS/Sources/Debug/PDSLogger.h</a></em></p>
+<p>This is useful for debugging specific subsystems without noise from others.</p>
+<h2 id="async-logging">Async Logging</h2>
+<p>For high-throughput scenarios, enable async logging:</p>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+logger.asyncLogging = YES;
+</code></pre>
+
+<p><strong>How it works</strong>:
+- Log messages are buffered in memory
+- Buffer is flushed every 100 messages or on ERROR level
+- Background queue handles file I/O
+- Reduces latency on the logging thread</p>
+<p><strong>Trade-offs</strong>:
+- Logs may be lost if the process crashes before flush
+- Slightly more complex debugging (logs appear delayed)
+- Better for production, worse for development</p>
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.m#L233-L242">ATProtoPDS/Sources/Debug/PDSLogger.m</a></em></p>
+<h2 id="sensitive-data-redaction">Sensitive Data Redaction</h2>
+<h3 id="redaction-rules">Redaction Rules</h3>
+<p><strong>NEVER log the following</strong>:
+- Passwords, tokens, API keys
+- Private keys, signing keys
+- Session secrets, refresh tokens
+- Email addresses (in production)
+- IP addresses (in production, depending on privacy policy)
+- Full DIDs in high-volume logs (use truncated versions)</p>
+<h3 id="sanitization-patterns">Sanitization Patterns</h3>
+<p>The codebase uses several patterns to avoid logging sensitive data:</p>
+<h4 id="1-sanitized-error-summaries">1. Sanitized Error Summaries</h4>
+<p>Instead of logging full error objects (which may contain sensitive data), log sanitized summaries:</p>
+<pre class="codehilite"><code class="language-objc">// Helper function definition
+static NSString *XrpcAuthSanitizedErrorSummary(NSError *error) {
+    if (!error) {
+        return @&quot;domain=unknown code=0&quot;;
+    }
+    return [NSString stringWithFormat:@&quot;domain=%@ code=%ld&quot;,
+            error.domain, (long)error.code];
+}
+
+// Usage in authentication code
+PDS_LOG_AUTH_WARN(@&quot;Invalid DPoP proof (%@)&quot;, 
+                  XrpcAuthSanitizedErrorSummary(dpopError));
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L65-L72">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<p>This pattern extracts only the error domain and code, avoiding potentially sensitive information in the error's <code>userInfo</code> dictionary or localized description.</p>
+<p><strong>Real-world usage examples:</strong></p>
+<pre class="codehilite"><code class="language-objc">// From XrpcAuthHelper.m - Checking takedown status
+BOOL isTakedown = [adminController isAccountTakedownActive:did error:&amp;takedownError];
+if (takedownError) {
+    PDS_LOG_AUTH_WARN(@&quot;Failed to check takedown status (%@)&quot;, 
+                      XrpcAuthSanitizedErrorSummary(takedownError));
+    return nil;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L311-L315">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// From PDSAdminAuth.m - JWT verification failure
+if (![verifier verifyJWT:jwt error:&amp;verifyError]) {
+    PDS_LOG_AUTH_WARN(@&quot;PDSAdminAuth: JWT verification failed (%@)&quot;,
+                      PDSAdminAuthSanitizedErrorSummary(verifyError));
+    if (error) {
+        *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain 
+                                     code:401 
+                                 userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid token&quot;}];
+    }
+    return nil;
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Admin/PDSAdminAuth.m#L373-L377">ATProtoPDS/Sources/Admin/PDSAdminAuth.m</a></em></p>
+<p><strong>Additional sanitized error helpers:</strong></p>
+<p>The same pattern is used in multiple modules with module-specific helper functions:</p>
+<ul>
+<li><code>PDSAdminAuthSanitizedErrorSummary()</code> in <a href="../../ATProtoPDS/Sources/Admin/PDSAdminAuth.m#L152-L159">ATProtoPDS/Sources/Admin/PDSAdminAuth.m</a></li>
+<li><code>XrpcAuthSanitizedErrorSummary()</code> in <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L65-L72">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></li>
+</ul>
+<h4 id="2-sanitized-urls">2. Sanitized URLs</h4>
+<p>Remove query parameters and credentials from URLs before logging:</p>
+<pre class="codehilite"><code class="language-objc">// Helper function definition
+static NSString *PDSSanitizedURLString(NSURL *url) {
+    if (!url) return @&quot;&quot;;
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url 
+                                              resolvingAgainstBaseURL:NO];
+    if (!components) return url.absoluteString ?: @&quot;&quot;;
+    components.query = nil;      // Remove query parameters
+    components.fragment = nil;   // Remove fragments
+    return components.string ?: (url.absoluteString ?: @&quot;&quot;);
+}
+
+// Usage
+PDS_LOG_SERVICE_INFO(@&quot;Forwarding request to %@&quot;, PDSSanitizedURLString(url));
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Federation/FederationClient.m#L27-L35">ATProtoPDS/Sources/Federation/FederationClient.m</a></em></p>
+<p>This prevents logging of sensitive data that might be in URL query parameters (tokens, API keys, etc.).</p>
+<p><strong>Real-world usage examples:</strong></p>
+<pre class="codehilite"><code class="language-objc">// From FederationClient.m - XRPC forwarding
+PDS_LOG_SERVICE_INFO(@&quot;Forwarding XRPC request (method=%@, did=%@) to %@&quot;, 
+                     method ?: @&quot;&quot;, did ?: @&quot;&quot;, PDSSanitizedURLString(url));
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Federation/FederationClient.m#L183">ATProtoPDS/Sources/Federation/FederationClient.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// From FederationClient.m - HTTP forwarding
+PDS_LOG_SERVICE_INFO(@&quot;Forwarding HTTP request (method=%@) to %@&quot;, 
+                     method ?: @&quot;&quot;, PDSSanitizedURLString(url));
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Federation/FederationClient.m#L241">ATProtoPDS/Sources/Federation/FederationClient.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// From FederationClient.m - Binary XRPC forwarding
+PDS_LOG_SERVICE_INFO(@&quot;Forwarding binary XRPC request (method=%@, did=%@) to %@&quot;, 
+                     method ?: @&quot;&quot;, did ?: @&quot;&quot;, PDSSanitizedURLString(url));
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Federation/FederationClient.m#L328">ATProtoPDS/Sources/Federation/FederationClient.m</a></em></p>
+<h4 id="3-redacting-record-data">3. Redacting Record Data</h4>
+<p>When logging events, remove large or sensitive fields:</p>
+<pre class="codehilite"><code class="language-objc">// From EventFormatter.m - Sanitizing firehose commit events
+// Sanitize ops to remove recordCBOR which is internal-only and huge
+// Per ATProto spec, the record data is in the blocks (CAR), not in the ops metadata
+NSMutableArray *sanitizedOps = [NSMutableArray arrayWithCapacity:event.ops.count];
+for (NSDictionary *op in event.ops) {
+    if (op[@&quot;recordCBOR&quot;]) {
+        NSMutableDictionary *cleanOp = [op mutableCopy];
+        [cleanOp removeObjectForKey:@&quot;recordCBOR&quot;];
+        [sanitizedOps addObject:cleanOp];
+    } else {
+        [sanitizedOps addObject:op];
+    }
+}
+payload[@&quot;ops&quot;] = sanitizedOps;
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Sync/EventFormatter.m#L28-L40">ATProtoPDS/Sources/Sync/EventFormatter.m</a></em></p>
+<p>This pattern removes the <code>recordCBOR</code> field which contains the full record data (potentially sensitive user content) while keeping the metadata needed for debugging.</p>
+<h4 id="4-null-byte-sanitization">4. Null Byte Sanitization</h4>
+<p>Input validation helpers strip null bytes before processing to prevent injection attacks. While primarily for security, this also ensures clean log output:</p>
+<pre class="codehilite"><code class="language-objc">// From PDSInputValidator.m - Sanitizing SQL input
+- (nullable NSString *)sanitizeSQLInput:(NSString *)input error:(NSError **)error {
+    if (!input || input.length == 0) {
+        if (error) *error = [NSError errorWithDomain:PDSValidationErrorDomain 
+                                                 code:PDSValidationErrorEmptyString 
+                                             userInfo:@{NSLocalizedDescriptionKey: @&quot;SQL input cannot be empty&quot;}];
+        return nil;
+    }
+    NSMutableString *sanitized = [NSMutableString stringWithString:input];
+    [sanitized replaceOccurrencesOfString:@&quot;\0&quot; withString:@&quot;&quot; options:0 range:NSMakeRange(0, sanitized.length)];
+    return [sanitized copy];
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Security/PDSInputValidator.m#L140-L148">ATProtoPDS/Sources/Security/PDSInputValidator.m</a></em></p>
+<p>Similar sanitization is applied in:
+- <code>sanitizePathInput:error:</code> - <a href="../../ATProtoPDS/Sources/Security/PDSInputValidator.m#L150-L162">ATProtoPDS/Sources/Security/PDSInputValidator.m</a>
+- <code>sanitizeJSONField:error:</code> - <a href="../../ATProtoPDS/Sources/Security/PDSInputValidator.m#L164-L172">ATProtoPDS/Sources/Security/PDSInputValidator.m</a></p>
+<h3 id="best-practices-for-redaction">Best Practices for Redaction</h3>
+<ol>
+<li><strong>Log identifiers, not content</strong>: Log DIDs, not user data</li>
+<li><strong>Use truncation</strong>: <code>did:plc:abc...xyz</code> instead of full DID</li>
+<li><strong>Log metadata, not payloads</strong>: Log request size, not request body</li>
+<li><strong>Sanitize before formatting</strong>: Don't rely on format strings for security</li>
+<li><strong>Review logs regularly</strong>: Use the <code>objc-log-redaction-audit</code> skill</li>
+</ol>
+<h3 id="what-not-to-log">What NOT to Log</h3>
+<p>The following data types should <strong>NEVER</strong> appear in logs:</p>
+<h4 id="authentication-secrets">Authentication &amp; Secrets</h4>
+<ul>
+<li><strong>Passwords</strong> (plaintext or hashed) - Never log password values</li>
+<li><strong>Access tokens, refresh tokens</strong> - Log only token metadata (type, expiration)</li>
+<li><strong>API keys, service tokens</strong> - Use sanitized error summaries instead</li>
+<li><strong>Private keys, signing keys</strong> - Never log cryptographic key material</li>
+<li><strong>Session secrets</strong> - Log session IDs only, not secret values</li>
+<li><strong>DPoP proofs</strong> - Log validation results, not proof contents</li>
+<li><strong>JWT payloads</strong> - Log claims metadata, not full payload</li>
+</ul>
+<p><strong>Example - What to log:</strong></p>
+<pre class="codehilite"><code class="language-objc">// GOOD: Log token issuance metadata
+PDS_LOG_AUTH_DEBUG(@&quot;Tokens issued: sub=%@ client_id=%@&quot;, sub, clientID);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m#L509-L511">ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// GOOD: Log token validation failure without exposing token
+PDS_LOG_AUTH_WARN(@&quot;JWT verification failed for request from IP: %@&quot;, 
+                  request.remoteAddress ?: @&quot;unknown&quot;);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L258-L260">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// GOOD: Log password operations without the password value
+PDS_LOG_INFO(@&quot;Updating password for account: %@&quot;, did);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Services/PDSAdminService.m#L205-L207">ATProtoPDS/Sources/Services/PDSAdminService.m</a></em></p>
+<h4 id="personal-information">Personal Information</h4>
+<ul>
+<li><strong>Email addresses</strong> - Consider privacy policy; may be acceptable in development, should be limited in production</li>
+<li><strong>Full DIDs in high-volume logs</strong> - Use truncated versions for performance</li>
+<li><strong>User-generated content</strong> - Log content metadata (size, type), not actual content</li>
+<li><strong>IP addresses</strong> - Consider privacy regulations; acceptable for security/debugging but may need retention limits</li>
+</ul>
+<p><strong>Example - Email logging patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Development/debugging: Email addresses are logged
+PDS_LOG_INFO(@&quot;[Resend] Sending email to: %@ subject: %@&quot;, to, subject);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Email/PDSResendEmailProvider.m#L74-L76">ATProtoPDS/Sources/Email/PDSResendEmailProvider.m</a></em></p>
+<p><strong>Note:</strong> Email logging is currently used for debugging email delivery. In production environments with strict privacy requirements, consider logging only email domain or a hash.</p>
+<p><strong>Example - IP address logging patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Acceptable: IP addresses for security monitoring
+PDS_LOG_HTTP_INFO(@&quot;[%@] %@ %@&quot;, request.remoteAddress, request.methodString, logPath);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/HttpServer.m#L990-L992">ATProtoPDS/Sources/Network/HttpServer.m</a></em></p>
+<pre class="codehilite"><code class="language-objc">// Acceptable: IP addresses for authentication failures
+PDS_LOG_AUTH_WARN(@&quot;JWT verification failed for request from IP: %@&quot;, 
+                  request.remoteAddress ?: @&quot;unknown&quot;);
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L258-L260">ATProtoPDS/Sources/Network/XrpcAuthHelper.m</a></em></p>
+<p><strong>Privacy considerations for IP addresses:</strong>
+- IP addresses are logged for security monitoring, rate limiting, and debugging
+- Consider your jurisdiction's privacy regulations (GDPR, CCPA, etc.)
+- Implement log retention policies appropriate for your privacy requirements
+- Consider anonymization or truncation for long-term storage</p>
+<h4 id="large-or-binary-data">Large or Binary Data</h4>
+<ul>
+<li><strong>Full record CBOR data</strong> - Use the EventFormatter sanitization pattern</li>
+<li><strong>Binary blobs</strong> - Log size and hash, not content</li>
+<li><strong>CAR file contents</strong> - Log metadata only</li>
+<li><strong>Full request/response bodies</strong> - Log size and content-type</li>
+</ul>
+<p><strong>Example - Redacting large data:</strong></p>
+<pre class="codehilite"><code class="language-objc">// GOOD: Remove recordCBOR before logging/transmitting
+if (op[@&quot;recordCBOR&quot;]) {
+    NSMutableDictionary *cleanOp = [op mutableCopy];
+    [cleanOp removeObjectForKey:@&quot;recordCBOR&quot;];
+    [sanitizedOps addObject:cleanOp];
+}
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Sync/EventFormatter.m#L33-L37">ATProtoPDS/Sources/Sync/EventFormatter.m</a></em></p>
+<h3 id="creating-new-sanitization-helpers">Creating New Sanitization Helpers</h3>
+<p>When adding new logging to sensitive code paths, follow these patterns:</p>
+<h4 id="pattern-1-module-specific-error-sanitizer">Pattern 1: Module-Specific Error Sanitizer</h4>
+<pre class="codehilite"><code class="language-objc">// In your .m file (static function)
+static NSString *MyModuleSanitizedErrorSummary(NSError *error) {
+    if (!error) {
+        return @&quot;domain=unknown code=0&quot;;
+    }
+    return [NSString stringWithFormat:@&quot;domain=%@ code=%ld&quot;,
+            error.domain, (long)error.code];
+}
+
+// Usage
+PDS_LOG_ERROR(@&quot;Operation failed (%@)&quot;, MyModuleSanitizedErrorSummary(error));
+</code></pre>
+
+<h4 id="pattern-2-url-sanitizer">Pattern 2: URL Sanitizer</h4>
+<pre class="codehilite"><code class="language-objc">// In your .m file (static function)
+static NSString *MySanitizedURLString(NSURL *url) {
+    if (!url) return @&quot;&quot;;
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url 
+                                              resolvingAgainstBaseURL:NO];
+    if (!components) return url.absoluteString ?: @&quot;&quot;;
+    components.query = nil;      // Remove query parameters
+    components.fragment = nil;   // Remove fragments
+    return components.string ?: (url.absoluteString ?: @&quot;&quot;);
+}
+</code></pre>
+
+<h4 id="pattern-3-field-redaction">Pattern 3: Field Redaction</h4>
+<pre class="codehilite"><code class="language-objc">// Remove sensitive fields before logging
+NSMutableDictionary *sanitized = [originalDict mutableCopy];
+[sanitized removeObjectForKey:@&quot;password&quot;];
+[sanitized removeObjectForKey:@&quot;token&quot;];
+[sanitized removeObjectForKey:@&quot;secret&quot;];
+PDS_LOG_DEBUG(@&quot;Request data: %@&quot;, sanitized);
+</code></pre>
+
+<h2 id="platform-specific-logging">Platform-Specific Logging</h2>
+<h3 id="macos-os_log-integration">macOS: os_log Integration</h3>
+<p>On macOS, logs are also sent to the unified logging system:</p>
+<pre class="codehilite"><code class="language-objc">#if PDS_HAS_OS_LOG
+- (void)logToOSLogWithLevel:(PDSLogLevel)level
+                  formatted:(NSString *)formatted
+                  component:(NSString *)component {
+    os_log_t log = os_log_create(&quot;com.atproto.pds&quot;, [component UTF8String]);
+    os_log_with_type(log, type, &quot;%{public}@&quot;, formatted);
+}
+#endif
+</code></pre>
+
+<p><em>Source: <a href="../../ATProtoPDS/Sources/Debug/PDSLogger.m#L289-L311">ATProtoPDS/Sources/Debug/PDSLogger.m</a></em></p>
+<p>View logs with Console.app or <code>log</code> command:</p>
+<pre class="codehilite"><code class="language-bash"># Stream PDS logs
+log stream --predicate 'subsystem == &quot;com.atproto.pds&quot;'
+
+# Filter by component
+log stream --predicate 'subsystem == &quot;com.atproto.pds&quot; &amp;&amp; category == &quot;Auth&quot;'
+</code></pre>
+
+<h3 id="linuxgnustep-nslog-fallback">Linux/GNUstep: NSLog Fallback</h3>
+<p>On Linux, the system falls back to <code>NSLog</code>:</p>
+<pre class="codehilite"><code class="language-c">#define os_log(log, format, ...) \
+    NSLog(PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+
+#define os_log_info(log, format, ...) \
+    NSLog(@&quot;[ATProtoPDS INFO] &quot; PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+</code></pre>
+
+<p><em>Source: <a href="../../Sources/Compat/os/log.h#L17-L23">Sources/Compat/os/log.h</a></em></p>
+<h2 id="configuration-examples">Configuration Examples</h2>
+<h3 id="development-configuration">Development Configuration</h3>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+logger.logLevel = PDSLogLevelDebug;
+logger.printToStdout = YES;
+logger.logFormat = PDSLogFormatText;
+logger.asyncLogging = NO;  // Immediate output for debugging
+</code></pre>
+
+<h3 id="production-configuration">Production Configuration</h3>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+logger.logLevel = PDSLogLevelInfo;
+logger.logFilePath = @&quot;/var/log/pds/server.log&quot;;
+logger.printToStdout = NO;
+logger.logFormat = PDSLogFormatJSON;  // For log aggregation
+logger.asyncLogging = YES;  // Better performance
+logger.maxLogFileSize = 50 * 1024 * 1024;  // 50MB
+logger.maxLogFiles = 10;
+</code></pre>
+
+<h3 id="debug-specific-component">Debug Specific Component</h3>
+<pre class="codehilite"><code class="language-objc">PDSLogger *logger = [PDSLogger sharedLogger];
+logger.logLevel = PDSLogLevelDebug;
+logger.enabledComponents = [NSSet setWithObject:PDSLogComponentAuth];
+// Only Auth component logs will be output
+</code></pre>
+
+<h2 id="integration-with-monitoring">Integration with Monitoring</h2>
+<h3 id="shipping-logs-to-aggregators">Shipping Logs to Aggregators</h3>
+<p>For JSON format logs, use log shippers like:</p>
+<ul>
+<li><strong>Filebeat</strong>: Ships to Elasticsearch</li>
+<li><strong>Fluentd</strong>: Ships to various backends</li>
+<li><strong>Vector</strong>: High-performance log router</li>
+</ul>
+<p>Example Filebeat configuration:</p>
+<pre class="codehilite"><code class="language-yaml">filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/pds/server.log
+    json.keys_under_root: true
+    json.add_error_key: true
+
+output.elasticsearch:
+  hosts: [&quot;localhost:9200&quot;]
+  index: &quot;pds-logs-%{+yyyy.MM.dd}&quot;
+</code></pre>
+
+<h3 id="querying-json-logs">Querying JSON Logs</h3>
+<p>With JSON format, you can query logs programmatically:</p>
+<pre class="codehilite"><code class="language-bash"># Find all errors in the last hour
+jq 'select(.level == &quot;ERROR&quot; and .timestamp &gt; &quot;2025-01-15T13:00:00Z&quot;)' server.log
+
+# Count errors by component
+jq -r 'select(.level == &quot;ERROR&quot;) | .component' server.log | sort | uniq -c
+
+# Find logs for a specific correlation ID
+jq 'select(.correlation_id == &quot;req-abc-123&quot;)' server.log
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="dos">Do's</h3>
+<ul>
+<li><strong>Use appropriate log levels</strong>: Don't log everything at ERROR</li>
+<li><strong>Include context</strong>: Log relevant IDs, states, and parameters</li>
+<li><strong>Use component tags</strong>: Makes filtering and debugging easier</li>
+<li><strong>Set correlation IDs</strong>: Track requests across the system</li>
+<li><strong>Sanitize sensitive data</strong>: Never log secrets or PII</li>
+<li><strong>Log errors with context</strong>: Include error domain and code</li>
+<li><strong>Use structured logging in production</strong>: JSON format for aggregation</li>
+</ul>
+<h3 id="donts">Don'ts</h3>
+<ul>
+<li><strong>Don't log in tight loops</strong>: Causes performance issues</li>
+<li><strong>Don't log sensitive data</strong>: Passwords, tokens, keys</li>
+<li><strong>Don't log full objects</strong>: Use selective field logging</li>
+<li><strong>Don't ignore log levels</strong>: Respect the configured level</li>
+<li><strong>Don't log to stdout in production</strong>: Use log files</li>
+<li><strong>Don't forget to flush</strong>: Call <code>flush</code> before shutdown</li>
+<li><strong>Don't log without context</strong>: Include relevant identifiers</li>
+</ul>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="metrics-collection.md">Metrics Collection</a> - Quantitative monitoring</li>
+<li><a href="performance-monitoring.md">Performance Monitoring</a> - Profiling and optimization</li>
+<li><a href="security-audit-guide.md">Security Audit Guide</a> - Using the log redaction audit skill</li>
+<li><a href="../06-authentication/secrets-management.md">Secrets Management</a> - Handling sensitive data</li>
+</ul>
+<h2 id="auditing-log-redaction">Auditing Log Redaction</h2>
+<p>The repository includes a specialized audit skill for reviewing log statements:</p>
+<h3 id="using-the-log-redaction-audit-skill">Using the Log Redaction Audit Skill</h3>
+<p>The <code>objc-log-redaction-audit</code> skill (located in <code>.opencode/skills/objc-log-redaction-audit/</code>) analyzes the codebase for potential sensitive data leaks in log statements.</p>
+<p><strong>What it checks:</strong>
+- Passwords, tokens, keys in log statements
+- Email addresses and PII in logs
+- Full error objects that may contain sensitive data
+- URLs with query parameters
+- Large binary data in logs</p>
+<p><strong>How to use:</strong></p>
+<p>Refer to the skill's documentation in <code>.opencode/skills/objc-log-redaction-audit/</code> for usage instructions. The skill can be invoked through Kiro's skill system to perform automated analysis of logging patterns.</p>
+<p><strong>When to audit:</strong>
+- Before production deployment
+- After adding new authentication/authorization code
+- When implementing new API endpoints
+- During security reviews
+- After adding email or notification features</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="https://developer.apple.com/documentation/os/logging">Apple Unified Logging</a></li>
+<li><a href="https://www.structlog.org/en/stable/why.html">Structured Logging Best Practices</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html">OWASP Logging Cheat Sheet</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

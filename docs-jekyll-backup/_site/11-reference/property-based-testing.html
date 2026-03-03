@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property-Based Testing - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Property-Based Testing</h1>
+            </div>
+            <h1 id="property-based-testing">Property-Based Testing</h1>
+<p>September PDS uses property-based testing (PBT) principles to validate correctness properties across a wide range of inputs. While the project doesn't use a formal PBT framework like QuickCheck or Hypothesis, it employs randomized testing, fuzzing, and invariant checking to achieve similar goals.</p>
+<h2 id="testing-philosophy">Testing Philosophy</h2>
+<p>Property-based testing focuses on specifying properties that should hold for all valid inputs, rather than testing specific examples. September validates:</p>
+<ol>
+<li><strong>Correctness Properties</strong> - Invariants that must always hold</li>
+<li><strong>Round-Trip Properties</strong> - Encode/decode cycles preserve data</li>
+<li><strong>Security Properties</strong> - Attack vectors are properly defended</li>
+<li><strong>Protocol Compliance</strong> - AT Protocol specifications are followed</li>
+</ol>
+<h2 id="randomized-testing">Randomized Testing</h2>
+<h3 id="random-data-generation">Random Data Generation</h3>
+<p>September uses cryptographically secure random generation for test data:</p>
+<pre class="codehilite"><code class="language-objective-c">// Generate random bytes
+NSData *randomData = [CryptoUtils randomBytes:32];
+
+// Generate random code verifier (PKCE)
++ (NSString *)generateCodeVerifier {
+    NSData *randomData = [CryptoUtils randomBytes:32];
+    return [CryptoUtils base64URLEncode:randomData];
+}
+
+// Generate random invite code
+NSString *alphabet = @&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ234567&quot;;
+NSMutableString *code = [NSMutableString string];
+for (int i = 0; i &lt; 4; i++) {
+    unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
+    [code appendFormat:@&quot;%C&quot;, c];
+}
+</code></pre>
+
+<h3 id="random-test-fixtures">Random Test Fixtures</h3>
+<p>Tests generate random data to explore edge cases:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testHandleRandomInputs {
+    for (int i = 0; i &lt; 100; i++) {
+        // Generate random handle
+        NSUInteger length = arc4random_uniform(50) + 1;
+        NSMutableString *handle = [NSMutableString string];
+        for (NSUInteger j = 0; j &lt; length; j++) {
+            unichar c = 'a' + arc4random_uniform(26);
+            [handle appendFormat:@&quot;%C&quot;, c];
+        }
+
+        // Test validation
+        BOOL isValid = [ATProtoHandleValidator validateHandle:handle];
+        // Verify invariants hold
+    }
+}
+</code></pre>
+
+<h2 id="fuzz-testing">Fuzz Testing</h2>
+<p>September includes a comprehensive fuzzing infrastructure in <code>fuzzing/</code>:</p>
+<h3 id="fuzzer-targets">Fuzzer Targets</h3>
+<pre class="codehilite"><code>fuzzing/
+├── fuzz_xrpc          # XRPC request parsing
+├── fuzz_cbor          # CBOR decoding
+├── fuzz_car           # CAR file parsing
+├── fuzz_mst           # MST tree operations
+├── fuzz_did           # DID document parsing
+├── fuzz_jwt           # JWT token parsing
+└── corpus_*/          # Seed inputs for each fuzzer
+</code></pre>
+
+<h3 id="building-fuzzers">Building Fuzzers</h3>
+<pre class="codehilite"><code class="language-bash">mkdir -p build &amp;&amp; cd build
+cmake .. -DBUILD_FUZZERS=ON
+make -j$(sysctl -n hw.ncpu)
+</code></pre>
+
+<h3 id="running-fuzzers">Running Fuzzers</h3>
+<pre class="codehilite"><code class="language-bash"># Run XRPC fuzzer with corpus
+./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/
+
+# Run CBOR fuzzer
+./build/fuzzing/fuzz_cbor fuzzing/corpus_cbor/
+
+# Run with specific input
+./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/xrpc_valid_create.txt
+</code></pre>
+
+<h3 id="fuzzer-implementation-pattern">Fuzzer Implementation Pattern</h3>
+<pre class="codehilite"><code class="language-objective-c">// fuzz_cbor.m
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+    @autoreleasepool {
+        NSData *input = [NSData dataWithBytes:data length:size];
+
+        // Try to decode - should not crash
+        NSError *error = nil;
+        id decoded = [ATProtoDagCBOR decodeData:input error:&amp;error];
+
+        if (decoded) {
+            // If decode succeeded, verify round-trip property
+            NSData *reencoded = [ATProtoDagCBOR encodeObject:decoded error:nil];
+            if (reencoded) {
+                id redecoded = [ATProtoDagCBOR decodeData:reencoded error:nil];
+                // Verify equivalence
+                assert([decoded isEqual:redecoded]);
+            }
+        }
+
+        return 0;
+    }
+}
+</code></pre>
+
+<h2 id="correctness-properties">Correctness Properties</h2>
+<h3 id="round-trip-properties">Round-Trip Properties</h3>
+<p>Encoding and decoding should be inverse operations:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testCBORRoundTrip {
+    NSDictionary *original = @{
+        @&quot;text&quot;: @&quot;Hello&quot;,
+        @&quot;number&quot;: @42,
+        @&quot;nested&quot;: @{@&quot;key&quot;: @&quot;value&quot;}
+    };
+
+    // Encode
+    NSError *error = nil;
+    NSData *encoded = [ATProtoDagCBOR encodeObject:original error:&amp;error];
+    XCTAssertNotNil(encoded);
+
+    // Decode
+    id decoded = [ATProtoDagCBOR decodeData:encoded error:&amp;error];
+    XCTAssertNotNil(decoded);
+
+    // Property: decode(encode(x)) == x
+    XCTAssertEqualObjects(decoded, original);
+}
+</code></pre>
+
+<h3 id="canonical-encoding-properties">Canonical Encoding Properties</h3>
+<p>CBOR encoding must be canonical (deterministic):</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testCBORCanonicalEncoding {
+    NSDictionary *data = @{
+        @&quot;z&quot;: @&quot;last&quot;,
+        @&quot;a&quot;: @&quot;first&quot;,
+        @&quot;m&quot;: @&quot;middle&quot;
+    };
+
+    // Encode multiple times
+    NSData *encoded1 = [ATProtoDagCBOR encodeObject:data error:nil];
+    NSData *encoded2 = [ATProtoDagCBOR encodeObject:data error:nil];
+
+    // Property: encode(x) always produces same bytes
+    XCTAssertEqualObjects(encoded1, encoded2);
+
+    // Property: keys must be sorted
+    // Verify byte-level ordering
+}
+</code></pre>
+
+<h3 id="mst-tree-properties">MST Tree Properties</h3>
+<p>MST (Merkle Search Tree) must maintain invariants:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testMSTInvariants {
+    MST *tree = [[MST alloc] init];
+
+    // Insert random keys
+    NSMutableArray *keys = [NSMutableArray array];
+    for (int i = 0; i &lt; 100; i++) {
+        NSString *key = [self generateRandomKey];
+        [keys addObject:key];
+        [tree insertKey:key value:@{@&quot;data&quot;: @&quot;value&quot;}];
+    }
+
+    // Property 1: All inserted keys are retrievable
+    for (NSString *key in keys) {
+        XCTAssertNotNil([tree getValueForKey:key]);
+    }
+
+    // Property 2: Tree is balanced (height is O(log n))
+    NSUInteger height = [tree height];
+    NSUInteger maxHeight = (NSUInteger)(log2(keys.count) * 2);
+    XCTAssertLessThanOrEqual(height, maxHeight);
+
+    // Property 3: Keys are in sorted order
+    NSArray *allKeys = [tree allKeys];
+    NSArray *sortedKeys = [allKeys sortedArrayUsingSelector:@selector(compare:)];
+    XCTAssertEqualObjects(allKeys, sortedKeys);
+
+    // Property 4: CID is deterministic
+    NSString *cid1 = [tree rootCID];
+    NSString *cid2 = [tree rootCID];
+    XCTAssertEqualObjects(cid1, cid2);
+}
+</code></pre>
+
+<h2 id="security-properties">Security Properties</h2>
+<h3 id="input-validation-properties">Input Validation Properties</h3>
+<p>All inputs must be validated before processing:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testHandleValidationProperties {
+    // Property: Invalid handles are rejected
+    NSArray *invalidHandles = @[
+        @&quot;&quot;,                    // Empty
+        @&quot;a&quot;,                   // Too short
+        @&quot;UPPERCASE.test&quot;,      // Uppercase not allowed
+        @&quot;under_score.test&quot;,    // Underscore not allowed
+        @&quot;test..double.test&quot;,   // Double dot
+        @&quot;.leading.test&quot;,       // Leading dot
+        @&quot;trailing.test.&quot;,      // Trailing dot
+        @&quot;test.123456789012345678901234567890123456789012345678901234567890&quot;, // Too long
+    ];
+
+    for (NSString *handle in invalidHandles) {
+        BOOL isValid = [ATProtoHandleValidator validateHandle:handle];
+        XCTAssertFalse(isValid, @&quot;Should reject: %@&quot;, handle);
+    }
+
+    // Property: Valid handles are accepted
+    NSArray *validHandles = @[
+        @&quot;alice.test&quot;,
+        @&quot;bob-smith.example.com&quot;,
+        @&quot;user123.bsky.social&quot;,
+    ];
+
+    for (NSString *handle in validHandles) {
+        BOOL isValid = [ATProtoHandleValidator validateHandle:handle];
+        XCTAssertTrue(isValid, @&quot;Should accept: %@&quot;, handle);
+    }
+}
+</code></pre>
+
+<h3 id="ssrf-protection-properties">SSRF Protection Properties</h3>
+<p>Private IP addresses must be rejected:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testSSRFProtectionProperties {
+    NSArray *privateIPs = @[
+        @&quot;127.0.0.1&quot;,           // Loopback
+        @&quot;10.0.0.1&quot;,            // Private class A
+        @&quot;172.16.0.1&quot;,          // Private class B
+        @&quot;192.168.1.1&quot;,         // Private class C
+        @&quot;169.254.1.1&quot;,         // Link-local
+        @&quot;::1&quot;,                 // IPv6 loopback
+        @&quot;fc00::1&quot;,             // IPv6 private
+    ];
+
+    for (NSString *ip in privateIPs) {
+        BOOL isAllowed = [SSRFValidator isIPAddressAllowed:ip];
+        XCTAssertFalse(isAllowed, @&quot;Should reject private IP: %@&quot;, ip);
+    }
+}
+</code></pre>
+
+<h2 id="characterization-tests">Characterization Tests</h2>
+<p>Characterization tests document existing behavior and detect regressions:</p>
+<pre class="codehilite"><code class="language-objective-c">@interface ActorStoreCharacterizationTests : XCTestCase
+@end
+
+@implementation ActorStoreCharacterizationTests
+
+- (void)testSigningKeyWarningBehavior {
+    // Document current behavior: ActorStore logs warning when signing key is missing
+    // This test captures the current state and will fail if behavior changes
+
+    ActorStore *store = [[ActorStore alloc] initWithPath:@&quot;/tmp/test&quot;];
+
+    // Capture log output
+    __block BOOL warningLogged = NO;
+    // ... log capture setup ...
+
+    [store getSigningKey];
+
+    // Property: Warning is logged when key is missing
+    XCTAssertTrue(warningLogged, @&quot;Expected warning about missing signing key&quot;);
+}
+
+@end
+</code></pre>
+
+<h2 id="interoperability-properties">Interoperability Properties</h2>
+<p>Tests verify compliance with AT Protocol specifications:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testMSTInteroperability {
+    // Load reference test vectors from AT Protocol spec
+    NSString *fixturePath = [[NSBundle bundleForClass:[self class]] 
+                             pathForResource:@&quot;mst-test-vectors&quot; ofType:@&quot;json&quot;];
+    NSData *fixtureData = [NSData dataWithContentsOfFile:fixturePath];
+    NSDictionary *testVectors = [NSJSONSerialization JSONObjectWithData:fixtureData 
+                                                                options:0 
+                                                                  error:nil];
+
+    for (NSDictionary *vector in testVectors[@&quot;tests&quot;]) {
+        NSArray *operations = vector[@&quot;operations&quot;];
+        NSString *expectedCID = vector[@&quot;expectedCID&quot;];
+
+        MST *tree = [[MST alloc] init];
+        for (NSDictionary *op in operations) {
+            [tree insertKey:op[@&quot;key&quot;] value:op[@&quot;value&quot;]];
+        }
+
+        // Property: Implementation matches reference implementation
+        XCTAssertEqualObjects([tree rootCID], expectedCID);
+    }
+}
+</code></pre>
+
+<h2 id="test-data-generators">Test Data Generators</h2>
+<h3 id="handle-generator">Handle Generator</h3>
+<pre class="codehilite"><code class="language-objective-c">- (NSString *)generateRandomHandle {
+    NSArray *segments = @[
+        [self randomAlphanumeric:arc4random_uniform(10) + 3],
+        [self randomAlphanumeric:arc4random_uniform(10) + 3],
+        @&quot;test&quot;
+    ];
+    return [segments componentsJoinedByString:@&quot;.&quot;];
+}
+
+- (NSString *)randomAlphanumeric:(NSUInteger)length {
+    NSString *alphabet = @&quot;abcdefghijklmnopqrstuvwxyz0123456789&quot;;
+    NSMutableString *result = [NSMutableString string];
+    for (NSUInteger i = 0; i &lt; length; i++) {
+        unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
+        [result appendFormat:@&quot;%C&quot;, c];
+    }
+    return result;
+}
+</code></pre>
+
+<h3 id="did-generator">DID Generator</h3>
+<pre class="codehilite"><code class="language-objective-c">- (NSString *)generateRandomDID {
+    NSData *randomBytes = [CryptoUtils randomBytes:16];
+    NSString *encoded = [CryptoUtils base32Encode:randomBytes];
+    return [NSString stringWithFormat:@&quot;did:plc:%@&quot;, [encoded lowercaseString]];
+}
+</code></pre>
+
+<h3 id="record-generator">Record Generator</h3>
+<pre class="codehilite"><code class="language-objective-c">- (NSDictionary *)generateRandomPost {
+    NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+    formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime | 
+                              NSISO8601DateFormatWithFractionalSeconds;
+
+    return @{
+        @&quot;$type&quot;: @&quot;app.bsky.feed.post&quot;,
+        @&quot;text&quot;: [self generateRandomText:arc4random_uniform(280) + 1],
+        @&quot;createdAt&quot;: [formatter stringFromDate:[NSDate date]]
+    };
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Test Invariants</strong> - Focus on properties that must always hold</li>
+<li><strong>Use Random Data</strong> - Generate diverse inputs to explore edge cases</li>
+<li><strong>Verify Round-Trips</strong> - Encode/decode cycles should preserve data</li>
+<li><strong>Check Boundaries</strong> - Test minimum, maximum, and invalid values</li>
+<li><strong>Fuzz Parsers</strong> - Use fuzzing for all input parsing code</li>
+<li><strong>Document Behavior</strong> - Use characterization tests for complex behavior</li>
+<li><strong>Test Security</strong> - Verify attack vectors are properly defended</li>
+</ol>
+<h2 id="limitations">Limitations</h2>
+<p>September's testing approach has some limitations compared to formal PBT frameworks:</p>
+<ul>
+<li>No automatic shrinking of failing test cases</li>
+<li>Manual test data generation (no built-in generators)</li>
+<li>Limited property specification language</li>
+<li>No automatic property discovery</li>
+</ul>
+<p>These limitations are mitigated by:
+- Comprehensive fuzzing infrastructure
+- Extensive interoperability test suites
+- Security-focused testing
+- Manual property verification</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="test-organization.md">Test Organization</a> - Test structure and discovery</li>
+<li><a href="e2e-testing.md">E2E Testing</a> - End-to-end test scenarios</li>
+<li><a href="test-coverage-goals.md">Test Coverage Goals</a> - Coverage targets</li>
+<li><a href="security-audit-guide.md">Security Audit Guide</a> - Security testing</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

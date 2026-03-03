@@ -120,9 +120,9 @@ This skill ensures ATProto implementations remain compliant with protocol evolut
 
 ## Related Documentation
 
-- [Skills Overview](README.md) - Index of all skills documentation
-- [OAuth 2.0 Implementation](../oauth2/README.md) - OAuth flows, DPoP, PKCE, token management
-- [Security Documentation](../security/README.md) - Security testing, SSRF protection, admin auth
-- [Testing Guide](../tests/README.md) - Test infrastructure and CI/CD integration
-- [XRPC Protocol Reference](../architecture/XRPC_PROTOCOL_REFERENCE.md) - HTTP API conventions and endpoints
-- [Architecture Overview](../architecture/README.md) - System design and data models
+- [Skills Overview](README) - Index of all skills documentation
+- [OAuth 2.0 Implementation](../oauth2/README) - OAuth flows, DPoP, PKCE, token management
+- [Security Documentation](../security/README) - Security testing, SSRF protection, admin auth
+- [Testing Guide](../tests/README) - Test infrastructure and CI/CD integration
+- [XRPC Protocol Reference](../architecture/XRPC_PROTOCOL_REFERENCE) - HTTP API conventions and endpoints
+- [Architecture Overview](../architecture/README) - System design and data models

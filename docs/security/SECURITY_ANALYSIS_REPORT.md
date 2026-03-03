@@ -170,9 +170,9 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 
 ## Related Documentation
 
-- [Security Documentation Index](README.md) - Overview of all security docs
-- [Security Plan](SECURITY_PLAN.md) - Comprehensive security testing strategy
-- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Detailed fuzzing and exploit testing
-- [Security Test Results](security_test_results.md) - Current test results
-- [Reports](reports/README.md) - Historical security analysis reports
-- [OAuth2 Security](../oauth2/security.md) - OAuth2 implementation security
+- [Security Documentation Index](README) - Overview of all security docs
+- [Security Plan](SECURITY_PLAN) - Comprehensive security testing strategy
+- [Security Testing Plan](SECURITY_TESTING_PLAN) - Detailed fuzzing and exploit testing
+- [Security Test Results](security_test_results) - Current test results
+- [Reports](reports/README) - Historical security analysis reports
+- [OAuth2 Security](../oauth2/security) - OAuth2 implementation security

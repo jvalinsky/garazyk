@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARC Runtime Considerations - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>ARC Runtime Considerations</h1>
+            </div>
+            <h1 id="arc-runtime-considerations">ARC Runtime Considerations</h1>
+<h2 id="overview">Overview</h2>
+<p>Automatic Reference Counting (ARC) is supported on both macOS and GNUstep, but with important differences:
+- Both platforms use ARC by default
+- Runtime behavior differs slightly
+- Memory management patterns are the same
+- Debugging tools vary by platform</p>
+<h2 id="arc-basics">ARC Basics</h2>
+<h3 id="reference-counting">Reference Counting</h3>
+<p>ARC automatically manages object lifetime through reference counting:</p>
+<pre class="codehilite"><code class="language-objc">// Strong reference (default)
+@property (nonatomic, strong) NSString *name;  // Increments retain count
+
+// Weak reference
+@property (nonatomic, weak) PDSApplication *app;  // Doesn't increment retain count
+
+// Unowned reference (rare)
+@property (nonatomic, unsafe_unretained) NSObject *object;  // Manual management
+</code></pre>
+
+<h3 id="retain-cycles">Retain Cycles</h3>
+<p>ARC prevents most retain cycles, but some still occur:</p>
+<pre class="codehilite"><code class="language-objc">// PROBLEM: Retain cycle
+@interface Parent : NSObject
+@property (nonatomic, strong) Child *child;
+@end
+
+@interface Child : NSObject
+@property (nonatomic, strong) Parent *parent;  // Cycle!
+@end
+
+// SOLUTION: Use weak reference
+@interface Child : NSObject
+@property (nonatomic, weak) Parent *parent;  // No cycle
+@end
+</code></pre>
+
+<h2 id="macos-arc-runtime">macOS ARC Runtime</h2>
+<h3 id="xcodeclang-arc">Xcode/clang ARC</h3>
+<p>macOS uses the Xcode/clang ARC runtime:</p>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (instancetype)initWithConfiguration:(PDSConfiguration *)config {
+    self = [super init];
+    if (!self) return nil;
+
+    // ARC automatically manages these
+    self.configuration = config;  // Strong reference
+    self.services = [NSMutableDictionary dictionary];
+
+    return self;
+}
+
+- (void)dealloc {
+    // ARC calls this automatically
+    // No need to release properties
+    NSLog(@&quot;PDSApplication deallocated&quot;);
+}
+</code></pre>
+
+<h3 id="memory-debugging-on-macos">Memory Debugging on macOS</h3>
+<pre class="codehilite"><code class="language-bash"># Enable malloc debugging
+export MallocStackLogging=1
+export MallocStackLoggingNoCompact=1
+
+# Run with Instruments
+instruments -t &quot;Allocations&quot; ./build/bin/kaszlak
+
+# Check for leaks
+leaks -atExit -- ./build/bin/kaszlak
+</code></pre>
+
+<h3 id="xcode-memory-graph">Xcode Memory Graph</h3>
+<pre class="codehilite"><code class="language-objc">// In Xcode debugger
+// 1. Run with breakpoint
+// 2. Click &quot;Debug Memory Graph&quot; button
+// 3. Inspect object references
+// 4. Identify retain cycles
+</code></pre>
+
+<h2 id="gnustep-arc-runtime">GNUstep ARC Runtime</h2>
+<h3 id="gnustep-22-runtime">GNUstep 2.2 Runtime</h3>
+<p>GNUstep uses the GNUstep 2.2 runtime with ARC support:</p>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m (GNUstep)
+- (instancetype)initWithConfiguration:(PDSConfiguration *)config {
+    self = [super init];
+    if (!self) return nil;
+
+    // ARC works the same on GNUstep
+    self.configuration = config;
+    self.services = [NSMutableDictionary dictionary];
+
+    return self;
+}
+
+- (void)dealloc {
+    // ARC calls this automatically on GNUstep too
+    NSLog(@&quot;PDSApplication deallocated&quot;);
+}
+</code></pre>
+
+<h3 id="memory-debugging-on-gnustep">Memory Debugging on GNUstep</h3>
+<pre class="codehilite"><code class="language-bash"># Enable GNUstep memory debugging
+export GNUSTEP_MEMORY_DEBUG=1
+
+# Run with valgrind
+valgrind --leak-check=full ./build/bin/kaszlak
+
+# Check for leaks
+valgrind --leak-check=summary ./build/bin/kaszlak
+</code></pre>
+
+<h2 id="autoreleasepool">Autoreleasepool</h2>
+<h3 id="when-to-use-autoreleasepool">When to Use Autoreleasepool</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (void)processRecordsInBatch:(NSArray *)records {
+    // Create autorelease pool for batch processing
+    @autoreleasepool {
+        for (NSDictionary *record in records) {
+            // Temporary objects created here
+            NSString *uri = [self createURI:record];
+            NSData *encoded = [self encodeRecord:record];
+
+            // Objects are released at end of pool
+        }
+    }
+
+    // All temporary objects released here
+}
+</code></pre>
+
+<h3 id="nested-autoreleasepool">Nested Autoreleasepool</h3>
+<pre class="codehilite"><code class="language-objc">// In CommitBroadcaster.m
+- (void)broadcastCommits:(NSArray *)commits {
+    @autoreleasepool {
+        for (NSDictionary *commit in commits) {
+            @autoreleasepool {
+                // Inner pool for each commit
+                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:commit 
+                                                                   options:0 
+                                                                     error:nil];
+                [self sendToSubscribers:jsonData];
+            }
+            // Inner pool drained here
+        }
+    }
+}
+</code></pre>
+
+<h2 id="weak-references">Weak References</h2>
+<h3 id="preventing-retain-cycles">Preventing Retain Cycles</h3>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.h
+@interface SubscribeReposHandler : NSObject
+
+@property (nonatomic, weak) CommitBroadcaster *broadcaster;  // Weak to prevent cycle
+@property (nonatomic, strong) NSMutableArray *subscriptions;
+
+@end
+
+// In SubscribeReposHandler.m
+- (void)handleWebSocketUpgrade:(HttpRequest *)request 
+                     response:(HttpResponse *)response {
+
+    // Check if broadcaster is still alive
+    CommitBroadcaster *broadcaster = self.broadcaster;
+    if (!broadcaster) {
+        NSLog(@&quot;Broadcaster was deallocated&quot;);
+        return;
+    }
+
+    [broadcaster registerSubscription:context];
+}
+</code></pre>
+
+<h3 id="weak-reference-patterns">Weak Reference Patterns</h3>
+<pre class="codehilite"><code class="language-objc">// Pattern 1: Weak self in blocks
+- (void)startServer {
+    __weak typeof(self) weakSelf = self;
+
+    dispatch_async(self.queue, ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;  // Object was deallocated
+
+        [strongSelf doWork];
+    });
+}
+
+// Pattern 2: Weak delegate
+@property (nonatomic, weak) id&lt;PDSDelegate&gt; delegate;
+
+- (void)notifyDelegate {
+    if ([self.delegate respondsToSelector:@selector(didFinish)]) {
+        [self.delegate didFinish];
+    }
+}
+</code></pre>
+
+<h2 id="memory-pressure">Memory Pressure</h2>
+<h3 id="handling-low-memory">Handling Low Memory</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)setupMemoryWarningHandler {
+#if __APPLE__
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(handleMemoryWarning:) 
+                                                 name:UIApplicationDidReceiveMemoryWarningNotification 
+                                               object:nil];
+#endif
+}
+
+- (void)handleMemoryWarning:(NSNotification *)notification {
+    NSLog(@&quot;Memory warning received&quot;);
+
+    // 1. Clear caches
+    [self.databasePool clearCache];
+    [self.blobStorage clearTemporaryFiles];
+
+    // 2. Reduce buffer sizes
+    self.maxSendBufferSize = 5 * 1024 * 1024;  // Reduce from 10MB to 5MB
+
+    // 3. Force garbage collection (if available)
+    @autoreleasepool {
+        // Drain autorelease pool
+    }
+}
+</code></pre>
+
+<h2 id="debugging-memory-issues">Debugging Memory Issues</h2>
+<h3 id="identifying-leaks">Identifying Leaks</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)debugMemoryUsage {
+    // 1. Get memory statistics
+    struct mallinfo info = mallinfo();
+    NSLog(@&quot;Total allocated: %d bytes&quot;, info.uordblks);
+    NSLog(@&quot;Total free: %d bytes&quot;, info.fordblks);
+
+    // 2. Check object counts
+    NSLog(@&quot;Active objects: %lu&quot;, [NSObject instanceCount]);
+
+    // 3. Monitor specific classes
+    [self logInstanceCountForClass:[PDSRecordService class]];
+    [self logInstanceCountForClass:[WebSocketConnection class]];
+}
+
+- (void)logInstanceCountForClass:(Class)cls {
+    unsigned int count = 0;
+    Class *classes = objc_copyClassList(&amp;count);
+
+    for (unsigned int i = 0; i &lt; count; i++) {
+        if (classes[i] == cls) {
+            NSLog(@&quot;%@ instances: %u&quot;, NSStringFromClass(cls), 
+                  [cls instanceCount]);
+        }
+    }
+
+    free(classes);
+}
+</code></pre>
+
+<h3 id="memory-profiling">Memory Profiling</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)startMemoryProfiling {
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, 
+                                                     dispatch_get_main_queue());
+
+    dispatch_source_set_timer(timer,
+                             dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC),
+                             5 * NSEC_PER_SEC,
+                             1 * NSEC_PER_SEC);
+
+    dispatch_source_set_event_handler(timer, ^{
+        [self logMemoryUsage];
+    });
+
+    dispatch_resume(timer);
+}
+
+- (void)logMemoryUsage {
+    struct task_basic_info info;
+    mach_msg_type_number_t size = TASK_BASIC_INFO_COUNT;
+
+    kern_return_t kerr = task_info(mach_task_self(),
+                                   TASK_BASIC_INFO,
+                                   (task_info_t)&amp;info,
+                                   &amp;size);
+
+    if (kerr == KERN_SUCCESS) {
+        NSLog(@&quot;Memory usage: %.2f MB&quot;, info.resident_size / 1024.0 / 1024.0);
+    }
+}
+</code></pre>
+
+<h2 id="platform-differences">Platform Differences</h2>
+<h3 id="macos-vs-gnustep">macOS vs GNUstep</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>macOS</th>
+<th>GNUstep</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ARC Support</td>
+<td>Full</td>
+<td>Full (2.2+)</td>
+</tr>
+<tr>
+<td>Autorelease Pool</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Weak References</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Memory Debugging</td>
+<td>Instruments</td>
+<td>valgrind</td>
+</tr>
+<tr>
+<td>Dealloc Timing</td>
+<td>Immediate</td>
+<td>May be delayed</td>
+</tr>
+<tr>
+<td>Autoreleasepool Drain</td>
+<td>Automatic</td>
+<td>Automatic</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dealloc-timing">Dealloc Timing</h3>
+<pre class="codehilite"><code class="language-objc">// macOS: Dealloc called immediately when refcount reaches 0
+- (void)testDeallocTiming {
+    @autoreleasepool {
+        NSString *str = [[NSString alloc] initWithString:@&quot;test&quot;];
+        NSLog(@&quot;Created: %@&quot;, str);
+    }  // Dealloc called here on macOS
+}
+
+// GNUstep: Dealloc may be delayed
+- (void)testDeallocTimingGNUstep {
+    @autoreleasepool {
+        NSString *str = [[NSString alloc] initWithString:@&quot;test&quot;];
+        NSLog(@&quot;Created: %@&quot;, str);
+    }  // Dealloc may be called later on GNUstep
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Use strong references by default</strong> — Only use weak when necessary</li>
+<li><strong>Avoid retain cycles</strong> — Use weak for delegates and observers</li>
+<li><strong>Use autoreleasepool in loops</strong> — Prevent memory buildup</li>
+<li><strong>Check weak references</strong> — Always verify before use</li>
+<li><strong>Profile memory usage</strong> — Monitor on both platforms</li>
+<li><strong>Handle memory warnings</strong> — Clear caches when needed</li>
+<li><strong>Test on both platforms</strong> — Verify behavior matches</li>
+<li><strong>Document memory ownership</strong> — Clearly mark strong/weak</li>
+</ol>
+<h2 id="common-pitfalls">Common Pitfalls</h2>
+<ol>
+<li><strong>Forgetting weak self in blocks</strong> — Causes retain cycles</li>
+<li><strong>Not checking weak references</strong> — May be nil unexpectedly</li>
+<li><strong>Excessive autoreleasepool nesting</strong> — Reduces performance</li>
+<li><strong>Ignoring memory warnings</strong> — Causes crashes on low memory</li>
+<li><strong>Platform-specific memory behavior</strong> — Different dealloc timing</li>
+<li><strong>Circular delegate references</strong> — Use weak for delegates</li>
+<li><strong>Not profiling memory</strong> — Leaks go undetected</li>
+<li><strong>Assuming immediate dealloc</strong> — May be delayed on GNUstep</li>
+</ol>
+<h2 id="testing-memory-management">Testing Memory Management</h2>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Tests/MemoryTests.m
+@interface MemoryTests : XCTestCase
+@end
+
+@implementation MemoryTests
+
+- (void)testNoRetainCycles {
+    // 1. Create objects
+    PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config];
+    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    handler.broadcaster = app.broadcaster;
+
+    // 2. Release objects
+    app = nil;
+    handler = nil;
+
+    // 3. Verify deallocation
+    XCTAssertTrue(YES);  // If we get here, no crash
+}
+
+- (void)testWeakReferenceBehavior {
+    __weak NSString *weakStr = nil;
+
+    @autoreleasepool {
+        NSString *str = [[NSString alloc] initWithString:@&quot;test&quot;];
+        weakStr = str;
+        XCTAssertNotNil(weakStr);
+    }
+
+    // After pool drains, weak reference should be nil
+    XCTAssertNil(weakStr);
+}
+
+- (void)testAutoreleasePoolDraining {
+    NSMutableArray *objects = [NSMutableArray array];
+
+    @autoreleasepool {
+        for (int i = 0; i &lt; 1000; i++) {
+            NSString *str = [NSString stringWithFormat:@&quot;String %d&quot;, i];
+            [objects addObject:str];
+        }
+    }
+
+    // Objects should still be alive (strong references in array)
+    XCTAssertEqual(objects.count, 1000);
+}
+
+@end
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./network-transport.md">Network Transport</a></strong> — Platform-specific network I/O</li>
+<li><strong><a href="./compatibility-layer.md">Compatibility Layer</a></strong> — Compatibility shims</li>
+<li><strong><a href="./macos-linux.md">macOS/Linux</a></strong> — Platform overview</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

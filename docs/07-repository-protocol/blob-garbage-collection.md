@@ -1747,9 +1747,9 @@ Add GC settings to `config.json`:
 
 ## See Also
 
-- [Blob Lifecycle](./blob-lifecycle.md) — Upload, download, and deletion workflows
-- [Blob Optimization](./blob-optimization.md) — Performance optimization techniques
-- [Blob Storage](./blob-storage.md) — Storage architecture and providers
-- [Blob Service](../03-application-layer/blob-service.md) — Service layer API
-- [Database Layer](../05-database-layer/sqlite-architecture.md) — Database architecture
+- [Blob Lifecycle](./blob-lifecycle) — Upload, download, and deletion workflows
+- [Blob Optimization](./blob-optimization) — Performance optimization techniques
+- [Blob Storage](./blob-storage) — Storage architecture and providers
+- [Blob Service](../03-application-layer/blob-service) — Service layer API
+- [Database Layer](../05-database-layer/sqlite-architecture) — Database architecture
 

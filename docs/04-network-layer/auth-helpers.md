@@ -588,8 +588,8 @@ if (authHeader) {
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch.md)
-- [Domain Methods](./domain-methods.md)
-- [Error Handling](./error-handling.md)
-- [JWT Tokens](../06-authentication/jwt-tokens.md)
-- [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop.md)
+- [XRPC Dispatch](./xrpc-dispatch)
+- [Domain Methods](./domain-methods)
+- [Error Handling](./error-handling)
+- [JWT Tokens](../06-authentication/jwt-tokens)
+- [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop)

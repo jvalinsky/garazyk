@@ -349,9 +349,9 @@ The complete code for this tutorial is available in:
 
 [Link to related tutorials or next steps]
 
-- **[Tutorial N+1: Title](./tutorial-[N+1]-[name].md)** — [Brief description]
-- **[Related Documentation](../path/to/doc.md)** — [Brief description]
-- **[Advanced Topic](../path/to/advanced.md)** — [Brief description]
+- **[Tutorial N+1: Title](./tutorial-[N+1]-[name])** — [Brief description]
+- **[Related Documentation](../path/to/doc)** — [Brief description]
+- **[Advanced Topic](../path/to/advanced)** — [Brief description]
 
 ## Summary
 
@@ -386,4 +386,4 @@ If you have questions or suggestions about this tutorial:
 **Version:** [Version number]  
 **Last Updated:** [Date]  
 **Example Code:** `examples/tutorial-[N]-[name]/`  
-**Related Tutorials:** [Tutorial N-1](./tutorial-[N-1]-[name].md), [Tutorial N+1](./tutorial-[N+1]-[name].md)
+**Related Tutorials:** [Tutorial N-1](./tutorial-[N-1]-[name]), [Tutorial N+1](./tutorial-[N+1]-[name])

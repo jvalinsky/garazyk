@@ -479,7 +479,7 @@ After completing these tasks, move to Phase 3 advanced testing including securit
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Architecture Docs](../../architecture/README.md) - System architecture documentation
-- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Architecture Docs](../../architecture/README) - System architecture documentation
+- [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

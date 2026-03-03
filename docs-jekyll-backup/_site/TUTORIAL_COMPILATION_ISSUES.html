@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial Compilation Issues - Task 12.3.2 Verification Report - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Tutorial Compilation Issues - Task 12.3.2 Verification Report</h1>
+            </div>
+            <h1 id="tutorial-compilation-issues-task-1232-verification-report">Tutorial Compilation Issues - Task 12.3.2 Verification Report</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>The tutorial examples (tutorials 1-6) currently <strong>do not compile</strong> due to fundamental architectural issues. After attempting multiple fixes, the tutorials remain non-functional and violate <strong>Correctness Property CP-2</strong>: "All code examples must compile and run without modification."</p>
+<h2 id="issues-found">Issues Found</h2>
+<h3 id="1-all-tutorials-1-5-build-failure">1. All Tutorials (1-5) - Build Failure</h3>
+<p><strong>Status:</strong> ❌ FAILS TO COMPILE</p>
+<p><strong>Error:</strong> Foundation framework macros (NS_ENUM, NS_ASSUME_NONNULL_BEGIN, etc.) are not recognized during compilation of PDS source files.</p>
+<p><strong>Root Cause:</strong>
+- The CMakeLists.txt attempts to compile the entire PDS codebase (~100+ source files)
+- PDS header files (.h) do not import Foundation - they expect it to be imported by the including .m file
+- When compiling PDS sources as part of tutorial build, Foundation macros are unavailable
+- Prefix header approach (-include prefix.pch) does not resolve the issue
+- The <code>-fmodules</code> flag alone is insufficient</p>
+<p><strong>Sample Errors:</strong></p>
+<pre class="codehilite"><code>error: unknown type name 'NS_ASSUME_NONNULL_BEGIN'
+error: cannot find interface declaration for 'NSObject'
+error: unknown type name 'NSString'
+error: unknown type name 'BOOL'
+error: use of undeclared identifier 'ATProtoErrorCodeUnknown'
+error: function definition declared 'typedef' (NS_ENUM not recognized)
+</code></pre>
+
+<h3 id="2-architectural-problem">2. Architectural Problem</h3>
+<p>The tutorials claim to be "minimal examples" but actually:
+- Include ALL PDS source files (App/, Network/, Services/, Database/, Core/, Auth/, etc.)
+- Attempt to build the entire production PDS codebase
+- Are not actually "tutorials" but full PDS builds with different main.m files
+- Compile time would be 5-10 minutes even if they worked</p>
+<p><strong>Contradiction:</strong>
+- Documentation says: "Tutorial 1: Minimal PDS with single endpoint" (30 minutes)
+- Reality: Compiles 100+ production source files including OAuth, WebAuthn, MST, CBOR, CAR, SQLite pools, etc.</p>
+<h3 id="3-documentation-vs-reality-mismatch">3. Documentation vs Reality Mismatch</h3>
+<p><strong>docs/10-tutorials/tutorial-1-hello-pds.md</strong> shows:
+- Standalone implementations of HttpServer, XrpcDispatcher, etc.
+- Self-contained code that could be copy-pasted
+- Claims "30 minutes" completion time</p>
+<p><strong>examples/tutorial-1-hello-pds/</strong> contains:
+- CMakeLists.txt that globs ALL PDS sources
+- main.m that imports full PDSApplication
+- No standalone implementations</p>
+<h2 id="verification-results">Verification Results</h2>
+<table>
+<thead>
+<tr>
+<th>Tutorial</th>
+<th>Compiles</th>
+<th>Runs</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tutorial 1</td>
+<td>❌</td>
+<td>❌</td>
+<td>Foundation macros not available during PDS source compilation</td>
+</tr>
+<tr>
+<td>Tutorial 2</td>
+<td>❌</td>
+<td>❌</td>
+<td>Same issue as Tutorial 1</td>
+</tr>
+<tr>
+<td>Tutorial 3</td>
+<td>❌</td>
+<td>❌</td>
+<td>Same issue as Tutorial 1</td>
+</tr>
+<tr>
+<td>Tutorial 4</td>
+<td>❌</td>
+<td>❌</td>
+<td>Same issue as Tutorial 1</td>
+</tr>
+<tr>
+<td>Tutorial 5</td>
+<td>❌</td>
+<td>❌</td>
+<td>Same issue as Tutorial 1</td>
+</tr>
+<tr>
+<td>Tutorial 6</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>Deployment guide, no compilation required</td>
+</tr>
+</tbody>
+</table>
+<h2 id="attempted-fixes">Attempted Fixes</h2>
+<ol>
+<li>✅ Added Security and SQLite3 frameworks to CMakeLists.txt</li>
+<li>✅ Added <code>-fmodules</code> flag</li>
+<li>✅ Added <code>-iframework</code> path for system frameworks</li>
+<li>✅ Created prefix header (prefix.pch) with Foundation import</li>
+<li>✅ Added <code>-include prefix.pch</code> to compiler flags</li>
+<li>❌ <strong>All attempts failed</strong> - Foundation macros still not recognized</li>
+</ol>
+<h2 id="root-cause-analysis">Root Cause Analysis</h2>
+<p>The PDS codebase uses a pattern where:
+- <code>.h</code> files use Foundation types (NSString, NSObject, etc.) and macros (NS_ENUM, NS_ASSUME_NONNULL_BEGIN)
+- <code>.h</code> files do NOT import Foundation themselves
+- <code>.m</code> files import Foundation before importing headers</p>
+<p>This works fine when:
+- Building the main PDS (each .m file imports Foundation first)
+- Using precompiled headers in Xcode</p>
+<p>This FAILS when:
+- Compiling PDS sources via CMake without proper precompiled header setup
+- The <code>-include</code> flag doesn't properly inject Foundation before header parsing</p>
+<h2 id="recommended-solutions">Recommended Solutions</h2>
+<h3 id="option-1-fix-pds-headers-proper-solution">Option 1: Fix PDS Headers (Proper Solution)</h3>
+<p>Add <code>#import &lt;Foundation/Foundation.h&gt;</code> to all PDS header files that use Foundation types. This makes headers self-contained.</p>
+<p><strong>Pros:</strong> Fixes root cause, makes headers more robust
+<strong>Cons:</strong> Requires modifying ~100+ header files in main PDS codebase</p>
+<h3 id="option-2-create-true-standalone-tutorials-recommended-for-tutorials">Option 2: Create True Standalone Tutorials (Recommended for Tutorials)</h3>
+<p>Rewrite tutorials to match the documentation:
+- Implement minimal standalone versions of components
+- No dependencies on full PDS codebase
+- Actually achievable in stated timeframes
+- True learning progression</p>
+<p><strong>Pros:</strong> Matches documentation, educational value, fast builds, actually works
+<strong>Cons:</strong> Significant work to implement (~2-3 days)</p>
+<h3 id="option-3-link-against-built-pds-library">Option 3: Link Against Built PDS Library</h3>
+<p>Build PDS as a library, link tutorials against it:
+- Build libATProtoPDS.a from main codebase
+- Tutorials link against library + headers
+- Faster tutorial builds</p>
+<p><strong>Pros:</strong> Cleaner separation, faster builds
+<strong>Cons:</strong> Requires refactoring build system, headers still need Foundation</p>
+<h3 id="option-4-mark-tutorials-as-non-functional-immediate-action">Option 4: Mark Tutorials as Non-Functional (Immediate Action)</h3>
+<p>Document current state and disable tutorial builds:
+- Add note to tutorial documentation: "Code examples currently non-functional"
+- Remove tutorial builds from CI
+- Plan proper fix for future release</p>
+<p><strong>Pros:</strong> Honest about current state, no broken promises
+<strong>Cons:</strong> Reduces documentation value</p>
+<h2 id="inline-code-examples">Inline Code Examples</h2>
+<p>The documentation also contains inline code examples in various sections. These were not systematically verified due to:
+1. They are embedded in markdown, not standalone compilable files
+2. Many are code snippets, not complete programs
+3. The tutorial examples (which should be the "complete" versions) don't compile</p>
+<p><strong>Recommendation:</strong> Once tutorials are fixed, verify inline examples match working code.</p>
+<h2 id="immediate-action-required">Immediate Action Required</h2>
+<p>The current state violates <strong>Correctness Property CP-2</strong>:</p>
+<blockquote>
+<p>"All code examples must compile and run without modification"</p>
+</blockquote>
+<p><strong>Status:</strong> ❌ VIOLATION - No tutorial examples compile</p>
+<p><strong>Recommendation:</strong> 
+1. Mark task 12.3.2 as <strong>blocked</strong> due to fundamental architectural issues
+2. Document findings (this report)
+3. Create follow-up task to implement Option 2 (standalone tutorials)
+4. Add warning to tutorial documentation about current non-functional state</p>
+<h2 id="testing-methodology-note">Testing Methodology Note</h2>
+<p>Per task requirements, tutorial servers run indefinitely and need special testing:
+- Use <code>timeout 5s ./tutorial-X</code> to test startup without hanging
+- Or use background + curl + kill approach
+- Focus on build verification and startup without crash</p>
+<p><strong>Current Status:</strong> Cannot test runtime behavior because builds fail.</p>
+<h2 id="files-affected">Files Affected</h2>
+<ul>
+<li><code>examples/tutorial-1-hello-pds/CMakeLists.txt</code> - Modified, still fails</li>
+<li><code>examples/tutorial-1-hello-pds/src/prefix.pch</code> - Created, ineffective</li>
+<li><code>examples/tutorial-2-accounts/CMakeLists.txt</code> - Not modified yet</li>
+<li><code>examples/tutorial-3-records/CMakeLists.txt</code> - Not modified yet</li>
+<li><code>examples/tutorial-4-auth/CMakeLists.txt</code> - Not modified yet</li>
+<li><code>examples/tutorial-5-firehose/CMakeLists.txt</code> - Not modified yet</li>
+</ul>
+<h2 id="conclusion">Conclusion</h2>
+<p>The tutorial examples are fundamentally broken and cannot be fixed with simple CMakeLists.txt changes. The issue requires either:
+1. Modifying all PDS headers to import Foundation (affects main codebase)
+2. Rewriting tutorials as true standalone examples (significant work)
+3. Accepting that tutorials are currently non-functional documentation</p>
+<p><strong>Task 12.3.2 Status:</strong> ❌ CANNOT COMPLETE - Tutorials do not compile</p>
+<p><strong>Recommendation:</strong> Mark task as blocked, document issues, plan proper fix for future milestone.</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

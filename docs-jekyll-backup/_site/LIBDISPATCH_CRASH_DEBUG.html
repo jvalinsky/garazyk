@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>libdispatch SIGILL Crash Debugging Session - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>libdispatch SIGILL Crash Debugging Session</h1>
+            </div>
+            <h1 id="libdispatch-sigill-crash-debugging-session">libdispatch SIGILL Crash Debugging Session</h1>
+<p><strong>Date</strong>: 2026-02-21<br />
+<strong>System</strong>: Ubuntu 24.04, x86_64<br />
+<strong>libdispatch</strong>: swift-corelibs-libdispatch <code>swift-DEVELOPMENT-SNAPSHOT-2026-02-19-a</code> from <code>/usr/local/lib/libdispatch.so</code><br />
+<strong>ObjC Runtime</strong>: GNUstep libobjc2 with ARC<br />
+<strong>Affected binaries</strong>: <code>kaszlak</code> (PDS server), <code>campagnola</code> (PLC server)  </p>
+<h2 id="symptom">Symptom</h2>
+<p>Both servers crash with <code>SIGILL</code> (Illegal instruction) after handling their first HTTP request. The crash happens consistently, every time, killing the process. systemd auto-restarts it (<code>Restart=on-failure</code>), but the next request kills it again — making every other request fail with a 502.</p>
+<pre class="codehilite"><code>dmesg output (consistent across all crashes):
+traps: -qos.overcommit[PID] trap invalid opcode ip:XXXX sp:XXXX error:0 in libdispatch.so[5c700,BASE+52000]
+</code></pre>
+
+<p>The crash offset is always <code>+0x3D700</code> from the libdispatch base address.</p>
+<hr />
+<h2 id="timeline">Timeline</h2>
+<h3 id="2106-utc-problem-identified">21:06 UTC — Problem identified</h3>
+<p>CSS not loading on <code>https://crimson-comet.exe.xyz:8000/</code> because the PDS crashes after serving the HTML, and CSS/JS requests hit during the restart window → 502.</p>
+<h3 id="2108-utc-initial-investigation">21:08 UTC — Initial investigation</h3>
+<p>Confirmed all CSS/JS endpoints return valid data when the server is up:</p>
+<pre class="codehilite"><code class="language-bash">curl -s http://localhost:2583/css/system.css  # Works, returns CSS
+curl -s http://localhost:2583/               # Works, returns HTML
+# ...then server crashes, next request fails
+</code></pre>
+
+<p>Checked <code>dmesg</code>:</p>
+<pre class="codehilite"><code>traps: -qos.overcommit[68131] trap invalid opcode ip:7faa1d2e1700 sp:7faa127f9100 error:0 in libdispatch.so[5c700,7faa1d2a4000+52000]
+</code></pre>
+
+<p>Offset: <code>0x7faa1d2e1700 - 0x7faa1d2a4000 = 0x3D700</code></p>
+<p>Checked history — crashes predate all code changes (going back to 20:09 UTC).</p>
+<h3 id="2117-utc-workaround-nginx-static-file-serving">21:17 UTC — Workaround: nginx static file serving</h3>
+<p><strong>Decision</strong>: Serve all static assets (CSS, JS, HTML, fonts) directly from nginx, bypassing the crashing PDS/PLC entirely. Only proxy dynamic API calls (<code>/xrpc/</code>, <code>/api/</code>, etc.) to the backend.</p>
+<p><strong>Result</strong>: ✅ CSS loads reliably. The page renders fully styled. But API calls still fail intermittently when they hit the crash window.</p>
+<h3 id="2135-utc-reduced-restartsec">21:35 UTC — Reduced RestartSec</h3>
+<p>Changed <code>RestartSec=5</code> → <code>RestartSec=1</code> in both <code>pds.service</code> and <code>plc.service</code> to minimize the crash/restart window.</p>
+<p><strong>Result</strong>: Marginal improvement — shorter downtime between crashes but still every-other-request fails.</p>
+<h3 id="2137-utc-hypothesis-1-null-dispatch-objects-from-weak-self">21:37 UTC — Hypothesis 1: NULL dispatch objects from weak self</h3>
+<p>Looking at <code>HttpServer.m</code> <code>dispatchRequest:onConnection:</code> method:</p>
+<pre class="codehilite"><code class="language-objc">dispatch_async(dispatch_get_global_queue(...), ^{
+    dispatch_semaphore_wait(weakSelf.concurrencySemaphore, DISPATCH_TIME_FOREVER);
+
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) {
+        dispatch_semaphore_signal(weakSelf.concurrencySemaphore); // BUG: weakSelf is nil!
+        dispatch_group_leave(weakSelf.taskGroup);                 // BUG: weakSelf is nil!
+        return;
+    }
+    ...
+});
+</code></pre>
+
+<p>On Linux, <code>PDS_DISPATCH_QUEUE_STRONG</code> is <code>assign</code> (not <code>strong</code>), so dispatch objects are NOT ARC-managed. If <code>weakSelf</code> is nil, messaging it returns nil/NULL, and <code>dispatch_semaphore_signal(NULL)</code> / <code>dispatch_group_leave(NULL)</code> would crash in libdispatch.</p>
+<p><strong>Fix attempt</strong>: Removed the nil-path dispatch calls entirely (just <code>return</code> if strongSelf is nil).</p>
+<p><strong>Result</strong>: ❌ Still crashes. The nil-self path wasn't being hit — the server object is alive during normal operation.</p>
+<h3 id="2140-utc-hypothesis-2-dangling-dispatch-objects-assign-property">21:40 UTC — Hypothesis 2: Dangling dispatch objects (assign property)</h3>
+<p>Since dispatch objects are <code>assign</code> on Linux, they could be freed while async blocks still hold references via <code>strongSelf.concurrencySemaphore</code> etc.</p>
+<p><strong>Fix attempt</strong>: Capture dispatch objects as local variables with explicit <code>dispatch_retain</code>/<code>dispatch_release</code>:</p>
+<pre class="codehilite"><code class="language-objc">dispatch_semaphore_t semaphore = self.concurrencySemaphore;
+dispatch_group_t group = self.taskGroup;
+dispatch_queue_t serverQ = self.serverQueue;
+dispatch_retain(semaphore);
+dispatch_retain(group);
+dispatch_retain(serverQ);
+// ... use captured locals in block, dispatch_release in all paths
+</code></pre>
+
+<p>Verified <code>dispatch_retain</code>/<code>dispatch_release</code> work correctly on this libdispatch build:</p>
+<pre class="codehilite"><code class="language-bash"># Test program: create, retain, release, release — no crash
+clang -o /tmp/test_dispatch test.m -ldispatch
+/tmp/test_dispatch  # &quot;created, retained, released, final release&quot; — OK
+</code></pre>
+
+<p><strong>Result</strong>: ❌ Still crashes at same offset <code>+0x3D700</code>. The dispatch objects weren't being freed prematurely — the server object stays alive.</p>
+<h3 id="2142-utc-core-dump-analysis">21:42 UTC — Core dump analysis</h3>
+<p>Enabled core dumps and caught one:</p>
+<pre class="codehilite"><code class="language-bash">ulimit -c unlimited
+sudo sysctl kernel.core_pattern=/tmp/core.%e.%p
+./build-linux/bin/kaszlak serve ...
+curl http://localhost:2583/
+# Crash → core dump at /tmp/core.-qos.overcommit.71085
+</code></pre>
+
+<p>GDB analysis:</p>
+<pre class="codehilite"><code>Program terminated with signal SIGILL, Illegal instruction.
+#0  dispatch_group_leave () from /usr/local/lib/libdispatch.so
+#1  __41_i_HttpServer__readRequestFromConnection__block_invoke
+    at HttpServer.m:378
+#2  -[PDSNetworkConnectionLinux processReadRequests:error:]
+    at PDSNetworkTransportLinux.m:462
+#3  -[PDSNetworkConnectionLinux handleRead]
+    at PDSNetworkTransportLinux.m:388
+#4  __42_i_PDSNetworkConnectionLinux__setupSources_block_invoke
+    at PDSNetworkTransportLinux.m:366
+#5  _dispatch_client_callout () from libdispatch.so
+#6  _dispatch_continuation_pop () from libdispatch.so
+#7  _dispatch_source_latch_and_call () from libdispatch.so
+...
+</code></pre>
+
+<p><strong>Key finding</strong>: The crash is <code>dispatch_group_leave()</code> called inside the <code>readRequestFromConnection</code> completion block. <code>dispatch_group_leave</code> with an already-zero count triggers <code>__builtin_trap()</code> (UD2 instruction) inside libdispatch → SIGILL.</p>
+<p>The crash is NOT from the <code>dispatchRequest</code> path I was fixing earlier. It's from the <strong>read completion</strong> path.</p>
+<h3 id="2143-utc-root-cause-analysis">21:43 UTC — Root cause analysis</h3>
+<p>The <code>readRequestFromConnection</code> method:
+1. Calls <code>dispatch_group_enter(group)</code>
+2. Starts a <code>receiveWithMinimumLength:completion:</code> async read
+3. When data arrives, the completion block calls <code>handleReceivedData</code> then <code>dispatch_group_leave(group)</code></p>
+<p>The completion is called by <code>processReadRequests:error:</code> in <code>PDSNetworkTransportLinux.m</code>, which runs a <strong>while loop</strong> over all pending read requests. The flow:</p>
+<ol>
+<li><code>handleRead</code> receives EOF (<code>received == 0</code>) → calls <code>processReadRequests:YES error:nil</code></li>
+<li><code>processReadRequests</code> loops, fires completion with <code>(data, isComplete=YES, nil)</code></li>
+<li>Completion calls <code>handleReceivedData</code> → dispatches the HTTP response → tries to set up a new read</li>
+<li>But <code>handleReceivedData</code> → <code>readRequestFromConnection</code> returns early (pendingDispatchCount &gt; 0)</li>
+<li>Completion calls <code>dispatch_group_leave(group)</code> — <strong>balanced</strong> (one enter, one leave)</li>
+<li>Back in <code>handleRead</code>, after <code>processReadRequests</code> returns, it calls <code>[self cancel]</code></li>
+<li><code>cancel</code> may trigger dispatch source cancellation → more callbacks → potentially another <code>dispatch_group_leave</code></li>
+</ol>
+<p>OR: the <code>processReadRequests</code> while loop processes multiple pending reads (if &gt;1 was queued), each calling <code>dispatch_group_leave</code> but only one <code>dispatch_group_enter</code> was done.</p>
+<p><strong>The fundamental issue</strong>: <code>dispatch_group_enter</code>/<code>leave</code> is used for individual socket reads, but the completion callback can fire in unexpected contexts (dispatch source callbacks, cancellation) where the group balance assumption breaks.</p>
+<h3 id="2144-utc-fix-attempt-3-remove-group-from-read-path">21:44 UTC — Fix attempt 3: Remove group from read path</h3>
+<p>The <code>taskGroup</code> is used for:
+1. Waiting for all in-flight operations during server shutdown
+2. Tracking concurrent request processing</p>
+<p>The individual socket reads don't need group tracking — they're triggered by dispatch sources (which have their own lifecycle). Only <code>dispatchRequest</code> needs the group for concurrency management.</p>
+<p><strong>Fix</strong>: Remove <code>dispatch_group_enter</code>/<code>leave</code> from <code>readRequestFromConnection</code> entirely. The read completion just processes data and dispatches if needed — no group involvement.</p>
+<pre class="codehilite"><code class="language-objc">// Before: 
+dispatch_group_enter(self.taskGroup);
+[connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(...){
+    ...
+    dispatch_group_leave(group);
+}];
+
+// After:
+[connection receiveWithMinimumLength:1 maximumLength:UINT32_MAX completion:^(...){
+    ...
+    // No group involvement
+}];
+</code></pre>
+
+<p><strong>Result</strong>: ❌ Still crashes at same location. The crash pattern <code>200 000 000 000 000 200 000 000 000 000</code> persists.</p>
+<p><strong>Analysis</strong>: This was surprising. Even without the group_enter/leave in our code, the crash still happens in <code>dispatch_group_leave</code> at the same libdispatch offset. This means either:
+1. The old binary wasn't properly deployed (checked — it was rebuilt and restarted)
+2. There's ANOTHER dispatch_group_leave somewhere in the call chain
+3. The symbol <code>dispatch_group_leave</code> in the backtrace is misleading (the crash address +0x3D700 maps to <code>dispatch_get_specific</code> in objdump, not <code>dispatch_group_leave</code>)</p>
+<h3 id="current-status-2144-utc">Current status (21:44 UTC)</h3>
+<p>The crash persists. The <code>+0x3D700</code> offset in libdispatch is hit consistently after every request.</p>
+<h2 id="what-we-know-for-certain">What we know for certain</h2>
+<ol>
+<li><strong>The crash is in libdispatch</strong>, specifically in a GCD overcommit worker thread</li>
+<li><strong>It happens after every HTTP request</strong> — the request completes successfully (status 200 logged) then the process dies</li>
+<li><strong>The crash offset is always <code>+0x3D700</code></strong> from the libdispatch base</li>
+<li><strong>Core dump confirms</strong>: <code>dispatch_group_leave()</code> called from <code>readRequestFromConnection</code> completion block → called from <code>processReadRequests</code> → called from <code>handleRead</code> dispatch source callback</li>
+<li><strong>The libdispatch version</strong> is a very recent dev snapshot (<code>swift-DEVELOPMENT-SNAPSHOT-2026-02-19-a</code>)</li>
+<li><strong>dispatch_retain/release work correctly</strong> in isolation</li>
+<li><strong>The <code>assign</code> property storage</strong> for dispatch objects on Linux (vs <code>strong</code> on macOS) is a contributing factor to lifetime management complexity</li>
+</ol>
+<h2 id="hypotheses-still-to-investigate">Hypotheses still to investigate</h2>
+<ol>
+<li>
+<p><strong>Double dispatch_group_leave</strong>: <code>processReadRequests</code> while loop may fire the completion callback multiple times for a single <code>dispatch_group_enter</code>. Need to add logging/assertions to count enter/leave calls.</p>
+</li>
+<li>
+<p><strong>Dispatch source cancellation handler</strong>: After <code>handleRead</code> calls <code>processReadRequests</code>, it calls <code>[self cancel]</code> which cancels the dispatch source. The cancellation handler might trigger another code path that also leaves the group.</p>
+</li>
+<li>
+<p><strong>libobjc2 + libdispatch ARC interaction</strong>: On Linux with GNUstep's libobjc2, blocks captured by dispatch may have different lifetime semantics. The block might be freed while libdispatch is still executing it.</p>
+</li>
+<li>
+<p><strong>libdispatch build issue</strong>: The <code>swift-DEVELOPMENT-SNAPSHOT-2026-02-19-a</code> is a bleeding-edge build. There might be a known bug. Worth checking:</p>
+</li>
+<li>https://github.com/apple/swift-corelibs-libdispatch/issues</li>
+<li>
+<p>Whether building with an older tag (e.g., <code>swift-5.10-RELEASE</code>) fixes the issue</p>
+</li>
+<li>
+<p><strong>NWConnection / socket lifecycle</strong>: The Linux network transport (<code>PDSNetworkTransportLinux.m</code>) uses raw sockets with dispatch sources. If the dispatch source fires after the connection object is deallocated, the callback hits freed memory.</p>
+</li>
+</ol>
+<h2 id="workaround-in-place">Workaround in place</h2>
+<p>Nginx serves all static files (HTML, CSS, JS, fonts) directly. Only API calls proxy to the PDS/PLC backends. Combined with <code>RestartSec=1</code>, this means:
+- Page always loads with full styling
+- API calls succeed ~50% of the time (first request after restart works, subsequent fail until next restart)
+- The JS UI should be updated to retry failed API calls</p>
+<h2 id="files-modified-during-debugging">Files modified during debugging</h2>
+<ul>
+<li><code>ATProtoPDS/Sources/Network/HttpServer.m</code> — dispatch_group changes (3 iterations)</li>
+<li><code>/etc/systemd/system/pds.service</code> — RestartSec=5→1</li>
+<li><code>/etc/systemd/system/plc.service</code> — RestartSec=5→1</li>
+<li><code>/etc/nginx/sites-enabled/garazyk.xyz</code> — static file serving + proxy config</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

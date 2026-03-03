@@ -155,10 +155,10 @@ XCTAssertEqual(keyBytes.length, 33);  // Compressed secp256k1
 
 ## Related Documentation
 
-- [Folder README](README.md) - Integration tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [E2E Tests](e2e.md) - End-to-end flows
-- [Federation Tests](federation.md) - Cross-PDS communication
-- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - DID resolution
-- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - Secp256k1 keys
-- [Primitives Tests](../01-repository/primitives.md) - DID validation
+- [Folder README](README) - Integration tests overview
+- [Test Index](../README) - Main test documentation index
+- [E2E Tests](e2e) - End-to-end flows
+- [Federation Tests](federation) - Cross-PDS communication
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution) - DID resolution
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto) - Secp256k1 keys
+- [Primitives Tests](../01-repository/primitives) - DID validation

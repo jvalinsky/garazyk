@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Migration Strategy - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Database Migration Strategy</h1>
+            </div>
+            <h1 id="database-migration-strategy">Database Migration Strategy</h1>
+<h2 id="overview">Overview</h2>
+<p>The PDS uses a structured migration strategy to evolve database schemas safely over time. This document covers versioning approaches, compatibility considerations, and migration planning strategies.</p>
+<h2 id="schema-versioning">Schema Versioning</h2>
+<h3 id="version-tracking">Version Tracking</h3>
+<p>Each database maintains its schema version in a dedicated table:</p>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE schema_version (
+    version INTEGER PRIMARY KEY,
+    applied_at DATETIME NOT NULL,
+    description TEXT
+);
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m</code></p>
+<h3 id="version-numbering">Version Numbering</h3>
+<p>Migrations use sequential integer versioning:</p>
+<pre class="codehilite"><code>Version 1: Initial schema
+Version 2: Add invite codes table
+Version 3: Add refresh tokens table
+Version 4: Add JWT signing keys table
+Version 5: Add DID cache table
+...
+</code></pre>
+
+<p>Each migration increments the version number by 1, ensuring a clear upgrade path.</p>
+<h3 id="checking-current-version">Checking Current Version</h3>
+<pre class="codehilite"><code class="language-objc">// Query current schema version
+- (NSInteger)currentSchemaVersion:(PDSDatabase *)database error:(NSError **)error {
+    NSString *query = @&quot;SELECT MAX(version) FROM schema_version&quot;;
+    NSArray *results = [database executeQuery:query error:error];
+
+    if (results.count &gt; 0) {
+        return [results[0][@&quot;version&quot;] integerValue];
+    }
+
+    return 0; // No schema version found
+}
+</code></pre>
+
+<h2 id="migration-types">Migration Types</h2>
+<h3 id="additive-migrations">Additive Migrations</h3>
+<p>Additive migrations add new tables, columns, or indexes without modifying existing structures. These are the safest type of migration.</p>
+<h4 id="adding-a-new-table">Adding a New Table</h4>
+<pre class="codehilite"><code class="language-sql">-- Migration 004: Add labels table
+CREATE TABLE IF NOT EXISTS labels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target TEXT NOT NULL,
+    label TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    created_by TEXT NOT NULL,
+    UNIQUE(target, label)
+);
+
+CREATE INDEX idx_labels_target ON labels(target);
+CREATE INDEX idx_labels_label ON labels(label);
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (4, datetime('now'), 'Add labels table');
+</code></pre>
+
+<h4 id="adding-a-column">Adding a Column</h4>
+<pre class="codehilite"><code class="language-sql">-- Migration 005: Add account status column
+ALTER TABLE accounts ADD COLUMN status TEXT DEFAULT 'active';
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (5, datetime('now'), 'Add account status column');
+</code></pre>
+
+<p><strong>Key Points:</strong>
+- Always use <code>DEFAULT</code> values for new columns
+- Ensures existing rows have valid data
+- No data transformation required</p>
+<h3 id="transformative-migrations">Transformative Migrations</h3>
+<p>Transformative migrations modify existing data structures or content. These require careful planning and testing.</p>
+<h4 id="data-normalization">Data Normalization</h4>
+<pre class="codehilite"><code class="language-sql">-- Migration 006: Normalize handles to lowercase
+UPDATE accounts SET handle = LOWER(handle);
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (6, datetime('now'), 'Normalize handles to lowercase');
+</code></pre>
+
+<h4 id="column-renaming-sqlite-workaround">Column Renaming (SQLite Workaround)</h4>
+<p>SQLite doesn't support direct column renaming. Use the table recreation pattern:</p>
+<pre class="codehilite"><code class="language-sql">-- Migration 007: Rename status to account_status
+
+-- 1. Create new table with correct schema
+CREATE TABLE accounts_new (
+    did TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    handle TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    account_status TEXT DEFAULT 'active'  -- renamed column
+);
+
+-- 2. Copy data from old table
+INSERT INTO accounts_new 
+SELECT did, email, handle, password_hash, created_at, updated_at, status
+FROM accounts;
+
+-- 3. Drop old table
+DROP TABLE accounts;
+
+-- 4. Rename new table
+ALTER TABLE accounts_new RENAME TO accounts;
+
+-- 5. Recreate indexes
+CREATE INDEX idx_accounts_email ON accounts(email);
+CREATE INDEX idx_accounts_handle ON accounts(handle);
+
+-- 6. Update version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (7, datetime('now'), 'Rename status column to account_status');
+</code></pre>
+
+<h3 id="destructive-migrations">Destructive Migrations</h3>
+<p>Destructive migrations remove tables, columns, or data. These are high-risk and should be avoided when possible.</p>
+<h4 id="dropping-a-column">Dropping a Column</h4>
+<pre class="codehilite"><code class="language-sql">-- Migration 008: Remove deprecated column
+
+-- SQLite requires table recreation to drop columns
+CREATE TABLE accounts_new (
+    did TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    handle TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+    -- deprecated_field removed
+);
+
+INSERT INTO accounts_new 
+SELECT did, email, handle, password_hash, created_at, updated_at
+FROM accounts;
+
+DROP TABLE accounts;
+ALTER TABLE accounts_new RENAME TO accounts;
+
+-- Recreate indexes
+CREATE INDEX idx_accounts_email ON accounts(email);
+CREATE INDEX idx_accounts_handle ON accounts(handle);
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (8, datetime('now'), 'Remove deprecated field');
+</code></pre>
+
+<h2 id="forward-compatibility">Forward Compatibility</h2>
+<p>Forward compatibility ensures older code can work with newer database schemas.</p>
+<h3 id="design-principles">Design Principles</h3>
+<ol>
+<li><strong>Additive Changes Only</strong>: Add new tables/columns rather than modifying existing ones</li>
+<li><strong>Optional Columns</strong>: New columns should have DEFAULT values or allow NULL</li>
+<li><strong>Preserve Existing APIs</strong>: Don't change the meaning of existing columns</li>
+<li><strong>Graceful Degradation</strong>: Older code ignores new columns it doesn't understand</li>
+</ol>
+<h3 id="example-forward-compatible-column-addition">Example: Forward-Compatible Column Addition</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration 009: Add optional profile_image column
+ALTER TABLE accounts ADD COLUMN profile_image TEXT DEFAULT NULL;
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (9, datetime('now'), 'Add optional profile image');
+</code></pre>
+
+<p>Older code that doesn't know about <code>profile_image</code> will:
+- Successfully read accounts (ignoring the new column)
+- Successfully write accounts (column gets NULL or DEFAULT value)
+- Continue functioning without errors</p>
+<h3 id="code-pattern-for-forward-compatibility">Code Pattern for Forward Compatibility</h3>
+<pre class="codehilite"><code class="language-objc">// Older code reading accounts
+- (PDSAccount *)loadAccount:(NSString *)did error:(NSError **)error {
+    NSString *query = @&quot;SELECT did, email, handle, password_hash, created_at, updated_at &quot;
+                      @&quot;FROM accounts WHERE did = ?&quot;;
+    NSArray *results = [self.database executeQuery:query withParameters:@[did] error:error];
+
+    if (results.count == 0) {
+        return nil;
+    }
+
+    NSDictionary *row = results[0];
+    PDSAccount *account = [[PDSAccount alloc] init];
+    account.did = row[@&quot;did&quot;];
+    account.email = row[@&quot;email&quot;];
+    account.handle = row[@&quot;handle&quot;];
+    // ... other fields
+
+    // New profile_image column is ignored by older code
+    return account;
+}
+</code></pre>
+
+<h2 id="backward-compatibility">Backward Compatibility</h2>
+<p>Backward compatibility ensures newer code can work with older database schemas.</p>
+<h3 id="design-principles_1">Design Principles</h3>
+<ol>
+<li><strong>Check Column Existence</strong>: Verify columns exist before using them</li>
+<li><strong>Provide Defaults</strong>: Handle missing columns gracefully</li>
+<li><strong>Conditional Logic</strong>: Use different code paths based on schema version</li>
+<li><strong>Fallback Behavior</strong>: Degrade gracefully when features aren't available</li>
+</ol>
+<h3 id="example-backward-compatible-column-access">Example: Backward-Compatible Column Access</h3>
+<pre class="codehilite"><code class="language-objc">// Newer code that handles both old and new schemas
+- (PDSAccount *)loadAccount:(NSString *)did error:(NSError **)error {
+    // Check if profile_image column exists
+    BOOL hasProfileImage = [self columnExists:@&quot;profile_image&quot; inTable:@&quot;accounts&quot;];
+
+    NSString *query;
+    if (hasProfileImage) {
+        query = @&quot;SELECT did, email, handle, password_hash, created_at, updated_at, profile_image &quot;
+                @&quot;FROM accounts WHERE did = ?&quot;;
+    } else {
+        query = @&quot;SELECT did, email, handle, password_hash, created_at, updated_at &quot;
+                @&quot;FROM accounts WHERE did = ?&quot;;
+    }
+
+    NSArray *results = [self.database executeQuery:query withParameters:@[did] error:error];
+
+    if (results.count == 0) {
+        return nil;
+    }
+
+    NSDictionary *row = results[0];
+    PDSAccount *account = [[PDSAccount alloc] init];
+    account.did = row[@&quot;did&quot;];
+    account.email = row[@&quot;email&quot;];
+    account.handle = row[@&quot;handle&quot;];
+    // ... other fields
+
+    // Only set profile_image if column exists
+    if (hasProfileImage &amp;&amp; row[@&quot;profile_image&quot;] != [NSNull null]) {
+        account.profileImage = row[@&quot;profile_image&quot;];
+    }
+
+    return account;
+}
+
+// Helper method to check column existence
+- (BOOL)columnExists:(NSString *)columnName inTable:(NSString *)tableName {
+    NSString *query = @&quot;PRAGMA table_info(?)&quot;;
+    NSArray *results = [self.database executeQuery:query withParameters:@[tableName] error:nil];
+
+    for (NSDictionary *row in results) {
+        if ([row[@&quot;name&quot;] isEqualToString:columnName]) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+</code></pre>
+
+<h3 id="version-based-conditional-logic">Version-Based Conditional Logic</h3>
+<pre class="codehilite"><code class="language-objc">// Execute different logic based on schema version
+- (void)performOperation:(NSError **)error {
+    NSInteger version = [self currentSchemaVersion:self.database error:error];
+
+    if (version &gt;= 9) {
+        // Use new profile_image feature
+        [self updateProfileImage:@&quot;https://example.com/image.jpg&quot; error:error];
+    } else {
+        // Fall back to older behavior
+        PDS_LOG_DB_INFO(@&quot;Profile images not supported in schema version %ld&quot;, (long)version);
+    }
+}
+</code></pre>
+
+<h2 id="migration-planning">Migration Planning</h2>
+<h3 id="pre-migration-checklist">Pre-Migration Checklist</h3>
+<p>Before deploying a migration:</p>
+<ul>
+<li>[ ] <strong>Backup Database</strong>: Always backup before migration</li>
+<li>[ ] <strong>Test on Staging</strong>: Run migration on staging environment</li>
+<li>[ ] <strong>Measure Duration</strong>: Time the migration with production-like data</li>
+<li>[ ] <strong>Review Rollback Plan</strong>: Document how to revert if needed</li>
+<li>[ ] <strong>Check Disk Space</strong>: Ensure sufficient space for migration</li>
+<li>[ ] <strong>Verify Indexes</strong>: Confirm indexes will be recreated</li>
+<li>[ ] <strong>Test Compatibility</strong>: Verify old and new code work with migrated schema</li>
+</ul>
+<h3 id="migration-execution-flow">Migration Execution Flow</h3>
+<pre class="codehilite"><code>1. Check current schema version
+   ↓
+2. Determine target schema version
+   ↓
+3. For each migration from current to target:
+   a. Begin transaction
+   b. Execute migration SQL
+   c. Update schema_version table
+   d. Commit transaction
+   ↓
+4. Verify schema integrity
+   ↓
+5. Update statistics (ANALYZE)
+   ↓
+6. Report success/failure
+</code></pre>
+
+<h3 id="batch-migration-pattern">Batch Migration Pattern</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m</code> (Lines 100-130)</p>
+<pre class="codehilite"><code class="language-objc">// Migrate accounts in batches for better performance
+const NSUInteger batchSize = 100;
+for (NSUInteger i = 0; i &lt; allAccounts.count; i += batchSize) {
+    if (self.cancelBlock &amp;&amp; self.cancelBlock()) {
+        // Migration cancelled
+        return NO;
+    }
+
+    NSUInteger endIndex = MIN(i + batchSize, allAccounts.count);
+    NSArray&lt;PDSDatabaseAccount *&gt; *batch = [allAccounts subarrayWithRange:NSMakeRange(i, endIndex - i)];
+
+    NSError *createError = nil;
+    BOOL batchSuccess = [serviceDb createAccounts:batch error:&amp;createError];
+    if (!batchSuccess) {
+        PDS_LOG_DB_ERROR(@&quot;Migration failed to create account batch: %@&quot;, createError);
+        return NO;
+    }
+
+    // Update progress
+    [self updateProgress:(0.1 + 0.3 * ((double)(i + batch.count) / allAccounts.count))
+                  status:[NSString stringWithFormat:@&quot;Migrating accounts (%lu/%lu)&quot;, 
+                         (unsigned long)(i + batch.count), (unsigned long)allAccounts.count]];
+}
+</code></pre>
+
+<p><strong>Key Benefits:</strong>
+- Reduces memory usage for large datasets
+- Provides progress feedback
+- Allows cancellation between batches
+- Improves transaction performance</p>
+<h2 id="multi-database-migration">Multi-Database Migration</h2>
+<p>The PDS uses separate databases for service-level and per-actor data. Migrations must handle both types.</p>
+<h3 id="service-database-migration">Service Database Migration</h3>
+<pre class="codehilite"><code class="language-objc">// Migrate shared service database
+- (BOOL)migrateServiceDatabase:(PDSServiceDatabases *)serviceDb error:(NSError **)error {
+    NSInteger currentVersion = [self currentSchemaVersion:serviceDb.database error:error];
+    NSInteger targetVersion = [self latestSchemaVersion];
+
+    for (NSInteger version = currentVersion + 1; version &lt;= targetVersion; version++) {
+        NSString *migrationSQL = [self migrationSQLForVersion:version];
+
+        BOOL success = [serviceDb.database executeSQL:migrationSQL error:error];
+        if (!success) {
+            return NO;
+        }
+
+        // Update version
+        NSString *updateSQL = @&quot;INSERT INTO schema_version (version, applied_at, description) &quot;
+                              @&quot;VALUES (?, datetime('now'), ?)&quot;;
+        [serviceDb.database executeSQL:updateSQL 
+                        withParameters:@[@(version), [self descriptionForVersion:version]]
+                                 error:error];
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="actor-database-migration">Actor Database Migration</h3>
+<pre class="codehilite"><code class="language-objc">// Migrate per-actor databases
+- (BOOL)migrateActorDatabases:(PDSDatabasePool *)pool error:(NSError **)error {
+    NSArray&lt;NSString *&gt; *allDIDs = [pool allDIDs];
+
+    for (NSString *did in allDIDs) {
+        PDSActorStore *store = [pool storeForDID:did error:error];
+        if (!store) {
+            continue;
+        }
+
+        NSInteger currentVersion = [self currentSchemaVersion:store.database error:error];
+        NSInteger targetVersion = [self latestActorSchemaVersion];
+
+        for (NSInteger version = currentVersion + 1; version &lt;= targetVersion; version++) {
+            NSString *migrationSQL = [self actorMigrationSQLForVersion:version];
+
+            BOOL success = [store.database executeSQL:migrationSQL error:error];
+            if (!success) {
+                PDS_LOG_DB_ERROR(@&quot;Failed to migrate actor database for %@: %@&quot;, did, *error);
+                return NO;
+            }
+
+            // Update version
+            NSString *updateSQL = @&quot;INSERT INTO schema_version (version, applied_at, description) &quot;
+                                  @&quot;VALUES (?, datetime('now'), ?)&quot;;
+            [store.database executeSQL:updateSQL 
+                            withParameters:@[@(version), [self actorDescriptionForVersion:version]]
+                                     error:error];
+        }
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h2 id="migration-testing">Migration Testing</h2>
+<h3 id="unit-test-pattern">Unit Test Pattern</h3>
+<pre class="codehilite"><code class="language-objc">- (void)testMigrationFromVersion1ToVersion2 {
+    // Create database at version 1
+    PDSDatabase *db = [self createDatabaseAtVersion:1];
+
+    // Insert test data
+    [db executeSQL:@&quot;INSERT INTO accounts (did, email, handle, password_hash, created_at, updated_at) &quot;
+                   @&quot;VALUES ('did:plc:test', 'test@example.com', 'test', 'hash', datetime('now'), datetime('now'))&quot;
+             error:nil];
+
+    // Run migration to version 2
+    PDSMigrationManager *manager = [PDSMigrationManager sharedManager];
+    NSError *error = nil;
+    BOOL success = [manager migrateDatabase:db toVersion:2 error:&amp;error];
+
+    XCTAssertTrue(success, @&quot;Migration should succeed&quot;);
+    XCTAssertNil(error, @&quot;No error should occur&quot;);
+
+    // Verify schema version
+    NSInteger version = [manager currentSchemaVersion:db error:nil];
+    XCTAssertEqual(version, 2, @&quot;Schema version should be 2&quot;);
+
+    // Verify data is preserved
+    NSArray *results = [db executeQuery:@&quot;SELECT * FROM accounts WHERE did = 'did:plc:test'&quot; error:nil];
+    XCTAssertEqual(results.count, 1, @&quot;Account should still exist&quot;);
+
+    // Verify new table exists
+    NSArray *tables = [db executeQuery:@&quot;SELECT name FROM sqlite_master WHERE type='table' AND name='invite_codes'&quot; error:nil];
+    XCTAssertEqual(tables.count, 1, @&quot;invite_codes table should exist&quot;);
+}
+</code></pre>
+
+<h3 id="integration-test-pattern">Integration Test Pattern</h3>
+<pre class="codehilite"><code class="language-objc">- (void)testFullMigrationPath {
+    // Create database at version 1
+    PDSDatabase *db = [self createDatabaseAtVersion:1];
+
+    // Insert test data at each version
+    [self insertTestDataForVersion:1 inDatabase:db];
+
+    // Migrate through all versions
+    PDSMigrationManager *manager = [PDSMigrationManager sharedManager];
+    NSInteger targetVersion = [manager latestSchemaVersion];
+
+    for (NSInteger version = 2; version &lt;= targetVersion; version++) {
+        NSError *error = nil;
+        BOOL success = [manager migrateDatabase:db toVersion:version error:&amp;error];
+
+        XCTAssertTrue(success, @&quot;Migration to version %ld should succeed&quot;, (long)version);
+        XCTAssertNil(error, @&quot;No error should occur at version %ld&quot;, (long)version);
+
+        // Verify data integrity after each migration
+        [self verifyDataIntegrityAtVersion:version inDatabase:db];
+    }
+
+    // Verify final schema
+    NSInteger finalVersion = [manager currentSchemaVersion:db error:nil];
+    XCTAssertEqual(finalVersion, targetVersion, @&quot;Should be at latest version&quot;);
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-keep-migrations-small">1. Keep Migrations Small</h3>
+<p>Each migration should focus on a single logical change:</p>
+<pre class="codehilite"><code class="language-sql">-- Good: Single focused change
+-- Migration 010: Add email verification
+ALTER TABLE accounts ADD COLUMN email_verified INTEGER DEFAULT 0;
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (10, datetime('now'), 'Add email verification');
+</code></pre>
+
+<pre class="codehilite"><code class="language-sql">-- Bad: Multiple unrelated changes
+-- Migration 010: Various updates
+ALTER TABLE accounts ADD COLUMN email_verified INTEGER DEFAULT 0;
+ALTER TABLE accounts ADD COLUMN phone_number TEXT;
+CREATE TABLE notifications (...);
+-- Too many changes in one migration
+</code></pre>
+
+<h3 id="2-use-transactions">2. Use Transactions</h3>
+<p>Always wrap migrations in transactions:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)executeMigration:(NSString *)sql error:(NSError **)error {
+    [self.database beginTransaction];
+
+    BOOL success = [self.database executeSQL:sql error:error];
+
+    if (success) {
+        [self.database commitTransaction];
+    } else {
+        [self.database rollbackTransaction];
+    }
+
+    return success;
+}
+</code></pre>
+
+<h3 id="3-validate-before-migrating">3. Validate Before Migrating</h3>
+<pre class="codehilite"><code class="language-objc">- (BOOL)validateBeforeMigration:(NSError **)error {
+    // Check disk space
+    if (![self hasSufficientDiskSpace]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                        code:PDSMigrationErrorInsufficientSpace
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Insufficient disk space&quot;}];
+        }
+        return NO;
+    }
+
+    // Check database integrity
+    if (![self.database checkIntegrity:error]) {
+        return NO;
+    }
+
+    // Verify backup exists
+    if (![self hasRecentBackup]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                        code:PDSMigrationErrorNoBackup
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;No recent backup found&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="4-document-migration-impact">4. Document Migration Impact</h3>
+<pre class="codehilite"><code class="language-objc">// Migration metadata
+typedef struct {
+    NSInteger version;
+    NSString *description;
+    NSTimeInterval estimatedDuration;  // seconds
+    BOOL requiresDowntime;
+    NSString *rollbackProcedure;
+} PDSMigrationMetadata;
+
+- (PDSMigrationMetadata)metadataForVersion:(NSInteger)version {
+    switch (version) {
+        case 10:
+            return (PDSMigrationMetadata){
+                .version = 10,
+                .description = @&quot;Add email verification&quot;,
+                .estimatedDuration = 5.0,
+                .requiresDowntime = NO,
+                .rollbackProcedure = @&quot;Run migration 010_rollback.sql&quot;
+            };
+        // ... other versions
+    }
+}
+</code></pre>
+
+<h3 id="5-monitor-migration-progress">5. Monitor Migration Progress</h3>
+<pre class="codehilite"><code class="language-objc">// Progress reporting
+- (void)migrateWithProgress:(void (^)(double progress, NSString *status))progressBlock {
+    NSInteger totalSteps = [self countMigrationSteps];
+    NSInteger currentStep = 0;
+
+    for (NSInteger version = currentVersion + 1; version &lt;= targetVersion; version++) {
+        NSString *status = [NSString stringWithFormat:@&quot;Migrating to version %ld&quot;, (long)version];
+        double progress = (double)currentStep / totalSteps;
+
+        progressBlock(progress, status);
+
+        [self executeMigrationForVersion:version];
+        currentStep++;
+    }
+
+    progressBlock(1.0, @&quot;Migration complete&quot;);
+}
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./migration-rollback.md">Migration Rollback</a> — Rollback procedures and safety checks</li>
+<li><a href="./data-integrity.md">Data Integrity</a> — Verification and consistency checks</li>
+<li><a href="./zero-downtime-migrations.md">Zero-Downtime Migrations</a> — Online migration strategies</li>
+<li><a href="./migrations.md">Migrations</a> — Basic migration concepts and examples</li>
+<li><a href="./sqlite-architecture.md">SQLite Architecture</a> — Database design patterns</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

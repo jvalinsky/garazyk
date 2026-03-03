@@ -678,13 +678,13 @@ Before deploying a migration:
 ## See Also
 
 **Basic Topics:**
-- [Service Databases](./service-databases.md) — Shared database
-- [Actor Databases](./actor-databases.md) — Per-user databases
-- [WAL Mode](./wal-mode.md) — Write-Ahead Logging
-- [SQLite Architecture](./sqlite-architecture.md) — Database design
+- [Service Databases](./service-databases) — Shared database
+- [Actor Databases](./actor-databases) — Per-user databases
+- [WAL Mode](./wal-mode) — Write-Ahead Logging
+- [SQLite Architecture](./sqlite-architecture) — Database design
 
 **Advanced Topics:**
-- [Migration Strategy](./migration-strategy.md) — Planning migrations
-- [Migration Rollback](./migration-rollback.md) — Rollback procedures
-- [Data Integrity](./data-integrity.md) — Consistency checks
-- [Zero-Downtime Migrations](./zero-downtime-migrations.md) — Online migrations
+- [Migration Strategy](./migration-strategy) — Planning migrations
+- [Migration Rollback](./migration-rollback) — Rollback procedures
+- [Data Integrity](./data-integrity) — Consistency checks
+- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migrations

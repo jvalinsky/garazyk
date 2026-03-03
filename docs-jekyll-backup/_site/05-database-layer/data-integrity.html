@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Integrity Verification - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Data Integrity Verification</h1>
+            </div>
+            <h1 id="data-integrity-verification">Data Integrity Verification</h1>
+<h2 id="overview">Overview</h2>
+<p>Data integrity is critical for a PDS. This document covers verification strategies, consistency checks, repair procedures, and monitoring approaches to ensure database reliability.</p>
+<h2 id="integrity-check-types">Integrity Check Types</h2>
+<h3 id="sqlite-integrity-check">SQLite Integrity Check</h3>
+<p>The primary integrity verification uses SQLite's built-in <code>PRAGMA integrity_check</code>:</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m</code> (Lines 60-90)</p>
+<pre class="codehilite"><code class="language-objc">- (PDSHealthStatus)checkDatabaseIntegrity:(NSError **)error {
+    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSActorStore *store = [serviceDb.servicePool storeForDid:@&quot;__service__&quot; error:nil];
+
+    if (!store || !store.isOpen) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.health&quot;
+                                        code:-1
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Service database not available&quot;}];
+        }
+        return PDSHealthStatusCritical;
+    }
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
+    int result = sqlite3_prepare_v2(store.db, &quot;PRAGMA integrity_check&quot;, -1, &amp;stmt, NULL);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.health&quot;
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to prepare integrity check&quot;}];
+        }
+        return PDSHealthStatusCritical;
+    }
+
+    NSString *checkResult = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *text = (const char *)sqlite3_column_text(stmt, 0);
+        checkResult = [NSString stringWithUTF8String:text];
+    }
+
+    if ([checkResult isEqualToString:@&quot;ok&quot;]) {
+        return PDSHealthStatusHealthy;
+    } else if ([checkResult.lowercaseString containsString:@&quot;ok&quot;]) {
+        return PDSHealthStatusWarning;
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.health&quot;
+                                        code:-2
+                                    userInfo:@{NSLocalizedDescriptionKey: checkResult ?: @&quot;Integrity check failed&quot;}];
+        }
+        return PDSHealthStatusCritical;
+    }
+}
+</code></pre>
+
+<p><strong>What it checks:</strong>
+- B-tree structure validity
+- Page checksums
+- Index consistency
+- Freelist integrity</p>
+<h3 id="foreign-key-constraint-check">Foreign Key Constraint Check</h3>
+<p>Verify referential integrity between tables:</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m</code> (Lines 92-120)</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)checkForeignKeys:(NSError **)error {
+    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSActorStore *store = [serviceDb.servicePool storeForDid:@&quot;__service__&quot; error:nil];
+
+    if (!store) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.health&quot;
+                                        code:-1
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Service database not available&quot;}];
+        }
+        return NO;
+    }
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
+    int result = sqlite3_prepare_v2(store.db, &quot;PRAGMA foreign_key_check&quot;, -1, &amp;stmt, NULL);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.health&quot;
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to prepare foreign key check&quot;}];
+        }
+        return NO;
+    }
+
+    BOOL hasViolations = NO;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        hasViolations = YES;
+        break;
+    }
+
+    return !hasViolations;
+}
+</code></pre>
+
+<p><strong>What it checks:</strong>
+- Foreign key references exist
+- No orphaned records
+- Referential integrity maintained</p>
+<h3 id="quick-integrity-check">Quick Integrity Check</h3>
+<p>For faster checks, use <code>PRAGMA quick_check</code>:</p>
+<pre class="codehilite"><code class="language-sql">PRAGMA quick_check;
+</code></pre>
+
+<p><strong>Differences from full check:</strong>
+- Skips BLOB content verification
+- Faster execution (seconds vs minutes)
+- Good for routine monitoring
+- Use full check for thorough validation</p>
+<h2 id="consistency-checks">Consistency Checks</h2>
+<h3 id="repository-consistency">Repository Consistency</h3>
+<p>Verify repository data structures are valid:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)verifyRepositoryConsistency:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.pool storeForDID:did error:error];
+    if (!store) {
+        return NO;
+    }
+
+    // 1. Check repo_root exists
+    NSString *query = @&quot;SELECT cid FROM repo_root LIMIT 1&quot;;
+    NSArray *results = [store executeQuery:query error:error];
+    if (results.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:PDSIntegrityErrorNoRepoRoot
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;No repo root found&quot;}];
+        }
+        return NO;
+    }
+
+    NSData *rootCID = results[0][@&quot;cid&quot;];
+
+    // 2. Verify root CID exists in blocks
+    query = @&quot;SELECT cid FROM ipld_blocks WHERE cid = ?&quot;;
+    results = [store executeQuery:query withParameters:@[rootCID] error:error];
+    if (results.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:PDSIntegrityErrorMissingBlock
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Root CID not found in blocks&quot;}];
+        }
+        return NO;
+    }
+
+    // 3. Verify all records have corresponding blocks
+    query = @&quot;SELECT r.uri, r.cid FROM records r &quot;
+            @&quot;LEFT JOIN ipld_blocks b ON r.cid = b.cid &quot;
+            @&quot;WHERE b.cid IS NULL&quot;;
+    results = [store executeQuery:query error:error];
+    if (results.count &gt; 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:PDSIntegrityErrorOrphanedRecords
+                                    userInfo:@{
+                                        NSLocalizedDescriptionKey: @&quot;Records without blocks found&quot;,
+                                        @&quot;count&quot;: @(results.count)
+                                    }];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="blob-consistency">Blob Consistency</h3>
+<p>Verify blob references are valid:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)verifyBlobConsistency:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.pool storeForDID:did error:error];
+    if (!store) {
+        return NO;
+    }
+
+    // 1. Check for orphaned blobs (no record references)
+    NSString *query = @&quot;SELECT b.cid FROM blobs b &quot;
+                      @&quot;LEFT JOIN records r ON r.value LIKE '%' || b.cid || '%' &quot;
+                      @&quot;WHERE r.uri IS NULL&quot;;
+    NSArray *orphanedBlobs = [store executeQuery:query error:error];
+
+    if (orphanedBlobs.count &gt; 0) {
+        PDS_LOG_DB_WARNING(@&quot;Found %lu orphaned blobs for %@&quot;, 
+                          (unsigned long)orphanedBlobs.count, did);
+    }
+
+    // 2. Check for missing blobs (record references but no blob)
+    query = @&quot;SELECT r.uri, r.value FROM records r &quot;
+            @&quot;WHERE r.value LIKE '%\&quot;$type\&quot;:\&quot;blob\&quot;%'&quot;;
+    NSArray *recordsWithBlobs = [store executeQuery:query error:error];
+
+    NSMutableArray *missingBlobs = [NSMutableArray array];
+    for (NSDictionary *record in recordsWithBlobs) {
+        NSData *valueData = record[@&quot;value&quot;];
+        NSDictionary *value = [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil];
+
+        // Extract blob CIDs from record value
+        NSArray *blobCIDs = [self extractBlobCIDsFromValue:value];
+
+        for (NSString *blobCID in blobCIDs) {
+            NSString *checkQuery = @&quot;SELECT cid FROM blobs WHERE cid = ?&quot;;
+            NSArray *results = [store executeQuery:checkQuery withParameters:@[blobCID] error:nil];
+
+            if (results.count == 0) {
+                [missingBlobs addObject:@{@&quot;uri&quot;: record[@&quot;uri&quot;], @&quot;cid&quot;: blobCID}];
+            }
+        }
+    }
+
+    if (missingBlobs.count &gt; 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:PDSIntegrityErrorMissingBlobs
+                                    userInfo:@{
+                                        NSLocalizedDescriptionKey: @&quot;Missing blob references&quot;,
+                                        @&quot;missing&quot;: missingBlobs
+                                    }];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="account-consistency">Account Consistency</h3>
+<p>Verify account data is consistent:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)verifyAccountConsistency:(NSError **)error {
+    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+
+    // 1. Check for duplicate handles
+    NSString *query = @&quot;SELECT handle, COUNT(*) as count FROM accounts &quot;
+                      @&quot;GROUP BY handle HAVING count &gt; 1&quot;;
+    NSArray *duplicates = [serviceDb executeQuery:query error:error];
+
+    if (duplicates.count &gt; 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:PDSIntegrityErrorDuplicateHandles
+                                    userInfo:@{
+                                        NSLocalizedDescriptionKey: @&quot;Duplicate handles found&quot;,
+                                        @&quot;duplicates&quot;: duplicates
+                                    }];
+        }
+        return NO;
+    }
+
+    // 2. Check for duplicate emails
+    query = @&quot;SELECT email, COUNT(*) as count FROM accounts &quot;
+            @&quot;WHERE email IS NOT NULL &quot;
+            @&quot;GROUP BY email HAVING count &gt; 1&quot;;
+    duplicates = [serviceDb executeQuery:query error:error];
+
+    if (duplicates.count &gt; 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:PDSIntegrityErrorDuplicateEmails
+                                    userInfo:@{
+                                        NSLocalizedDescriptionKey: @&quot;Duplicate emails found&quot;,
+                                        @&quot;duplicates&quot;: duplicates
+                                    }];
+        }
+        return NO;
+    }
+
+    // 3. Verify all accounts have actor databases
+    query = @&quot;SELECT did FROM accounts&quot;;
+    NSArray *accounts = [serviceDb executeQuery:query error:error];
+
+    for (NSDictionary *account in accounts) {
+        NSString *did = account[@&quot;did&quot;];
+        PDSActorStore *store = [self.pool storeForDID:did error:nil];
+
+        if (!store) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                            code:PDSIntegrityErrorMissingActorDB
+                                        userInfo:@{
+                                            NSLocalizedDescriptionKey: @&quot;Missing actor database&quot;,
+                                            @&quot;did&quot;: did
+                                        }];
+            }
+            return NO;
+        }
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h2 id="fragmentation-analysis">Fragmentation Analysis</h2>
+<h3 id="measuring-fragmentation">Measuring Fragmentation</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m</code> (Lines 150-170)</p>
+<pre class="codehilite"><code class="language-objc">- (NSUInteger)getFragmentationPercent {
+    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSActorStore *store = [serviceDb.servicePool storeForDid:@&quot;__service__&quot; error:nil];
+
+    if (!store || !store.isOpen) {
+        return 0;
+    }
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(store.db, 
+        &quot;SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'&quot;, 
+        -1, &amp;stmt, NULL) != SQLITE_OK) {
+        return 0;
+    }
+
+    double fragmentation = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        fragmentation = sqlite3_column_double(stmt, 0);
+    }
+
+    return (NSUInteger)(fragmentation * 100);
+}
+</code></pre>
+
+<h3 id="fragmentation-thresholds">Fragmentation Thresholds</h3>
+<pre class="codehilite"><code class="language-objc">- (PDSFragmentationLevel)assessFragmentation:(NSUInteger)percent {
+    if (percent &lt; 10) {
+        return PDSFragmentationLevelLow;
+    } else if (percent &lt; 30) {
+        return PDSFragmentationLevelModerate;
+    } else if (percent &lt; 50) {
+        return PDSFragmentationLevelHigh;
+    } else {
+        return PDSFragmentationLevelCritical;
+    }
+}
+</code></pre>
+
+<p><strong>Recommended Actions:</strong>
+- <strong>Low (&lt; 10%)</strong>: No action needed
+- <strong>Moderate (10-30%)</strong>: Schedule VACUUM during maintenance window
+- <strong>High (30-50%)</strong>: VACUUM recommended soon
+- <strong>Critical (&gt; 50%)</strong>: VACUUM urgently needed</p>
+<h2 id="repair-procedures">Repair Procedures</h2>
+<h3 id="vacuum-operation">VACUUM Operation</h3>
+<p>Rebuild database to eliminate fragmentation:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)vacuumDatabase:(NSString *)databasePath error:(NSError **)error {
+    sqlite3 *db;
+    int result = sqlite3_open(databasePath.UTF8String, &amp;db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to open database&quot;}];
+        }
+        return NO;
+    }
+
+    // VACUUM requires exclusive lock and cannot run in transaction
+    PDS_LOG_DB_INFO(@&quot;Starting VACUUM on %@&quot;, databasePath);
+
+    result = sqlite3_exec(db, &quot;VACUUM&quot;, NULL, NULL, NULL);
+
+    sqlite3_close(db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;VACUUM failed&quot;}];
+        }
+        return NO;
+    }
+
+    PDS_LOG_DB_INFO(@&quot;VACUUM completed on %@&quot;, databasePath);
+    return YES;
+}
+</code></pre>
+
+<p><strong>Important Notes:</strong>
+- VACUUM requires 2x database size in free disk space
+- Database is locked during VACUUM (no writes)
+- Can take minutes to hours for large databases
+- Always backup before VACUUM</p>
+<h3 id="incremental-vacuum">Incremental VACUUM</h3>
+<p>For databases that can't afford downtime:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)incrementalVacuum:(NSString *)databasePath 
+                    pages:(NSInteger)pageCount 
+                    error:(NSError **)error {
+    sqlite3 *db;
+    int result = sqlite3_open(databasePath.UTF8String, &amp;db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to open database&quot;}];
+        }
+        return NO;
+    }
+
+    // Enable auto_vacuum=incremental if not already set
+    sqlite3_exec(db, &quot;PRAGMA auto_vacuum=INCREMENTAL&quot;, NULL, NULL, NULL);
+
+    // Vacuum specified number of pages
+    NSString *sql = [NSString stringWithFormat:@&quot;PRAGMA incremental_vacuum(%ld)&quot;, (long)pageCount];
+    result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+
+    sqlite3_close(db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Incremental VACUUM failed&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="reindex-operation">REINDEX Operation</h3>
+<p>Rebuild indexes to fix corruption:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)reindexDatabase:(NSString *)databasePath error:(NSError **)error {
+    sqlite3 *db;
+    int result = sqlite3_open(databasePath.UTF8String, &amp;db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to open database&quot;}];
+        }
+        return NO;
+    }
+
+    PDS_LOG_DB_INFO(@&quot;Starting REINDEX on %@&quot;, databasePath);
+
+    result = sqlite3_exec(db, &quot;REINDEX&quot;, NULL, NULL, NULL);
+
+    sqlite3_close(db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;REINDEX failed&quot;}];
+        }
+        return NO;
+    }
+
+    PDS_LOG_DB_INFO(@&quot;REINDEX completed on %@&quot;, databasePath);
+    return YES;
+}
+</code></pre>
+
+<h3 id="analyze-operation">ANALYZE Operation</h3>
+<p>Update query planner statistics:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)analyzeDatabase:(NSString *)databasePath error:(NSError **)error {
+    sqlite3 *db;
+    int result = sqlite3_open(databasePath.UTF8String, &amp;db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to open database&quot;}];
+        }
+        return NO;
+    }
+
+    // ANALYZE collects statistics for query optimization
+    result = sqlite3_exec(db, &quot;ANALYZE&quot;, NULL, NULL, NULL);
+
+    sqlite3_close(db);
+
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSIntegrityErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;ANALYZE failed&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h2 id="monitoring-and-health-checks">Monitoring and Health Checks</h2>
+<h3 id="comprehensive-health-check">Comprehensive Health Check</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m</code> (Lines 20-60)</p>
+<pre class="codehilite"><code class="language-objc">- (NSDictionary&lt;NSString *, id&gt; *)performHealthCheck {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    NSMutableArray *warnings = [NSMutableArray array];
+    NSMutableArray *errors = [NSMutableArray array];
+
+    result[@&quot;timestamp&quot;] = @([[NSDate date] timeIntervalSince1970]);
+    result[@&quot;status&quot;] = @&quot;healthy&quot;;
+
+    // Check database integrity
+    NSError *integrityError = nil;
+    PDSHealthStatus integrityStatus = [self checkDatabaseIntegrity:&amp;integrityError];
+    result[@&quot;database_integrity&quot;] = @(integrityStatus);
+
+    if (integrityStatus == PDSHealthStatusCritical) {
+        [errors addObject:integrityError.localizedDescription ?: @&quot;Database integrity check failed&quot;];
+        result[@&quot;status&quot;] = @&quot;critical&quot;;
+    } else if (integrityStatus == PDSHealthStatusWarning) {
+        [warnings addObject:integrityError.localizedDescription ?: @&quot;Database integrity warning&quot;];
+        result[@&quot;status&quot;] = @&quot;warning&quot;;
+    }
+
+    // Get table sizes
+    NSDictionary *tableSizes = [self getTableSizes];
+    result[@&quot;table_sizes&quot;] = tableSizes;
+
+    // Check fragmentation
+    NSUInteger fragmentation = [self getFragmentationPercent];
+    result[@&quot;fragmentation_percent&quot;] = @(fragmentation);
+
+    if (fragmentation &gt; 50) {
+        [warnings addObject:[NSString stringWithFormat:@&quot;High fragmentation: %lu%%&quot;, (unsigned long)fragmentation]];
+    }
+
+    // Get pool metrics
+    NSDictionary *metrics = [[PDSServiceDatabases sharedInstance].servicePool collectMetrics];
+    result[@&quot;pool_metrics&quot;] = metrics;
+
+    // Check file handle usage
+    NSUInteger openHandles = [metrics[@&quot;open_file_handles&quot;] unsignedIntegerValue];
+    NSUInteger maxHandles = [metrics[@&quot;max_size&quot;] unsignedIntegerValue];
+    result[@&quot;file_handles&quot;] = @{@&quot;open&quot;: @(openHandles), @&quot;max&quot;: @(maxHandles)};
+
+    if (openHandles &gt;= maxHandles * 0.9) {
+        [warnings addObject:@&quot;File handle pool approaching capacity&quot;];
+    }
+
+    result[@&quot;warnings&quot;] = warnings;
+    result[@&quot;errors&quot;] = errors;
+
+    return result;
+}
+</code></pre>
+
+<h3 id="scheduled-integrity-checks">Scheduled Integrity Checks</h3>
+<p>Run integrity checks on a schedule:</p>
+<pre class="codehilite"><code class="language-objc">- (void)scheduleIntegrityChecks {
+    // Run quick check every hour
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
+
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
+    dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, 3600 * NSEC_PER_SEC, 60 * NSEC_PER_SEC);
+
+    dispatch_source_set_event_handler(timer, ^{
+        [self performQuickIntegrityCheck];
+    });
+
+    dispatch_resume(timer);
+    self.integrityCheckTimer = timer;
+}
+
+- (void)performQuickIntegrityCheck {
+    NSError *error = nil;
+
+    // Quick check on service database
+    if (![self quickCheckDatabase:self.serviceDb.path error:&amp;error]) {
+        PDS_LOG_DB_ERROR(@&quot;Quick integrity check failed: %@&quot;, error);
+        [self notifyIntegrityFailure:error];
+    }
+
+    // Check fragmentation
+    NSUInteger fragmentation = [self getFragmentationPercent];
+    if (fragmentation &gt; 50) {
+        PDS_LOG_DB_WARNING(@&quot;High fragmentation detected: %lu%%&quot;, (unsigned long)fragmentation);
+        [self scheduleVacuum];
+    }
+}
+</code></pre>
+
+<h3 id="continuous-monitoring">Continuous Monitoring</h3>
+<p>Monitor database health metrics:</p>
+<pre class="codehilite"><code class="language-objc">- (void)startContinuousMonitoring {
+    self.monitoringQueue = dispatch_queue_create(&quot;com.atproto.pds.db.monitor&quot;, DISPATCH_QUEUE_SERIAL);
+
+    dispatch_async(self.monitoringQueue, ^{
+        while (self.isMonitoring) {
+            @autoreleasepool {
+                NSDictionary *metrics = [self collectMetrics];
+                [self recordMetrics:metrics];
+
+                // Check for anomalies
+                [self detectAnomalies:metrics];
+
+                // Sleep for 60 seconds
+                [NSThread sleepForTimeInterval:60.0];
+            }
+        }
+    });
+}
+
+- (void)detectAnomalies:(NSDictionary *)metrics {
+    // Check for sudden size increases
+    NSUInteger currentSize = [metrics[@&quot;database_size&quot;] unsignedIntegerValue];
+    NSUInteger previousSize = [self.previousMetrics[@&quot;database_size&quot;] unsignedIntegerValue];
+
+    if (currentSize &gt; previousSize * 1.5) {
+        PDS_LOG_DB_WARNING(@&quot;Database size increased by 50%% in last minute&quot;);
+    }
+
+    // Check for high error rates
+    NSUInteger errorCount = [metrics[@&quot;error_count&quot;] unsignedIntegerValue];
+    if (errorCount &gt; 10) {
+        PDS_LOG_DB_ERROR(@&quot;High error rate detected: %lu errors&quot;, (unsigned long)errorCount);
+    }
+
+    self.previousMetrics = metrics;
+}
+</code></pre>
+
+<h2 id="automated-repair">Automated Repair</h2>
+<h3 id="self-healing-database">Self-Healing Database</h3>
+<p>Automatically repair minor issues:</p>
+<pre class="codehilite"><code class="language-objc">- (void)performAutomatedRepair {
+    NSError *error = nil;
+
+    // 1. Check integrity
+    PDSHealthStatus status = [self checkDatabaseIntegrity:&amp;error];
+
+    if (status == PDSHealthStatusCritical) {
+        PDS_LOG_DB_ERROR(@&quot;Critical integrity failure, manual intervention required: %@&quot;, error);
+        [self notifyAdministrator:error];
+        return;
+    }
+
+    // 2. Check fragmentation
+    NSUInteger fragmentation = [self getFragmentationPercent];
+    if (fragmentation &gt; 30) {
+        PDS_LOG_DB_INFO(@&quot;High fragmentation (%lu%%), running VACUUM&quot;, (unsigned long)fragmentation);
+        [self vacuumDatabase:self.database.path error:&amp;error];
+    }
+
+    // 3. Rebuild indexes if needed
+    if (![self checkForeignKeys:&amp;error]) {
+        PDS_LOG_DB_WARNING(@&quot;Foreign key violations detected, rebuilding indexes&quot;);
+        [self reindexDatabase:self.database.path error:&amp;error];
+    }
+
+    // 4. Update statistics
+    [self analyzeDatabase:self.database.path error:&amp;error];
+
+    PDS_LOG_DB_INFO(@&quot;Automated repair completed&quot;);
+}
+</code></pre>
+
+<h3 id="orphan-cleanup">Orphan Cleanup</h3>
+<p>Remove orphaned data:</p>
+<pre class="codehilite"><code class="language-objc">- (NSUInteger)cleanupOrphanedBlobs:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.pool storeForDID:did error:error];
+    if (!store) {
+        return 0;
+    }
+
+    // Find orphaned blobs
+    NSString *query = @&quot;SELECT b.cid FROM blobs b &quot;
+                      @&quot;LEFT JOIN records r ON r.value LIKE '%' || b.cid || '%' &quot;
+                      @&quot;WHERE r.uri IS NULL AND b.created_at &lt; datetime('now', '-7 days')&quot;;
+
+    NSArray *orphanedBlobs = [store executeQuery:query error:error];
+
+    if (orphanedBlobs.count == 0) {
+        return 0;
+    }
+
+    // Delete orphaned blobs
+    NSString *deleteSQL = @&quot;DELETE FROM blobs WHERE cid = ?&quot;;
+
+    NSUInteger deletedCount = 0;
+    for (NSDictionary *blob in orphanedBlobs) {
+        NSData *cid = blob[@&quot;cid&quot;];
+
+        if ([store executeSQL:deleteSQL withParameters:@[cid] error:error]) {
+            deletedCount++;
+        }
+    }
+
+    PDS_LOG_DB_INFO(@&quot;Cleaned up %lu orphaned blobs for %@&quot;, (unsigned long)deletedCount, did);
+    return deletedCount;
+}
+
+- (NSUInteger)cleanupOrphanedBlocks:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.pool storeForDID:did error:error];
+    if (!store) {
+        return 0;
+    }
+
+    // Find blocks not referenced by repo_root or records
+    NSString *query = @&quot;SELECT b.cid FROM ipld_blocks b &quot;
+                      @&quot;WHERE b.cid NOT IN (SELECT cid FROM repo_root) &quot;
+                      @&quot;AND b.cid NOT IN (SELECT cid FROM records) &quot;
+                      @&quot;AND b.created_at &lt; datetime('now', '-7 days')&quot;;
+
+    NSArray *orphanedBlocks = [store executeQuery:query error:error];
+
+    if (orphanedBlocks.count == 0) {
+        return 0;
+    }
+
+    // Delete orphaned blocks
+    NSString *deleteSQL = @&quot;DELETE FROM ipld_blocks WHERE cid = ?&quot;;
+
+    NSUInteger deletedCount = 0;
+    for (NSDictionary *block in orphanedBlocks) {
+        NSData *cid = block[@&quot;cid&quot;];
+
+        if ([store executeSQL:deleteSQL withParameters:@[cid] error:error]) {
+            deletedCount++;
+        }
+    }
+
+    PDS_LOG_DB_INFO(@&quot;Cleaned up %lu orphaned blocks for %@&quot;, (unsigned long)deletedCount, did);
+    return deletedCount;
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-regular-integrity-checks">1. Regular Integrity Checks</h3>
+<pre class="codehilite"><code class="language-objc">// Schedule daily full integrity check
+- (void)scheduleDailyIntegrityCheck {
+    // Run at 3 AM local time
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSDateComponents *components = [[NSDateComponents alloc] init];
+    components.hour = 3;
+    components.minute = 0;
+
+    NSDate *nextRun = [calendar nextDateAfterDate:[NSDate date]
+                                 matchingComponents:components
+                                            options:NSCalendarMatchNextTime];
+
+    NSTimeInterval interval = [nextRun timeIntervalSinceNow];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(interval * NSEC_PER_SEC)),
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        [self performFullIntegrityCheck];
+        [self scheduleDailyIntegrityCheck]; // Reschedule for next day
+    });
+}
+</code></pre>
+
+<h3 id="2-backup-before-repair">2. Backup Before Repair</h3>
+<p>Always backup before running repair operations:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)safeVacuum:(NSString *)databasePath error:(NSError **)error {
+    // Create backup
+    NSString *backupPath = [self createBackup:databasePath error:error];
+    if (!backupPath) {
+        return NO;
+    }
+
+    // Run VACUUM
+    BOOL success = [self vacuumDatabase:databasePath error:error];
+
+    if (!success) {
+        // Restore from backup on failure
+        [self restoreFromBackup:backupPath toDatabase:databasePath error:error];
+    }
+
+    return success;
+}
+</code></pre>
+
+<h3 id="3-monitor-repair-operations">3. Monitor Repair Operations</h3>
+<p>Track repair operation metrics:</p>
+<pre class="codehilite"><code class="language-objc">- (void)vacuumWithMonitoring:(NSString *)databasePath {
+    NSDate *startTime = [NSDate date];
+    NSError *error = nil;
+
+    PDS_LOG_DB_INFO(@&quot;Starting VACUUM on %@&quot;, databasePath);
+
+    BOOL success = [self vacuumDatabase:databasePath error:&amp;error];
+
+    NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:startTime];
+
+    if (success) {
+        PDS_LOG_DB_INFO(@&quot;VACUUM completed in %.2f seconds&quot;, duration);
+        [self recordMetric:@&quot;vacuum_duration&quot; value:duration];
+    } else {
+        PDS_LOG_DB_ERROR(@&quot;VACUUM failed after %.2f seconds: %@&quot;, duration, error);
+        [self recordMetric:@&quot;vacuum_failure&quot; value:1];
+    }
+}
+</code></pre>
+
+<h3 id="4-gradual-repair">4. Gradual Repair</h3>
+<p>For large databases, use incremental repair:</p>
+<pre class="codehilite"><code class="language-objc">- (void)performGradualVacuum:(NSString *)databasePath {
+    const NSInteger pagesPerBatch = 1000;
+    NSInteger totalPages = [self getTotalPages:databasePath];
+    NSInteger batchCount = (totalPages + pagesPerBatch - 1) / pagesPerBatch;
+
+    for (NSInteger i = 0; i &lt; batchCount; i++) {
+        NSError *error = nil;
+        [self incrementalVacuum:databasePath pages:pagesPerBatch error:&amp;error];
+
+        // Sleep between batches to avoid blocking
+        [NSThread sleepForTimeInterval:1.0];
+    }
+}
+</code></pre>
+
+<h3 id="5-alert-on-critical-issues">5. Alert on Critical Issues</h3>
+<p>Notify administrators of critical integrity issues:</p>
+<pre class="codehilite"><code class="language-objc">- (void)notifyIntegrityFailure:(NSError *)error {
+    // Log critical error
+    PDS_LOG_DB_ERROR(@&quot;CRITICAL: Database integrity failure: %@&quot;, error);
+
+    // Send alert (email, Slack, PagerDuty, etc.)
+    [self sendAlert:@&quot;Database Integrity Failure&quot; 
+            message:error.localizedDescription
+           severity:@&quot;critical&quot;];
+
+    // Record incident
+    [self recordIncident:@&quot;integrity_failure&quot; details:error.userInfo];
+}
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./migration-strategy.md">Migration Strategy</a> — Versioning and compatibility</li>
+<li><a href="./migration-rollback.md">Migration Rollback</a> — Rollback procedures</li>
+<li><a href="./zero-downtime-migrations.md">Zero-Downtime Migrations</a> — Online migration strategies</li>
+<li><a href="./wal-mode.md">WAL Mode</a> — Write-Ahead Logging benefits</li>
+<li><a href="./sqlite-architecture.md">SQLite Architecture</a> — Database design patterns</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

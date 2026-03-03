@@ -633,7 +633,7 @@ watch -n 1 'ps aux | grep kaszlak | grep -v grep'
 
 ## Next Steps
 
-- **[CLI Reference](./cli-reference.md)** — Command-line interface
-- **[Config Reference](./config-reference.md)** — Configuration options
-- **[API Reference](./api-reference.md)** — XRPC endpoints
+- **[CLI Reference](./cli-reference)** — Command-line interface
+- **[Config Reference](./config-reference)** — Configuration options
+- **[API Reference](./api-reference)** — XRPC endpoints
 

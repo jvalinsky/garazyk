@@ -18,11 +18,11 @@ Active implementation plans and status documents.
 
 Completed or superseded plans are moved to the [`archive/`](archive/) subdirectory.
 
-See [`archive/README.md`](archive/README.md) for the complete index of archived documents.
+See [`archive/README.md`](archive/README) for the complete index of archived documents.
 
 ## Related Documentation
 
-- [Main Documentation](../README.md) - Project documentation index
-- [Architecture](../architecture/README.md) - System architecture decisions and diagrams
-- [Security](../security/README.md) - Security analysis and hardening guides
-- [OAuth2](../oauth2/README.md) - Authentication and authorization documentation
+- [Main Documentation](../README) - Project documentation index
+- [Architecture](../architecture/README) - System architecture decisions and diagrams
+- [Security](../security/README) - Security analysis and hardening guides
+- [OAuth2](../oauth2/README) - Authentication and authorization documentation

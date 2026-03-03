@@ -70,11 +70,11 @@ The project has reached **Phase 10**, achieving AT Protocol specification compli
 
 ## Related Documentation
 
-- [Production Readiness](production-readiness.md) - Current audit findings and blocking issues
-- [Detailed Next Steps](detailed_next_steps_plan.md) - Priority execution plan for production blockers
-- [Architecture Overview](../architecture/README.md) - System architecture decisions
-- [Security Documentation](../security/README.md) - Security hardening guides
-- [OAuth2 Documentation](../oauth2/README.md) - Authentication implementation details
+- [Production Readiness](production-readiness) - Current audit findings and blocking issues
+- [Detailed Next Steps](detailed_next_steps_plan) - Priority execution plan for production blockers
+- [Architecture Overview](../architecture/README) - System architecture decisions
+- [Security Documentation](../security/README) - Security hardening guides
+- [OAuth2 Documentation](../oauth2/README) - Authentication implementation details
 
 ---
 

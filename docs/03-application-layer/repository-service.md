@@ -715,7 +715,7 @@ if (deltaCAR) {
 
 ## See Also
 
-- [Record Service](./record-service.md)
-- [Services Overview](./services-overview.md)
-- [MST Trees](../02-core-concepts/mst-trees.md)
-- [CAR Format](../07-repository-protocol/car-format.md)
+- [Record Service](./record-service)
+- [Services Overview](./services-overview)
+- [MST Trees](../02-core-concepts/mst-trees)
+- [CAR Format](../07-repository-protocol/car-format)

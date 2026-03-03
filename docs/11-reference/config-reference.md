@@ -323,5 +323,5 @@ The PDS validates configuration on startup:
 
 ## Next Steps
 
-- **[CLI Reference](./cli-reference.md)** — Command-line interface
-- **[Troubleshooting](./troubleshooting.md)** — Common issues
+- **[CLI Reference](./cli-reference)** — Command-line interface
+- **[Troubleshooting](./troubleshooting)** — Common issues

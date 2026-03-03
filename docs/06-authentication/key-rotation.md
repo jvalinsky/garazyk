@@ -498,6 +498,6 @@ CREATE TABLE key_rotation_audit (
 
 ## See Also
 
-- [JWT Tokens](./jwt-tokens.md)
-- [OAuth 2.0 with DPoP](./oauth2-dpop.md)
-- [TOTP and WebAuthn](./totp-webauthn.md)
+- [JWT Tokens](./jwt-tokens)
+- [OAuth 2.0 with DPoP](./oauth2-dpop)
+- [TOTP and WebAuthn](./totp-webauthn)

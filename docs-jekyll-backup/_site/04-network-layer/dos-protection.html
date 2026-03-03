@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoS Protection - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>DoS Protection</h1>
+            </div>
+            <h1 id="dos-protection">DoS Protection</h1>
+<h2 id="overview">Overview</h2>
+<p>Denial of Service (DoS) protection prevents malicious actors from overwhelming the PDS and making it unavailable to legitimate users. The PDS implements multiple layers of defense to detect and mitigate various attack vectors.</p>
+<h2 id="attack-vectors">Attack Vectors</h2>
+<h3 id="1-request-flooding">1. Request Flooding</h3>
+<p><strong>Attack:</strong> Overwhelming the server with high-volume requests.</p>
+<p><strong>Impact:</strong>
+- CPU exhaustion from request processing
+- Memory exhaustion from connection handling
+- Network bandwidth saturation
+- Legitimate users unable to connect</p>
+<p><strong>Mitigation:</strong>
+- Rate limiting per IP/DID
+- Connection limits
+- Request queue depth limits
+- Fast rejection of invalid requests</p>
+<h3 id="2-slowloris-attack">2. Slowloris Attack</h3>
+<p><strong>Attack:</strong> Opening many connections and sending partial HTTP requests slowly to keep connections open.</p>
+<p><strong>Impact:</strong>
+- Connection pool exhaustion
+- Server unable to accept new connections
+- Resource starvation</p>
+<p><strong>Mitigation:</strong>
+- Connection timeouts
+- Request header size limits
+- Request timeout enforcement
+- Maximum concurrent connections per IP</p>
+<h3 id="3-large-payload-attack">3. Large Payload Attack</h3>
+<p><strong>Attack:</strong> Sending extremely large request bodies to consume memory and bandwidth.</p>
+<p><strong>Impact:</strong>
+- Memory exhaustion
+- Disk space exhaustion
+- Bandwidth saturation
+- Processing delays</p>
+<p><strong>Mitigation:</strong>
+- Request body size limits
+- Streaming request processing
+- Early rejection of oversized requests
+- Blob upload quotas</p>
+<h3 id="4-computational-exhaustion">4. Computational Exhaustion</h3>
+<p><strong>Attack:</strong> Triggering expensive operations (crypto, database queries, MST operations).</p>
+<p><strong>Impact:</strong>
+- CPU exhaustion
+- Database lock contention
+- Response time degradation
+- Service unavailability</p>
+<p><strong>Mitigation:</strong>
+- Operation complexity limits
+- Query timeout enforcement
+- Cryptographic operation rate limiting
+- MST depth limits</p>
+<h3 id="5-websocket-flooding">5. WebSocket Flooding</h3>
+<p><strong>Attack:</strong> Opening many WebSocket connections or sending high-volume messages.</p>
+<p><strong>Impact:</strong>
+- Connection pool exhaustion
+- Memory exhaustion from buffering
+- CPU exhaustion from message processing
+- Firehose unavailability</p>
+<p><strong>Mitigation:</strong>
+- WebSocket connection limits
+- Message rate limiting
+- Backpressure mechanisms
+- Connection timeout enforcement</p>
+<h3 id="6-database-exhaustion">6. Database Exhaustion</h3>
+<p><strong>Attack:</strong> Triggering expensive database queries or excessive writes.</p>
+<p><strong>Impact:</strong>
+- Database lock contention
+- Disk I/O saturation
+- Query timeout cascades
+- Service degradation</p>
+<p><strong>Mitigation:</strong>
+- Query complexity limits
+- Transaction timeout enforcement
+- Write rate limiting
+- Database connection pooling</p>
+<h2 id="defense-layers">Defense Layers</h2>
+<h3 id="layer-1-network-level">Layer 1: Network Level</h3>
+<p><strong>Firewall Rules:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Example iptables rules (applied at infrastructure level)
+# Limit new connections per IP
+iptables -A INPUT -p tcp --dport 2583 -m connlimit --connlimit-above 50 -j REJECT
+
+# Rate limit SYN packets
+iptables -A INPUT -p tcp --syn -m limit --limit 10/s --limit-burst 20 -j ACCEPT
+iptables -A INPUT -p tcp --syn -j DROP
+
+# Drop invalid packets
+iptables -A INPUT -m state --state INVALID -j DROP
+</code></pre>
+
+<p><strong>Reverse Proxy (nginx):</strong></p>
+<pre class="codehilite"><code class="language-nginx"># In production: exe.dev HTTPS → nginx:3000 → PDS:2583
+http {
+    # Connection limits
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+    limit_conn addr 10;
+
+    # Request rate limits
+    limit_req_zone $binary_remote_addr zone=req_limit:10m rate=10r/s;
+    limit_req zone=req_limit burst=20 nodelay;
+
+    # Request size limits
+    client_max_body_size 10M;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+
+    # Timeouts
+    keepalive_timeout 30s;
+    send_timeout 30s;
+}
+</code></pre>
+
+<h3 id="layer-2-http-server-level">Layer 2: HTTP Server Level</h3>
+<p><strong>Connection Management:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In HttpServer.m - Connection limits
+@interface HttpServer ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, assign) NSUInteger activeConnections;
+@property (nonatomic, strong) NSMutableDictionary *connectionsPerIP;
+@end
+
+- (BOOL)shouldAcceptConnection:(NSString *)remoteIP {
+    // 1. Check global connection limit
+    if (self.activeConnections &gt;= self.maxConnections) {
+        PDS_LOG_HTTP_WARNING(@&quot;Rejecting connection: max connections reached (%lu)&quot;, 
+                             (unsigned long)self.maxConnections);
+        return NO;
+    }
+
+    // 2. Check per-IP connection limit
+    NSNumber *ipConnections = self.connectionsPerIP[remoteIP] ?: @0;
+    if (ipConnections.integerValue &gt;= 10) {
+        PDS_LOG_HTTP_WARNING(@&quot;Rejecting connection from %@: per-IP limit reached&quot;, remoteIP);
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<p><strong>Request Size Limits:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In HttpServer.m - Request validation
+- (BOOL)validateRequest:(HttpRequest *)request {
+    // 1. Header size limit (8KB)
+    if (request.headerSize &gt; 8192) {
+        PDS_LOG_HTTP_WARNING(@&quot;Rejecting request: headers too large (%lu bytes)&quot;, 
+                             (unsigned long)request.headerSize);
+        return NO;
+    }
+
+    // 2. URI length limit (2KB)
+    if (request.path.length &gt; 2048) {
+        PDS_LOG_HTTP_WARNING(@&quot;Rejecting request: URI too long (%lu chars)&quot;, 
+                             (unsigned long)request.path.length);
+        return NO;
+    }
+
+    // 3. Body size limit (varies by endpoint)
+    NSUInteger maxBodySize = [self maxBodySizeForPath:request.path];
+    if (request.contentLength &gt; maxBodySize) {
+        PDS_LOG_HTTP_WARNING(@&quot;Rejecting request: body too large (%lld &gt; %lu)&quot;, 
+                             request.contentLength, (unsigned long)maxBodySize);
+        return NO;
+    }
+
+    return YES;
+}
+
+- (NSUInteger)maxBodySizeForPath:(NSString *)path {
+    if ([path hasPrefix:@&quot;/xrpc/com.atproto.repo.uploadBlob&quot;]) {
+        return 10 * 1024 * 1024;  // 10MB for blobs
+    } else if ([path hasPrefix:@&quot;/xrpc/&quot;]) {
+        return 1 * 1024 * 1024;   // 1MB for XRPC
+    } else {
+        return 100 * 1024;        // 100KB default
+    }
+}
+</code></pre>
+
+<p><strong>Request Timeouts:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In HttpServer.m - Timeout enforcement
+- (void)handleConnection:(int)clientSocket remoteAddress:(NSString *)remoteIP {
+    // 1. Set socket timeout
+    struct timeval timeout;
+    timeout.tv_sec = 30;  // 30 second timeout
+    timeout.tv_usec = 0;
+    setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, &amp;timeout, sizeof(timeout));
+    setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, &amp;timeout, sizeof(timeout));
+
+    // 2. Start request timer
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, 
+                                                     dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    dispatch_source_set_timer(timer, 
+                             dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+                             DISPATCH_TIME_FOREVER, 
+                             1 * NSEC_PER_SEC);
+
+    dispatch_source_set_event_handler(timer, ^{
+        PDS_LOG_HTTP_WARNING(@&quot;Request timeout from %@&quot;, remoteIP);
+        close(clientSocket);
+    });
+
+    dispatch_resume(timer);
+
+    // 3. Process request
+    [self processRequest:clientSocket remoteAddress:remoteIP];
+
+    // 4. Cancel timer
+    dispatch_source_cancel(timer);
+}
+</code></pre>
+
+<h3 id="layer-3-rate-limiting">Layer 3: Rate Limiting</h3>
+<p><strong>IP-Based Rate Limiting:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In HttpServer.m - OAuth endpoint protection
+if ([request.path hasPrefix:@&quot;/oauth/&quot;] &amp;&amp; !RateLimiterIsDisabledGlobally() &amp;&amp;
+    [RateLimiter sharedLimiter].isEnabled) {
+  RateLimitResult *result =
+      [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+
+  if (!result.allowed) {
+    response.statusCode = 429;
+    [response setJsonBody:@{
+      @&quot;error&quot; : @&quot;too_many_requests&quot;,
+      @&quot;message&quot; : @&quot;Rate limit exceeded&quot;
+    }];
+    return response;
+  }
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/HttpServer.m</code> (lines 994-1005)</p>
+<p><strong>DID-Based Rate Limiting:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In XRPC handlers - Authenticated request protection
+- (void)handleXrpcRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    // 1. Verify authentication
+    NSString *did = [self extractDIDFromRequest:request];
+    if (!did) {
+        response.statusCode = 401;
+        return;
+    }
+
+    // 2. Check rate limit
+    RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
+    if (!result.allowed) {
+        response.statusCode = 429;
+        [response setHeader:[NSString stringWithFormat:@&quot;%.0f&quot;, result.retryAfter] 
+                     forKey:@&quot;Retry-After&quot;];
+        [response setJsonBody:@{
+            @&quot;error&quot;: @&quot;RateLimitExceeded&quot;,
+            @&quot;message&quot;: @&quot;Too many requests&quot;
+        }];
+        return;
+    }
+
+    // 3. Process request
+    [self processXrpcRequest:request response:response];
+}
+</code></pre>
+
+<h3 id="layer-4-application-level">Layer 4: Application Level</h3>
+<p><strong>Blob Upload Protection:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In PDSBlobService.m - Blob upload limits
+- (void)uploadBlob:(NSData *)blobData 
+            forDID:(NSString *)did
+        completion:(void (^)(NSString *cid, NSError *error))completion {
+
+    // 1. Check blob size
+    if (blobData.length &gt; 10 * 1024 * 1024) {  // 10MB limit
+        NSError *error = [NSError errorWithDomain:@&quot;BlobError&quot; 
+                                             code:413 
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;Blob too large&quot;}];
+        completion(nil, error);
+        return;
+    }
+
+    // 2. Check rate limit
+    RateLimitResult *result = [[RateLimiter sharedLimiter] checkBlobUploadRateLimitForDid:did];
+    if (!result.allowed) {
+        NSError *error = [NSError errorWithDomain:@&quot;BlobError&quot; 
+                                             code:429 
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;Upload rate limit exceeded&quot;}];
+        completion(nil, error);
+        return;
+    }
+
+    // 3. Check quota
+    NSUInteger currentUsage = [self getBlobUsageForDID:did];
+    if (currentUsage + blobData.length &gt; self.maxBlobStoragePerUser) {
+        NSError *error = [NSError errorWithDomain:@&quot;BlobError&quot; 
+                                             code:507 
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;Storage quota exceeded&quot;}];
+        completion(nil, error);
+        return;
+    }
+
+    // 4. Process upload
+    [self storeBlobData:blobData forDID:did completion:completion];
+}
+</code></pre>
+
+<p><strong>MST Operation Limits:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In MST.m - Complexity limits
+- (BOOL)validateMSTOperation:(MSTOperation *)operation {
+    // 1. Depth limit
+    if (operation.depth &gt; 32) {
+        PDS_LOG_ERROR(@&quot;MST operation exceeds depth limit: %lu&quot;, (unsigned long)operation.depth);
+        return NO;
+    }
+
+    // 2. Node count limit
+    if (operation.nodeCount &gt; 10000) {
+        PDS_LOG_ERROR(@&quot;MST operation exceeds node count limit: %lu&quot;, (unsigned long)operation.nodeCount);
+        return NO;
+    }
+
+    // 3. Key length limit
+    if (operation.key.length &gt; 256) {
+        PDS_LOG_ERROR(@&quot;MST key exceeds length limit: %lu&quot;, (unsigned long)operation.key.length);
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<p><strong>Database Query Limits:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In database layer - Query timeout enforcement
+- (NSArray *)executeQuery:(NSString *)sql 
+               withParams:(NSArray *)params
+                  timeout:(NSTimeInterval)timeout {
+
+    // 1. Set statement timeout
+    sqlite3_busy_timeout(self.db, (int)(timeout * 1000));
+
+    // 2. Prepare statement
+    sqlite3_stmt *stmt;
+    int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &amp;stmt, NULL);
+    if (result != SQLITE_OK) {
+        return nil;
+    }
+
+    // 3. Bind parameters
+    [self bindParams:params toStatement:stmt];
+
+    // 4. Execute with timeout
+    NSMutableArray *rows = [NSMutableArray array];
+    NSDate *startTime = [NSDate date];
+
+    while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+        // Check timeout
+        if ([[NSDate date] timeIntervalSinceDate:startTime] &gt; timeout) {
+            PDS_LOG_DB_WARNING(@&quot;Query timeout exceeded&quot;);
+            sqlite3_finalize(stmt);
+            return nil;
+        }
+
+        [rows addObject:[self rowFromStatement:stmt]];
+    }
+
+    sqlite3_finalize(stmt);
+    return rows;
+}
+</code></pre>
+
+<h3 id="layer-5-websocket-protection">Layer 5: WebSocket Protection</h3>
+<p><strong>Connection Limits:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In WebSocketServer.m - Connection management
+@interface WebSocketServer ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, strong) NSMutableSet *activeConnections;
+@property (nonatomic, strong) NSMutableDictionary *connectionsPerIP;
+@end
+
+- (BOOL)shouldAcceptWebSocketConnection:(NSString *)remoteIP {
+    // 1. Check global limit
+    if (self.activeConnections.count &gt;= self.maxConnections) {
+        PDS_LOG_WEBSOCKET_WARNING(@&quot;Rejecting WebSocket: max connections reached&quot;);
+        return NO;
+    }
+
+    // 2. Check per-IP limit
+    NSNumber *ipConnections = self.connectionsPerIP[remoteIP] ?: @0;
+    if (ipConnections.integerValue &gt;= 5) {  // 5 WebSocket connections per IP
+        PDS_LOG_WEBSOCKET_WARNING(@&quot;Rejecting WebSocket from %@: per-IP limit reached&quot;, remoteIP);
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<p><strong>Message Rate Limiting:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m - Message rate limiting
+@interface WebSocketConnection ()
+@property (nonatomic, assign) NSUInteger messagesReceived;
+@property (nonatomic, strong) NSDate *windowStart;
+@property (nonatomic, assign) NSUInteger maxMessagesPerWindow;
+@property (nonatomic, assign) NSTimeInterval windowDuration;
+@end
+
+- (BOOL)shouldAcceptMessage {
+    NSTimeInterval elapsed = [[NSDate date] timeIntervalSinceDate:self.windowStart];
+
+    // Reset window if expired
+    if (elapsed &gt; self.windowDuration) {
+        self.messagesReceived = 0;
+        self.windowStart = [NSDate date];
+    }
+
+    // Check limit
+    if (self.messagesReceived &gt;= self.maxMessagesPerWindow) {
+        PDS_LOG_WEBSOCKET_WARNING(@&quot;Message rate limit exceeded&quot;);
+        return NO;
+    }
+
+    self.messagesReceived++;
+    return YES;
+}
+</code></pre>
+
+<p><strong>Backpressure Enforcement:</strong></p>
+<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m - Buffer overflow protection
+- (void)sendFrame:(NSData *)frame {
+  dispatch_async(self.writeQueue, ^{
+    if (self.state == WebSocketConnectionStateClosing ||
+        self.state == WebSocketConnectionStateClosed) {
+      return;
+    }
+
+    // Check buffer limit
+    if (self.queuedSendBytes + frame.length &gt; WS_MAX_PENDING_SEND_BYTES) {
+      [self.messageQueue removeAllObjects];
+      self.queuedSendBytes = 0;
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self closeWithCode:1009 reason:@&quot;Outbound queue limit exceeded&quot;];
+      });
+      return;
+    }
+
+    [self.messageQueue addObject:frame];
+    self.queuedSendBytes += frame.length;
+    if (self.messageQueue.count == 1) {
+      [self flushWriteBuffer];
+    }
+  });
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/WebSocketConnection.m</code> (lines 280-300)</p>
+<h2 id="monitoring-and-detection">Monitoring and Detection</h2>
+<h3 id="attack-detection">Attack Detection</h3>
+<pre class="codehilite"><code class="language-objc">// In DoSDetector.m - Attack pattern detection
+@interface DoSDetector : NSObject
+@property (nonatomic, strong) NSMutableDictionary *requestCounts;
+@property (nonatomic, strong) NSMutableDictionary *errorCounts;
+@property (nonatomic, strong) NSMutableDictionary *suspiciousIPs;
+@end
+
+- (void)recordRequest:(NSString *)remoteIP statusCode:(NSInteger)statusCode {
+    // 1. Update request count
+    NSNumber *count = self.requestCounts[remoteIP] ?: @0;
+    self.requestCounts[remoteIP] = @(count.integerValue + 1);
+
+    // 2. Track errors
+    if (statusCode &gt;= 400) {
+        NSNumber *errorCount = self.errorCounts[remoteIP] ?: @0;
+        self.errorCounts[remoteIP] = @(errorCount.integerValue + 1);
+    }
+
+    // 3. Detect suspicious patterns
+    if (count.integerValue &gt; 1000) {  // High request volume
+        [self markIPAsSuspicious:remoteIP reason:@&quot;High request volume&quot;];
+    }
+
+    NSNumber *errorCount = self.errorCounts[remoteIP] ?: @0;
+    if (errorCount.integerValue &gt; 100) {  // High error rate
+        [self markIPAsSuspicious:remoteIP reason:@&quot;High error rate&quot;];
+    }
+}
+
+- (void)markIPAsSuspicious:(NSString *)ip reason:(NSString *)reason {
+    self.suspiciousIPs[ip] = @{
+        @&quot;reason&quot;: reason,
+        @&quot;timestamp&quot;: [NSDate date],
+        @&quot;action&quot;: @&quot;monitor&quot;
+    };
+
+    PDS_LOG_SECURITY_WARNING(@&quot;Suspicious IP detected: %@ (%@)&quot;, ip, reason);
+}
+</code></pre>
+
+<h3 id="metrics-collection">Metrics Collection</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSMetrics.m - DoS metrics
+@interface PDSMetrics : NSObject
+@property (nonatomic, assign) NSUInteger totalRequests;
+@property (nonatomic, assign) NSUInteger rejectedRequests;
+@property (nonatomic, assign) NSUInteger rateLimitedRequests;
+@property (nonatomic, assign) NSUInteger timeoutRequests;
+@property (nonatomic, assign) NSUInteger oversizedRequests;
+@end
+
+- (void)recordRejection:(NSString *)reason {
+    self.rejectedRequests++;
+
+    if ([reason isEqualToString:@&quot;rate_limit&quot;]) {
+        self.rateLimitedRequests++;
+    } else if ([reason isEqualToString:@&quot;timeout&quot;]) {
+        self.timeoutRequests++;
+    } else if ([reason isEqualToString:@&quot;oversized&quot;]) {
+        self.oversizedRequests++;
+    }
+}
+
+- (NSDictionary *)getMetrics {
+    return @{
+        @&quot;total_requests&quot;: @(self.totalRequests),
+        @&quot;rejected_requests&quot;: @(self.rejectedRequests),
+        @&quot;rate_limited_requests&quot;: @(self.rateLimitedRequests),
+        @&quot;timeout_requests&quot;: @(self.timeoutRequests),
+        @&quot;oversized_requests&quot;: @(self.oversizedRequests),
+        @&quot;rejection_rate&quot;: @((double)self.rejectedRequests / self.totalRequests)
+    };
+}
+</code></pre>
+
+<h2 id="response-strategies">Response Strategies</h2>
+<h3 id="1-graceful-degradation">1. Graceful Degradation</h3>
+<pre class="codehilite"><code class="language-objc">// In HttpServer.m - Load shedding
+- (HttpResponse *)handleRequest:(HttpRequest *)request {
+    // 1. Check server load
+    double cpuUsage = [self getCurrentCPUUsage];
+    NSUInteger activeConnections = self.activeConnections;
+
+    // 2. Shed load if overloaded
+    if (cpuUsage &gt; 0.9 || activeConnections &gt; self.maxConnections * 0.9) {
+        // Reject non-critical requests
+        if (![self isCriticalEndpoint:request.path]) {
+            HttpResponse *response = [HttpResponse response];
+            response.statusCode = 503;
+            [response setHeader:@&quot;60&quot; forKey:@&quot;Retry-After&quot;];
+            [response setJsonBody:@{
+                @&quot;error&quot;: @&quot;ServiceUnavailable&quot;,
+                @&quot;message&quot;: @&quot;Server overloaded, please retry later&quot;
+            }];
+            return response;
+        }
+    }
+
+    // 3. Process request
+    return [self processRequest:request];
+}
+
+- (BOOL)isCriticalEndpoint:(NSString *)path {
+    // Critical endpoints that should always be available
+    return [path hasPrefix:@&quot;/xrpc/com.atproto.server.describeServer&quot;] ||
+           [path hasPrefix:@&quot;/xrpc/com.atproto.server.getSession&quot;];
+}
+</code></pre>
+
+<h3 id="2-temporary-blocking">2. Temporary Blocking</h3>
+<pre class="codehilite"><code class="language-objc">// In IPBlockList.m - Temporary IP blocking
+@interface IPBlockList : NSObject
+@property (nonatomic, strong) NSMutableDictionary *blockedIPs;
+@end
+
+- (void)blockIP:(NSString *)ip duration:(NSTimeInterval)duration reason:(NSString *)reason {
+    NSDate *unblockTime = [NSDate dateWithTimeIntervalSinceNow:duration];
+
+    self.blockedIPs[ip] = @{
+        @&quot;unblock_time&quot;: unblockTime,
+        @&quot;reason&quot;: reason,
+        @&quot;blocked_at&quot;: [NSDate date]
+    };
+
+    PDS_LOG_SECURITY_WARNING(@&quot;Blocked IP %@ for %.0f seconds (%@)&quot;, ip, duration, reason);
+}
+
+- (BOOL)isIPBlocked:(NSString *)ip {
+    NSDictionary *blockInfo = self.blockedIPs[ip];
+    if (!blockInfo) {
+        return NO;
+    }
+
+    NSDate *unblockTime = blockInfo[@&quot;unblock_time&quot;];
+    if ([[NSDate date] compare:unblockTime] == NSOrderedDescending) {
+        // Block expired
+        [self.blockedIPs removeObjectForKey:ip];
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="3-captcha-challenge">3. CAPTCHA Challenge</h3>
+<pre class="codehilite"><code class="language-objc">// In CaptchaChallenge.m - Challenge suspicious requests
+- (BOOL)shouldChallengeRequest:(HttpRequest *)request {
+    NSString *ip = request.remoteAddress;
+
+    // 1. Check if IP is suspicious
+    if ([self.dosDetector isSuspiciousIP:ip]) {
+        return YES;
+    }
+
+    // 2. Check request patterns
+    NSUInteger recentRequests = [self.dosDetector getRecentRequestCount:ip];
+    if (recentRequests &gt; 50) {  // High request rate
+        return YES;
+    }
+
+    return NO;
+}
+
+- (HttpResponse *)generateChallengeResponse {
+    HttpResponse *response = [HttpResponse response];
+    response.statusCode = 403;
+    [response setJsonBody:@{
+        @&quot;error&quot;: @&quot;ChallengeRequired&quot;,
+        @&quot;message&quot;: @&quot;Please complete CAPTCHA verification&quot;,
+        @&quot;challenge_url&quot;: @&quot;/challenge&quot;
+    }];
+    return response;
+}
+</code></pre>
+
+<h2 id="configuration">Configuration</h2>
+<h3 id="recommended-limits">Recommended Limits</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSConfiguration.m - DoS protection settings
+@interface PDSConfiguration ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, assign) NSUInteger maxConnectionsPerIP;
+@property (nonatomic, assign) NSUInteger maxRequestBodySize;
+@property (nonatomic, assign) NSTimeInterval requestTimeout;
+@property (nonatomic, assign) NSUInteger maxWebSocketConnections;
+@property (nonatomic, assign) NSUInteger maxWebSocketConnectionsPerIP;
+@end
+
+// Default values
+self.maxConnections = 1000;
+self.maxConnectionsPerIP = 10;
+self.maxRequestBodySize = 10 * 1024 * 1024;  // 10MB
+self.requestTimeout = 30.0;  // 30 seconds
+self.maxWebSocketConnections = 500;
+self.maxWebSocketConnectionsPerIP = 5;
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Defense in depth</strong> — Multiple protection layers</li>
+<li><strong>Fail closed</strong> — Reject when uncertain</li>
+<li><strong>Monitor continuously</strong> — Track attack patterns</li>
+<li><strong>Log security events</strong> — Audit trail for analysis</li>
+<li><strong>Rate limit aggressively</strong> — Better safe than sorry</li>
+<li><strong>Implement timeouts</strong> — Prevent resource exhaustion</li>
+<li><strong>Validate all input</strong> — Never trust client data</li>
+<li><strong>Test under load</strong> — Verify protections work</li>
+<li><strong>Update regularly</strong> — Stay ahead of new attacks</li>
+<li><strong>Have incident response plan</strong> — Know what to do</li>
+</ol>
+<h2 id="incident-response">Incident Response</h2>
+<h3 id="detection">Detection</h3>
+<ol>
+<li>Monitor metrics for anomalies</li>
+<li>Alert on threshold violations</li>
+<li>Correlate events across layers</li>
+<li>Identify attack patterns</li>
+</ol>
+<h3 id="response">Response</h3>
+<ol>
+<li>Confirm attack is occurring</li>
+<li>Identify attack vector</li>
+<li>Apply appropriate mitigation</li>
+<li>Monitor effectiveness</li>
+<li>Escalate if needed</li>
+</ol>
+<h3 id="recovery">Recovery</h3>
+<ol>
+<li>Remove temporary blocks</li>
+<li>Restore normal operation</li>
+<li>Analyze attack logs</li>
+<li>Update defenses</li>
+<li>Document lessons learned</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./rate-limiting.md">Rate Limiting</a></strong> — Rate limiting strategies</li>
+<li><strong><a href="./request-throttling.md">Request Throttling</a></strong> — Per-endpoint throttling</li>
+<li><strong><a href="./input-validation.md">Input Validation</a></strong> — Input validation strategies</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -142,11 +142,11 @@ XCTAssertNil(data, "Floats must be rejected in DAG-CBOR");
 
 ## Related Documentation
 
-- [Folder README](README.md) - Repository tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [MST Tests](mst.md) - Merkle Search Tree tests
-- [Primitives Tests](primitives.md) - Core data type tests
-- [Database Tests](../03-database/README.md) - Actor store persistence
-- [Integration Tests](../06-integration/README.md) - E2E repository operations
-- [Characterization Tests](../08-characterization/characterization.md) - Reference compliance
-- [Security Hardening](../05-security/hardening.md) - CBOR parser security
+- [Folder README](README) - Repository tests overview
+- [Test Index](../README) - Main test documentation index
+- [MST Tests](mst) - Merkle Search Tree tests
+- [Primitives Tests](primitives) - Core data type tests
+- [Database Tests](../03-database/README) - Actor store persistence
+- [Integration Tests](../06-integration/README) - E2E repository operations
+- [Characterization Tests](../08-characterization/characterization) - Reference compliance
+- [Security Hardening](../05-security/hardening) - CBOR parser security

@@ -324,19 +324,19 @@ Returns the server's public keys for JWT verification:
 ## Related Documentation
 
 ### OAuth2 Documentation
-- [Architecture](./architecture.md) - System architecture and component overview
-- [Authorization Flow](./authorization-flow.md) - Auth code flow with sign-in and consent
-- [Token Management](./token-management.md) - JWT tokens, sessions, and lifecycle
-- [DPoP](./dpop.md) - DPoP proof-of-possession implementation
-- [PKCE](./pkce.md) - PKCE code exchange security
-- [Web UI](./web-ui.md) - Consent screen and authorization UI
-- [Security](./security.md) - Security considerations and threat model
-- [Admin Auth](./admin-auth.md) - Admin authentication (separate from OAuth)
+- [Architecture](./architecture) - System architecture and component overview
+- [Authorization Flow](./authorization-flow) - Auth code flow with sign-in and consent
+- [Token Management](./token-management) - JWT tokens, sessions, and lifecycle
+- [DPoP](./dpop) - DPoP proof-of-possession implementation
+- [PKCE](./pkce) - PKCE code exchange security
+- [Web UI](./web-ui) - Consent screen and authorization UI
+- [Security](./security) - Security considerations and threat model
+- [Admin Auth](./admin-auth) - Admin authentication (separate from OAuth)
 
 ### Other Documentation
-- [Developer Guide](../guides/DEVELOPER_GUIDE.md) - General development setup
-- [Architecture](../architecture/ARCHITECTURE_ANALYSIS.md) - System architecture
-- [Security Plan](../security/SECURITY_PLAN.md) - Security overview
+- [Developer Guide](../guides/DEVELOPER_GUIDE) - General development setup
+- [Architecture](../architecture/ARCHITECTURE_ANALYSIS) - System architecture
+- [Security Plan](../security/SECURITY_PLAN) - Security overview
 
 ## References
 

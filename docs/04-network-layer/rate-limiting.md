@@ -559,6 +559,6 @@ Minimal memory footprint due to SQLite storage.
 
 ## Next Steps
 
-- **[DoS Protection](./dos-protection.md)** — Attack mitigation strategies
-- **[Request Throttling](./request-throttling.md)** — Per-endpoint throttling
-- **[Error Handling](./error-handling.md)** — Standardized error responses
+- **[DoS Protection](./dos-protection)** — Attack mitigation strategies
+- **[Request Throttling](./request-throttling)** — Per-endpoint throttling
+- **[Error Handling](./error-handling)** — Standardized error responses

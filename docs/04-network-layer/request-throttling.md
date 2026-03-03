@@ -653,6 +653,6 @@ throttle.sustainedRate = 100;
 
 ## Next Steps
 
-- **[Rate Limiting](./rate-limiting.md)** — Rate limiting strategies
-- **[DoS Protection](./dos-protection.md)** — Attack mitigation
-- **[Firehose Rate Limiting](../08-sync-firehose/firehose-rate-limiting.md)** — WebSocket throttling
+- **[Rate Limiting](./rate-limiting)** — Rate limiting strategies
+- **[DoS Protection](./dos-protection)** — Attack mitigation
+- **[Firehose Rate Limiting](../08-sync-firehose/firehose-rate-limiting)** — WebSocket throttling

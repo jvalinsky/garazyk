@@ -1385,10 +1385,10 @@ curl http://localhost:2582/_metrics
 
 ## Related Documentation
 
-- **[PLC Directory Concepts](../02-core-concepts/plc-directory.md)** — PLC protocol and DID operations
-- **[CLI Reference](./cli-reference.md)** — kaszlak CLI commands
-- **[Config Reference](./config-reference.md)** — PDS configuration options
-- **[Troubleshooting](./troubleshooting.md)** — Common issues and solutions
+- **[PLC Directory Concepts](../02-core-concepts/plc-directory)** — PLC protocol and DID operations
+- **[CLI Reference](./cli-reference)** — kaszlak CLI commands
+- **[Config Reference](./config-reference)** — PDS configuration options
+- **[Troubleshooting](./troubleshooting)** — Common issues and solutions
 
 ## External Resources
 

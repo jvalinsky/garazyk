@@ -1,6 +1,6 @@
 # OAuth2 AT Protocol Spec Remediation Plan
 
-Reference: [OAuth2 Spec Compliance Report](oauth2-spec-compliance-report.md)
+Reference: [OAuth2 Spec Compliance Report](oauth2-spec-compliance-report)
 
 ---
 

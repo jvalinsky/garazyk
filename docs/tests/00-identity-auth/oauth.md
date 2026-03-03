@@ -256,12 +256,12 @@ XCTAssertNotNil(retrieved, @"Session should persist across store instances");
 
 ## Related Documentation
 
-- [Folder README](README.md) - Identity & authentication tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [OAuth2 Architecture](../../oauth2/architecture.md) - OAuth2 system architecture
-- [Authorization Flow](../../oauth2/authorization-flow.md) - OAuth2 authorization process
-- [DPoP Implementation](../../oauth2/dpop.md) - DPoP proof specification
-- [PKCE](../../oauth2/pkce.md) - Proof Key for Code Exchange
-- [Token Management](../../oauth2/token-management.md) - Token lifecycle
-- [Security Hardening Tests](../05-security/hardening.md) - Token security testing
-- [Security Tests](../05-security/README.md) - Security test documentation
+- [Folder README](README) - Identity & authentication tests overview
+- [Test Index](../README) - Main test documentation index
+- [OAuth2 Architecture](../../oauth2/architecture) - OAuth2 system architecture
+- [Authorization Flow](../../oauth2/authorization-flow) - OAuth2 authorization process
+- [DPoP Implementation](../../oauth2/dpop) - DPoP proof specification
+- [PKCE](../../oauth2/pkce) - Proof Key for Code Exchange
+- [Token Management](../../oauth2/token-management) - Token lifecycle
+- [Security Hardening Tests](../05-security/hardening) - Token security testing
+- [Security Tests](../05-security/README) - Security test documentation

@@ -708,6 +708,6 @@ Execute the updated test script to verify end-to-end functionality.
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

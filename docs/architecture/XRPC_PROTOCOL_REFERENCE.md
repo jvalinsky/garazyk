@@ -128,16 +128,16 @@ wss://pds.example.com/xrpc/com.atproto.sync.subscribeRepos
 ## Related Documentation
 
 ### Architecture Documents
-- [README.md](README.md) - Architecture documentation index
-- [atproto_pds_architecture.md](atproto_pds_architecture.md) - PDS API endpoints and protocols
-- [atproto_data_models.md](atproto_data_models.md) - Data types (DID, CID, AT-URI) reference
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - XRPC handler component analysis
+- [README.md](README) - Architecture documentation index
+- [atproto_pds_architecture.md](atproto_pds_architecture) - PDS API endpoints and protocols
+- [atproto_data_models.md](atproto_data_models) - Data types (DID, CID, AT-URI) reference
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - XRPC handler component analysis
 
 ### Diagram Documents
-- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - XRPC request flow diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - XRPC request flow diagrams
 
 ### Related Tests
-- [../tests/02-network/xrpc.md](../tests/02-network/xrpc.md) - XRPC protocol tests
+- [../tests/02-network/xrpc.md](../tests/02-network/xrpc) - XRPC protocol tests
 
 ### Related Guides
-- [../guides/XRPC_PROTOCOL_REFERENCE.md](../guides/XRPC_PROTOCOL_REFERENCE.md) - Duplicate guide version
+- [../guides/XRPC_PROTOCOL_REFERENCE.md](../guides/XRPC_PROTOCOL_REFERENCE) - Duplicate guide version

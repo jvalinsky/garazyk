@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+  <defs>
+    <style>
+      .title { font: bold 18px sans-serif; fill: #2c3e50; }
+      .subtitle { font: 14px sans-serif; fill: #34495e; }
+      .label { font: 12px sans-serif; fill: #2c3e50; }
+      .small { font: 10px sans-serif; fill: #7f8c8d; }
+      .box { fill: #ecf0f1; stroke: #34495e; stroke-width: 2; }
+      .header-box { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
+      .category-box { fill: #e8f4f8; stroke: #3498db; stroke-width: 1.5; }
+      .test-box { fill: #ffffff; stroke: #95a5a6; stroke-width: 1; }
+      .arrow { stroke: #7f8c8d; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+      .count { font: bold 11px sans-serif; fill: #27ae60; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#7f8c8d" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="title">Test Organization Structure</text>
+  <text x="400" y="50" text-anchor="middle" class="subtitle">September PDS Test Suite (1,017 tests)</text>
+
+  <!-- Test Runner -->
+  <rect x="300" y="80" width="200" height="60" class="header-box" rx="5"/>
+  <text x="400" y="105" text-anchor="middle" class="label" fill="white">test_main.m</text>
+  <text x="400" y="125" text-anchor="middle" class="small" fill="white">Test Runner &amp; Discovery</text>
+
+  <!-- Arrow to categories -->
+  <path d="M 400 140 L 400 170" class="arrow"/>
+
+  <!-- Test Categories Container -->
+  <rect x="50" y="180" width="700" height="680" class="box" rx="5"/>
+  <text x="400" y="205" text-anchor="middle" class="subtitle">Test Categories by Directory</text>
+
+  <!-- Row 1: Core, Auth, Network -->
+  <g>
+    <rect x="70" y="230" width="200" height="120" class="category-box" rx="3"/>
+    <text x="170" y="250" text-anchor="middle" class="label" font-weight="bold">Core/</text>
+    <text x="170" y="268" text-anchor="middle" class="small">CBOR, CAR, CID, MST</text>
+    <text x="170" y="285" text-anchor="middle" class="count">~150 tests</text>
+    
+    <rect x="80" y="300" width="180" height="40" class="test-box" rx="2"/>
+    <text x="170" y="318" text-anchor="middle" class="small">MSTInteropTests</text>
+    <text x="170" y="332" text-anchor="middle" class="small">CARInteropTests</text>
+  </g>
+
+  <g>
+    <rect x="290" y="230" width="200" height="120" class="category-box" rx="3"/>
+    <text x="390" y="250" text-anchor="middle" class="label" font-weight="bold">Auth/</text>
+    <text x="390" y="268" text-anchor="middle" class="small">OAuth, JWT, DPoP, TOTP</text>
+    <text x="390" y="285" text-anchor="middle" class="count">~120 tests</text>
+    
+    <rect x="300" y="300" width="180" height="40" class="test-box" rx="2"/>
+    <text x="390" y="318" text-anchor="middle" class="small">OAuthIntegrationTests</text>
+    <text x="390" y="332" text-anchor="middle" class="small">JWTTests</text>
+  </g>
+
+  <g>
+    <rect x="510" y="230" width="200" height="120" class="category-box" rx="3"/>
+    <text x="610" y="250" text-anchor="middle" class="label" font-weight="bold">Network/</text>
+    <text x="610" y="268" text-anchor="middle" class="small">HTTP, XRPC, Routing</text>
+    <text x="610" y="285" text-anchor="middle" class="count">~180 tests</text>
+    
+    <rect x="520" y="300" width="180" height="40" class="test-box" rx="2"/>
+    <text x="610" y="318" text-anchor="middle" class="small">HttpServerTests</text>
+    <text x="610" y="332" text-anchor="middle" class="small">XrpcMethodRegistryTests</text>
+  </g>
+
+  <!-- Row 2: Database, Repository, Identity -->
+  <g>
+    <rect x="70" y="370" width="200" height="120" class="category-box" rx="3"/>
+    <text x="170" y="390" text-anchor="middle" class="label" font-weight="bold">Database/</text>
+    <text x="170" y="408" text-anchor="middle" class="small">SQLite, Migrations</text>
+    <text x="170" y="425" text-anchor="middle" class="count">~100 tests</text>
+    
+    <rect x="80" y="440" width="180" height="40" class="test-box" rx="2"/>
+    <text x="170" y="458" text-anchor="middle" class="small">DatabasePoolTests</text>
+    <text x="170" y="472" text-anchor="middle" class="small">ActorStoreTests</text>
+  </g>
+
+  <g>
+    <rect x="290" y="370" width="200" height="120" class="category-box" rx="3"/>
+    <text x="390" y="390" text-anchor="middle" class="label" font-weight="bold">Repository/</text>
+    <text x="390" y="408" text-anchor="middle" class="small">MST, Commits, Blobs</text>
+    <text x="390" y="425" text-anchor="middle" class="count">~90 tests</text>
+    
+    <rect x="300" y="440" width="180" height="40" class="test-box" rx="2"/>
+    <text x="390" y="458" text-anchor="middle" class="small">RepoCommitTests</text>
+    <text x="390" y="472" text-anchor="middle" class="small">PDSBlobServiceTests</text>
+  </g>
+
+  <g>
+    <rect x="510" y="370" width="200" height="120" class="category-box" rx="3"/>
+    <text x="610" y="390" text-anchor="middle" class="label" font-weight="bold">Identity/</text>
+    <text x="610" y="408" text-anchor="middle" class="small">DID, Handle Resolution</text>
+    <text x="610" y="425" text-anchor="middle" class="count">~80 tests</text>
+    
+    <rect x="520" y="440" width="180" height="40" class="test-box" rx="2"/>
+    <text x="610" y="458" text-anchor="middle" class="small">DIDResolverTests</text>
+    <text x="610" y="472" text-anchor="middle" class="small">HandleResolverTests</text>
+  </g>
+
+  <!-- Row 3: Sync, Admin, Services -->
+  <g>
+    <rect x="70" y="510" width="200" height="120" class="category-box" rx="3"/>
+    <text x="170" y="530" text-anchor="middle" class="label" font-weight="bold">Sync/</text>
+    <text x="170" y="548" text-anchor="middle" class="small">Firehose, WebSocket</text>
+    <text x="170" y="565" text-anchor="middle" class="count">~70 tests</text>
+    
+    <rect x="80" y="580" width="180" height="40" class="test-box" rx="2"/>
+    <text x="170" y="598" text-anchor="middle" class="small">FirehoseIntegrationTests</text>
+    <text x="170" y="612" text-anchor="middle" class="small">WebSocketServerTests</text>
+  </g>
+
+  <g>
+    <rect x="290" y="510" width="200" height="120" class="category-box" rx="3"/>
+    <text x="390" y="530" text-anchor="middle" class="label" font-weight="bold">Admin/</text>
+    <text x="390" y="548" text-anchor="middle" class="small">Moderation, Takedowns</text>
+    <text x="390" y="565" text-anchor="middle" class="count">~60 tests</text>
+    
+    <rect x="300" y="580" width="180" height="40" class="test-box" rx="2"/>
+    <text x="390" y="598" text-anchor="middle" class="small">PDSAdminServiceTests</text>
+    <text x="390" y="612" text-anchor="middle" class="small">AdminAuthTests</text>
+  </g>
+
+  <g>
+    <rect x="510" y="510" width="200" height="120" class="category-box" rx="3"/>
+    <text x="610" y="530" text-anchor="middle" class="label" font-weight="bold">Services/</text>
+    <text x="610" y="548" text-anchor="middle" class="small">Account, Record, Blob</text>
+    <text x="610" y="565" text-anchor="middle" class="count">~80 tests</text>
+    
+    <rect x="520" y="580" width="180" height="40" class="test-box" rx="2"/>
+    <text x="610" y="598" text-anchor="middle" class="small">PDSAccountServiceTests</text>
+    <text x="610" y="612" text-anchor="middle" class="small">PDSRecordServiceTests</text>
+  </g>
+
+  <!-- Row 4: Security, Integration, Characterization -->
+  <g>
+    <rect x="70" y="650" width="200" height="120" class="category-box" rx="3"/>
+    <text x="170" y="670" text-anchor="middle" class="label" font-weight="bold">Security/</text>
+    <text x="170" y="688" text-anchor="middle" class="small">Validation, SSRF, Fuzzing</text>
+    <text x="170" y="705" text-anchor="middle" class="count">~50 tests</text>
+    
+    <rect x="80" y="720" width="180" height="40" class="test-box" rx="2"/>
+    <text x="170" y="738" text-anchor="middle" class="small">CBORSecurityTests</text>
+    <text x="170" y="752" text-anchor="middle" class="small">HandleResolverSSRFTests</text>
+  </g>
+
+  <g>
+    <rect x="290" y="650" width="200" height="120" class="category-box" rx="3"/>
+    <text x="390" y="670" text-anchor="middle" class="label" font-weight="bold">Integration/</text>
+    <text x="390" y="688" text-anchor="middle" class="small">End-to-End Workflows</text>
+    <text x="390" y="705" text-anchor="middle" class="count">~37 tests</text>
+    
+    <rect x="300" y="720" width="180" height="40" class="test-box" rx="2"/>
+    <text x="390" y="738" text-anchor="middle" class="small">OAuthIntegrationTests</text>
+    <text x="390" y="752" text-anchor="middle" class="small">FirehoseIntegrationTests</text>
+  </g>
+
+  <g>
+    <rect x="510" y="650" width="200" height="120" class="category-box" rx="3"/>
+    <text x="610" y="670" text-anchor="middle" class="label" font-weight="bold">CharacterizationTests/</text>
+    <text x="610" y="688" text-anchor="middle" class="small">Behavior Documentation</text>
+    <text x="610" y="705" text-anchor="middle" class="count">~20 tests</text>
+    
+    <rect x="520" y="720" width="180" height="40" class="test-box" rx="2"/>
+    <text x="610" y="738" text-anchor="middle" class="small">ActorStoreCharacterization</text>
+    <text x="610" y="752" text-anchor="middle" class="small">MSTCharacterizationTests</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(50, 790)">
+    <text x="0" y="0" class="label" font-weight="bold">Test Discovery:</text>
+    <text x="0" y="18" class="small">• Runtime reflection finds methods starting with "test"</text>
+    <text x="0" y="33" class="small">• Test classes registered in testClasses array</text>
+    <text x="0" y="48" class="small">• Each test class inherits from XCTestCase</text>
+    <text x="0" y="63" class="small">• Tests run via: ./build/tests/AllTests</text>
+  </g>
+</svg>

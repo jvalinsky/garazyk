@@ -153,6 +153,6 @@ These findings inform the gap between current implementation and specification c
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Tests Docs](../../tests/README.md) - Testing documentation
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Tests Docs](../../tests/README) - Testing documentation

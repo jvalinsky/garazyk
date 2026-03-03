@@ -399,6 +399,6 @@ Backup user's repository
 
 ## Next Steps
 
-- **[MST Trees](./mst-trees.md)** — Merkle Search Tree structure
-- **[Cryptography](./cryptography.md)** — Cryptographic operations
-- **[Repository Protocol](../07-repository-protocol/repository-basics.md)** — Repository operations
+- **[MST Trees](./mst-trees)** — Merkle Search Tree structure
+- **[Cryptography](./cryptography)** — Cryptographic operations
+- **[Repository Protocol](../07-repository-protocol/repository-basics)** — Repository operations

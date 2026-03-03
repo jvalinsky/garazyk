@@ -837,9 +837,9 @@ Before going live, verify:
 **Congratulations!** You've deployed a production ATProto PDS.
 
 **Further reading:**
-- [Configuration Reference](../11-reference/config-reference.md) — All config options
-- [Troubleshooting Guide](../11-reference/troubleshooting.md) — Common issues
-- [API Reference](../11-reference/api-reference.md) — XRPC endpoints
+- [Configuration Reference](../11-reference/config-reference) — All config options
+- [Troubleshooting Guide](../11-reference/troubleshooting) — Common issues
+- [API Reference](../11-reference/api-reference) — XRPC endpoints
 
 **Production considerations:**
 - Set up external monitoring (UptimeRobot, Pingdom)

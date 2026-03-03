@@ -6,8 +6,8 @@ Tests for configuration, metrics, debugging tools, and exploration endpoints.
 
 | File | Description |
 |------|-------------|
-| [config-metrics.md](config-metrics.md) | Configuration hierarchy, environment overrides, metrics collection, NodeInfo |
-| [debug.md](debug.md) | Logger performance, explore handler, MST viewer, OAuth demo |
+| [config-metrics.md](config-metrics) | Configuration hierarchy, environment overrides, metrics collection, NodeInfo |
+| [debug.md](debug) | Logger performance, explore handler, MST viewer, OAuth demo |
 
 ## Test Classes
 
@@ -32,8 +32,8 @@ Tests for configuration, metrics, debugging tools, and exploration endpoints.
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [Config & Metrics Tests](config-metrics.md) - Configuration details
-- [Debug Tests](debug.md) - Debug and exploration tools
-- [Application Tests](../04-application/README.md) - Application lifecycle
-- [Controller Tests](../04-application/controller.md) - Configuration loading
+- [Test Index](../README) - Main test documentation index
+- [Config & Metrics Tests](config-metrics) - Configuration details
+- [Debug Tests](debug) - Debug and exploration tools
+- [Application Tests](../04-application/README) - Application lifecycle
+- [Controller Tests](../04-application/controller) - Configuration loading
