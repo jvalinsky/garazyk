@@ -208,10 +208,10 @@
   - [x] 11.5.2 Create WebSocket example in examples/
   - [x] 11.5.3 Test example builds and runs
 
-- [~] 11.6 Write Tutorial 6: Production Deployment
-  - [ ] 11.6.1 Write docs/10-tutorials/tutorial-6-deployment.md
-  - [ ] 11.6.2 Create Docker deployment example
-  - [ ] 11.6.3 Test deployment example
+- [x] 11.6 Write Tutorial 6: Production Deployment
+  - [x] 11.6.1 Write docs/10-tutorials/tutorial-6-deployment.md
+  - [x] 11.6.2 Create Docker deployment example
+  - [x] 11.6.3 Test deployment example
 
 ## Phase 12: Reference & Polish
 
