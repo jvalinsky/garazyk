@@ -65,6 +65,20 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
   return [NSString stringWithFormat:@"%@://%@", scheme, host];
 }
 
+static BOOL PDSConfigRunningUnderTests(void) {
+  NSDictionary *env = [[NSProcessInfo processInfo] environment];
+  if ([env[@"XCTestConfigurationFilePath"] length] > 0 ||
+      [env[@"XCTestBundlePath"] length] > 0 ||
+      [env[@"PDS_RUNNING_TESTS"] length] > 0) {
+    return YES;
+  }
+
+  NSString *processName =
+      [[[NSProcessInfo processInfo] processName] lowercaseString];
+  return [processName containsString:@"alltests"] ||
+         [processName containsString:@"xctest"];
+}
+
 @implementation PDSConfiguration {
   NSDictionary *_config;
   NSString *_phoneVerificationProvider;
@@ -105,6 +119,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
 - (instancetype)init {
   self = [super init];
   if (self) {
+    BOOL runningUnderTests = PDSConfigRunningUnderTests();
     _config = @{};
 
     _serverHost = @"0.0.0.0";
@@ -185,19 +200,22 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
     _crawlRelays = @[ @"https://bsky.network" ];
 
     // Security defaults
-    _useBiometricProtection = YES;
+    _useBiometricProtection = runningUnderTests ? NO : YES;
     if ([self envVarExists:@"PDS_USE_BIOMETRIC_PROTECTION"]) {
       _useBiometricProtection =
-          [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION" default:YES];
+          [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION"
+                    default:_useBiometricProtection];
     }
 
-    _useKeychain = YES;
+    _useKeychain = runningUnderTests ? NO : YES;
     if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
-      _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN" default:YES];
+      _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN"
+                               default:_useKeychain];
     }
 
     _masterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
 
+    _useSecureEnclave = NO;
     if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
       _useSecureEnclave = [self boolFromEnv:@"PDS_USE_SECURE_ENCLAVE" default:NO];
     }
