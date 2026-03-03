@@ -297,6 +297,16 @@
 </code></pre>
 
 <p>Sets 401 Unauthorized response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setAuthenticationError:(HttpResponse *)response
+                       message:(NSString *)message {
+    [self setError:response
+        statusCode:HttpStatusUnauthorized
+         errorCode:@&quot;AuthRequired&quot;
+           message:message ?: @&quot;Authentication required&quot;];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setAuthenticationError:response 
                                 message:@&quot;Invalid token&quot;];
@@ -318,6 +328,16 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets 403 Forbidden response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setAuthorizationError:(HttpResponse *)response
+                      message:(NSString *)message {
+    [self setError:response
+        statusCode:HttpStatusForbidden
+         errorCode:@&quot;Forbidden&quot;
+           message:message ?: @&quot;Forbidden&quot;];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setAuthorizationError:response 
                                message:@&quot;Cannot modify other's repository&quot;];
@@ -339,6 +359,16 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets 400 Bad Request response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setValidationError:(HttpResponse *)response
+                   message:(NSString *)message {
+    [self setError:response
+        statusCode:HttpStatusBadRequest
+         errorCode:@&quot;InvalidRequest&quot;
+           message:message ?: @&quot;Invalid request&quot;];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setValidationError:response 
                             message:@&quot;Invalid email format&quot;];
@@ -360,6 +390,16 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets 404 Not Found response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setNotFoundError:(HttpResponse *)response
+                 message:(NSString *)message {
+    [self setError:response
+        statusCode:HttpStatusNotFound
+         errorCode:@&quot;NotFound&quot;
+           message:message ?: @&quot;Not found&quot;];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setNotFoundError:response 
                           message:@&quot;Record not found&quot;];
@@ -381,6 +421,16 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets 500 Internal Server Error response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setInternalServerError:(HttpResponse *)response
+                       message:(NSString *)message {
+    [self setError:response
+        statusCode:HttpStatusInternalServerError
+         errorCode:@&quot;InternalServerError&quot;
+           message:message ?: @&quot;Internal server error&quot;];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setInternalServerError:response 
                                 message:@&quot;Database connection failed&quot;];
@@ -403,6 +453,21 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets 405 Method Not Allowed response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setMethodNotAllowedError:(HttpResponse *)response
+                   allowedMethod:(NSString *)allowedMethod
+                         message:(NSString *)message {
+    response.statusCode = HttpStatusMethodNotAllowed;
+    if (allowedMethod.length &gt; 0) {
+        [response setHeader:allowedMethod forKey:@&quot;Allow&quot;];
+    }
+    [response setJsonBody:@{
+        @&quot;error&quot;: @&quot;MethodNotAllowed&quot;,
+        @&quot;message&quot;: message ?: [NSString stringWithFormat:@&quot;Expected %@&quot;, allowedMethod]
+    }];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setMethodNotAllowedError:response 
                             allowedMethod:@&quot;POST&quot;
@@ -428,6 +493,19 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets custom error response.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setError:(HttpResponse *)response
+      statusCode:(HttpStatusCode)statusCode
+       errorCode:(NSString *)errorCode
+         message:(NSString *)message {
+    response.statusCode = statusCode;
+    [response setJsonBody:@{
+        @&quot;error&quot;: errorCode,
+        @&quot;message&quot;: message
+    }];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setError:response
               statusCode:409
@@ -442,12 +520,32 @@ Content-Type: application/json
 </code></pre>
 
 <p>Sets 400 Bad Request with InvalidRequest error code.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setInvalidRequestError:(HttpResponse *)response
+                       message:(NSString *)message {
+    [self setError:response
+        statusCode:HttpStatusBadRequest
+         errorCode:@&quot;InvalidRequest&quot;
+           message:message];
+}
+</code></pre>
+
 <h3 id="account-not-found-error">Account Not Found Error</h3>
 <pre class="codehilite"><code class="language-objc">+ (void)setAccountNotFoundError:(HttpResponse *)response
                      identifier:(NSString *)identifier;
 </code></pre>
 
 <p>Sets 404 Not Found for account.</p>
+<p><strong>Implementation (from XrpcErrorHelper.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">+ (void)setAccountNotFoundError:(HttpResponse *)response
+                     identifier:(NSString *)identifier {
+    [self setError:response
+        statusCode:HttpStatusNotFound
+         errorCode:@&quot;AccountNotFound&quot;
+           message:[NSString stringWithFormat:@&quot;Account not found: %@&quot;, identifier]];
+}
+</code></pre>
+
 <p><strong>Example:</strong></p>
 <pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setAccountNotFoundError:response 
                              identifier:@&quot;alice&quot;];
@@ -738,7 +836,7 @@ response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:n
 <li><a href="./auth-helpers.md">Auth Helpers</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

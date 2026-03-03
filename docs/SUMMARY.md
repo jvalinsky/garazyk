@@ -14,6 +14,8 @@
 - [CBOR and CAR](02-core-concepts/cbor-and-car.md)
 - [Merkle Search Trees](02-core-concepts/mst-trees.md)
 - [Cryptography](02-core-concepts/cryptography.md)
+- [PLC Directory](02-core-concepts/plc-directory.md)
+- [DID Document Updates](02-core-concepts/did-document-updates.md)
 
 ### 03 Application Layer
 - [Services Overview](03-application-layer/services-overview.md)
@@ -32,6 +34,7 @@
 - [Domain Methods](04-network-layer/domain-methods.md)
 - [Auth Helpers](04-network-layer/auth-helpers.md)
 - [Error Handling](04-network-layer/error-handling.md)
+- [Input Validation](04-network-layer/input-validation.md)
 - [Rate Limiting](04-network-layer/rate-limiting.md)
 - [DoS Protection](04-network-layer/dos-protection.md)
 - [Request Throttling](04-network-layer/request-throttling.md)
@@ -42,12 +45,18 @@
 - [Actor Databases](05-database-layer/actor-databases.md)
 - [Migrations](05-database-layer/migrations.md)
 - [WAL Mode](05-database-layer/wal-mode.md)
+- [Migration Strategy](05-database-layer/migration-strategy.md)
+- [Migration Rollback](05-database-layer/migration-rollback.md)
+- [Data Integrity](05-database-layer/data-integrity.md)
+- [Zero-Downtime Migrations](05-database-layer/zero-downtime-migrations.md)
 
 ### 06 Authentication
 - [JWT Tokens](06-authentication/jwt-tokens.md)
 - [OAuth 2.0 with DPoP](06-authentication/oauth2-dpop.md)
 - [Key Rotation](06-authentication/key-rotation.md)
 - [TOTP and WebAuthn](06-authentication/totp-webauthn.md)
+- [Secrets Management](06-authentication/secrets-management.md)
+- [Security Best Practices](06-authentication/security-best-practices.md)
 
 ### 07 Repository & Protocol
 - [Repository Basics](07-repository-protocol/repository-basics.md)
@@ -55,6 +64,10 @@
 - [CAR Format](07-repository-protocol/car-format.md)
 - [CID and Hashing](07-repository-protocol/cid-and-hashing.md)
 - [Blob Storage](07-repository-protocol/blob-storage.md)
+- [Blob Lifecycle](07-repository-protocol/blob-lifecycle.md)
+- [Blob Optimization](07-repository-protocol/blob-optimization.md)
+- [Blob Garbage Collection](07-repository-protocol/blob-garbage-collection.md)
+- [Blob Quotas](07-repository-protocol/blob-quotas.md)
 
 ### 08 Sync & Firehose
 - [Firehose Overview](08-sync-firehose/firehose-overview.md)
@@ -71,12 +84,24 @@
 
 ### 10 Tutorials
 - [Tutorial 1: Hello PDS](10-tutorials/tutorial-1-hello-pds.md)
+- [Tutorial 2: Accounts](10-tutorials/tutorial-2-accounts.md)
+- [Tutorial 3: Records](10-tutorials/tutorial-3-records.md)
+- [Tutorial 4: Authentication](10-tutorials/tutorial-4-auth.md)
+- [Tutorial 5: Firehose](10-tutorials/tutorial-5-firehose.md)
+- [Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment.md)
 
 ### 11 Reference
 - [API Reference](11-reference/api-reference.md)
 - [Config Reference](11-reference/config-reference.md)
 - [CLI Reference](11-reference/cli-reference.md)
 - [Troubleshooting](11-reference/troubleshooting.md)
+- [Metrics Collection](11-reference/metrics-collection.md)
+- [Logging Strategy](11-reference/logging-strategy.md)
+- [Performance Monitoring](11-reference/performance-monitoring.md)
+- [Alerting](11-reference/alerting.md)
+- [Security Audit Guide](11-reference/security-audit-guide.md)
+- [PLC Server Operations](11-reference/plc-server-operations.md)
+- [PLC Failover](11-reference/plc-failover.md)
 
 ### 12 Diagrams
 - [System Architecture](12-diagrams/system-architecture.svg)
@@ -89,6 +114,10 @@
 - [Rate Limiting Algorithm](12-diagrams/rate-limiting-algorithm.svg)
 - [Request Throttling Flow](12-diagrams/request-throttling-flow.svg)
 - [DoS Mitigation Architecture](12-diagrams/dos-mitigation-architecture.svg)
+- [Secrets Management Flow](12-diagrams/secrets-management-flow.svg)
+- [PLC Directory Architecture](12-diagrams/plc-directory-architecture.svg)
+- [DID Resolution Flow](12-diagrams/did-resolution-flow.svg)
+- [PLC Failover Mechanism](12-diagrams/plc-failover-mechanism.svg)
 
 ---
 

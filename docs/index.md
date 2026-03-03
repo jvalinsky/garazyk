@@ -31,6 +31,8 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [CBOR and CAR](02-core-concepts/cbor-and-car.md) — Serialization formats
 - [Merkle Search Trees](02-core-concepts/mst-trees.md) — Data structure
 - [Cryptography](02-core-concepts/cryptography.md) — JWT, DPoP, ECDSA P-256
+- [PLC Directory](02-core-concepts/plc-directory.md) — DID operations
+- [DID Document Updates](02-core-concepts/did-document-updates.md) — Update workflow
 
 ### Application Layer
 - [PDSApplication Facade](03-application-layer/pds-application.md) — Main application class
@@ -49,6 +51,10 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Domain Methods](04-network-layer/domain-methods.md) — Handler patterns
 - [Auth Helpers](04-network-layer/auth-helpers.md) — JWT/DPoP verification
 - [Error Handling](04-network-layer/error-handling.md) — Standardized responses
+- [Input Validation](04-network-layer/input-validation.md) — Request validation
+- [Rate Limiting](04-network-layer/rate-limiting.md) — Request rate control
+- [DoS Protection](04-network-layer/dos-protection.md) — Attack mitigation
+- [Request Throttling](04-network-layer/request-throttling.md) — Traffic management
 
 ### Database Layer
 - [SQLite Architecture](05-database-layer/sqlite-architecture.md) — Design patterns
@@ -56,12 +62,18 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Actor Databases](05-database-layer/actor-databases.md) — Per-user pools
 - [Migrations](05-database-layer/migrations.md) — Schema versioning
 - [WAL Mode](05-database-layer/wal-mode.md) — Write-Ahead Logging
+- [Migration Strategy](05-database-layer/migration-strategy.md) — Planning migrations
+- [Migration Rollback](05-database-layer/migration-rollback.md) — Rollback procedures
+- [Data Integrity](05-database-layer/data-integrity.md) — Consistency checks
+- [Zero-Downtime Migrations](05-database-layer/zero-downtime-migrations.md) — Online migrations
 
 ### Authentication
 - [JWT Tokens](06-authentication/jwt-tokens.md) — Token generation/verification
 - [OAuth 2.0 with DPoP](06-authentication/oauth2-dpop.md) — OAuth flow
 - [Key Rotation](06-authentication/key-rotation.md) — Key management
 - [TOTP and WebAuthn](06-authentication/totp-webauthn.md) — MFA
+- [Secrets Management](06-authentication/secrets-management.md) — Key storage
+- [Security Best Practices](06-authentication/security-best-practices.md) — Defense in depth
 
 ### Repository & Protocol
 - [Repository Basics](07-repository-protocol/repository-basics.md) — Structure
@@ -69,12 +81,17 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [CAR Format](07-repository-protocol/car-format.md) — Archive format
 - [CID and Hashing](07-repository-protocol/cid-and-hashing.md) — Content addressing
 - [Blob Storage](07-repository-protocol/blob-storage.md) — File management
+- [Blob Lifecycle](07-repository-protocol/blob-lifecycle.md) — Upload/download/deletion
+- [Blob Optimization](07-repository-protocol/blob-optimization.md) — Chunking and caching
+- [Blob Garbage Collection](07-repository-protocol/blob-garbage-collection.md) — Cleanup strategies
+- [Blob Quotas](07-repository-protocol/blob-quotas.md) — Size limits
 
 ### Sync & Firehose
 - [Firehose Overview](08-sync-firehose/firehose-overview.md) — Real-time sync
 - [WebSocket Server](08-sync-firehose/websocket-server.md) — Connection handling
 - [Commit Broadcasting](08-sync-firehose/commit-broadcasting.md) — Event streaming
 - [Backpressure](08-sync-firehose/backpressure.md) — Flow control
+- [Firehose Rate Limiting](08-sync-firehose/firehose-rate-limiting.md) — Subscriber limits
 
 ### Platform Compatibility
 - [macOS vs Linux](09-platform-compatibility/macos-linux.md) — Platform differences
@@ -95,6 +112,13 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Config Reference](11-reference/config-reference.md) — Configuration
 - [CLI Reference](11-reference/cli-reference.md) — kaszlak commands
 - [Troubleshooting](11-reference/troubleshooting.md) — Common issues
+- [Metrics Collection](11-reference/metrics-collection.md) — Observability
+- [Logging Strategy](11-reference/logging-strategy.md) — Structured logging
+- [Performance Monitoring](11-reference/performance-monitoring.md) — Profiling
+- [Alerting](11-reference/alerting.md) — Alert rules
+- [Security Audit Guide](11-reference/security-audit-guide.md) — Vulnerability scanning
+- [PLC Server Operations](11-reference/plc-server-operations.md) — Running campagnola
+- [PLC Failover](11-reference/plc-failover.md) — Redundancy strategies
 
 ### Diagrams
 - [System Architecture](12-diagrams/system-architecture.svg)
@@ -104,6 +128,11 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [OAuth 2.0 with DPoP Flow](12-diagrams/oauth2-dpop-flow.svg)
 - [Commit Broadcasting Flow](12-diagrams/commit-broadcasting-flow.svg)
 - [WebSocket Upgrade Flow](12-diagrams/websocket-upgrade-flow.svg)
+- [Rate Limiting Algorithm](12-diagrams/rate-limiting-algorithm.svg)
+- [Secrets Management Flow](12-diagrams/secrets-management-flow.svg)
+- [PLC Directory Architecture](12-diagrams/plc-directory-architecture.svg)
+- [DID Resolution Flow](12-diagrams/did-resolution-flow.svg)
+- [PLC Failover Mechanism](12-diagrams/plc-failover-mechanism.svg)
 
 ## Learning Path
 
@@ -119,10 +148,57 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 3. Check [Network Layer](04-network-layer/http-server.md) for endpoints
 4. Follow corresponding tutorial
 
+**For Production Deployment:**
+1. Review [Security Best Practices](06-authentication/security-best-practices.md)
+2. Configure [Rate Limiting](04-network-layer/rate-limiting.md) and [DoS Protection](04-network-layer/dos-protection.md)
+3. Set up [Monitoring](11-reference/metrics-collection.md) and [Alerting](11-reference/alerting.md)
+4. Plan [Database Migrations](05-database-layer/migration-strategy.md)
+5. Follow [Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment.md)
+
 **For Troubleshooting:**
 1. Check [Troubleshooting Guide](11-reference/troubleshooting.md)
 2. Review [Error Handling](04-network-layer/error-handling.md)
 3. Check [Platform Compatibility](09-platform-compatibility/macos-linux.md)
+
+## Advanced Topics
+
+This guide includes comprehensive coverage of production-ready features:
+
+**Security & Authentication:**
+- [Secrets Management](06-authentication/secrets-management.md) — Hardware-backed key storage
+- [Security Best Practices](06-authentication/security-best-practices.md) — Defense in depth
+- [Input Validation](04-network-layer/input-validation.md) — Attack prevention
+- [Security Audit Guide](11-reference/security-audit-guide.md) — Vulnerability scanning
+
+**Performance & Reliability:**
+- [Rate Limiting](04-network-layer/rate-limiting.md) — Request rate control
+- [DoS Protection](04-network-layer/dos-protection.md) — Attack mitigation
+- [Blob Optimization](07-repository-protocol/blob-optimization.md) — Chunking and caching
+- [Firehose Rate Limiting](08-sync-firehose/firehose-rate-limiting.md) — Subscriber limits
+
+**Operations & Monitoring:**
+- [Metrics Collection](11-reference/metrics-collection.md) — Observability
+- [Logging Strategy](11-reference/logging-strategy.md) — Structured logging
+- [Performance Monitoring](11-reference/performance-monitoring.md) — Profiling
+- [Alerting](11-reference/alerting.md) — Alert rules
+
+**Database Management:**
+- [Migration Strategy](05-database-layer/migration-strategy.md) — Planning migrations
+- [Migration Rollback](05-database-layer/migration-rollback.md) — Rollback procedures
+- [Data Integrity](05-database-layer/data-integrity.md) — Consistency checks
+- [Zero-Downtime Migrations](05-database-layer/zero-downtime-migrations.md) — Online migrations
+
+**Blob Management:**
+- [Blob Lifecycle](07-repository-protocol/blob-lifecycle.md) — Upload/download/deletion
+- [Blob Optimization](07-repository-protocol/blob-optimization.md) — Chunking and caching
+- [Blob Garbage Collection](07-repository-protocol/blob-garbage-collection.md) — Cleanup strategies
+- [Blob Quotas](07-repository-protocol/blob-quotas.md) — Size limits
+
+**Identity & PLC:**
+- [PLC Directory](02-core-concepts/plc-directory.md) — DID operations
+- [DID Document Updates](02-core-concepts/did-document-updates.md) — Update workflow
+- [PLC Server Operations](11-reference/plc-server-operations.md) — Running campagnola
+- [PLC Failover](11-reference/plc-failover.md) — Redundancy strategies
 
 ## Documentation Structure
 

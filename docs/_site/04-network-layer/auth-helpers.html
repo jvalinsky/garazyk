@@ -272,7 +272,160 @@
 - <code>adminController</code>: Admin controller for takedown checks
 - <code>request</code>: HTTP request for DPoP URL construction</p>
 <p><strong>Returns:</strong> Authenticated DID or nil on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation Details (from XrpcAuthHelper.m):</strong></p>
+<p>The helper supports both Bearer tokens and DPoP tokens:</p>
+<pre class="codehilite"><code class="language-objc">// Parse Bearer or DPoP token
+NSString *token = nil;
+BOOL isDPoP = NO;
+if ([authHeader hasPrefix:@&quot;Bearer &quot;]) {
+    token = [authHeader substringFromIndex:7];
+    if ([request headerForKey:@&quot;DPoP&quot;].length &gt; 0) {
+        isDPoP = YES; // Some clients send Bearer but attach a DPoP header
+    }
+} else if ([authHeader hasPrefix:@&quot;DPoP &quot;]) {
+    token = [authHeader substringFromIndex:5];
+    isDPoP = YES;
+} else {
+    return nil;
+}
+</code></pre>
+
+<p>For DPoP verification, it validates the proof and extracts the thumbprint:</p>
+<pre class="codehilite"><code class="language-objc">// DPoP verification
+NSString *dpopThumbprint = nil;
+if (isDPoP) {
+    NSString *dpopProof = [request headerForKey:@&quot;DPoP&quot;];
+    if (dpopProof.length == 0) {
+        PDS_LOG_AUTH_WARN(@&quot;Missing DPoP header for DPoP authorization&quot;);
+        return nil;
+    }
+
+    NSURL *dpopURL = XrpcAuthExpectedDPoPURL(request, jwtMinter);
+    if (!dpopURL) {
+        PDS_LOG_AUTH_WARN(@&quot;Unable to construct DPoP URL for request&quot;);
+        return nil;
+    }
+
+    // Verify DPoP proof
+    NSError *dpopError = nil;
+    if (![OAuth2DPoPProof verifyProof:dpopProof
+                               method:request.methodString
+                                  url:dpopURL
+                                nonce:nil
+                         requireNonce:[PDSConfiguration sharedConfiguration].requireDPoPNonce
+                        outThumbprint:&amp;dpopThumbprint
+                                error:&amp;dpopError]) {
+        // Handle DPoP nonce challenge
+        if ([dpopError.userInfo[@&quot;use_dpop_nonce&quot;] boolValue]) {
+            if (response) {
+                response.statusCode = HttpStatusUnauthorized;
+                NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+                if (nonce.length &gt; 0) {
+                    [response setHeader:nonce forKey:@&quot;DPoP-Nonce&quot;];
+                }
+                [response setHeader:@&quot;DPoP error=\&quot;use_dpop_nonce\&quot;&quot; forKey:@&quot;WWW-Authenticate&quot;];
+                [response setJsonBody:@{
+                    @&quot;error&quot;: @&quot;use_dpop_nonce&quot;,
+                    @&quot;message&quot;: @&quot;DPoP nonce required&quot;
+                }];
+            }
+            return nil;
+        }
+        return nil;
+    }
+}
+</code></pre>
+
+<p>JWT verification with custom audience handling:</p>
+<pre class="codehilite"><code class="language-objc">// Parse the JWT token
+NSError *parseError = nil;
+JWT *jwt = [JWT jwtWithToken:token error:&amp;parseError];
+if (!jwt || parseError) {
+    return nil;
+}
+
+// Create verifier and set expected issuer
+JWTVerifier *verifier = [[JWTVerifier alloc] init];
+if (jwtMinter) {
+    verifier.keyManager = jwtMinter.keyManager;
+    verifier.publicKey = jwtMinter.publicKey;
+}
+
+PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+NSString *expectedIssuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
+verifier.expectedIssuer = expectedIssuer;
+verifier.allowedAlgorithms = [self allowedAlgorithmsForMinter:jwtMinter];
+
+// Verify the JWT
+NSError *verifyError = nil;
+BOOL isValid = [verifier verifyJWT:jwt error:&amp;verifyError];
+if (!isValid || verifyError) {
+    return nil;
+}
+
+// Custom Audience Verification (supports did:web variants)
+NSString *tokenAud = jwt.payload.aud;
+if (tokenAud) {
+    BOOL validAud = [tokenAud isEqualToString:expectedIssuer];
+    if (!validAud) {
+        NSURL *issuerURL = [NSURL URLWithString:expectedIssuer];
+        if (issuerURL.host) {
+            NSString *didWebHost = [NSString stringWithFormat:@&quot;did:web:%@&quot;, issuerURL.host];
+            NSString *didWebHostPort = nil;
+            if (issuerURL.port) {
+                didWebHostPort = [NSString stringWithFormat:@&quot;did:web:%@%%3A%@&quot;, issuerURL.host, issuerURL.port];
+            }
+            if ([tokenAud isEqualToString:didWebHost] || (didWebHostPort &amp;&amp; [tokenAud isEqualToString:didWebHostPort])) {
+                validAud = YES;
+            }
+        }
+    }
+    if (!validAud) {
+        return nil;
+    }
+}
+</code></pre>
+
+<p>DPoP binding verification:</p>
+<pre class="codehilite"><code class="language-objc">// Enforce DPoP binding
+NSString *tokenJkt = jwt.payload.cnf[@&quot;jkt&quot;];
+if (isDPoP) {
+    if (!tokenJkt) {
+        PDS_LOG_AUTH_WARN(@&quot;DPoP authorization used with non-DPoP-bound token&quot;);
+        return nil;
+    }
+    if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
+        PDS_LOG_AUTH_WARN(@&quot;DPoP thumbprint mismatch&quot;);
+        return nil;
+    }
+} else if (tokenJkt) {
+    PDS_LOG_AUTH_WARN(@&quot;DPoP-bound token sent as Bearer token&quot;);
+    return nil;
+}
+</code></pre>
+
+<p>Takedown account rejection:</p>
+<pre class="codehilite"><code class="language-objc">// Extract DID from subject claim
+NSString *did = jwt.payload.sub;
+if (!did || ![did hasPrefix:@&quot;did:&quot;]) {
+    return nil;
+}
+
+// Check takedown status
+NSError *takedownError = nil;
+BOOL isTakedown = [adminController isAccountTakedownActive:did error:&amp;takedownError];
+if (takedownError) {
+    return nil;
+}
+if (isTakedown) {
+    PDS_LOG_AUTH_WARN(@&quot;Rejected request for suspended account %@&quot;, did);
+    return nil;
+}
+
+return did;
+</code></pre>
+
+<p><strong>Example Usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
 NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                               jwtMinter:jwtMinter
@@ -657,7 +810,7 @@ if (authHeader) {
 <li><a href="../06-authentication/oauth2-dpop.md">OAuth 2.0 with DPoP</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>
