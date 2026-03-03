@@ -81,6 +81,18 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
 int main(int argc, char *argv[]) {
   fprintf(stderr, "test_main started\n");
   @autoreleasepool {
+    // Ensure config defaults behave in non-interactive test mode.
+    setenv("PDS_RUNNING_TESTS", "1", 1);
+    if (getenv("PDS_USE_KEYCHAIN") == NULL) {
+      setenv("PDS_USE_KEYCHAIN", "0", 1);
+    }
+    if (getenv("PDS_USE_SECURE_ENCLAVE") == NULL) {
+      setenv("PDS_USE_SECURE_ENCLAVE", "0", 1);
+    }
+    if (getenv("PDS_USE_BIOMETRIC_PROTECTION") == NULL) {
+      setenv("PDS_USE_BIOMETRIC_PROTECTION", "0", 1);
+    }
+
     // Disable rate limiting for tests
     RateLimiterSetDisabledGlobally(YES);
     [RateLimiter sharedLimiter].enabled = NO;
@@ -153,6 +165,7 @@ int main(int argc, char *argv[]) {
       @"ActorStoreTests",
       @"DatabasePoolTests",
       @"PDSMigrationManagerTests",
+      @"PDSDatabaseLRUTests",
       @"PDSControllerTests",
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
@@ -230,6 +243,7 @@ int main(int argc, char *argv[]) {
       @"MSTCharacterizationTests",
       @"SessionCharacterizationTests",
       @"KeyManagerCharacterizationTests",
+      @"KeyManagerSecurityTests",
       @"ATProtoErrorTests",
       @"ProtocolCompileTests",
       @"PDSServiceContainerTests",
