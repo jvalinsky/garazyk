@@ -1,0 +1,35 @@
+# Milestone 7: Rewiring Plan
+
+## 1. WebSocketConnection
+- **Add properties:** `WebSocketCodec *codec`, `WebSocketHeartbeatPolicy *policy` in `WebSocketConnection.m` class extension.
+- **init:** Initialize `codec` and `policy`.
+- **handleReceivedData:** 
+  - Call `NSArray *events = [self.codec feedData:data];`
+  - Loop over events and switch on `event.type`. Call the appropriate handlers (`notifyTextMessage:`, `notifyBinaryMessage:`, `handlePingFrame:`, `handlePongFrame:`, `handleCloseFrame:`).
+- **Serialization:** Replace `createFrameWithOpcode:` calls in `sendText:`, `sendMessage:`, `sendPing:`, `sendPong:`, `closeWithCode:` with `[self.codec textFrame:]`, etc.
+- **Heartbeat:** 
+  - Change `startHeartbeat` to create a single recurring timer that calls `tickHeartbeat`.
+  - In `tickHeartbeat`, get `NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];`
+  - Call `WSHeartbeatAction action = [self.policy tick:now];`
+  - If action is `WSHeartbeatActionSendPing`, call `sendPing:nil` and `[self.policy pingSent:now]`.
+  - If action is `WSHeartbeatActionTimeout`, call `[self closeWithCode:1001 reason:@"Heartbeat timeout"]`.
+  - In `handlePongFrame:`, call `[self.policy pongReceived:now]`.
+- **Cleanup:** Delete manual parsing variables, `createFrameWithOpcode:`, manual heartbeat variables.
+
+## 2. HttpServer
+- **HttpConnectionState:**
+  - Remove `buffer`, `message`, `headersComplete`, `expectedBodyLength`, `headerStartTime`, `headerEndOffset`, `isChunkedEncoding`, `chunkedBodyParser`.
+  - Add `Http1Parser *parser`.
+  - Add `Http1PipelinePolicy *pipelinePolicy`.
+  - Initialize them in `init`.
+  - In `resetForNextRequest`, call `[self.parser reset]` and `[self.pipelinePolicy reset]`.
+- **HttpServer:**
+  - `handleReceivedData:onConnection:`: 
+    - Feed data to `state.parser`.
+    - Check for errors: if `[state.parser parseError]`, queue an error response and return.
+    - Check if complete: if `[state.parser completedRequest]`, process it.
+  - Delete `tryProcessRequestFromState:connection:` large CFHTTPMessage logic.
+  - Implement pipeline tracking using `state.pipelinePolicy`.
+  - Handle unconsumed data after request completion for pipelined requests.
+  - Pass unconsumed data to WebSocket upgrade if applicable.
+
