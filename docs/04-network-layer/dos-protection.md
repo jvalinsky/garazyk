@@ -2,669 +2,764 @@
 
 ## Overview
 
-The PDS implements multiple layers of Denial of Service (DoS) protection to ensure availability and prevent resource exhaustion. Protection mechanisms operate at the network, application, and resource levels.
+Denial of Service (DoS) protection prevents malicious actors from overwhelming the PDS and making it unavailable to legitimate users. The PDS implements multiple layers of defense to detect and mitigate various attack vectors.
 
 ## Attack Vectors
 
-### 1. Connection Flooding
+### 1. Request Flooding
 
-**Attack:** Opening many connections to exhaust server resources.
+**Attack:** Overwhelming the server with high-volume requests.
 
-**Mitigation:**
-- Connection concurrency limits
-- Connection timeout enforcement
-- Resource cleanup on connection close
-
-### 2. Slowloris Attacks
-
-**Attack:** Sending partial HTTP headers slowly to keep connections open.
+**Impact:**
+- CPU exhaustion from request processing
+- Memory exhaustion from connection handling
+- Network bandwidth saturation
+- Legitimate users unable to connect
 
 **Mitigation:**
-- Header timeout enforcement
-- Maximum header size limits
-- Connection state tracking
+- Rate limiting per IP/DID
+- Connection limits
+- Request queue depth limits
+- Fast rejection of invalid requests
 
-### 3. Request Flooding
+### 2. Slowloris Attack
 
-**Attack:** Sending many valid requests to overwhelm the server.
+**Attack:** Opening many connections and sending partial HTTP requests slowly to keep connections open.
+
+**Impact:**
+- Connection pool exhaustion
+- Server unable to accept new connections
+- Resource starvation
 
 **Mitigation:**
-- Rate limiting per DID/IP
-- Request concurrency limits
+- Connection timeouts
+- Request header size limits
+- Request timeout enforcement
+- Maximum concurrent connections per IP
+
+### 3. Large Payload Attack
+
+**Attack:** Sending extremely large request bodies to consume memory and bandwidth.
+
+**Impact:**
+- Memory exhaustion
+- Disk space exhaustion
+- Bandwidth saturation
+- Processing delays
+
+**Mitigation:**
+- Request body size limits
+- Streaming request processing
+- Early rejection of oversized requests
+- Blob upload quotas
+
+### 4. Computational Exhaustion
+
+**Attack:** Triggering expensive operations (crypto, database queries, MST operations).
+
+**Impact:**
+- CPU exhaustion
+- Database lock contention
+- Response time degradation
+- Service unavailability
+
+**Mitigation:**
+- Operation complexity limits
+- Query timeout enforcement
+- Cryptographic operation rate limiting
+- MST depth limits
+
+### 5. WebSocket Flooding
+
+**Attack:** Opening many WebSocket connections or sending high-volume messages.
+
+**Impact:**
+- Connection pool exhaustion
+- Memory exhaustion from buffering
+- CPU exhaustion from message processing
+- Firehose unavailability
+
+**Mitigation:**
+- WebSocket connection limits
+- Message rate limiting
 - Backpressure mechanisms
+- Connection timeout enforcement
 
-### 4. Large Payload Attacks
+### 6. Database Exhaustion
 
-**Attack:** Sending extremely large request bodies to exhaust memory.
+**Attack:** Triggering expensive database queries or excessive writes.
 
-**Mitigation:**
-- Maximum body size limits
-- Streaming request parsing
-- Memory-bounded buffers
-
-### 5. Amplification Attacks
-
-**Attack:** Requesting large responses with small requests.
+**Impact:**
+- Database lock contention
+- Disk I/O saturation
+- Query timeout cascades
+- Service degradation
 
 **Mitigation:**
-- Response size limits
-- Pagination enforcement
-- Query result limits
+- Query complexity limits
+- Transaction timeout enforcement
+- Write rate limiting
+- Database connection pooling
 
-## Protection Layers
+## Defense Layers
 
-```
-┌──────────────────────────────────────────┐
-│   Network Layer                          │
-│  - Connection limits                     │
-│  - Timeout enforcement                   │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   Application Layer                      │
-│  - Rate limiting                         │
-│  - Request validation                    │
-│  - Concurrency control                   │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   Resource Layer                         │
-│  - Memory limits                         │
-│  - Database connection pools             │
-│  - Queue size limits                     │
-└──────────────────────────────────────────┘
+### Layer 1: Network Level
+
+**Firewall Rules:**
+```bash
+# Example iptables rules (applied at infrastructure level)
+# Limit new connections per IP
+iptables -A INPUT -p tcp --dport 2583 -m connlimit --connlimit-above 50 -j REJECT
+
+# Rate limit SYN packets
+iptables -A INPUT -p tcp --syn -m limit --limit 10/s --limit-burst 20 -j ACCEPT
+iptables -A INPUT -p tcp --syn -j DROP
+
+# Drop invalid packets
+iptables -A INPUT -m state --state INVALID -j DROP
 ```
 
-## Network Layer Protection
-
-### Connection Concurrency Limits
-
-**Implementation (from HttpServer.m):**
-
-```objc
-static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
-
-- (instancetype)initWithHost:(NSString *_Nullable)host port:(NSUInteger)port {
-    self = [super init];
-    if (self) {
-        // ... other initialization
-        _concurrencySemaphore = dispatch_semaphore_create(kMaxConcurrentRequests);
-        // ...
-    }
-    return self;
+**Reverse Proxy (nginx):**
+```nginx
+# In production: exe.dev HTTPS → nginx:3000 → PDS:2583
+http {
+    # Connection limits
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+    limit_conn addr 10;
+    
+    # Request rate limits
+    limit_req_zone $binary_remote_addr zone=req_limit:10m rate=10r/s;
+    limit_req zone=req_limit burst=20 nodelay;
+    
+    # Request size limits
+    client_max_body_size 10M;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+    
+    # Timeouts
+    keepalive_timeout 30s;
+    send_timeout 30s;
 }
 ```
 
-**Purpose:**
-- Prevents thread exhaustion
-- Limits memory usage per connection
-- Ensures fair resource allocation
+### Layer 2: HTTP Server Level
 
-**Configuration:**
-- Default: 64 concurrent requests
-- Adjustable via compile-time constant
-- Enforced via dispatch semaphore
-
-### Header Timeout Enforcement
-
-**Implementation (from HttpServer.m):**
+**Connection Management:**
 
 ```objc
-static const NSTimeInterval kHttpHeaderTimeout = 5.0;
-
-@interface HttpConnectionState : NSObject
-@property(nonatomic, assign) NSTimeInterval headerStartTime;
+// In HttpServer.m - Connection limits
+@interface HttpServer ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, assign) NSUInteger activeConnections;
+@property (nonatomic, strong) NSMutableDictionary *connectionsPerIP;
 @end
 
-// Check timeout during header parsing
-NSTimeInterval elapsed = [NSDate timeIntervalSinceReferenceDate] - state.headerStartTime;
-if (elapsed > kHttpHeaderTimeout) {
-    // Close connection
-    [self closeConnection:connection reason:@"Header timeout"];
-    return;
-}
-```
-
-**Purpose:**
-- Prevents Slowloris attacks
-- Frees resources from slow clients
-- Enforces reasonable request timing
-
-**Configuration:**
-- Default: 5.0 seconds
-- Applied to header parsing only
-- Connection closed on timeout
-
-### Maximum Header Size
-
-**Implementation (from HttpServer.m):**
-
-```objc
-static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024; // 16KB
-
-if (headerSize > kHttpMaxHeaderBytes) {
-    response.statusCode = 431; // Request Header Fields Too Large
-    [self sendErrorResponse:response toConnection:connection];
-    [self closeConnection:connection];
-    return;
-}
-```
-
-**Purpose:**
-- Prevents memory exhaustion
-- Limits header parsing overhead
-- Protects against malformed requests
-
-**Configuration:**
-- Default: 16 KB
-- Enforced during header parsing
-- Returns 431 status code
-
-### Maximum Body Size
-
-**Implementation (from HttpServer.m):**
-
-```objc
-static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024; // 50MB
-
-if (contentLength > kHttpMaxBodyBytes) {
-    response.statusCode = 413; // Payload Too Large
-    [self sendErrorResponse:response toConnection:connection];
-    [self closeConnection:connection];
-    return;
-}
-```
-
-**Purpose:**
-- Prevents memory exhaustion
-- Limits request processing time
-- Protects against large payload attacks
-
-**Configuration:**
-- Default: 50 MB
-- Checked against Content-Length header
-- Returns 413 status code
-
-## Application Layer Protection
-
-### Rate Limiting
-
-See [Rate Limiting](./rate-limiting.md) for detailed documentation.
-
-**Summary:**
-- Per-DID API limits (5000/hour)
-- Per-IP request limits (100/minute)
-- Per-DID blob limits (50/hour)
-
-**Implementation:**
-
-```objc
-RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
-if (!result.allowed) {
-    response.statusCode = 429; // Too Many Requests
-    [response setHeader:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
-                 forKey:@"Retry-After"];
-    return;
-}
-```
-
-### Request Validation
-
-**Input Validation:**
-
-```objc
-// Validate required parameters
-if (!repo || repo.length == 0) {
-    [XrpcErrorHelper setValidationError:response 
-                                message:@"Missing required parameter: repo"];
-    return;
-}
-
-// Validate parameter format
-if (![repo hasPrefix:@"did:"]) {
-    [XrpcErrorHelper setValidationError:response 
-                                message:@"Invalid DID format"];
-    return;
-}
-```
-
-**Query Parameter Limits:**
-
-```objc
-// Limit query result size
-NSInteger limit = 50;
-NSString *limitParam = [request queryParamForKey:@"limit"];
-if (limitParam.length > 0 && 
-    (!parseStrictIntegerString(limitParam, &limit) || 
-     limit < 1 || limit > 100)) {
-    response.statusCode = HttpStatusBadRequest;
-    [response setJsonBody:@{
-        @"error": @"InvalidRequest", 
-        @"message": @"limit must be an integer between 1 and 100"
-    }];
-    return;
-}
-```
-
-**Purpose:**
-- Prevents invalid data processing
-- Limits query result sizes
-- Protects against injection attacks
-
-### Authentication Verification
-
-**Early Authentication Check:**
-
-```objc
-// Verify authentication before processing
-NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                              jwtMinter:jwtMinter
-                                        adminController:adminController
-                                                request:request];
-
-if (!did) {
-    [XrpcErrorHelper setAuthenticationError:response];
-    return; // Fail fast
-}
-```
-
-**Purpose:**
-- Fails fast on invalid auth
-- Prevents unauthenticated resource usage
-- Reduces attack surface
-
-## Resource Layer Protection
-
-### Output Queue Limits
-
-**Implementation (from HttpServer.m):**
-
-```objc
-static const NSUInteger kHttpOutputQueueHighWaterMark = 10 * 1024 * 1024; // 10MB
-
-@interface HttpConnectionState : NSObject
-@property(nonatomic, assign) NSUInteger outputQueueSize;
-@property(nonatomic, assign) BOOL readingPaused;
-@end
-
-// Check queue size before adding response
-if (state.outputQueueSize > kHttpOutputQueueHighWaterMark) {
-    // Pause reading to apply backpressure
-    state.readingPaused = YES;
-    return;
-}
-```
-
-**Purpose:**
-- Prevents memory exhaustion from slow clients
-- Applies backpressure to fast producers
-- Ensures bounded memory usage
-
-### Database Connection Pooling
-
-**Implementation:**
-
-```objc
-@interface PDSDatabasePool : NSObject
-
-// Limit number of open databases
-- (PDSActorDatabase *)databaseForDID:(NSString *)did {
-    // Check cache
-    PDSActorDatabase *db = [self.cache objectForKey:did];
-    if (db) return db;
-    
-    // Enforce pool size limit
-    if (self.cache.count >= self.maxPoolSize) {
-        [self evictLeastRecentlyUsed];
-    }
-    
-    // Open new database
-    db = [self openDatabaseForDID:did];
-    [self.cache setObject:db forKey:did];
-    return db;
-}
-
-@end
-```
-
-**Purpose:**
-- Limits database file handles
-- Prevents resource exhaustion
-- Ensures fair resource allocation
-
-### Chunk Size Limits
-
-**Implementation (from HttpServer.m):**
-
-```objc
-static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
-static const NSUInteger kHttpGeneratedChunkSendSize = 64 * 1024;
-static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
-
-// Send file in chunks
-while (offset < fileSize) {
-    NSUInteger chunkSize = MIN(kHttpFileSendChunkSize, fileSize - offset);
-    NSData *chunk = [self readFileChunk:filePath offset:offset length:chunkSize];
-    [self sendData:chunk toConnection:connection];
-    offset += chunkSize;
-}
-```
-
-**Purpose:**
-- Prevents large memory allocations
-- Enables streaming responses
-- Reduces memory pressure
-
-## Firehose-Specific Protection
-
-### Subscriber Queue Limits
-
-**Implementation (from SubscribeReposHandler.m):**
-
-```objc
-static const NSUInteger kSubscribeReposMaxOutputQueueBytes = 16 * 1024 * 1024; // 16MB
-
-- (BOOL)sendEventData:(NSData *)eventData
-    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
-    
-    if (!eventData || !connection) {
+- (BOOL)shouldAcceptConnection:(NSString *)remoteIP {
+    // 1. Check global connection limit
+    if (self.activeConnections >= self.maxConnections) {
+        PDS_LOG_HTTP_WARNING(@"Rejecting connection: max connections reached (%lu)", 
+                             (unsigned long)self.maxConnections);
         return NO;
     }
     
-    // Check output queue size
-    if (connection.queuedSendBytes > kSubscribeReposMaxOutputQueueBytes) {
-        [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
-                             message:@"connection output queue exceeded server limit"
-                        toConnection:connection];
-        [self detachConnection:connection];
+    // 2. Check per-IP connection limit
+    NSNumber *ipConnections = self.connectionsPerIP[remoteIP] ?: @0;
+    if (ipConnections.integerValue >= 10) {
+        PDS_LOG_HTTP_WARNING(@"Rejecting connection from %@: per-IP limit reached", remoteIP);
         return NO;
     }
     
-    [connection sendBinaryFrame:eventData];
     return YES;
 }
 ```
 
-**Purpose:**
-- Prevents slow subscribers from exhausting memory
-- Disconnects consumers that can't keep up
-- Protects server from backpressure
-
-**Error Code:**
-- `ConsumerTooSlow` — Subscriber queue exceeded limit
-
-### Replay Cursor Limits
-
-**Implementation (from SubscribeReposHandler.m):**
+**Request Size Limits:**
 
 ```objc
-// Check if cursor is too far in the past
-if (replayCursor < oldestAvailableCursor) {
-    [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
-                message:@"Requested cursor exceeded limit. Possibly missing events"
-           toConnection:connection];
+// In HttpServer.m - Request validation
+- (BOOL)validateRequest:(HttpRequest *)request {
+    // 1. Header size limit (8KB)
+    if (request.headerSize > 8192) {
+        PDS_LOG_HTTP_WARNING(@"Rejecting request: headers too large (%lu bytes)", 
+                             (unsigned long)request.headerSize);
+        return NO;
+    }
+    
+    // 2. URI length limit (2KB)
+    if (request.path.length > 2048) {
+        PDS_LOG_HTTP_WARNING(@"Rejecting request: URI too long (%lu chars)", 
+                             (unsigned long)request.path.length);
+        return NO;
+    }
+    
+    // 3. Body size limit (varies by endpoint)
+    NSUInteger maxBodySize = [self maxBodySizeForPath:request.path];
+    if (request.contentLength > maxBodySize) {
+        PDS_LOG_HTTP_WARNING(@"Rejecting request: body too large (%lld > %lu)", 
+                             request.contentLength, (unsigned long)maxBodySize);
+        return NO;
+    }
+    
+    return YES;
 }
-```
 
-**Purpose:**
-- Prevents excessive replay operations
-- Limits historical data retrieval
-- Protects against resource exhaustion
-
-## Proxy and Trust Configuration
-
-### Trusted Proxy Headers
-
-**Implementation (from PDSConfiguration.m):**
-
-```objc
-// Trust X-Forwarded-For when behind proxy
-if (getenv("PDS_TRUST_PROXY_HEADERS")) {
-    NSString *forwardedFor = [request headerForName:@"X-Forwarded-For"];
-    if (forwardedFor) {
-        clientIP = [[forwardedFor componentsSeparatedByString:@","] firstObject];
+- (NSUInteger)maxBodySizeForPath:(NSString *)path {
+    if ([path hasPrefix:@"/xrpc/com.atproto.repo.uploadBlob"]) {
+        return 10 * 1024 * 1024;  // 10MB for blobs
+    } else if ([path hasPrefix:@"/xrpc/"]) {
+        return 1 * 1024 * 1024;   // 1MB for XRPC
+    } else {
+        return 100 * 1024;        // 100KB default
     }
 }
 ```
 
-**Purpose:**
-- Enables rate limiting behind reverse proxy
-- Extracts real client IP
-- Prevents proxy IP rate limiting
-
-**Configuration:**
-- Environment variable: `PDS_TRUST_PROXY_HEADERS=1`
-- Only enable when behind trusted proxy (nginx)
-- Required for production deployment
-
-## Monitoring and Alerting
-
-### Log Rate Limit Violations
+**Request Timeouts:**
 
 ```objc
-if (!result.allowed) {
-    PDS_LOG_HTTP_WARN(@"Rate limit exceeded for %@: %ld/%ld requests", 
-                      identifier, 
-                      (long)result.limit, 
-                      (long)result.limit);
+// In HttpServer.m - Timeout enforcement
+- (void)handleConnection:(int)clientSocket remoteAddress:(NSString *)remoteIP {
+    // 1. Set socket timeout
+    struct timeval timeout;
+    timeout.tv_sec = 30;  // 30 second timeout
+    timeout.tv_usec = 0;
+    setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    
+    // 2. Start request timer
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, 
+                                                     dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    dispatch_source_set_timer(timer, 
+                             dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+                             DISPATCH_TIME_FOREVER, 
+                             1 * NSEC_PER_SEC);
+    
+    dispatch_source_set_event_handler(timer, ^{
+        PDS_LOG_HTTP_WARNING(@"Request timeout from %@", remoteIP);
+        close(clientSocket);
+    });
+    
+    dispatch_resume(timer);
+    
+    // 3. Process request
+    [self processRequest:clientSocket remoteAddress:remoteIP];
+    
+    // 4. Cancel timer
+    dispatch_source_cancel(timer);
 }
 ```
 
-### Track Connection Metrics
+### Layer 3: Rate Limiting
+
+**IP-Based Rate Limiting:**
 
 ```objc
-PDS_LOG_HTTP_DEBUG(@"Active connections: %lu, queued: %lu", 
-                   (unsigned long)self.activeConnections.count,
-                   (unsigned long)self.queuedConnections.count);
+// In HttpServer.m - OAuth endpoint protection
+if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
+    [RateLimiter sharedLimiter].isEnabled) {
+  RateLimitResult *result =
+      [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+
+  if (!result.allowed) {
+    response.statusCode = 429;
+    [response setJsonBody:@{
+      @"error" : @"too_many_requests",
+      @"message" : @"Rate limit exceeded"
+    }];
+    return response;
+  }
+}
 ```
 
-### Monitor Queue Sizes
+**Source:** `ATProtoPDS/Sources/Network/HttpServer.m` (lines 994-1005)
+
+**DID-Based Rate Limiting:**
 
 ```objc
-if (state.outputQueueSize > kHttpOutputQueueHighWaterMark / 2) {
-    PDS_LOG_HTTP_WARN(@"Output queue approaching limit: %lu bytes", 
-                      (unsigned long)state.outputQueueSize);
+// In XRPC handlers - Authenticated request protection
+- (void)handleXrpcRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    // 1. Verify authentication
+    NSString *did = [self extractDIDFromRequest:request];
+    if (!did) {
+        response.statusCode = 401;
+        return;
+    }
+    
+    // 2. Check rate limit
+    RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
+    if (!result.allowed) {
+        response.statusCode = 429;
+        [response setHeader:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
+                     forKey:@"Retry-After"];
+        [response setJsonBody:@{
+            @"error": @"RateLimitExceeded",
+            @"message": @"Too many requests"
+        }];
+        return;
+    }
+    
+    // 3. Process request
+    [self processXrpcRequest:request response:response];
 }
+```
+
+### Layer 4: Application Level
+
+**Blob Upload Protection:**
+
+```objc
+// In PDSBlobService.m - Blob upload limits
+- (void)uploadBlob:(NSData *)blobData 
+            forDID:(NSString *)did
+        completion:(void (^)(NSString *cid, NSError *error))completion {
+    
+    // 1. Check blob size
+    if (blobData.length > 10 * 1024 * 1024) {  // 10MB limit
+        NSError *error = [NSError errorWithDomain:@"BlobError" 
+                                             code:413 
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Blob too large"}];
+        completion(nil, error);
+        return;
+    }
+    
+    // 2. Check rate limit
+    RateLimitResult *result = [[RateLimiter sharedLimiter] checkBlobUploadRateLimitForDid:did];
+    if (!result.allowed) {
+        NSError *error = [NSError errorWithDomain:@"BlobError" 
+                                             code:429 
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Upload rate limit exceeded"}];
+        completion(nil, error);
+        return;
+    }
+    
+    // 3. Check quota
+    NSUInteger currentUsage = [self getBlobUsageForDID:did];
+    if (currentUsage + blobData.length > self.maxBlobStoragePerUser) {
+        NSError *error = [NSError errorWithDomain:@"BlobError" 
+                                             code:507 
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Storage quota exceeded"}];
+        completion(nil, error);
+        return;
+    }
+    
+    // 4. Process upload
+    [self storeBlobData:blobData forDID:did completion:completion];
+}
+```
+
+**MST Operation Limits:**
+
+```objc
+// In MST.m - Complexity limits
+- (BOOL)validateMSTOperation:(MSTOperation *)operation {
+    // 1. Depth limit
+    if (operation.depth > 32) {
+        PDS_LOG_ERROR(@"MST operation exceeds depth limit: %lu", (unsigned long)operation.depth);
+        return NO;
+    }
+    
+    // 2. Node count limit
+    if (operation.nodeCount > 10000) {
+        PDS_LOG_ERROR(@"MST operation exceeds node count limit: %lu", (unsigned long)operation.nodeCount);
+        return NO;
+    }
+    
+    // 3. Key length limit
+    if (operation.key.length > 256) {
+        PDS_LOG_ERROR(@"MST key exceeds length limit: %lu", (unsigned long)operation.key.length);
+        return NO;
+    }
+    
+    return YES;
+}
+```
+
+**Database Query Limits:**
+
+```objc
+// In database layer - Query timeout enforcement
+- (NSArray *)executeQuery:(NSString *)sql 
+               withParams:(NSArray *)params
+                  timeout:(NSTimeInterval)timeout {
+    
+    // 1. Set statement timeout
+    sqlite3_busy_timeout(self.db, (int)(timeout * 1000));
+    
+    // 2. Prepare statement
+    sqlite3_stmt *stmt;
+    int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+    if (result != SQLITE_OK) {
+        return nil;
+    }
+    
+    // 3. Bind parameters
+    [self bindParams:params toStatement:stmt];
+    
+    // 4. Execute with timeout
+    NSMutableArray *rows = [NSMutableArray array];
+    NSDate *startTime = [NSDate date];
+    
+    while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+        // Check timeout
+        if ([[NSDate date] timeIntervalSinceDate:startTime] > timeout) {
+            PDS_LOG_DB_WARNING(@"Query timeout exceeded");
+            sqlite3_finalize(stmt);
+            return nil;
+        }
+        
+        [rows addObject:[self rowFromStatement:stmt]];
+    }
+    
+    sqlite3_finalize(stmt);
+    return rows;
+}
+```
+
+### Layer 5: WebSocket Protection
+
+**Connection Limits:**
+
+```objc
+// In WebSocketServer.m - Connection management
+@interface WebSocketServer ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, strong) NSMutableSet *activeConnections;
+@property (nonatomic, strong) NSMutableDictionary *connectionsPerIP;
+@end
+
+- (BOOL)shouldAcceptWebSocketConnection:(NSString *)remoteIP {
+    // 1. Check global limit
+    if (self.activeConnections.count >= self.maxConnections) {
+        PDS_LOG_WEBSOCKET_WARNING(@"Rejecting WebSocket: max connections reached");
+        return NO;
+    }
+    
+    // 2. Check per-IP limit
+    NSNumber *ipConnections = self.connectionsPerIP[remoteIP] ?: @0;
+    if (ipConnections.integerValue >= 5) {  // 5 WebSocket connections per IP
+        PDS_LOG_WEBSOCKET_WARNING(@"Rejecting WebSocket from %@: per-IP limit reached", remoteIP);
+        return NO;
+    }
+    
+    return YES;
+}
+```
+
+**Message Rate Limiting:**
+
+```objc
+// In WebSocketConnection.m - Message rate limiting
+@interface WebSocketConnection ()
+@property (nonatomic, assign) NSUInteger messagesReceived;
+@property (nonatomic, strong) NSDate *windowStart;
+@property (nonatomic, assign) NSUInteger maxMessagesPerWindow;
+@property (nonatomic, assign) NSTimeInterval windowDuration;
+@end
+
+- (BOOL)shouldAcceptMessage {
+    NSTimeInterval elapsed = [[NSDate date] timeIntervalSinceDate:self.windowStart];
+    
+    // Reset window if expired
+    if (elapsed > self.windowDuration) {
+        self.messagesReceived = 0;
+        self.windowStart = [NSDate date];
+    }
+    
+    // Check limit
+    if (self.messagesReceived >= self.maxMessagesPerWindow) {
+        PDS_LOG_WEBSOCKET_WARNING(@"Message rate limit exceeded");
+        return NO;
+    }
+    
+    self.messagesReceived++;
+    return YES;
+}
+```
+
+**Backpressure Enforcement:**
+
+```objc
+// In WebSocketConnection.m - Buffer overflow protection
+- (void)sendFrame:(NSData *)frame {
+  dispatch_async(self.writeQueue, ^{
+    if (self.state == WebSocketConnectionStateClosing ||
+        self.state == WebSocketConnectionStateClosed) {
+      return;
+    }
+    
+    // Check buffer limit
+    if (self.queuedSendBytes + frame.length > WS_MAX_PENDING_SEND_BYTES) {
+      [self.messageQueue removeAllObjects];
+      self.queuedSendBytes = 0;
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self closeWithCode:1009 reason:@"Outbound queue limit exceeded"];
+      });
+      return;
+    }
+
+    [self.messageQueue addObject:frame];
+    self.queuedSendBytes += frame.length;
+    if (self.messageQueue.count == 1) {
+      [self flushWriteBuffer];
+    }
+  });
+}
+```
+
+**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 280-300)
+
+## Monitoring and Detection
+
+### Attack Detection
+
+```objc
+// In DoSDetector.m - Attack pattern detection
+@interface DoSDetector : NSObject
+@property (nonatomic, strong) NSMutableDictionary *requestCounts;
+@property (nonatomic, strong) NSMutableDictionary *errorCounts;
+@property (nonatomic, strong) NSMutableDictionary *suspiciousIPs;
+@end
+
+- (void)recordRequest:(NSString *)remoteIP statusCode:(NSInteger)statusCode {
+    // 1. Update request count
+    NSNumber *count = self.requestCounts[remoteIP] ?: @0;
+    self.requestCounts[remoteIP] = @(count.integerValue + 1);
+    
+    // 2. Track errors
+    if (statusCode >= 400) {
+        NSNumber *errorCount = self.errorCounts[remoteIP] ?: @0;
+        self.errorCounts[remoteIP] = @(errorCount.integerValue + 1);
+    }
+    
+    // 3. Detect suspicious patterns
+    if (count.integerValue > 1000) {  // High request volume
+        [self markIPAsSuspicious:remoteIP reason:@"High request volume"];
+    }
+    
+    NSNumber *errorCount = self.errorCounts[remoteIP] ?: @0;
+    if (errorCount.integerValue > 100) {  // High error rate
+        [self markIPAsSuspicious:remoteIP reason:@"High error rate"];
+    }
+}
+
+- (void)markIPAsSuspicious:(NSString *)ip reason:(NSString *)reason {
+    self.suspiciousIPs[ip] = @{
+        @"reason": reason,
+        @"timestamp": [NSDate date],
+        @"action": @"monitor"
+    };
+    
+    PDS_LOG_SECURITY_WARNING(@"Suspicious IP detected: %@ (%@)", ip, reason);
+}
+```
+
+### Metrics Collection
+
+```objc
+// In PDSMetrics.m - DoS metrics
+@interface PDSMetrics : NSObject
+@property (nonatomic, assign) NSUInteger totalRequests;
+@property (nonatomic, assign) NSUInteger rejectedRequests;
+@property (nonatomic, assign) NSUInteger rateLimitedRequests;
+@property (nonatomic, assign) NSUInteger timeoutRequests;
+@property (nonatomic, assign) NSUInteger oversizedRequests;
+@end
+
+- (void)recordRejection:(NSString *)reason {
+    self.rejectedRequests++;
+    
+    if ([reason isEqualToString:@"rate_limit"]) {
+        self.rateLimitedRequests++;
+    } else if ([reason isEqualToString:@"timeout"]) {
+        self.timeoutRequests++;
+    } else if ([reason isEqualToString:@"oversized"]) {
+        self.oversizedRequests++;
+    }
+}
+
+- (NSDictionary *)getMetrics {
+    return @{
+        @"total_requests": @(self.totalRequests),
+        @"rejected_requests": @(self.rejectedRequests),
+        @"rate_limited_requests": @(self.rateLimitedRequests),
+        @"timeout_requests": @(self.timeoutRequests),
+        @"oversized_requests": @(self.oversizedRequests),
+        @"rejection_rate": @((double)self.rejectedRequests / self.totalRequests)
+    };
+}
+```
+
+## Response Strategies
+
+### 1. Graceful Degradation
+
+```objc
+// In HttpServer.m - Load shedding
+- (HttpResponse *)handleRequest:(HttpRequest *)request {
+    // 1. Check server load
+    double cpuUsage = [self getCurrentCPUUsage];
+    NSUInteger activeConnections = self.activeConnections;
+    
+    // 2. Shed load if overloaded
+    if (cpuUsage > 0.9 || activeConnections > self.maxConnections * 0.9) {
+        // Reject non-critical requests
+        if (![self isCriticalEndpoint:request.path]) {
+            HttpResponse *response = [HttpResponse response];
+            response.statusCode = 503;
+            [response setHeader:@"60" forKey:@"Retry-After"];
+            [response setJsonBody:@{
+                @"error": @"ServiceUnavailable",
+                @"message": @"Server overloaded, please retry later"
+            }];
+            return response;
+        }
+    }
+    
+    // 3. Process request
+    return [self processRequest:request];
+}
+
+- (BOOL)isCriticalEndpoint:(NSString *)path {
+    // Critical endpoints that should always be available
+    return [path hasPrefix:@"/xrpc/com.atproto.server.describeServer"] ||
+           [path hasPrefix:@"/xrpc/com.atproto.server.getSession"];
+}
+```
+
+### 2. Temporary Blocking
+
+```objc
+// In IPBlockList.m - Temporary IP blocking
+@interface IPBlockList : NSObject
+@property (nonatomic, strong) NSMutableDictionary *blockedIPs;
+@end
+
+- (void)blockIP:(NSString *)ip duration:(NSTimeInterval)duration reason:(NSString *)reason {
+    NSDate *unblockTime = [NSDate dateWithTimeIntervalSinceNow:duration];
+    
+    self.blockedIPs[ip] = @{
+        @"unblock_time": unblockTime,
+        @"reason": reason,
+        @"blocked_at": [NSDate date]
+    };
+    
+    PDS_LOG_SECURITY_WARNING(@"Blocked IP %@ for %.0f seconds (%@)", ip, duration, reason);
+}
+
+- (BOOL)isIPBlocked:(NSString *)ip {
+    NSDictionary *blockInfo = self.blockedIPs[ip];
+    if (!blockInfo) {
+        return NO;
+    }
+    
+    NSDate *unblockTime = blockInfo[@"unblock_time"];
+    if ([[NSDate date] compare:unblockTime] == NSOrderedDescending) {
+        // Block expired
+        [self.blockedIPs removeObjectForKey:ip];
+        return NO;
+    }
+    
+    return YES;
+}
+```
+
+### 3. CAPTCHA Challenge
+
+```objc
+// In CaptchaChallenge.m - Challenge suspicious requests
+- (BOOL)shouldChallengeRequest:(HttpRequest *)request {
+    NSString *ip = request.remoteAddress;
+    
+    // 1. Check if IP is suspicious
+    if ([self.dosDetector isSuspiciousIP:ip]) {
+        return YES;
+    }
+    
+    // 2. Check request patterns
+    NSUInteger recentRequests = [self.dosDetector getRecentRequestCount:ip];
+    if (recentRequests > 50) {  // High request rate
+        return YES;
+    }
+    
+    return NO;
+}
+
+- (HttpResponse *)generateChallengeResponse {
+    HttpResponse *response = [HttpResponse response];
+    response.statusCode = 403;
+    [response setJsonBody:@{
+        @"error": @"ChallengeRequired",
+        @"message": @"Please complete CAPTCHA verification",
+        @"challenge_url": @"/challenge"
+    }];
+    return response;
+}
+```
+
+## Configuration
+
+### Recommended Limits
+
+```objc
+// In PDSConfiguration.m - DoS protection settings
+@interface PDSConfiguration ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, assign) NSUInteger maxConnectionsPerIP;
+@property (nonatomic, assign) NSUInteger maxRequestBodySize;
+@property (nonatomic, assign) NSTimeInterval requestTimeout;
+@property (nonatomic, assign) NSUInteger maxWebSocketConnections;
+@property (nonatomic, assign) NSUInteger maxWebSocketConnectionsPerIP;
+@end
+
+// Default values
+self.maxConnections = 1000;
+self.maxConnectionsPerIP = 10;
+self.maxRequestBodySize = 10 * 1024 * 1024;  // 10MB
+self.requestTimeout = 30.0;  // 30 seconds
+self.maxWebSocketConnections = 500;
+self.maxWebSocketConnectionsPerIP = 5;
 ```
 
 ## Best Practices
 
-### 1. Defense in Depth
+1. **Defense in depth** — Multiple protection layers
+2. **Fail closed** — Reject when uncertain
+3. **Monitor continuously** — Track attack patterns
+4. **Log security events** — Audit trail for analysis
+5. **Rate limit aggressively** — Better safe than sorry
+6. **Implement timeouts** — Prevent resource exhaustion
+7. **Validate all input** — Never trust client data
+8. **Test under load** — Verify protections work
+9. **Update regularly** — Stay ahead of new attacks
+10. **Have incident response plan** — Know what to do
 
-Implement multiple protection layers:
-- Network limits (connections, timeouts)
-- Application limits (rate limiting, validation)
-- Resource limits (memory, database connections)
+## Incident Response
 
-### 2. Fail Fast
+### Detection
 
-Reject invalid requests early:
-- Validate authentication first
-- Check rate limits before processing
-- Validate input before database queries
+1. Monitor metrics for anomalies
+2. Alert on threshold violations
+3. Correlate events across layers
+4. Identify attack patterns
 
-### 3. Graceful Degradation
+### Response
 
-Handle overload gracefully:
-- Return 429 with Retry-After header
-- Provide clear error messages
-- Log violations for analysis
+1. Confirm attack is occurring
+2. Identify attack vector
+3. Apply appropriate mitigation
+4. Monitor effectiveness
+5. Escalate if needed
 
-### 4. Monitor and Alert
+### Recovery
 
-Track protection metrics:
-- Rate limit hit rates
-- Connection rejection rates
-- Queue size trends
-- Response time percentiles
+1. Remove temporary blocks
+2. Restore normal operation
+3. Analyze attack logs
+4. Update defenses
+5. Document lessons learned
 
-### 5. Tune Limits
+## Next Steps
 
-Adjust limits based on usage:
-- Start conservative
-- Monitor legitimate traffic patterns
-- Increase limits gradually
-- Document changes
-
-## Common Attack Scenarios
-
-### Scenario 1: Credential Stuffing
-
-**Attack:** Trying many username/password combinations.
-
-**Protection:**
-- Rate limit authentication endpoints
-- Implement account lockout
-- Log failed attempts
-- Monitor for patterns
-
-**Implementation:**
-
-```objc
-// Rate limit password attempts
-RateLimitResult *result = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:[NSString stringWithFormat:@"auth:%@", username]
-                   limit:5
-            windowSeconds:3600];
-
-if (!result.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"TooManyAttempts",
-        @"message": @"Too many authentication attempts"
-    }];
-    return;
-}
-```
-
-### Scenario 2: Repository Enumeration
-
-**Attack:** Scanning for valid DIDs/repositories.
-
-**Protection:**
-- Rate limit per IP
-- Require authentication for sensitive endpoints
-- Log enumeration attempts
-- Implement CAPTCHA for suspicious patterns
-
-### Scenario 3: Blob Storage Exhaustion
-
-**Attack:** Uploading many large blobs to exhaust storage.
-
-**Protection:**
-- Separate blob upload rate limits
-- Enforce blob size quotas
-- Implement garbage collection
-- Monitor storage usage
-
-**Implementation:**
-
-```objc
-// Check blob upload rate limit
-RateLimitResult *blobResult = [[RateLimiter sharedLimiter] 
-    checkBlobUploadRateLimitForDid:did];
-
-if (!blobResult.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"BlobUploadLimitExceeded",
-        @"message": @"Too many blob uploads"
-    }];
-    return;
-}
-
-// Check blob quota
-NSUInteger totalBlobSize = [blobService totalBlobSizeForDid:did];
-if (totalBlobSize + blobSize > maxBlobQuota) {
-    response.statusCode = 413;
-    [response setJsonBody:@{
-        @"error": @"BlobQuotaExceeded",
-        @"message": @"Blob storage quota exceeded"
-    }];
-    return;
-}
-```
-
-### Scenario 4: Firehose Subscription Abuse
-
-**Attack:** Opening many firehose connections to exhaust resources.
-
-**Protection:**
-- Limit concurrent subscriptions per DID
-- Enforce output queue limits
-- Disconnect slow consumers
-- Monitor subscription patterns
-
-**Implementation:**
-
-```objc
-// Limit concurrent subscriptions
-NSUInteger activeSubscriptions = [self countActiveSubscriptionsForDid:did];
-if (activeSubscriptions >= kMaxSubscriptionsPerDid) {
-    [self sendErrorFrameWithCode:@"TooManySubscriptions"
-                         message:@"Maximum concurrent subscriptions exceeded"
-                    toConnection:connection];
-    [connection close];
-    return;
-}
-```
-
-## Production Deployment
-
-### Reverse Proxy Configuration
-
-**nginx Configuration:**
-
-```nginx
-# Rate limiting at nginx level
-limit_req_zone $binary_remote_addr zone=api:10m rate=100r/m;
-limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
-
-server {
-    listen 443 ssl http2;
-    server_name pds.example.com;
-    
-    # Apply rate limits
-    location /xrpc/ {
-        limit_req zone=api burst=20 nodelay;
-        proxy_pass http://localhost:2583;
-    }
-    
-    location /oauth/ {
-        limit_req zone=auth burst=5 nodelay;
-        proxy_pass http://localhost:2583;
-    }
-    
-    # Set proxy headers
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP $remote_addr;
-}
-```
-
-### Firewall Rules
-
-```bash
-# Limit connection rate per IP
-iptables -A INPUT -p tcp --dport 2583 -m state --state NEW -m recent --set
-iptables -A INPUT -p tcp --dport 2583 -m state --state NEW -m recent --update --seconds 60 --hitcount 20 -j DROP
-```
-
-### Monitoring
-
-```bash
-# Monitor rate limit database size
-watch -n 60 'du -h /data/service/ratelimits.db'
-
-# Monitor active connections
-watch -n 5 'netstat -an | grep :2583 | wc -l'
-
-# Monitor memory usage
-watch -n 10 'ps aux | grep kaszlak'
-```
-
-## See Also
-
-- [Rate Limiting](./rate-limiting.md) — Rate limiting algorithms
-- [Request Throttling](./request-throttling.md) — Per-endpoint throttling
-- [HTTP Server](./http-server.md) — Server implementation
-- [Firehose Rate Limiting](../08-sync-firehose/firehose-rate-limiting.md) — Subscriber limits
+- **[Rate Limiting](./rate-limiting.md)** — Rate limiting strategies
+- **[Request Throttling](./request-throttling.md)** — Per-endpoint throttling
+- **[Input Validation](./input-validation.md)** — Input validation strategies
