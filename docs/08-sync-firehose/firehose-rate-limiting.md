@@ -2,700 +2,598 @@
 
 ## Overview
 
-The firehose (subscribeRepos) implements specialized rate limiting and backpressure mechanisms to protect the server from slow or abusive subscribers. Unlike HTTP request rate limiting, firehose rate limiting focuses on:
+Firehose rate limiting protects the PDS from being overwhelmed by WebSocket subscribers while ensuring fair resource distribution. Unlike HTTP request rate limiting, firehose rate limiting must handle:
 
-- **Output queue limits** — Preventing memory exhaustion from slow consumers
-- **Backpressure detection** — Identifying subscribers that can't keep up
-- **Automatic disconnection** — Removing slow consumers to protect the server
-- **Replay limits** — Controlling historical event retrieval
+- Long-lived connections (hours to days)
+- High-volume event streams
+- Variable subscriber consumption rates
+- Backpressure from slow clients
+- Connection resource limits
 
-## Architecture
+## Why Firehose Rate Limiting?
 
-```
-┌──────────────────────────────────────────┐
-│   Commit Event                           │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   Broadcast to All Subscribers           │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-   Fast Consumer     Slow Consumer
-        │                 │
-        ▼                 ▼
-   Queue Empty      Queue Growing
-   (Healthy)        (Backpressure)
-                         │
-                         ▼
-                  Queue Limit Exceeded
-                         │
-                         ▼
-                  Disconnect Consumer
-```
+### Problems Without Rate Limiting
 
-## Subscriber Limits
+1. **Resource exhaustion** — Too many subscribers consume all memory/CPU
+2. **Slow client impact** — One slow client can affect others
+3. **Bandwidth saturation** — High-volume streams consume all bandwidth
+4. **Connection pool exhaustion** — Too many WebSocket connections
+5. **Unfair resource distribution** — Some clients monopolize resources
 
-### Output Queue Limits
+### Goals
 
-**Implementation (from SubscribeReposHandler.m):**
+1. **Protect server resources** — Prevent exhaustion
+2. **Fair distribution** — All subscribers get reasonable service
+3. **Graceful degradation** — Slow clients don't affect fast ones
+4. **Prevent abuse** — Limit malicious or misconfigured clients
+5. **Maintain reliability** — Keep firehose available for all
+
+## Rate Limiting Dimensions
+
+### 1. Connection Limits
+
+Limit the number of concurrent WebSocket connections:
 
 ```objc
-static const NSUInteger kSubscribeReposMaxPendingSendsDefault = 512;
-static const NSUInteger kSubscribeReposMaxPendingBytesDefault = 16 * 1024 * 1024; // 16MB
-
-@interface SubscribeReposHandler ()
-@property(nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
-@property(nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
+// In WebSocketServer.m - Connection limits
+@interface WebSocketServer ()
+@property (nonatomic, assign) NSUInteger maxConnections;
+@property (nonatomic, strong) NSMutableSet *activeConnections;
+@property (nonatomic, strong) NSMutableDictionary *connectionsPerIP;
+@property (nonatomic, assign) NSUInteger maxConnectionsPerIP;
 @end
 
-- (instancetype)initWithWebSocketServer:(WebSocketServer *)server
-                       serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                       userDatabasePool:(PDSDatabasePool *)userDatabasePool {
+- (instancetype)initWithHost:(NSString *)host port:(uint16_t)port path:(NSString *)path {
     self = [super init];
     if (self) {
-        _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
-        _maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
-        // ...
+        _host = [host copy];
+        _port = port;
+        _path = [path copy];
+        _maxConnections = 500;           // Max 500 total connections
+        _maxConnectionsPerIP = 5;        // Max 5 connections per IP
+        _activeConnections = [NSMutableSet set];
+        _connectionsPerIP = [NSMutableDictionary dictionary];
     }
     return self;
 }
+
+- (BOOL)shouldAcceptConnection:(NSString *)remoteIP {
+    // 1. Check global limit
+    if (self.activeConnections.count >= self.maxConnections) {
+        PDS_LOG_WEBSOCKET_WARNING(@"Rejecting connection: max connections reached (%lu)",
+                                  (unsigned long)self.maxConnections);
+        return NO;
+    }
+    
+    // 2. Check per-IP limit
+    NSNumber *ipConnections = self.connectionsPerIP[remoteIP] ?: @0;
+    if (ipConnections.integerValue >= self.maxConnectionsPerIP) {
+        PDS_LOG_WEBSOCKET_WARNING(@"Rejecting connection from %@: per-IP limit reached", remoteIP);
+        return NO;
+    }
+    
+    return YES;
+}
+
+- (void)trackConnection:(WebSocketConnection *)connection remoteIP:(NSString *)remoteIP {
+    [self.activeConnections addObject:connection];
+    
+    NSNumber *count = self.connectionsPerIP[remoteIP] ?: @0;
+    self.connectionsPerIP[remoteIP] = @(count.integerValue + 1);
+}
+
+- (void)untrackConnection:(WebSocketConnection *)connection remoteIP:(NSString *)remoteIP {
+    [self.activeConnections removeObject:connection];
+    
+    NSNumber *count = self.connectionsPerIP[remoteIP];
+    if (count && count.integerValue > 0) {
+        self.connectionsPerIP[remoteIP] = @(count.integerValue - 1);
+    }
+}
 ```
 
-**Purpose:**
-- Prevents memory exhaustion from slow subscribers
-- Limits per-connection resource usage
-- Ensures fair resource allocation
+### 2. Event Rate Limits
 
-**Configuration:**
-- Default pending sends: 512 messages
-- Default pending bytes: 16 MB
-- Per-connection limits
-
-### Backpressure Detection
-
-**Implementation (from SubscribeReposHandler.m):**
+Limit the rate at which events are sent to subscribers:
 
 ```objc
-- (BOOL)sendEventData:(NSData *)eventData
-    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
+// In SubscribeReposHandler.m - Event rate limiting
+@interface SubscribeReposHandler ()
+@property (nonatomic, strong) NSMutableDictionary *subscriberRateLimits;
+@end
+
+- (BOOL)shouldSendEventToConnection:(WebSocketConnection *)connection {
+    // 1. Get rate limit state for connection
+    NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+    NSMutableDictionary *state = self.subscriberRateLimits[connectionID];
     
-    if (!eventData || !connection) {
+    if (!state) {
+        state = [@{
+            @"events_sent": @0,
+            @"window_start": [NSDate date],
+            @"max_events_per_second": @1000  // 1000 events/second per subscriber
+        } mutableCopy];
+        self.subscriberRateLimits[connectionID] = state;
+    }
+    
+    // 2. Check if window expired
+    NSDate *windowStart = state[@"window_start"];
+    NSTimeInterval elapsed = [[NSDate date] timeIntervalSinceDate:windowStart];
+    
+    if (elapsed >= 1.0) {
+        // Reset window
+        state[@"events_sent"] = @0;
+        state[@"window_start"] = [NSDate date];
+    }
+    
+    // 3. Check rate limit
+    NSInteger eventsSent = [state[@"events_sent"] integerValue];
+    NSInteger maxEvents = [state[@"max_events_per_second"] integerValue];
+    
+    if (eventsSent >= maxEvents) {
+        PDS_LOG_WEBSOCKET_DEBUG(@"Rate limit exceeded for connection %@", connectionID);
         return NO;
     }
     
-    // Check both message count and byte size
-    if (connection.pendingSendCount >= self.maxPendingSendsPerConnection ||
-        connection.pendingSendBytes >= self.maxPendingBytesPerConnection) {
-        
-        // Send error frame before disconnecting
-        [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
-                             message:@"connection output queue exceeded server limit"
-                        toConnection:connection];
-        
-        // Detach and close connection
-        [self detachConnection:connection];
-        [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
-        
-        return NO;
-    }
-    
-    // Send event
-    [connection sendMessage:eventData];
+    // 4. Increment counter
+    state[@"events_sent"] = @(eventsSent + 1);
     return YES;
 }
 ```
 
-**Detection Criteria:**
-- Pending send count ≥ 512 messages
-- Pending send bytes ≥ 16 MB
+### 3. Bandwidth Limits
 
-**Action:**
-- Send `ConsumerTooSlow` error frame
-- Detach connection from subscriber list
-- Close WebSocket with code 1008
-
-### Queue Tracking
-
-**Implementation (from WebSocketConnection.m):**
+Limit the bandwidth consumed by each subscriber:
 
 ```objc
+// In WebSocketConnection.m - Bandwidth tracking
 @interface WebSocketConnection ()
-@property(nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
-@property(nonatomic, assign) NSUInteger queuedSendBytes;
+@property (nonatomic, assign) NSUInteger bytesSent;
+@property (nonatomic, strong) NSDate *bandwidthWindowStart;
+@property (nonatomic, assign) NSUInteger maxBytesPerSecond;
 @end
 
-- (NSUInteger)pendingSendCount {
-    __block NSUInteger count = 0;
-    if (!self.writeQueue) {
-        return 0;
+- (BOOL)canSendData:(NSData *)data {
+    // 1. Initialize bandwidth tracking
+    if (!self.bandwidthWindowStart) {
+        self.bandwidthWindowStart = [NSDate date];
+        self.bytesSent = 0;
+        self.maxBytesPerSecond = 1 * 1024 * 1024;  // 1 MB/s per connection
     }
     
-    dispatch_sync(self.writeQueue, ^{
-        count = self.messageQueue.count;
-    });
-    return count;
-}
-
-- (NSUInteger)pendingSendBytes {
-    __block NSUInteger bytes = 0;
-    if (!self.writeQueue) {
-        return 0;
+    // 2. Check if window expired
+    NSTimeInterval elapsed = [[NSDate date] timeIntervalSinceDate:self.bandwidthWindowStart];
+    if (elapsed >= 1.0) {
+        // Reset window
+        self.bytesSent = 0;
+        self.bandwidthWindowStart = [NSDate date];
     }
     
-    dispatch_sync(self.writeQueue, ^{
-        bytes = self.queuedSendBytes;
-    });
-    return bytes;
+    // 3. Check bandwidth limit
+    if (self.bytesSent + data.length > self.maxBytesPerSecond) {
+        PDS_LOG_WEBSOCKET_DEBUG(@"Bandwidth limit exceeded: %lu bytes sent in window",
+                                (unsigned long)self.bytesSent);
+        return NO;
+    }
+    
+    // 4. Update counter
+    self.bytesSent += data.length;
+    return YES;
 }
 ```
 
-**Thread Safety:**
-- Queue operations on serial write queue
-- Synchronous reads for accurate counts
-- Atomic updates to queue size
+### 4. Buffer Limits
 
-### WebSocket-Level Limits
-
-**Implementation (from WebSocketConnection.m):**
+Limit the amount of buffered data per connection:
 
 ```objc
-static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 32 * 1024 * 1024; // 32MB
-
+// In WebSocketConnection.m - Buffer management
 - (void)sendFrame:(NSData *)frame {
-    dispatch_async(self.writeQueue, ^{
-        if (self.state == WebSocketConnectionStateClosing ||
-            self.state == WebSocketConnectionStateClosed) {
-            return;
-        }
-        
-        // Check WebSocket-level limit
-        if (self.queuedSendBytes + frame.length > WS_MAX_PENDING_SEND_BYTES) {
-            [self.messageQueue removeAllObjects];
-            self.queuedSendBytes = 0;
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self closeWithCode:1009 reason:@"Outbound queue limit exceeded"];
-            });
-            return;
-        }
-        
-        [self.messageQueue addObject:frame];
-        self.queuedSendBytes += frame.length;
-        
-        if (self.messageQueue.count == 1) {
-            [self flushWriteBuffer];
-        }
-    });
-}
-```
-
-**Purpose:**
-- Hard limit at WebSocket layer
-- Prevents catastrophic memory growth
-- Last line of defense
-
-**Configuration:**
-- WebSocket limit: 32 MB (higher than firehose limit)
-- Closes with code 1009 (Message Too Big)
-
-## Replay Limits
-
-### Maximum Replay Events
-
-**Implementation (from SubscribeReposHandler.m):**
-
-```objc
-static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
-
-@interface SubscribeReposHandler ()
-@property(nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
-@end
-
-- (instancetype)initWithWebSocketServer:(WebSocketServer *)server
-                       serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                       userDatabasePool:(PDSDatabasePool *)userDatabasePool {
-    self = [super init];
-    if (self) {
-        _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
-        // ...
-    }
-    return self;
-}
-```
-
-**Purpose:**
-- Limits historical event retrieval
-- Prevents excessive database queries
-- Protects against cursor abuse
-
-**Configuration:**
-- Default: 10,000 events per connection
-- Applied during cursor-based replay
-
-### Replay Batch Size
-
-**Implementation (from SubscribeReposHandler.m):**
-
-```objc
-static const NSUInteger kSubscribeReposReplayBatchSize = 100;
-
-// Replay events in batches
-while (replayedCount < maxReplayEvents && currentCursor <= latestSequence) {
-    NSArray *events = [self.serviceDatabases 
-        getEventsFromSequence:currentCursor 
-                        limit:kSubscribeReposReplayBatchSize 
-                        error:&error];
-    
-    for (NSDictionary *event in events) {
-        NSData *eventData = [self formatEvent:event];
-        
-        if (![self sendEventData:eventData 
-            toConnectionWithBackpressureCheck:connection]) {
-            // Subscriber too slow, stop replay
-            return;
-        }
-        
-        replayedCount++;
+  dispatch_async(self.writeQueue, ^{
+    if (self.state == WebSocketConnectionStateClosing ||
+        self.state == WebSocketConnectionStateClosed) {
+      return;
     }
     
-    currentCursor += events.count;
+    // Check buffer limit
+    if (self.queuedSendBytes + frame.length > WS_MAX_PENDING_SEND_BYTES) {
+      [self.messageQueue removeAllObjects];
+      self.queuedSendBytes = 0;
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self closeWithCode:1009 reason:@"Outbound queue limit exceeded"];
+      });
+      return;
+    }
+
+    [self.messageQueue addObject:frame];
+    self.queuedSendBytes += frame.length;
+    if (self.messageQueue.count == 1) {
+      [self flushWriteBuffer];
+    }
+  });
 }
 ```
 
-**Purpose:**
-- Prevents large memory allocations
-- Enables incremental replay
-- Allows backpressure checks between batches
-
-**Configuration:**
-- Batch size: 100 events
-- Checked after each batch
-
-### Outdated Cursor Handling
-
-**Implementation (from SubscribeReposHandler.m):**
-
-```objc
-// Check if cursor is too far in the past
-if (replayCursor < oldestAvailableCursor) {
-    [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
-                message:@"Requested cursor exceeded limit. Possibly missing events"
-           toConnection:connection];
-}
-```
-
-**Purpose:**
-- Informs subscribers of data loss
-- Prevents excessive historical queries
-- Manages event retention
-
-**Info Code:**
-- `OutdatedCursor` — Cursor too old, events may be missing
+**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 280-300)
 
 ## Backpressure Strategies
 
-### Strategy 1: Immediate Disconnection
+### Strategy 1: Pause and Resume
 
-**When:** Queue limits exceeded
-
-**Action:**
-1. Send error frame with `ConsumerTooSlow` code
-2. Detach connection from subscriber list
-3. Close WebSocket connection
-4. Log disconnection event
-
-**Implementation:**
+Pause event delivery when buffer fills, resume when it drains:
 
 ```objc
-if (connection.pendingSendCount >= self.maxPendingSendsPerConnection ||
-    connection.pendingSendBytes >= self.maxPendingBytesPerConnection) {
+// In SubscribeReposHandler.m - Backpressure handling
+- (void)broadcastCommit:(NSDictionary *)commit {
+    NSArray *connections = [self.attachedConnections allObjects];
     
-    PDS_LOG_SYNC_WARN(@"Disconnecting slow consumer: %lu pending sends, %lu pending bytes",
-                      (unsigned long)connection.pendingSendCount,
-                      (unsigned long)connection.pendingSendBytes);
-    
-    [self sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
-                         message:@"connection output queue exceeded server limit"
-                    toConnection:connection];
-    
-    [self detachConnection:connection];
-    [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
-    
-    return NO;
+    for (WebSocketConnection *connection in connections) {
+        // 1. Check buffer level
+        NSUInteger pendingBytes = [connection pendingSendBytes];
+        
+        if (pendingBytes > WS_BACKPRESSURE_THRESHOLD) {
+            // 2. Apply backpressure
+            [self pauseEventsForConnection:connection];
+            
+            // 3. Schedule resume check
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC),
+                          dispatch_get_main_queue(), ^{
+                [self checkResumeForConnection:connection];
+            });
+            
+            continue;
+        }
+        
+        // 4. Send event
+        [self sendCommitToConnection:connection commit:commit];
+    }
 }
-```
 
-### Strategy 2: Replay Interruption
-
-**When:** Backpressure detected during replay
-
-**Action:**
-1. Stop sending replay events
-2. Return from replay function
-3. Connection remains open for live events
-
-**Implementation:**
-
-```objc
-// During replay
-for (NSDictionary *event in events) {
-    NSData *eventData = [self formatEvent:event];
+- (void)pauseEventsForConnection:(WebSocketConnection *)connection {
+    NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+    self.pausedConnections[connectionID] = @YES;
     
-    if (![self sendEventData:eventData 
-        toConnectionWithBackpressureCheck:connection]) {
-        // Backpressure detected, stop replay
-        PDS_LOG_SYNC_WARN(@"Replay interrupted due to backpressure");
-        return;
+    PDS_LOG_WEBSOCKET_DEBUG(@"Paused events for connection %@", connectionID);
+}
+
+- (void)checkResumeForConnection:(WebSocketConnection *)connection {
+    NSUInteger pendingBytes = [connection pendingSendBytes];
+    
+    if (pendingBytes < WS_BACKPRESSURE_RELEASE_THRESHOLD) {
+        NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+        [self.pausedConnections removeObjectForKey:connectionID];
+        
+        PDS_LOG_WEBSOCKET_DEBUG(@"Resumed events for connection %@", connectionID);
+    } else {
+        // Check again later
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC),
+                      dispatch_get_main_queue(), ^{
+            [self checkResumeForConnection:connection];
+        });
     }
 }
 ```
 
-### Strategy 3: Queue Monitoring
+### Strategy 2: Event Dropping
 
-**When:** Continuously during operation
-
-**Action:**
-1. Monitor queue sizes
-2. Log warnings at thresholds
-3. Track slow consumer patterns
-
-**Implementation:**
+Drop events for slow clients to prevent buffer overflow:
 
 ```objc
-// Monitor queue size
-if (connection.pendingSendBytes > self.maxPendingBytesPerConnection / 2) {
-    PDS_LOG_SYNC_DEBUG(@"Subscriber queue at 50%% capacity: %lu bytes",
-                       (unsigned long)connection.pendingSendBytes);
+// In SubscribeReposHandler.m - Event dropping
+- (void)broadcastCommitWithDropping:(NSDictionary *)commit {
+    NSArray *connections = [self.attachedConnections allObjects];
+    
+    for (WebSocketConnection *connection in connections) {
+        NSUInteger pendingBytes = [connection pendingSendBytes];
+        
+        if (pendingBytes > WS_MAX_PENDING_SEND_BYTES * 0.9) {
+            // 1. Buffer nearly full - drop event
+            [self recordDroppedEvent:connection];
+            
+            PDS_LOG_WEBSOCKET_WARNING(@"Dropped event for slow connection %p", connection);
+            continue;
+        }
+        
+        // 2. Send event
+        [self sendCommitToConnection:connection commit:commit];
+    }
 }
 
-if (connection.pendingSendCount > self.maxPendingSendsPerConnection / 2) {
-    PDS_LOG_SYNC_DEBUG(@"Subscriber queue at 50%% capacity: %lu messages",
-                       (unsigned long)connection.pendingSendCount);
-}
-```
-
-## Error Codes
-
-### ConsumerTooSlow
-
-**Code:** `ConsumerTooSlow`
-
-**Meaning:** Subscriber's output queue exceeded server limits
-
-**Response:**
-```json
-{
-  "error": "ConsumerTooSlow",
-  "message": "connection output queue exceeded server limit"
-}
-```
-
-**WebSocket Close Code:** 1008 (Policy Violation)
-
-**Client Action:**
-- Reconnect with cursor
-- Optimize event processing
-- Reduce processing overhead
-
-### OutdatedCursor (Info)
-
-**Code:** `OutdatedCursor`
-
-**Meaning:** Requested cursor is too old, events may be missing
-
-**Response:**
-```json
-{
-  "info": "OutdatedCursor",
-  "message": "Requested cursor exceeded limit. Possibly missing events"
+- (void)recordDroppedEvent:(WebSocketConnection *)connection {
+    NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+    NSNumber *dropped = self.droppedEvents[connectionID] ?: @0;
+    self.droppedEvents[connectionID] = @(dropped.integerValue + 1);
+    
+    // Send info message periodically
+    if (dropped.integerValue % 100 == 0) {
+        [self sendInfoMessage:connection 
+                      message:[NSString stringWithFormat:@"Dropped %ld events due to slow consumption", 
+                              (long)dropped.integerValue]];
+    }
 }
 ```
 
-**Client Action:**
-- Accept potential data loss
-- Continue from available cursor
-- Consider full repository sync
+### Strategy 3: Connection Termination
+
+Close connections that consistently can't keep up:
+
+```objc
+// In SubscribeReposHandler.m - Slow client detection
+- (void)monitorSlowClients {
+    NSArray *connections = [self.attachedConnections allObjects];
+    
+    for (WebSocketConnection *connection in connections) {
+        NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+        
+        // 1. Check dropped event count
+        NSNumber *dropped = self.droppedEvents[connectionID] ?: @0;
+        if (dropped.integerValue > 1000) {
+            // Too many dropped events - close connection
+            PDS_LOG_WEBSOCKET_WARNING(@"Closing slow connection %@ (dropped %ld events)",
+                                     connectionID, (long)dropped.integerValue);
+            
+            [connection closeWithCode:1008 reason:@"Client too slow"];
+            continue;
+        }
+        
+        // 2. Check buffer level
+        NSUInteger pendingBytes = [connection pendingSendBytes];
+        if (pendingBytes > WS_MAX_PENDING_SEND_BYTES * 0.95) {
+            // Buffer nearly full for too long
+            NSDate *pausedAt = self.pausedTimestamps[connectionID];
+            if (pausedAt && [[NSDate date] timeIntervalSinceDate:pausedAt] > 60) {
+                PDS_LOG_WEBSOCKET_WARNING(@"Closing stalled connection %@", connectionID);
+                [connection closeWithCode:1008 reason:@"Connection stalled"];
+            }
+        }
+    }
+}
+```
+
+### Strategy 4: Adaptive Rate Adjustment
+
+Dynamically adjust event rate based on client performance:
+
+```objc
+// In SubscribeReposHandler.m - Adaptive rate adjustment
+@interface SubscribeReposHandler ()
+@property (nonatomic, strong) NSMutableDictionary *connectionRates;
+@end
+
+- (NSTimeInterval)getDelayForConnection:(WebSocketConnection *)connection {
+    NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+    NSNumber *rate = self.connectionRates[connectionID];
+    
+    if (!rate) {
+        // Default: no delay (full speed)
+        rate = @1.0;
+        self.connectionRates[connectionID] = rate;
+    }
+    
+    // Calculate delay based on rate
+    // rate = 1.0 → no delay
+    // rate = 0.5 → 50% slower (delay between events)
+    // rate = 0.1 → 90% slower
+    
+    NSTimeInterval baseDelay = 0.001;  // 1ms base
+    return baseDelay / rate.doubleValue;
+}
+
+- (void)adjustRateForConnection:(WebSocketConnection *)connection {
+    NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+    NSNumber *currentRate = self.connectionRates[connectionID] ?: @1.0;
+    
+    NSUInteger pendingBytes = [connection pendingSendBytes];
+    double fillPercentage = (double)pendingBytes / WS_MAX_PENDING_SEND_BYTES;
+    
+    double newRate;
+    if (fillPercentage > 0.8) {
+        // Buffer filling - slow down
+        newRate = currentRate.doubleValue * 0.8;
+    } else if (fillPercentage < 0.3) {
+        // Buffer draining - speed up
+        newRate = MIN(1.0, currentRate.doubleValue * 1.2);
+    } else {
+        // Stable - no change
+        newRate = currentRate.doubleValue;
+    }
+    
+    self.connectionRates[connectionID] = @(newRate);
+}
+
+- (void)sendCommitWithAdaptiveRate:(NSDictionary *)commit 
+                       toConnection:(WebSocketConnection *)connection {
+    // 1. Get delay for this connection
+    NSTimeInterval delay = [self getDelayForConnection:connection];
+    
+    // 2. Schedule send with delay
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, delay * NSEC_PER_SEC),
+                  dispatch_get_main_queue(), ^{
+        [self sendCommitToConnection:connection commit:commit];
+        
+        // 3. Adjust rate for next event
+        [self adjustRateForConnection:connection];
+    });
+}
+```
+
+## Subscriber Prioritization
+
+### Priority Levels
+
+```objc
+// In SubscribeReposHandler.m - Subscriber priorities
+typedef NS_ENUM(NSInteger, SubscriberPriority) {
+    SubscriberPriorityLow = 0,
+    SubscriberPriorityNormal = 1,
+    SubscriberPriorityHigh = 2,
+    SubscriberPriorityCritical = 3
+};
+
+@interface SubscriptionContext : NSObject
+@property (nonatomic, strong) WebSocketConnection *connection;
+@property (nonatomic, assign) SubscriberPriority priority;
+@property (nonatomic, copy) NSString *did;
+@end
+
+- (SubscriberPriority)getPriorityForDID:(NSString *)did {
+    // 1. Check if official relay
+    if ([self isOfficialRelay:did]) {
+        return SubscriberPriorityCritical;
+    }
+    
+    // 2. Check if trusted subscriber
+    if ([self isTrustedSubscriber:did]) {
+        return SubscriberPriorityHigh;
+    }
+    
+    // 3. Default priority
+    return SubscriberPriorityNormal;
+}
+```
+
+### Priority-Based Broadcasting
+
+```objc
+// In SubscribeReposHandler.m - Priority-aware broadcasting
+- (void)broadcastCommitWithPriority:(NSDictionary *)commit {
+    // 1. Sort connections by priority
+    NSArray *sortedConnections = [self.subscriptions sortedArrayUsingComparator:^NSComparisonResult(SubscriptionContext *ctx1, SubscriptionContext *ctx2) {
+        if (ctx1.priority > ctx2.priority) {
+            return NSOrderedAscending;
+        } else if (ctx1.priority < ctx2.priority) {
+            return NSOrderedDescending;
+        }
+        return NSOrderedSame;
+    }];
+    
+    // 2. Send to high-priority subscribers first
+    for (SubscriptionContext *context in sortedConnections) {
+        if (context.priority >= SubscriberPriorityHigh) {
+            [self sendCommitToConnection:context.connection commit:commit];
+        }
+    }
+    
+    // 3. Send to normal/low priority subscribers
+    for (SubscriptionContext *context in sortedConnections) {
+        if (context.priority < SubscriberPriorityHigh) {
+            // Apply rate limiting for lower priority
+            if ([self shouldSendEventToConnection:context.connection]) {
+                [self sendCommitToConnection:context.connection commit:commit];
+            }
+        }
+    }
+}
+```
 
 ## Monitoring and Metrics
 
-### Log Slow Consumers
+### Subscriber Metrics
 
 ```objc
-PDS_LOG_SYNC_WARN(@"Disconnecting slow consumer: %lu pending sends, %lu pending bytes",
-                  (unsigned long)connection.pendingSendCount,
-                  (unsigned long)connection.pendingSendBytes);
-```
+// In SubscribeReposHandler.m - Metrics collection
+@interface SubscriberMetrics : NSObject
+@property (nonatomic, assign) NSUInteger totalSubscribers;
+@property (nonatomic, assign) NSUInteger activeSubscribers;
+@property (nonatomic, assign) NSUInteger pausedSubscribers;
+@property (nonatomic, assign) NSUInteger slowSubscribers;
+@property (nonatomic, assign) NSUInteger eventsDelivered;
+@property (nonatomic, assign) NSUInteger eventsDropped;
+@property (nonatomic, assign) NSUInteger bytesDelivered;
+@end
 
-### Track Disconnection Rates
-
-```objc
-PDS_LOG_SYNC_INFO(@"Subscriber disconnected due to backpressure. "
-                  @"Total slow consumer disconnects: %lu",
-                  (unsigned long)slowConsumerDisconnectCount);
-```
-
-### Monitor Queue Sizes
-
-```objc
-// Periodic queue size logging
-dispatch_async(self.eventQueue, ^{
-    for (WebSocketConnection *conn in self.attachedConnections) {
-        if (conn.pendingSendBytes > threshold) {
-            PDS_LOG_SYNC_DEBUG(@"Subscriber queue size: %lu bytes, %lu messages",
-                               (unsigned long)conn.pendingSendBytes,
-                               (unsigned long)conn.pendingSendCount);
+- (void)collectMetrics {
+    self.metrics.totalSubscribers = self.attachedConnections.count;
+    self.metrics.activeSubscribers = 0;
+    self.metrics.pausedSubscribers = 0;
+    self.metrics.slowSubscribers = 0;
+    
+    for (WebSocketConnection *connection in self.attachedConnections) {
+        NSString *connectionID = [NSString stringWithFormat:@"%p", connection];
+        
+        // Check if paused
+        if (self.pausedConnections[connectionID]) {
+            self.metrics.pausedSubscribers++;
+        } else {
+            self.metrics.activeSubscribers++;
+        }
+        
+        // Check if slow
+        NSUInteger pendingBytes = [connection pendingSendBytes];
+        if (pendingBytes > WS_BACKPRESSURE_THRESHOLD) {
+            self.metrics.slowSubscribers++;
         }
     }
-});
-```
+}
 
-### Track Replay Performance
-
-```objc
-NSTimeInterval replayStart = [NSDate timeIntervalSinceReferenceDate];
-
-// Perform replay...
-
-NSTimeInterval replayDuration = [NSDate timeIntervalSinceReferenceDate] - replayStart;
-PDS_LOG_SYNC_INFO(@"Replay completed: %lu events in %.2fs (%.0f events/sec)",
-                  (unsigned long)replayedCount,
-                  replayDuration,
-                  replayedCount / replayDuration);
+- (NSDictionary *)getMetrics {
+    return @{
+        @"total_subscribers": @(self.metrics.totalSubscribers),
+        @"active_subscribers": @(self.metrics.activeSubscribers),
+        @"paused_subscribers": @(self.metrics.pausedSubscribers),
+        @"slow_subscribers": @(self.metrics.slowSubscribers),
+        @"events_delivered": @(self.metrics.eventsDelivered),
+        @"events_dropped": @(self.metrics.eventsDropped),
+        @"bytes_delivered": @(self.metrics.bytesDelivered),
+        @"drop_rate": @((double)self.metrics.eventsDropped / MAX(1, self.metrics.eventsDelivered))
+    };
+}
 ```
 
 ## Configuration
 
-### Compile-Time Constants
+### Recommended Settings
 
 ```objc
-// SubscribeReposHandler.m
-static const NSUInteger kSubscribeReposReplayBatchSize = 100;
-static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
-static const NSUInteger kSubscribeReposMaxPendingSendsDefault = 512;
-static const NSUInteger kSubscribeReposMaxPendingBytesDefault = 16 * 1024 * 1024;
-
-// WebSocketConnection.m
-static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 32 * 1024 * 1024;
+// In SubscribeReposHandler.m - Configuration
+static const NSUInteger WS_MAX_CONNECTIONS = 500;
+static const NSUInteger WS_MAX_CONNECTIONS_PER_IP = 5;
+static const NSUInteger WS_MAX_EVENTS_PER_SECOND = 1000;
+static const NSUInteger WS_MAX_BYTES_PER_SECOND = 1 * 1024 * 1024;  // 1 MB/s
+static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 10 * 1024 * 1024;  // 10 MB
+static const NSUInteger WS_BACKPRESSURE_THRESHOLD = 7 * 1024 * 1024;  // 7 MB (70%)
+static const NSUInteger WS_BACKPRESSURE_RELEASE_THRESHOLD = 3 * 1024 * 1024;  // 3 MB (30%)
+static const NSUInteger WS_MAX_DROPPED_EVENTS = 1000;
+static const NSTimeInterval WS_STALL_TIMEOUT = 60.0;  // 60 seconds
 ```
 
-### Runtime Configuration
+### Configuration File
 
-```objc
-// Adjust limits at runtime
-handler.maxPendingSendsPerConnection = 1024;
-handler.maxPendingBytesPerConnection = 32 * 1024 * 1024;
-handler.maxReplayEventsPerConnection = 20000;
+```json
+{
+  "firehose": {
+    "max_connections": 500,
+    "max_connections_per_ip": 5,
+    "max_events_per_second": 1000,
+    "max_bytes_per_second": 1048576,
+    "max_pending_send_bytes": 10485760,
+    "backpressure_threshold": 7340032,
+    "backpressure_release_threshold": 3145728,
+    "max_dropped_events": 1000,
+    "stall_timeout": 60,
+    "enable_adaptive_rate": true,
+    "enable_event_dropping": false,
+    "enable_priority": true
+  }
+}
 ```
 
 ## Best Practices
 
-### 1. Monitor Subscriber Health
+1. **Set conservative limits** — Protect server resources
+2. **Monitor subscriber health** — Track slow/stalled connections
+3. **Apply backpressure early** — Don't wait for buffer overflow
+4. **Prioritize critical subscribers** — Relays get priority
+5. **Drop events gracefully** — Inform clients of drops
+6. **Close stalled connections** — Don't let them linger
+7. **Log rate limit events** — Track patterns
+8. **Test under load** — Verify limits work
+9. **Provide feedback** — Tell clients why they're limited
+10. **Review regularly** — Adjust based on usage
 
-Track metrics:
-- Queue sizes per subscriber
-- Disconnection rates
-- Replay durations
-- Event processing latency
+## Next Steps
 
-### 2. Tune Limits Based on Usage
-
-Adjust limits based on:
-- Network conditions
-- Event sizes
-- Subscriber capabilities
-- Server resources
-
-### 3. Provide Clear Error Messages
-
-Include helpful information:
-- Error code
-- Queue size at disconnection
-- Recommended actions
-- Reconnection guidance
-
-### 4. Log Backpressure Events
-
-Log important events:
-- Slow consumer disconnections
-- Queue size warnings
-- Replay interruptions
-- Cursor issues
-
-### 5. Test Slow Consumer Scenarios
-
-Test edge cases:
-- Extremely slow subscribers
-- Network interruptions
-- Large event bursts
-- Replay with backpressure
-
-## Client-Side Considerations
-
-### Handling ConsumerTooSlow
-
-**Client Implementation:**
-
-```objc
-- (void)webSocketDidReceiveError:(NSError *)error {
-    if ([error.userInfo[@"code"] isEqualToString:@"ConsumerTooSlow"]) {
-        // Log the issue
-        NSLog(@"Disconnected: processing too slow");
-        
-        // Optimize processing
-        [self optimizeEventProcessing];
-        
-        // Reconnect with cursor
-        [self reconnectWithCursor:self.lastProcessedCursor];
-    }
-}
-```
-
-### Optimizing Event Processing
-
-**Strategies:**
-- Process events asynchronously
-- Batch database writes
-- Use efficient data structures
-- Minimize per-event overhead
-- Consider event sampling
-
-**Example:**
-
-```objc
-- (void)handleFirehoseEvent:(NSData *)eventData {
-    // Queue event for async processing
-    [self.eventQueue addObject:eventData];
-    
-    // Process in batches
-    if (self.eventQueue.count >= batchSize) {
-        [self processBatch:self.eventQueue];
-        [self.eventQueue removeAllObjects];
-    }
-}
-```
-
-### Cursor Management
-
-**Save cursor frequently:**
-
-```objc
-- (void)handleCommitEvent:(NSDictionary *)event {
-    // Process event
-    [self processCommit:event];
-    
-    // Save cursor
-    NSNumber *seq = event[@"seq"];
-    [self saveLastProcessedCursor:seq];
-}
-```
-
-**Reconnect with cursor:**
-
-```objc
-- (void)reconnect {
-    NSNumber *cursor = [self loadLastProcessedCursor];
-    [self connectToFirehoseWithCursor:cursor];
-}
-```
-
-## Performance Tuning
-
-### Increasing Limits
-
-For high-throughput scenarios:
-
-```objc
-// Increase limits for powerful subscribers
-handler.maxPendingSendsPerConnection = 2048;
-handler.maxPendingBytesPerConnection = 64 * 1024 * 1024;
-```
-
-**Considerations:**
-- Available memory
-- Network bandwidth
-- Subscriber capabilities
-- Event sizes
-
-### Decreasing Limits
-
-For resource-constrained environments:
-
-```objc
-// Decrease limits to protect server
-handler.maxPendingSendsPerConnection = 256;
-handler.maxPendingBytesPerConnection = 8 * 1024 * 1024;
-```
-
-**Considerations:**
-- Server memory limits
-- Number of subscribers
-- Event burst patterns
-- Network conditions
-
-## Testing
-
-### Test Slow Consumer Handling
-
-```objc
-- (void)testSlowConsumerDisconnection {
-    // Create subscriber
-    WebSocketConnection *slowSubscriber = [self createSubscriber];
-    
-    // Simulate slow processing by not reading from socket
-    [slowSubscriber pauseReading];
-    
-    // Send events until queue fills
-    for (NSInteger i = 0; i < maxPendingSends + 10; i++) {
-        [handler broadcastEvent:[self createTestEvent]];
-    }
-    
-    // Verify disconnection
-    XCTAssertTrue(slowSubscriber.isClosed);
-    XCTAssertEqualObjects(slowSubscriber.closeReason, @"ConsumerTooSlow");
-}
-```
-
-### Test Replay Limits
-
-```objc
-- (void)testReplayEventLimit {
-    // Create many historical events
-    for (NSInteger i = 0; i < maxReplayEvents + 1000; i++) {
-        [self createHistoricalEvent];
-    }
-    
-    // Subscribe with old cursor
-    WebSocketConnection *subscriber = [self subscribeWithCursor:0];
-    
-    // Wait for replay
-    [self waitForReplayCompletion];
-    
-    // Verify event count limit
-    XCTAssertLessThanOrEqual(subscriber.receivedEventCount, maxReplayEvents);
-}
-```
-
-### Test Backpressure During Replay
-
-```objc
-- (void)testReplayBackpressure {
-    // Create subscriber with small queue
-    WebSocketConnection *subscriber = [self createSubscriberWithSmallQueue];
-    
-    // Start replay
-    [handler replayEventsForSubscriber:subscriber fromCursor:0];
-    
-    // Verify replay stops when queue fills
-    XCTAssertLessThan(subscriber.receivedEventCount, totalHistoricalEvents);
-    XCTAssertTrue(subscriber.isConnected); // Still connected
-}
-```
-
-## See Also
-
-- [Backpressure](./backpressure.md) — Backpressure mechanisms
-- [Commit Broadcasting](./commit-broadcasting.md) — Event distribution
-- [WebSocket Server](./websocket-server.md) — WebSocket implementation
-- [Rate Limiting](../04-network-layer/rate-limiting.md) — HTTP rate limiting
-- [DoS Protection](../04-network-layer/dos-protection.md) — Attack mitigation
+- **[Backpressure](./backpressure.md)** — Backpressure mechanisms
+- **[WebSocket Server](./websocket-server.md)** — WebSocket implementation
+- **[Commit Broadcasting](./commit-broadcasting.md)** — Event broadcasting
+- **[Request Throttling](../04-network-layer/request-throttling.md)** — HTTP throttling
