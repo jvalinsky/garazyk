@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1300" viewBox="0 0 1000 1300">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .process { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .decision { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .success { fill: #e6ffe6; stroke: #00cc00; stroke-width: 2; }
+      .delete { fill: #ffe6e6; stroke: #cc0000; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; text-anchor: middle; }
+      .title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; }
+      .label { font-family: Arial, sans-serif; font-size: 11px; text-anchor: middle; fill: #333; }
+      .code { font-family: monospace; font-size: 10px; text-anchor: middle; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .loop-arrow { stroke: #0066cc; stroke-width: 2; fill: none; marker-end: url(#arrowhead); stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="30" class="title">Blob Garbage Collection Flow (Mark-and-Sweep)</text>
+
+  <!-- Trigger -->
+  <rect x="300" y="60" width="400" height="60" class="box" rx="5"/>
+  <text x="500" y="85" class="text">GC Trigger</text>
+  <text x="500" y="105" class="label">Scheduled, manual, or event-driven</text>
+
+  <!-- Arrow -->
+  <path d="M 500 120 L 500 150" class="arrow"/>
+
+  <!-- Phase 1 Header -->
+  <rect x="200" y="150" width="600" height="40" class="process" rx="5"/>
+  <text x="500" y="175" class="text" font-weight="bold">PHASE 1: MARK (Find Referenced Blobs)</text>
+
+  <!-- Arrow -->
+  <path d="M 500 190 L 500 220" class="arrow"/>
+
+  <!-- Get Actor Store -->
+  <rect x="300" y="220" width="400" height="60" class="process" rx="5"/>
+  <text x="500" y="245" class="text">Get Actor Store for User DID</text>
+  <text x="500" y="265" class="label">PDSDatabasePool.storeForDid</text>
+
+  <!-- Arrow -->
+  <path d="M 500 280 L 500 310" class="arrow"/>
+
+  <!-- List Records -->
+  <rect x="300" y="310" width="400" height="60" class="process" rx="5"/>
+  <text x="500" y="335" class="text">List All Records (Paginated)</text>
+  <text x="500" y="355" class="label">Batch size: 100 records at a time</text>
+
+  <!-- Arrow -->
+  <path d="M 500 370 L 500 400" class="arrow"/>
+
+  <!-- For Each Record -->
+  <polygon points="500,400 600,450 500,500 400,450" class="decision"/>
+  <text x="500" y="450" class="text">For each</text>
+  <text x="500" y="465" class="label">record</text>
+
+  <!-- Process Record -->
+  <path d="M 600 450 L 750 450" class="arrow"/>
+  <rect x="750" y="420" width="200" height="60" class="process" rx="5"/>
+  <text x="850" y="445" class="label">Decode CBOR</text>
+  <text x="850" y="460" class="label">record data</text>
+
+  <!-- Arrow -->
+  <path d="M 850 480 L 850 520" class="arrow"/>
+
+  <!-- Extract CIDs -->
+  <rect x="750" y="520" width="200" height="80" class="process" rx="5"/>
+  <text x="850" y="545" class="label">Extract Blob CIDs</text>
+  <text x="850" y="560" class="label">Search for:</text>
+  <text x="850" y="575" class="code">$type: "blob"</text>
+  <text x="850" y="590" class="code">ref.$link</text>
+
+  <!-- Arrow -->
+  <path d="M 850 600 L 850 640" class="arrow"/>
+
+  <!-- Add to Set -->
+  <rect x="750" y="640" width="200" height="60" class="success" rx="5"/>
+  <text x="850" y="665" class="label">Add CIDs to</text>
+  <text x="850" y="680" class="label">referenced set</text>
+
+  <!-- Loop back -->
+  <path d="M 750 670 L 650 670 L 650 450 L 600 450" class="loop-arrow"/>
+  <text x="660" y="560" class="label">Next record</text>
+
+  <!-- More records? -->
+  <path d="M 400 450 L 250 450" class="arrow"/>
+  <text x="320" y="445" class="label">More?</text>
+  <polygon points="250,450 200,475 250,500 300,475" class="decision"/>
+  <text x="250" y="480" class="label">More</text>
+  <text x="250" y="495" class="label">pages?</text>
+
+  <!-- Yes - loop back -->
+  <path d="M 250 500 L 250 550 L 350 550 L 350 340 L 300 340" class="loop-arrow"/>
+  <text x="260" y="525" class="label">Yes</text>
+
+  <!-- No - continue -->
+  <path d="M 200 475 L 150 475 L 150 750 L 300 750" class="arrow"/>
+  <text x="160" y="470" class="label">No</text>
+
+  <!-- Done - continue -->
+  <path d="M 500 500 L 500 750" class="arrow"/>
+  <text x="520" y="625" class="label">Done</text>
+
+  <!-- Phase 2 Header -->
+  <rect x="200" y="750" width="600" height="40" class="process" rx="5"/>
+  <text x="500" y="775" class="text" font-weight="bold">PHASE 2: SWEEP (Delete Unreferenced Blobs)</text>
+
+  <!-- Arrow -->
+  <path d="M 500 790 L 500 820" class="arrow"/>
+
+  <!-- List All Blobs -->
+  <rect x="300" y="820" width="400" height="60" class="process" rx="5"/>
+  <text x="500" y="845" class="text">List All Blobs for User</text>
+  <text x="500" y="865" class="label">BlobStorage.listBlobsForDID</text>
+
+  <!-- Arrow -->
+  <path d="M 500 880 L 500 910" class="arrow"/>
+
+  <!-- For Each Blob -->
+  <polygon points="500,910 600,960 500,1010 400,960" class="decision"/>
+  <text x="500" y="960" class="text">For each</text>
+  <text x="500" y="975" class="label">blob</text>
+
+  <!-- Check Referenced -->
+  <path d="M 600 960 L 750 960" class="arrow"/>
+  <polygon points="750,960 800,985 750,1010 700,985" class="decision"/>
+  <text x="750" y="985" class="label">In ref</text>
+  <text x="750" y="1000" class="label">set?</text>
+
+  <!-- Yes - Skip -->
+  <path d="M 800 985 L 850 985" class="arrow"/>
+  <text x="820 980" class="label">Yes</text>
+  <rect x="850" y="960" width="100" height="50" class="success" rx="5"/>
+  <text x="900" y="985" class="label">Skip</text>
+  <text x="900" y="1000" class="label">(keep blob)</text>
+
+  <!-- No - Check Grace Period -->
+  <path d="M 750 1010 L 750 1050" class="arrow"/>
+  <text x="770" y="1030" class="label">No</text>
+  <polygon points="750,1050 800,1075 750,1100 700,1075" class="decision"/>
+  <text x="750" y="1075" class="label">Grace</text>
+  <text x="750" y="1090" class="label">period?</text>
+
+  <!-- Too new - Skip -->
+  <path d="M 800 1075 L 850 1075" class="arrow"/>
+  <text x="820" y="1070" class="label">Too new</text>
+  <rect x="850" y="1050" width="100" height="50" class="success" rx="5"/>
+  <text x="900" y="1075" class="label">Skip</text>
+  <text x="900" y="1090" class="label">(wait 24h)</text>
+
+  <!-- Old enough - Delete -->
+  <path d="M 750 1100 L 750 1140" class="arrow"/>
+  <text x="770" y="1120" class="label">Old enough</text>
+
+  <!-- Delete Metadata -->
+  <rect x="650" y="1140" width="200" height="60" class="delete" rx="5"/>
+  <text x="750" y="1165" class="label">Delete Metadata</text>
+  <text x="750" y="1180" class="label">(in transaction)</text>
+
+  <!-- Arrow -->
+  <path d="M 750 1200 L 750 1230" class="arrow"/>
+
+  <!-- Delete Provider Data -->
+  <rect x="650" y="1230" width="200" height="60" class="delete" rx="5"/>
+  <text x="750" y="1255" class="label">Delete Provider Data</text>
+  <text x="750" y="1270" class="label">(best effort)</text>
+
+  <!-- Loop back -->
+  <path d="M 650 1260 L 550 1260 L 550 960 L 600 960" class="loop-arrow"/>
+  <text x="560" y="1110" class="label">Next blob</text>
+
+  <!-- Done -->
+  <path d="M 400 960 L 350 960 L 350 1050 L 500 1050" class="arrow"/>
+  <text x="360" y="955" class="label">Done</text>
+
+  <!-- Arrow -->
+  <path d="M 500 1050 L 500 1080" class="arrow"/>
+
+  <!-- Complete -->
+  <rect x="300" y="1080" width="400" height="40" class="success" rx="5"/>
+  <text x="500" y="1105" class="text">GC Complete - Return Deleted Count</text>
+
+  <!-- Legend -->
+  <g transform="translate(50, 1150)">
+    <text x="0" y="0" class="text" text-anchor="start" font-weight="bold">Key Points:</text>
+    <text x="0" y="20" class="label" text-anchor="start">• Mark phase scans all records to find referenced CIDs</text>
+    <text x="0" y="35" class="label" text-anchor="start">• Sweep phase deletes blobs not in referenced set</text>
+    <text x="0" y="50" class="label" text-anchor="start">• Grace period (24h) prevents premature deletion</text>
+    <text x="0" y="65" class="label" text-anchor="start">• Metadata deletion is transactional</text>
+    <text x="0" y="80" class="label" text-anchor="start">• Provider deletion failures don't fail operation</text>
+    <text x="0" y="95" class="label" text-anchor="start">• Pagination prevents memory exhaustion</text>
+  </g>
+</svg>
