@@ -1,4 +1,5 @@
 #import "Sync/WebSocketCodec.h"
+#include <string.h>
 
 static const uint8_t WS_OPCODE_CONTINUE = 0x0;
 static const uint8_t WS_OPCODE_TEXT = 0x1;
@@ -98,16 +99,19 @@ static const uint8_t WS_MASK = 0x80;
             break;
         }
 
-        NSMutableData *payload = [NSMutableData dataWithCapacity:payloadLength];
-        if (masked) {
-            const uint8_t *maskBytes = bytes + maskOffset;
-            for (NSUInteger i = 0; i < payloadLength; i++) {
-                uint8_t maskedByte = bytes[dataOffset + i];
-                uint8_t unmaskedByte = maskedByte ^ maskBytes[i % 4];
-                [payload appendBytes:&unmaskedByte length:1];
+        NSUInteger payloadSize = (NSUInteger)payloadLength;
+        NSMutableData *payload = [NSMutableData dataWithLength:payloadSize];
+        if (payloadSize > 0) {
+            uint8_t *payloadBytes = (uint8_t *)payload.mutableBytes;
+            const uint8_t *sourceBytes = bytes + dataOffset;
+            if (masked) {
+                const uint8_t *maskBytes = bytes + maskOffset;
+                for (NSUInteger i = 0; i < payloadSize; i++) {
+                    payloadBytes[i] = sourceBytes[i] ^ maskBytes[i % 4];
+                }
+            } else {
+                memcpy(payloadBytes, sourceBytes, payloadSize);
             }
-        } else {
-            [payload appendBytes:bytes + dataOffset length:payloadLength];
         }
 
         offset += headerLength + payloadLength;
