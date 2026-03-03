@@ -252,6 +252,8 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="02-core-concepts/cbor-and-car.md">CBOR and CAR</a> — Serialization formats</li>
 <li><a href="02-core-concepts/mst-trees.md">Merkle Search Trees</a> — Data structure</li>
 <li><a href="02-core-concepts/cryptography.md">Cryptography</a> — JWT, DPoP, ECDSA P-256</li>
+<li><a href="02-core-concepts/plc-directory.md">PLC Directory</a> — DID operations</li>
+<li><a href="02-core-concepts/did-document-updates.md">DID Document Updates</a> — Update workflow</li>
 </ul>
 <h3 id="application-layer">Application Layer</h3>
 <ul>
@@ -272,6 +274,10 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="04-network-layer/domain-methods.md">Domain Methods</a> — Handler patterns</li>
 <li><a href="04-network-layer/auth-helpers.md">Auth Helpers</a> — JWT/DPoP verification</li>
 <li><a href="04-network-layer/error-handling.md">Error Handling</a> — Standardized responses</li>
+<li><a href="04-network-layer/input-validation.md">Input Validation</a> — Request validation</li>
+<li><a href="04-network-layer/rate-limiting.md">Rate Limiting</a> — Request rate control</li>
+<li><a href="04-network-layer/dos-protection.md">DoS Protection</a> — Attack mitigation</li>
+<li><a href="04-network-layer/request-throttling.md">Request Throttling</a> — Traffic management</li>
 </ul>
 <h3 id="database-layer">Database Layer</h3>
 <ul>
@@ -280,6 +286,10 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="05-database-layer/actor-databases.md">Actor Databases</a> — Per-user pools</li>
 <li><a href="05-database-layer/migrations.md">Migrations</a> — Schema versioning</li>
 <li><a href="05-database-layer/wal-mode.md">WAL Mode</a> — Write-Ahead Logging</li>
+<li><a href="05-database-layer/migration-strategy.md">Migration Strategy</a> — Planning migrations</li>
+<li><a href="05-database-layer/migration-rollback.md">Migration Rollback</a> — Rollback procedures</li>
+<li><a href="05-database-layer/data-integrity.md">Data Integrity</a> — Consistency checks</li>
+<li><a href="05-database-layer/zero-downtime-migrations.md">Zero-Downtime Migrations</a> — Online migrations</li>
 </ul>
 <h3 id="authentication">Authentication</h3>
 <ul>
@@ -287,6 +297,8 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="06-authentication/oauth2-dpop.md">OAuth 2.0 with DPoP</a> — OAuth flow</li>
 <li><a href="06-authentication/key-rotation.md">Key Rotation</a> — Key management</li>
 <li><a href="06-authentication/totp-webauthn.md">TOTP and WebAuthn</a> — MFA</li>
+<li><a href="06-authentication/secrets-management.md">Secrets Management</a> — Key storage</li>
+<li><a href="06-authentication/security-best-practices.md">Security Best Practices</a> — Defense in depth</li>
 </ul>
 <h3 id="repository-protocol">Repository &amp; Protocol</h3>
 <ul>
@@ -295,6 +307,10 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="07-repository-protocol/car-format.md">CAR Format</a> — Archive format</li>
 <li><a href="07-repository-protocol/cid-and-hashing.md">CID and Hashing</a> — Content addressing</li>
 <li><a href="07-repository-protocol/blob-storage.md">Blob Storage</a> — File management</li>
+<li><a href="07-repository-protocol/blob-lifecycle.md">Blob Lifecycle</a> — Upload/download/deletion</li>
+<li><a href="07-repository-protocol/blob-optimization.md">Blob Optimization</a> — Chunking and caching</li>
+<li><a href="07-repository-protocol/blob-garbage-collection.md">Blob Garbage Collection</a> — Cleanup strategies</li>
+<li><a href="07-repository-protocol/blob-quotas.md">Blob Quotas</a> — Size limits</li>
 </ul>
 <h3 id="sync-firehose">Sync &amp; Firehose</h3>
 <ul>
@@ -302,6 +318,7 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="08-sync-firehose/websocket-server.md">WebSocket Server</a> — Connection handling</li>
 <li><a href="08-sync-firehose/commit-broadcasting.md">Commit Broadcasting</a> — Event streaming</li>
 <li><a href="08-sync-firehose/backpressure.md">Backpressure</a> — Flow control</li>
+<li><a href="08-sync-firehose/firehose-rate-limiting.md">Firehose Rate Limiting</a> — Subscriber limits</li>
 </ul>
 <h3 id="platform-compatibility">Platform Compatibility</h3>
 <ul>
@@ -325,14 +342,28 @@ title: PDS Objective-C Implementation Guide</p>
 <li><a href="11-reference/config-reference.md">Config Reference</a> — Configuration</li>
 <li><a href="11-reference/cli-reference.md">CLI Reference</a> — kaszlak commands</li>
 <li><a href="11-reference/troubleshooting.md">Troubleshooting</a> — Common issues</li>
+<li><a href="11-reference/metrics-collection.md">Metrics Collection</a> — Observability</li>
+<li><a href="11-reference/logging-strategy.md">Logging Strategy</a> — Structured logging</li>
+<li><a href="11-reference/performance-monitoring.md">Performance Monitoring</a> — Profiling</li>
+<li><a href="11-reference/alerting.md">Alerting</a> — Alert rules</li>
+<li><a href="11-reference/security-audit-guide.md">Security Audit Guide</a> — Vulnerability scanning</li>
+<li><a href="11-reference/plc-server-operations.md">PLC Server Operations</a> — Running campagnola</li>
+<li><a href="11-reference/plc-failover.md">PLC Failover</a> — Redundancy strategies</li>
 </ul>
 <h3 id="diagrams">Diagrams</h3>
 <ul>
 <li><a href="12-diagrams/system-architecture.svg">System Architecture</a></li>
 <li><a href="12-diagrams/request-flow.svg">Request Flow</a></li>
 <li><a href="12-diagrams/database-schema.svg">Database Schema</a></li>
-<li><a href="12-diagrams/auth-flow.svg">Auth Flow</a></li>
-<li><a href="12-diagrams/firehose-flow.svg">Firehose Flow</a></li>
+<li><a href="12-diagrams/jwt-token-flow.svg">JWT Token Flow</a></li>
+<li><a href="12-diagrams/oauth2-dpop-flow.svg">OAuth 2.0 with DPoP Flow</a></li>
+<li><a href="12-diagrams/commit-broadcasting-flow.svg">Commit Broadcasting Flow</a></li>
+<li><a href="12-diagrams/websocket-upgrade-flow.svg">WebSocket Upgrade Flow</a></li>
+<li><a href="12-diagrams/rate-limiting-algorithm.svg">Rate Limiting Algorithm</a></li>
+<li><a href="12-diagrams/secrets-management-flow.svg">Secrets Management Flow</a></li>
+<li><a href="12-diagrams/plc-directory-architecture.svg">PLC Directory Architecture</a></li>
+<li><a href="12-diagrams/did-resolution-flow.svg">DID Resolution Flow</a></li>
+<li><a href="12-diagrams/plc-failover-mechanism.svg">PLC Failover Mechanism</a></li>
 </ul>
 <h2 id="learning-path">Learning Path</h2>
 <p><strong>For New Developers:</strong>
@@ -345,10 +376,48 @@ title: PDS Objective-C Implementation Guide</p>
 2. Read relevant service documentation
 3. Check <a href="04-network-layer/http-server.md">Network Layer</a> for endpoints
 4. Follow corresponding tutorial</p>
+<p><strong>For Production Deployment:</strong>
+1. Review <a href="06-authentication/security-best-practices.md">Security Best Practices</a>
+2. Configure <a href="04-network-layer/rate-limiting.md">Rate Limiting</a> and <a href="04-network-layer/dos-protection.md">DoS Protection</a>
+3. Set up <a href="11-reference/metrics-collection.md">Monitoring</a> and <a href="11-reference/alerting.md">Alerting</a>
+4. Plan <a href="05-database-layer/migration-strategy.md">Database Migrations</a>
+5. Follow <a href="10-tutorials/tutorial-6-deployment.md">Tutorial 6: Deployment</a></p>
 <p><strong>For Troubleshooting:</strong>
 1. Check <a href="11-reference/troubleshooting.md">Troubleshooting Guide</a>
 2. Review <a href="04-network-layer/error-handling.md">Error Handling</a>
 3. Check <a href="09-platform-compatibility/macos-linux.md">Platform Compatibility</a></p>
+<h2 id="advanced-topics">Advanced Topics</h2>
+<p>This guide includes comprehensive coverage of production-ready features:</p>
+<p><strong>Security &amp; Authentication:</strong>
+- <a href="06-authentication/secrets-management.md">Secrets Management</a> — Hardware-backed key storage
+- <a href="06-authentication/security-best-practices.md">Security Best Practices</a> — Defense in depth
+- <a href="04-network-layer/input-validation.md">Input Validation</a> — Attack prevention
+- <a href="11-reference/security-audit-guide.md">Security Audit Guide</a> — Vulnerability scanning</p>
+<p><strong>Performance &amp; Reliability:</strong>
+- <a href="04-network-layer/rate-limiting.md">Rate Limiting</a> — Request rate control
+- <a href="04-network-layer/dos-protection.md">DoS Protection</a> — Attack mitigation
+- <a href="07-repository-protocol/blob-optimization.md">Blob Optimization</a> — Chunking and caching
+- <a href="08-sync-firehose/firehose-rate-limiting.md">Firehose Rate Limiting</a> — Subscriber limits</p>
+<p><strong>Operations &amp; Monitoring:</strong>
+- <a href="11-reference/metrics-collection.md">Metrics Collection</a> — Observability
+- <a href="11-reference/logging-strategy.md">Logging Strategy</a> — Structured logging
+- <a href="11-reference/performance-monitoring.md">Performance Monitoring</a> — Profiling
+- <a href="11-reference/alerting.md">Alerting</a> — Alert rules</p>
+<p><strong>Database Management:</strong>
+- <a href="05-database-layer/migration-strategy.md">Migration Strategy</a> — Planning migrations
+- <a href="05-database-layer/migration-rollback.md">Migration Rollback</a> — Rollback procedures
+- <a href="05-database-layer/data-integrity.md">Data Integrity</a> — Consistency checks
+- <a href="05-database-layer/zero-downtime-migrations.md">Zero-Downtime Migrations</a> — Online migrations</p>
+<p><strong>Blob Management:</strong>
+- <a href="07-repository-protocol/blob-lifecycle.md">Blob Lifecycle</a> — Upload/download/deletion
+- <a href="07-repository-protocol/blob-optimization.md">Blob Optimization</a> — Chunking and caching
+- <a href="07-repository-protocol/blob-garbage-collection.md">Blob Garbage Collection</a> — Cleanup strategies
+- <a href="07-repository-protocol/blob-quotas.md">Blob Quotas</a> — Size limits</p>
+<p><strong>Identity &amp; PLC:</strong>
+- <a href="02-core-concepts/plc-directory.md">PLC Directory</a> — DID operations
+- <a href="02-core-concepts/did-document-updates.md">DID Document Updates</a> — Update workflow
+- <a href="11-reference/plc-server-operations.md">PLC Server Operations</a> — Running campagnola
+- <a href="11-reference/plc-failover.md">PLC Failover</a> — Redundancy strategies</p>
 <h2 id="documentation-structure">Documentation Structure</h2>
 <p>This guide is organized into 12 progressive sections, each building on previous knowledge:</p>
 <ul>
@@ -395,7 +464,7 @@ title: PDS Objective-C Implementation Guide</p>
 <strong>Version:</strong> 1.0
 <strong>Status:</strong> In Development</p>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:02</p>
             </div>
         </div>
     </div>

@@ -270,6 +270,66 @@ Resume sending
 No data loss
 </code></pre>
 
+<p><strong>ASCII Diagram: Backpressure Flow Control</strong></p>
+<pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
+│  CommitBroadcaster.broadcastCommit                      │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────▼────────────┐
+        │  Create firehose event  │
+        │  Format and encode JSON │
+        └────────────┬────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  For each subscription:         │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  Check send buffer level        │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────┴────────────┬────────────────┐
+        │                         │                │
+   &lt; 70%                      70-90%            &gt; 90%
+        │                         │                │
+   ┌────▼────┐          ┌────────▼────────┐  ┌───▼────┐
+   │ Send    │          │ Apply           │  │ Close  │
+   │ event   │          │ backpressure    │  │ conn   │
+   │ now     │          └────────┬────────┘  └────────┘
+   └────┬────┘                   │
+        │                   ┌────▼────────────┐
+        │                   │ Queue message   │
+        │                   │ in buffer       │
+        │                   └────────┬────────┘
+        │                           │
+        │                   ┌────────▼────────┐
+        │                   │ Start drain     │
+        │                   │ timer (100ms)   │
+        │                   └────────┬────────┘
+        │                           │
+        │                   ┌────────▼────────┐
+        │                   │ Buffer drained? │
+        │                   └────────┬────────┘
+        │                           │
+        │                   ┌───────┴────────┐
+        │                   │                │
+        │                  No               Yes
+        │                   │                │
+        │                   └────────┬───────┘
+        │                           │
+        │                   ┌────────▼────────────┐
+        │                   │ Release backpressure│
+        │                   │ Resume sending      │
+        │                   └────────┬────────────┘
+        │                           │
+        └───────────────────────────┴──────────────┐
+                                                   │
+                                    ┌──────────────▼──────┐
+                                    │ Continue broadcast  │
+                                    │ to next subscription│
+                                    └─────────────────────┘
+</code></pre>
+
 <h2 id="buffer-management">Buffer Management</h2>
 <h3 id="send-buffer-architecture">Send Buffer Architecture</h3>
 <pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m
@@ -303,41 +363,45 @@ No data loss
 
 <h2 id="backpressure-detection">Backpressure Detection</h2>
 <h3 id="monitoring-buffer-levels">Monitoring Buffer Levels</h3>
-<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m
-- (void)sendMessage:(NSData *)message 
-            opcode:(uint8_t)opcode
-               fin:(BOOL)fin
-              error:(NSError **)error {
+<p>The WebSocketConnection tracks send buffer levels and applies backpressure when needed:</p>
+<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m - Send frame with backpressure handling
+- (void)sendFrame:(NSData *)frame {
+  dispatch_async(self.writeQueue, ^{
+    if (self.state == WebSocketConnectionStateClosing ||
+        self.state == WebSocketConnectionStateClosed) {
+      return;
+    }
+    if (self.queuedSendBytes + frame.length &gt; WS_MAX_PENDING_SEND_BYTES) {
+      [self.messageQueue removeAllObjects];
+      self.queuedSendBytes = 0;
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self closeWithCode:1009 reason:@&quot;Outbound queue limit exceeded&quot;];
+      });
+      return;
+    }
 
-    dispatch_async(self.sendQueue, ^{
-        // 1. Create frame
-        NSData *frame = [self createFrame:message opcode:opcode fin:fin];
+    [self.messageQueue addObject:frame];
+    self.queuedSendBytes += frame.length;
+    if (self.messageQueue.count == 1) {
+      [self flushWriteBuffer];
+    }
+  });
+}
 
-        // 2. Check buffer level
-        NSUInteger newBufferSize = self.sendBufferSize + frame.length;
+- (NSUInteger)pendingSendBytes {
+  __block NSUInteger bytes = 0;
+  if (!self.writeQueue) {
+    return 0;
+  }
 
-        if (newBufferSize &gt; self.maxSendBufferSize) {
-            // 3. Apply backpressure
-            NSLog(@&quot;Backpressure: buffer full (%lu bytes)&quot;, (unsigned long)newBufferSize);
-            [self applyBackpressure];
-
-            // 4. Queue message for later
-            [self.sendBuffer appendData:frame];
-            self.sendBufferSize = newBufferSize;
-
-            return;
-        }
-
-        // 5. Send immediately
-        [self.socket sendData:frame];
-
-        // 6. Update metrics
-        self.sendBufferSize += frame.length;
-        [self recordMetric:@&quot;bytes_sent&quot; value:@(frame.length)];
-    });
+  dispatch_sync(self.writeQueue, ^{
+    bytes = self.queuedSendBytes;
+  });
+  return bytes;
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/WebSocketConnection.m</code> (lines 280-310)</p>
 <h3 id="buffer-threshold-levels">Buffer Threshold Levels</h3>
 <pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m
 - (void)checkBufferThresholds {
@@ -411,30 +475,48 @@ No data loss
 }
 </code></pre>
 
-<h3 id="releasing-backpressure">Releasing Backpressure</h3>
-<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m
-- (void)releaseBackpressure {
-    if (!self.isPaused) {
-        return;  // Not paused
-    }
+<h3 id="write-buffer-flushing">Write Buffer Flushing</h3>
+<p>The connection flushes queued messages asynchronously:</p>
+<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m - Flushing write buffer
+- (void)flushWriteBuffer {
+  if (self.messageQueue.count == 0)
+    return;
 
-    self.isPaused = NO;
+  NSData *message = self.messageQueue.firstObject;
+  [self writeData:message];
+}
 
-    // 1. Stop drain timer
-    if (self.drainTimer) {
-        dispatch_source_cancel(self.drainTimer);
-        self.drainTimer = nil;
-    }
+- (void)writeData:(NSData *)data {
+  __weak typeof(self) weakSelf = self;
+  [self.connection sendData:data
+                 completion:^(NSError *_Nullable error) {
+                   __strong typeof(weakSelf) strongSelf = weakSelf;
+                   if (!strongSelf)
+                     return;
 
-    // 2. Notify broadcaster to resume
-    if (self.backpressureHandler) {
-        self.backpressureHandler(NO);
-    }
+                   dispatch_async(strongSelf.writeQueue, ^{
+                     if (strongSelf.messageQueue.count &gt; 0) {
+                       NSData *sentFrame = strongSelf.messageQueue.firstObject;
+                       [strongSelf.messageQueue removeObjectAtIndex:0];
+                       if (sentFrame.length &gt;= strongSelf.queuedSendBytes) {
+                         strongSelf.queuedSendBytes = 0;
+                       } else {
+                         strongSelf.queuedSendBytes -= sentFrame.length;
+                       }
+                     }
+                     [strongSelf flushWriteBuffer];
+                   });
 
-    NSLog(@&quot;Backpressure released&quot;);
+                   if (error) {
+                     dispatch_async(dispatch_get_main_queue(), ^{
+                       [strongSelf notifyError:error];
+                     });
+                   }
+                 }];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/WebSocketConnection.m</code> (lines 310-340)</p>
 <h2 id="broadcaster-level-backpressure">Broadcaster-Level Backpressure</h2>
 <h3 id="selective-broadcasting">Selective Broadcasting</h3>
 <pre class="codehilite"><code class="language-objc">// In CommitBroadcaster.m
@@ -591,47 +673,46 @@ No data loss
 }
 </code></pre>
 
-<h2 id="timeout-handling">Timeout Handling</h2>
-<h3 id="detecting-stalled-connections">Detecting Stalled Connections</h3>
-<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m
-- (void)startStallDetection {
-    self.stallTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, 
-                                             self.sendQueue);
+<h2 id="keep-alive-and-heartbeat">Keep-Alive and Heartbeat</h2>
+<h3 id="heartbeat-implementation">Heartbeat Implementation</h3>
+<p>The WebSocketConnection implements a heartbeat mechanism to detect stalled connections:</p>
+<pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m - Heartbeat management
+- (void)startHeartbeat {
+  [self stopHeartbeat];
+  self.heartbeatTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+                                               dispatch_get_main_queue());
+  // Tick more frequently to check the policy (e.g., every 1 second)
+  dispatch_source_set_timer(
+      self.heartbeatTimer,
+      dispatch_walltime(NULL, 1 * NSEC_PER_SEC),
+      1 * NSEC_PER_SEC, 1 * NSEC_PER_SEC);
 
-    dispatch_source_set_timer(self.stallTimer,
-                             dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC),
-                             5 * NSEC_PER_SEC,
-                             1 * NSEC_PER_SEC);
-
-    dispatch_source_set_event_handler(self.stallTimer, ^{
-        [self checkForStall];
-    });
-
-    dispatch_resume(self.stallTimer);
+  __weak typeof(self) weakSelf = self;
+  dispatch_source_set_event_handler(self.heartbeatTimer, ^{
+    [weakSelf tickHeartbeat];
+  });
+  dispatch_resume(self.heartbeatTimer);
 }
 
-- (void)checkForStall {
-    // 1. Check if buffer is growing
-    NSUInteger previousSize = self.lastBufferSize;
-    self.lastBufferSize = self.sendBufferSize;
+- (void)tickHeartbeat {
+  NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+  WSHeartbeatAction action = [self.heartbeatPolicy tick:now];
 
-    if (self.sendBufferSize &gt; previousSize) {
-        // Buffer is growing, not stalled
-        self.stallCount = 0;
-        return;
-    }
+  if (action == WSHeartbeatActionSendPing) {
+    [self sendPing:nil];
+    [self.heartbeatPolicy pingSent:now];
+  } else if (action == WSHeartbeatActionTimeout) {
+    [self closeWithCode:1001 reason:@&quot;Heartbeat timeout&quot;];
+  }
+}
 
-    // 2. Increment stall counter
-    self.stallCount++;
-
-    // 3. Close connection if stalled too long
-    if (self.stallCount &gt; 12) {  // 60 seconds
-        NSLog(@&quot;Connection stalled, closing&quot;);
-        [self closeWithCode:1000 reason:@&quot;Stalled&quot;];
-    }
+- (void)handlePongFrame:(NSData *)payload {
+  NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+  [self.heartbeatPolicy pongReceived:now];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/WebSocketConnection.m</code> (lines 340-380)</p>
 <h2 id="monitoring-and-metrics">Monitoring and Metrics</h2>
 <h3 id="backpressure-metrics">Backpressure Metrics</h3>
 <pre class="codehilite"><code class="language-objc">// In CommitBroadcaster.m
@@ -714,7 +795,7 @@ static const NSUInteger MAX_STALL_COUNT = 12;                       // 60 second
 <li><strong><a href="./firehose-overview.md">Firehose Overview</a></strong> — Architecture overview</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

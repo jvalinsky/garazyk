@@ -393,46 +393,158 @@ CREATE TABLE commits (
 <li><strong>Type safety</strong> — Automatic type conversion</li>
 </ul>
 <h3 id="using-prepared-statements">Using Prepared Statements</h3>
-<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
-- (void)createRecord:(NSDictionary *)record 
-          collection:(NSString *)collection
-                rkey:(NSString *)rkey
-                 did:(NSString *)did
-          completion:(void (^)(NSString *uri, NSError *error))completion {
-
-    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
-
-    // 1. Prepare statement
-    const char *sql = &quot;INSERT INTO records (collection, rkey, cid, data) VALUES (?, ?, ?, ?)&quot;;
-    sqlite3_stmt *stmt;
-
-    int rc = sqlite3_prepare_v2(db.connection, sql, -1, &amp;stmt, NULL);
-    if (rc != SQLITE_OK) {
-        completion(nil, [NSError errorWithDomain:@&quot;SQLite&quot; code:rc userInfo:nil]);
-        return;
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Service/ServiceDatabases.m</code> (Lines 169-189)</p>
+<pre class="codehilite"><code class="language-objc">// Get account by DID with prepared statement
+- (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.servicePool storeForDid:@&quot;__service__&quot; error:nil];
+    if (!store) {
+        return nil;
     }
 
-    // 2. Bind parameters
-    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
-    NSString *cid = [CID calculateCIDForData:cbor];
-
-    sqlite3_bind_text(stmt, 1, [collection UTF8String], -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, [rkey UTF8String], -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, [cid UTF8String], -1, SQLITE_TRANSIENT);
-    sqlite3_bind_blob(stmt, 4, cbor.bytes, (int)cbor.length, SQLITE_TRANSIENT);
-
-    // 3. Execute statement
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE) {
-        completion(nil, [NSError errorWithDomain:@&quot;SQLite&quot; code:rc userInfo:nil]);
-        sqlite3_finalize(stmt);
-        return;
+    NSString *sql = @&quot;SELECT * FROM accounts WHERE did = ?&quot;;
+    __autoreleasing NSError *stmtError = nil;
+    sqlite3_stmt *stmt = [store prepareStatement:sql error:&amp;stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
+        return nil;
     }
 
-    // 4. Finalize statement
-    sqlite3_finalize(stmt);
+    // Bind parameter
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
 
-    completion(cid, nil);
+    // Execute and fetch result
+    PDSDatabaseAccount *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [store accountFromStatement:stmt];
+    }
+
+    // Finalize statement
+    [store finalizeStatement:stmt];
+    return account;
+}
+</code></pre>
+
+<h3 id="parameter-binding-patterns">Parameter Binding Patterns</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Service/ServiceDatabases.m</code> (Lines 245-270)</p>
+<pre class="codehilite"><code class="language-objc">// Bind different parameter types
+NSString *sql = @&quot;INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)&quot;;
+PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+if (!stmt) { success = NO; return; }
+
+// Bind text parameter
+sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+
+// Bind text parameter
+sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+// Bind double (timestamp)
+sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
+
+// Bind double (expiration timestamp)
+PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+NSUInteger refreshTokenTtl = config.refreshTokenTtlSeconds &gt; 0 ? config.refreshTokenTtlSeconds : (30 * 24 * 60 * 60);
+sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:refreshTokenTtl] timeIntervalSince1970]);
+
+// Execute
+success = (sqlite3_step(stmt) == SQLITE_DONE);
+</code></pre>
+
+<h3 id="blob-parameter-binding">Blob Parameter Binding</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Service/ServiceDatabases.m</code> (Lines 430-485)</p>
+<pre class="codehilite"><code class="language-objc">// Bind blob parameters (for hashes and salts)
+NSString *sql = @&quot;INSERT INTO app_passwords (id, account_did, name, password_hash, password_salt, privileged, created_at) &quot;
+                @&quot;VALUES (?, ?, ?, ?, ?, ?, ?)&quot;;
+PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+if (!stmt) return;
+
+NSString *uuid = [[NSUUID UUID] UUIDString];
+sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+sqlite3_bind_text(stmt, 3, name.UTF8String, -1, SQLITE_TRANSIENT);
+
+// Bind blob (password hash)
+sqlite3_bind_blob(stmt, 4, hash.bytes, (int)hash.length, SQLITE_TRANSIENT);
+
+// Bind blob (password salt)
+sqlite3_bind_blob(stmt, 5, salt.bytes, (int)salt.length, SQLITE_TRANSIENT);
+
+// Bind integer
+sqlite3_bind_int(stmt, 6, privileged ? 1 : 0);
+
+// Bind double
+sqlite3_bind_double(stmt, 7, createdAt);
+
+if (sqlite3_step(stmt) != SQLITE_DONE) {
+    if (innerError) {
+        *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:sqlite3_errcode(store.db)
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to insert app password&quot;}];
+    }
+    return;
+}
+</code></pre>
+
+<h3 id="iterating-query-results">Iterating Query Results</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m</code> (Lines 100-130)</p>
+<pre class="codehilite"><code class="language-objc">// Iterate through query results
+PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *accountStmt;
+sqlite3_prepare_v2(sourceDb,
+    &quot;SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at &quot;
+    &quot;FROM accounts&quot;, -1, &amp;accountStmt, NULL);
+
+while (sqlite3_step(accountStmt) == SQLITE_ROW) {
+    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+
+    // Extract text columns
+    account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 0)];
+    account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 1)];
+
+    // Check for NULL values
+    int col = 2;
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, col)];
+    }
+    col++;
+
+    // Extract blob columns
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                              length:sqlite3_column_bytes(accountStmt, col)];
+    }
+    col++;
+
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                              length:sqlite3_column_bytes(accountStmt, col)];
+    }
+    col++;
+
+    // Extract double columns (timestamps)
+    account.createdAt = sqlite3_column_double(accountStmt, col);
+    col++;
+    account.updatedAt = sqlite3_column_double(accountStmt, col);
+
+    [allAccounts addObject:account];
+}
+</code></pre>
+
+<h3 id="counting-rows">Counting Rows</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m</code> (Lines 60-85)</p>
+<pre class="codehilite"><code class="language-objc">// Count rows for progress tracking
+{
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+    sqlite3_prepare_v2(sourceDb, &quot;SELECT COUNT(*) FROM accounts&quot;, -1, &amp;countStmt, NULL);
+    if (sqlite3_step(countStmt) == SQLITE_ROW) {
+        totalAccounts = sqlite3_column_int64(countStmt, 0);
+    }
+}
+
+{
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+    sqlite3_prepare_v2(sourceDb, &quot;SELECT COUNT(*) FROM repos&quot;, -1, &amp;countStmt, NULL);
+    if (sqlite3_step(countStmt) == SQLITE_ROW) {
+        totalRepos = sqlite3_column_int64(countStmt, 0);
+    }
 }
 </code></pre>
 
@@ -598,7 +710,7 @@ sqlite3_bind_int(stmt, 2, (int)limit);
 <li><strong><a href="./migrations.md">Migrations</a></strong> — Schema versioning</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

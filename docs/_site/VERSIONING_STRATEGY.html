@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Versioning Strategy - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Documentation Versioning Strategy</h1>
+            </div>
+            <h1 id="documentation-versioning-strategy">Documentation Versioning Strategy</h1>
+<h2 id="overview">Overview</h2>
+<p>This document defines the versioning strategy for the ATProto PDS Objective-C implementation guide. The strategy ensures documentation stays synchronized with code releases while remaining maintainable and accessible.</p>
+<h2 id="versioning-approach">Versioning Approach</h2>
+<h3 id="version-numbering">Version Numbering</h3>
+<p>Documentation versions follow the project's semantic versioning (SemVer):
+- <strong>Major.Minor.Patch</strong> (e.g., 1.0.0, 1.1.0, 1.1.1)
+- Documentation version matches the code release version</p>
+<h3 id="version-branches">Version Branches</h3>
+<ul>
+<li><strong>main branch</strong> — Latest stable documentation (matches latest release)</li>
+<li><strong>develop branch</strong> — In-progress documentation (matches develop code)</li>
+<li><strong>Version tags</strong> — Tagged releases (e.g., v1.0.0, v1.1.0)</li>
+</ul>
+<h2 id="documentation-update-workflow">Documentation Update Workflow</h2>
+<h3 id="for-new-releases">For New Releases</h3>
+<ol>
+<li><strong>During Development</strong> (on develop branch):</li>
+<li>Update documentation alongside code changes</li>
+<li>Mark breaking changes with version notes</li>
+<li>
+<p>Update code examples to match new APIs</p>
+</li>
+<li>
+<p><strong>Before Release</strong> (pre-release checklist):</p>
+</li>
+<li>Review all documentation for accuracy</li>
+<li>Verify all code examples compile and run</li>
+<li>Update version numbers in _config.yml</li>
+<li>Test all links and cross-references</li>
+<li>
+<p>Update CHANGELOG.md with documentation changes</p>
+</li>
+<li>
+<p><strong>At Release</strong> (when tagging):</p>
+</li>
+<li>Merge develop to main</li>
+<li>Tag release (e.g., git tag v1.0.0)</li>
+<li>Deploy documentation to gh-pages</li>
+<li>Archive previous version if needed</li>
+</ol>
+<h3 id="for-patch-releases">For Patch Releases</h3>
+<ul>
+<li>Update only affected documentation sections</li>
+<li>Maintain backward compatibility in examples</li>
+<li>Add clarifications or corrections</li>
+<li>Fix broken links or typos</li>
+</ul>
+<h3 id="for-majorminor-releases">For Major/Minor Releases</h3>
+<ul>
+<li>Update architecture diagrams if structure changed</li>
+<li>Add new sections for new features</li>
+<li>Mark deprecated features clearly</li>
+<li>Update all affected code examples</li>
+<li>Review and update tutorials</li>
+</ul>
+<h2 id="version-indicators">Version Indicators</h2>
+<h3 id="in-documentation-files">In Documentation Files</h3>
+<p>Add version metadata to front matter:</p>
+<pre class="codehilite"><code class="language-yaml">---
+title: &quot;Service Documentation&quot;
+version: &quot;1.0.0&quot;
+last_updated: &quot;2024-03-15&quot;
+---
+</code></pre>
+
+<h3 id="version-specific-notes">Version-Specific Notes</h3>
+<p>Use callout blocks for version-specific information:</p>
+<pre class="codehilite"><code class="language-markdown">&gt; **Version Note (v1.1.0+):** This feature was added in version 1.1.0.
+
+&gt; **Breaking Change (v2.0.0):** The API signature changed in version 2.0.0.
+
+&gt; **Deprecated (v1.2.0):** This method is deprecated. Use `newMethod` instead.
+</code></pre>
+
+<h3 id="code-example-versioning">Code Example Versioning</h3>
+<p>Include version comments in code examples:</p>
+<pre class="codehilite"><code class="language-objc">// Available since: v1.0.0
+// Updated in: v1.1.0 (added error parameter)
+- (void)createRecord:(NSString *)did
+          collection:(NSString *)collection
+               value:(NSDictionary *)value
+               error:(NSError **)error;
+</code></pre>
+
+<h2 id="version-archive-strategy">Version Archive Strategy</h2>
+<h3 id="when-to-archive">When to Archive</h3>
+<p>Archive documentation when:
+- Major version releases introduce breaking changes
+- Significant architectural changes occur
+- Users need to reference older versions</p>
+<h3 id="archive-location">Archive Location</h3>
+<pre class="codehilite"><code>docs/
+├── archive/
+│   ├── v0.9/          # Pre-1.0 documentation
+│   ├── v1.0/          # Version 1.0.x documentation
+│   └── v1.1/          # Version 1.1.x documentation
+└── [current docs]     # Latest version
+</code></pre>
+
+<h3 id="archive-process">Archive Process</h3>
+<ol>
+<li>Copy current docs to <code>docs/archive/vX.Y/</code></li>
+<li>Add archive notice to archived version</li>
+<li>Update navigation to link to archived versions</li>
+<li>Keep archives read-only (no updates)</li>
+</ol>
+<h2 id="version-selection-ui">Version Selection UI</h2>
+<h3 id="in-jekyll-site">In Jekyll Site</h3>
+<p>Add version selector to _config.yml:</p>
+<pre class="codehilite"><code class="language-yaml">versions:
+  - version: &quot;1.2.0&quot;
+    label: &quot;Latest (1.2.0)&quot;
+    path: &quot;/&quot;
+  - version: &quot;1.1.0&quot;
+    label: &quot;1.1.0&quot;
+    path: &quot;/archive/v1.1/&quot;
+  - version: &quot;1.0.0&quot;
+    label: &quot;1.0.0&quot;
+    path: &quot;/archive/v1.0/&quot;
+</code></pre>
+
+<h3 id="version-banner">Version Banner</h3>
+<p>Display version banner on all pages:</p>
+<pre class="codehilite"><code class="language-html">&lt;div class=&quot;version-banner&quot;&gt;
+  &lt;span&gt;Documentation Version: 1.2.0&lt;/span&gt;
+  &lt;a href=&quot;/versions&quot;&gt;View other versions&lt;/a&gt;
+&lt;/div&gt;
+</code></pre>
+
+<h2 id="maintenance-guidelines">Maintenance Guidelines</h2>
+<h3 id="regular-updates">Regular Updates</h3>
+<ul>
+<li><strong>Weekly</strong>: Check for broken links</li>
+<li><strong>Monthly</strong>: Review code examples for accuracy</li>
+<li><strong>Per Release</strong>: Full documentation review</li>
+<li><strong>Quarterly</strong>: Audit archived versions for relevance</li>
+</ul>
+<h3 id="deprecation-policy">Deprecation Policy</h3>
+<ol>
+<li><strong>Mark as deprecated</strong> in current version</li>
+<li><strong>Keep documentation</strong> for 2 major versions</li>
+<li><strong>Move to archive</strong> after 2 major versions</li>
+<li><strong>Remove from main docs</strong> after 3 major versions</li>
+</ol>
+<h3 id="breaking-changes">Breaking Changes</h3>
+<p>When documenting breaking changes:
+1. Clearly mark the change with version number
+2. Explain what changed and why
+3. Provide migration guide
+4. Show before/after code examples
+5. Link to related GitHub issues/PRs</p>
+<h2 id="version-metadata">Version Metadata</h2>
+<h3 id="_configyml-configuration">_config.yml Configuration</h3>
+<pre class="codehilite"><code class="language-yaml"># Documentation version
+doc_version: &quot;1.2.0&quot;
+code_version: &quot;1.2.0&quot;
+last_updated: &quot;2024-03-15&quot;
+
+# Version history
+version_history:
+  - version: &quot;1.2.0&quot;
+    date: &quot;2024-03-15&quot;
+    changes: &quot;Added firehose backpressure documentation&quot;
+  - version: &quot;1.1.0&quot;
+    date: &quot;2024-02-01&quot;
+    changes: &quot;Added OAuth 2.0 with DPoP guide&quot;
+  - version: &quot;1.0.0&quot;
+    date: &quot;2024-01-15&quot;
+    changes: &quot;Initial release&quot;
+</code></pre>
+
+<h3 id="changelogmd">CHANGELOG.md</h3>
+<p>Maintain a documentation-specific changelog:</p>
+<pre class="codehilite"><code class="language-markdown"># Documentation Changelog
+
+## [1.2.0] - 2024-03-15
+### Added
+- Firehose backpressure handling guide
+- WebSocket connection pooling examples
+
+### Changed
+- Updated OAuth flow diagrams
+- Improved error handling examples
+
+### Fixed
+- Corrected JWT token expiration times
+- Fixed broken links in tutorial 4
+
+## [1.1.0] - 2024-02-01
+...
+</code></pre>
+
+<h2 id="cicd-integration">CI/CD Integration</h2>
+<h3 id="automated-version-checks">Automated Version Checks</h3>
+<p>CI pipeline should verify:
+- Documentation version matches code version
+- All version tags are consistent
+- No references to unreleased versions
+- Archived versions remain unchanged</p>
+<h3 id="version-tagging-automation">Version Tagging Automation</h3>
+<pre class="codehilite"><code class="language-bash"># On release, automatically:
+1. Update _config.yml with new version
+2. Tag documentation with release version
+3. Deploy to gh-pages
+4. Create archive if major version
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="do">DO</h3>
+<ul>
+<li>✅ Update documentation in the same PR as code changes</li>
+<li>✅ Mark version-specific features clearly</li>
+<li>✅ Keep archived versions accessible</li>
+<li>✅ Test all code examples before release</li>
+<li>✅ Document breaking changes prominently</li>
+</ul>
+<h3 id="dont">DON'T</h3>
+<ul>
+<li>❌ Update archived documentation (read-only)</li>
+<li>❌ Remove old versions without notice</li>
+<li>❌ Mix versions in code examples</li>
+<li>❌ Forget to update version metadata</li>
+<li>❌ Deploy documentation without testing</li>
+</ul>
+<h2 id="version-support-policy">Version Support Policy</h2>
+<h3 id="supported-versions">Supported Versions</h3>
+<ul>
+<li><strong>Latest stable</strong>: Full support, active updates</li>
+<li><strong>Previous minor</strong>: Security fixes, critical corrections</li>
+<li><strong>Older versions</strong>: Archived, read-only, no updates</li>
+</ul>
+<h3 id="end-of-life">End of Life</h3>
+<p>When a version reaches end of life:
+1. Add EOL notice to archived documentation
+2. Recommend upgrading to supported version
+3. Keep archived for reference only
+4. Remove from version selector after 1 year</p>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://semver.org/">Semantic Versioning</a></li>
+<li><a href="https://keepachangelog.com/">Keep a Changelog</a></li>
+<li><a href="DOCUMENTATION_UPDATE_CHECKLIST.md">Documentation Update Checklist</a></li>
+</ul>
+<h2 id="revision-history">Revision History</h2>
+<ul>
+<li><strong>2024-03-15</strong>: Initial versioning strategy document</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

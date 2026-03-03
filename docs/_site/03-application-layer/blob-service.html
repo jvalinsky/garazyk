@@ -284,7 +284,32 @@
 - <code>mimeType</code>: MIME type (e.g., "image/jpeg")
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Dictionary with CID, size, and metadata or nil on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSBlobService.m lines 30-60):</strong></p>
+<p>The service uploads the blob to storage, generates a CID, and returns metadata:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)uploadBlob:(NSData *)blobData
+                              forDid:(NSString *)did
+                             mimeType:(NSString *)mimeType
+                               error:(NSError **)error {
+
+    CID *cid = [self.blobStorage uploadBlob:blobData mimeType:mimeType did:did error:error];
+    if (!cid) {
+        return nil;
+    }
+
+    NSString *cidString = cid.stringValue;
+
+    return @{
+        @&quot;blob&quot;: @{
+            @&quot;$type&quot;: @&quot;blob&quot;,
+            @&quot;ref&quot;: @{@&quot;$link&quot;: cidString},
+            @&quot;mimeType&quot;: mimeType,
+            @&quot;size&quot;: @(blobData.length)
+        }
+    };
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSData *imageData = [NSData dataWithContentsOfFile:@&quot;/path/to/image.jpg&quot;];
 
 NSError *error = nil;
@@ -294,9 +319,9 @@ NSDictionary *blob = [blobService uploadBlob:imageData
                                       error:&amp;error];
 
 if (blob) {
-    NSString *cid = blob[@&quot;cid&quot;];
-    NSNumber *size = blob[@&quot;size&quot;];
-    NSString *mimeType = blob[@&quot;mimeType&quot;];
+    NSString *cid = blob[@&quot;blob&quot;][@&quot;ref&quot;][@&quot;$link&quot;];
+    NSNumber *size = blob[@&quot;blob&quot;][@&quot;size&quot;];
+    NSString *mimeType = blob[@&quot;blob&quot;][@&quot;mimeType&quot;];
 }
 </code></pre>
 
@@ -310,7 +335,16 @@ if (blob) {
 - <code>did</code>: Repository owner DID
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Blob data or nil if not found</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSBlobService.m lines 20-30):</strong></p>
+<p>The service retrieves the blob from storage:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSData *)getBlob:(NSData *)cidData forDid:(NSString *)did error:(NSError **)error {
+    CID *cid = [CID cidFromBytes:cidData];
+    if (!cid) return nil;
+    return [self.blobStorage getBlobWithCID:cid did:did error:error];
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSData *blobData = [blobService getBlob:cidData
                                 forDid:@&quot;did:plc:user123&quot;
@@ -323,18 +357,46 @@ if (blobData) {
 </code></pre>
 
 <h3 id="get-blob-with-cid-string">Get Blob with CID String</h3>
-<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getBlobWithCID:(NSString *)cid
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getBlobWithCID:(NSString *)cidString
                                        did:(NSString *)did
                                     error:(NSError **)error;
 </code></pre>
 
 <p>Retrieves blob metadata by CID string.</p>
 <p><strong>Parameters:</strong>
-- <code>cid</code>: CID as string (e.g., "bafy...")
+- <code>cidString</code>: CID as string (e.g., "bafy...")
 - <code>did</code>: Repository owner DID
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Dictionary with metadata or nil if not found</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSBlobService.m lines 60-90):</strong></p>
+<p>The service retrieves blob metadata from storage:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getBlobWithCID:(NSString *)cidString
+                                       did:(NSString *)did
+                                     error:(NSError **)error {
+
+    CID *cid = [CID cidFromString:cidString];
+    if (!cid) {
+        if (error) *error = [NSError errorWithDomain:@&quot;PDSController&quot; code:1003
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid CID format&quot;}];
+        return nil;
+    }
+
+    NSData *blobData = [self.blobStorage getBlobWithCID:cid did:did error:error];
+    if (!blobData) return nil;
+
+    PDSDatabaseBlob *metadata = [self.blobStorage getBlobMetadataWithCID:cid.stringValue did:did error:nil];
+    NSString *mimeType = metadata.mimeType ?: @&quot;application/octet-stream&quot;;
+    NSNumber *blobSize = metadata ? @(metadata.size) : nil;
+
+    return @{
+        @&quot;blob&quot;: blobData,
+        @&quot;mimeType&quot;: mimeType,
+        @&quot;size&quot;: blobSize ?: @(blobData.length)
+    };
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSDictionary *metadata = [blobService getBlobWithCID:@&quot;bafy2bzaced...&quot;
                                                  did:@&quot;did:plc:user123&quot;
@@ -648,7 +710,7 @@ for (NSDictionary *blob in allBlobs) {
 <li><a href="../07-repository-protocol/blob-storage.md">Blob Storage</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

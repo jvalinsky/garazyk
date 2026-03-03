@@ -254,23 +254,37 @@
 </code></pre>
 
 <h2 id="blob-storage-backend">Blob Storage Backend</h2>
-<pre class="codehilite"><code class="language-objc">@protocol BlobStorage &lt;NSObject&gt;
+<pre class="codehilite"><code class="language-objc">@interface BlobStorage : NSObject
 
-// Storage operations
-- (BOOL)storeBlob:(NSData *)data forCID:(NSString *)cid error:(NSError **)error;
-- (nullable NSData *)getBlob:(NSString *)cid error:(NSError **)error;
-- (BOOL)deleteBlob:(NSString *)cid error:(NSError **)error;
+// Initialization
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool 
+                            provider:(id&lt;PDSBlobProvider&gt;)provider;
 
-// Metadata
-- (nullable NSDictionary *)getBlobMetadata:(NSString *)cid error:(NSError **)error;
-- (NSUInteger)getBlobSize:(NSString *)cid error:(NSError **)error;
+// Upload and retrieval
+- (nullable CID *)uploadBlob:(NSData *)data
+                    mimeType:(NSString *)mimeType
+                         did:(NSString *)did
+                       error:(NSError **)error;
+
+- (nullable NSData *)getBlobWithCID:(CID *)cid 
+                                did:(nullable NSString *)did 
+                               error:(NSError **)error;
+
+// Deletion
+- (BOOL)deleteBlobWithCID:(CID *)cid 
+                      did:(NSString *)did 
+                     error:(NSError **)error;
 
 // Listing
-- (nullable NSArray *)listBlobs:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error;
+- (NSArray&lt;PDSDatabaseBlob *&gt; *)listBlobsForDID:(NSString *)did
+                                          limit:(NSInteger)limit
+                                         cursor:(nullable NSString *)cursor
+                                          error:(NSError **)error;
 
 @end
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 1-50)</p>
 <h2 id="file-based-storage">File-Based Storage</h2>
 <pre class="codehilite"><code class="language-objc">@interface FileBasedBlobStorage : NSObject &lt;BlobStorage&gt;
 
@@ -289,29 +303,36 @@
 └── ...
 </code></pre>
 
-<h3 id="storing-blobs">Storing Blobs</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Generate CID
-NSData *blobData = /* image data */;
-NSData *hash = [CryptoUtils sha256:blobData];
-NSString *cid = [CID createCIDv1:hash codec:@&quot;raw&quot; error:&amp;error];
-
-// 2. Store blob
+<h2 id="storing-blobs">Storing Blobs</h2>
+<pre class="codehilite"><code class="language-objc">// 1. Validate the blob
 NSError *error = nil;
-BOOL success = [blobStorage storeBlob:blobData forCID:cid error:&amp;error];
-
-if (success) {
-    // 3. Store metadata
-    NSDictionary *metadata = @{
-        @&quot;cid&quot;: cid,
-        @&quot;size&quot;: @(blobData.length),
-        @&quot;mimeType&quot;: @&quot;image/jpeg&quot;,
-        @&quot;uploadedAt&quot;: [NSDate date]
-    };
-
-    [self storeMetadata:metadata forCID:cid];
+if (![blobStorage validateBlob:blobData mimeType:@&quot;image/jpeg&quot; error:&amp;error]) {
+    NSLog(@&quot;Blob validation failed: %@&quot;, error);
+    return;
 }
+
+// 2. Upload blob (computes CID internally)
+CID *cid = [blobStorage uploadBlob:blobData
+                          mimeType:@&quot;image/jpeg&quot;
+                               did:userDid
+                             error:&amp;error];
+
+if (!cid) {
+    NSLog(@&quot;Upload failed: %@&quot;, error);
+    return;
+}
+
+// 3. Use CID in record
+NSDictionary *metadata = @{
+    @&quot;cid&quot;: cid.stringValue,
+    @&quot;mimeType&quot;: @&quot;image/jpeg&quot;,
+    @&quot;size&quot;: @(blobData.length)
+};
+
+NSLog(@&quot;Blob stored with CID: %@&quot;, cid.stringValue);
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 35-85)</p>
 <h2 id="blob-references">Blob References</h2>
 <p>Blobs are referenced in records using embeds:</p>
 <pre class="codehilite"><code class="language-json">{
@@ -329,22 +350,34 @@ if (success) {
 
 <h2 id="garbage-collection">Garbage Collection</h2>
 <p>Blobs without references are deleted:</p>
-<pre class="codehilite"><code class="language-objc">// 1. Find unreferenced blobs
-NSArray *allBlobs = [blobStorage listBlobs:UINT_MAX offset:0 error:&amp;error];
+<pre class="codehilite"><code class="language-objc">// 1. List all blobs for user
+NSError *error = nil;
+NSArray&lt;PDSDatabaseBlob *&gt; *allBlobs = [blobStorage listBlobsForDID:userDid
+                                                               limit:1000
+                                                              cursor:nil
+                                                               error:&amp;error];
 
-for (NSDictionary *blob in allBlobs) {
-    NSString *cid = blob[@&quot;cid&quot;];
+// 2. Check each blob for references
+for (PDSDatabaseBlob *blob in allBlobs) {
+    CID *cid = [CID cidFromBytes:blob.cid];
 
-    // 2. Check if referenced
-    NSArray *references = [self findReferencesToBlob:cid];
+    // Check if blob is referenced in any records
+    NSArray *references = [recordService findReferencesToBlob:cid forDid:userDid];
 
     if (references.count == 0) {
         // 3. Delete unreferenced blob
-        [blobStorage deleteBlob:cid error:&amp;error];
+        BOOL success = [blobStorage deleteBlobWithCID:cid 
+                                                  did:userDid 
+                                                 error:&amp;error];
+
+        if (success) {
+            NSLog(@&quot;Deleted unreferenced blob: %@&quot;, cid.stringValue);
+        }
     }
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 120-150)</p>
 <h2 id="blob-quotas">Blob Quotas</h2>
 <p>Users have storage quotas:</p>
 <pre class="codehilite"><code class="language-sql">CREATE TABLE blob_quotas (
@@ -356,55 +389,79 @@ for (NSDictionary *blob in allBlobs) {
 </code></pre>
 
 <h3 id="enforcing-quotas">Enforcing Quotas</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Check quota
-NSUInteger usedBytes = [self getUsedBlobStorage:userDid];
-NSUInteger quotaBytes = [self getBlobQuota:userDid];
+<pre class="codehilite"><code class="language-objc">// 1. Check quota before upload
+NSError *error = nil;
+NSUInteger usedBytes = [blobStorage getUsedBlobStorage:userDid];
+NSUInteger quotaBytes = [blobStorage getBlobQuota:userDid];
 
 if (usedBytes + blobData.length &gt; quotaBytes) {
     [XrpcErrorHelper setValidationError:response message:@&quot;Blob quota exceeded&quot;];
     return;
 }
 
-// 2. Store blob
-[blobService uploadBlob:blobData forDid:userDid mimeType:mimeType error:&amp;error];
+// 2. Upload blob
+CID *cid = [blobStorage uploadBlob:blobData
+                          mimeType:mimeType
+                               did:userDid
+                             error:&amp;error];
 
-// 3. Update usage
-[self updateBlobUsage:userDid addBytes:blobData.length];
+if (!cid) {
+    [XrpcErrorHelper setInternalServerError:response];
+    return;
+}
+
+// 3. Update usage (done automatically by uploadBlob)
+NSLog(@&quot;Blob uploaded. Used: %lu / %lu bytes&quot;, 
+      (unsigned long)(usedBytes + blobData.length), 
+      (unsigned long)quotaBytes);
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 35-85)</p>
 <h2 id="blob-validation">Blob Validation</h2>
+<h2 id="blob-validation_1">Blob Validation</h2>
 <h3 id="mime-type-validation">MIME Type Validation</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Check MIME type
-NSString *mimeType = [self detectMimeType:blobData];
+<pre class="codehilite"><code class="language-objc">// 1. Validate MIME type
+MimeTypeValidator *validator = [MimeTypeValidator sharedValidator];
+NSError *mimeError = nil;
 
-if (![self isAllowedMimeType:mimeType]) {
-    [XrpcErrorHelper setValidationError:response message:@&quot;MIME type not allowed&quot;];
-    return;
+if (![validator isValidMimeType:mimeType error:&amp;mimeError]) {
+    NSLog(@&quot;Invalid MIME type: %@&quot;, mimeError);
+    return NO;
+}
+
+if (![validator isSupportedMimeType:mimeType error:&amp;mimeError]) {
+    NSLog(@&quot;Unsupported MIME type: %@&quot;, mimeError);
+    return NO;
 }
 
 // 2. Validate magic bytes
-if (![self validateMagicBytes:blobData forMimeType:mimeType]) {
-    [XrpcErrorHelper setValidationError:response message:@&quot;Invalid file format&quot;];
-    return;
+if (![validator validateMagicNumbers:blobData forMimeType:mimeType error:&amp;mimeError]) {
+    NSLog(@&quot;Magic number mismatch: %@&quot;, mimeError);
+    return NO;
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 180-220)</p>
 <h3 id="size-validation">Size Validation</h3>
 <pre class="codehilite"><code class="language-objc">// 1. Check size limits
-NSUInteger maxSize = 5 * 1024 * 1024;  // 5MB
+MimeTypeValidator *validator = [MimeTypeValidator sharedValidator];
+NSError *sizeError = nil;
 
-if (blobData.length &gt; maxSize) {
-    [XrpcErrorHelper setValidationError:response message:@&quot;Blob too large&quot;];
-    return;
+if (![validator validateSize:blobData.length forMimeType:mimeType error:&amp;sizeError]) {
+    NSLog(@&quot;Size validation failed: %@&quot;, sizeError);
+    return NO;
 }
 
 // 2. Check minimum size
 if (blobData.length == 0) {
-    [XrpcErrorHelper setValidationError:response message:@&quot;Blob is empty&quot;];
-    return;
+    NSLog(@&quot;Blob is empty&quot;);
+    return NO;
 }
+
+NSLog(@&quot;Blob size valid: %lu bytes&quot;, (unsigned long)blobData.length);
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 180-220)</p>
 <h2 id="best-practices">Best Practices</h2>
 <ol>
 <li><strong>Storage</strong></li>
@@ -447,34 +504,47 @@ NSData *blobData = request.body;
 NSString *mimeType = [request headerForName:@&quot;Content-Type&quot;];
 
 // 2. Validate
-if (blobData.length &gt; 5*1024*1024) {
-    [XrpcErrorHelper setValidationError:response message:@&quot;Blob too large&quot;];
+NSError *error = nil;
+if (![blobStorage validateBlob:blobData mimeType:mimeType error:&amp;error]) {
+    [XrpcErrorHelper setValidationError:response message:error.localizedDescription];
     return;
 }
 
 // 3. Upload
-NSError *error = nil;
-NSDictionary *blob = [blobService uploadBlob:blobData
-                                     forDid:userDid
-                                   mimeType:mimeType
-                                      error:&amp;error];
+CID *cid = [blobStorage uploadBlob:blobData
+                          mimeType:mimeType
+                               did:userDid
+                             error:&amp;error];
 
-if (!blob) {
+if (!cid) {
     [XrpcErrorHelper setInternalServerError:response];
     return;
 }
 
 // 4. Return CID
+NSDictionary *blob = @{
+    @&quot;cid&quot;: cid.stringValue,
+    @&quot;mimeType&quot;: mimeType,
+    @&quot;size&quot;: @(blobData.length)
+};
+
 response.statusCode = 200;
 response.body = [NSJSONSerialization dataWithJSONObject:blob options:0 error:nil];
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 35-85)</p>
 <h3 id="creating-a-post-with-image">Creating a Post with Image</h3>
 <pre class="codehilite"><code class="language-objc">// 1. Upload image
-NSDictionary *blob = [blobService uploadBlob:imageData
-                                     forDid:userDid
-                                   mimeType:@&quot;image/jpeg&quot;
-                                      error:&amp;error];
+NSError *error = nil;
+CID *imageCid = [blobStorage uploadBlob:imageData
+                               mimeType:@&quot;image/jpeg&quot;
+                                    did:userDid
+                                  error:&amp;error];
+
+if (!imageCid) {
+    NSLog(@&quot;Image upload failed: %@&quot;, error);
+    return;
+}
 
 // 2. Create post with image embed
 NSDictionary *post = @{
@@ -482,31 +552,39 @@ NSDictionary *post = @{
     @&quot;embed&quot;: @{
         @&quot;$type&quot;: @&quot;app.bsky.embed.image&quot;,
         @&quot;image&quot;: @{
-            @&quot;cid&quot;: blob[@&quot;cid&quot;],
+            @&quot;cid&quot;: imageCid.stringValue,
             @&quot;mimeType&quot;: @&quot;image/jpeg&quot;,
-            @&quot;size&quot;: blob[@&quot;size&quot;]
+            @&quot;size&quot;: @(imageData.length)
         }
     }
 };
 
-// 3. Store post
-[recordService putRecord:@&quot;app.bsky.feed.post&quot;
-                   rkey:@&quot;abc123&quot;
-                  value:post
-                 forDid:userDid
-               actorDid:userDid
-         validationMode:PDSValidationModeOptimistic
-                  error:&amp;error];
+// 3. Encode and store post
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:post error:&amp;error];
+if (!cborData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
+}
+
+NSData *hash = [CID sha256Digest:cborData];
+CID *postCid = [CID cidWithDigest:hash codec:0x71];
+
+NSLog(@&quot;Post created with image: %@&quot;, postCid.stringValue);
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 35-85); <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20)</p>
 <h2 id="see-also">See Also</h2>
-<ul>
-<li><a href="../03-application-layer/blob-service.md">Blob Service</a></li>
-<li><a href="./cid-and-hashing.md">CID and Hashing</a></li>
-<li><a href="./repository-basics.md">Repository Basics</a></li>
-</ul>
+<p><strong>Basic Topics:</strong>
+- <a href="../03-application-layer/blob-service.md">Blob Service</a> — Blob service layer
+- <a href="./cid-and-hashing.md">CID and Hashing</a> — Content addressing
+- <a href="./repository-basics.md">Repository Basics</a> — Repository structure</p>
+<p><strong>Advanced Topics:</strong>
+- <a href="./blob-lifecycle.md">Blob Lifecycle</a> — Upload/download/deletion
+- <a href="./blob-optimization.md">Blob Optimization</a> — Chunking and caching
+- <a href="./blob-garbage-collection.md">Blob Garbage Collection</a> — Cleanup strategies
+- <a href="./blob-quotas.md">Blob Quotas</a> — Size limits and enforcement</p>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

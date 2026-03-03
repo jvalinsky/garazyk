@@ -313,126 +313,335 @@ BOOL thumbprintMatches = [accessTokenPayload[@&quot;cnf&quot;][@&quot;jkt&quot;]
 
 <h2 id="implementation">Implementation</h2>
 <h3 id="oauth-20-handler">OAuth 2.0 Handler</h3>
+<p>The <code>OAuth2Handler</code> class manages authorization and token endpoints:</p>
 <pre class="codehilite"><code class="language-objc">@interface OAuth2Handler : NSObject
 
 // Authorization endpoint
-- (void)handleAuthorizationRequest:(HttpRequest *)request
-                          response:(HttpResponse *)response;
+- (void)handleAuthorizeRequest:(HttpRequest *)request
+                      response:(HttpResponse *)response;
 
 // Token endpoint
 - (void)handleTokenRequest:(HttpRequest *)request
                   response:(HttpResponse *)response;
 
-// Refresh token endpoint
-- (void)handleRefreshTokenRequest:(HttpRequest *)request
-                         response:(HttpResponse *)response;
+// Revocation endpoint
+- (void)handleRevokeRequest:(HttpRequest *)request
+                   response:(HttpResponse *)response;
+
+// JWKS endpoint for public keys
+- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
 </code></pre>
 
-<h3 id="authorization-request">Authorization Request</h3>
-<pre class="codehilite"><code class="language-objc">- (void)handleAuthorizationRequest:(HttpRequest *)request
-                          response:(HttpResponse *)response {
-    // 1. Parse parameters
-    NSString *clientId = [request parameterForName:@&quot;client_id&quot;];
-    NSString *redirectUri = [request parameterForName:@&quot;redirect_uri&quot;];
-    NSString *scope = [request parameterForName:@&quot;scope&quot;];
-    NSString *state = [request parameterForName:@&quot;state&quot;];
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/OAuth2Handler.m</code></p>
+<h3 id="client-validation">Client Validation</h3>
+<p>Clients are validated against database records or provided client_metadata:</p>
+<pre class="codehilite"><code class="language-objc">// In OAuth2Handler.m (ATProtoPDS/Sources/Auth/OAuth2Handler.m)
+- (void)validateClient:(NSString *)clientID
+            completion:(void (^)(NSDictionary *_Nullable client,
+                                 NSError *_Nullable error))completion {
+    if (!completion) return;
 
-    // 2. Validate client
-    NSDictionary *client = [self getClientForId:clientId];
-    if (!client || ![client[@&quot;redirect_uris&quot;] containsObject:redirectUri]) {
-        [XrpcErrorHelper setValidationError:response message:@&quot;Invalid client&quot;];
+    if (!clientID) {
+        completion(nil, [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                            code:400
+                                        userInfo:@{
+                                          NSLocalizedDescriptionKey :
+                                              @&quot;Missing client_id&quot;
+                                        }]);
         return;
     }
 
-    // 3. Redirect to login
-    NSString *loginUrl = [NSString stringWithFormat:@&quot;/oauth/login?client_id=%@&amp;state=%@&quot;,
-                         clientId, state];
-    response.statusCode = 302;
-    [response setHeaderValue:loginUrl forName:@&quot;Location&quot;];
-}
-</code></pre>
-
-<h3 id="token-request">Token Request</h3>
-<pre class="codehilite"><code class="language-objc">- (void)handleTokenRequest:(HttpRequest *)request
-                  response:(HttpResponse *)response {
-    // 1. Parse request
-    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:request.body
-                                                         options:0
-                                                           error:nil];
-
-    NSString *grantType = body[@&quot;grant_type&quot;];
-    NSString *code = body[@&quot;code&quot;];
-    NSString *clientId = body[@&quot;client_id&quot;];
-    NSString *clientSecret = body[@&quot;client_secret&quot;];
-
-    // 2. Validate authorization code
-    NSDictionary *authCode = [self getAuthorizationCode:code];
-    if (!authCode || ![authCode[@&quot;client_id&quot;] isEqualToString:clientId]) {
-        [XrpcErrorHelper setValidationError:response message:@&quot;Invalid code&quot;];
+    // 1. First attempt: Query database for registered client
+    NSError *dbError = nil;
+    NSDictionary *client = [self.database getClientWithID:clientID error:&amp;dbError];
+    if (client) {
+        completion(client, nil);
         return;
     }
 
-    // 3. Generate tokens
-    NSString *accessToken = [self generateAccessToken:authCode[@&quot;did&quot;]];
-    NSString *refreshToken = [self generateRefreshToken:authCode[@&quot;did&quot;]];
+    // 2. If not in database, check client_metadata in request
+    if (self.clientMetadata) {
+        NSError *metadataError = nil;
+        NSDictionary *validatedClient =
+            [self validateClientMetadata:self.clientMetadata error:&amp;metadataError];
 
-    // 4. Return tokens
-    NSDictionary *response = @{
-        @&quot;access_token&quot;: accessToken,
-        @&quot;refresh_token&quot;: refreshToken,
-        @&quot;token_type&quot;: @&quot;DPoP&quot;,
-        @&quot;expires_in&quot;: @3600
-    };
+        if (validatedClient) {
+            NSString *metadataClientID = validatedClient[@&quot;client_id&quot;];
+            if (metadataClientID.length == 0 ||
+                ![CryptoUtils constantTimeCompare:metadataClientID to:clientID]) {
+                completion(nil, [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                                    code:400
+                                                userInfo:@{
+                                                  NSLocalizedDescriptionKey :
+                                                      @&quot;client_id does not match client_metadata&quot;
+                                                }]);
+                return;
+            }
+            completion(validatedClient, nil);
+            return;
+        } else {
+            completion(nil, metadataError);
+            return;
+        }
+    }
 
-    response.statusCode = 200;
-    response.body = [NSJSONSerialization dataWithJSONObject:response options:0 error:nil];
+    // 3. Not found in DB and not in request
+    completion(nil, [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                        code:401
+                                    userInfo:@{
+                                      NSLocalizedDescriptionKey : @&quot;Invalid client&quot;
+                                    }]);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/OAuth2Handler.m</code> lines 50-150</p>
+<h3 id="client-metadata-validation">Client Metadata Validation</h3>
+<p>Client metadata must be validated for security:</p>
+<pre class="codehilite"><code class="language-objc">// In OAuth2Handler.m (ATProtoPDS/Sources/Auth/OAuth2Handler.m)
+- (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
+                                   error:(NSError **)error {
+    if (!metadata || ![metadata isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                           code:400
+                                       userInfo:@{
+                                         NSLocalizedDescriptionKey :
+                                             @&quot;client_metadata must be a JSON object&quot;
+                                       }];
+        }
+        return nil;
+    }
+
+    // 1. Validate client_id is HTTPS URL (required by ATProto spec)
+    NSString *clientID = metadata[@&quot;client_id&quot;];
+    if (!clientID || ![clientID isKindOfClass:[NSString class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                           code:400
+                                       userInfo:@{
+                                         NSLocalizedDescriptionKey :
+                                             @&quot;client_id is required in client_metadata&quot;
+                                       }];
+        }
+        return nil;
+    }
+
+    if (![clientID hasPrefix:@&quot;https://&quot;]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                           code:400
+                                       userInfo:@{
+                                         NSLocalizedDescriptionKey :
+                                             @&quot;client_id must be an HTTPS URL per ATProto OAuth specification&quot;
+                                       }];
+        }
+        return nil;
+    }
+
+    // 2. Validate it's a valid URL
+    NSURL *clientIDURL = [NSURL URLWithString:clientID];
+    if (!clientIDURL || !clientIDURL.host) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                           code:400
+                                       userInfo:@{
+                                         NSLocalizedDescriptionKey :
+                                             @&quot;client_id must be a valid HTTPS URL&quot;
+                                       }];
+        }
+        return nil;
+    }
+
+    // 3. Validate redirect_uris array
+    NSArray *redirectURIs = metadata[@&quot;redirect_uris&quot;];
+    if (!redirectURIs || ![redirectURIs isKindOfClass:[NSArray class]]) {
+        if (error) {
+            *error = [NSError
+                errorWithDomain:@&quot;OAuth2&quot;
+                           code:400
+                       userInfo:@{
+                         NSLocalizedDescriptionKey :
+                             @&quot;redirect_uris array is required in client_metadata&quot;
+                       }];
+        }
+        return nil;
+    }
+
+    if (redirectURIs.count == 0) {
+        if (error) {
+            *error = [NSError
+                errorWithDomain:@&quot;OAuth2&quot;
+                           code:400
+                       userInfo:@{
+                         NSLocalizedDescriptionKey :
+                             @&quot;redirect_uris array must contain at least one URI&quot;
+                       }];
+        }
+        return nil;
+    }
+
+    // 4. Validate each redirect_uri
+    for (id redirectURI in redirectURIs) {
+        if (![redirectURI isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@&quot;OAuth2&quot;
+                                               code:400
+                                           userInfo:@{
+                                             NSLocalizedDescriptionKey :
+                                                 @&quot;All redirect_uris must be strings&quot;
+                                           }];
+            }
+            return nil;
+        }
+
+        NSString *uriString = (NSString *)redirectURI;
+        NSURL *uri = [NSURL URLWithString:uriString];
+        if (!uri || !uri.scheme) {
+            if (error) {
+                *error = [NSError
+                    errorWithDomain:@&quot;OAuth2&quot;
+                               code:400
+                           userInfo:@{
+                             NSLocalizedDescriptionKey :
+                                 [NSString stringWithFormat:@&quot;Invalid redirect_uri: %@&quot;,
+                                                            uriString]
+                           }];
+            }
+            return nil;
+        }
+    }
+
+    return metadata;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/OAuth2Handler.m</code> lines 200-350</p>
 <h2 id="dpop-utilities">DPoP Utilities</h2>
 <h3 id="generating-dpop-proofs">Generating DPoP Proofs</h3>
-<pre class="codehilite"><code class="language-objc">@interface DPoPUtil : NSObject
+<p>The <code>DPoPUtil</code> class handles DPoP proof generation and verification:</p>
+<pre class="codehilite"><code class="language-objc">// In DPoPUtil.m (ATProtoPDS/Sources/Auth/DPoPUtil.m)
++ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
+                                         uri:(NSString *)htu
+                                       nonce:(nullable NSString *)nonce
+                                         key:(SecKeyRef)privateKey
+                                       error:(NSError **)error {
+    // 1. Validate URI
+    NSURL *url = [NSURL URLWithString:htu];
+    if (!url) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.dpop&quot;
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid DPoP URI&quot;}];
+        }
+        return nil;
+    }
 
-+ (NSString *)generateDPoPProof:(NSString *)method
-                           uri:(NSString *)uri
-                      clientKey:(SecKeyRef)clientKey
-                         nonce:(nullable NSString *)nonce
-                         error:(NSError **)error;
+    // 2. Extract public key from private key for JWK
+    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromKey:privateKey error:error];
+    if (!jwk) return nil;
 
-+ (NSString *)generateThumbprint:(NSDictionary *)jwk error:(NSError **)error;
+    // 3. Create DPoP token with claims
+    NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    DPoPToken *token = [[DPoPToken alloc] init];
+    token.htm = htm;
+    token.htu = canonicalHTU;
+    token.iat = [NSDate date];
+    token.jti = [[NSUUID UUID] UUIDString];
+    token.nonce = nonce;
+    token.exp = [NSDate dateWithTimeIntervalSinceNow:300];  // 5 minute expiration
 
-+ (BOOL)verifyDPoPProof:(NSString *)proof
-                method:(NSString *)method
-                   uri:(NSString *)uri
-                 error:(NSError **)error;
+    // 4. Build JWT header with JWK
+    NSDictionary *header = @{
+        @&quot;typ&quot;: @&quot;dpop+jwt&quot;,
+        @&quot;alg&quot;: @&quot;ES256&quot;,
+        @&quot;jwk&quot;: jwk
+    };
 
-@end
+    // 5. Encode header and payload
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:[token payload] options:0 error:error];
+    if (!headerData || !payloadData) return nil;
+
+    NSString *headerB64 = [AuthCryptoBase64URL encode:headerData];
+    NSString *payloadB64 = [AuthCryptoBase64URL encode:payloadData];
+    NSString *signingInput = [NSString stringWithFormat:@&quot;%@.%@&quot;, headerB64, payloadB64];
+    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+
+    // 6. Sign with private key
+    CFErrorRef signError = NULL;
+    NSData *derSignature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+                                                                 kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                                                 (__bridge CFDataRef)signingData,
+                                                                 &amp;signError));
+    if (!derSignature) {
+        if (error) *error = CFBridgingRelease(signError);
+        return nil;
+    }
+
+    // 7. Convert DER signature to raw format
+    NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
+    if (!rawSignature) return nil;
+
+    // 8. Combine into complete JWT
+    token.jwt = [NSString stringWithFormat:@&quot;%@.%@.%@&quot;, headerB64, payloadB64, [AuthCryptoBase64URL encode:rawSignature]];
+    return token;
+}
 </code></pre>
 
-<h3 id="example-generating-dpop-proof">Example: Generating DPoP Proof</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Generate client key pair
-SecKeyRef publicKey = nil;
-SecKeyRef privateKey = nil;
-[CryptoUtils generateECKeyPairWithCurve:kSecAttrKeyTypeECSECP256R1
-                              publicKey:&amp;publicKey
-                             privateKey:&amp;privateKey];
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/DPoPUtil.m</code> lines 50-110</p>
+<h3 id="verifying-dpop-proofs">Verifying DPoP Proofs</h3>
+<p>DPoP proofs are verified to ensure they match the request method and URI:</p>
+<pre class="codehilite"><code class="language-objc">// In DPoPUtil.m (ATProtoPDS/Sources/Auth/DPoPUtil.m)
++ (BOOL)verifyDPoP:(NSString *)dpopJwt
+     withPublicKey:(nullable SecKeyRef)publicKey
+              method:(NSString *)htm
+                 uri:(NSString *)htu
+              nonce:(nullable NSString *)nonce
+               error:(NSError **)error {
+    // 1. Validate URI
+    NSURL *url = [NSURL URLWithString:htu];
+    if (!url) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.pds.dpop&quot;
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid DPoP URI&quot;}];
+        }
+        return NO;
+    }
 
-// 2. Generate DPoP proof
-NSError *error = nil;
-NSString *dpopProof = [DPoPUtil generateDPoPProof:@&quot;POST&quot;
-                                             uri:@&quot;https://pds.example.com/xrpc/com.atproto.repo.createRecord&quot;
-                                        clientKey:privateKey
-                                           nonce:nil
-                                           error:&amp;error];
+    // 2. Verify DPoP proof structure and signature
+    NSString *thumbprint = nil;
+    BOOL valid = [AuthCryptoDPoP verifyProof:dpopJwt
+                                      method:htm
+                                         url:url
+                                       nonce:nonce
+                                requireNonce:NO
+                              nonceValidator:nil
+                               replayChecker:nil
+                               outThumbprint:&amp;thumbprint
+                                       error:error];
+    if (!valid) return NO;
 
-// 3. Use in request
-[request setHeaderValue:[NSString stringWithFormat:@&quot;DPoP %@&quot;, accessToken]
-              forName:@&quot;Authorization&quot;];
-[request setHeaderValue:dpopProof forName:@&quot;DPoP&quot;];
+    // 3. If public key provided, verify it matches the one in DPoP header
+    if (publicKey) {
+        NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForKey:publicKey error:error];
+        if (!expectedThumbprint || ![thumbprint isEqualToString:expectedThumbprint]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@&quot;com.atproto.pds.dpop&quot;
+                                             code:-14
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;Public key mismatch&quot;}];
+            }
+            return NO;
+        }
+    }
+
+    return YES;
+}
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/DPoPUtil.m</code> lines 112-160</p>
 <h2 id="nonce-management">Nonce Management</h2>
 <p>DPoP nonces prevent replay attacks:</p>
 <pre class="codehilite"><code class="language-objc">@interface PDSNonceManager : NSObject
@@ -567,7 +776,7 @@ NSData *data = [NSURLConnection sendSynchronousRequest:request
 <li><a href="../04-network-layer/auth-helpers.md">Auth Helpers</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

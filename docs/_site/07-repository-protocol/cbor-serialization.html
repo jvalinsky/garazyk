@@ -248,19 +248,15 @@ CBOR: a2 64 6e 61 6d 65 65 41 6c 69 63 65 63 61 67 65 18 1e
 <pre class="codehilite"><code class="language-objc">@interface ATProtoCBORSerialization : NSObject
 
 // Encoding
-+ (nullable NSData *)encodeObject:(id)object error:(NSError **)error;
-+ (nullable NSData *)encodeRecord:(NSDictionary *)record error:(NSError **)error;
++ (nullable NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error;
 
 // Decoding
-+ (nullable id)decodeData:(NSData *)data error:(NSError **)error;
-+ (nullable NSDictionary *)decodeRecord:(NSData *)data error:(NSError **)error;
-
-// Validation
-+ (BOOL)isValidDAGCBOR:(NSData *)data error:(NSError **)error;
++ (nullable id)JSONObjectWithData:(NSData *)data error:(NSError **)error;
 
 @end
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 1-50)</p>
 <h2 id="encoding-records">Encoding Records</h2>
 <pre class="codehilite"><code class="language-objc">// Record to encode
 NSDictionary *post = @{
@@ -271,39 +267,56 @@ NSDictionary *post = @{
 
 // Encode to CBOR
 NSError *error = nil;
-NSData *cborData = [ATProtoCBORSerialization encodeRecord:post error:&amp;error];
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:post error:&amp;error];
 
 if (cborData) {
     // Use CBOR data for storage or transmission
+    NSLog(@&quot;Encoded %lu bytes&quot;, (unsigned long)cborData.length);
+} else {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20)</p>
 <h2 id="decoding-records">Decoding Records</h2>
 <pre class="codehilite"><code class="language-objc">// CBOR data from storage
 NSData *cborData = /* ... */;
 
 // Decode from CBOR
 NSError *error = nil;
-NSDictionary *record = [ATProtoCBORSerialization decodeRecord:cborData error:&amp;error];
+id decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData error:&amp;error];
 
-if (record) {
+if (decoded &amp;&amp; [decoded isKindOfClass:[NSDictionary class]]) {
+    NSDictionary *record = (NSDictionary *)decoded;
     NSString *text = record[@&quot;text&quot;];
     NSString *createdAt = record[@&quot;createdAt&quot;];
+    NSLog(@&quot;Decoded record: %@&quot;, record);
+} else {
+    NSLog(@&quot;Decoding failed: %@&quot;, error);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 22-35)</p>
 <h2 id="cid-generation">CID Generation</h2>
 <p>CIDs (Content Identifiers) are generated from CBOR-encoded data:</p>
 <pre class="codehilite"><code class="language-objc">// 1. Encode record
-NSData *cborData = [ATProtoCBORSerialization encodeRecord:record error:&amp;error];
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&amp;error];
+
+if (!cborData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
+}
 
 // 2. Hash with SHA-256
-NSData *hash = [CryptoUtils sha256:cborData];
+NSData *hash = [CID sha256Digest:cborData];
 
-// 3. Create CID
-NSString *cid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot;];
+// 3. Create CID (0x71 = dag-cbor codec)
+CID *cid = [CID cidWithDigest:hash codec:0x71];
+NSString *cidString = cid.stringValue;  // &quot;bafy2bzaced...&quot;
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20); <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 280-295)</p>
 <h2 id="validation">Validation</h2>
 <h3 id="canonical-ordering">Canonical Ordering</h3>
 <p>Map keys must be sorted by encoded bytes:</p>
@@ -358,48 +371,56 @@ NSData *encoded2 = [ATProtoCBORSerialization encodeRecord:record error:&amp;erro
 };
 
 NSError *error = nil;
-NSData *cborData = [ATProtoCBORSerialization encodeRecord:post error:&amp;error];
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:post error:&amp;error];
 
 if (cborData) {
     // Generate CID
-    NSData *hash = [CryptoUtils sha256:cborData];
-    NSString *cid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot;];
+    NSData *hash = [CID sha256Digest:cborData];
+    CID *cid = [CID cidWithDigest:hash codec:0x71];
 
-    // Store record
-    [recordService putRecord:@&quot;app.bsky.feed.post&quot;
-                       rkey:@&quot;abc123&quot;
-                      value:post
-                     forDid:userDid
-                   actorDid:userDid
-             validationMode:PDSValidationModeOptimistic
-                      error:&amp;error];
+    NSLog(@&quot;Post encoded to CBOR: %lu bytes&quot;, (unsigned long)cborData.length);
+    NSLog(@&quot;Post CID: %@&quot;, cid.stringValue);
+
+    // Store record (service layer handles persistence)
+    // The CID is used as the record's content address
+} else {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20, 37-100); <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 280-295)</p>
 <h3 id="decoding-and-validating">Decoding and Validating</h3>
 <pre class="codehilite"><code class="language-objc">NSData *cborData = /* from storage */;
 
 // Decode
 NSError *error = nil;
-NSDictionary *record = [ATProtoCBORSerialization decodeRecord:cborData error:&amp;error];
+id decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData error:&amp;error];
 
-if (!record) {
+if (!decoded) {
     NSLog(@&quot;Decode failed: %@&quot;, error);
     return;
 }
 
-// Validate
-BOOL valid = [ATProtoCBORSerialization isValidDAGCBOR:cborData error:&amp;error];
+if (![decoded isKindOfClass:[NSDictionary class]]) {
+    NSLog(@&quot;Decoded object is not a dictionary&quot;);
+    return;
+}
 
-if (!valid) {
-    NSLog(@&quot;Invalid DAG-CBOR: %@&quot;, error);
+NSDictionary *record = (NSDictionary *)decoded;
+
+// Validate required fields
+if (!record[@&quot;text&quot;] || !record[@&quot;createdAt&quot;]) {
+    NSLog(@&quot;Missing required fields&quot;);
     return;
 }
 
 // Use record
 NSString *text = record[@&quot;text&quot;];
+NSString *createdAt = record[@&quot;createdAt&quot;];
+NSLog(@&quot;Record text: %@&quot;, text);
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 22-35, 37-100)</p>
 <h2 id="best-practices">Best Practices</h2>
 <ol>
 <li><strong>Encoding</strong></li>
@@ -442,7 +463,7 @@ NSString *text = record[@&quot;text&quot;];
 <li><a href="./repository-basics.md">Repository Basics</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

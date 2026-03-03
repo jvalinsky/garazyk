@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Best Practices - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Security Best Practices</h1>
+            </div>
+            <h1 id="security-best-practices">Security Best Practices</h1>
+<p>This document outlines security best practices for September PDS, focusing on defense in depth, least privilege, and secure development patterns. These principles should guide all security-related decisions and implementations.</p>
+<h2 id="core-security-principles">Core Security Principles</h2>
+<h3 id="1-defense-in-depth">1. Defense in Depth</h3>
+<p>Defense in depth means implementing multiple layers of security controls so that if one layer fails, others continue to provide protection.</p>
+<p><strong>September PDS implements defense in depth through:</strong></p>
+<h4 id="layer-1-network-perimeter">Layer 1: Network Perimeter</h4>
+<ul>
+<li>TLS/HTTPS for all external communication</li>
+<li>Rate limiting at HTTP server level</li>
+<li>Request size limits</li>
+<li>IP-based filtering (optional)</li>
+</ul>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/Network/HttpServer.m
+- (void)configureSecurityMiddleware {
+    // TLS configuration
+    [self requireTLS:YES];
+
+    // Rate limiting
+    [self enableRateLimiting:self.config.rateLimitConfig];
+
+    // Request size limits
+    [self setMaxRequestSize:10 * 1024 * 1024];  // 10 MB
+
+    // Timeout configuration
+    [self setRequestTimeout:30.0];  // 30 seconds
+}
+</code></pre>
+
+<h4 id="layer-2-authentication-authorization">Layer 2: Authentication &amp; Authorization</h4>
+<ul>
+<li>OAuth 2.0 with DPoP for token binding</li>
+<li>JWT signature verification</li>
+<li>Token expiration enforcement</li>
+<li>Scope-based authorization</li>
+</ul>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/Network/XrpcAuthHelper.m
+- (BOOL)verifyRequest:(XrpcRequest *)request error:(NSError **)error {
+    // Layer 2a: Verify JWT signature
+    if (![self verifyJWTSignature:request.token error:error]) {
+        return NO;
+    }
+
+    // Layer 2b: Verify DPoP proof
+    if (![self verifyDPoPProof:request.dpopProof 
+                     forMethod:request.method 
+                           uri:request.uri 
+                         error:error]) {
+        return NO;
+    }
+
+    // Layer 2c: Check token expiration
+    if ([self isTokenExpired:request.token]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Auth&quot; 
+                                         code:401 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Token expired&quot;}];
+        }
+        return NO;
+    }
+
+    // Layer 2d: Verify scopes
+    if (![self hasRequiredScopes:request.token 
+                      forEndpoint:request.nsid]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Auth&quot; 
+                                         code:403 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Insufficient permissions&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h4 id="layer-3-input-validation">Layer 3: Input Validation</h4>
+<ul>
+<li>Protocol identifier validation (DID, CID, NSID)</li>
+<li>MIME type validation</li>
+<li>Size limits by content type</li>
+<li>Magic number verification</li>
+</ul>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/Blob/BlobService.m
+- (BOOL)validateBlobUpload:(NSData *)data 
+                  mimeType:(NSString *)mimeType 
+                       cid:(NSString *)cid 
+                     error:(NSError **)error {
+    // Layer 3a: Validate CID format
+    if (![ATProtoValidator validateCID:cid error:error]) {
+        return NO;
+    }
+
+    // Layer 3b: Validate MIME type
+    if (![self.mimeValidator validateMimeType:mimeType error:error]) {
+        return NO;
+    }
+
+    // Layer 3c: Validate size for type
+    if (![self.mimeValidator validateSize:data.length 
+                              forMimeType:mimeType 
+                                    error:error]) {
+        return NO;
+    }
+
+    // Layer 3d: Verify magic numbers
+    if (![self.mimeValidator validateMagicNumbers:data 
+                                      forMimeType:mimeType 
+                                            error:error]) {
+        return NO;
+    }
+
+    // Layer 3e: Verify CID matches content
+    NSString *computedCID = [self computeCIDForData:data];
+    if (![computedCID isEqualToString:cid]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;BlobService&quot; 
+                                         code:400 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;CID mismatch&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h4 id="layer-4-business-logic">Layer 4: Business Logic</h4>
+<ul>
+<li>Service-level authorization checks</li>
+<li>Resource ownership verification</li>
+<li>State validation</li>
+<li>Transaction integrity</li>
+</ul>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/Services/PDSRecordService.m
+- (BOOL)deleteRecord:(NSString *)did 
+          collection:(NSString *)collection 
+              rkey:(NSString *)rkey 
+         requestDID:(NSString *)requestDID 
+             error:(NSError **)error {
+    // Layer 4a: Verify ownership
+    if (![did isEqualToString:requestDID]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;RecordService&quot; 
+                                         code:403 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Cannot delete another user's record&quot;}];
+        }
+        return NO;
+    }
+
+    // Layer 4b: Verify record exists
+    NSDictionary *record = [self getRecord:did 
+                                collection:collection 
+                                      rkey:rkey 
+                                     error:error];
+    if (!record) {
+        return NO;
+    }
+
+    // Layer 4c: Check for dependencies
+    if ([self hasReferences:did collection:collection rkey:rkey]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;RecordService&quot; 
+                                         code:409 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Record has references&quot;}];
+        }
+        return NO;
+    }
+
+    // Proceed with deletion
+    return [self performDelete:did collection:collection rkey:rkey error:error];
+}
+</code></pre>
+
+<h4 id="layer-5-data-protection">Layer 5: Data Protection</h4>
+<ul>
+<li>Encryption at rest (Keychain for secrets)</li>
+<li>Secure key storage</li>
+<li>Database encryption (optional)</li>
+<li>Secure deletion</li>
+</ul>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/Auth/KeychainManager.m
+- (BOOL)storePrivateKey:(NSData *)keyData 
+             identifier:(NSString *)identifier 
+                  error:(NSError **)error {
+    // Store in Keychain with hardware-backed protection
+    NSDictionary *query = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassKey,
+        (__bridge id)kSecAttrApplicationTag: [identifier dataUsingEncoding:NSUTF8StringEncoding],
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecValueData: keyData,
+        (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        (__bridge id)kSecAttrTokenID: (__bridge id)kSecAttrTokenIDSecureEnclave  // Hardware-backed
+    };
+
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+    if (status != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:NSOSStatusErrorDomain 
+                                         code:status 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Failed to store key in Keychain&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="2-least-privilege">2. Least Privilege</h3>
+<p>The principle of least privilege means granting only the minimum permissions necessary to perform a task.</p>
+<p><strong>Implementation strategies:</strong></p>
+<h4 id="token-scopes">Token Scopes</h4>
+<p>Limit token capabilities to specific operations:</p>
+<pre class="codehilite"><code class="language-objc">// Token with limited scopes
+NSDictionary *tokenClaims = @{
+    @&quot;sub&quot;: did,
+    @&quot;iss&quot;: @&quot;https://pds.garazyk.xyz&quot;,
+    @&quot;aud&quot;: @&quot;https://pds.garazyk.xyz&quot;,
+    @&quot;exp&quot;: @(expirationTime),
+    @&quot;scope&quot;: @&quot;com.atproto.repo.createRecord com.atproto.repo.getRecord&quot;  // Limited scopes
+};
+
+// Verify scope before operation
+- (BOOL)hasRequiredScopes:(NSString *)token forEndpoint:(NSString *)nsid {
+    NSArray *tokenScopes = [self extractScopes:token];
+    NSArray *requiredScopes = [self requiredScopesForEndpoint:nsid];
+
+    for (NSString *required in requiredScopes) {
+        if (![tokenScopes containsObject:required]) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h4 id="database-permissions">Database Permissions</h4>
+<p>Use separate database connections with minimal privileges:</p>
+<pre class="codehilite"><code class="language-objc">// Read-only connection for queries
+- (PDSDatabase *)readOnlyConnection {
+    PDSDatabase *db = [[PDSDatabase alloc] initWithPath:self.dbPath];
+    [db executeUpdate:@&quot;PRAGMA query_only = ON&quot; error:nil];
+    return db;
+}
+
+// Write connection only when needed
+- (BOOL)updateRecord:(NSDictionary *)record error:(NSError **)error {
+    PDSDatabase *writeDB = [self writeConnection];
+    BOOL success = [writeDB executeUpdate:@&quot;UPDATE records SET value = ? WHERE id = ?&quot; 
+                                   params:@[record[@&quot;value&quot;], record[@&quot;id&quot;]] 
+                                    error:error];
+    [writeDB close];
+    return success;
+}
+</code></pre>
+
+<h4 id="file-system-permissions">File System Permissions</h4>
+<p>Restrict file access to necessary directories:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)validateBlobPath:(NSString *)path error:(NSError **)error {
+    // Ensure path is within blob directory
+    NSString *resolvedPath = [path stringByStandardizingPath];
+    NSString *blobDir = [self.blobDirectory stringByStandardizingPath];
+
+    if (![resolvedPath hasPrefix:blobDir]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;BlobStorage&quot; 
+                                         code:403 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Path outside blob directory&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="3-fail-securely">3. Fail Securely</h3>
+<p>When errors occur, fail in a way that maintains security rather than bypassing controls.</p>
+<p><strong>Secure failure patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Good: Fail securely on validation error
+- (BOOL)processRequest:(XrpcRequest *)request error:(NSError **)error {
+    // If validation fails, reject request
+    if (![self validateRequest:request error:error]) {
+        return NO;  // Secure failure
+    }
+
+    // Process validated request
+    return [self handleRequest:request error:error];
+}
+
+// Bad: Continue on validation error
+// if (![self validateRequest:request error:error]) {
+//     PDS_LOG_WARN(@&quot;Validation failed, continuing anyway&quot;);  // INSECURE!
+// }
+// return [self handleRequest:request error:error];
+
+// Good: Deny by default
+- (BOOL)isAuthorized:(NSString *)did forAction:(NSString *)action {
+    // Explicit authorization required
+    return [self.authorizationRules allowsDID:did action:action];
+}
+
+// Bad: Allow by default
+// - (BOOL)isDenied:(NSString *)did forAction:(NSString *)action {
+//     return [self.denyList containsDID:did];  // Allows unknown DIDs!
+// }
+</code></pre>
+
+<h3 id="4-secure-defaults">4. Secure Defaults</h3>
+<p>Configure systems with secure settings by default, requiring explicit action to weaken security.</p>
+<p><strong>Secure configuration defaults:</strong></p>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/App/PDSConfiguration.m
+- (instancetype)initWithDefaults {
+    self = [super init];
+    if (self) {
+        // Secure defaults
+        _requireInviteCode = YES;  // Require invite codes
+        _rateLimitEnabled = YES;   // Enable rate limiting
+        _debugMode = NO;           // Disable debug mode
+        _logLevel = PDSLogLevelInfo;  // Info level (not debug)
+        _maxRequestSize = 10 * 1024 * 1024;  // 10 MB limit
+        _sessionTimeout = 3600;    // 1 hour
+        _requireTLS = YES;         // Require HTTPS
+        _plcURL = @&quot;https://plc.directory&quot;;  // Production PLC
+    }
+    return self;
+}
+</code></pre>
+
+<p><strong>Configuration validation:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)validateConfiguration:(NSError **)error {
+    // Warn about insecure settings
+    if (!self.requireInviteCode) {
+        PDS_LOG_WARN(@&quot;Invite codes disabled - server is open to public registration&quot;);
+    }
+
+    if (self.debugMode) {
+        PDS_LOG_WARN(@&quot;Debug mode enabled - verbose logging may expose sensitive data&quot;);
+    }
+
+    if ([self.plcURL isEqualToString:@&quot;mock&quot;]) {
+        PDS_LOG_ERROR(@&quot;Mock PLC URL in production - DID resolution will fail&quot;);
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Configuration&quot; 
+                                         code:1 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                         @&quot;Mock PLC URL not allowed in production&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h3 id="5-minimize-attack-surface">5. Minimize Attack Surface</h3>
+<p>Reduce the number of potential entry points for attackers.</p>
+<p><strong>Attack surface reduction strategies:</strong></p>
+<h4 id="disable-unnecessary-features">Disable Unnecessary Features</h4>
+<pre class="codehilite"><code class="language-objc">// Conditional compilation for debug features
+#if DEBUG
+- (void)registerDebugEndpoints {
+    [self.httpServer registerRoute:@&quot;/debug/state&quot; 
+                           handler:^(HttpRequest *req, HttpResponse *res) {
+        [res sendJSON:[self dumpInternalState]];
+    }];
+}
+#endif
+
+// Never expose debug endpoints in production
+- (void)configureServer {
+    [self registerProductionEndpoints];
+
+#if DEBUG
+    if (self.config.debugMode) {
+        [self registerDebugEndpoints];
+    }
+#endif
+}
+</code></pre>
+
+<h4 id="limit-exposed-endpoints">Limit Exposed Endpoints</h4>
+<pre class="codehilite"><code class="language-objc">// Only expose necessary XRPC methods
+- (void)registerXRPCMethods {
+    // Core methods (always enabled)
+    [self registerMethod:@&quot;com.atproto.server.createSession&quot;];
+    [self registerMethod:@&quot;com.atproto.repo.createRecord&quot;];
+    [self registerMethod:@&quot;com.atproto.repo.getRecord&quot;];
+
+    // Admin methods (only if admin enabled)
+    if (self.config.adminEnabled) {
+        [self registerMethod:@&quot;com.atproto.admin.disableInviteCodes&quot;];
+        [self registerMethod:@&quot;com.atproto.admin.emitModerationEvent&quot;];
+    }
+
+    // Experimental methods (only in development)
+    if (self.config.experimentalFeaturesEnabled) {
+        [self registerMethod:@&quot;com.atproto.temp.experimental&quot;];
+    }
+}
+</code></pre>
+
+<h4 id="remove-sensitive-information-from-responses">Remove Sensitive Information from Responses</h4>
+<pre class="codehilite"><code class="language-objc">- (NSDictionary *)sanitizeErrorResponse:(NSError *)error {
+    // Never expose internal details to clients
+    NSMutableDictionary *response = [NSMutableDictionary dictionary];
+
+    response[@&quot;error&quot;] = @&quot;InvalidRequest&quot;;
+    response[@&quot;message&quot;] = @&quot;The request could not be processed&quot;;
+
+    // Only include details in development
+#if DEBUG
+    if (self.config.debugMode) {
+        response[@&quot;debug&quot;] = @{
+            @&quot;domain&quot;: error.domain,
+            @&quot;code&quot;: @(error.code),
+            @&quot;description&quot;: error.localizedDescription
+        };
+    }
+#endif
+
+    return response;
+}
+</code></pre>
+
+<h2 id="secure-development-practices">Secure Development Practices</h2>
+<h3 id="1-code-review-checklist">1. Code Review Checklist</h3>
+<p>Before merging security-sensitive code, verify:</p>
+<ul>
+<li>[ ] Input validation at all entry points</li>
+<li>[ ] Authentication checks on protected endpoints</li>
+<li>[ ] Authorization checks for resource access</li>
+<li>[ ] Parameterized queries (no string concatenation in SQL)</li>
+<li>[ ] Sensitive data redacted from logs</li>
+<li>[ ] Error messages don't leak internal details</li>
+<li>[ ] Cryptographic operations use approved algorithms</li>
+<li>[ ] Secrets not hardcoded in source</li>
+<li>[ ] Rate limiting on resource-intensive operations</li>
+<li>[ ] Tests cover security requirements</li>
+</ul>
+<h3 id="2-security-testing">2. Security Testing</h3>
+<p><strong>Unit Tests:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (void)testAuthenticationRequired {
+    // Verify endpoint rejects unauthenticated requests
+    XrpcRequest *request = [[XrpcRequest alloc] init];
+    request.nsid = @&quot;com.atproto.repo.createRecord&quot;;
+    // No token provided
+
+    XrpcResponse *response = [self.dispatcher handleRequest:request];
+
+    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqualObjects(response.error, @&quot;AuthenticationRequired&quot;);
+}
+
+- (void)testAuthorizationEnforced {
+    // Verify user cannot access another user's data
+    NSString *aliceDID = @&quot;did:plc:alice&quot;;
+    NSString *bobDID = @&quot;did:plc:bob&quot;;
+
+    NSString *aliceToken = [self createTokenForDID:aliceDID];
+
+    XrpcRequest *request = [[XrpcRequest alloc] init];
+    request.nsid = @&quot;com.atproto.repo.deleteRecord&quot;;
+    request.token = aliceToken;
+    request.params = @{@&quot;repo&quot;: bobDID, @&quot;collection&quot;: @&quot;app.bsky.feed.post&quot;, @&quot;rkey&quot;: @&quot;123&quot;};
+
+    XrpcResponse *response = [self.dispatcher handleRequest:request];
+
+    XCTAssertEqual(response.statusCode, 403);
+    XCTAssertEqualObjects(response.error, @&quot;Forbidden&quot;);
+}
+</code></pre>
+
+<p><strong>Integration Tests:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (void)testSQLInjectionPrevention {
+    // Attempt SQL injection
+    NSString *maliciousDID = @&quot;did:plc:test' OR '1'='1&quot;;
+
+    NSError *error = nil;
+    PDSDatabaseAccount *account = [self.database getAccountByDid:maliciousDID error:&amp;error];
+
+    // Should return nil (not found), not execute injection
+    XCTAssertNil(account);
+    XCTAssertNil(error);  // No error, just not found
+}
+
+- (void)testRateLimitingEnforced {
+    NSString *did = @&quot;did:plc:test&quot;;
+
+    // Make requests up to limit
+    for (int i = 0; i &lt; 100; i++) {
+        XrpcResponse *response = [self makeRequest:did];
+        XCTAssertEqual(response.statusCode, 200);
+    }
+
+    // Next request should be rate limited
+    XrpcResponse *response = [self makeRequest:did];
+    XCTAssertEqual(response.statusCode, 429);
+}
+</code></pre>
+
+<h3 id="3-dependency-management">3. Dependency Management</h3>
+<p><strong>Verify dependencies:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check for known vulnerabilities
+osv-scanner --lockfile=package-lock.json
+
+# Audit npm dependencies
+npm audit
+
+# Update dependencies regularly
+npm update
+</code></pre>
+
+<p><strong>Pin dependency versions:</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;dependencies&quot;: {
+    &quot;sqlite3&quot;: &quot;5.1.6&quot;,  // Pinned version
+    &quot;express&quot;: &quot;4.18.2&quot;
+  }
+}
+</code></pre>
+
+<h3 id="4-secrets-management">4. Secrets Management</h3>
+<p><strong>Never commit secrets:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Add to .gitignore
+config.json
+*.key
+*.pem
+.env
+secrets/
+</code></pre>
+
+<p><strong>Use environment variables:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (NSString *)getJWTSecret {
+    // Read from environment, not config file
+    NSString *secret = [[[NSProcessInfo processInfo] environment] objectForKey:@&quot;JWT_SECRET&quot;];
+
+    if (!secret) {
+        PDS_LOG_ERROR(@&quot;JWT_SECRET environment variable not set&quot;);
+        exit(1);
+    }
+
+    return secret;
+}
+</code></pre>
+
+<p><strong>Rotate secrets regularly:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (void)rotateJWTSigningKey {
+    // Generate new key
+    NSData *newKey = [self generateSigningKey];
+
+    // Store with version identifier
+    [self.keychain storeKey:newKey identifier:@&quot;jwt-signing-v2&quot; error:nil];
+
+    // Keep old key for verification during transition
+    [self.keychain storeKey:self.currentKey identifier:@&quot;jwt-signing-v1&quot; error:nil];
+
+    // Update current key reference
+    self.currentKey = newKey;
+    self.currentKeyVersion = 2;
+}
+</code></pre>
+
+<h2 id="incident-response">Incident Response</h2>
+<h3 id="1-security-monitoring">1. Security Monitoring</h3>
+<p><strong>Log security events:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (void)logSecurityEvent:(NSString *)event details:(NSDictionary *)details {
+    NSMutableDictionary *logEntry = [NSMutableDictionary dictionary];
+    logEntry[@&quot;timestamp&quot;] = [NSDate date];
+    logEntry[@&quot;event&quot;] = event;
+    logEntry[@&quot;details&quot;] = details;
+    logEntry[@&quot;severity&quot;] = @&quot;SECURITY&quot;;
+
+    PDS_LOG_SECURITY(@&quot;%@&quot;, logEntry);
+
+    // Send to SIEM if configured
+    if (self.siemEnabled) {
+        [self.siemClient sendEvent:logEntry];
+    }
+}
+
+// Usage
+[self logSecurityEvent:@&quot;AuthenticationFailure&quot; 
+               details:@{
+                   @&quot;did&quot;: did,
+                   @&quot;ip&quot;: request.remoteIP,
+                   @&quot;reason&quot;: @&quot;Invalid token signature&quot;
+               }];
+</code></pre>
+
+<h3 id="2-alerting">2. Alerting</h3>
+<p><strong>Configure alerts for suspicious activity:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (void)checkForSuspiciousActivity:(NSString *)did {
+    // Check for rapid authentication failures
+    NSInteger failureCount = [self.authFailureTracker countForDID:did 
+                                                       inLastMinutes:5];
+    if (failureCount &gt; 10) {
+        [self sendAlert:@&quot;Possible brute force attack&quot; 
+                details:@{@&quot;did&quot;: did, @&quot;failures&quot;: @(failureCount)}];
+    }
+
+    // Check for unusual access patterns
+    if ([self detectAnomalousAccess:did]) {
+        [self sendAlert:@&quot;Anomalous access pattern detected&quot; 
+                details:@{@&quot;did&quot;: did}];
+    }
+}
+</code></pre>
+
+<h3 id="3-breach-response">3. Breach Response</h3>
+<p><strong>If a security breach is detected:</strong></p>
+<ol>
+<li><strong>Contain:</strong> Disable affected accounts, revoke tokens</li>
+<li><strong>Investigate:</strong> Review logs, identify scope</li>
+<li><strong>Remediate:</strong> Fix vulnerability, deploy patch</li>
+<li><strong>Notify:</strong> Inform affected users</li>
+<li><strong>Learn:</strong> Post-mortem, improve defenses</li>
+</ol>
+<pre class="codehilite"><code class="language-objc">- (void)handleSecurityBreach:(NSString *)breachType affectedDIDs:(NSArray *)dids {
+    // 1. Contain
+    for (NSString *did in dids) {
+        [self.accountService disableAccount:did reason:@&quot;Security breach&quot; error:nil];
+        [self.tokenService revokeAllTokensForDID:did];
+    }
+
+    // 2. Log incident
+    [self logSecurityEvent:@&quot;SecurityBreach&quot; 
+                   details:@{
+                       @&quot;type&quot;: breachType,
+                       @&quot;affectedCount&quot;: @(dids.count)
+                   }];
+
+    // 3. Alert administrators
+    [self sendAlert:@&quot;SECURITY BREACH&quot; 
+            details:@{@&quot;type&quot;: breachType, @&quot;affected&quot;: @(dids.count)}];
+
+    // 4. Initiate investigation
+    [self startIncidentInvestigation:breachType affectedDIDs:dids];
+}
+</code></pre>
+
+<h2 id="compliance">Compliance</h2>
+<h3 id="1-data-protection">1. Data Protection</h3>
+<p><strong>GDPR/Privacy considerations:</strong></p>
+<ul>
+<li>Implement data export (user can download their data)</li>
+<li>Implement data deletion (right to be forgotten)</li>
+<li>Minimize data collection</li>
+<li>Encrypt sensitive data</li>
+<li>Log access to personal data</li>
+</ul>
+<pre class="codehilite"><code class="language-objc">- (NSDictionary *)exportUserData:(NSString *)did error:(NSError **)error {
+    // Export all user data for GDPR compliance
+    NSMutableDictionary *export = [NSMutableDictionary dictionary];
+
+    export[@&quot;account&quot;] = [self.accountService getAccount:did error:error];
+    export[@&quot;records&quot;] = [self.recordService getAllRecords:did error:error];
+    export[@&quot;blobs&quot;] = [self.blobService getBlobMetadata:did error:error];
+
+    return export;
+}
+
+- (BOOL)deleteUserData:(NSString *)did error:(NSError **)error {
+    // Permanently delete all user data
+    BOOL success = YES;
+
+    success &amp;= [self.recordService deleteAllRecords:did error:error];
+    success &amp;= [self.blobService deleteAllBlobs:did error:error];
+    success &amp;= [self.accountService deleteAccount:did error:error];
+
+    // Log deletion for audit trail
+    [self logSecurityEvent:@&quot;UserDataDeleted&quot; details:@{@&quot;did&quot;: did}];
+
+    return success;
+}
+</code></pre>
+
+<h3 id="2-audit-logging">2. Audit Logging</h3>
+<p><strong>Maintain audit trail:</strong></p>
+<pre class="codehilite"><code class="language-objc">- (void)auditLog:(NSString *)action 
+             did:(NSString *)did 
+        resource:(NSString *)resource 
+          result:(NSString *)result {
+    NSDictionary *auditEntry = @{
+        @&quot;timestamp&quot;: [NSDate date],
+        @&quot;action&quot;: action,
+        @&quot;did&quot;: did,
+        @&quot;resource&quot;: resource,
+        @&quot;result&quot;: result,
+        @&quot;ip&quot;: self.currentRequest.remoteIP
+    };
+
+    // Write to audit log (separate from application logs)
+    [self.auditLogger writeEntry:auditEntry];
+}
+
+// Usage
+[self auditLog:@&quot;DeleteRecord&quot; 
+           did:did 
+      resource:[NSString stringWithFormat:@&quot;%@/%@&quot;, collection, rkey]
+        result:success ? @&quot;SUCCESS&quot; : @&quot;FAILURE&quot;];
+</code></pre>
+
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="../04-network-layer/input-validation.md">Input Validation</a> — Validation strategies</li>
+<li><a href="../11-reference/security-audit-guide.md">Security Audit Guide</a> — Using audit skills</li>
+<li><a href="secrets-management.md">Secrets Management</a> — Key storage and rotation</li>
+<li><a href="oauth2-dpop.md">OAuth 2.0 with DPoP</a> — Authentication implementation</li>
+<li><a href="../04-network-layer/rate-limiting.md">Rate Limiting</a> — DoS protection</li>
+</ul>
+<h2 id="external-resources">External Resources</h2>
+<ul>
+<li>OWASP Secure Coding Practices: https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/</li>
+<li>NIST Cybersecurity Framework: https://www.nist.gov/cyberframework</li>
+<li>CIS Controls: https://www.cisecurity.org/controls</li>
+<li>AT Protocol Security: https://atproto.com/specs/security</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

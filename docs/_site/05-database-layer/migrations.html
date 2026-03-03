@@ -316,24 +316,303 @@ CREATE INDEX idx_ipld_blocks_cid ON ipld_blocks(cid);
 </code></pre>
 
 <h2 id="migration-manager">Migration Manager</h2>
-<p>The <code>PDSMigrationManager</code> orchestrates migrations:</p>
-<pre class="codehilite"><code class="language-objc">@interface PDSMigrationManager : NSObject
+<p>The <code>PDSMigrationManager</code> orchestrates database migrations and handles data transformation.</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m</code></p>
+<h3 id="migration-execution-flow">Migration Execution Flow</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 30-50: Main migration entry point
+- (BOOL)migrateFromMonolithicDatabase:(NSString *)sourcePath 
+                    toSingleTenantDirectory:(NSString *)destinationDirectory
+                                  error:(NSError **)error {
+    NSFileManager *fm = [NSFileManager defaultManager];
 
-// Singleton
-+ (instancetype)sharedManager;
+    if (![fm fileExistsAtPath:sourcePath]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                        code:PDSMigrationErrorSourceNotFound
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Source database not found&quot;}];
+        }
+        return NO;
+    }
 
-// Migration execution
-- (BOOL)migrateServiceDatabase:(PDSDatabase *)database error:(NSError **)error;
-- (BOOL)migrateActorDatabase:(PDSActorDatabase *)database error:(NSError **)error;
+    [self updateProgress:0 status:@&quot;Opening source database&quot;];
 
-// Migration status
-- (NSInteger)currentSchemaVersion:(PDSDatabase *)database error:(NSError **)error;
-- (NSInteger)targetSchemaVersion;
+    sqlite3 *sourceDb;
+    int result = sqlite3_open(sourcePath.UTF8String, &amp;sourceDb);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to open source database&quot;}];
+        }
+        return NO;
+    }
+    // ... migration continues
+}
+</code></pre>
 
-// Progress tracking
-@property (nonatomic, copy) void (^progressBlock)(double progress, NSString *status);
+<h3 id="counting-records-for-progress">Counting Records for Progress</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 60-85: Count records to migrate for progress tracking
+[self updateProgress:0.05 status:@&quot;Counting records to migrate&quot;];
 
-@end
+{
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+    sqlite3_prepare_v2(sourceDb, &quot;SELECT COUNT(*) FROM accounts&quot;, -1, &amp;countStmt, NULL);
+    if (sqlite3_step(countStmt) == SQLITE_ROW) {
+        totalAccounts = sqlite3_column_int64(countStmt, 0);
+    }
+}
+
+{
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+    sqlite3_prepare_v2(sourceDb, &quot;SELECT COUNT(*) FROM repos&quot;, -1, &amp;countStmt, NULL);
+    if (sqlite3_step(countStmt) == SQLITE_ROW) {
+        totalRepos = sqlite3_column_int64(countStmt, 0);
+    }
+}
+
+{
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+    sqlite3_prepare_v2(sourceDb, &quot;SELECT COUNT(*) FROM records&quot;, -1, &amp;countStmt, NULL);
+    if (sqlite3_step(countStmt) == SQLITE_ROW) {
+        totalRecords = sqlite3_column_int64(countStmt, 0);
+    }
+}
+
+{
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *countStmt = NULL;
+    sqlite3_prepare_v2(sourceDb, &quot;SELECT COUNT(*) FROM blocks&quot;, -1, &amp;countStmt, NULL);
+    if (sqlite3_step(countStmt) == SQLITE_ROW) {
+        totalBlocks = sqlite3_column_int64(countStmt, 0);
+    }
+}
+</code></pre>
+
+<h3 id="batch-account-migration">Batch Account Migration</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 100-130: Migrate accounts in batches for performance
+NSMutableArray&lt;PDSDatabaseAccount *&gt; *allAccounts = [NSMutableArray array];
+PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *accountStmt;
+sqlite3_prepare_v2(sourceDb,
+    &quot;SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at &quot;
+    &quot;FROM accounts&quot;, -1, &amp;accountStmt, NULL);
+
+while (sqlite3_step(accountStmt) == SQLITE_ROW) {
+    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+    account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 0)];
+    account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, 1)];
+
+    int col = 2;
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(accountStmt, col)];
+    }
+    col++;
+
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                              length:sqlite3_column_bytes(accountStmt, col)];
+    }
+    col++;
+
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                              length:sqlite3_column_bytes(accountStmt, col)];
+    }
+    col++;
+
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.accessJwt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                           length:sqlite3_column_bytes(accountStmt, col)];
+    }
+    col++;
+
+    if (sqlite3_column_type(accountStmt, col) != SQLITE_NULL) {
+        account.refreshJwt = [NSData dataWithBytes:sqlite3_column_blob(accountStmt, col)
+                                            length:sqlite3_column_bytes(accountStmt, col)];
+    }
+    col++;
+
+    account.createdAt = sqlite3_column_double(accountStmt, col);
+    col++;
+    account.updatedAt = sqlite3_column_double(accountStmt, col);
+
+    [allAccounts addObject:account];
+    [accountDids addObject:account.did];
+}
+
+// Create accounts in batches for better performance
+const NSUInteger batchSize = 100;
+for (NSUInteger i = 0; i &lt; allAccounts.count; i += batchSize) {
+    if (self.cancelBlock &amp;&amp; self.cancelBlock()) {
+        sqlite3_close(sourceDb);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                        code:PDSMigrationErrorCancelled
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Migration cancelled&quot;}];
+        }
+        return NO;
+    }
+
+    NSUInteger endIndex = MIN(i + batchSize, allAccounts.count);
+    NSArray&lt;PDSDatabaseAccount *&gt; *batch = [allAccounts subarrayWithRange:NSMakeRange(i, endIndex - i)];
+
+    NSError *createError = nil;
+    BOOL batchSuccess = [serviceDb createAccounts:batch error:&amp;createError];
+    if (!batchSuccess) {
+        PDS_LOG_DB_ERROR(@&quot;Migration failed to create account batch starting at index %lu: %@&quot;,
+                         (unsigned long)i, createError);
+    }
+
+    migratedItems += batch.count;
+    [self updateProgress:(0.1 + 0.3 * ((double)migratedItems / totalItems))
+                  status:[NSString stringWithFormat:@&quot;Migrating accounts (%ld/%ld)&quot;, (long)migratedItems, (long)totalAccounts]];
+}
+</code></pre>
+
+<h3 id="repository-and-record-migration">Repository and Record Migration</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 135-180: Migrate repos and records per user
+[self updateProgress:0.4 status:@&quot;Migrating repos and records&quot;];
+
+for (NSInteger i = 0; i &lt; accountDids.count; i++) {
+    NSString *did = accountDids[i];
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *repoStmt;
+    sqlite3_prepare_v2(sourceDb, 
+        &quot;SELECT owner_did, root_cid, collection_data, created_at, updated_at FROM repos WHERE owner_did = ?&quot;,
+        -1, &amp;repoStmt, NULL);
+    sqlite3_bind_text(repoStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+
+    PDSDatabaseRepo *repo = nil;
+    if (sqlite3_step(repoStmt) == SQLITE_ROW) {
+        repo = [[PDSDatabaseRepo alloc] init];
+        repo.ownerDid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(repoStmt, 0)];
+
+        if (sqlite3_column_type(repoStmt, 1) != SQLITE_NULL) {
+            repo.rootCid = [NSData dataWithBytes:sqlite3_column_blob(repoStmt, 1) 
+                                          length:sqlite3_column_bytes(repoStmt, 1)];
+        }
+
+        if (sqlite3_column_type(repoStmt, 2) != SQLITE_NULL) {
+            repo.collectionData = [NSData dataWithBytes:sqlite3_column_blob(repoStmt, 2) 
+                                                 length:sqlite3_column_bytes(repoStmt, 2)];
+        }
+
+        repo.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(repoStmt, 3)];
+        repo.updatedAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(repoStmt, 4)];
+    }
+
+    __block NSError *repoError = nil;
+    if (repo) {
+        [destinationPool transactWithDid:did block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **blockError) {
+            PDSActorStore *store = (PDSActorStore *)transactor;
+            [store createRepo:repo error:blockError];
+        } error:&amp;repoError];
+    }
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *recordStmt;
+    sqlite3_prepare_v2(sourceDb, 
+        &quot;SELECT uri, did, collection, rkey, cid, created_at FROM records WHERE did = ?&quot;,
+        -1, &amp;recordStmt, NULL);
+    sqlite3_bind_text(recordStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+
+    while (sqlite3_step(recordStmt) == SQLITE_ROW) {
+        PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+        record.uri = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(recordStmt, 0)];
+        record.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(recordStmt, 1)];
+        record.collection = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(recordStmt, 2)];
+        record.rkey = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(recordStmt, 3)];
+        record.cid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(recordStmt, 4)];
+        record.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(recordStmt, 5)];
+
+        __block NSError *recordError = nil;
+        [destinationPool transactWithDid:did block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **blockError) {
+            PDSActorStore *store = (PDSActorStore *)transactor;
+            [store putRecord:record forDid:did error:blockError];
+        } error:&amp;recordError];
+    }
+}
+</code></pre>
+
+<h3 id="block-migration">Block Migration</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 185-220: Migrate IPLD blocks
+[self updateProgress:0.7 status:@&quot;Migrating blocks&quot;];
+
+PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *blockStmt;
+sqlite3_prepare_v2(sourceDb, 
+    &quot;SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks&quot;,
+    -1, &amp;blockStmt, NULL);
+
+NSInteger blockIndex = 0;
+while (sqlite3_step(blockStmt) == SQLITE_ROW) {
+    if (self.cancelBlock &amp;&amp; self.cancelBlock()) {
+        sqlite3_close(sourceDb);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                        code:PDSMigrationErrorCancelled
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Migration cancelled&quot;}];
+        }
+        return NO;
+    }
+
+    NSData *cid = [NSData dataWithBytes:sqlite3_column_blob(blockStmt, 0) 
+                                 length:sqlite3_column_bytes(blockStmt, 0)];
+    NSString *repoDid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(blockStmt, 1)];
+
+    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    block.cid = cid;
+    block.repoDid = repoDid;
+
+    if (sqlite3_column_type(blockStmt, 2) != SQLITE_NULL) {
+        block.blockData = [NSData dataWithBytes:sqlite3_column_blob(blockStmt, 2) 
+                                         length:sqlite3_column_bytes(blockStmt, 2)];
+    }
+
+    if (sqlite3_column_type(blockStmt, 3) != SQLITE_NULL) {
+        block.contentType = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(blockStmt, 3)];
+    }
+
+    block.size = sqlite3_column_int64(blockStmt, 4);
+    block.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(blockStmt, 5)];
+
+    __block NSError *blockError = nil;
+    [destinationPool transactWithDid:repoDid block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        [store putBlock:block forDid:repoDid error:innerError];
+    } error:&amp;blockError];
+
+    blockIndex++;
+    if (blockIndex % 100 == 0) {
+        double progress = 0.7 + 0.3 * ((double)blockIndex / totalBlocks);
+        [self updateProgress:progress 
+                      status:[NSString stringWithFormat:@&quot;Migrating blocks (%ld/%ld)&quot;, (long)blockIndex, (long)totalBlocks]];
+    }
+}
+</code></pre>
+
+<h3 id="async-migration-with-progress">Async Migration with Progress</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 235-245: Async migration with completion handler
+- (void)migrateFromMonolithicDatabaseAsync:(NSString *)sourcePath 
+                        toSingleTenantDirectory:(NSString *)destinationDirectory
+                                completion:(void (^)(NSError * _Nullable error))completion {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = nil;
+        [self migrateFromMonolithicDatabase:sourcePath 
+                        toSingleTenantDirectory:destinationDirectory 
+                                      error:&amp;error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error);
+        });
+    });
+}
+</code></pre>
+
+<h3 id="progress-reporting">Progress Reporting</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 255-265: Update progress on main thread
+- (void)updateProgress:(double)progress status:(NSString *)status {
+    if (self.progressBlock) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.progressBlock(progress, status);
+        });
+    }
+}
 </code></pre>
 
 <h2 id="schema-versioning">Schema Versioning</h2>
@@ -421,7 +700,7 @@ INSERT INTO schema_version (version, applied_at, description)
 VALUES (7, datetime('now'), 'Normalize handles to lowercase');
 </code></pre>
 
-<h2 id="migration-execution-flow">Migration Execution Flow</h2>
+<h2 id="migration-execution-flow_1">Migration Execution Flow</h2>
 <pre class="codehilite"><code>1. Check current schema version
    ↓
 2. Determine target schema version
@@ -577,14 +856,18 @@ VALUES (9, datetime('now'), 'Add performance indexes');
 <li>[ ] Monitoring is in place</li>
 </ul>
 <h2 id="see-also">See Also</h2>
-<ul>
-<li><a href="./service-databases.md">Service Databases</a></li>
-<li><a href="./actor-databases.md">Actor Databases</a></li>
-<li><a href="./wal-mode.md">WAL Mode</a></li>
-<li><a href="./sqlite-architecture.md">SQLite Architecture</a></li>
-</ul>
+<p><strong>Basic Topics:</strong>
+- <a href="./service-databases.md">Service Databases</a> — Shared database
+- <a href="./actor-databases.md">Actor Databases</a> — Per-user databases
+- <a href="./wal-mode.md">WAL Mode</a> — Write-Ahead Logging
+- <a href="./sqlite-architecture.md">SQLite Architecture</a> — Database design</p>
+<p><strong>Advanced Topics:</strong>
+- <a href="./migration-strategy.md">Migration Strategy</a> — Planning migrations
+- <a href="./migration-rollback.md">Migration Rollback</a> — Rollback procedures
+- <a href="./data-integrity.md">Data Integrity</a> — Consistency checks
+- <a href="./zero-downtime-migrations.md">Zero-Downtime Migrations</a> — Online migrations</p>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

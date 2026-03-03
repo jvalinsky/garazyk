@@ -283,33 +283,36 @@ NSURLRequest *request = [NSURLRequest requestWithURL:url];
 
 <h2 id="implementing-the-firehose">Implementing the Firehose</h2>
 <h3 id="websocket-handler">WebSocket Handler</h3>
-<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
-- (void)handleWebSocketConnection:(WebSocketConnection *)connection 
-                          request:(HttpRequest *)request {
+<p>The SubscribeReposHandler manages WebSocket connections and sends initial repository state:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Accepting upgraded connections
+- (void)acceptUpgradedConnection:(id&lt;PDSNetworkConnection&gt;)connection
+                         request:(HttpRequest *)request {
+  [self ensureSequenceInitialized];
 
-    // 1. Parse subscription parameters
-    NSString *cursor = request.queryParams[@&quot;cursor&quot;];
+  WebSocketConnection *webSocketConnection =
+      [[WebSocketConnection alloc] initWithConnection:connection];
+  if (request.remoteAddress.length &gt; 0) {
+    webSocketConnection.remoteAddress = request.remoteAddress;
+  }
+  webSocketConnection.delegate = self;
+  @synchronized(self.attachedConnections) {
+    [self.attachedConnections addObject:webSocketConnection];
+  }
 
-    // 2. Register connection with broadcaster
-    [self.broadcaster registerConnection:connection];
+  if ([self.delegate respondsToSelector:@selector
+                     (subscribeReposHandler:didAcceptConnection:)]) {
+    [self.delegate subscribeReposHandler:self
+                     didAcceptConnection:webSocketConnection];
+  }
 
-    // 3. Send initial events (if cursor provided)
-    if (cursor) {
-        [self sendHistoricalEvents:cursor toConnection:connection];
-    }
-
-    // 4. Listen for incoming messages
-    [connection setMessageHandler:^(NSData *message) {
-        [self handleClientMessage:message connection:connection];
-    }];
-
-    // 5. Handle disconnection
-    [connection setCloseHandler:^{
-        [self.broadcaster unregisterConnection:connection];
-    }];
+  [webSocketConnection startOnExistingTransport];
+  [self sendInitialRepositoryStateToConnection:webSocketConnection
+                                        cursor:[request
+                                                   queryParamForKey:@&quot;cursor&quot;]];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 150-170)</p>
 <h3 id="commit-broadcasting">Commit Broadcasting</h3>
 <pre class="codehilite"><code class="language-objc">// In CommitBroadcaster.m
 - (void)broadcastCommit:(NSDictionary *)commit 
@@ -510,7 +513,7 @@ NSURLRequest *request = [NSURLRequest requestWithURL:url];
 <li><strong><a href="./backpressure.md">Backpressure</a></strong> — Flow control</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>
