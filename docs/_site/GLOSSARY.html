@@ -243,6 +243,7 @@
 <p><strong>CID</strong> — Content Identifier. Hash-based identifier for content in a DAG.</p>
 <p><strong>Commit</strong> — A snapshot of repository state at a point in time, identified by a CID.</p>
 <p><strong>Cryptographic Hash</strong> — One-way function that produces a fixed-size digest from input data.</p>
+<p><strong>Cursor</strong> — Position marker (sequence number) in the firehose event stream that allows clients to resume from a specific point after disconnection.</p>
 <h2 id="d">D</h2>
 <p><strong>DAG</strong> — Directed Acyclic Graph. Data structure used to represent repository history.</p>
 <p><strong>DAG-CBOR</strong> — CBOR encoding with specific rules for canonical representation.</p>
@@ -312,6 +313,7 @@
 <p><strong>Relay</strong> — External service notified of repository updates.</p>
 <p><strong>RelayService</strong> — Service for notifying external relays.</p>
 <p><strong>Retry Policy</strong> — Strategy for retrying failed operations with backoff.</p>
+<p><strong>Replay Window</strong> — Maximum number of historical events that can be replayed to reconnecting clients.</p>
 <h2 id="s">S</h2>
 <p><strong>Secrets Management</strong> — Secure storage and handling of cryptographic keys and sensitive data.</p>
 <p><strong>Security Audit</strong> — Systematic review of code for security vulnerabilities.</p>
@@ -321,6 +323,7 @@
 <p><strong>SQLite</strong> — Embedded SQL database engine used for persistence.</p>
 <p><strong>Structured Logging</strong> — Logging format with consistent fields for parsing and analysis.</p>
 <p><strong>SubscribeRepos</strong> — XRPC method providing real-time repository updates via WebSocket.</p>
+<p><strong>Sequence Number</strong> — Monotonically increasing integer assigned to each firehose event that defines canonical ordering.</p>
 <h2 id="t">T</h2>
 <p><strong>Throttling</strong> — Limiting the rate of operations to prevent resource exhaustion.</p>
 <p><strong>TOTP</strong> — Time-based One-Time Password. Multi-factor authentication method.</p>
@@ -454,7 +457,7 @@
 </tbody>
 </table>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:53:04</p>
             </div>
         </div>
     </div>
