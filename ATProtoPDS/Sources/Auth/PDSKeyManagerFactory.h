@@ -6,7 +6,8 @@
  @discussion
     Creates the appropriate PDSKeyManager implementation based on the
     current platform:
-    - macOS/iOS: PDSAppleKeyManager (Security.framework)
+    - macOS/iOS: PDSAppleKeyManager (Security.framework) when keychain is enabled
+    - macOS/iOS (non-keychain): PDSOpenSSLSessionKeyManager when OpenSSL support is available, else PDSAppleKeyManager in non-keychain mode
     - Linux: PDSOpenSSLKeyManager (OpenSSL)
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -43,7 +44,10 @@ NS_ASSUME_NONNULL_BEGIN
  @param database The database for key storage metadata.
 
  @return A PDSKeyManager implementation appropriate for the current platform.
-         Returns PDSAppleKeyManager on macOS/iOS, PDSOpenSSLKeyManager on Linux.
+         Returns PDSAppleKeyManager on macOS/iOS when keychain is enabled.
+         Returns PDSOpenSSLSessionKeyManager on Linux and on macOS/iOS when
+         keychain is disabled and OpenSSL support is compiled in; otherwise
+         returns PDSAppleKeyManager with keychain behavior controlled by config.
 
  @discussion
     The database is used for storing key metadata and, on Linux, the actual
