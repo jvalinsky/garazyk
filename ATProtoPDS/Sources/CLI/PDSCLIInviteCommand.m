@@ -1,6 +1,9 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
 #import "PDSCLIInputHelper.h"
+#import "PDSCLIAccountManager.h"
+#import "Database/PDSDatabase.h"
+#import <sqlite3.h>
 
 @interface PDSInviteInfo : NSObject
 @property (nonatomic, copy) NSString *code;
@@ -29,44 +32,47 @@
 
 @implementation PDSInviteManager
 
++ (NSString *)databasePathForContext:(PDSCLICommandContext *)context {
+    return [PDSCLIAccountManager databasePathForContext:context];
+}
+
 + (NSArray<PDSInviteInfo *> *)listInvitesWithContext:(PDSCLICommandContext *)context
                                              filter:(NSString *)filter
                                         includeUsed:(BOOL)includeUsed {
-    NSMutableArray<PDSInviteInfo *> *invites = [NSMutableArray array];
-
-    PDSInviteInfo *invite1 = [[PDSInviteInfo alloc] init];
-    invite1.code = @"ABCD-1234-EFGH-5678";
-    invite1.createdBy = @"admin@example.com";
-    invite1.uses = 0;
-    invite1.maxUses = 1;
-    invite1.disabled = NO;
-    invite1.createdAt = @"2026-01-01T00:00:00Z";
-    [invites addObject:invite1];
-
-    PDSInviteInfo *invite2 = [[PDSInviteInfo alloc] init];
-    invite2.code = @"WXYZ-9012-RSTU-3456";
-    invite2.createdBy = @"admin@example.com";
-    invite2.uses = 2;
-    invite2.maxUses = 5;
-    invite2.disabled = NO;
-    invite2.expiresAt = @"2026-02-01T00:00:00Z";
-    invite2.createdAt = @"2025-12-20T00:00:00Z";
-    [invites addObject:invite2];
-
-    PDSInviteInfo *invite3 = [[PDSInviteInfo alloc] init];
-    invite3.code = @"USED-0000-EXPI-RED";
-    invite3.createdBy = @"admin@example.com";
-    invite3.uses = 5;
-    invite3.maxUses = 5;
-    invite3.disabled = YES;
-    invite3.createdAt = @"2025-11-01T00:00:00Z";
-    [invites addObject:invite3];
-
-    if (!includeUsed) {
-        [invites filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(PDSInviteInfo *invite, NSDictionary *bindings) {
-            return invite.uses < invite.maxUses && !invite.disabled;
-        }]];
+    NSString *dbPath = [self databasePathForContext:context];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+        return @[];
     }
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return @[];
+    }
+
+    NSMutableArray<PDSInviteInfo *> *invites = [NSMutableArray array];
+    NSString *sql = includeUsed
+        ? @"SELECT code, account_did, uses, max_uses, disabled, created_at FROM invite_codes ORDER BY created_at DESC"
+        : @"SELECT code, account_did, uses, max_uses, disabled, created_at FROM invite_codes WHERE disabled = 0 AND uses < max_uses ORDER BY created_at DESC";
+
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(db.sqliteHandle, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            PDSInviteInfo *info = [[PDSInviteInfo alloc] init];
+            const char *code = (const char *)sqlite3_column_text(stmt, 0);
+            const char *acct = (const char *)sqlite3_column_text(stmt, 1);
+            const char *created = (const char *)sqlite3_column_text(stmt, 5);
+            info.code = code ? [NSString stringWithUTF8String:code] : @"";
+            info.createdBy = acct ? [NSString stringWithUTF8String:acct] : @"";
+            info.uses = sqlite3_column_int(stmt, 2);
+            info.maxUses = sqlite3_column_int(stmt, 3);
+            info.disabled = sqlite3_column_int(stmt, 4) != 0;
+            info.createdAt = created ? [NSString stringWithUTF8String:created] : @"";
+            [invites addObject:info];
+        }
+        sqlite3_finalize(stmt);
+    }
+    [db close];
 
     if (filter.length > 0) {
         [invites filterUsingPredicate:[NSPredicate predicateWithFormat:@"code CONTAINS[cd] %@", filter]];
@@ -79,28 +85,85 @@
                                  uses:(NSInteger)uses
                              disabled:(BOOL)disabled {
     NSString *alphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    NSMutableString *code = [NSMutableString string];
+    NSMutableString *code = [NSMutableString stringWithCapacity:19];
 
-    for (int i = 0; i < 4; i++) {
-        if (i > 0 && i % 4 == 0) {
-            [code appendString:@"-"];
+    for (int g = 0; g < 4; g++) {
+        if (g > 0) [code appendString:@"-"];
+        for (int i = 0; i < 4; i++) {
+            unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
+            [code appendFormat:@"%C", c];
         }
-        unichar c = [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)];
-        [code appendFormat:@"%C", c];
+    }
+
+    NSString *dbPath = [self databasePathForContext:context];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+        PDS_LOG_ERROR(@"Database not found at %@", dbPath);
+        return nil;
+    }
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        PDS_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
+        return nil;
+    }
+
+    NSString *sql = @"INSERT INTO invite_codes (id, code, account_did, created_at, uses, max_uses, disabled) "
+                    @"VALUES (?, ?, ?, ?, 0, ?, ?)";
+    sqlite3_stmt *stmt = NULL;
+    BOOL success = NO;
+    if (sqlite3_prepare_v2(db.sqliteHandle, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
+        NSString *uuid = [[NSUUID UUID] UUIDString];
+        NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+        fmt.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+        fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        NSString *now = [fmt stringFromDate:[NSDate date]];
+
+        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, code.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, @"admin".UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, now.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 5, uses);
+        sqlite3_bind_int(stmt, 6, disabled ? 1 : 0);
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+    }
+    [db close];
+
+    if (!success) {
+        PDS_LOG_ERROR(@"Failed to insert invite code into database");
+        return nil;
     }
 
     if (context.verbose) {
-        PDS_LOG_INFO(@"Created invite code: %@ (uses: %ld)", code, (long)uses);
+        PDS_LOG_INFO(@"Created invite code: %@ (max_uses: %ld)", code, (long)uses);
     }
 
     return code;
 }
 
 + (BOOL)revokeInviteWithContext:(PDSCLICommandContext *)context code:(NSString *)code {
-    if (context.verbose) {
-        PDS_LOG_INFO(@"Revoking invite code: %@", code);
+    NSString *dbPath = [self databasePathForContext:context];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+        return NO;
     }
-    return YES;
+
+    NSError *error = nil;
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    if (![db openWithError:&error]) {
+        return NO;
+    }
+
+    NSString *sql = @"UPDATE invite_codes SET disabled = 1 WHERE code = ?";
+    sqlite3_stmt *stmt = NULL;
+    BOOL success = NO;
+    if (sqlite3_prepare_v2(db.sqliteHandle, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, code.UTF8String, -1, SQLITE_TRANSIENT);
+        success = (sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db.sqliteHandle) > 0);
+        sqlite3_finalize(stmt);
+    }
+    [db close];
+    return success;
 }
 
 @end

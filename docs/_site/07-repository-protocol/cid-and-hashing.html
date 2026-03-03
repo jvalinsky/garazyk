@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CID and Hashing - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>CID and Hashing</h1>
+            </div>
+            <h1 id="cid-and-hashing">CID and Hashing</h1>
+<h2 id="overview">Overview</h2>
+<p>CID (Content Identifier) is a self-describing content address that combines a hash function, hash digest, and codec. It enables content-addressed storage and verification.</p>
+<h2 id="cid-structure">CID Structure</h2>
+<pre class="codehilite"><code>CIDv1: z&lt;multibase&gt;&lt;multicodec&gt;&lt;multihash&gt;
+
+Example: zbafy2bzaced4ueelaegfs5fq4a3fvh2ijmmq7xjlmakivezbsxyhynaiksqq
+
+z       - multibase (base32)
+bafy    - multicodec (dag-cbor)
+2bzaced... - multihash (sha256 hash)
+</code></pre>
+
+<h2 id="multihash-format">Multihash Format</h2>
+<pre class="codehilite"><code>&lt;hash-function-code&gt;&lt;digest-length&gt;&lt;digest&gt;
+
+Example: 12 20 &lt;32-byte-sha256-hash&gt;
+
+12      - SHA-256 code
+20      - 32 bytes (hex)
+&lt;hash&gt;  - 32-byte SHA-256 digest
+</code></pre>
+
+<h2 id="cid-class">CID Class</h2>
+<pre class="codehilite"><code class="language-objc">@interface CID : NSObject
+
+// Creating CIDs
++ (nullable NSString *)createCIDv1:(NSData *)hash
+                             codec:(NSString *)codec
+                             error:(NSError **)error;
+
++ (nullable NSString *)createCIDv0:(NSData *)hash error:(NSError **)error;
+
+// Parsing CIDs
++ (nullable NSDictionary *)parseCID:(NSString *)cid error:(NSError **)error;
+
+// Validation
++ (BOOL)isValidCID:(NSString *)cid error:(NSError **)error;
+
+// Conversion
++ (nullable NSString *)convertCIDv0toV1:(NSString *)cidv0 error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h2 id="hashing">Hashing</h2>
+<h3 id="sha-256-hashing">SHA-256 Hashing</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Encode record to CBOR
+NSData *cborData = [ATProtoCBORSerialization encodeRecord:record error:&amp;error];
+
+// 2. Hash with SHA-256
+NSData *hash = [CryptoUtils sha256:cborData];
+
+// 3. Create CID
+NSString *cid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
+</code></pre>
+
+<h2 id="creating-cids">Creating CIDs</h2>
+<h3 id="for-records">For Records</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Encode record
+NSDictionary *post = @{
+    @&quot;text&quot;: @&quot;Hello!&quot;,
+    @&quot;createdAt&quot;: @&quot;2025-01-15T10:30:00Z&quot;
+};
+
+NSData *cborData = [ATProtoCBORSerialization encodeRecord:post error:&amp;error];
+
+// 2. Hash
+NSData *hash = [CryptoUtils sha256:cborData];
+
+// 3. Create CID
+NSString *recordCid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
+
+// 4. Store record with CID
+[recordService putRecord:@&quot;app.bsky.feed.post&quot;
+                   rkey:@&quot;abc123&quot;
+                  value:post
+                 forDid:userDid
+               actorDid:userDid
+         validationMode:PDSValidationModeOptimistic
+                  error:&amp;error];
+</code></pre>
+
+<h3 id="for-blocks">For Blocks</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Encode block (CBOR or JSON)
+NSData *blockData = [ATProtoCBORSerialization encodeObject:blockObject error:&amp;error];
+
+// 2. Hash
+NSData *hash = [CryptoUtils sha256:blockData];
+
+// 3. Create CID
+NSString *blockCid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
+
+// 4. Store block
+[blobService storeBlock:blockData forCID:blockCid];
+</code></pre>
+
+<h2 id="parsing-cids">Parsing CIDs</h2>
+<pre class="codehilite"><code class="language-objc">// 1. Parse CID
+NSError *error = nil;
+NSDictionary *cidInfo = [CID parseCID:@&quot;bafy2bzaced...&quot; error:&amp;error];
+
+if (cidInfo) {
+    NSString *version = cidInfo[@&quot;version&quot;];      // &quot;1&quot;
+    NSString *codec = cidInfo[@&quot;codec&quot;];          // &quot;dag-cbor&quot;
+    NSString *hashFunction = cidInfo[@&quot;hash&quot;];    // &quot;sha256&quot;
+    NSData *digest = cidInfo[@&quot;digest&quot;];          // hash bytes
+}
+</code></pre>
+
+<h2 id="validation">Validation</h2>
+<h3 id="verifying-content">Verifying Content</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Get content by CID
+NSData *content = [blobService getBlob:cidData forDid:userDid error:&amp;error];
+
+// 2. Hash content
+NSData *hash = [CryptoUtils sha256:content];
+
+// 3. Parse CID to get expected hash
+NSDictionary *cidInfo = [CID parseCID:cidString error:&amp;error];
+NSData *expectedHash = cidInfo[@&quot;digest&quot;];
+
+// 4. Verify
+if ([hash isEqualToData:expectedHash]) {
+    // Content matches CID
+} else {
+    // Content corrupted or wrong
+}
+</code></pre>
+
+<h2 id="cidv0-vs-cidv1">CIDv0 vs CIDv1</h2>
+<h3 id="cidv0-legacy">CIDv0 (Legacy)</h3>
+<pre class="codehilite"><code>Qm... (base58 encoded)
+- Only supports dag-pb codec
+- Shorter but less flexible
+</code></pre>
+
+<h3 id="cidv1-current">CIDv1 (Current)</h3>
+<pre class="codehilite"><code>bafy... (base32 encoded)
+- Supports multiple codecs
+- Self-describing
+- Recommended for new code
+</code></pre>
+
+<h3 id="conversion">Conversion</h3>
+<pre class="codehilite"><code class="language-objc">// Convert v0 to v1
+NSError *error = nil;
+NSString *cidv1 = [CID convertCIDv0toV1:@&quot;Qm...&quot; error:&amp;error];
+
+// Result: bafy...
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>CID Generation</strong></li>
+<li>Use CIDv1 for new content</li>
+<li>Use SHA-256 for hashing</li>
+<li>Use dag-cbor for records</li>
+<li>
+<p>Verify CID matches content</p>
+</li>
+<li>
+<p><strong>Storage</strong></p>
+</li>
+<li>Store content by CID</li>
+<li>Deduplicate by CID</li>
+<li>Verify on retrieval</li>
+<li>
+<p>Cache CID lookups</p>
+</li>
+<li>
+<p><strong>Transmission</strong></p>
+</li>
+<li>Include CID with content</li>
+<li>Verify CID on receipt</li>
+<li>Use CID for integrity checks</li>
+<li>
+<p>Support both v0 and v1</p>
+</li>
+<li>
+<p><strong>Performance</strong></p>
+</li>
+<li>Cache hash computations</li>
+<li>Batch CID generation</li>
+<li>Use streaming for large content</li>
+<li>Monitor hash time</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="storing-a-record-with-cid">Storing a Record with CID</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Create record
+NSDictionary *post = @{
+    @&quot;text&quot;: @&quot;Hello!&quot;,
+    @&quot;createdAt&quot;: @&quot;2025-01-15T10:30:00Z&quot;
+};
+
+// 2. Encode and hash
+NSData *cborData = [ATProtoCBORSerialization encodeRecord:post error:&amp;error];
+NSData *hash = [CryptoUtils sha256:cborData];
+NSString *cid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
+
+// 3. Store record
+[recordService putRecord:@&quot;app.bsky.feed.post&quot;
+                   rkey:@&quot;abc123&quot;
+                  value:post
+                 forDid:userDid
+               actorDid:userDid
+         validationMode:PDSValidationModeOptimistic
+                  error:&amp;error];
+
+// 4. Return CID to client
+response[@&quot;uri&quot;] = [NSString stringWithFormat:@&quot;at://%@/app.bsky.feed.post/abc123&quot;, userDid];
+response[@&quot;cid&quot;] = cid;
+</code></pre>
+
+<h3 id="verifying-content-integrity">Verifying Content Integrity</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Get content
+NSData *content = [blobService getBlob:cidData forDid:userDid error:&amp;error];
+
+// 2. Verify CID
+NSData *hash = [CryptoUtils sha256:content];
+NSDictionary *cidInfo = [CID parseCID:cidString error:&amp;error];
+
+if (![hash isEqualToData:cidInfo[@&quot;digest&quot;]]) {
+    NSLog(@&quot;Content corrupted!&quot;);
+    return NO;
+}
+
+return YES;
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./cbor-serialization.md">CBOR Serialization</a></li>
+<li><a href="./car-format.md">CAR Format</a></li>
+<li><a href="./blob-storage.md">Blob Storage</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

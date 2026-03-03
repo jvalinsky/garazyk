@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compatibility Layer - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Compatibility Layer</h1>
+            </div>
+            <h1 id="compatibility-layer">Compatibility Layer</h1>
+<h2 id="overview">Overview</h2>
+<p>The compatibility layer provides platform-agnostic abstractions for platform-specific functionality. It:
+- Abstracts macOS and Linux/GNUstep differences
+- Provides unified APIs for common operations
+- Handles conditional compilation
+- Manages platform-specific dependencies
+- Enables code reuse across platforms</p>
+<h2 id="architecture">Architecture</h2>
+<h3 id="compatibility-shims">Compatibility Shims</h3>
+<pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
+│              Application Code                           │
+│  (Uses unified APIs from compatibility layer)           │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────▼────────────────────────────────────┐
+        │      Compatibility Layer (Compat/)              │
+        │  ┌──────────────────────────────────────────┐  │
+        │  │ Logging (os/log.h shim)                  │  │
+        │  │ Security (Security.framework shim)       │  │
+        │  │ Crypto (CommonCrypto shim)               │  │
+        │  │ Network (NSURLSession shim)              │  │
+        │  └──────────────────────────────────────────┘  │
+        └────────────┬─────────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        │                         │
+   ┌────▼────────┐        ┌──────▼──────┐
+   │   macOS     │        │   Linux/    │
+   │  (Xcode)    │        │  GNUstep    │
+   │             │        │             │
+   │ - os/log.h  │        │ - syslog    │
+   │ - Security  │        │ - OpenSSL   │
+   │ - CommonCrypto       │ - GnuTLS    │
+   │ - NSURLSession       │ - libcurl   │
+   └─────────────┘        └─────────────┘
+</code></pre>
+
+<h2 id="logging-compatibility">Logging Compatibility</h2>
+<h3 id="problem-oslogh-on-gnustep">Problem: os/log.h on GNUstep</h3>
+<p>macOS provides <code>os/log.h</code> for structured logging, but GNUstep doesn't have this framework.</p>
+<h3 id="solution-logging-shim">Solution: Logging Shim</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSLogging.h
+#ifndef PDS_LOGGING_H
+#define PDS_LOGGING_H
+
+#import &lt;Foundation/Foundation.h&gt;
+
+#if __APPLE__
+    #import &lt;os/log.h&gt;
+    #define PDSLog(format, ...) os_log(OS_LOG_DEFAULT, format, ##__VA_ARGS__)
+    #define PDSLogError(format, ...) os_log_error(OS_LOG_DEFAULT, format, ##__VA_ARGS__)
+#else
+    // GNUstep: use NSLog
+    #define PDSLog(format, ...) NSLog(@&quot;[INFO] &quot; format, ##__VA_ARGS__)
+    #define PDSLogError(format, ...) NSLog(@&quot;[ERROR] &quot; format, ##__VA_ARGS__)
+#endif
+
+@interface PDSLogger : NSObject
+
++ (void)logInfo:(NSString *)message;
++ (void)logError:(NSString *)message;
++ (void)logDebug:(NSString *)message;
++ (void)logWarning:(NSString *)message;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="usage">Usage</h3>
+<pre class="codehilite"><code class="language-objc">// In any source file
+#import &quot;PDSLogging.h&quot;
+
+- (void)processRequest:(HttpRequest *)request {
+    PDSLog(&quot;Processing request: %@&quot;, request.path);
+
+    if (error) {
+        PDSLogError(&quot;Request failed: %@&quot;, error.localizedDescription);
+    }
+}
+</code></pre>
+
+<h2 id="security-framework-compatibility">Security Framework Compatibility</h2>
+<h3 id="problem-securityframework-on-gnustep">Problem: Security.framework on GNUstep</h3>
+<p>macOS provides <code>Security.framework</code> for keychain and certificate operations, but GNUstep doesn't.</p>
+<h3 id="solution-security-shim">Solution: Security Shim</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSSecurity.h
+#ifndef PDS_SECURITY_H
+#define PDS_SECURITY_H
+
+#import &lt;Foundation/Foundation.h&gt;
+
+#if __APPLE__
+    #import &lt;Security/Security.h&gt;
+#else
+    // GNUstep: use OpenSSL directly
+    #import &lt;openssl/x509.h&gt;
+    #import &lt;openssl/pem.h&gt;
+#endif
+
+@interface PDSSecurityManager : NSObject
+
++ (NSData *)generateRandomBytes:(NSUInteger)length;
++ (BOOL)verifyCertificate:(NSData *)certData error:(NSError **)error;
++ (NSData *)encryptData:(NSData *)data withKey:(NSData *)key error:(NSError **)error;
++ (NSData *)decryptData:(NSData *)data withKey:(NSData *)key error:(NSError **)error;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="implementation">Implementation</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSSecurity.m
+#import &quot;PDSSecurity.h&quot;
+
+#if __APPLE__
+    #import &lt;Security/Security.h&gt;
+    #import &lt;CommonCrypto/CommonCrypto.h&gt;
+#else
+    #import &lt;openssl/rand.h&gt;
+    #import &lt;openssl/evp.h&gt;
+#endif
+
+@implementation PDSSecurityManager
+
++ (NSData *)generateRandomBytes:(NSUInteger)length {
+#if __APPLE__
+    NSMutableData *randomData = [NSMutableData dataWithLength:length];
+    int result = SecRandomCopyBytes(kSecRandomDefault, length, randomData.mutableBytes);
+    if (result != errSecSuccess) {
+        return nil;
+    }
+    return randomData;
+#else
+    unsigned char *buffer = malloc(length);
+    if (RAND_bytes(buffer, (int)length) != 1) {
+        free(buffer);
+        return nil;
+    }
+    NSData *data = [NSData dataWithBytes:buffer length:length];
+    free(buffer);
+    return data;
+#endif
+}
+
++ (NSData *)encryptData:(NSData *)data 
+                withKey:(NSData *)key 
+                 error:(NSError **)error {
+#if __APPLE__
+    // Use CommonCrypto on macOS
+    NSMutableData *encryptedData = [NSMutableData dataWithLength:data.length + kCCBlockSizeAES128];
+
+    size_t encryptedLength = 0;
+    CCCryptorStatus status = CCCrypt(
+        kCCEncrypt,
+        kCCAlgorithmAES128,
+        kCCOptionPKCS7Padding,
+        key.bytes,
+        key.length,
+        NULL,  // IV
+        data.bytes,
+        data.length,
+        encryptedData.mutableBytes,
+        encryptedData.length,
+        &amp;encryptedLength
+    );
+
+    if (status != kCCSuccess) {
+        *error = [NSError errorWithDomain:@&quot;PDSSecurity&quot; code:status 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Encryption failed&quot;}];
+        return nil;
+    }
+
+    [encryptedData setLength:encryptedLength];
+    return encryptedData;
+#else
+    // Use OpenSSL on GNUstep
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        *error = [NSError errorWithDomain:@&quot;PDSSecurity&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to create cipher context&quot;}];
+        return nil;
+    }
+
+    NSMutableData *encryptedData = [NSMutableData dataWithLength:data.length + EVP_MAX_BLOCK_LENGTH];
+    int len = 0;
+    int ciphertext_len = 0;
+
+    if (!EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key.bytes, NULL)) {
+        EVP_CIPHER_CTX_free(ctx);
+        *error = [NSError errorWithDomain:@&quot;PDSSecurity&quot; code:2 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Encryption initialization failed&quot;}];
+        return nil;
+    }
+
+    if (!EVP_EncryptUpdate(ctx, encryptedData.mutableBytes, &amp;len, data.bytes, (int)data.length)) {
+        EVP_CIPHER_CTX_free(ctx);
+        *error = [NSError errorWithDomain:@&quot;PDSSecurity&quot; code:3 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Encryption update failed&quot;}];
+        return nil;
+    }
+
+    ciphertext_len = len;
+
+    if (!EVP_EncryptFinal_ex(ctx, encryptedData.mutableBytes + len, &amp;len)) {
+        EVP_CIPHER_CTX_free(ctx);
+        *error = [NSError errorWithDomain:@&quot;PDSSecurity&quot; code:4 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Encryption finalization failed&quot;}];
+        return nil;
+    }
+
+    ciphertext_len += len;
+    EVP_CIPHER_CTX_free(ctx);
+
+    [encryptedData setLength:ciphertext_len];
+    return encryptedData;
+#endif
+}
+
+@end
+</code></pre>
+
+<h2 id="commoncrypto-compatibility">CommonCrypto Compatibility</h2>
+<h3 id="problem-commoncrypto-on-gnustep">Problem: CommonCrypto on GNUstep</h3>
+<p>macOS provides <code>CommonCrypto</code> for cryptographic operations, but GNUstep uses OpenSSL.</p>
+<h3 id="solution-crypto-shim">Solution: Crypto Shim</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSCrypto.h
+#ifndef PDS_CRYPTO_H
+#define PDS_CRYPTO_H
+
+#import &lt;Foundation/Foundation.h&gt;
+
+@interface PDSCryptoManager : NSObject
+
++ (NSData *)sha256:(NSData *)data;
++ (NSData *)sha1:(NSData *)data;
++ (NSData *)hmacSHA256:(NSData *)data withKey:(NSData *)key;
++ (NSData *)generateECDSAP256KeyPair:(NSData **)publicKey error:(NSError **)error;
++ (NSData *)signData:(NSData *)data withPrivateKey:(NSData *)privateKey error:(NSError **)error;
++ (BOOL)verifySignature:(NSData *)signature 
+               forData:(NSData *)data 
+          withPublicKey:(NSData *)publicKey 
+                 error:(NSError **)error;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="implementation_1">Implementation</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSCrypto.m
+#import &quot;PDSCrypto.h&quot;
+
+#if __APPLE__
+    #import &lt;CommonCrypto/CommonCrypto.h&gt;
+#else
+    #import &lt;openssl/sha.h&gt;
+    #import &lt;openssl/hmac.h&gt;
+    #import &lt;openssl/ec.h&gt;
+    #import &lt;openssl/ecdsa.h&gt;
+#endif
+
+@implementation PDSCryptoManager
+
++ (NSData *)sha256:(NSData *)data {
+#if __APPLE__
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+#else
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256_CTX ctx;
+    SHA256_Init(&amp;ctx);
+    SHA256_Update(&amp;ctx, data.bytes, data.length);
+    SHA256_Final(digest, &amp;ctx);
+    return [NSData dataWithBytes:digest length:SHA256_DIGEST_LENGTH];
+#endif
+}
+
++ (NSData *)hmacSHA256:(NSData *)data withKey:(NSData *)key {
+#if __APPLE__
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CCHmac(kCCHmacAlgSHA256, key.bytes, key.length, data.bytes, data.length, digest);
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+#else
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    unsigned int digestLength = 0;
+
+    HMAC(EVP_sha256(), key.bytes, (int)key.length, data.bytes, (int)data.length, 
+         digest, &amp;digestLength);
+
+    return [NSData dataWithBytes:digest length:digestLength];
+#endif
+}
+
++ (NSData *)generateECDSAP256KeyPair:(NSData **)publicKey 
+                               error:(NSError **)error {
+#if __APPLE__
+    // Use Security.framework on macOS
+    NSDictionary *attributes = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecAttrKeySizeInBits: @256
+    };
+
+    SecKeyRef privateKeyRef = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, 
+                                                    (CFErrorRef *)error);
+    if (!privateKeyRef) {
+        return nil;
+    }
+
+    SecKeyRef publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
+
+    NSData *privateKeyData = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(privateKeyRef, 
+                                                                                          (CFErrorRef *)error);
+    *publicKey = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(publicKeyRef, 
+                                                                              (CFErrorRef *)error);
+
+    CFRelease(privateKeyRef);
+    CFRelease(publicKeyRef);
+
+    return privateKeyData;
+#else
+    // Use OpenSSL on GNUstep
+    EC_KEY *ecKey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+    if (!ecKey) {
+        *error = [NSError errorWithDomain:@&quot;PDSCrypto&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to create EC key&quot;}];
+        return nil;
+    }
+
+    if (!EC_KEY_generate_key(ecKey)) {
+        EC_KEY_free(ecKey);
+        *error = [NSError errorWithDomain:@&quot;PDSCrypto&quot; code:2 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to generate key&quot;}];
+        return nil;
+    }
+
+    // Extract private key
+    const BIGNUM *priv = EC_KEY_get0_private_key(ecKey);
+    int privLen = BN_num_bytes(priv);
+    unsigned char *privBytes = malloc(privLen);
+    BN_bn2bin(priv, privBytes);
+    NSData *privateKeyData = [NSData dataWithBytes:privBytes length:privLen];
+    free(privBytes);
+
+    // Extract public key
+    const EC_POINT *pub = EC_KEY_get0_public_key(ecKey);
+    int pubLen = EC_POINT_point2oct(EC_KEY_get0_group(ecKey), pub, 
+                                    POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    unsigned char *pubBytes = malloc(pubLen);
+    EC_POINT_point2oct(EC_KEY_get0_group(ecKey), pub, POINT_CONVERSION_UNCOMPRESSED, 
+                       pubBytes, pubLen, NULL);
+    *publicKey = [NSData dataWithBytes:pubBytes length:pubLen];
+    free(pubBytes);
+
+    EC_KEY_free(ecKey);
+
+    return privateKeyData;
+#endif
+}
+
+@end
+</code></pre>
+
+<h2 id="conditional-compilation">Conditional Compilation</h2>
+<h3 id="platform-detection">Platform Detection</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSPlatform.h
+#ifndef PDS_PLATFORM_H
+#define PDS_PLATFORM_H
+
+#if __APPLE__
+    #define PDS_PLATFORM_MACOS 1
+    #define PDS_PLATFORM_LINUX 0
+#elif TARGET_OS_LINUX
+    #define PDS_PLATFORM_MACOS 0
+    #define PDS_PLATFORM_LINUX 1
+#else
+    #error &quot;Unsupported platform&quot;
+#endif
+
+// Platform-specific macros
+#if PDS_PLATFORM_MACOS
+    #define PDS_AVAILABLE_MACOS(version) __attribute__((availability(macos, introduced=version)))
+    #define PDS_AVAILABLE_LINUX(version)
+#else
+    #define PDS_AVAILABLE_MACOS(version)
+    #define PDS_AVAILABLE_LINUX(version)
+#endif
+
+#endif
+</code></pre>
+
+<h3 id="usage_1">Usage</h3>
+<pre class="codehilite"><code class="language-objc">// In source files
+#import &quot;PDSPlatform.h&quot;
+
+#if PDS_PLATFORM_MACOS
+    // macOS-specific code
+    [self setupMacOSSpecificFeatures];
+#elif PDS_PLATFORM_LINUX
+    // Linux/GNUstep-specific code
+    [self setupLinuxSpecificFeatures];
+#endif
+</code></pre>
+
+<h2 id="arc-runtime-compatibility">ARC Runtime Compatibility</h2>
+<h3 id="problem-arc-on-gnustep">Problem: ARC on GNUstep</h3>
+<p>Both macOS and GNUstep support ARC, but with different runtime implementations.</p>
+<h3 id="solution-arc-shim">Solution: ARC Shim</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSMemory.h
+#ifndef PDS_MEMORY_H
+#define PDS_MEMORY_H
+
+#import &lt;Foundation/Foundation.h&gt;
+
+@interface PDSMemoryManager : NSObject
+
++ (void)autoreleasePool:(void (^)(void))block;
++ (void)retainObject:(id)object;
++ (void)releaseObject:(id)object;
++ (NSUInteger)retainCount:(id)object;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="implementation_2">Implementation</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSMemory.m
+#import &quot;PDSMemory.h&quot;
+
+@implementation PDSMemoryManager
+
++ (void)autoreleasePool:(void (^)(void))block {
+    @autoreleasepool {
+        block();
+    }
+}
+
++ (void)retainObject:(id)object {
+    // ARC handles this automatically
+    // This is for explicit reference counting if needed
+    #if !__has_feature(objc_arc)
+        [object retain];
+    #endif
+}
+
++ (void)releaseObject:(id)object {
+    // ARC handles this automatically
+    #if !__has_feature(objc_arc)
+        [object release];
+    #endif
+}
+
++ (NSUInteger)retainCount:(id)object {
+    #if !__has_feature(objc_arc)
+        return [object retainCount];
+    #else
+        // ARC: return 1 (simplified)
+        return 1;
+    #endif
+}
+
+@end
+</code></pre>
+
+<h2 id="framework-availability">Framework Availability</h2>
+<h3 id="checking-framework-availability">Checking Framework Availability</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)initializeCompatibilityLayer {
+    // Check for macOS-specific frameworks
+    #if __APPLE__
+        if (@available(macOS 10.15, *)) {
+            // Use os/log.h
+            [self setupOSLogging];
+        } else {
+            // Fall back to NSLog
+            [self setupNSLogging];
+        }
+    #else
+        // GNUstep: use syslog
+        [self setupSyslogLogging];
+    #endif
+}
+</code></pre>
+
+<h2 id="testing-compatibility">Testing Compatibility</h2>
+<h3 id="platform-specific-tests">Platform-Specific Tests</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Tests/CompatibilityTests.m
+@interface CompatibilityTests : XCTestCase
+@end
+
+@implementation CompatibilityTests
+
+- (void)testLoggingShim {
+    // Test logging on both platforms
+    PDSLog(&quot;Test message&quot;);
+    XCTAssertTrue(YES);  // If we get here, logging works
+}
+
+- (void)testCryptoShim {
+    NSData *randomData = [PDSCryptoManager generateRandomBytes:32];
+    XCTAssertEqual(randomData.length, 32);
+}
+
+- (void)testSecurityShim {
+    NSData *encrypted = [PDSSecurityManager encryptData:[@&quot;test&quot; dataUsingEncoding:NSUTF8StringEncoding]
+                                                withKey:[@&quot;key&quot; dataUsingEncoding:NSUTF8StringEncoding]
+                                                  error:nil];
+    XCTAssertNotNil(encrypted);
+}
+
+#if PDS_PLATFORM_MACOS
+- (void)testMacOSSpecificFeatures {
+    // macOS-specific tests
+}
+#endif
+
+#if PDS_PLATFORM_LINUX
+- (void)testLinuxSpecificFeatures {
+    // Linux-specific tests
+}
+#endif
+
+@end
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Use compatibility shims</strong> — Never use platform-specific APIs directly</li>
+<li><strong>Centralize platform detection</strong> — Use PDSPlatform.h for all checks</li>
+<li><strong>Test on both platforms</strong> — Verify code works on macOS and Linux</li>
+<li><strong>Document platform differences</strong> — Clearly mark platform-specific behavior</li>
+<li><strong>Minimize conditional compilation</strong> — Keep #if blocks small and focused</li>
+<li><strong>Provide fallbacks</strong> — Always have a fallback for unsupported features</li>
+<li><strong>Use feature detection</strong> — Check for features, not just platform</li>
+<li><strong>Keep shims simple</strong> — Avoid complex logic in compatibility layer</li>
+</ol>
+<h2 id="common-pitfalls">Common Pitfalls</h2>
+<ol>
+<li><strong>Forgetting GNUstep limitations</strong> — NSURLSession is declarations-only</li>
+<li><strong>Using macOS-only frameworks</strong> — Security.framework, os/log.h</li>
+<li><strong>Assuming CommonCrypto availability</strong> — Use OpenSSL on GNUstep</li>
+<li><strong>Incorrect conditional compilation</strong> — Use TARGET_OS_LINUX, not <strong>linux</strong></li>
+<li><strong>Memory management differences</strong> — ARC works differently on GNUstep</li>
+<li><strong>Missing error handling</strong> — Platform-specific code may fail differently</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./network-transport.md">Network Transport</a></strong> — Platform-specific network I/O</li>
+<li><strong><a href="./arc-runtime.md">ARC Runtime</a></strong> — ARC considerations</li>
+<li><strong><a href="./macos-linux.md">macOS/Linux</a></strong> — Platform overview</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

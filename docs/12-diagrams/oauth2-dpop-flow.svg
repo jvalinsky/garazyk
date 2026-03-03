@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1400" height="1600" viewBox="0 0 1400 1600">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .client-box { fill: #e6f3ff; stroke: #0066cc; stroke-width: 2; }
+      .server-box { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .security-box { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .success-box { fill: #e6f7e6; stroke: #00aa00; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+      .step-number { font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; fill: white; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="30" text-anchor="middle" class="title" font-size="20">OAuth 2.0 with DPoP Flow</text>
+
+  <!-- ===== SETUP SECTION ===== -->
+  <text x="50" y="70" class="title" font-size="14">1. Client Setup</text>
+
+  <!-- Client Generates Key Pair -->
+  <rect x="100" y="90" width="220" height="70" class="client-box" rx="5"/>
+  <circle cx="115" cy="105" r="12" fill="#0066cc"/>
+  <text x="115" y="110" text-anchor="middle" class="step-number">1</text>
+  <text x="210" y="115" class="text">Client Generates</text>
+  <text x="210" y="135" class="label">EC Key Pair (P-256)</text>
+  <text x="210" y="150" class="label">(Private + Public)</text>
+
+  <!-- Arrow -->
+  <path d="M 320 125 L 380 125" class="arrow"/>
+
+  <!-- Store Private Key -->
+  <rect x="380" y="90" width="220" height="70" class="security-box" rx="5"/>
+  <text x="490" y="115" class="text">Store Private Key</text>
+  <text x="490" y="135" class="label">Securely</text>
+  <text x="490" y="150" class="label">(Never Share)</text>
+
+  <!-- ===== AUTHORIZATION REQUEST SECTION ===== -->
+  <text x="50" y="230" class="title" font-size="14">2. Authorization Request</text>
+
+  <!-- Client -->
+  <rect x="100" y="250" width="200" height="70" class="client-box" rx="5"/>
+  <circle cx="115" cy="265" r="12" fill="#0066cc"/>
+  <text x="115" y="270" text-anchor="middle" class="step-number">2</text>
+  <text x="200" y="280" text-anchor="middle" class="text">Client</text>
+  <text x="200" y="300" text-anchor="middle" class="label">Initiates Login</text>
+
+  <!-- Arrow -->
+  <path d="M 300 285 L 380 285" class="arrow"/>
+  <text x="340" y="275" class="label">Redirect to</text>
+  <text x="340" y="290" class="label">Authorization</text>
+
+  <!-- Authorization Endpoint -->
+  <rect x="380" y="250" width="220" height="70" class="server-box" rx="5"/>
+  <circle cx="395" cy="265" r="12" fill="#ff9900"/>
+  <text x="395" y="270" text-anchor="middle" class="step-number">3</text>
+  <text x="490" y="280" text-anchor="middle" class="text">Authorization</text>
+  <text x="490" y="300" text-anchor="middle" class="label">Endpoint</text>
+
+  <!-- Arrow -->
+  <path d="M 600 285 L 680 285" class="arrow"/>
+  <text x="640" y="275" class="label">User Login</text>
+
+  <!-- User Consent -->
+  <rect x="680" y="250" width="200" height="70" class="box" rx="5"/>
+  <circle cx="695" cy="265" r="12" fill="#0066cc"/>
+  <text x="695" y="270" text-anchor="middle" class="step-number">4</text>
+  <text x="780" y="280" text-anchor="middle" class="text">User Login &</text>
+  <text x="780" y="300" text-anchor="middle" class="label">Grant Consent</text>
+
+  <!-- ===== AUTHORIZATION CODE SECTION ===== -->
+  <text x="50" y="390" class="title" font-size="14">3. Authorization Code Response</text>
+
+  <!-- Authorization Server -->
+  <rect x="100" y="410" width="220" height="70" class="server-box" rx="5"/>
+  <circle cx="115" cy="425" r="12" fill="#ff9900"/>
+  <text x="115" y="430" text-anchor="middle" class="step-number">5</text>
+  <text x="210" y="440" text-anchor="middle" class="text">Authorization</text>
+  <text x="210" y="460" text-anchor="middle" class="label">Server</text>
+
+  <!-- Arrow -->
+  <path d="M 320 445 L 380 445" class="arrow"/>
+  <text x="350" y="435" class="label">Code + State</text>
+
+  <!-- Client Receives Code -->
+  <rect x="380" y="410" width="220" height="70" class="client-box" rx="5"/>
+  <circle cx="395" cy="425" r="12" fill="#0066cc"/>
+  <text x="395" y="430" text-anchor="middle" class="step-number">6</text>
+  <text x="490" y="440" text-anchor="middle" class="text">Client Receives</text>
+  <text x="490" y="460" text-anchor="middle" class="label">Authorization Code</text>
+
+  <!-- ===== TOKEN REQUEST WITH DPOP SECTION ===== -->
+  <text x="50" y="550" class="title" font-size="14">4. Token Request with DPoP Proof</text>
+
+  <!-- Generate DPoP Proof -->
+  <rect x="100" y="570" width="220" height="80" class="security-box" rx="5"/>
+  <circle cx="115" cy="585" r="12" fill="#6600cc"/>
+  <text x="115" y="590" text-anchor="middle" class="step-number">7</text>
+  <text x="210" y="600" text-anchor="middle" class="text">Generate DPoP</text>
+  <text x="210" y="620" text-anchor="middle" class="label">Proof JWT</text>
+  <text x="210" y="635" text-anchor="middle" class="label">(Signed with Private Key)</text>
+
+  <!-- Arrow -->
+  <path d="M 320 610 L 380 610" class="arrow"/>
+
+  <!-- DPoP Proof Details -->
+  <rect x="380" y="570" width="220" height="80" class="security-box" rx="5"/>
+  <text x="490" y="590" text-anchor="middle" class="label">Header: {typ, alg, jwk}</text>
+  <text x="490" y="610" text-anchor="middle" class="label">Payload: {htm, htu,</text>
+  <text x="490" y="630" text-anchor="middle" class="label">iat, jti, nonce}</text>
+
+  <!-- Arrow -->
+  <path d="M 600 610 L 680 610" class="arrow"/>
+  <text x="640" y="600" class="label">Token Request</text>
+
+  <!-- Token Endpoint -->
+  <rect x="680" y="570" width="220" height="80" class="server-box" rx="5"/>
+  <circle cx="695" cy="585" r="12" fill="#ff9900"/>
+  <text x="695" y="590" text-anchor="middle" class="step-number">8</text>
+  <text x="790" y="600" text-anchor="middle" class="text">Token Endpoint</text>
+  <text x="790" y="620" text-anchor="middle" class="label">Receives Request</text>
+  <text x="790" y="635" text-anchor="middle" class="label">+ DPoP Proof</text>
+
+  <!-- ===== DPOP VERIFICATION SECTION ===== -->
+  <text x="50" y="720" class="title" font-size="14">5. DPoP Verification</text>
+
+  <!-- Verify DPoP Signature -->
+  <rect x="100" y="740" width="180" height="70" class="server-box" rx="5"/>
+  <circle cx="115" cy="755" r="12" fill="#ff9900"/>
+  <text x="115" y="760" text-anchor="middle" class="step-number">9</text>
+  <text x="190" y="770" class="text">Verify DPoP</text>
+  <text x="190" y="790" class="label">Signature</text>
+
+  <!-- Arrow -->
+  <path d="M 280 775 L 340 775" class="arrow"/>
+
+  <!-- Verify Method & URI -->
+  <rect x="340" y="740" width="180" height="70" class="server-box" rx="5"/>
+  <circle cx="355" cy="755" r="12" fill="#ff9900"/>
+  <text x="355" y="760" text-anchor="middle" class="step-number">10</text>
+  <text x="430" y="770" class="text">Verify Method</text>
+  <text x="430" y="790" class="label">& URI Match</text>
+
+  <!-- Arrow -->
+  <path d="M 520 775 L 580 775" class="arrow"/>
+
+  <!-- Check Timestamp -->
+  <rect x="580" y="740" width="180" height="70" class="server-box" rx="5"/>
+  <circle cx="595" cy="755" r="12" fill="#ff9900"/>
+  <text x="595" y="760" text-anchor="middle" class="step-number">11</text>
+  <text x="670" y="770" class="text">Check</text>
+  <text x="670" y="790" class="label">Timestamp</text>
+
+  <!-- Arrow -->
+  <path d="M 760 775 L 820 775" class="arrow"/>
+
+  <!-- Extract Thumbprint -->
+  <rect x="820" y="740" width="180" height="70" class="security-box" rx="5"/>
+  <circle cx="835" cy="755" r="12" fill="#6600cc"/>
+  <text x="835" y="760" text-anchor="middle" class="step-number">12</text>
+  <text x="910" y="770" class="text">Extract Public</text>
+  <text x="910" y="790" class="label">Key Thumbprint</text>
+
+  <!-- ===== TOKEN GENERATION SECTION ===== -->
+  <text x="50" y="880" class="title" font-size="14">6. Access Token Generation</text>
+
+  <!-- Create Access Token -->
+  <rect x="100" y="900" width="220" height="80" class="success-box" rx="5"/>
+  <circle cx="115" cy="915" r="12" fill="#00aa00"/>
+  <text x="115" y="920" text-anchor="middle" class="step-number">13</text>
+  <text x="210" y="930" text-anchor="middle" class="text">Create Access</text>
+  <text x="210" y="950" text-anchor="middle" class="label">Token with DPoP</text>
+  <text x="210" y="965" text-anchor="middle" class="label">Binding (cnf.jkt)</text>
+
+  <!-- Arrow -->
+  <path d="M 320 940 L 380 940" class="arrow"/>
+
+  <!-- Token Claims -->
+  <rect x="380" y="900" width="220" height="80" class="success-box" rx="5"/>
+  <text x="490" y="920" text-anchor="middle" class="label">Claims:</text>
+  <text x="490" y="940" text-anchor="middle" class="label">sub, aud, exp, iat</text>
+  <text x="490" y="960" text-anchor="middle" class="label">cnf: {jkt: thumbprint}</text>
+
+  <!-- Arrow -->
+  <path d="M 600 940 L 680 940" class="arrow"/>
+
+  <!-- Return Tokens -->
+  <rect x="680" y="900" width="220" height="80" class="success-box" rx="5"/>
+  <circle cx="695" cy="915" r="12" fill="#00aa00"/>
+  <text x="695" y="920" text-anchor="middle" class="step-number">14</text>
+  <text x="790" y="930" text-anchor="middle" class="text">Return Access</text>
+  <text x="790" y="950" text-anchor="middle" class="label">Token + Refresh</text>
+  <text x="790" y="965" text-anchor="middle" class="label">Token</text>
+
+  <!-- ===== API REQUEST WITH DPOP SECTION ===== -->
+  <text x="50" y="1050" class="title" font-size="14">7. API Request with DPoP Header</text>
+
+  <!-- Client -->
+  <rect x="100" y="1070" width="200" height="70" class="client-box" rx="5"/>
+  <circle cx="115" cy="1085" r="12" fill="#0066cc"/>
+  <text x="115" y="1090" text-anchor="middle" class="step-number">15</text>
+  <text x="200" y="1100" text-anchor="middle" class="text">Client</text>
+  <text x="200" y="1120" text-anchor="middle" class="label">API Request</text>
+
+  <!-- Arrow -->
+  <path d="M 300 1105 L 380 1105" class="arrow"/>
+  <text x="340" y="1095" class="label">Authorization:</text>
+  <text x="340" y="1110" class="label">DPoP token</text>
+
+  <!-- API Request Headers -->
+  <rect x="380" y="1070" width="220" height="70" class="box" rx="5"/>
+  <text x="490" y="1090" text-anchor="middle" class="label">Authorization:</text>
+  <text x="490" y="1105" text-anchor="middle" class="label">DPoP &lt;token&gt;</text>
+  <text x="490" y="1120" text-anchor="middle" class="label">DPoP: &lt;proof&gt;</text>
+
+  <!-- Arrow -->
+  <path d="M 600 1105 L 680 1105" class="arrow"/>
+
+  <!-- Server -->
+  <rect x="680" y="1070" width="220" height="70" class="server-box" rx="5"/>
+  <circle cx="695" cy="1085" r="12" fill="#ff9900"/>
+  <text x="695" y="1090" text-anchor="middle" class="step-number">16</text>
+  <text x="790" y="1100" text-anchor="middle" class="text">PDS Server</text>
+  <text x="790" y="1120" text-anchor="middle" class="label">Verifies DPoP</text>
+
+  <!-- ===== FINAL VERIFICATION SECTION ===== -->
+  <text x="50" y="1210" class="title" font-size="14">8. Final Verification & Response</text>
+
+  <!-- Verify Token Binding -->
+  <rect x="100" y="1230" width="200" height="70" class="server-box" rx="5"/>
+  <circle cx="115" cy="1245" r="12" fill="#ff9900"/>
+  <text x="115" y="1250" text-anchor="middle" class="step-number">17</text>
+  <text x="200" y="1260" text-anchor="middle" class="text">Verify Token</text>
+  <text x="200" y="1280" text-anchor="middle" class="label">Binding</text>
+
+  <!-- Arrow -->
+  <path d="M 300 1265 L 380 1265" class="arrow"/>
+
+  <!-- Check Thumbprint Match -->
+  <rect x="380" y="1230" width="200" height="70" class="server-box" rx="5"/>
+  <circle cx="395" cy="1245" r="12" fill="#ff9900"/>
+  <text x="395" y="1250" text-anchor="middle" class="step-number">18</text>
+  <text x="480" y="1260" text-anchor="middle" class="text">Thumbprint</text>
+  <text x="480" y="1280" text-anchor="middle" class="label">Match?</text>
+
+  <!-- Arrow Success -->
+  <path d="M 580 1265 L 680 1265" class="arrow"/>
+  <text x="630" y="1255" class="label">Yes</text>
+
+  <!-- Success Response -->
+  <rect x="680" y="1230" width="220" height="70" class="success-box" rx="5"/>
+  <circle cx="695" cy="1245" r="12" fill="#00aa00"/>
+  <text x="695" y="1250" text-anchor="middle" class="step-number">✓</text>
+  <text x="790" y="1260" text-anchor="middle" class="text">Grant Access</text>
+  <text x="790" y="1280" text-anchor="middle" class="label">Process Request</text>
+
+  <!-- Arrow Failure -->
+  <path d="M 580 1300 L 680 1300" class="dashed arrow"/>
+  <text x="630" y="1320" class="label">No</text>
+
+  <!-- Error Response -->
+  <rect x="680" y="1280" width="220" height="70" class="box" rx="5" style="fill: #ffe6e6; stroke: #cc0000;"/>
+  <text x="790" y="1305" text-anchor="middle" class="text" font-weight="bold">✗ Reject</text>
+  <text x="790" y="1325" text-anchor="middle" class="label">Return 401</text>
+
+  <!-- ===== LEGEND SECTION ===== -->
+  <g transform="translate(50, 1420)">
+    <text x="0" y="0" class="title">Legend:</text>
+    
+    <rect x="0" y="20" width="20" height="20" class="client-box"/>
+    <text x="30" y="35" class="label">Client Action</text>
+    
+    <rect x="0" y="50" width="20" height="20" class="server-box"/>
+    <text x="30" y="65" class="label">Server Action</text>
+    
+    <rect x="0" y="80" width="20" height="20" class="security-box"/>
+    <text x="30" y="95" class="label">Security Operation</text>
+    
+    <rect x="0" y="110" width="20" height="20" class="success-box"/>
+    <text x="30" y="125" class="label">Success</text>
+    
+    <rect x="0" y="140" width="20" height="20" style="fill: #ffe6e6; stroke: #cc0000; stroke-width: 2;"/>
+    <text x="30" y="155" class="label">Error/Rejection</text>
+  </g>
+
+  <!-- ASCII Art Comment for Fallback -->
+  <!-- 
+  OAuth 2.0 with DPoP Flow:
+  
+  1. CLIENT SETUP
+     Generate EC Key Pair (P-256) → Store Private Key Securely
+  
+  2. AUTHORIZATION REQUEST
+     Client → Authorization Endpoint → User Login & Consent
+  
+  3. AUTHORIZATION CODE
+     Authorization Server → Client (Code + State)
+  
+  4. TOKEN REQUEST WITH DPOP
+     Generate DPoP Proof (JWT signed with private key)
+     Token Request includes: Authorization Code + DPoP Proof
+  
+  5. DPOP VERIFICATION
+     Verify Signature → Verify Method & URI → Check Timestamp → Extract Thumbprint
+  
+  6. ACCESS TOKEN GENERATION
+     Create Access Token with DPoP Binding (cnf.jkt = thumbprint)
+     Return Access Token + Refresh Token
+  
+  7. API REQUEST WITH DPOP
+     Client sends: Authorization: DPoP &lt;token&gt;
+                   DPoP: &lt;proof&gt;
+  
+  8. FINAL VERIFICATION
+     Verify Token Binding → Check Thumbprint Match
+     ✓ Match: Grant Access
+     ✗ No Match: Return 401 Unauthorized
+  -->
+</svg>
