@@ -49,6 +49,34 @@ NSString * const OAuth2ErrorDomain = @"com.atproto.pds.oauth2";
 static NSString * const kAuthorizationCodeKey = @"authorization_code";
 static NSString * const kRefreshTokenKey = @"refresh_token";
 
+static BOOL OAuth2ShouldUseEphemeralJWTKeyForTests(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *processName = [[NSProcessInfo processInfo] processName] ?: @"";
+    BOOL runningTests = [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+                        [processName containsString:@"AllTests"];
+    if (!runningTests) {
+        return NO;
+    }
+
+    NSString *useKeychainEnv = [env[@"PDS_USE_KEYCHAIN"] lowercaseString];
+    if ([useKeychainEnv isEqualToString:@"0"] ||
+        [useKeychainEnv isEqualToString:@"false"] ||
+        [useKeychainEnv isEqualToString:@"no"]) {
+        return YES;
+    }
+
+    return ![PDSConfiguration sharedConfiguration].useKeychain;
+}
+
+static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
+    static BOOL didLog = NO;
+    if (didLog) {
+        return;
+    }
+    didLog = YES;
+    PDS_LOG_AUTH_INFO(@"Using in-memory secp256k1 OAuth2 JWT signing key in test mode (keychain disabled).");
+}
+
 
 
 @interface OAuth2Server ()
@@ -427,7 +455,7 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
 
 @implementation OAuth2Server
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database {
+- (instancetype)initWithDatabase:(nullable PDSDatabase *)database {
     self = [super init];
     if (self) {
         _authorizationCodes = [NSMutableDictionary dictionary];
@@ -445,31 +473,51 @@ static NSString * const kRefreshTokenKey = @"refresh_token";
         _handleResolver = [[HandleResolver alloc] init];
         _database = database;
 
-        NSError *keyError = nil;
-        id<PDSKeyPair> keyPair = [_keyManager getActiveKeyPair:&keyError];
-        if (!keyPair) {
-            NSDictionary *env = [[NSProcessInfo processInfo] environment];
-            BOOL isProduction = [[env[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
-                                [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
-                                [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
-            if (!isProduction) {
-                NSError *fallbackError = nil;
-                Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
-                if (fallbackKeyPair) {
-                    _keyManager = nil;
-                    _jwtMinter.keyManager = nil;
-                    _jwtMinter.signingAlgorithm = @"ES256K";
-                    _jwtMinter.privateKey = fallbackKeyPair.privateKey;
-                    _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-                    PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 OAuth2 JWT signing key fallback because key manager provisioning failed (%@).",
-                                      keyError.localizedDescription ?: @"unknown error");
-                } else {
-                    PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@ (fallback error: %@)",
-                                       keyError.localizedDescription ?: @"unknown error",
-                                       fallbackError.localizedDescription ?: @"unknown error");
-                }
+        BOOL hasProvisionedSigningKey = NO;
+        if (OAuth2ShouldUseEphemeralJWTKeyForTests()) {
+            NSError *fallbackError = nil;
+            Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            if (fallbackKeyPair) {
+                _keyManager = nil;
+                _jwtMinter.keyManager = nil;
+                _jwtMinter.signingAlgorithm = @"ES256K";
+                _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+                _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+                hasProvisionedSigningKey = YES;
+                OAuth2LogEphemeralJWTKeyModeOnce();
             } else {
-                PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError.localizedDescription ?: @"unknown error");
+                PDS_LOG_AUTH_WARN(@"Test-mode ephemeral OAuth2 JWT key generation failed; falling back to key manager path: %@",
+                                  fallbackError.localizedDescription ?: @"unknown error");
+            }
+        }
+
+        if (!hasProvisionedSigningKey) {
+            NSError *keyError = nil;
+            id<PDSKeyPair> keyPair = [_keyManager getActiveKeyPair:&keyError];
+            if (!keyPair) {
+                NSDictionary *env = [[NSProcessInfo processInfo] environment];
+                BOOL isProduction = [[env[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
+                                    [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
+                                    [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
+                if (!isProduction) {
+                    NSError *fallbackError = nil;
+                    Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+                    if (fallbackKeyPair) {
+                        _keyManager = nil;
+                        _jwtMinter.keyManager = nil;
+                        _jwtMinter.signingAlgorithm = @"ES256K";
+                        _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+                        _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+                        PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 OAuth2 JWT signing key fallback because key manager provisioning failed (%@).",
+                                          keyError.localizedDescription ?: @"unknown error");
+                    } else {
+                        PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@ (fallback error: %@)",
+                                           keyError.localizedDescription ?: @"unknown error",
+                                           fallbackError.localizedDescription ?: @"unknown error");
+                    }
+                } else {
+                    PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError.localizedDescription ?: @"unknown error");
+                }
             }
         }
     }
