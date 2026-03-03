@@ -31,9 +31,11 @@ static NSDateFormatter * iso8601Formatter(void) {
 #if defined(__linux__) || defined(__GNUstep__)
 @property (nonatomic, strong) NSMutableDictionary *statementCache;
 @property (nonatomic, assign) dispatch_queue_t cacheQueue;
+@property (nonatomic, strong) NSMutableArray<NSString *> *statementCacheOrder;
 #else
 @property (nonatomic, strong) NSMutableDictionary *statementCache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
+@property (nonatomic, strong) NSMutableArray<NSString *> *statementCacheOrder;
 #endif
 
 @end
@@ -53,6 +55,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     self = [super init];
     if (self) {
         _statementCache = [NSMutableDictionary dictionary];
+        _statementCacheOrder = [NSMutableArray array];
     }
     return self;
 }
@@ -64,9 +67,11 @@ static NSDateFormatter * iso8601Formatter(void) {
     database.db = NULL;
 #if defined(__linux__) || defined(__GNUstep__)
     database.statementCache = [NSMutableDictionary dictionary];
+    database.statementCacheOrder = [NSMutableArray array];
     database.cacheQueue = dispatch_queue_create("com.atproto.pds.database.cache", DISPATCH_QUEUE_SERIAL);
 #else
     database.statementCache = [NSMutableDictionary dictionary];
+    database.statementCacheOrder = [NSMutableArray array];
 #endif
     return database;
 }
@@ -128,7 +133,9 @@ static NSDateFormatter * iso8601Formatter(void) {
             sqlite3_finalize(stmt);
         }
         [self.statementCache removeAllObjects];
+        [self.statementCacheOrder removeAllObjects];
         self.statementCache = nil;
+        self.statementCacheOrder = nil;
         
         // Finalize any other stray statements
         sqlite3_stmt *strayStmt;
@@ -147,6 +154,7 @@ static NSDateFormatter * iso8601Formatter(void) {
             sqlite3_finalize(stmt);
         }
         [self.statementCache removeAllObjects];
+        [self.statementCacheOrder removeAllObjects];
     }
     
     // Finalize any other stray statements
@@ -166,53 +174,56 @@ static NSDateFormatter * iso8601Formatter(void) {
     [self close];
 }
 
+- (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query {
 #if defined(__linux__) || defined(__GNUstep__)
-- (nullable sqlite3_stmt *)cachedStatementForKey:(NSString *)key {
     __block sqlite3_stmt *stmt = NULL;
     dispatch_sync(self.cacheQueue, ^{
-        NSValue *val = self.statementCache[key];
-        if (val) {
-            stmt = [val pointerValue];
+        NSValue *stmtValue = self.statementCache[query];
+        if (stmtValue) {
+            stmt = [stmtValue pointerValue];
+            sqlite3_reset(stmt);
+            [self.statementCacheOrder removeObject:query];
+            [self.statementCacheOrder addObject:query];
+            return;
+        }
+
+        if (sqlite3_prepare_v2(_db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+            if (self.statementCacheOrder.count >= 100) {
+                NSString *keyToRemove = self.statementCacheOrder.firstObject;
+                if (keyToRemove) {
+                    [self.statementCacheOrder removeObjectAtIndex:0];
+                    NSValue *staleValue = self.statementCache[keyToRemove];
+                    if (staleValue) {
+                        sqlite3_finalize([staleValue pointerValue]);
+                        [self.statementCache removeObjectForKey:keyToRemove];
+                    }
+                }
+            }
+
+            self.statementCache[query] = [NSValue valueWithPointer:stmt];
+            [self.statementCacheOrder addObject:query];
+        } else {
+            stmt = NULL;
         }
     });
     return stmt;
-}
-
-- (void)cacheStatement:(sqlite3_stmt *)stmt forKey:(NSString *)key {
-    dispatch_sync(self.cacheQueue, ^{
-        NSValue *existingVal = self.statementCache[key];
-        if (existingVal) {
-            sqlite3_finalize([existingVal pointerValue]);
-        }
-        
-        if (self.statementCache.count >= 100) {
-            NSString *keyToRemove = [self.statementCache allKeys].firstObject;
-            if (keyToRemove) {
-                 NSValue *valToRemove = self.statementCache[keyToRemove];
-                 sqlite3_finalize([valToRemove pointerValue]);
-                 [self.statementCache removeObjectForKey:keyToRemove];
-            }
-        }
-        self.statementCache[key] = [NSValue valueWithPointer:stmt];
-    });
-}
 #else
-- (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query {
     @synchronized(self.statementCache) {
         NSValue *stmtValue = self.statementCache[query];
         if (stmtValue) {
             sqlite3_stmt *stmt = [stmtValue pointerValue];
             sqlite3_reset(stmt);
+            [self.statementCacheOrder removeObject:query];
+            [self.statementCacheOrder addObject:query];
             return stmt;
         }
         
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(_db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
-            // Primitive cache eviction if too large
-            if (self.statementCache.count >= 100) {
-                // Just remove one arbitrary key
-                NSString *keyToRemove = [self.statementCache allKeys].firstObject;
+            if (self.statementCacheOrder.count >= 100) {
+                NSString *keyToRemove = self.statementCacheOrder.firstObject;
                 if (keyToRemove) {
+                    [self.statementCacheOrder removeObjectAtIndex:0];
                     NSValue *sVal = self.statementCache[keyToRemove];
                     sqlite3_finalize([sVal pointerValue]);
                     [self.statementCache removeObjectForKey:keyToRemove];
@@ -220,12 +231,13 @@ static NSDateFormatter * iso8601Formatter(void) {
             }
             
             self.statementCache[query] = [NSValue valueWithPointer:stmt];
+            [self.statementCacheOrder addObject:query];
             return stmt;
         }
     }
     return NULL;
+    #endif
 }
-#endif
 
 - (BOOL)prepareStatement:(sqlite3_stmt **)stmt sql:(NSString *)sql error:(NSError **)error {
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, stmt, NULL);
