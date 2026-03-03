@@ -60,11 +60,17 @@
 
 **Endpoint** — HTTP route that handles a specific request type.
 
+**E2E Testing** — End-to-end testing that validates complete workflows from client to database.
+
+**Event** — A change notification in the firehose stream.
+
 ## F
 
 **Firehose** — Real-time stream of repository commits. Accessed via subscribeRepos WebSocket.
 
 **Flow Control** — Mechanism to manage data transmission rate between producer and consumer.
+
+**Fuzzing** — Automated testing technique that provides random or malformed input to find bugs and vulnerabilities.
 
 ## G
 
@@ -89,6 +95,8 @@
 **IdentityService** — Service responsible for DID and handle resolution.
 
 **Input Validation** — Process of verifying and sanitizing user input to prevent attacks.
+
+**Integration Test** — Test that validates interaction between multiple components or systems.
 
 ## J
 
@@ -156,6 +164,8 @@
 
 **Prepared Statement** — Pre-compiled SQL query for efficient execution.
 
+**Property-Based Testing (PBT)** — Testing methodology that verifies code satisfies general properties across randomly generated inputs rather than specific test cases.
+
 ## R
 
 **Rate Limiting** — Technique to control the rate of requests to prevent abuse.
@@ -197,6 +207,12 @@
 **Sequence Number** — Monotonically increasing integer assigned to each firehose event that defines canonical ordering.
 
 ## T
+
+**Test Coverage** — Metric measuring the percentage of code executed by tests.
+
+**Test Discovery** — Process of automatically finding and registering test methods at runtime.
+
+**Test Runner** — Component that executes tests and reports results.
 
 **Throttling** — Limiting the rate of operations to prevent resource exhaustion.
 
@@ -259,6 +275,7 @@
 | DID | Decentralized Identifier |
 | DoS | Denial of Service |
 | DPoP | Demonstration of Proof-of-Possession |
+| E2E | End-to-End |
 | ECDSA | Elliptic Curve Digital Signature Algorithm |
 | GNUstep | GNU Objective-C Runtime Environment |
 | HSM | Hardware Security Module |
@@ -267,6 +284,7 @@
 | MST | Merkle Search Tree |
 | NSID | Namespace Identifier |
 | OAuth | Open Authorization |
+| PBT | Property-Based Testing |
 | PDS | Personal Data Server |
 | PLC | Public Ledger of Credentials |
 | SQL | Structured Query Language |
